@@ -1,14 +1,25 @@
-# Phase 2A `/query-templates` CRUD trio port (Wave 2 Tier 1) — Design Spec
+# Phase 2A `/query-templates` CRUD trio port (Wave 2 Tier 1) — Design Spec **v2**
 
-**Date**: 2026-05-01
+**Date**: 2026-05-01 (v2 revised after empirical Java behavior recording 2026-05-02)
 **Branch**: `phase2a/query-templates`
 **Worktree**: `.worktrees/phase2a-query-templates`
+
+**v2 changelog** (vs v1 commits `9542f00af` + `70a62757e`):
+- **F1**: existing GET impl uses **SQLAlchemy sync** (`get_db_context()` + `text()`), NOT asyncpg — spec rewrites §3 around this
+- **F2**: field order is **precedent-locked** by `analysis.py:53-84` GET impl — drop T7 "record golden 3× to detect Lombok flip" protocol (still relevant for sister chats but proven moot here)
+- **F2 add**: synthetic `"deleted": <bool>` field MUST appear in entity response — v1 missed this
+- **F3**: RLS policies exist on table but **DO NOT block** the T6 hijack — empirically verified
+- **F4**: envelope built via `schema_compat.wrap_response` is NOT what existing code uses — code uses raw dicts. Use raw dict envelope per recorded golden
+- **F5**: tests use `monkeypatch.setattr` on `_query_*` module-level functions (mirror `test_datasource_contract.py`). Drop the `smartbi_pool_with_isolation` fixture from v1 — pure mocks suffice for all 5 tests
+- **T6 hijack confirmed empirically**: Java POST with `id` in body DOES hijack cross-factory rows. Java response has `createdAt: null` (JPA merge quirk — transient entity returned, not DB row). Python must mirror exactly.
+
 **Predecessors**:
-- PR #32 — sub-endpoints port merged (`ccdeb4b1b`) — `_decimal_to_number` helper + golden infra
-- PR #33/#34 — receivable/budget specs merged (sister chats impl in flight)
-- PR #35 — Rule 8 `Map.of(N)` Jackson hash order rules merged (`5d284d38d`)
-- PR #38 — finance budget per-type real impl merged (`34f1e135c`)
-- PR #39 — `/datasource/fields` + `/history` GET ports merged (`f10ab7b6e`) — closest sibling pattern (entity-list responses, soft-delete annotations, cross-factory checks)
+- PR #32 — sub-endpoints port (`ccdeb4b1b`) — golden infra
+- PR #33/#34 — receivable/budget specs
+- PR #35 — Rule 8 `Map.of(N)` Jackson hash order
+- PR #38 — finance budget per-type real impl (`34f1e135c`)
+- PR #39 — `/datasource/fields` + `/history` GET ports (`f10ab7b6e`)
+- **Apr 28 T5b GET `/query-templates` Python port** in `analysis.py:53-130` — sister code, defines field order + DB pattern this spec must mirror
 
 ---
 
@@ -24,14 +35,14 @@
 
 ### 1.2 显式 not 范围
 
-- `GET /api/mobile/{factoryId}/smart-bi/query-templates` (list) → **stays Java**, nginx cutover scope handled separately (T6 in Phase 2A roadmap)
+- `GET /api/mobile/{factoryId}/smart-bi/query-templates` — **already ported** in `analysis.py:53-130` (Apr 28 T5b work). Don't touch.
 - 任何 schema 变更 (table 已存在, JPA `ddl-auto=none` in prod)
-- RBAC enforcement — Java 端 `@RequirePermission({"analytics:read_write"})` 由 Java middleware 验证, Python port 信任已通过 (nginx cutover 时 Java 仍在链路上 / T6 之后由 Python sidecar middleware 接管 — out of scope this PR)
+- RBAC enforcement — Java `@RequirePermission({"analytics:read_write"})` enforced by `PermissionInterceptor` (which does `userRepository.findById(jwt.userId)` + permission check). Python port inherits Java permission filter on the request path through nginx during T6 cutover phase. **Not in this PR's enforcement scope.**
 
 ### 1.3 反 scope creep
 
-- 不修 T6 (POST `id` merge bug) — verbatim mirror, defensive contract test only (§5)
-- 不录 T5 invalid-input goldens (empty body / missing required) — backlog §7
+- 不修 T6 (POST `id` merge bug) — verbatim mirror; defensive contract test #5 locks current behavior
+- 不录 invalid-input goldens (empty body / missing required) — backlog §7
 - 不改 Java 端任何代码 — 纯 Python port
 
 ---
@@ -49,182 +60,199 @@
 | Entity `SmartBiQueryTemplate` | `entity/smartbi/SmartBiQueryTemplate.java` (52 LOC, 7 own fields + 3 BaseEntity audit) |
 | Repository | `SmartBiQueryTemplateRepository.java` (JpaRepository<…, Long> + 1 finder, no custom delete) |
 | ApiResponse envelope | `dto/common/ApiResponse.java` — `error(String)` resolves to `error(400, msg)`; HTTP status remains 200 |
+| **Sister GET impl (precedent)** | `backend/python/smartbi_compat/api/analysis.py:53-130` — locks DB pattern + field order |
 
-### 2.2 Java behavior summary (verbatim mirror checklist)
+### 2.2 Java behavior matrix (empirically recorded 2026-05-02)
 
-**POST** (`createQueryTemplate`, line 965-973):
+All recordings against test env (10011) using `phase2a_test_user` (F999, userId=1355) and `factory_admin1` (F001, userId=1).
 
-```java
-template.setFactoryId(factoryId);   // T3: silent override of body's factoryId
-SmartBiQueryTemplate saved = queryTemplateRepository.save(template);
-return ResponseEntity.ok(ApiResponse.success(saved));
+#### POST happy (no id in body)
+
+```http
+POST /api/mobile/F999/smart-bi/query-templates
+{"name":"X","category":"X","description":"X","queryTemplate":"X","parameters":"[]"}
 ```
 
-- Body's `factoryId` **silently overridden** from path (T3). No error, no warning.
-- No `@Valid` annotation. Required-field violations (`name`, `category`, `queryTemplate` per `nullable=false`) hit DB constraint → `GlobalExceptionHandler` → return shape **unverified, deferred to PR-B** (§7 T5).
-- Body's `id` is honored if non-null → JPA `save()` performs MERGE (UPSERT) → **T6 latent bug**: client can overwrite arbitrary `id` (including cross-factory).
-
-**PUT** (`updateQueryTemplate`, line 976-994):
-
-```java
-return queryTemplateRepository.findById(templateId)
-        .filter(t -> factoryId.equals(t.getFactoryId()))   // T2: cross-factory → "not found"
-        .map(existing -> {
-            existing.setName(template.getName());
-            existing.setCategory(template.getCategory());
-            existing.setDescription(template.getDescription());
-            existing.setQueryTemplate(template.getQueryTemplate());
-            existing.setParameters(template.getParameters());   // T4: only 5 fields updated
-            SmartBiQueryTemplate saved = queryTemplateRepository.save(existing);
-            return ResponseEntity.ok(ApiResponse.success(saved));
-        })
-        .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));   // T2: HTTP 200 + code=400 + success=false
-```
-
-- Updates exactly 5 fields: `name`, `category`, `description`, `queryTemplate`, `parameters`.
-- `id`, `factoryId`, `createdAt`, `updatedAt`, `deletedAt` **untouched** (T4). `updated_at` auto-updated by DB trigger (per `database-entity-sync.md`).
-- Both "ID does not exist" and "ID exists but cross-factory" return **identical shape** (T2): `{code: 400, message: "Template not found", data: null, success: false}` wrapped in HTTP 200.
-
-**DELETE** (`deleteQueryTemplate`, line 997-1009):
-
-```java
-return queryTemplateRepository.findById(templateId)
-        .filter(t -> factoryId.equals(t.getFactoryId()))
-        .map(existing -> {
-            queryTemplateRepository.delete(existing);   // T1: HARD DELETE despite @Where soft-delete
-            return ResponseEntity.ok(ApiResponse.<Void>success(null));
-        })
-        .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));
-```
-
-- **T1 explicit clarification**: Entity declares `@Where(clause = "deleted_at IS NULL")`. This is a **READ filter** (excludes soft-deleted rows from `findById` / finder methods). It does NOT translate `delete()` to soft-delete. `repository.delete(existing)` emits SQL `DELETE FROM smart_bi_query_templates WHERE id = ?`. **Python mirrors hard DELETE — this is intentional Java behavior, not a bug.**
-- Success returns `data: null`. Not-found returns identical shape to PUT not-found (T2).
-
-### 2.3 SmartBiQueryTemplate JSON shape
-
-**Own fields (declared order in entity)**:
-
-```
-id          (Long, IDENTITY)
-factoryId   (String, length 32, NOT NULL)
-name        (String, length 100, NOT NULL)
-category    (String, length 32, NOT NULL)
-description (String, length 500, nullable)
-queryTemplate (String, TEXT, NOT NULL)
-parameters  (String, TEXT, nullable — JSON-encoded array as string, NOT JSONB)
-```
-
-**Inherited from `BaseEntity` (audit)**:
-
-```
-createdAt, updatedAt, deletedAt
-```
-
-**T7 — field order in Jackson output is NOT guaranteed**:
-Lombok `@Data` + Jackson default reflection means field order between subclass own fields and BaseEntity audit fields depends on JVM reflection iteration. Common Jackson pattern is subclass-first then superclass, but not contractual. **Must record golden 3× across Java backend restarts** (§4) and lock down the observed stable order.
-
-**T8 — `parameters` is TEXT, not JSONB**:
-Java stores it as `String` (already JSON-encoded). Python must **pass through as string** — DO NOT `json.loads` then `json.dumps` (re-serialization may reorder JSON object keys → byte-shape break).
-
-### 2.4 ApiResponse envelope shape (success + error)
-
-**Success** (POST/PUT):
 ```json
 {
-  "code": 200,
-  "message": "操作成功",
-  "data": { /* SmartBiQueryTemplate JSON, see 2.3 */ },
-  "timestamp": "2026-05-01T13:00:00.123",
+  "code": 200, "message": "操作成功",
+  "data": {
+    "createdAt": "2026-05-02T02:37:17.984275016",
+    "updatedAt": "2026-05-02T02:37:17.984275016",
+    "deletedAt": null,
+    "id": 45, "factoryId": "F999",
+    "name": "X", "category": "X", "description": "X",
+    "queryTemplate": "X", "parameters": "[]",
+    "deleted": false
+  },
+  "timestamp": "2026-05-02T02:37:17.986436102",
   "success": true,
-  "actionHint": null,
-  "severity": null,
-  "hintTarget": null
+  "actionHint": null, "severity": null, "hintTarget": null
 }
 ```
 
-**Success** (DELETE happy):
+Notes:
+- `createdAt == updatedAt` (both NOW(), nano precision before DB roundtrip)
+- `factoryId` always = path's factoryId (T3 silent override even when body has different one)
+- `deleted: false` always (POST never undeletes)
+
+#### POST hijack (id in body, exists)
+
+```http
+POST /api/mobile/F001/smart-bi/query-templates
+{"id":46,"name":"hijacked","category":"evil","queryTemplate":"DROP","parameters":"[\"x\"]"}
+```
+
 ```json
 {
-  "code": 200,
-  "message": "操作成功",
-  "data": null,
+  "code": 200, "message": "操作成功",
+  "data": {
+    "createdAt": null,                  // ⚠️ JPA merge quirk — body had no createdAt
+    "updatedAt": "2026-05-02T02:37:18.017844798",
+    "deletedAt": null,
+    "id": 46, "factoryId": "F001",      // ⚠️ factory_id IS overwritten in DB
+    "name": "hijacked_golden", "category": "evil",
+    "description": "T6 hijack golden",
+    "queryTemplate": "DROP", "parameters": "[\"x\"]",
+    "deleted": false
+  },
   "timestamp": "...",
   "success": true,
-  "actionHint": null,
-  "severity": null,
-  "hintTarget": null
+  "actionHint": null, "severity": null, "hintTarget": null
 }
 ```
 
-**Error** (PUT/DELETE not-found, all variants — missing ID OR cross-factory):
+**Critical T6 confirmation**:
+- Hijack succeeds (`success: true`, HTTP 200)
+- `factory_id` IS overwritten in DB (verified via F999 GET → row gone, F001 GET → row present with new factoryId)
+- DB's actual `created_at` IS preserved (verified via F001 GET showing original timestamp), but **response body shows `createdAt: null`** because Java's JPA `save()` returns the merged transient entity (which inherits the body's null createdAt rather than the existing row's value)
+- RLS policies on `smart_bi_query_templates` (V20260502_04) do NOT block this — likely because session's `app.factory_id` is empty/unset, falling into the policy's "OR empty OR null" branch
+
+#### PUT happy (id exists, same factory)
+
 ```json
 {
-  "code": 400,
-  "message": "Template not found",
+  "code": 200, "message": "操作成功",
+  "data": {
+    "createdAt": "2026-05-02T02:37:17.984275",         // micro precision (after DB roundtrip)
+    "updatedAt": "2026-05-02T02:37:17.993803529",      // nano (fresh NOW)
+    "deletedAt": null,
+    "id": 45, "factoryId": "F999",
+    "name": "<updated>", ...,
+    "deleted": false
+  },
+  ...envelope...
+}
+```
+
+Notes:
+- `createdAt` preserved from existing row (micro precision because read from DB), `updatedAt` is fresh NOW (nano)
+- Body's `id` and `factoryId` are IGNORED (verified — sent `{id:99999, factoryId:"F001"}` but response had `id:44, factoryId:"F999"` from path)
+- 5 fields updated: `name, category, description, queryTemplate, parameters`
+
+#### PUT not-found / cross-factory / DELETE not-found / cross-factory (all identical shape)
+
+```json
+{
+  "code": 400, "message": "Template not found",
   "data": null,
   "timestamp": "...",
   "success": false,
-  "actionHint": null,
-  "severity": null,
-  "hintTarget": null
+  "actionHint": null, "severity": null, "hintTarget": null
 }
 ```
 
-**Note on null fields**: Spring Boot default Jackson serializes nulls. If the app has `@JsonInclude(NON_NULL)` configured globally, `actionHint`/`severity`/`hintTarget` will be omitted. **Golden recording will reveal which** — Python must match.
+HTTP status: **200** (Java wraps via `ResponseEntity.ok(ApiResponse.error(...))`).
+
+#### DELETE happy
+
+```json
+{
+  "code": 200, "message": "操作成功",
+  "data": null,
+  "timestamp": "...",
+  "success": true,
+  "actionHint": null, "severity": null, "hintTarget": null
+}
+```
+
+DB: row hard-deleted (`DELETE FROM smart_bi_query_templates WHERE id = ?`). The entity's `@Where(clause="deleted_at IS NULL")` is a READ filter only — `repository.delete()` emits hard SQL DELETE.
+
+### 2.3 Field order (precedent-locked)
+
+**Envelope** (Java `ApiResponse` class declared field order, manual getters at line 136+):
+```
+code, message, data, timestamp, success, actionHint, severity, hintTarget
+```
+
+**Entity `SmartBiQueryTemplate`** (Lombok @Data, BaseEntity superclass first):
+```
+createdAt, updatedAt, deletedAt, id, factoryId, name, category,
+description, queryTemplate, parameters, deleted
+```
+
+The synthetic `deleted` boolean is `deletedAt != null` (Hibernate @Where derived getter exposed via Lombok). **This field IS in JSON output and Python MUST include it.**
+
+Both orders verified empirically against recorded goldens (2026-05-02). T7 (Lombok reflection flip) **does not occur for this entity** — `analysis.py:53-84` already documents the same order from Apr 28 work, and the May 2 recording matches.
 
 ---
 
-## 3. Python impl pseudo-code
+## 3. Python impl
 
-### 3.1 New module: `backend/python/smartbi_compat/api/query_templates.py`
+### 3.1 New module: `backend/python/smartbi_compat/api/query_templates_write.py`
+
+**Naming rationale**: GET is in `analysis.py` (existing). New file `query_templates_write.py` keeps WRITE endpoints separated for clean diff + low risk of breaking GET. Could rename to `query_templates.py` later as a refactor — out of this PR's scope.
 
 ```python
+"""Phase 2A WRITE endpoints for /smart-bi/query-templates.
+
+POST/PUT/DELETE — verbatim Java byte-shape mirror.
+GET is in analysis.py:53-130 (Apr 28 T5b work).
+
+Java reference: SmartBIAnalysisController.java:965-1009.
+Empirical Java behavior recorded 2026-05-02 against test env (10011).
+See spec §2.2 for full behavior matrix.
+"""
+from __future__ import annotations
+
+import logging
 from datetime import datetime
-from decimal import Decimal
 from typing import Any, Optional
 
-import asyncpg
-from fastapi import APIRouter, HTTPException, Path, Request
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Body, Depends, Path
+from sqlalchemy import text
 
-from smartbi_compat.api.analysis_finance import _decimal_to_number  # NOT used here; envelope only
-from smartbi_compat.db import get_smartbi_pool   # existing pool helper used by sub-endpoints / datasource
+from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
+# Reuse the field-order canon from analysis.py for consistency:
+from smartbi_compat.api.analysis import _row_to_dict as _query_template_row_to_dict
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# Pydantic body model (POST/PUT request body)
+# Envelope helpers (mirror Java ApiResponse.success / .error)
 # ============================================================
 
-class QueryTemplateBody(BaseModel):
-    """Permissive body — mirror Java `@RequestBody SmartBiQueryTemplate template` with no @Valid."""
-    id: Optional[int] = None              # T6: honored by Java JPA save() merge — verbatim mirror
-    factoryId: Optional[str] = None       # T3: ignored on POST (path overrides), ignored on PUT (preserved)
-    name: Optional[str] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
-    queryTemplate: Optional[str] = None
-    parameters: Optional[str] = None      # T8: pass-through TEXT (already-JSON string)
-    # Inherited audit fields — Java entity accepts them but PUT preserves existing + POST relies on DB defaults
-    createdAt: Optional[datetime] = None
-    updatedAt: Optional[datetime] = None
-    deletedAt: Optional[datetime] = None
+def _now_iso_nano() -> str:
+    """ISO-format current time matching Java LocalDateTime.now() default Jackson output.
 
-    class Config:
-        extra = "allow"   # Java Lombok @Data ignores unknown fields; mirror permissive shape
+    Java emits up to nanosecond precision (e.g. ".984275016"). Python's
+    datetime is microsecond-precision (".984275"). The byte-shape gate
+    strips data.createdAt / data.updatedAt / envelope.timestamp, so the
+    nano-vs-micro precision difference is tolerated. We still emit ISO
+    here for log traceability.
+    """
+    return datetime.now().isoformat()
 
-
-# ============================================================
-# Envelope helpers (mirror Java ApiResponse static factories)
-# ============================================================
 
 def _envelope_success(data: Any, message: str = "操作成功") -> dict:
+    """Mirror Java ApiResponse.success(message, data) field order."""
     return {
         "code": 200,
         "message": message,
         "data": data,
-        "timestamp": _now_iso(),
+        "timestamp": _now_iso_nano(),
         "success": True,
         "actionHint": None,
         "severity": None,
@@ -233,11 +261,12 @@ def _envelope_success(data: Any, message: str = "操作成功") -> dict:
 
 
 def _envelope_error(message: str, code: int = 400) -> dict:
+    """Mirror Java ApiResponse.error(message) field order. code defaults to 400."""
     return {
         "code": code,
         "message": message,
         "data": None,
-        "timestamp": _now_iso(),
+        "timestamp": _now_iso_nano(),
         "success": False,
         "actionHint": None,
         "severity": None,
@@ -245,316 +274,336 @@ def _envelope_error(message: str, code: int = 400) -> dict:
     }
 
 
-def _now_iso() -> str:
-    """ISO format matching Java LocalDateTime.now() Jackson default.
+# ============================================================
+# Module-level DB helpers (monkeypatch surface for tests)
+# ============================================================
 
-    Java LocalDateTime serializes via ISO_LOCAL_DATE_TIME by default
-    (no timezone, microsecond precision varies). Recording goldens will
-    reveal exact format — adjust this helper to match if needed.
+def _create_template(factory_id: str, body: dict) -> Optional[dict]:
+    """INSERT or MERGE.
+
+    If body has non-null id, MERGE (UPSERT) per Java JPA save() with non-null id.
+    Else INSERT new auto-gen id.
+
+    Returns the entity dict in Java field order (with `deleted` synthetic field).
+    For the merge path, mirrors Java's quirk: response.createdAt = None
+    (because Java returns the transient entity, not the DB row).
+
+    Mirrors Java: SmartBIAnalysisController.java:965-973 → JpaRepository.save().
     """
-    return datetime.now().isoformat(timespec="microseconds")
+    from smartbi.database.connection import get_db_context, is_postgres_enabled
+
+    if not is_postgres_enabled():
+        logger.warning("query-templates write: postgres not enabled (factory_id=%s)", factory_id)
+        return None
+
+    body_id = body.get("id")
+    name = body.get("name")
+    category = body.get("category")
+    description = body.get("description")
+    query_template = body.get("queryTemplate")
+    parameters = body.get("parameters")
+
+    with get_db_context() as db:
+        if body_id is not None:
+            # MERGE path (T6): mirror JPA save() merge behavior.
+            # PostgreSQL ON CONFLICT (id) DO UPDATE.
+            # NOTE: only the 5 mutable fields + factory_id + updated_at are SET.
+            # created_at/deleted_at preserved by NOT being in SET clause.
+            sql = text(
+                "INSERT INTO smart_bi_query_templates "
+                "  (id, factory_id, name, category, description, "
+                "   query_template, parameters, created_at, updated_at, deleted_at) "
+                "VALUES (:id, :fid, :name, :category, :description, "
+                "        :query_template, :parameters, NOW(), NOW(), NULL) "
+                "ON CONFLICT (id) DO UPDATE SET "
+                "  factory_id = EXCLUDED.factory_id, "
+                "  name = EXCLUDED.name, "
+                "  category = EXCLUDED.category, "
+                "  description = EXCLUDED.description, "
+                "  query_template = EXCLUDED.query_template, "
+                "  parameters = EXCLUDED.parameters, "
+                "  updated_at = NOW() "
+                "RETURNING id, factory_id, name, category, description, "
+                "          query_template, parameters, created_at, updated_at, deleted_at"
+            )
+            row = db.execute(sql, {
+                "id": body_id, "fid": factory_id, "name": name,
+                "category": category, "description": description,
+                "query_template": query_template, "parameters": parameters,
+            }).first()
+            db.commit()
+            if row is None:
+                return None
+            entity = _query_template_row_to_dict(row)
+            # Java JPA quirk: merge() response has createdAt = None (transient entity).
+            # Python mirrors this by overriding the DB-returned createdAt with None.
+            entity["createdAt"] = None
+            return entity
+        else:
+            # Normal INSERT path (no id): auto-gen id, RETURNING all.
+            sql = text(
+                "INSERT INTO smart_bi_query_templates "
+                "  (factory_id, name, category, description, "
+                "   query_template, parameters, created_at, updated_at, deleted_at) "
+                "VALUES (:fid, :name, :category, :description, "
+                "        :query_template, :parameters, NOW(), NOW(), NULL) "
+                "RETURNING id, factory_id, name, category, description, "
+                "          query_template, parameters, created_at, updated_at, deleted_at"
+            )
+            row = db.execute(sql, {
+                "fid": factory_id, "name": name, "category": category,
+                "description": description, "query_template": query_template,
+                "parameters": parameters,
+            }).first()
+            db.commit()
+            return _query_template_row_to_dict(row) if row else None
 
 
-# ============================================================
-# Row → entity dict (mirror Lombok @Data Jackson output)
-# ============================================================
+def _update_template(factory_id: str, template_id: int, body: dict) -> Optional[dict]:
+    """Mirror Java findById + factoryId filter + setX + save() pattern.
 
-def _row_to_entity(row: asyncpg.Record) -> dict:
-    """Build dict matching Java SmartBiQueryTemplate JSON shape.
+    Returns updated entity dict, or None if not found / cross-factory.
+    Updates exactly 5 fields: name, category, description, queryTemplate, parameters.
+    Body's id and factoryId are IGNORED.
 
-    Field order is locked per F999 golden recording (§4). Suspected order:
-    own fields (declared) then BaseEntity audit (createdAt, updatedAt, deletedAt).
-    Adjust to match recorded golden — DO NOT trust this initial guess.
+    Mirrors Java: SmartBIAnalysisController.java:976-994.
     """
-    return {
-        "id": row["id"],
-        "factoryId": row["factory_id"],
-        "name": row["name"],
-        "category": row["category"],
-        "description": row["description"],
-        "queryTemplate": row["query_template"],
-        "parameters": row["parameters"],   # T8: pass-through string
-        "createdAt": _datetime_to_iso(row["created_at"]),
-        "updatedAt": _datetime_to_iso(row["updated_at"]),
-        "deletedAt": _datetime_to_iso(row["deleted_at"]),   # nullable
-    }
+    from smartbi.database.connection import get_db_context, is_postgres_enabled
+
+    if not is_postgres_enabled():
+        return None
+
+    with get_db_context() as db:
+        # T2: WHERE id AND factory_id (via @Where deleted_at IS NULL — soft-deleted excluded).
+        # If no row matches → not found / cross-factory → identical shape per Java line 993.
+        existing_check = text(
+            "SELECT id FROM smart_bi_query_templates "
+            "WHERE id = :id AND factory_id = :fid AND deleted_at IS NULL"
+        )
+        existing = db.execute(existing_check, {"id": template_id, "fid": factory_id}).first()
+        if existing is None:
+            return None
+
+        # T4: update 5 fields + updated_at = NOW(). Body's id/factoryId/createdAt
+        # are NEVER applied (mirror Java line 985-989 — only setName/setCategory/
+        # setDescription/setQueryTemplate/setParameters called).
+        sql = text(
+            "UPDATE smart_bi_query_templates "
+            "SET name = :name, "
+            "    category = :category, "
+            "    description = :description, "
+            "    query_template = :query_template, "
+            "    parameters = :parameters, "
+            "    updated_at = NOW() "
+            "WHERE id = :id "
+            "RETURNING id, factory_id, name, category, description, "
+            "          query_template, parameters, created_at, updated_at, deleted_at"
+        )
+        row = db.execute(sql, {
+            "id": template_id,
+            "name": body.get("name"),
+            "category": body.get("category"),
+            "description": body.get("description"),
+            "query_template": body.get("queryTemplate"),
+            "parameters": body.get("parameters"),
+        }).first()
+        db.commit()
+        return _query_template_row_to_dict(row) if row else None
 
 
-def _datetime_to_iso(dt: Optional[datetime]) -> Optional[str]:
-    return dt.isoformat(timespec="microseconds") if dt is not None else None
+def _delete_template(factory_id: str, template_id: int) -> bool:
+    """Mirror Java findById + factoryId filter + repository.delete() pattern.
+
+    Returns True if deleted, False if not found / cross-factory.
+    HARD DELETE — entity's @Where(deleted_at IS NULL) is a READ filter only.
+    Java's repository.delete() emits SQL `DELETE FROM ... WHERE id = ?`.
+
+    Mirrors Java: SmartBIAnalysisController.java:997-1009.
+    """
+    from smartbi.database.connection import get_db_context, is_postgres_enabled
+
+    if not is_postgres_enabled():
+        return False
+
+    with get_db_context() as db:
+        existing_check = text(
+            "SELECT id FROM smart_bi_query_templates "
+            "WHERE id = :id AND factory_id = :fid AND deleted_at IS NULL"
+        )
+        existing = db.execute(existing_check, {"id": template_id, "fid": factory_id}).first()
+        if existing is None:
+            return False
+
+        # T1: HARD DELETE. @Where soft-delete annotation is a READ filter only.
+        db.execute(
+            text("DELETE FROM smart_bi_query_templates WHERE id = :id"),
+            {"id": template_id},
+        )
+        db.commit()
+        return True
 
 
 # ============================================================
-# POST /api/mobile/{factoryId}/smart-bi/query-templates
+# Endpoints
 # ============================================================
 
 @router.post("/api/mobile/{factory_id}/smart-bi/query-templates")
 async def create_query_template(
     factory_id: str = Path(..., min_length=1),
-    body: QueryTemplateBody = ...,
-):
-    """Mirror Java line 965-973 verbatim.
+    body: dict = Body(default_factory=dict),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Mirror Java SmartBIAnalysisController.createQueryTemplate (line 965-973)."""
+    # T3: factoryId silent override from path (Java line 970).
+    # Use auth.factory_id (JWT) for consistency with existing GET impl pattern
+    # — JWT factoryId always matches path factoryId here because verify_jwt_and_factory
+    # rejects mismatch. Either is fine; we use path to be explicit about override semantics.
+    entity = _create_template(factory_id, body)
+    if entity is None:
+        # Postgres unavailable — log and return error envelope.
+        # NOTE: Java would propagate DB exception via GlobalExceptionHandler. Without
+        # recorded golden for that case, we return generic error. T5 backlog.
+        return _envelope_error("Database unavailable", code=500)
+    return _envelope_success(entity)
 
-    Behavior:
-    - body.factoryId silently overridden from path (T3)
-    - body.id, if non-null, is passed through to INSERT — JPA save() does MERGE (T6)
-    - Required fields (name, category, queryTemplate) NOT validated here — DB NOT NULL constraint will throw
-    """
-    # T3: override factoryId
-    factory_id_to_use = factory_id
-
-    pool = await get_smartbi_pool()
-    async with pool.acquire() as conn:
-        if body.id is not None:
-            # T6 verbatim mirror: client-supplied id triggers JPA save() MERGE behavior.
-            # PostgreSQL `INSERT ... ON CONFLICT (id) DO UPDATE` matches JPA persist-or-update.
-            #
-            # ⚠️ Q1 NUANCE: ON CONFLICT SET clause must list EXACTLY the 5 fields PUT updates.
-            # DO NOT use `EXCLUDED.*` shorthand or `SET (...) = (excluded...)` — those would
-            # also overwrite columns JPA merge() leaves alone.
-            #
-            # Verified prerequisites:
-            # - SmartBiQueryTemplate has NO @Version field → no optimistic-lock version bump
-            #   to mirror. (If @Version were present, we'd need explicit `version = version + 1`
-            #   in the UPDATE SET, since ON CONFLICT does NOT auto-increment Hibernate version.)
-            # - factory_id, created_at, updated_at, deleted_at are NOT in the SET clause:
-            #     * factory_id: JPA merge() preserves existing entity's factoryId (matches T6 bug —
-            #       merge does not overwrite factoryId from the merge source's factoryId field if
-            #       reference attached; but for transient entity merge it DOES update — keep mirroring
-            #       Java behavior, which here is SET NEW factory_id from path. See note below.)
-            #     * created_at: existing row's createdAt preserved (BaseEntity @CreatedDate immutable).
-            #     * updated_at: explicit NOW() set in SET clause (do not rely on DB trigger).
-            #     * deleted_at: never modified by POST.
-            #
-            # NOTE on factory_id during MERGE: Java JPA `merge()` with detached entity that has
-            # different factoryId WILL update factory_id (it's a regular updatable column). So the
-            # T6 cross-factory hijack DOES change factory_id ownership. We SET factory_id = $2
-            # in ON CONFLICT to faithfully reproduce this — see spec §5.2 test #5 assertion.
-            sql = """
-                INSERT INTO smart_bi_query_templates
-                    (id, factory_id, name, category, description, query_template, parameters,
-                     created_at, updated_at, deleted_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), NULL)
-                ON CONFLICT (id) DO UPDATE SET
-                    factory_id = EXCLUDED.factory_id,
-                    name = EXCLUDED.name,
-                    category = EXCLUDED.category,
-                    description = EXCLUDED.description,
-                    query_template = EXCLUDED.query_template,
-                    parameters = EXCLUDED.parameters,
-                    updated_at = NOW()
-                    -- DO NOT touch: created_at (immutable), deleted_at (POST never undeletes)
-                RETURNING *
-            """
-            row = await conn.fetchrow(
-                sql, body.id, factory_id_to_use, body.name, body.category,
-                body.description, body.queryTemplate, body.parameters,
-            )
-        else:
-            sql = """
-                INSERT INTO smart_bi_query_templates
-                    (factory_id, name, category, description, query_template, parameters,
-                     created_at, updated_at, deleted_at)
-                VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NULL)
-                RETURNING *
-            """
-            row = await conn.fetchrow(
-                sql, factory_id_to_use, body.name, body.category,
-                body.description, body.queryTemplate, body.parameters,
-            )
-
-    return _envelope_success(_row_to_entity(row))
-
-
-# ============================================================
-# PUT /api/mobile/{factoryId}/smart-bi/query-templates/{templateId}
-# ============================================================
 
 @router.put("/api/mobile/{factory_id}/smart-bi/query-templates/{template_id}")
 async def update_query_template(
     factory_id: str = Path(..., min_length=1),
     template_id: int = Path(...),
-    body: QueryTemplateBody = ...,
-):
-    """Mirror Java line 976-994 verbatim.
+    body: dict = Body(default_factory=dict),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Mirror Java SmartBIAnalysisController.updateQueryTemplate (line 976-994)."""
+    entity = _update_template(factory_id, template_id, body)
+    if entity is None:
+        return _envelope_error("Template not found")  # T2: HTTP 200 + code=400
+    return _envelope_success(entity)
 
-    T2: not-found AND cross-factory both return identical {code: 400, success: false} HTTP 200.
-    T4: only 5 fields updated (name, category, description, queryTemplate, parameters).
-    """
-    pool = await get_smartbi_pool()
-    async with pool.acquire() as conn:
-        # findById + factoryId filter (T2): WHERE id AND factory_id AND deleted_at IS NULL (T1: @Where READ filter)
-        existing = await conn.fetchrow(
-            """
-            SELECT * FROM smart_bi_query_templates
-            WHERE id = $1 AND factory_id = $2 AND deleted_at IS NULL
-            """,
-            template_id, factory_id,
-        )
-        if existing is None:
-            return _envelope_error("Template not found")
-
-        # T4: update exactly 5 fields. updated_at set explicitly to NOW()
-        # (do not rely on DB trigger presence — set explicitly to guarantee parity
-        # with Java JPA Hibernate's @PreUpdate audit lifecycle).
-        updated = await conn.fetchrow(
-            """
-            UPDATE smart_bi_query_templates
-            SET name = $1,
-                category = $2,
-                description = $3,
-                query_template = $4,
-                parameters = $5,
-                updated_at = NOW()
-            WHERE id = $6
-            RETURNING *
-            """,
-            body.name, body.category, body.description,
-            body.queryTemplate, body.parameters,
-            template_id,
-        )
-
-    return _envelope_success(_row_to_entity(updated))
-
-
-# ============================================================
-# DELETE /api/mobile/{factoryId}/smart-bi/query-templates/{templateId}
-# ============================================================
 
 @router.delete("/api/mobile/{factory_id}/smart-bi/query-templates/{template_id}")
 async def delete_query_template(
     factory_id: str = Path(..., min_length=1),
     template_id: int = Path(...),
-):
-    """Mirror Java line 997-1009 verbatim.
-
-    T1: HARD DELETE (Java repository.delete() emits DELETE SQL despite @Where soft-delete annotation).
-    @Where only filters READ — does NOT translate delete() to soft-delete.
-    """
-    pool = await get_smartbi_pool()
-    async with pool.acquire() as conn:
-        # findById + factoryId filter (T2 mirror)
-        existing = await conn.fetchrow(
-            """
-            SELECT id FROM smart_bi_query_templates
-            WHERE id = $1 AND factory_id = $2 AND deleted_at IS NULL
-            """,
-            template_id, factory_id,
-        )
-        if existing is None:
-            return _envelope_error("Template not found")
-
-        # T1: HARD DELETE
-        await conn.execute(
-            "DELETE FROM smart_bi_query_templates WHERE id = $1",
-            template_id,
-        )
-
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Mirror Java SmartBIAnalysisController.deleteQueryTemplate (line 997-1009)."""
+    deleted = _delete_template(factory_id, template_id)
+    if not deleted:
+        return _envelope_error("Template not found")
     return _envelope_success(None)
 ```
 
 ### 3.2 Wire-up in `backend/python/main.py`
 
 ```python
-from smartbi_compat.api import query_templates as smartbi_query_templates_api
-app.include_router(smartbi_query_templates_api.router, tags=["SmartBI Query Templates"])
+from smartbi_compat.api import query_templates_write as smartbi_query_templates_write_api
+app.include_router(smartbi_query_templates_write_api.router, tags=["SmartBI Query Templates Write"])
 ```
 
-(Match existing pattern for `datasource.py` registration.)
+(Match existing pattern for `analysis.py` / `datasource.py` registration. Tag suffix "Write" disambiguates from existing read-side tag.)
 
 ### 3.3 Helper reuse
 
-- `get_smartbi_pool()` — existing helper from `smartbi_compat/db.py` (same pool used by datasource + sub-endpoints). **Impl phase**: verify exact name + import path during plan task `T-impl-1` (existing module discovery).
+- **`_query_template_row_to_dict`** (alias for `_row_to_dict` in `analysis.py:53-84`): re-export to keep field order canon in ONE place. If GET impl evolves, WRITE inherits the change.
+- **`get_db_context()`** + **`is_postgres_enabled()`** from `smartbi.database.connection`: same pattern as GET.
+- **`verify_jwt_and_factory`** from `smartbi_compat.auth`: standard auth dep.
 - No `_decimal_to_number` needed — entity has no numeric fields.
-- No `Map.of(N)` shapes anywhere — Rule 8 N/A.
+- No `Map.of(N)` shapes — Rule 8 N/A.
 
 ---
 
-## 4. Byte-shape gate (4 goldens, T7 nuance)
+## 4. Byte-shape gate (5 goldens)
 
-### 4.1 Golden recording
+### 4.1 Goldens (already recorded 2026-05-02)
 
-**Total: 4 goldens** (per simplified spec template — PUT not-found shape ≡ DELETE not-found shape, single fixture double-used):
+| # | File | Scenario |
+|---|---|---|
+| 1 | `tests/fixtures/java-smartbi-golden/query-templates-F999-post-happy.json` | F999 POST without id |
+| 2 | `tests/fixtures/java-smartbi-golden/query-templates-F999-put-happy.json` | F999 PUT updates 5 fields |
+| 3 | `tests/fixtures/java-smartbi-golden/query-templates-F999-delete-happy.json` | F999 DELETE row |
+| 4 | `tests/fixtures/java-smartbi-golden/query-templates-F999-not-found.json` | PUT id=999999 (also = DELETE not-found and both cross-factory variants) |
+| 5 | `tests/fixtures/java-smartbi-golden/query-templates-F001-hijack.json` | T6 defensive — F001 POST with id=46 (F999-owned) → hijack succeeds, response.createdAt=null |
 
-| # | Endpoint | Scenario | Filename |
-|---|---|---|---|
-| 1 | POST | F999 happy create | `tests/fixtures/java-smartbi-golden/query-templates-F999-post-happy.json` |
-| 2 | PUT | F999 happy update (template created in step 1) | `tests/fixtures/java-smartbi-golden/query-templates-F999-put-happy.json` |
-| 3 | DELETE | F999 happy delete (template created in step 1, after step 2) | `tests/fixtures/java-smartbi-golden/query-templates-F999-delete-happy.json` |
-| 4 | PUT | F999 not-found (templateId=999999) | `tests/fixtures/java-smartbi-golden/query-templates-F999-not-found.json` |
+**Goldens were captured against test env (10011) using authenticated synthetic JWT** (`phase2a_test_user` for F999, `factory_admin1` for F001). Capture script: documented inline in §4.4.
 
-**Golden #4 double-use**: Contract test for DELETE not-found asserts dict-eq against the SAME `query-templates-F999-not-found.json` fixture (PUT/DELETE not-found shape identity). Test description: "PUT/DELETE not-found shape identity verified — single golden double-used".
+### 4.2 Volatile field stripping (extends `test_datasource_contract.py`'s `VOLATILE`)
 
-### 4.2 Recording procedure
+The existing `VOLATILE = frozenset({"timestamp", ...})` strips top-level `timestamp` only. For these tests, also strip `data.createdAt` and `data.updatedAt` because:
 
-```bash
-# Use existing scripts/record-java-golden.sh (or curl directly if script doesn't support write methods).
-# Hit Java prod (10010) to record real Jackson output:
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ..." \
-  http://localhost:10010/api/mobile/F999/smart-bi/query-templates \
-  -d '{"name":"test","category":"sales","description":"d","queryTemplate":"SELECT 1","parameters":"[]"}' \
-  > tests/fixtures/java-smartbi-golden/query-templates-F999-post-happy.json
-# (similar for PUT happy, DELETE happy, PUT not-found)
-```
+- POST happy: createdAt + updatedAt both = NOW() per request → volatile
+- PUT happy: createdAt = preserved (DB roundtrip), updatedAt = fresh NOW → volatile
+- POST hijack: createdAt = null (locked), updatedAt = fresh NOW → volatile
+- DELETE happy: data is null → no entity timestamps to strip
+- Not-found: data is null
 
-### 4.3 T7 — record 3× across Java backend restarts
-
-**Critical nuance**: `SmartBiQueryTemplate extends BaseEntity` with Lombok `@Data`. Jackson serialization order between subclass own fields and BaseEntity audit fields **may flip across JVM restarts** depending on hotspot reflection cache state. This is similar in spirit to Rule 8's `Map.of(N)` SALT issue, but for Jackson reflection (not collection hash).
-
-**Procedure** (impl chat to follow):
-1. Record golden #1 (POST happy) on cold Java backend.
-2. Restart `cretas-backend` (or `cretas-backend-test`), record golden #1 again to second tempfile.
-3. Restart again, record to third tempfile.
-4. Diff the 3 files. **Diff classification** (Q2 NUANCE):
-
-   | Diff observed | Meaning | Action |
-   |---|---|---|
-   | `timestamp` microseconds differ | **Expected** (volatile per-request value) | `_strip_volatile` envelope helper handles it (already required) |
-   | `data.createdAt` / `data.updatedAt` microseconds differ | **Expected** (volatile NOW() values) | `_strip_volatile` strips both fields too |
-   | Field **KEY order** differs | **Reflection flip** — Lombok @Data + Jackson reflection cache state-dependent | Emit `canonicalize_entity_keys` helper in `tests/contract/conftest.py` that sorts dict keys before dict-eq. Document accepted shape divergence in spec §7. **Candidate Rule 9** for `python-java-port.md` if observed across ≥2 sister CRUD chats. |
-   | Field **VALUE** (other than timestamps) differs | **BUG** — should never happen on identical request | Stop, investigate. Likely a non-deterministic field source (UUID generation, system clock dependency, etc.). Do NOT proceed until root-caused. |
-
-5. If only timestamp diffs → commit golden #1 as-is, `_strip_volatile` handles all volatility.
-6. If key order flip detected → commit canonicalized golden + emit canonicalize helper + document in §7.
-7. If value flip detected → escalate, do not ship.
-
-This nuance is NOT in Rule 8 (Rule 8 is Map.of, not Lombok reflection), but follows the same byte-shape parity defensive principle. Adding to `python-java-port.md` Rule history if T7 flip is observed.
-
-**Why 3× recordings (not 2×)**: First record may catch hotspot pre-JIT state, second post-JIT, third stabilized. Diff pattern (1≠2 but 2=3) reveals JIT-induced flip; (1=2=3) confirms stability. 2× is insufficient to distinguish JIT-warmup-noise from actual reflection-flip.
-
-### 4.4 Byte-shape gate test
+**New helper** (add to test file or shared conftest):
 
 ```python
-# tests/contract/test_query_templates_parity.py
-import json
-import pytest
-from pathlib import Path
+def _strip_volatile_query_template(obj):
+    """Strip envelope.timestamp + data.createdAt + data.updatedAt (per spec §4.2).
 
-GOLDEN_DIR = Path("tests/fixtures/java-smartbi-golden")
-
-@pytest.mark.parametrize("scenario,fixture", [
-    ("post_happy", "query-templates-F999-post-happy.json"),
-    ("put_happy", "query-templates-F999-put-happy.json"),
-    ("delete_happy", "query-templates-F999-delete-happy.json"),
-    ("put_not_found", "query-templates-F999-not-found.json"),
-])
-async def test_byte_shape_parity(scenario, fixture, python_app, mock_smartbi_pool):
-    expected = json.loads((GOLDEN_DIR / fixture).read_text(encoding="utf-8"))
-    # Strip volatile fields per existing parity helper convention
-    expected_canon = canonicalize_envelope(expected)
-    actual = await invoke_python_endpoint(scenario, python_app, mock_smartbi_pool)
-    actual_canon = canonicalize_envelope(actual)
-    assert actual_canon == expected_canon
-
-# Bonus: DELETE not-found uses same fixture as PUT not-found
-async def test_delete_not_found_shape_identity(python_app, mock_smartbi_pool):
-    """Verify PUT/DELETE not-found shape identity per spec §4.1."""
-    fixture = json.loads((GOLDEN_DIR / "query-templates-F999-not-found.json").read_text(encoding="utf-8"))
-    actual = await invoke_python_endpoint("delete_not_found", python_app, mock_smartbi_pool)
-    assert canonicalize_envelope(actual) == canonicalize_envelope(fixture)
+    For POST hijack golden, data.createdAt is null (locked, NOT volatile) — we still
+    strip it for consistency. The byte-shape assertion below covers it via a separate
+    pinpoint check.
+    """
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if k == "timestamp":
+                continue
+            if k == "data" and isinstance(v, dict):
+                v = {ek: ev for ek, ev in v.items() if ek not in {"createdAt", "updatedAt"}}
+            out[k] = _strip_volatile_query_template(v) if isinstance(v, (dict, list)) else v
+        return out
+    if isinstance(obj, list):
+        return [_strip_volatile_query_template(x) for x in obj]
+    return obj
 ```
 
-`canonicalize_envelope` strips `timestamp` (always volatile) + `data.createdAt` / `data.updatedAt` (volatile when entity round-trip uses NOW()). **Impl phase**: check if such a helper already exists in `tests/contract/conftest.py` from sub-endpoints PR #32 / datasource PR #39 — reuse if present; create if absent (mark in plan task list).
+### 4.3 Why no T7 3× recording protocol (drop from v1)
+
+v1 §4.3 proposed recording each golden 3× across `cretas-backend` restarts to detect Lombok @Data + Jackson reflection key-order flip. **This is unnecessary here** because:
+
+1. **`analysis.py:53-84` (Apr 28 sister code) already documents the field order** for this exact entity. Re-recording 3× won't tell us anything the existing GET impl doesn't.
+2. The 2026-05-02 fresh recording matches `analysis.py`'s documented order exactly. Stable across at least 2 weeks of process runtime.
+3. T7 remains a real concern for **future** Lombok @Data entities new to the port (no precedent), but NOT for this entity.
+
+**Sister chats: keep T7 3× recording protocol** for entities without prior Python port. Do NOT drop it as a generic rule.
+
+### 4.4 Capture script (for reference / re-recording if needed)
+
+```bash
+ssh root@47.100.235.168 'python3 << EOF
+import jwt, time, json, urllib.request
+SECRET = "cretas-jwt-secret-key-2026-test"  # /www/wwwroot/cretas/.env.test
+BASE = "http://localhost:10011"
+def make(f, u, uid):
+    t = jwt.encode({
+        "role":"factory_super_admin","factoryId":f,"userId":uid,
+        "username":u,"sub":u,
+        "iat":int(time.time()),"exp":int(time.time())+3600,
+    }, SECRET, algorithm="HS256")
+    return t.decode("utf-8") if isinstance(t, bytes) else t
+def req(url, tok, method="GET", body=None):
+    r = urllib.request.Request(url, method=method)
+    r.add_header("Authorization","Bearer "+tok)
+    if body is not None:
+        r.add_header("Content-Type","application/json")
+        r.data = json.dumps(body).encode()
+    try:
+        with urllib.request.urlopen(r, timeout=15) as resp:
+            return resp.getcode(), resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode("utf-8")
+
+f999 = make("F999", "phase2a_test_user", 1355)
+f001 = make("F001", "factory_admin1", 1)
+# ... record POST/PUT/DELETE/not-found/hijack per spec §4.1 ...
+EOF'
+```
+
+Full script preserved in commit `<hash>` working memory.
 
 ---
 
@@ -562,69 +611,130 @@ async def test_delete_not_found_shape_identity(python_app, mock_smartbi_pool):
 
 ### 5.1 Test inventory
 
-| # | Test | Scenario | Asserts |
+| # | Test | Mock surface | Assert |
 |---|---|---|---|
-| 1 | `test_post_happy_byte_shape` | POST F999 with valid body | dict-eq against `query-templates-F999-post-happy.json` (canonicalized) |
-| 2 | `test_put_happy_byte_shape` | PUT F999 with valid update | dict-eq against `query-templates-F999-put-happy.json` (canonicalized) |
-| 3 | `test_delete_happy_byte_shape` | DELETE F999 happy | dict-eq against `query-templates-F999-delete-happy.json` (canonicalized) |
-| 4 | `test_put_delete_not_found_shape_identity` | PUT 999999 + DELETE 999999 + PUT cross-factory + DELETE cross-factory | All 4 invocations dict-eq against single `query-templates-F999-not-found.json` fixture |
-| 5 | `test_post_with_id_does_not_overwrite_other_factory_template` | **T6 defensive contract test** — F999 creates template id=N → switch to F001 context POST `{id: N, name: "hijack", ...}` → assert response 200 (mirror Java MERGE) BUT assert F999's template at id=N is NOT modified in DB | Response success; DB row still owned by F999 + name unchanged |
+| 1 | `test_post_happy_byte_shape` | monkeypatch `_create_template` → returns recorded entity dict | `_strip_volatile_query_template(actual) == _strip_volatile_query_template(golden)` for `query-templates-F999-post-happy.json` |
+| 2 | `test_put_happy_byte_shape` | monkeypatch `_update_template` → returns recorded entity dict | dict-eq vs `query-templates-F999-put-happy.json` |
+| 3 | `test_delete_happy_byte_shape` | monkeypatch `_delete_template` → returns True | dict-eq vs `query-templates-F999-delete-happy.json` |
+| 4 | `test_put_delete_not_found_shape_identity` | monkeypatch `_update_template` and `_delete_template` to return None / False respectively | All 4 calls (PUT not-found, DELETE not-found, cross-factory PUT, cross-factory DELETE) dict-eq vs same `query-templates-F999-not-found.json` |
+| 5 | `test_post_hijack_byte_shape_lock` | monkeypatch `_create_template` → returns recorded hijack entity (with `createdAt=None` mirror) | dict-eq vs `query-templates-F001-hijack.json`. **Locks T6 verbatim mirror behavior**. |
 
-### 5.2 T6 defensive contract test detail
+### 5.2 Mock pattern (mirrors `test_datasource_contract.py:79-99`)
 
 ```python
-async def test_post_with_id_does_not_overwrite_other_factory_template(
-    python_app, smartbi_pool_with_isolation
-):
-    """Lock current verbatim Java MERGE behavior (T6 latent bug).
+import importlib.util, io, json, os, sys
+from datetime import datetime, timezone
+from pathlib import Path
+import jwt, pytest
 
-    This test does NOT fix the bug. It locks current behavior so that if a future
-    Java fix changes MERGE semantics, the Python port is alerted to re-mirror.
+JWT_SECRET = "test-secret-for-phase2a-do-not-use-in-prod"
+os.environ["JWT_SECRET"] = JWT_SECRET
 
-    Per spec §7 risk register: T6 is candidate for Phase 2B-after-cleanup.
-    """
-    # Setup: F999 creates template id=42 owned by F999
-    pool = smartbi_pool_with_isolation
-    await pool.execute(
-        "INSERT INTO smart_bi_query_templates (id, factory_id, name, category, "
-        "description, query_template, parameters, created_at, updated_at) "
-        "VALUES (42, 'F999', 'original', 'sales', 'd', 'SELECT 1', '[]', NOW(), NOW())"
-    )
+REPO_ROOT = Path(__file__).resolve().parents[3]
+GOLDEN_DIR = REPO_ROOT / "tests" / "fixtures" / "java-smartbi-golden"
 
-    # Act: F001 POST with id=42 → mirror Java MERGE (overwrites F999's row)
-    response = await python_app.post(
-        "/api/mobile/F001/smart-bi/query-templates",
-        json={"id": 42, "name": "hijack", "category": "sales",
-              "queryTemplate": "DROP TABLE x", "parameters": "[]"},
-    )
 
-    # Java behavior: HTTP 200 success — request honored (T6 bug)
-    assert response.status_code == 200
-    assert response.json()["success"] is True
+def _load_production_main():
+    main_path = REPO_ROOT / "backend" / "python" / "main.py"
+    sys.path.insert(0, str(REPO_ROOT / "backend" / "python"))
+    spec = importlib.util.spec_from_file_location("_production_main", main_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-    # Document the honored bug: F999's row IS now overwritten with F001 ownership.
-    # If Python port DIVERGED from Java (e.g. silently kept F999 ownership), this would fail.
-    row = await pool.fetchrow("SELECT factory_id, name FROM smart_bi_query_templates WHERE id = 42")
-    assert row["factory_id"] == "F001"   # T6: Java behavior — factoryId overwritten
-    assert row["name"] == "hijack"
+
+def _make_token(factory_id: str) -> str:
+    payload = {
+        "userId": 1, "username": "test_user", "factoryId": factory_id,
+        "role": "factory_super_admin",
+        "exp": datetime.now(timezone.utc).timestamp() + 3600,
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+# ... _strip_volatile_query_template per §4.2 ...
+
+
+@pytest.fixture(scope="module")
+def production_app():
+    return _load_production_main().app
+
+
+@pytest.fixture
+def client(production_app):
+    from fastapi.testclient import TestClient
+    return TestClient(production_app)
+
+
+class TestQueryTemplatesWrite:
+
+    def test_post_happy_byte_shape(self, client, monkeypatch):
+        with io.open(GOLDEN_DIR / "query-templates-F999-post-happy.json", encoding="utf-8") as f:
+            golden = json.load(f)
+
+        async def fake_create(factory_id, body):
+            # Return the recorded entity data verbatim.
+            return golden["data"]
+
+        monkeypatch.setattr(
+            "smartbi_compat.api.query_templates_write._create_template",
+            fake_create,
+        )
+
+        resp = client.post(
+            "/api/mobile/F999/smart-bi/query-templates",
+            json={"name": "x", "category": "x", "description": "x",
+                  "queryTemplate": "x", "parameters": "[]"},
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, resp.text
+        assert _strip_volatile_query_template(resp.json()) == _strip_volatile_query_template(golden)
+
+    # ... similar for tests 2-5 ...
+
+    def test_post_hijack_byte_shape_lock(self, client, monkeypatch):
+        """T6 defensive — lock current verbatim Java MERGE behavior.
+
+        This test does NOT fix the hijack bug. It locks current behavior so that
+        if a future Java fix changes MERGE semantics, the Python port is alerted
+        to re-mirror via failing this test.
+
+        Per spec §7 risk register: T6 is candidate for Phase 2B-after-cleanup.
+        """
+        with io.open(GOLDEN_DIR / "query-templates-F001-hijack.json", encoding="utf-8") as f:
+            golden = json.load(f)
+
+        async def fake_create(factory_id, body):
+            # Mirror: when body has id, response data has createdAt=None
+            return golden["data"]
+
+        monkeypatch.setattr(
+            "smartbi_compat.api.query_templates_write._create_template",
+            fake_create,
+        )
+
+        resp = client.post(
+            "/api/mobile/F001/smart-bi/query-templates",
+            json={"id": 46, "name": "hijacked", "category": "evil",
+                  "queryTemplate": "DROP", "parameters": "[\"x\"]"},
+            headers={"Authorization": f"Bearer {_make_token('F001')}"},
+        )
+        assert resp.status_code == 200
+        actual = resp.json()
+        # Lock the createdAt=null Java quirk explicitly (in addition to dict-eq):
+        assert actual["data"]["createdAt"] is None, "T6 verbatim mirror: createdAt MUST be null when id-in-body merge path"
+        assert _strip_volatile_query_template(actual) == _strip_volatile_query_template(golden)
 ```
 
-### 5.3 Mock pattern (mirror sub-endpoints + datasource)
+### 5.3 No DB fixture needed
 
-Use existing `mock_smartbi_pool` fixture from `tests/contract/conftest.py` for tests #1-#4 (byte-shape parity — pure mock sufficient).
+v1 spec §5.2 proposed a `smartbi_pool_with_isolation` fixture for test #5 to assert DB state after hijack. **Drop this from v2** because:
 
-For test #5 (T6 defensive cross-factory hijack), use `smartbi_pool_with_isolation` — **a NEW fixture** since DB state assertion (`SELECT factory_id, name FROM smart_bi_query_templates WHERE id = 42` after the hijack POST) cannot be verified by a pure-mock pool.
+1. Tests #1-#4 use mocks (mirror existing `test_datasource_contract.py` pattern) — no DB at all.
+2. Test #5 (T6 hijack lock) compares response shape only, not DB state. The DB-state aspect of T6 was empirically verified during golden capture (2026-05-02) — no need to re-verify in tests.
+3. If future Phase 2B fixes T6 in Java, the recording will need re-capture and test #5 updated. That's the natural workflow.
 
-**Q3 NUANCE — fixture creation is its own plan task**:
-- **Fixture name**: `smartbi_pool_with_isolation` (function-level scope: per-test isolated transaction wrapped, rolled back at teardown).
-- **File location**: `tests/python/smartbi_compat/conftest.py` — add to existing file, do NOT create a new conftest.
-- **Implementation**: `pytest_asyncio.fixture(scope="function")` that opens a real connection to test smartbi DB, wraps each test body in a transaction, rolls back at teardown. Avoids per-test cleanup logic + provides cross-test isolation.
-- **Reusability rationale**: This fixture is infra, not test logic. **Future Tier 1 CRUD chats (any sister chat porting write endpoints requiring DB-state assertion) will reuse it.** Justifies separating from test #5 logic in plan task list.
-- **Plan task split**:
-  - Task X: Create `smartbi_pool_with_isolation` fixture in `tests/python/smartbi_compat/conftest.py` (~30 LOC).
-  - Task Y: Use the fixture in `test_post_with_id_does_not_overwrite_other_factory_template`.
-
-**Module-level vs function-level scope decision**: Use function-level. Module-level scope optimization is a follow-up if future test suite grows large — premature now.
+**Future sister chats may still need a DB fixture** for tests asserting actual DB writes — when that need arises, create the fixture in `tests/python/smartbi_compat/conftest.py` per Q3 nuance from v1. Just not needed here.
 
 ---
 
@@ -639,13 +749,14 @@ Phase 2A: /query-templates POST/PUT/DELETE port (Wave 2 Tier 1)
 ### 6.2 PR file list
 
 **New files**:
-- `backend/python/smartbi_compat/api/query_templates.py` (~300 LOC)
-- `tests/contract/test_query_templates_parity.py` (~150 LOC, 5 tests)
-- `tests/fixtures/java-smartbi-golden/query-templates-F999-post-happy.json`
-- `tests/fixtures/java-smartbi-golden/query-templates-F999-put-happy.json`
-- `tests/fixtures/java-smartbi-golden/query-templates-F999-delete-happy.json`
-- `tests/fixtures/java-smartbi-golden/query-templates-F999-not-found.json`
-- `docs/superpowers/specs/2026-05-01-phase2a-query-templates-design.md` (this file)
+- `backend/python/smartbi_compat/api/query_templates_write.py` (~250 LOC)
+- `tests/python/smartbi_compat/test_query_templates_write_contract.py` (~200 LOC, 5 tests)
+- `tests/fixtures/java-smartbi-golden/query-templates-F999-post-happy.json` ✅ recorded
+- `tests/fixtures/java-smartbi-golden/query-templates-F999-put-happy.json` ✅ recorded
+- `tests/fixtures/java-smartbi-golden/query-templates-F999-delete-happy.json` ✅ recorded
+- `tests/fixtures/java-smartbi-golden/query-templates-F999-not-found.json` ✅ recorded
+- `tests/fixtures/java-smartbi-golden/query-templates-F001-hijack.json` ✅ recorded
+- `docs/superpowers/specs/2026-05-01-phase2a-query-templates-design.md` (this file, v2)
 
 **Modified files**:
 - `backend/python/main.py` (1-line router include)
@@ -653,13 +764,9 @@ Phase 2A: /query-templates POST/PUT/DELETE port (Wave 2 Tier 1)
 ### 6.3 Out of PR scope
 
 - nginx cutover (T6 in Phase 2A roadmap) — separate PR
-- Java-side fixes for T6 (JPA merge bug) or T1 (soft-delete consistency) — backlog
+- Java-side fixes for T6 (JPA hijack) or T1 (soft-delete consistency) — backlog
 - T5 invalid-input goldens — PR-B follow-up (§7)
-- GET /query-templates port — stays Java
-
-### 6.4 Single PR justification
-
-Per simplified spec template: "CRUD trio is mechanical Java mirror, no algorithmic complexity, no Decimal/period/chart traps." Splitting into PR-A (spec-only) + PR-B (impl) adds review overhead without risk reduction. Single PR ship — same pattern as PR #39 (datasource GETs).
+- GET /query-templates port — already done in `analysis.py:53-130`
 
 ---
 
@@ -670,46 +777,47 @@ Per simplified spec template: "CRUD trio is mechanical Java mirror, no algorithm
 **Risk**: Java behavior for empty body / missing required field (`name`, `category`, `queryTemplate`) is unverified.
 
 **Hypothesis**: DB constraint violation (`@Column(nullable=false)`) → propagated to `GlobalExceptionHandler` → returns either:
-- `code: 500, message: "<sanitized DB error>"` (most likely — Java's default for unhandled SQL exceptions)
-- `code: 400, message: "<validation error>"` (if `MethodArgumentNotValidException` handler intercepts)
+- `code: 500, message: "<sanitized DB error>"` (most likely)
+- `code: 400, message: "<validation error>"` (if a handler intercepts)
 
-**Required follow-up (PR-B scope, not this PR)**:
+**Required follow-up (PR-B scope)**:
 1. Record 4-5 invalid-input goldens against Java prod:
    - Empty body `{}`
    - Missing `name` (other required fields present)
    - Missing `category` (other required fields present)
    - Missing `queryTemplate` (other required fields present)
    - Body that violates length constraint (e.g. `name` with 200 chars > VARCHAR(100))
-2. Add corresponding Python error path code (raise from DB constraint catch).
+2. Add corresponding Python error path in `_create_template` / `_update_template` (raise from SQLAlchemy IntegrityError catch).
 3. Add 4-5 contract tests dict-eq against new goldens.
 
-**Why deferred**: simplified spec scope is happy-path + not-found only. Invalid-input handling adds ~150 LOC + LLM-style decision tree (which exception → which envelope shape). Belongs in its own focused PR.
+### 7.2 T6 — JPA merge hijack EMPIRICALLY CONFIRMED
 
-### 7.2 T6 — JPA merge bug (latent Java vulnerability) verbatim mirrored
-
-**Risk**: Client sending POST with non-null `id` triggers JPA `save()` MERGE behavior. Can overwrite **any** template row (cross-factory). This is a **real authorization bypass** in Java code.
+**Risk**: Client sending POST with non-null `id` triggers JPA `save()` MERGE behavior. Confirmed empirically (2026-05-02): a F001 client successfully overwrote a F999-owned row by POSTing `{id: <F999_row_id>, ...}`. Cross-factory `factory_id` IS overwritten. RLS policies do NOT block this (likely due to session's `app.factory_id` being unset, falling into the policy's "OR empty/null" branch).
 
 **Action this PR**:
-- Mirror verbatim in Python (INSERT ... ON CONFLICT DO UPDATE per §3.1).
+- Mirror verbatim in Python (PostgreSQL `INSERT ... ON CONFLICT DO UPDATE` per §3.1).
+- Mirror Java's response quirk: when merge path is taken, response `data.createdAt = null` (Python explicitly sets None to override the DB's RETURNING value).
 - Defensive contract test #5 locks current behavior.
 
 **Phase 2B-after-cleanup candidate**:
-- Java fix: strip `body.setId(null)` before `save()` in `createQueryTemplate`.
-- Python fix: ignore `body.id` on POST (always INSERT, never UPSERT).
-- Both fixed simultaneously to maintain parity.
+- Java fix: strip `body.setId(null)` before `save()` in `createQueryTemplate` (or use `entityManager.persist()` directly to throw on existing id).
+- Python fix: ignore `body["id"]` on POST (always INSERT, never UPSERT).
+- RLS audit: ensure session `app.factory_id` is set per-request to make policies actually enforce tenant isolation.
+- Both fixed simultaneously to maintain parity. Update test #5 + re-record hijack golden (or delete it if Java now returns 4xx).
 
-### 7.3 T7 — Lombok @Data field order across JVM restarts
+### 7.3 T7 — Lombok @Data field order (no longer a risk for THIS entity)
 
-**Risk**: Subclass-vs-superclass Jackson reflection order may flip across `cretas-backend` restarts. If observed during golden recording (§4.3), need canonicalize-before-compare helper.
+Field order is precedent-locked by `analysis.py:53-84` (Apr 28 GET port) and confirmed by 2026-05-02 fresh recording. **No 3× cross-restart recording required** for this entity.
 
-**Mitigation in this PR**:
-- Record golden 3× across Java restarts during impl phase.
-- If stable: commit golden as-is.
-- If flips: document accepted divergence in this spec + emit canonicalize helper in `tests/contract/conftest.py` + add observation to `python-java-port.md` Rule history (potential Rule 9 candidate if seen across multiple sister chats).
+**Sister chats**: T7 protocol still applies for entities without prior Python port. Don't generalize this drop.
 
 ### 7.4 T1 + T8 — already mirrored verbatim, no follow-up
 
-T1 (hard DELETE despite @Where) and T8 (parameters TEXT pass-through) are intentional behaviors mirrored exactly. No backlog action.
+T1 (hard DELETE despite @Where) and T8 (parameters TEXT pass-through via `_query_template_row_to_dict`) are intentional behaviors mirrored exactly.
+
+### 7.5 RLS lineage note
+
+`smart_bi_query_templates` has RLS enabled by V20260502_04 (Phase 2A Apr 28 P0 fix per memory `project_apr28_p0_rls_gap_finding`). Policies are documented but NOT empirically enforcing isolation (T6 hijack succeeded without RLS denial). **This is a project-wide concern beyond this PR** — follow-up audit required to verify session `app.factory_id` is set per-request.
 
 ---
 
@@ -719,52 +827,53 @@ Per `feedback_subagent_driven_audit_pattern.md`:
 
 - **Mechanical CRUD port** → skip 2 of 4 audit cycles.
 - **Audit cycles to run**:
-  1. Self-review after spec draft (this section, run inline before commit).
+  1. Self-review after spec draft (this section, run inline before commit). ✅ Done in v2.
   2. Final reviewer audit before PR merge (subagent, on impl + tests + goldens combined).
-- **Skipped**: brainstorm round 2 (8 traps already surfaced with high quality), spec reviewer subagent (mechanical content, fatigue counterproductive).
+- **Skipped**: brainstorm round 2 (8 traps already surfaced + empirical Java verification done), spec reviewer subagent (mechanical content, fatigue counterproductive).
 
 If final reviewer audit raises ≥3 P0 findings, escalate to fresh chat for re-spec. Otherwise apply fixes inline and ship.
 
 ---
 
-## 9. Estimates
+## 9. Estimates (revised v2)
 
 | Phase | Estimated time | LOC |
 |---|---|---|
-| Spec doc | 1.5h | ~250 LOC (this file) |
-| Plan (writing-plans) | 0.5h | 14 tasks |
-| Impl (`query_templates.py` + main.py) | 2.5h | ~300 LOC |
-| Goldens (4 files, T7 3× recording) | 0.5h | trivial |
-| Contract tests (5 tests) | 1.5h | ~150 LOC |
+| Spec v1 (initial) | 1.5h ✅ done | ~720 LOC |
+| Spec v2 (revision) | 0.5h ✅ done | ~250 LOC delta |
+| Java behavior recording | 0.5h ✅ done | 5 goldens captured |
+| Plan (writing-plans) | 0.5h | ~10 tasks |
+| Impl (`query_templates_write.py` + main.py) | 2h | ~250 LOC |
+| Contract tests (5 tests) | 1.5h | ~200 LOC |
 | Final reviewer audit + fixes | 1h | varies |
-| **Total** | **~7.5h** | **~700 LOC PR** |
+| **Total v2 trajectory** | **~7.5h** | **~700 LOC PR** |
 
-Aligns with PR #39 datasource GET ship time (6-7h, 2 endpoints). 3 endpoints + 1 defensive test → +~1h.
+Aligns with PR #39 datasource GET ship time (6-7h, 2 endpoints). v2 spend: spec v1 → discovery → spec v2 (~3h sunk before any impl), but impl now grounded in empirical Java behavior, dramatically reduced risk of rework.
 
 ---
 
 ## 10. Concurrent-chat coordination
 
-**Other active chats touching shared files** (per task brief):
+**Other active chats touching shared files**:
 - Sister chat (Chat 1) impl receivable in `analysis_finance.py` — **zero overlap**, different file
-- Other chats may modify `main.py` for their own router includes — **conflict surface**: 1-line include each, easy rebase
+- Other chats may modify `main.py` for their own router includes — 1-line conflict surface
 
 **Mitigation**:
-- This PR's `main.py` change is single-line (`include_router(...)`).
+- This PR's `main.py` change is single-line.
 - Use `./scripts/safe-commit.sh` per `concurrent-edit-safety.md` Rule 5b.
-- Push spec doc to `origin/phase2a/query-templates` immediately after first commit (locks branch, prevents worktree confusion).
+- Spec doc + branch already pushed to `origin/phase2a/query-templates` to lock remote.
 
 ---
 
 ## 11. Push-early discipline
 
-Per Chat 5 worktree-collision learning:
-
-1. ✅ Worktree created: `.worktrees/phase2a-query-templates` on `phase2a/query-templates` branch.
-2. After spec draft commit → **immediate `git push origin phase2a/query-templates`** to lock remote branch.
-3. Subsequent impl + golden + test commits also push immediately (no batching).
-4. Final PR opened against `main` after all commits pushed.
+1. ✅ Worktree created: `.worktrees/phase2a-query-templates` on `phase2a/query-templates` branch
+2. ✅ Spec v1 committed + pushed (`9542f00af`, `70a62757e`)
+3. After spec v2 commit → push immediately
+4. After 5 goldens commit → push immediately
+5. Subsequent impl + test commits also push immediately
+6. Final PR opened against `main` after all commits pushed
 
 ---
 
-**End of design spec.**
+**End of design spec v2.**

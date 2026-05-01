@@ -1,0 +1,10 @@
+{
+  "code": 400,
+  "message": "Template not found",
+  "data": null,
+  "timestamp": "2026-05-02T02:37:18.004857049",
+  "success": false,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
