@@ -24,6 +24,7 @@ Spec: docs/superpowers/specs/2026-04-29-phase2a-analysis-finance-foundation-desi
 """
 from __future__ import annotations
 
+import calendar
 import logging
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -57,7 +58,6 @@ def _infer_granularity(start: date, end: date) -> str:
             and start.year == end.year):
         return "YEAR"
     # First day of a month to last day of the same month
-    import calendar
     last_day = calendar.monthrange(start.year, start.month)[1]
     if (start.day == 1
             and end.year == start.year
