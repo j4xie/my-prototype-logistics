@@ -2101,3 +2101,204 @@ class TestBudgetHelpers:
         assert _determine_budget_achievement_alert(Decimal("101")) == "YELLOW"
         assert _determine_budget_achievement_alert(Decimal("100")) == "GREEN"
         assert _determine_budget_achievement_alert(Decimal("0")) == "GREEN"
+
+
+class TestBudgetMetricsArithmetic:
+    """Unit tests for _get_budget_metrics arithmetic branches.
+
+    Spec ref: §5.2 + §3.3 algorithm.
+
+    Direct chart-function-level calls (no HTTP/JWT) — exercises the full
+    metrics computation: 4 metrics with two-stage Decimal arithmetic, edge
+    cases (budget=0, sign-based alerts, sign preservation through multiply).
+
+    Mock pattern: try/finally with af-attribute swap (mirror profit/cost PR-B).
+    """
+
+    def _run_metrics(self, fake_finance, year=2025, month=6):
+        """Run _get_budget_metrics with _query_finance_data mocked.
+
+        Returns list of 4 MetricResult dicts.
+        """
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_budget_metrics("F", year, month))
+        finally:
+            af._query_finance_data = original
+
+    def _by_code(self, metrics):
+        """Index metrics by metricCode for assertion convenience."""
+        return {m["metricCode"]: m for m in metrics}
+
+    def test_empty_budget_data_returns_4_zero_metrics(self):
+        """Empty rows → 4 metrics with value=0, all GREEN.
+
+        Edge case: all 4 metrics emit zero values + GREEN alerts via sign-based
+        ternaries (variance>0 false → GREEN; remaining>=0 true → GREEN; rate=0
+        below all thresholds → GREEN).
+        """
+        async def fake_empty(*_a, **_k): return []
+        metrics = self._run_metrics(fake_empty)
+        assert len(metrics) == 4
+        m = self._by_code(metrics)
+
+        for code in ["BUDGET_EXECUTION", "BUDGET_VARIANCE", "BUDGET_VARIANCE_RATE", "BUDGET_REMAINING"]:
+            assert code in m, f"missing metric {code}"
+            assert m[code]["value"] == 0
+            assert m[code]["alertLevel"] == "GREEN"
+
+    def test_total_budget_zero_actual_positive_execution_rate_zero(self):
+        """budget=0, actual=1000 → executionRate=0 (Java line 1055-1057 short-circuit).
+
+        When totalBudget == 0, Java line 1055 ternary returns BigDecimal.ZERO instead
+        of dividing (avoids ArithmeticException). Python mirrors via `if total_budget > 0`.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{
+                "budget_amount": Decimal("0"),  # zero budget
+                "actual_amount": Decimal("1000"),
+                "category": "test",
+                "record_date": _date(2025, 6, 15),
+                "upload_id": 1,
+            }]
+        metrics = self._run_metrics(fake)
+        m = self._by_code(metrics)
+        assert m["BUDGET_EXECUTION"]["value"] == 0
+        assert m["BUDGET_EXECUTION"]["alertLevel"] == "GREEN"
+        # Variance rate also 0 (same short-circuit at Java line 1088-1090)
+        assert m["BUDGET_VARIANCE_RATE"]["value"] == 0
+
+    def test_execution_rate_two_stage_scale(self):
+        """budget=300, actual=100 → executionRate=33.33 (two-stage Decimal arithmetic).
+
+        Java line 1056: divide(300, SCALE=4, HALF_UP) = 0.3333; multiply(100) = 33.3300;
+        line 1066 setScale(DISPLAY_SCALE=2, HALF_UP) = 33.33.
+
+        Verifies SCALE=4 intermediate precision before final SCALE=2 display rounding.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{
+                "budget_amount": Decimal("300"),
+                "actual_amount": Decimal("100"),
+                "category": "test",
+                "record_date": _date(2025, 6, 15),
+                "upload_id": 1,
+            }]
+        metrics = self._run_metrics(fake)
+        m = self._by_code(metrics)
+        assert m["BUDGET_EXECUTION"]["value"] == 33.33
+        assert m["BUDGET_EXECUTION"]["formattedValue"] == "33.33%"
+        assert m["BUDGET_EXECUTION"]["alertLevel"] == "GREEN"  # <100, GREEN
+
+    def test_variance_positive_yellow_alert(self):
+        """actual=1500, budget=1000 → variance=500 YELLOW (>0).
+
+        Java line 1081: variance.compareTo(BigDecimal.ZERO) > 0 ? YELLOW : GREEN.
+        Sign-based inline ternary, NOT helper-routed.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{
+                "budget_amount": Decimal("1000"),
+                "actual_amount": Decimal("1500"),
+                "category": "test",
+                "record_date": _date(2025, 6, 15),
+                "upload_id": 1,
+            }]
+        metrics = self._run_metrics(fake)
+        m = self._by_code(metrics)
+        assert m["BUDGET_VARIANCE"]["value"] == 500
+        assert m["BUDGET_VARIANCE"]["alertLevel"] == "YELLOW"
+
+    def test_variance_zero_green_alert(self):
+        """actual=1000, budget=1000 → variance=0 GREEN (≤0 is GREEN per Java line 1081).
+
+        Boundary case: variance=0 falls into else branch (>0 is YELLOW; everything
+        else including =0 is GREEN). Mirrors Java compareTo > 0 (NOT >=).
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{
+                "budget_amount": Decimal("1000"),
+                "actual_amount": Decimal("1000"),
+                "category": "test",
+                "record_date": _date(2025, 6, 15),
+                "upload_id": 1,
+            }]
+        metrics = self._run_metrics(fake)
+        m = self._by_code(metrics)
+        assert m["BUDGET_VARIANCE"]["value"] == 0
+        assert m["BUDGET_VARIANCE"]["alertLevel"] == "GREEN"
+        # Remaining = 0, also GREEN (>=0 per Java line 1109)
+        assert m["BUDGET_REMAINING"]["value"] == 0
+        assert m["BUDGET_REMAINING"]["alertLevel"] == "GREEN"
+
+    def test_remaining_negative_red_alert(self):
+        """actual=1500, budget=1000 → remaining=-500 RED (<0).
+
+        Also covers BUDGET_VARIANCE_RATE positive case: variance=500/1000*100=50 →
+        abs(50)>20 → RED (mirrors Java MetricCalculatorService line 515-519).
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{
+                "budget_amount": Decimal("1000"),
+                "actual_amount": Decimal("1500"),
+                "category": "test",
+                "record_date": _date(2025, 6, 15),
+                "upload_id": 1,
+            }]
+        metrics = self._run_metrics(fake)
+        m = self._by_code(metrics)
+        assert m["BUDGET_REMAINING"]["value"] == -500
+        assert m["BUDGET_REMAINING"]["alertLevel"] == "RED"
+        # variance_rate = 500/1000 * 100 = 50.00 → abs(50)>20 → RED
+        assert m["BUDGET_VARIANCE_RATE"]["value"] == 50
+        assert m["BUDGET_VARIANCE_RATE"]["alertLevel"] == "RED"
+
+    def test_negative_variance_rate_passes_through_alert_helper(self):
+        """actual=750, budget=1000 → variance=-250, varianceRate=-25.0000 → abs(25)>20 → RED.
+
+        Sign preserved through two-stage Decimal multiply: (-250/1000).quantize(0.0001)
+        * 100 = -25.0000. Python decimal.ROUND_HALF_UP matches Java RoundingMode.HALF_UP
+        (both round away from zero).
+
+        Defensive against impl bug like `varianceRate = abs(variance) / total_budget * 100`
+        which would silently mask sign and pass wrong alert.
+
+        Side checks: BUDGET_REMAINING = 1000-750 = 250 ≥0 → GREEN; BUDGET_VARIANCE = -250
+        ≤0 → GREEN.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{
+                "budget_amount": Decimal("1000"),
+                "actual_amount": Decimal("750"),
+                "category": "test",
+                "record_date": _date(2025, 6, 15),
+                "upload_id": 1,
+            }]
+        metrics = self._run_metrics(fake)
+        m = self._by_code(metrics)
+        # Sign preserved
+        assert m["BUDGET_VARIANCE_RATE"]["value"] == -25
+        # abs(25) > 20 → RED (helper applies abs)
+        assert m["BUDGET_VARIANCE_RATE"]["alertLevel"] == "RED"
+        # Sanity: variance ≤ 0 → GREEN (sign-based ternary)
+        assert m["BUDGET_VARIANCE"]["value"] == -250
+        assert m["BUDGET_VARIANCE"]["alertLevel"] == "GREEN"
+        # remaining ≥ 0 → GREEN
+        assert m["BUDGET_REMAINING"]["value"] == 250
+        assert m["BUDGET_REMAINING"]["alertLevel"] == "GREEN"
