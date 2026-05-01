@@ -420,6 +420,63 @@ def _format_currency(v: Optional[Decimal]) -> str:
     return f"{quantized:,.2f}"
 
 
+def _get_budget_amount_by_metric(record: dict, metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetAmountByMetric (line 1716-1749).
+
+    Java fall-through: switch case has inner `if category contains keyword: return; break;`
+    but `break` exits switch and falls through to outer `return data.getBudgetAmount()` at
+    line 1748. So function ALWAYS returns budget_amount regardless of category match —
+    keyword filter is dead code in Java. Mirror this literally.
+
+    `metric` parameter accepted but unused (Java parity, future-proof).
+    """
+    if record.get("budget_amount") is None:
+        return Decimal("0")
+    return _to_decimal(record["budget_amount"])
+
+
+def _get_actual_amount_by_metric(record: dict, metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getActualAmountByMetric (line 1754-1786).
+
+    Same Java fall-through behavior as _get_budget_amount_by_metric — always returns
+    actual_amount regardless of category match.
+    """
+    if record.get("actual_amount") is None:
+        return Decimal("0")
+    return _to_decimal(record["actual_amount"])
+
+
+def _determine_budget_achievement_alert(achievement_rate: Decimal) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.determineBudgetAchievementAlertLevel
+    (line 1794-1799).
+
+      v > 120  → RED   (超支严重)
+      v > 100  → YELLOW (略有超支)
+      v <= 100 → GREEN  (正常)
+
+    Boundary: exactly 100 → GREEN; exactly 120 → YELLOW.
+    """
+    v = float(achievement_rate)
+    if v > 120:
+        return "RED"
+    if v > 100:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _get_metric_display_name(metric: Optional[str]) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricDisplayName (line 1804-1820)."""
+    if metric is None:
+        return "综合"
+    return {
+        "revenue": "收入",
+        "cost": "成本",
+        "expense": "费用",
+        "profit": "利润",
+        "gross_margin": "毛利率",
+    }.get(metric.lower(), "综合")
+
+
 def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
     """Java `FinanceAnalysisServiceImpl.determineGrossMarginAlertLevel` line 1619-1624.
 
