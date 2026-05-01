@@ -1718,3 +1718,105 @@ class TestPayableMetricsArithmeticDepth:
         assert metrics[0]["value"] == 50
         assert isinstance(metrics[0]["value"], int)  # 50.00 → integral → int
         assert isinstance(metrics[1]["value"], int)  # turnover_days always integer per scale=1
+
+
+class TestPayableAgingChartShapeDepth:
+    """PR-B depth — chart shape regression for _get_payable_aging_chart.
+
+    Locks payable's shape distinctions from receivable:
+      - data items: 3 keys (NO alertLevel)
+      - options: 1 key (NO showAlert)
+      - colors palette: blue/purple/violet/pink (NOT receivable's green/yellow/red)
+      - title: "应付账款账龄分布" (NOT "应收...")
+      - chartType=BAR (same as receivable)
+    """
+
+    @staticmethod
+    async def _run_chart(monkeypatch, rows):
+        """Run _get_payable_aging_chart with _query_finance_payable_data mocked."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, end_date):
+            return rows
+        monkeypatch.setattr(analysis_finance, "_query_finance_payable_data", fake_query)
+        return await analysis_finance._get_payable_aging_chart("F001", date(2025, 12, 31))
+
+    @pytest.mark.asyncio
+    async def test_data_item_has_exactly_3_keys_no_alertLevel(self, monkeypatch):
+        """Each data item has 3 keys: {agingBucket, amount, percentage}.
+        NO alertLevel (which receivable has). Regression guard for shape divergence."""
+        rows = [{"payable_amount": "100", "payment_amount": "0", "aging_days": 30}]
+        chart = await self._run_chart(monkeypatch, rows)
+        for item in chart["data"]:
+            assert set(item.keys()) == {"agingBucket", "amount", "percentage"}, (
+                f"payable aging chart item should have 3 keys (no alertLevel), got {list(item.keys())}"
+            )
+
+    @pytest.mark.asyncio
+    async def test_options_has_only_colors_no_showAlert(self, monkeypatch):
+        """options has 1 key {colors}. NO showAlert (which receivable has)."""
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert set(chart["options"].keys()) == {"colors"}, (
+            f"payable options should have only 'colors', got {list(chart['options'].keys())}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_colors_palette_matches_payable_pattern(self, monkeypatch):
+        """Locked colors: blue/purple-blue/violet/pink (Java line 858 — NOT receivable's GR/Y/R)."""
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert chart["options"]["colors"] == ["#73c0de", "#5470c6", "#9a60b4", "#ea7ccc"]
+
+    @pytest.mark.asyncio
+    async def test_chart_envelope_matches_payable_signature(self, monkeypatch):
+        """Lock chartType=BAR + title="应付账款账龄分布" + xaxisField/yaxisField shape.
+
+        chartType=BAR (same as receivable) but title differs from receivable's "应收..."
+        """
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert chart["chartType"] == "BAR"
+        assert chart["title"] == "应付账款账龄分布"
+        assert chart["seriesField"] is None
+        assert chart["xaxisField"] == "agingBucket"
+        assert chart["yaxisField"] == "amount"
+
+    @pytest.mark.asyncio
+    async def test_empty_data_emits_4_zero_buckets(self, monkeypatch):
+        """No rows → 4 buckets all (0, 0). Matches Java line 853-866 always-emit pattern."""
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert len(chart["data"]) == 4
+        assert [d["agingBucket"] for d in chart["data"]] == ["0-30天", "31-60天", "61-90天", "90天以上"]
+        assert all(d["amount"] == 0 and d["percentage"] == 0 for d in chart["data"])
+
+    @pytest.mark.asyncio
+    async def test_percentage_zero_guard_when_total_ap_zero(self, monkeypatch):
+        """Java line 2421-2422: `if total_ap > 0` guards percentage calc.
+        When all rows skipped (outstanding<=0), total_ap=0 → all percentages=0."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "100", "aging_days": 30},  # outstanding=0 skip
+            {"payable_amount": "50",  "payment_amount": "100", "aging_days": 60},  # outstanding<0 skip
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        assert all(d["percentage"] == 0 for d in chart["data"])
+        assert all(d["amount"] == 0 for d in chart["data"])
+
+    @pytest.mark.asyncio
+    async def test_percentage_quantize_two_decimal(self, monkeypatch):
+        """Java line 2422: `(amount / total_ap).quantize(0.0001, HALF_UP) * 100`.
+        For 1/3 → 0.3333 * 100 = 33.33 (not 33.34).
+
+        Three rows in 3 different buckets, equal amounts → 33.33% each."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 15},   # 0-30
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 45},   # 31-60
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 75},   # 61-90
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        # Total = 300, each bucket = 100, percentage each = 33.33
+        for item in chart["data"][:3]:
+            assert item["percentage"] == 33.33, f"{item['agingBucket']} expected 33.33, got {item['percentage']}"
+        # 4th bucket (90天以上) should be 0
+        assert chart["data"][3]["percentage"] == 0
