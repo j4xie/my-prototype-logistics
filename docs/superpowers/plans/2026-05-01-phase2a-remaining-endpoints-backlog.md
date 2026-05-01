@@ -9,6 +9,8 @@
 > **Phase 2A 范围 update (2026-05-01)**: `/datasource/{id}/preview` 因 Java 端是 stub (`SmartBiSchemaServiceImpl.previewSchemaChanges` line 96-105 永远返 `noChanges` envelope, 不读 input, 不调 LLM; 此前 LLM-coupled 描述基于 `SchemaChangePreview` DTO 字段名假设错误) 移到 §2.4 deferred (跟 PR #37 quality/production 同模式). 见 §2.4 "/preview" 子节.
 >
 > **Phase 2A 范围 update (2026-05-02)**: `POST /datasource/upload` (multipart) 因 Java 端是 stub (`SmartBiSchemaServiceImpl.uploadAndDetectSchema` line 57-93 三个 TODO: Excel 解析 + Schema 比较 + LLM 字段推断, 实际只返 `SchemaChangePreview.noChanges` 或 `autoApplicable(empty, [])`) 移到 §2.4 deferred. 见 §2.4 "/upload" 子节.
+>
+> **Phase 2A 范围 update (2026-05-01, third)**: `POST /datasource/apply` 因 Java 端是 bookkeeping-stub (`SmartBiSchemaServiceImpl.applySchemaChanges` line 107-147 包装一个 TODO core: line 120-123 "执行实际的 Schema 变更 / 验证确认的映射 / 更新字段定义 / 执行 DDL"; 仅做 schema_version bump + history row write with hardcoded `'{}'` schemas; helper `serializeCurrentSchema` line 337-341 也是 stub 返回 `"{}"`) 移到 §2.4 deferred. 见 §2.4 "/apply" 子节.
 
 ---
 
@@ -76,7 +78,7 @@
 | 28 | `GET /incentive-plan/{targetType}/{targetId}` | | 1 | MED |
 | ~~29~~ | ~~`POST /datasource/upload`~~ (multipart) | ⏸️ **deferred** | — | Java stub-only (见 §2.4) |
 | ~~30~~ | ~~`GET /datasource/{id}/preview`~~ | ⏸️ **deferred** | — | Java stub-only (见 §2.4) |
-| 31 | `POST /datasource/apply` | 应用数据源 | 1 | MED |
+| ~~31~~ | ~~`POST /datasource/apply`~~ | ⏸️ **deferred** | — | Java bookkeeping-stub (见 §2.4) |
 | 32 | `GET /datasource/{id}/fields` | | 1 | LOW |
 | 33 | `GET /datasource/{id}/history` | | 1 | LOW |
 | 34 | `POST /query-templates` | 创建模板 | 1 | LOW (CRUD 标准) |
@@ -91,6 +93,7 @@
 | 22 | `/analysis/production` | ⏸️ deferred | 同上, `generateMockProductionData` 同模式, 0 repository 注入 |
 | 30 | `GET /datasource/{id}/preview` | ⏸️ deferred | Java `SmartBiSchemaServiceImpl.previewSchemaChanges` (line 96-105) 是 stub: `return SchemaChangePreview.noChanges(...)` 永远返同 envelope, 不读 input, 不调 LLM, 不读临时 schema 变更存储. 真实 impl pending Java 实现 "实现从临时存储获取待应用的变更" (TODO line 100). DTO `SchemaChangePreview` 有 LLM-shaped fields (`suggestedMappings` / `warningMessage` / `affectedReportsCount`) 但 stub 永远不 set. Class doc 自身 line 38: "注意：当前为 Stub 实现，部分方法返回模拟数据。" |
 | 29 | `POST /datasource/upload` (multipart) | ⏸️ deferred | Java `SmartBiSchemaServiceImpl.uploadAndDetectSchema` (line 57-93) 是 stub: 3 TODO 全部未实现 (line 61-65 "Excel 解析", line 74-76 "Schema 比较", line 88 "使用 LLM 推断字段含义"). 实际行为: existing datasource (`factoryId+name`) → `SchemaChangePreview.noChanges`; new → `autoApplicable(emptyReport, [])`. **不读 MultipartFile bytes, 不调 LLM, 不计算 schema diff**. 跟 `/preview` (line 96-105) 同 stub 模式. |
+| 31 | `POST /datasource/apply` | ⏸️ deferred | Java `SmartBiSchemaServiceImpl.applySchemaChanges` (line 107-147) 是 bookkeeping-stub: 仅 bump `schema_version` + write `smart_bi_schema_history` row with hardcoded `change_type='FIELD_UPDATE'` / `old_schema='{}'` / `new_schema='{}'` / `is_reversible=true` / `is_applied=true`. 核心业务逻辑全在 TODO line 120-123: "执行实际的 Schema 变更 / 1. 验证确认的映射 / 2. 更新字段定义 / 3. 执行 DDL". helper `serializeCurrentSchema` line 337-341 也是 stub (fetch fields list 但 never used, `return "{}"; // Stub 实现`). `request.executeDbMigration` flag 仅 read 进 log line 110-111, 从不分支. Class doc 自身 line 38: "注意：当前为 Stub 实现，部分方法返回模拟数据。" |
 
 #### 阻塞解除条件 (针对 quality + production)
 
@@ -117,6 +120,16 @@
 - `SchemaChangePreview` DTO 真实使用 `suggestedMappings` / `warningMessage` / `affectedReportsCount` / `affectedReportNames` / `estimatedMigrationTime` 字段 (currently 全 default empty/null)
 - `MultipartFile` 实际读取 (currently 接收参数但只读 `getOriginalFilename()` 写日志, 不读 bytes)
 
+#### 阻塞解除条件 (针对 /apply)
+
+**Java backend 必须先实现**:
+- `SchemaApplyRequest.confirmedMappings` 验证逻辑 (currently TODO `applySchemaChanges` line 120-121 "1. 验证确认的映射")
+- `smart_bi_field_definitions` 行真实 update — 当前仅 bump `schema_version`, 不写 field-level 变更 (TODO line 122 "2. 更新字段定义")
+- DDL 执行真实业务 — 表结构变更对底层 Excel/SQL datasource 的实际应用 (TODO line 123 "3. 执行 DDL（如果需要）")
+- `request.executeDbMigration` flag 真实分支 — 当前仅 read 进 log line 110-111, 从不影响行为
+- `serializeCurrentSchema` helper 真实 Jackson 序列化 (currently TODO line 339 + return literal `"{}"`)
+- `SmartBiSchemaHistory` 写入字段非 hardcoded — 当前 `change_type` 写死 `FIELD_UPDATE`, `is_reversible` 写死 `true`, `is_applied` 写死 `true`
+
 #### 为什么 mock 不能 byte-port (针对 quality + production)
 
 - Java `Random(seed)` 用 Linear Congruential Generator (JLS specified): `seed = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)`
@@ -132,16 +145,25 @@
 - PR #39 commit message 已写 "/preview deferred", `phase2a/datasource-upload` chat (2026-05-02) brainstorm round 1 surface "/upload 8 个决策全 skip" — 这次把两个 stub 端点决策正式落到 backlog map + 给出技术依据
 - /upload 跟 /preview 是同一 service class (`SmartBiSchemaServiceImpl`) 同一组 TODO, 解 stub 时大概率同一波 Java commit 一起实现 — defer + 真实 impl 一起 port 比 stub-port + 重写 ROI 高
 
+#### 为什么 bookkeeping-stub 不 byte-port (针对 /apply)
+
+- Bookkeeping 部分 (version bump + history row) 理论可 port, 但测试 surface 只是 repository invariants 不是 business logic
+- Apply 操作的实际业务 (field definitions / DDL / mapping validation) 在 Java 端永远 no-op, byte-port 到 Python 同样 no-op — 没有等价行为可验证
+- Hardcoded history fields (`change_type='FIELD_UPDATE'` / `'{}'` schemas / `is_reversible=true`) 锁住 Python 端必须复制相同假数据, 真实 Java impl 落地后必须 unwind 整个 port
+- PR #45 已为 sister 端点 /preview 设立 "stub-only → defer" 先例; /apply 是更进一步的 bookkeeping-stub 变种, 同决策更适用
+
 #### 何时重新派 chat
 
 - **quality / production**: Java backend 实现 real entity + Repository 后, 派新 chat 走完整 spec (brainstorm → 4-cycle audit → impl) 流程, 估时 8-12h per endpoint (跟其他 Tier 2 同档)
 - **/preview**: Java backend 实现真实 schema 临时存储读取 + LLM mapping 调用后, 派新 spec chat. 估时 8-12h (取决 LLM 真实 vs deterministic schema diff 比例)
 - **/upload**: Java backend 实现 Excel 解析 + Schema 比较 + LLM 字段推断 (3 个 TODO 全填) 后, 派新 spec chat (估时 8-12h, 含 Excel 解析 multipart byte-port + LLM 集成). /upload 跟 /preview 是同一 service class 同一组 TODO, 大概率一波 Java commit 同时实现 — 建议两个端点合并到一个 spec chat 一起 port (估时 12-16h 总).
+- **/apply**: Java backend 实现真实 `applySchemaChanges` (含 DDL execution + mapping validation + field definition updates) 后, 派新 spec chat. 估时 8-12h (含 transaction boundary + DDL safety port + rollback semantics). /apply 跟 /preview + /upload 是同一 service class — 推荐三个端点合并到一波 spec/impl 一起做 (总估时 16-22h, 含跨端点 transaction + DDL 共享逻辑).
 
 **发现 chat**:
 - `phase2a/spec-quality` (Chat 4, 2026-05-01) — quality + production deferral, brainstorm Round 1 grep Java 源码时 surface mock pattern
 - `phase2a/spec-preview` (Chat 5, 2026-05-01) — /preview deferral, prereq grep Java service impl 时 surface stub pattern (`@RequiredArgsConstructor` 仅 repo 注入 + 方法体仅 `findById` + `noChanges` return)
 - `phase2a/datasource-upload` (Chat 2, 2026-05-02) — /upload deferral, brainstorm round 1 grep `SmartBiSchemaServiceImpl.uploadAndDetectSchema` line 57-93 surface 3 个 TODO + 8 个设计决策全 skip (Excel parse / LLM / schema diff / file validation / permission / size limit / temp file / virus scan), stopped + 改派 deferral PR. 跟 /preview (PR #45) 是同一 service class 同一波 TODO.
+- `phase2a/datasource-apply` (Chat 5 follow-up, 2026-05-01) — /apply deferral, mock-check grep 通过但读 method body 发现 4 处 TODO + helper `serializeCurrentSchema` 也 stub + class doc 显式 "当前为 Stub 实现". 同 chat 在 /preview defer 后立即应用 organizer 升级后的 process rule (PR #45 Process rule 教训 §) 抓到 bookkeeping-stub 变种
 
 #### Process rule 教训
 
@@ -161,8 +183,12 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 - 看到 `private final XxxRepository` 或 `@Autowired XxxRepository` (真 DB) **以及** 方法体含真实 query/聚合逻辑 → real, 派 spec chat OK
 - 看到 `generateMockXxxData(...)` 或 `Random(factoryId.hashCode())` → mock, 加入本 §2.4 deferred
 - 看到方法体仅 `findById(...)` + `return XxxDTO.defaultFactory(...)` 无业务计算 → stub, 加入本 §2.4 deferred
+- 看到方法体含真实 `save(...)` 但核心业务逻辑被 TODO 注释覆盖 (e.g. `// TODO: 执行实际的 ...` 包住主路径) → bookkeeping-stub, 加入本 §2.4 deferred. 真实 save 部分是 scaffolding, 不是 port 价值
+- 看到 helper / 私有方法 `return "{}"` 或 `return null` 配 `// Stub 实现` → 此 service 内多个 endpoint 可能共用 stub, 二次评估同 service 其他方法
+- 看到 hardcoded literal (e.g. `change_type='FIELD_UPDATE'` 写死 / `is_reversible=true` 写死) 在写库路径里 → 是 stub fallback, 真实 impl 应该从 request/diff 推导
 - 看到 `TODO 实际实现时应从 ... 查询` 或 `当前为 Stub 实现` 注释 → 即使非 mock 也要二次评估
 - 看到 `@RequiredArgsConstructor` 后字段全是 repository (无 `DashScopeClient`/`LlmService`) 但 task 描述说 "LLM-coupled" → 不一致, 必须停手 ping organizer
+- 看到 request DTO 字段 (e.g. `executeDbMigration` flag) 仅 read 进 log line 不被分支 → 业务逻辑未实现的强信号
 
 ---
 
@@ -206,9 +232,9 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 | ~~/analysis/department~~ | ~~8-12h~~ | ✅ shipped (PR #36) |
 | /analysis/region | 6-10h | 按地区聚合, schema 待验 |
 | /analysis/procurement | 8-12h | 采购统计 |
-| /datasource/apply | 4-6h | 数据源应用逻辑 |
+| ~~/datasource/apply~~ | ~~4-6h~~ | ⏸️ 移到 §2.4 deferred (Java bookkeeping-stub) |
 
-**Tier 2 总计**: ~18-28h (department 已交付, quality 移到 §2.4 deferred).
+**Tier 2 总计**: ~14-22h (department 已交付, quality 移到 §2.4 deferred, /datasource/apply 移到 §2.4 deferred).
 
 ### Tier 3 (HIGH risk, 大工程)
 
@@ -304,8 +330,8 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 
 - ✅ 已 ship: 15 endpoints (~30%, 含 PR #36 department spec)
 - 🚧 in-flight: receivable + budget impl (Wave 1) + region spec (Wave 3) + datasource fields/history (Wave 2)
-- ⏸️ deferred (§2.4): 4 endpoints (quality + production Java mock-only; /preview + /upload Java stub-only)
-- ❌ backlog: ~24 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~110-156h 工作量, 减去 quality+production+preview+upload 的 32-50h)
+- ⏸️ deferred (§2.4): 5 endpoints (quality + production Java mock-only; /preview + /upload + /apply Java stub-only)
+- ❌ backlog: ~23 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~106-150h 工作量, 减去 quality+production+preview+upload+apply 的 36-56h)
 
 **Phase 2A 完整收尾估时**: 4-6 个有效 chat × 8-15h/chat = ~40-90h. 若并行 3-4 个 chat 同时进行, 实际墙钟 1-2 周.
 
