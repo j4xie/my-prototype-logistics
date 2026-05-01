@@ -1148,6 +1148,58 @@ def _get_aging_bucket_alert_level(bucket: str) -> str:
     return _AGING_BUCKET_ALERT_LEVELS.get(bucket, "GREEN")
 
 
+def _calculate_aging_buckets(ar_data: list[dict]) -> dict[str, Decimal]:
+    """4-bucket outstanding aggregation by aging_days.
+
+    Mirror Java FinanceAnalysisServiceImpl.calculateAgingBuckets (line 1492-1524).
+
+    For each row:
+      - outstanding = receivable_amount - collection_amount (null treated as 0 per Rule 1)
+      - skip if outstanding <= 0 (Java line 1505)
+      - bucket by aging_days (null fallback to 0 per Java line 1500):
+        <= 30 → 0-30天, <= 60 → 31-60天, <= 90 → 61-90天, else → 90天以上
+
+    Returns dict with all 4 buckets initialized to Decimal('0').
+    """
+    buckets: dict[str, Decimal] = {b: Decimal("0") for b in AGING_BUCKETS_ORDER}
+
+    for row in ar_data:
+        # Java line 1500 — null aging_days fallback to 0
+        aging_days = (
+            int(row["aging_days"])
+            if row.get("aging_days") is not None
+            else 0
+        )
+        # Java line 1501-1503 — receivable/collection null guards (Rule 1 — explicit `is not None`)
+        receivable = (
+            _to_decimal(row["receivable_amount"])
+            if row.get("receivable_amount") is not None
+            else Decimal("0")
+        )
+        collection = (
+            _to_decimal(row["collection_amount"])
+            if row.get("collection_amount") is not None
+            else Decimal("0")
+        )
+        outstanding = receivable - collection
+        # Java line 1505 — skip non-positive outstanding
+        if outstanding <= Decimal("0"):
+            continue
+
+        # Java line 1510-1518 — bucket assignment
+        if aging_days <= 30:
+            bucket = AGING_BUCKET_0_30
+        elif aging_days <= 60:
+            bucket = AGING_BUCKET_31_60
+        elif aging_days <= 90:
+            bucket = AGING_BUCKET_61_90
+        else:
+            bucket = AGING_BUCKET_OVER_90
+        buckets[bucket] += outstanding
+
+    return buckets
+
+
 # Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
 COST_CATEGORY_MATERIAL = "原材料"
 COST_CATEGORY_LABOR    = "人工"

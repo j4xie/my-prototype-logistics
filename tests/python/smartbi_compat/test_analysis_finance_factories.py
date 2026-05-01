@@ -194,3 +194,83 @@ class TestAgingBucketAlertLevel:
         """Java map.getOrDefault(..., GREEN) — unknown key returns GREEN."""
         from smartbi_compat.api.analysis_finance import _get_aging_bucket_alert_level
         assert _get_aging_bucket_alert_level("invalid-bucket") == "GREEN"
+
+
+class TestCalculateAgingBuckets:
+    """Mirror Java FinanceAnalysisServiceImpl.calculateAgingBuckets (line 1492-1524).
+
+    Outstanding = receivable - collection. Skip rows where outstanding <= 0.
+    Null aging_days fallback to 0 → 0-30天 bucket.
+    """
+
+    def test_empty_input_returns_4_zero_buckets(self):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        result = _calculate_aging_buckets([])
+        assert result == {
+            "0-30天": Decimal("0"),
+            "31-60天": Decimal("0"),
+            "61-90天": Decimal("0"),
+            "90天以上": Decimal("0"),
+        }
+
+    def test_single_row_aging_15_goes_to_0_30(self):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "1000", "collection_amount": "200", "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        assert result["0-30天"] == Decimal("800")
+        assert result["31-60天"] == Decimal("0")
+
+    def test_aging_45_goes_to_31_60(self):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "500", "collection_amount": "0", "aging_days": 45}]
+        result = _calculate_aging_buckets(rows)
+        assert result["31-60天"] == Decimal("500")
+
+    def test_aging_75_goes_to_61_90(self):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "300", "collection_amount": "0", "aging_days": 75}]
+        result = _calculate_aging_buckets(rows)
+        assert result["61-90天"] == Decimal("300")
+
+    def test_aging_120_goes_to_over_90(self):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "200", "collection_amount": "0", "aging_days": 120}]
+        result = _calculate_aging_buckets(rows)
+        assert result["90天以上"] == Decimal("200")
+
+    def test_outstanding_zero_skipped(self):
+        """Java line 1505 — skip if outstanding <= 0."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "100", "collection_amount": "100", "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        assert all(v == Decimal("0") for v in result.values())
+
+    def test_outstanding_negative_skipped(self):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "50", "collection_amount": "150", "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        assert all(v == Decimal("0") for v in result.values())
+
+    def test_null_aging_days_treated_as_0_30(self):
+        """Java line 1500 — null fallback to 0 → 0-30天 bucket."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "1000", "collection_amount": "0", "aging_days": None}]
+        result = _calculate_aging_buckets(rows)
+        assert result["0-30天"] == Decimal("1000")
+
+    def test_null_receivable_treated_as_zero(self):
+        """Rule 1 — null receivable → Decimal('0'). Combined with non-null collection
+        produces negative outstanding → skipped."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": None, "collection_amount": "100", "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        assert all(v == Decimal("0") for v in result.values())
+
+    def test_decimal_zero_receivable_not_skipped_when_collection_negative(self):
+        """Rule 1 edge — Decimal('0') is falsy in Python `or` but Java treats != null.
+        With receivable=Decimal('0') and collection=null → outstanding=0, SKIPPED (Java line 1505 <=).
+        This test pins behavior to mirror Java strictly."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "0", "collection_amount": None, "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        assert all(v == Decimal("0") for v in result.values())
