@@ -533,6 +533,92 @@ def _calculate_metric_from_sales(sales_rows: list[dict], metric: str) -> Decimal
     return total_revenue
 
 
+async def _get_metric_value_for_period(
+    factory_id: str, year_month: tuple, metric: str
+) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricValueForPeriod (line 1970-2000).
+
+    3 distinct branches by data source (audit C-1 fix):
+      revenue / profit / gross_margin → smart_bi_sales_data via _query_finance_sales_fallback
+      cost / expense                  → smart_bi_finance_data RecordType.COST, sum total_cost
+      default                         → smart_bi_sales_data, sum amount
+    """
+    year, month = year_month
+    last_day = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)
+    end_date = date(year, month, last_day)
+
+    metric_lower = (metric or "").lower()
+
+    if metric_lower in ("revenue", "profit", "gross_margin"):
+        sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+        return _calculate_metric_from_sales(sales_rows, metric_lower)
+
+    if metric_lower in ("cost", "expense"):
+        cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+        # Java line 1987-1990: sum total_cost (NOT actual_amount)
+        return sum(
+            (
+                _to_decimal(r["total_cost"])
+                for r in cost_records
+                if r.get("total_cost") is not None
+            ),
+            Decimal("0"),
+        )
+
+    # Default: sum amount from sales (Java line 1991-1998)
+    sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+    return sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+
+
+async def _get_metric_value_for_quarter(
+    factory_id: str, year: int, quarter: int, metric: str
+) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricValueForQuarter (line 2005-2035).
+
+    Same 3-branch structure as _get_metric_value_for_period, with quarter date math.
+    """
+    start_month = (quarter - 1) * 3 + 1
+    end_month = quarter * 3
+    last_day = calendar.monthrange(year, end_month)[1]
+    start_date = date(year, start_month, 1)
+    end_date = date(year, end_month, last_day)
+
+    metric_lower = (metric or "").lower()
+
+    if metric_lower in ("revenue", "profit", "gross_margin"):
+        sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+        return _calculate_metric_from_sales(sales_rows, metric_lower)
+
+    if metric_lower in ("cost", "expense"):
+        cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+        return sum(
+            (
+                _to_decimal(r["total_cost"])
+                for r in cost_records
+                if r.get("total_cost") is not None
+            ),
+            Decimal("0"),
+        )
+
+    sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+    return sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+
+
 async def _get_budget_achievement_chart(
     factory_id: str, year: int, metric: str = "revenue"
 ) -> dict:
