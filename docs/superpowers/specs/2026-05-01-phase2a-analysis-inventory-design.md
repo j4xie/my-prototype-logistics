@@ -60,7 +60,7 @@
 |---|---|---|
 | `turnover` | `getTurnoverAnalysis` + `getTurnoverByCategory` + `getTurnoverTrendChart(period="MONTH")` | `[startDate, endDate, metrics, ranking, trendChart]` |
 | `expiry` | `getExpiryRiskAnalysis` + `getExpiringBatchesRanking(daysToExpiry=30)` + `getExpiryRiskChart` | `[startDate, endDate, riskAnalysis, expiringBatches, riskChart]` |
-| `aging` | `getAgingMetrics` + `getInventoryAgingChart` + `getLongAgingBatchesRanking(minDays=60)` | `[startDate, endDate, agingMetrics, agingChart, longAgingBatches]` |
+| `aging` | `getAgingMetrics` + `getInventoryAgingChart` + `getLongAgingBatchesRanking(minDays=60, **inclusive `>=`**)` | `[startDate, endDate, agingMetrics, agingChart, longAgingBatches]` |
 | default | `getInventoryHealth` (DashboardResponse) | `[startDate, endDate, overview]` |
 
 **Helpers + scoring functions** in scope:
@@ -210,6 +210,12 @@ PR-B (default mode = overview DashboardResponse):
     + _calculate_kpi_cards()                    5 KPI cards builder (chains to getTurnoverAnalysis +
                                                 getExpiryRiskAnalysis + getHealthScore)
     + _get_health_score()                       MetricResult, T-INV-9 asymmetric null
+    + _calculate_loss_rate_for_health_score()   PRIVATE subset of Java getLossAnalysis (LOSS_RATE
+                                                only) — needed because Java getHealthScore L866-869
+                                                calls public getLossAnalysis but Python
+                                                `_get_loss_analysis` is NOT exported (out-of-scope
+                                                per §1.3). Body fully specified in §3.9.
+                                                **Cycle 2 audit fix BLOCKER 1 (§7 risk #7).**
     + _build_material_category_value_chart()    PIE top-10 by category
     + _generate_ai_insights()                   T6 rule-based, NO LLM (3 conditional insights)
     + _generate_suggestions()                   T6 rule-based 短文 list (3 conditional)
@@ -1556,7 +1562,12 @@ async def _get_long_aging_batches_ranking(
         RankingItem: rank, name=batchNumber, value, target=ageDays,
                      completionRate=currentQuantity, alertLevel
 
-    ⚠️ Note Java L786 uses `>= minDays` (inclusive) for filter, default 60.
+    ⚠️ **T-INV-14 (Cycle 2 BLOCKER 2 lock-in)** — Java L786 uses `>= minDays`
+    (**INCLUSIVE**) for filter, default 60. Python pseudo-code below mirrors with
+    `>=`. A batch aged exactly 60 days IS included. Implementation MUST NOT silently
+    use `>` (strict greater) or it drops the boundary case. PR-C
+    `TestInventoryLongAgingFilterBoundary` 显式 test ageDays==60 inclusion.
+
     Note `>= 60` filter then `> 90` YELLOW threshold means ageDays in [60, 90]
     falls to GREEN (the inline else clause). PR-C boundary test verifies.
     """
@@ -2043,6 +2054,24 @@ async def _get_health_score(
       - turnover None alone: score = 0 + (expiry/loss/aging contributions)
       - expiry None alone: score = (turnover) + 30 + (loss/aging)
     Cross-spec lineage: see §7 risk #2.
+
+    ⚠️⚠️ **T-INV-15 — DO NOT reuse named alert helpers inside this function!**
+    (Cycle 2 audit MAJOR 3 lock-in)
+
+    The 4 named helpers (`_determine_*_alert_level`) use **DIFFERENT comparison
+    direction** than the inline scoring tiers below:
+      - `_determine_turnover_alert_level`: rate < RED (regular dir, lower=worse)
+        BUT scoring uses `rate >= TURNOVER_YELLOW` for full pts (Java L837)
+      - `_determine_expiry_risk_alert_level`: rate > RED (inverse, strict >)
+        BUT scoring uses `rate < EXPIRY_YELLOW` for full pts (Java L854)
+      - `_determine_loss_rate_alert_level`: rate > RED (inverse, strict >)
+        BUT scoring uses `rate < LOSS_YELLOW` for full pts (Java L873)
+      - aging slow-moving (no helper, inline 10/20 INVERSE in getAgingMetrics)
+        BUT scoring uses `rate < 10` for 20pts (Java L892)
+
+    Implementation MUST inline the comparisons exactly as Java getHealthScore
+    L835-901 — calling the named helpers and mapping AlertLevel → score is WRONG
+    (would invert thresholds for 3 of 4 dimensions and break the score).
     """
     health_score = Decimal("0")
 
@@ -2374,6 +2403,53 @@ class TestInventoryHealthScoreAsymmetric:
        - turnover None alone → 0 + (other 3 contributions, depending)
        - expiry None alone → (turnover) + 30 + (loss/aging)"""
 
+
+class TestInventoryHealthScoreTierArithmetic:
+    """T-INV-15 — boundary tier arithmetic for 4 inline scoring branches in
+    _get_health_score. Catches off-by-one on `>=` vs `>` and direction-inverted
+    comparison errors (Cycle 2 audit MAJOR 4 lock-in).
+
+    Per dimension, test 6 cases at threshold boundaries:
+
+    Dimension 1 — TURNOVER (Java L837/839 use `>=`):
+      rate=11.99 → +20 (not +30)
+      rate=12.00 → +30 (boundary inclusive)
+      rate=5.99  → +10
+      rate=6.00  → +20 (boundary inclusive)
+      rate=0.0   → +10
+      rate=20.0  → +30
+
+    Dimension 2 — EXPIRY (Java L854/856 use `<` strict):
+      rate=9.99  → +30
+      rate=10.0  → +20 (boundary excludes 10 from full pts)
+      rate=14.99 → +20
+      rate=15.0  → +10 (boundary excludes 15 from mid pts)
+      rate=0.0   → +30
+      rate=100.0 → +10
+
+    Dimension 3 — LOSS (Java L873/875 use `<` strict):
+      rate=1.99  → +20
+      rate=2.0   → +12 (boundary excludes)
+      rate=4.99  → +12
+      rate=5.0   → +5  (boundary excludes)
+
+    Dimension 4 — AGING slow-moving (Java L892/894 use `<` strict):
+      rate=9.99  → +20
+      rate=10.0  → +12
+      rate=19.99 → +12
+      rate=20.0  → +5
+
+    Total ~24 boundary tests.
+    """
+
+
+class TestInventoryLongAgingFilterBoundary:
+    """T-INV-14 (Cycle 2 BLOCKER 2 lock-in) — _get_long_aging_batches_ranking
+    filter must be `>=` inclusive, not `>` strict. Test:
+      ageDays=59, min_days=60 → batch EXCLUDED
+      ageDays=60, min_days=60 → batch INCLUDED (boundary case)
+      ageDays=61, min_days=60 → batch INCLUDED"""
+
 class TestInventoryAgingBucketBoundaries:
     """4 boundaries × 2 sides = 8 tests (30/31, 60/61, 90/91, null receipt)"""
 
@@ -2480,6 +2556,27 @@ not separately tested (mirror ≡ SQL parity).
 **Cleanup follow-up** (Phase 3+): Java side normalize @Transient and SQL formulas
 (probably make SQL `COALESCE(used, 0)` etc to match @Transient). Once Java
 fixed, golden re-record + dict-eq.
+
+### Risk 7 — Private `_calculate_loss_rate_for_health_score` duplicates Java getLossAnalysis logic (Cycle 2 BLOCKER 1)
+
+**State**: Java `getHealthScore` L866-869 calls public `getLossAnalysis(...)` to obtain
+LOSS_RATE for dimension 3. But `getLossAnalysis` is NOT controller-dispatched (out-of-scope
+per §1.3). Python solves this by extracting just the LOSS_RATE computation as private
+helper `_calculate_loss_rate_for_health_score` (§3.9), mirroring Java L484-528 logic
+subset.
+
+**Decision**: Subset extraction is correct. Private helper does NOT export public
+loss analysis surface; only feeds health score consumer. PR-C boundary test classes
+cover the helper indirectly via `TestInventoryHealthScoreAsymmetric` and
+`TestInventoryHealthScoreTierArithmetic` — explicit standalone test deferred (would
+duplicate Java algorithm coverage already provided by health score tests).
+
+**Cleanup follow-up** (Phase 3+):
+- If future scope expansion requires public `_get_loss_analysis`, the private helper
+  body becomes its core; expose by renaming + adding remaining 4 metrics
+  (LOSS_AMOUNT, LOSS_MISSING, LOSS_DAMAGE, LOSS_CORRECTION).
+- Java side cleanup candidate: extract `getLossRateOnly` from `getLossAnalysis` to
+  remove unused metrics from health score's call path.
 
 ### Risk 6 — `LocalDate.now()` / `date.today()` timezone & test determinism
 
