@@ -73,3 +73,38 @@ async def _query_department_full(
     async with pool.acquire() as conn:
         rows = await conn.fetch(sql, factory_id, start_date, end_date)
     return [dict(r) for r in rows]
+
+
+async def _query_department_daily_trend(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java SmartBiSalesDataRepository.findDepartmentDailyTrend (line 107-112).
+
+    ⚠️ I4 fix: ORDER BY order_date ONLY (NOT order_date, department) — verbatim
+    Java semantics. Same-date department iteration order is intentionally
+    unspecified per Java behavior. Python NOT 主动加 ORDER BY department
+    否则 byte-shape 跟 Java 不一致.
+
+    Rule 6: input boundary None-check.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_department_daily_trend: start_date / end_date required "
+            f"(got start_date={start_date!r}, end_date={end_date!r})"
+        )
+
+    from smartbi.config import get_cretas_pool  # type: ignore
+    pool = await get_cretas_pool()
+
+    sql = """
+        SELECT order_date, department, SUM(amount) AS total_amount
+        FROM smart_bi_sales_data
+        WHERE factory_id = $1
+          AND deleted_at IS NULL
+          AND order_date BETWEEN $2 AND $3
+        GROUP BY order_date, department
+        ORDER BY order_date
+    """
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+    return [dict(r) for r in rows]
