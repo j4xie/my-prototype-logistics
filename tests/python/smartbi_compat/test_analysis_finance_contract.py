@@ -1921,3 +1921,70 @@ class TestAnalysisFinanceReceivable:
                 fromfile="golden", tofile="python", lineterm="", n=3,
             ))
             pytest.fail(f"F999 receivable byte-shape mismatch:\n{diff}")
+
+    def test_f999_composite_receivable_aging_shape_locked(self, client, monkeypatch):
+        """Post stub-replacement (Task 6), composite path's receivableAging is real impl.
+        Verify: envelope key set unchanged + 4-bucket shape + alertLevel hardcoded map.
+
+        This test is the contract gate for the transparent upgrade. If it fails after
+        replacing the stub, the composite F999 golden would also have to be re-recorded.
+
+        Task 6 replaced _get_receivable_aging_chart stub with real impl. Composite path
+        (_get_comprehensive_finance_analysis) calls this same function directly, so it
+        silently upgraded too. When Task 6 impl produces identical output for empty AR data
+        (no receivables), golden remains valid and this test locks the composite side-effect."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31",  # NO analysisType = composite path
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()["data"]
+
+        # Composite envelope unchanged (7 top-level keys per existing golden)
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-composite.json", encoding="utf-8") as f:
+            golden_data = json.load(f)["data"]
+        assert set(data.keys()) == set(golden_data.keys()), (
+            f"composite data envelope key set changed:\n"
+            f"  python: {sorted(data.keys())}\n"
+            f"  golden: {sorted(golden_data.keys())}"
+        )
+
+        # receivableAging shape locked (was stub returning placeholder, now real impl)
+        items = data.get("receivableAging", {}).get("data", [])
+        assert len(items) == 4, f"expected 4 aging buckets, got {len(items)}"
+
+        # Verify each item has expected schema
+        for item in items:
+            assert set(item.keys()) == {"agingBucket", "amount", "percentage", "alertLevel"}, (
+                f"aging bucket item schema mismatch, got keys: {set(item.keys())}"
+            )
+
+        # bucket order locked (Java line 600 fixed order: 0-30, 31-60, 61-90, 90+)
+        actual_buckets = [i["agingBucket"] for i in items]
+        expected_buckets = ["0-30天", "31-60天", "61-90天", "90天以上"]
+        assert actual_buckets == expected_buckets, (
+            f"aging bucket order changed:\n"
+            f"  actual:   {actual_buckets}\n"
+            f"  expected: {expected_buckets}"
+        )
+
+        # alertLevel hardcoded map (regardless of amount; Java line ~625)
+        actual_alerts = [i["alertLevel"] for i in items]
+        expected_alerts = ["GREEN", "YELLOW", "YELLOW", "RED"]
+        assert actual_alerts == expected_alerts, (
+            f"alertLevel map changed:\n"
+            f"  actual:   {actual_alerts}\n"
+            f"  expected: {expected_alerts}"
+        )
+
+        # Empty AR data → all amounts/percentages 0
+        for i, item in enumerate(items):
+            assert item["amount"] == 0, f"bucket {i} amount should be 0, got {item['amount']}"
+            assert item["percentage"] == 0, f"bucket {i} percentage should be 0, got {item['percentage']}"
