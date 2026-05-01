@@ -1062,3 +1062,98 @@ class TestReceivableMetricsArithmeticDepth:
         assert isinstance(metrics[0]["value"], int)
         assert metrics[1]["value"] == 100
         assert isinstance(metrics[1]["value"], int)
+
+
+class TestReceivableAlertLevelTable:
+    """PR-B depth — full 32-case threshold table for all 4 alert helpers.
+
+    Java strict comparison (`<` for collectionRate, `>` for aging ratios).
+    Boundary value falls into LOWER alertLevel.
+
+    Spec §1.4 reference table:
+      collectionRate: <60 RED, <80 YELLOW, else GREEN  (boundary: 60→YELLOW, 80→GREEN)
+      AGING_30: >50 RED, >25 YELLOW, else GREEN         (boundary: 25→GREEN, 50→YELLOW)
+      AGING_60: >30 RED, >15 YELLOW, else GREEN         (boundary: 15→GREEN, 30→YELLOW)
+      AGING_90: >20.0 RED, >10.0 YELLOW, else GREEN     (boundary: 10→GREEN, 20→YELLOW)
+
+    Each helper × 6 boundary cases = 24 total. PR-A covered 6 (1 per helper); this fills the rest.
+    """
+
+    @pytest.mark.parametrize("rate,expected", [
+        # Java: if v < 60 RED; if v < 80 YELLOW; else GREEN. Boundary 60/80 falls to LOWER level.
+        ("0",     "RED"),     # extreme low
+        ("59.99", "RED"),     # just-below-60
+        ("60.00", "YELLOW"),  # boundary 60: NOT < 60 → YELLOW
+        ("60.01", "YELLOW"),
+        ("79.99", "YELLOW"),  # just-below-80
+        ("80.00", "GREEN"),   # boundary 80: NOT < 80 → GREEN
+        ("80.01", "GREEN"),
+        ("100",   "GREEN"),   # extreme high
+    ])
+    def test_collection_rate_full_table(self, rate, expected):
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        assert _determine_collection_rate_alert(Decimal(rate)) == expected, f"rate={rate}"
+
+    @pytest.mark.parametrize("ratio,expected", [
+        # Java MetricCalculatorServiceImpl line 491-494: > 50 RED, > 25 YELLOW, else GREEN
+        ("0",     "GREEN"),
+        ("24.99", "GREEN"),
+        ("25.00", "GREEN"),   # boundary 25: NOT > 25 → GREEN
+        ("25.01", "YELLOW"),  # just-above-25
+        ("49.99", "YELLOW"),
+        ("50.00", "YELLOW"),  # boundary 50: NOT > 50 → YELLOW
+        ("50.01", "RED"),     # just-above-50
+        ("100",   "RED"),
+    ])
+    def test_aging_30_full_table(self, ratio, expected):
+        from smartbi_compat.api.analysis_finance import _aging_30_alert
+        assert _aging_30_alert(Decimal(ratio)) == expected, f"ratio={ratio}"
+
+    @pytest.mark.parametrize("ratio,expected", [
+        # Java MetricCalculatorServiceImpl line 485-488: > 30 RED, > 15 YELLOW, else GREEN
+        ("0",     "GREEN"),
+        ("14.99", "GREEN"),
+        ("15.00", "GREEN"),   # boundary 15
+        ("15.01", "YELLOW"),
+        ("29.99", "YELLOW"),
+        ("30.00", "YELLOW"),  # boundary 30
+        ("30.01", "RED"),
+        ("100",   "RED"),
+    ])
+    def test_aging_60_full_table(self, ratio, expected):
+        from smartbi_compat.api.analysis_finance import _aging_60_alert
+        assert _aging_60_alert(Decimal(ratio)) == expected, f"ratio={ratio}"
+
+    @pytest.mark.parametrize("ratio,expected", [
+        # Java FinanceAnalysisServiceImpl line 715-719: > 20.0 RED, > 10.0 YELLOW, else GREEN
+        # Constants AGING_90_RED_THRESHOLD=20.0 / AGING_90_YELLOW_THRESHOLD=10.0
+        ("0",     "GREEN"),
+        ("9.99",  "GREEN"),
+        ("10.00", "GREEN"),   # boundary 10
+        ("10.01", "YELLOW"),
+        ("19.99", "YELLOW"),
+        ("20.00", "YELLOW"),  # boundary 20
+        ("20.01", "RED"),
+        ("100",   "RED"),
+    ])
+    def test_aging_90_full_table(self, ratio, expected):
+        from smartbi_compat.api.analysis_finance import _aging_90_alert
+        assert _aging_90_alert(Decimal(ratio)) == expected, f"ratio={ratio}"
+
+    def test_collection_rate_threshold_uses_strict_less_than(self):
+        """Pin the comparison operator: `<` not `<=`. If Java logic flipped to `<=`,
+        boundary 60.0 would map to RED (currently YELLOW)."""
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        # 60.0 boundary asserts non-RED — guards against strict→relaxed regression
+        assert _determine_collection_rate_alert(Decimal("60")) != "RED"
+
+    def test_aging_helpers_threshold_uses_strict_greater_than(self):
+        """Pin the comparison operator: `>` not `>=` for all 3 aging helpers.
+        If Java logic flipped to `>=`, boundary values (25/15/10) would jump up a level."""
+        from smartbi_compat.api.analysis_finance import (
+            _aging_30_alert, _aging_60_alert, _aging_90_alert,
+        )
+        # All three: lower threshold value should produce LOWER alertLevel (NOT YELLOW)
+        assert _aging_30_alert(Decimal("25")) != "YELLOW"
+        assert _aging_60_alert(Decimal("15")) != "YELLOW"
+        assert _aging_90_alert(Decimal("10")) != "YELLOW"
