@@ -739,6 +739,137 @@ async def _calculate_quarter_range_yoy_mom(
     return result
 
 
+def _aggregate_sales_by_category(sales_rows: list) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.aggregateSalesByCategory (line 2070-2087).
+
+    Java line 2074: `getProductCategory() != null ? getProductCategory() : "其他"` — uses
+    NULL check, NOT falsy. Empty string "" is bucketed under "" (not "其他").
+
+    audit C-2 fix: use explicit `is not None` to match Java exactly. Avoid Python `or` falsy
+    which would collapse "" to "其他" (divergence).
+
+    Amount handling per Rule 1 (audit M-6 fix): explicit `is not None` check.
+    """
+    result: dict = {}
+    for row in sales_rows:
+        raw_cat = row.get("product_category")
+        cat = raw_cat if raw_cat is not None else "其他"
+        raw_amt = row.get("amount")
+        amount = _to_decimal(raw_amt) if raw_amt is not None else Decimal("0")
+        result[cat] = result.get(cat, Decimal("0")) + amount
+    return result
+
+
+async def _get_category_comparison_chart(
+    factory_id: str, year: int, compare_year: int
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getCategoryStructureComparisonChart (line 1259-1365).
+
+    Queries smart_bi_sales_data for both years via _query_finance_sales_fallback.
+    Aggregates by product_category, computes ratio/yoy growth, sorts by currentAmount desc.
+    """
+    current_sales = await _query_finance_sales_fallback(
+        factory_id, date(year, 1, 1), date(year, 12, 31)
+    )
+    compare_sales = await _query_finance_sales_fallback(
+        factory_id, date(compare_year, 1, 1), date(compare_year, 12, 31)
+    )
+
+    current_category_amount = _aggregate_sales_by_category(current_sales)
+    compare_category_amount = _aggregate_sales_by_category(compare_sales)
+
+    current_total = sum(current_category_amount.values(), Decimal("0"))
+    compare_total = sum(compare_category_amount.values(), Decimal("0"))
+
+    # Java LinkedHashSet preserves first-encounter order
+    all_categories: list = []
+    seen: set = set()
+    for cat in list(current_category_amount.keys()) + list(compare_category_amount.keys()):
+        if cat not in seen:
+            seen.add(cat)
+            all_categories.append(cat)
+
+    chart_data: list = []
+    for category in all_categories:
+        current_amount = current_category_amount.get(category, Decimal("0"))
+        compare_amount = compare_category_amount.get(category, Decimal("0"))
+
+        if current_total > Decimal("0"):
+            current_ratio = (current_amount / current_total * Decimal("100")).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+        else:
+            current_ratio = Decimal("0")
+        if compare_total > Decimal("0"):
+            compare_ratio = (compare_amount / compare_total * Decimal("100")).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+        else:
+            compare_ratio = Decimal("0")
+
+        # Java line 1304-1308: yoyGrowthRate with new-category fallback
+        if compare_amount > Decimal("0"):
+            yoy_growth_rate = (
+                (current_amount - compare_amount) / compare_amount * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif current_amount > Decimal("0"):
+            yoy_growth_rate = Decimal("100")
+        else:
+            yoy_growth_rate = Decimal("0")
+
+        ratio_change = current_ratio - compare_ratio
+
+        chart_data.append({
+            "category": category,
+            "currentAmount": _decimal_to_number(current_amount.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareAmount": _decimal_to_number(compare_amount.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "currentRatio": _decimal_to_number(current_ratio.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareRatio": _decimal_to_number(compare_ratio.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "yoyGrowthRate": _decimal_to_number(yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "ratioChange": _decimal_to_number(ratio_change.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "currentYear": year,
+            "compareYear": compare_year,
+        })
+
+    # Java line 1327-1331: sort by currentAmount DESC
+    chart_data.sort(key=lambda x: x["currentAmount"], reverse=True)
+
+    if compare_total > Decimal("0"):
+        total_yoy_growth_rate = (
+            (current_total - compare_total) / compare_total * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        total_yoy_growth_rate = Decimal("0")
+
+    options = {
+        "groupedBar": True,
+        "yAxis": [
+            {"position": "left", "name": "金额"},
+            {"position": "right", "name": "同比增长率(%)"},
+        ],
+        "series": [
+            {"yAxisIndex": 0, "type": "bar", "name": f"{year}年", "color": "#5470c6"},
+            {"yAxisIndex": 0, "type": "bar", "name": f"{compare_year}年", "color": "#91cc75"},
+            {"yAxisIndex": 1, "type": "line", "name": "同比增长率", "color": "#ee6666"},
+        ],
+        "summary": {
+            "currentTotal": _decimal_to_number(current_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareTotal": _decimal_to_number(compare_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "totalYoyGrowthRate": _decimal_to_number(total_yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        },
+    }
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title=f"{year}年 vs {compare_year}年 品类结构对比",
+        series_field="year",
+        data=chart_data,
+        options=options,
+        xaxis_field="category",
+        yaxis_field="currentAmount",
+    )
+
+
 async def _get_yoy_mom_chart(
     factory_id: str,
     period_type: str,
@@ -2031,4 +2162,16 @@ async def get_yoy_mom(
     result = await _get_yoy_mom_chart(
         auth.factory_id, periodType, startPeriod, endPeriod, metric
     )
+    return wrap_response(result)
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/category-comparison")
+async def get_category_comparison(
+    factory_id: str,
+    year: int = Query(...),
+    compareYear: int = Query(...),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getCategoryStructureComparisonChart line 314-330."""
+    result = await _get_category_comparison_chart(auth.factory_id, year, compareYear)
     return wrap_response(result)
