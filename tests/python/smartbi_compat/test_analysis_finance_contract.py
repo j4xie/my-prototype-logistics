@@ -145,10 +145,10 @@ class TestAnalysisFinanceComposite:
         """Verify 501 path for un-ported analysisTypes.
 
         C3 robust pattern: list reflects current main state at time of this PR.
-        profit/payable/cost are real impl; receivable + budget remain 501 until their PR-As merge.
+        profit/payable/cost/budget are real impl; receivable remains 501 until its PR-A merges.
         Sister chats merging concurrently must rebase + regenerate this list (drop their endpoint).
         """
-        for at in ["receivable", "budget"]:
+        for at in ["receivable"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
                 f"?startDate=2025-01-01&endDate=2025-12-31&analysisType={at}",
