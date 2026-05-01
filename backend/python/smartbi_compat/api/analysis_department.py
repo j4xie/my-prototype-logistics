@@ -311,17 +311,22 @@ def _create_empty_chart(chart_type: str, title: str) -> dict:
     ChartConfig.java:32) → Spring Boot Jackson default emits ALL fields including
     null.
 
-    ChartConfig field order (Java DTO line 37-67):
-      [chartType, title, xAxisField, yAxisField, seriesField, data, options]
+    ⚠️ Spec §3.8 was WRONG about ChartConfig shape — F999 golden reveals actual
+    Java emit order (Lombok @Data + Jackson bean introspection):
+      [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+    AND `xaxisField` / `yaxisField` are LOWERCASE-A (Jackson PropertyNamingStrategy
+    drops the camelCase between adjacent uppercase letters — `xAxisField` field
+    becomes `xaxisField` JSON key). This is a Java-side quirk that byte-shape
+    parity must mirror.
     """
     return {
         "chartType":   chart_type,
         "title":       title,
-        "xAxisField":  None,
-        "yAxisField":  None,
         "seriesField": None,
         "data":        [],
         "options":     None,
+        "xaxisField":  None,
+        "yaxisField":  None,
     }
 
 
@@ -336,8 +341,12 @@ def _build_date_range(start_date: date, end_date: date) -> dict:
       days <= 93  → QUARTER
       else        → YEAR
 
-    DateRange Lombok @Data @Builder field order (DateRange.java line 31-55):
-      [startDate, endDate, granularity, originalExpression, relative]
+    DateRange JSON field order per F999 golden (Lombok @Data getter introspection):
+      [startDate, endDate, granularity, originalExpression, relative, days, valid]
+
+    ⚠️ Spec §3.9 missed `days` and `valid` fields — F999 golden reveals Java emits
+    them via `getDays()` and `isValid()` getters (Lombok @Data + Jackson bean
+    introspection). `days = duration days inclusive`, `valid = startDate <= endDate`.
     """
     days = (end_date - start_date).days + 1
     if days <= 1:
@@ -356,6 +365,8 @@ def _build_date_range(start_date: date, end_date: date) -> dict:
         "granularity":        granularity,
         "originalExpression": f"{start_date} 至 {end_date}",
         "relative":           False,
+        "days":               days,
+        "valid":              start_date <= end_date,
     }
 
 
@@ -529,14 +540,17 @@ async def _get_department_efficiency_matrix(
         "colorField":      "department",
     }
 
+    # ChartConfig field order per F999 golden (Jackson actual):
+    # [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+    # `xaxisField`/`yaxisField` are LOWERCASE-A (Jackson bean introspection quirk).
     return {
         "chartType":   "SCATTER",
         "title":       "部门效率矩阵",
-        "xAxisField":  "perCapitaSales",
-        "yAxisField":  "perCapitaCost",
         "seriesField": "department",
         "data":        chart_data,
         "options":     options,
+        "xaxisField":  "perCapitaSales",
+        "yaxisField":  "perCapitaCost",
     }
 
 
@@ -604,14 +618,16 @@ async def _get_department_trend_comparison(
         "period": period,
     }
 
+    # ChartConfig field order per F999 golden (Jackson actual):
+    # [chartType, title, seriesField, data, options, xaxisField, yaxisField]
     return {
         "chartType":   "LINE",
         "title":       "部门销售趋势对比",
-        "xAxisField":  "period",
-        "yAxisField":  "amount",
         "seriesField": "department",
         "data":        chart_data,
         "options":     options,
+        "xaxisField":  "period",
+        "yaxisField":  "amount",
     }
 
 
@@ -635,14 +651,16 @@ async def _get_department_analysis(
     efficiency_matrix = await _get_department_efficiency_matrix(factory_id, start_date, end_date)
     trend_comparison = await _get_department_trend_comparison (factory_id, start_date, end_date, "WEEK")
 
-    # ⚠️ TBD: actual key order from F999 golden. Initial placeholder = Java put-order.
+    # Top-level data key order per F999 golden (Jackson HashMap hash-iter order):
+    # [completionRates, efficiencyMatrix, dateRange, generatedAt, ranking, trendComparison]
+    # NOT Java put-order — Jackson actual emit order from HashMap.
     return {
-        "ranking":          ranking,
         "completionRates":  completion_rates,
         "efficiencyMatrix": efficiency_matrix,
-        "trendComparison":  trend_comparison,
         "dateRange":        _build_date_range(start_date, end_date),
         "generatedAt":      _utc_now_iso(),    # volatile, stripped by _strip_volatile in tests
+        "ranking":          ranking,
+        "trendComparison":  trend_comparison,
     }
 
 

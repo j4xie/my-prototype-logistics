@@ -1,56 +1,41 @@
 {
-  "verb": "GET",
-  "path": "/api/mobile/F999/smart-bi/analysis/department",
-  "factory": "F999",
-  "response": {
-    "httpStatus": 200,
-    "code": 200,
-    "success": true,
-    "message": "操作成功",
-    "timestamp": "2026-04-30T06:34:35.064654578",
-    "data": {
-      "completionRates": [],
-      "efficiencyMatrix": {
-        "chartType": "SCATTER",
-        "title": "部门效率矩阵",
-        "seriesField": null,
-        "data": [],
-        "options": null,
-        "xaxisField": null,
-        "yaxisField": null
-      },
-      "dateRange": {
-        "startDate": "2025-01-01",
-        "endDate": "2025-12-31",
-        "granularity": "YEAR",
-        "originalExpression": "2025-01-01 至 2025-12-31",
-        "relative": false,
-        "days": 365,
-        "valid": true
-      },
-      "generatedAt": "2026-04-30T06:34:35.064499423",
-      "ranking": [],
-      "trendComparison": {
-        "chartType": "LINE",
-        "title": "部门销售趋势对比",
-        "seriesField": null,
-        "data": [],
-        "options": null,
-        "xaxisField": null,
-        "yaxisField": null
-      }
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "completionRates": [],
+    "efficiencyMatrix": {
+      "chartType": "SCATTER",
+      "title": "部门效率矩阵",
+      "seriesField": null,
+      "data": [],
+      "options": null,
+      "xaxisField": null,
+      "yaxisField": null
+    },
+    "dateRange": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "granularity": "YEAR",
+      "originalExpression": "2025-01-01 至 2025-12-31",
+      "relative": false,
+      "days": 365,
+      "valid": true
+    },
+    "generatedAt": "2026-05-02T05:18:58.549087618",
+    "ranking": [],
+    "trendComparison": {
+      "chartType": "LINE",
+      "title": "部门销售趋势对比",
+      "seriesField": null,
+      "data": [],
+      "options": null,
+      "xaxisField": null,
+      "yaxisField": null
     }
   },
-  "_meta": {
-    "name": "analysis-department",
-    "verb": "GET",
-    "path": "/api/mobile/F999/smart-bi/analysis/department",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-12-31"
-    },
-    "factory": "F999",
-    "recordedAt": "2026-04-29T22:34:35.435Z",
-    "javaPort": 10011
-  }
+  "timestamp": "2026-05-02T05:18:58.549193801",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
 }
