@@ -782,3 +782,660 @@ class TestReceivableTrendChartImpl:
         )
         assert len(result["data"]) == 1
         assert result["data"][0]["period"] == "2025-06"
+
+
+class TestReceivableBucketBoundaryDepth:
+    """PR-B depth coverage — aging-day boundaries for _calculate_aging_buckets.
+
+    Java <= chain (line 1510-1518):
+      aging_days <= 30 → 0-30天
+      aging_days <= 60 → 31-60天
+      aging_days <= 90 → 61-90天
+      else            → 90天以上
+
+    Boundary value falls into LOWER bucket (e.g., 30 → 0-30, NOT 31-60).
+    Spec §1.4 enumerates: -1 / 0 / 30 / 31 / 60 / 61 / 90 / 91 (8 cases).
+    """
+
+    @pytest.mark.parametrize("aging_days,expected_bucket", [
+        (-1,  "0-30天"),     # negative aging treated as 0 → first bucket per Java <= 30
+        (0,   "0-30天"),     # boundary low — null fallback also produces 0
+        (30,  "0-30天"),     # boundary high of first bucket (<=)
+        (31,  "31-60天"),    # boundary low of second bucket
+        (60,  "31-60天"),    # boundary high of second bucket
+        (61,  "61-90天"),    # boundary low of third bucket
+        (90,  "61-90天"),    # boundary high of third bucket
+        (91,  "90天以上"),   # boundary low of fourth bucket
+    ])
+    def test_aging_day_boundary_assignment(self, aging_days, expected_bucket):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "1000", "collection_amount": "0", "aging_days": aging_days}]
+        result = _calculate_aging_buckets(rows)
+        assert result[expected_bucket] == Decimal("1000")
+        # All other buckets stay 0
+        for other_bucket in ["0-30天", "31-60天", "61-90天", "90天以上"]:
+            if other_bucket != expected_bucket:
+                assert result[other_bucket] == Decimal("0"), (
+                    f"aging_days={aging_days} expected only {expected_bucket} populated, "
+                    f"but {other_bucket} = {result[other_bucket]}"
+                )
+
+    @pytest.mark.parametrize("receivable,collection,description", [
+        ("100", "100",  "outstanding=0 (equal) → skipped"),
+        ("50",  "100",  "outstanding<0 (negative) → skipped"),
+        ("0.01","0",    "outstanding=0.01 (just-positive) → kept"),
+    ])
+    def test_outstanding_threshold_strict_gt_zero(self, receivable, collection, description):
+        """Java line 1505: `if outstanding <= 0 continue` — boundary outstanding=0 skipped.
+
+        outstanding=0.01 (smallest possible positive) MUST be kept (Decimal precision).
+        """
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": receivable, "collection_amount": collection, "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        outstanding = Decimal(receivable) - Decimal(collection)
+        if outstanding > Decimal("0"):
+            assert result["0-30天"] == outstanding, description
+        else:
+            assert all(v == Decimal("0") for v in result.values()), description
+
+    @pytest.mark.parametrize("receivable,collection,aging,desc", [
+        (None, None, None, "all three null → null aging→0, null receivable→0, null collection→0, outstanding=0, skip"),
+        ("0",  None, 60,   "receivable=Decimal('0') (Rule 1 falsy trap), collection null, outstanding=0, skip"),
+        (None, "0",  60,   "receivable null→0, collection=Decimal('0'), outstanding=0, skip"),
+        ("0",  "0",  60,   "both Decimal('0'), outstanding=0, skip"),
+    ])
+    def test_null_combinations_with_zero_decimal_rule1(self, receivable, collection, aging, desc):
+        """Rule 1 trap: Decimal('0') is Python-falsy. Java treats != null as truthy.
+
+        Combined with the outstanding<=0 skip, all 4 combinations result in skipped rows.
+        Pins behavior so future refactor doesn't accidentally use `or` fallback.
+        """
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": receivable, "collection_amount": collection, "aging_days": aging}]
+        result = _calculate_aging_buckets(rows)
+        assert all(v == Decimal("0") for v in result.values()), desc
+
+    def test_aggregates_across_multiple_rows_same_bucket(self):
+        """Multiple rows in same bucket → outstanding sums."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [
+            {"receivable_amount": "100", "collection_amount": "0", "aging_days": 10},
+            {"receivable_amount": "200", "collection_amount": "0", "aging_days": 20},
+            {"receivable_amount": "300", "collection_amount": "0", "aging_days": 30},
+        ]
+        result = _calculate_aging_buckets(rows)
+        assert result["0-30天"] == Decimal("600")
+        assert result["31-60天"] == Decimal("0")
+
+    def test_distributes_across_all_4_buckets(self):
+        """One row per bucket → 4 distinct totals."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [
+            {"receivable_amount": "100", "collection_amount": "0", "aging_days": 15},  # 0-30
+            {"receivable_amount": "200", "collection_amount": "0", "aging_days": 45},  # 31-60
+            {"receivable_amount": "300", "collection_amount": "0", "aging_days": 75},  # 61-90
+            {"receivable_amount": "400", "collection_amount": "0", "aging_days": 120}, # 90+
+        ]
+        result = _calculate_aging_buckets(rows)
+        assert result["0-30天"]   == Decimal("100")
+        assert result["31-60天"]  == Decimal("200")
+        assert result["61-90天"]  == Decimal("300")
+        assert result["90天以上"] == Decimal("400")
+
+
+class TestReceivableMetricsArithmeticDepth:
+    """PR-B depth — formula arithmetic for 5 receivable metrics.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableMetrics (line 627-732).
+    Tests zero-guards, full collection (rate=100), all-overdue (ratios=100),
+    quantize HALF_UP rounding, and Decimal precision under fractional values.
+
+    Companion to TestReceivableMetricsImpl (PR-A) which only tested empty + 1 simple row.
+    """
+
+    # ===== AR_BALANCE arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_ar_balance_negative_when_overpaid(self, monkeypatch):
+        """totalCollection > totalReceivable → ar_balance < 0. AR_BALANCE keeps GREEN
+        (Java line 654 hardcoded), no alert flip."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "1000", "collection_amount": "1500", "aging_days": 15}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[0]["metricCode"] == "AR_BALANCE"
+        assert metrics[0]["value"] == -500
+        assert metrics[0]["alertLevel"] == "GREEN"  # hardcoded regardless of value
+
+    @pytest.mark.asyncio
+    async def test_ar_balance_quantize_half_up(self, monkeypatch):
+        """Decimal('0.005').quantize(0.01, HALF_UP) = 0.01.
+        receivable=1000.005, collection=0 → balance=1000.005 → quantize → 1000.01 (HALF_UP)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "1000.005", "collection_amount": "0", "aging_days": 15}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[0]["value"] == 1000.01
+
+    # ===== COLLECTION_RATE arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_collection_rate_100_percent_full_collected(self, monkeypatch):
+        """totalCollection == totalReceivable → rate=100. > 80 → GREEN."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "1000", "collection_amount": "1000", "aging_days": 0}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[1]["metricCode"] == "COLLECTION_RATE"
+        assert metrics[1]["value"] == 100
+        assert metrics[1]["formattedValue"] == "100.00%"
+        assert metrics[1]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_collection_rate_quantize_half_up_to_two_decimals(self, monkeypatch):
+        """1/3 = 0.33333... → 33.33 (NOT 33.34 — HALF_UP at scale=2 from clean intermediate).
+
+        receivable=3, collection=1, rate = 1/3 * 100 = 33.333... → quantize(0.01, HALF_UP) = 33.33
+        """
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "3", "collection_amount": "1", "aging_days": 0}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[1]["value"] == 33.33
+        assert metrics[1]["formattedValue"] == "33.33%"
+
+    @pytest.mark.asyncio
+    async def test_collection_rate_zero_guard_division(self, monkeypatch):
+        """Java line 659 zero-guard — totalReceivable=0 (no rows) → rate=0 (NOT div-by-zero)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[1]["value"] == 0
+        # 0 < 60 → RED
+        assert metrics[1]["alertLevel"] == "RED"
+
+    # ===== AGING_30/60/90_RATIO arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_aging_30_ratio_all_overdue_100_percent(self, monkeypatch):
+        """All outstanding > 30 days → AGING_30_RATIO = 100. > 50 → RED."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "1000", "collection_amount": "0", "aging_days": 100}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[2]["metricCode"] == "AGING_30_RATIO"
+        assert metrics[2]["value"] == 100
+        assert metrics[2]["alertLevel"] == "RED"
+
+    @pytest.mark.asyncio
+    async def test_aging_60_ratio_partial_50_50_split(self, monkeypatch):
+        """Half outstanding in 31-60 (NOT counted in over60), half in 90+ (counted).
+
+        over60 = bucket[61-90] + bucket[90+] = 0 + 500 = 500
+        total_for_ratio = bucket[0-30] + bucket[31-60] + bucket[61-90] + bucket[90+]
+                        = 0 + 500 + 0 + 500 = 1000
+        AGING_60_RATIO = 500/1000 * 100 = 50.0 → > 30 → RED
+        """
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"receivable_amount": "500", "collection_amount": "0", "aging_days": 45},   # 31-60
+                {"receivable_amount": "500", "collection_amount": "0", "aging_days": 120},  # 90+
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[3]["metricCode"] == "AGING_60_RATIO"
+        assert metrics[3]["value"] == 50
+        assert metrics[3]["alertLevel"] == "RED"
+
+    @pytest.mark.asyncio
+    async def test_aging_90_ratio_zero_when_no_aged_buckets(self, monkeypatch):
+        """All in 0-30 bucket → over90 = 0 → ratio = 0/total = 0. <= 10 → GREEN."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "1000", "collection_amount": "0", "aging_days": 15}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[4]["metricCode"] == "AGING_90_RATIO"
+        assert metrics[4]["value"] == 0
+        assert metrics[4]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_total_for_ratio_zero_guard_when_all_skipped(self, monkeypatch):
+        """All rows have outstanding<=0 (skipped by _calculate_aging_buckets) → total_for_ratio=0.
+        Java line 684/698/712 zero-guard → all 3 ratios = 0."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            # Both rows have outstanding=0 → calculate_aging_buckets skips → all buckets 0
+            return [
+                {"receivable_amount": "100", "collection_amount": "100", "aging_days": 30},
+                {"receivable_amount": "200", "collection_amount": "200", "aging_days": 90},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        # Note: COLLECTION_RATE uses totalReceivable+totalCollection (NOT bucketed) — independent of skip
+        # Above rows: totalReceivable=300, totalCollection=300 → rate=100 → GREEN
+        assert metrics[1]["value"] == 100
+        # But AGING_*_RATIO uses bucketed values; all skipped → all 0
+        assert metrics[2]["value"] == 0
+        assert metrics[3]["value"] == 0
+        assert metrics[4]["value"] == 0
+
+    @pytest.mark.asyncio
+    async def test_metrics_value_field_is_int_when_integral(self, monkeypatch):
+        """Rule 4 — _decimal_to_number returns int when Decimal is integer-valued.
+        Java Jackson would emit `100` (number); Python emits `int(100)` for dict-eq parity."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"receivable_amount": "1000", "collection_amount": "1000", "aging_days": 0}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+        assert metrics[0]["value"] == 0
+        assert isinstance(metrics[0]["value"], int)
+        assert metrics[1]["value"] == 100
+        assert isinstance(metrics[1]["value"], int)
+
+
+class TestReceivableAlertLevelTable:
+    """PR-B depth — full 32-case threshold table for all 4 alert helpers.
+
+    Java strict comparison (`<` for collectionRate, `>` for aging ratios).
+    Boundary value falls into LOWER alertLevel.
+
+    Spec §1.4 reference table:
+      collectionRate: <60 RED, <80 YELLOW, else GREEN  (boundary: 60→YELLOW, 80→GREEN)
+      AGING_30: >50 RED, >25 YELLOW, else GREEN         (boundary: 25→GREEN, 50→YELLOW)
+      AGING_60: >30 RED, >15 YELLOW, else GREEN         (boundary: 15→GREEN, 30→YELLOW)
+      AGING_90: >20.0 RED, >10.0 YELLOW, else GREEN     (boundary: 10→GREEN, 20→YELLOW)
+
+    Each helper × 6 boundary cases = 24 total. PR-A covered 6 (1 per helper); this fills the rest.
+    """
+
+    @pytest.mark.parametrize("rate,expected", [
+        # Java: if v < 60 RED; if v < 80 YELLOW; else GREEN. Boundary 60/80 falls to LOWER level.
+        ("0",     "RED"),     # extreme low
+        ("59.99", "RED"),     # just-below-60
+        ("60.00", "YELLOW"),  # boundary 60: NOT < 60 → YELLOW
+        ("60.01", "YELLOW"),
+        ("79.99", "YELLOW"),  # just-below-80
+        ("80.00", "GREEN"),   # boundary 80: NOT < 80 → GREEN
+        ("80.01", "GREEN"),
+        ("100",   "GREEN"),   # extreme high
+    ])
+    def test_collection_rate_full_table(self, rate, expected):
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        assert _determine_collection_rate_alert(Decimal(rate)) == expected, f"rate={rate}"
+
+    @pytest.mark.parametrize("ratio,expected", [
+        # Java MetricCalculatorServiceImpl line 491-494: > 50 RED, > 25 YELLOW, else GREEN
+        ("0",     "GREEN"),
+        ("24.99", "GREEN"),
+        ("25.00", "GREEN"),   # boundary 25: NOT > 25 → GREEN
+        ("25.01", "YELLOW"),  # just-above-25
+        ("49.99", "YELLOW"),
+        ("50.00", "YELLOW"),  # boundary 50: NOT > 50 → YELLOW
+        ("50.01", "RED"),     # just-above-50
+        ("100",   "RED"),
+    ])
+    def test_aging_30_full_table(self, ratio, expected):
+        from smartbi_compat.api.analysis_finance import _aging_30_alert
+        assert _aging_30_alert(Decimal(ratio)) == expected, f"ratio={ratio}"
+
+    @pytest.mark.parametrize("ratio,expected", [
+        # Java MetricCalculatorServiceImpl line 485-488: > 30 RED, > 15 YELLOW, else GREEN
+        ("0",     "GREEN"),
+        ("14.99", "GREEN"),
+        ("15.00", "GREEN"),   # boundary 15
+        ("15.01", "YELLOW"),
+        ("29.99", "YELLOW"),
+        ("30.00", "YELLOW"),  # boundary 30
+        ("30.01", "RED"),
+        ("100",   "RED"),
+    ])
+    def test_aging_60_full_table(self, ratio, expected):
+        from smartbi_compat.api.analysis_finance import _aging_60_alert
+        assert _aging_60_alert(Decimal(ratio)) == expected, f"ratio={ratio}"
+
+    @pytest.mark.parametrize("ratio,expected", [
+        # Java FinanceAnalysisServiceImpl line 715-719: > 20.0 RED, > 10.0 YELLOW, else GREEN
+        # Constants AGING_90_RED_THRESHOLD=20.0 / AGING_90_YELLOW_THRESHOLD=10.0
+        ("0",     "GREEN"),
+        ("9.99",  "GREEN"),
+        ("10.00", "GREEN"),   # boundary 10
+        ("10.01", "YELLOW"),
+        ("19.99", "YELLOW"),
+        ("20.00", "YELLOW"),  # boundary 20
+        ("20.01", "RED"),
+        ("100",   "RED"),
+    ])
+    def test_aging_90_full_table(self, ratio, expected):
+        from smartbi_compat.api.analysis_finance import _aging_90_alert
+        assert _aging_90_alert(Decimal(ratio)) == expected, f"ratio={ratio}"
+
+    def test_collection_rate_threshold_uses_strict_less_than(self):
+        """Pin the comparison operator: `<` not `<=`. If Java logic flipped to `<=`,
+        boundary 60.0 would map to RED (currently YELLOW)."""
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        # 60.0 boundary asserts non-RED — guards against strict→relaxed regression
+        assert _determine_collection_rate_alert(Decimal("60")) != "RED"
+
+    def test_aging_helpers_threshold_uses_strict_greater_than(self):
+        """Pin the comparison operator: `>` not `>=` for all 3 aging helpers.
+        If Java logic flipped to `>=`, boundary values (25/15/10) would jump up a level."""
+        from smartbi_compat.api.analysis_finance import (
+            _aging_30_alert, _aging_60_alert, _aging_90_alert,
+        )
+        # All three: lower threshold value should produce LOWER alertLevel (NOT YELLOW)
+        assert _aging_30_alert(Decimal("25")) != "YELLOW"
+        assert _aging_60_alert(Decimal("15")) != "YELLOW"
+        assert _aging_90_alert(Decimal("10")) != "YELLOW"
+
+
+class TestOverdueRankingDepth:
+    """PR-B depth — top-10 cap edge + dedup arithmetic for _get_overdue_customer_ranking.
+
+    Mirror Java FinanceAnalysisServiceImpl.getOverdueCustomerRanking (line 734-783).
+    PR-A tested basic shape + 4 skip guards; PR-B locks ordering edge cases.
+    """
+
+    @pytest.mark.asyncio
+    async def test_exactly_10_customers_returns_all(self, monkeypatch):
+        """10 customers → top-10 cap not triggered, all returned."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": f"C{i:02d}",
+                 "receivable_amount": str(100 - i),
+                 "collection_amount": "0",
+                 "aging_days": 60}
+                for i in range(10)
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert len(result) == 10
+        # Rank 1..10 sequence
+        assert [r["rank"] for r in result] == list(range(1, 11))
+
+    @pytest.mark.asyncio
+    async def test_11_customers_caps_at_10(self, monkeypatch):
+        """11 customers → bottom one (rank 11) dropped (Java line 762 `[:10]`)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": f"C{i:02d}",
+                 "receivable_amount": str(100 - i),  # decreasing → first 10 are top
+                 "collection_amount": "0",
+                 "aging_days": 60}
+                for i in range(11)
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert len(result) == 10
+        # Last rank = 10 (NOT 11)
+        assert result[-1]["rank"] == 10
+        # Excluded: C10 (smallest amount = 90, dropped)
+        names = [r["name"] for r in result]
+        assert "C10" not in names
+        assert "C00" in names  # largest amount = 100, kept
+
+    @pytest.mark.asyncio
+    async def test_dedup_preserves_max_aging_across_rows(self, monkeypatch):
+        """Same customer with multiple rows → max aging tracked across all rows.
+
+        Customer "Acme" has 3 rows: aging=30/100/60. Max = 100 → alertLevel=RED.
+        """
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": "Acme", "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+                {"customer_name": "Acme", "receivable_amount": "500",  "collection_amount": "0", "aging_days": 100},
+                {"customer_name": "Acme", "receivable_amount": "200",  "collection_amount": "0", "aging_days": 60},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert len(result) == 1
+        assert result[0]["name"] == "Acme"
+        assert result[0]["value"] == 1700  # 1000 + 500 + 200 aggregated
+        assert result[0]["alertLevel"] == "RED"  # max(30, 100, 60) = 100 > 90
+
+    @pytest.mark.asyncio
+    async def test_alertlevel_max_aging_strict_gt_boundary(self, monkeypatch):
+        """Java line 767-772: max_aging > 90 RED, > 60 YELLOW, else GREEN.
+        Boundary aging = 60 / 90 falls into LOWER level."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": "RedCust",      "receivable_amount": "100", "collection_amount": "0", "aging_days": 91},
+                {"customer_name": "BoundaryRed",  "receivable_amount": "100", "collection_amount": "0", "aging_days": 90},  # boundary → YELLOW
+                {"customer_name": "YellowCust",   "receivable_amount": "100", "collection_amount": "0", "aging_days": 61},
+                {"customer_name": "BoundaryYell", "receivable_amount": "100", "collection_amount": "0", "aging_days": 60},  # boundary → GREEN
+                {"customer_name": "GreenCust",    "receivable_amount": "100", "collection_amount": "0", "aging_days": 1},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        by_name = {r["name"]: r["alertLevel"] for r in result}
+        assert by_name["RedCust"] == "RED"           # 91 > 90
+        assert by_name["BoundaryRed"] == "YELLOW"    # 90 NOT > 90 → falls to YELLOW
+        assert by_name["YellowCust"] == "YELLOW"     # 61 > 60
+        assert by_name["BoundaryYell"] == "GREEN"    # 60 NOT > 60 → falls to GREEN
+        assert by_name["GreenCust"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_sort_stable_when_amounts_tied(self, monkeypatch):
+        """When 2 customers have identical outstanding, Python sorted() is stable —
+        insertion order is preserved among ties (mirrors Java LinkedHashMap iteration).
+
+        First customer in input → first in output for tied amounts.
+        """
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": "First",  "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+                {"customer_name": "Second", "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+                {"customer_name": "Third",  "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert [r["name"] for r in result] == ["First", "Second", "Third"]
+        # All equal value → ranks 1, 2, 3 (NOT all rank 1 — Java enumerate semantics)
+        assert [r["rank"] for r in result] == [1, 2, 3]
+
+    @pytest.mark.asyncio
+    async def test_ranking_value_quantize_half_up(self, monkeypatch):
+        """Decimal('1234.567').quantize(0.01, HALF_UP) = 1234.57.
+        Verify ranking value emits to 2 decimals via _decimal_to_number."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"customer_name": "FractionCust", "receivable_amount": "1234.567",
+                     "collection_amount": "0", "aging_days": 60}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert result[0]["value"] == 1234.57
+
+
+class TestReceivableTrendDepth:
+    """PR-B depth — monthly aggregation arithmetic for _get_receivable_trend_chart.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableTrendChart (line 786-827).
+    PR-A covered basic shape (empty / 2-month / sort / null skip / Map.of order).
+    PR-B locks balance formula, multi-row aggregation, single-month, and quantize.
+
+    NOTE: Mid-year dates only. Cross-year ISO-week ambiguity is out of scope here.
+    """
+
+    @pytest.mark.asyncio
+    async def test_balance_equals_receivable_minus_collection_per_period(self, monkeypatch):
+        """Per-period: balance = receivable - collection. Verify across 3 months.
+        Java line 803-806."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 6, 1),  "receivable_amount": "1000", "collection_amount": "300"},
+                {"record_date": date(2025, 7, 1),  "receivable_amount": "500",  "collection_amount": "500"},
+                {"record_date": date(2025, 8, 1),  "receivable_amount": "200",  "collection_amount": "600"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        data = result["data"]
+        # June: balance = 1000 - 300 = 700
+        assert data[0]["period"] == "2025-06"
+        assert data[0]["balance"] == 700
+        # July: balance = 500 - 500 = 0
+        assert data[1]["period"] == "2025-07"
+        assert data[1]["balance"] == 0
+        # August: balance = 200 - 600 = -400 (negative balance — overpayment)
+        assert data[2]["period"] == "2025-08"
+        assert data[2]["balance"] == -400
+
+    @pytest.mark.asyncio
+    async def test_multi_row_same_month_aggregates(self, monkeypatch):
+        """Same month, multiple rows → receivable + collection sum."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 6, 1),  "receivable_amount": "100", "collection_amount": "10"},
+                {"record_date": date(2025, 6, 5),  "receivable_amount": "200", "collection_amount": "20"},
+                {"record_date": date(2025, 6, 15), "receivable_amount": "300", "collection_amount": "30"},
+                {"record_date": date(2025, 6, 28), "receivable_amount": "400", "collection_amount": "40"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 6, 1), date(2025, 6, 30)
+        )
+        assert len(result["data"]) == 1
+        d = result["data"][0]
+        assert d["period"] == "2025-06"
+        assert d["receivable"] == 1000  # 100+200+300+400
+        assert d["collection"] == 100   # 10+20+30+40
+        assert d["balance"] == 900       # 1000 - 100
+
+    @pytest.mark.asyncio
+    async def test_single_month_single_row(self, monkeypatch):
+        """Minimal data: 1 month with 1 row → 1 chart point."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"record_date": date(2025, 7, 15), "receivable_amount": "5000", "collection_amount": "1000"}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 7, 1), date(2025, 7, 31)
+        )
+        assert len(result["data"]) == 1
+        assert result["data"][0]["period"] == "2025-07"
+        assert result["data"][0]["balance"] == 4000
+
+    @pytest.mark.asyncio
+    async def test_balance_quantize_half_up_two_decimals(self, monkeypatch):
+        """receivable=100.005, collection=0 → balance=100.005 → quantize(0.01, HALF_UP) = 100.01."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"record_date": date(2025, 6, 1), "receivable_amount": "100.005", "collection_amount": "0"}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 6, 1), date(2025, 6, 30)
+        )
+        assert result["data"][0]["balance"] == 100.01
+
+    @pytest.mark.asyncio
+    async def test_options_series_unchanged_regardless_of_data(self, monkeypatch):
+        """Rule 8 lock: options.series Map.of(2) order is `{name, type}` per item.
+        Verify across multiple data scenarios (empty / 1 row / multi-month) — series is invariant.
+        """
+        from smartbi_compat.api import analysis_finance
+
+        expected_series = [
+            {"name": "应收金额", "type": "bar"},
+            {"name": "回款金额", "type": "bar"},
+            {"name": "应收余额", "type": "line"},
+        ]
+
+        # Scenario A: empty
+        async def empty_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", empty_query)
+        result_empty = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result_empty["options"]["series"] == expected_series
+
+        # Scenario B: 1 row
+        async def one_row_query(factory_id, record_type, start, end):
+            return [{"record_date": date(2025, 6, 1), "receivable_amount": "100", "collection_amount": "0"}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", one_row_query)
+        result_one = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result_one["options"]["series"] == expected_series
+
+        # Scenario C: multi-month
+        async def multi_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 5, 1), "receivable_amount": "100", "collection_amount": "0"},
+                {"record_date": date(2025, 6, 1), "receivable_amount": "200", "collection_amount": "0"},
+                {"record_date": date(2025, 7, 1), "receivable_amount": "300", "collection_amount": "0"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", multi_query)
+        result_multi = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result_multi["options"]["series"] == expected_series
+
+        # Verify per-item key order locked (regression test for Rule 8 violation)
+        for item in result_multi["options"]["series"]:
+            assert list(item.keys()) == ["name", "type"]
+
+    @pytest.mark.asyncio
+    async def test_data_item_4key_order_locked(self, monkeypatch):
+        """Per-data-item order: [period, receivable, collection, balance] per spec §3.5."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 5, 1), "receivable_amount": "100", "collection_amount": "10"},
+                {"record_date": date(2025, 6, 1), "receivable_amount": "200", "collection_amount": "20"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        for item in result["data"]:
+            assert list(item.keys()) == ["period", "receivable", "collection", "balance"]
