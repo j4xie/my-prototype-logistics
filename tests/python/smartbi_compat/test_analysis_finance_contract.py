@@ -1988,3 +1988,28 @@ class TestAnalysisFinanceReceivable:
         for i, item in enumerate(items):
             assert item["amount"] == 0, f"bucket {i} amount should be 0, got {item['amount']}"
             assert item["percentage"] == 0, f"bucket {i} percentage should be 0, got {item['percentage']}"
+
+    @pytest.mark.skip(reason="manual smoke against test env Java backend (port 10011)")
+    def test_f001_receivable_byte_shape_manual(self, client):
+        """F001 manual smoke. Run by hand:
+            pytest -v -m '' --no-skip tests/python/smartbi_compat/test_analysis_finance_contract.py::TestAnalysisFinanceReceivable::test_f001_receivable_byte_shape_manual
+
+        Requires:
+          - Test env Java backend running on port 10011 with F001 fixture data
+          - cretas_pool / smartbi_user GRANTs configured
+          - Python service running locally with the same DB pool
+
+        Compares full byte-shape against analysis-finance-F001-receivable.json.
+        """
+        resp = client.get(
+            "/api/mobile/F001/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F001')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F001-receivable.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        assert py_data == golden_data, "F001 byte-shape mismatch — re-record golden if Java logic changed"
