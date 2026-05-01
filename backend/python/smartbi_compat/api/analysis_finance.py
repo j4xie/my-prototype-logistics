@@ -234,6 +234,26 @@ def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict
 
 
 
+def _create_waterfall_item(name: str, value: Decimal, type_: str) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.createWaterfallItem (line 1579-1585).
+
+    LinkedHashMap put-order: [name, value, type] verified via F999 budget golden
+    waterfall.data[0] (name=年度预算, value=0.0, type=total).
+
+    `type_` parameter name (with trailing underscore) avoids Python `type` builtin
+    shadowing. JSON output key remains `"type"` per Java parity.
+
+    `value` MUST be Decimal (not int/float); applies setScale(DISPLAY_SCALE=2, HALF_UP)
+    inside before _decimal_to_number serialization.
+    """
+    return {
+        "name": name,
+        "value": _decimal_to_number(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        "type": type_,
+    }
+
+
+
 def _aggregate_cost_by_period(
     cost_records: list[dict], period: str
 ) -> dict[str, list[Decimal]]:
