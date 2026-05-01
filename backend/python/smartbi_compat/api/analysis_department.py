@@ -276,3 +276,59 @@ def _determine_quadrant(
     if not high_output and high_cost:
         return "Q3_LOW_OUTPUT_HIGH_COST"
     return "Q2_LOW_OUTPUT_LOW_COST"
+
+
+def _create_empty_chart(chart_type: str, title: str) -> dict:
+    """Mirror Java DepartmentAnalysisServiceImpl create{Scatter,Pie,Line,Area}EmptyChart
+    factories (line 801-823).
+
+    ⚠️ I5 fix — Java ChartConfig DTO has NO @JsonInclude annotation (verified
+    ChartConfig.java:32) → Spring Boot Jackson default emits ALL fields including
+    null.
+
+    ChartConfig field order (Java DTO line 37-67):
+      [chartType, title, xAxisField, yAxisField, seriesField, data, options]
+    """
+    return {
+        "chartType":   chart_type,
+        "title":       title,
+        "xAxisField":  None,
+        "yAxisField":  None,
+        "seriesField": None,
+        "data":        [],
+        "options":     None,
+    }
+
+
+def _build_date_range(start_date: date, end_date: date) -> dict:
+    """Mirror Java DateRange.custom (DateRange.java:266-274) + inferGranularity
+    (line 308-321). Fully deterministic.
+
+    Inferred granularity:
+      days <= 1   → DAY
+      days <= 7   → WEEK
+      days <= 31  → MONTH
+      days <= 93  → QUARTER
+      else        → YEAR
+
+    DateRange Lombok @Data @Builder field order (DateRange.java line 31-55):
+      [startDate, endDate, granularity, originalExpression, relative]
+    """
+    days = (end_date - start_date).days + 1
+    if days <= 1:
+        granularity = "DAY"
+    elif days <= 7:
+        granularity = "WEEK"
+    elif days <= 31:
+        granularity = "MONTH"
+    elif days <= 93:
+        granularity = "QUARTER"
+    else:
+        granularity = "YEAR"
+    return {
+        "startDate":          start_date.isoformat(),
+        "endDate":            end_date.isoformat(),
+        "granularity":        granularity,
+        "originalExpression": f"{start_date} 至 {end_date}",
+        "relative":           False,
+    }
