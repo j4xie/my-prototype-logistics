@@ -2531,6 +2531,35 @@ async def _get_payable_analysis(factory_id: str, start_date: date, end_date: dat
     }
 
 
+async def _get_receivable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
+    """Receivable per-type analysis (analysisType=receivable).
+
+    Mirror Java SmartBIAnalysisController.getFinanceAnalysis receivable branch
+    (line ~244-254) which calls FinanceAnalysisService methods. 6-key envelope.
+
+    Sub-services use 1-year window for metrics/agingChart/overdueRanking;
+    trendChart uses [start_date, end_date].
+
+    Java HashMap put-order is startDate/endDate/metrics/agingChart/overdueRanking/trendChart,
+    but Jackson serialization re-orders by HashMap hash. F999 golden actual order:
+    [endDate, overdueRanking, metrics, agingChart, trendChart, startDate].
+    Compare uses dict-eq (key order ignored) per Phase 2A foundation gate.
+    """
+    metrics = await _get_receivable_metrics(factory_id, end_date)
+    aging_chart = await _get_receivable_aging_chart(factory_id, end_date)
+    overdue_ranking = await _get_overdue_customer_ranking(factory_id, end_date)
+    trend_chart = await _get_receivable_trend_chart(factory_id, start_date, end_date)
+
+    return {
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "metrics": metrics,
+        "agingChart": aging_chart,
+        "overdueRanking": overdue_ranking,
+        "trendChart": trend_chart,
+    }
+
+
 # ============================================================
 # Section 4d: Budget per-type real impl (Phase 2A)
 # ============================================================
@@ -2860,7 +2889,8 @@ async def get_finance_analysis(
       analysisType=payable     → payable per-type (4-key shape, real impl Phase E)
       analysisType=profit      → profit per-type (PR #21 + #22 sales fallback)
       analysisType=cost        → cost per-type (PR #25 structure + trend)
-      analysisType=budget      → budget per-type (this PR, 5-key dispatcher)
+      analysisType=budget      → budget per-type (PR #38, 5-key dispatcher)
+      analysisType=receivable  → receivable per-type (PR #42, 6-key shape)
       analysisType=other       → 501 envelope (un-ported, see spec §6 / §12)
     """
     range_ = DateRange.custom(startDate, endDate)
@@ -2883,6 +2913,10 @@ async def get_finance_analysis(
 
     if analysisType == "budget":
         result = await _get_budget_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    if analysisType == "receivable":
+        result = await _get_receivable_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
     return wrap_response(

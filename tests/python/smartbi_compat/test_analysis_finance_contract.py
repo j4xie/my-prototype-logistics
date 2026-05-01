@@ -141,14 +141,14 @@ class TestAnalysisFinanceComposite:
                 f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
             )
 
-    def test_f999_unimplemented_analysisType_returns_501(self, client):
-        """Verify 501 path for un-ported analysisTypes.
+    def test_f999_unknown_analysisType_returns_501(self, client):
+        """Verify dispatcher catchall 501 path for unknown analysisType strings.
 
-        C3 robust pattern: list reflects current main state at time of this PR.
-        profit/payable/cost/budget are real impl; receivable remains 501 until its PR-A merges.
-        Sister chats merging concurrently must rebase + regenerate this list (drop their endpoint).
+        Post receivable PR (#42): payable/profit/cost/budget/receivable are all real impl.
+        Only unknown strings fall through to the 501 envelope. Use a deterministically-invalid
+        string so this test stays stable across future per-type ports.
         """
-        for at in ["receivable"]:
+        for at in ["nonexistent_analysis_type"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
                 f"?startDate=2025-01-01&endDate=2025-12-31&analysisType={at}",
@@ -1826,3 +1826,32 @@ class TestAnalysisFinanceBudget:
             f"comparison range missing — expected {expected_comparison_range}, "
             f"got ranges {ranges}"
         )
+
+
+class TestAnalysisFinanceReceivableSmoke:
+    """Integration smoke for receivable per-type dispatcher branch.
+    Full byte-shape gate is in TestAnalysisFinanceReceivable below (Task 11)."""
+
+    def test_receivable_branch_returns_200_with_6_key_envelope(self, client, monkeypatch):
+        """analysisType=receivable hits new branch; returns 6-key envelope."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        data = resp.json()["data"]
+        # 6-key envelope (key order may vary; dict-eq compare in Task 11)
+        assert set(data.keys()) == {"startDate", "endDate", "metrics", "agingChart", "overdueRanking", "trendChart"}
+        assert data["startDate"] == "2025-01-01"
+        assert data["endDate"] == "2025-12-31"
+        assert isinstance(data["metrics"], list) and len(data["metrics"]) == 5
+        assert data["overdueRanking"] == []
+        assert data["agingChart"]["chartType"] == "BAR"
+        assert data["trendChart"]["chartType"] == "LINE_BAR"
