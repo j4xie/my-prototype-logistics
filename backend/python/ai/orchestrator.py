@@ -40,12 +40,25 @@ logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
-    """Composes the 4 stage matchers into a short-circuit pipeline."""
+    """Composes the 4 stage matchers into a short-circuit pipeline.
 
-    def __init__(self, semantic_matcher, classifier_matcher, llm_matcher):
+    β extension: optionally accepts a SemanticRouter for pre-stage 3-tier routing.
+    If router=None, behaves as α (runs all stages 5-8 short-circuit).
+    """
+
+    def __init__(self, semantic_matcher, classifier_matcher, llm_matcher,
+                 semantic_router=None, llm_tier_selector=None,
+                 calibrator=None, scorer=None,
+                 rag_retriever=None, rag_evaluator=None):
         self.semantic_matcher = semantic_matcher
         self.classifier_matcher = classifier_matcher
         self.llm_matcher = llm_matcher
+        self.semantic_router = semantic_router  # β: optional pre-stage router
+        self.llm_tier_selector = llm_tier_selector  # β C2: optional cheap/expensive picker
+        self.calibrator = calibrator  # β C4: optional per-stage confidence calibrator
+        self.scorer = scorer  # β C4: optional combined-score reranker
+        self.rag_retriever = rag_retriever  # β C5: optional RAG retriever
+        self.rag_evaluator = rag_evaluator  # β C5: optional CRAG-style quality evaluator
 
     async def match(
         self,
@@ -59,9 +72,57 @@ class Orchestrator:
         min_confidence: float,
         enable_llm: bool = True,
     ) -> IntentMatchResultDto:
-        """Run stages 5-8 short-circuit, return Java-shaped result."""
+        """Run stages 5-8 short-circuit, return Java-shaped result.
+
+        β: if a semantic_router was provided, runs pre-stage routing first and
+        honors its decision (DIRECT_EXECUTE / NEED_RERANKING / NEED_FULL_LLM).
+        Without a router, behaves identically to α.
+        """
         t0 = time.time()
         timing: Dict[str, int] = {}
+
+        # ===== β Stage 0: SemanticRouter (optional) =====
+        skip_stage_8_due_to_reranking = False
+        if self.semantic_router is not None:
+            t_router = time.time()
+            try:
+                decision = await self.semantic_router.route(
+                    query=query, visible_intents=visible_intents,
+                    factoryId=factoryId, businessType=businessType,
+                )
+            except Exception:
+                logger.exception("SemanticRouter failed, falling through to all stages")
+                decision = None
+            timing["routerMs"] = int((time.time() - t_router) * 1000)
+
+            # β F2 fix (I1): surface OOD signal via timingMs side-channel.
+            # Cannot add a 20th top-level field (would break F999/F001 byte-shape).
+            # timingMs is Map<String,Long> in Java (Jackson tolerates extras) and
+            # the contract test strips timingMs via VOLATILE_KEYS, so adding a
+            # key here is golden-safe. Only emit when ood_detected=True so the
+            # default-path response stays clean.
+            if decision is not None and decision.ood_detected:
+                timing["oodDetected"] = 1
+
+            if decision is not None:
+                if decision.method == "DIRECT_EXECUTE":
+                    logger.info(
+                        "SemanticRouter DIRECT_EXECUTE (top conf=%.3f)",
+                        decision.candidates[0].confidence if decision.candidates else 0.0,
+                    )
+                    timing["totalMs"] = int((time.time() - t0) * 1000)
+                    candidates = self._apply_calibration(decision.candidates, factoryId)
+                    return self._build_result(
+                        query=query,
+                        top_candidates=candidates,
+                        method=MatchMethod.SEMANTIC,
+                        visible_intents=visible_intents,
+                        min_confidence=min_confidence,
+                        timing=timing,
+                    )
+                elif decision.method == "NEED_RERANKING":
+                    skip_stage_8_due_to_reranking = True
+                # NEED_FULL_LLM falls through, all stages run
 
         # ===== Stage 5 SEMANTIC =====
         t_stage_start = time.time()
@@ -80,6 +141,7 @@ class Orchestrator:
                 sem_candidates[0].confidence,
             )
             timing["totalMs"] = int((time.time() - t0) * 1000)
+            sem_candidates = self._apply_calibration(sem_candidates, factoryId)
             return self._build_result(
                 query=query,
                 top_candidates=sem_candidates,
@@ -109,6 +171,7 @@ class Orchestrator:
                     fused[0].confidence,
                 )
                 timing["totalMs"] = int((time.time() - t0) * 1000)
+                fused = self._apply_calibration(fused, factoryId)
                 return self._build_result(
                     query=query,
                     top_candidates=fused,
@@ -119,11 +182,39 @@ class Orchestrator:
                 )
 
         # ===== Stage 8 LLM =====
-        if enable_llm:
+        # β: also skip if NEED_RERANKING decided
+        if enable_llm and not skip_stage_8_due_to_reranking:
+            # β C2: pick LLM tier (cheap/expensive) before stage 8
+            tier = None
+            if self.llm_tier_selector is not None:
+                try:
+                    tier = await self.llm_tier_selector.select(query=query)
+                except Exception:
+                    logger.exception("LlmTierSelector failed, llm_matcher uses default tier")
+                    tier = None
+
+            # β C5: RAG retrieval + evaluation, inject HIGH/MEDIUM cases into LLM prompt
+            rag_cases = []
+            if self.rag_retriever is not None and self.rag_evaluator is not None:
+                try:
+                    cases = await self.rag_retriever.retrieve(
+                        query=query, factory_id=factoryId, top_k=5,
+                    )
+                    quality = self.rag_evaluator.evaluate(cases)
+                    from ai.rag.evaluator import RAGQuality
+                    if quality in (RAGQuality.HIGH, RAGQuality.MEDIUM):
+                        rag_cases = cases
+                        logger.info("RAG quality=%s, injecting %d cases", quality, len(cases))
+                    else:
+                        logger.debug("RAG quality=%s (UNRELIABLE), skipping", quality)
+                except Exception:
+                    logger.exception("RAG failed, continuing without enrichment")
+
             t_stage_start = time.time()
             try:
                 llm_candidates = await self.llm_matcher.match(
-                    query, visible_intents=visible_intents, history=history
+                    query, visible_intents=visible_intents, history=history,
+                    tier=tier, rag_cases=rag_cases,
                 )
             except Exception:
                 logger.exception("Stage 8 LLM failed, treating as empty")
@@ -137,6 +228,7 @@ class Orchestrator:
                     llm_candidates[0].confidence,
                 )
                 timing["totalMs"] = int((time.time() - t0) * 1000)
+                llm_candidates = self._apply_calibration(llm_candidates, factoryId)
                 return self._build_result(
                     query=query,
                     top_candidates=llm_candidates,
@@ -152,6 +244,27 @@ class Orchestrator:
         result = IntentMatchResultDto.empty(userInput=query)
         result.timingMs = timing
         return result
+
+    def _apply_calibration(self, candidates, factory_id):
+        """β: calibrate each candidate's confidence per (matcher, factory_id) coef.
+        If calibrator is None, return unchanged. If scorer is set, re-rank by combined score."""
+        if self.calibrator is None:
+            return candidates
+        for c in candidates:
+            method_name = c.matchMethod.value if c.matchMethod else "NONE"
+            c.confidence = self.calibrator.calibrate(
+                raw=c.confidence, matcher=method_name, factory_id=factory_id,
+            )
+        if self.scorer is not None:
+            candidates.sort(
+                key=lambda c: -self.scorer.score(
+                    calibrated_confidence=c.confidence,
+                    matched_keyword_count=len(c.matchedKeywords or []),
+                    priority=80,
+                    confidence_boost=0.0,
+                ),
+            )
+        return candidates
 
     def _build_result(
         self,

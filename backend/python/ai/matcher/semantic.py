@@ -19,11 +19,11 @@ once pool init can be safely modified (tracked: pgvector adapter wiring).
 from __future__ import annotations
 
 import logging
-from typing import List, Sequence
+from typing import List
 
 from ai.config import default_config
 from ai.dto import CandidateIntentDto, MatchMethod
-from ai.embedding import get_embedding
+from ai.embedding import get_embedding_cached, vec_to_pgvector_text
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +41,6 @@ WHERE deleted_at IS NULL
 ORDER BY embedding <=> $1::vector
 LIMIT $4
 """
-
-
-def _vec_to_pgvector_text(vec: Sequence[float]) -> str:
-    """Convert List[float] to pgvector text literal `[v1,v2,...]`.
-
-    asyncpg passes the string as text and the SQL `$1::vector` cast turns
-    it into the vector type at the PG layer. Avoids needing pgvector's
-    asyncpg type adapter registered on the shared pool.
-    """
-    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
 
 
 def is_strong_signal(candidates: List[CandidateIntentDto]) -> bool:
@@ -74,15 +64,21 @@ class SemanticMatcher:
         factoryId: str,
         businessType: str,
     ) -> List[CandidateIntentDto]:
-        """Compute query embedding, run pgvector kNN, return top-K candidates."""
-        vec = await get_embedding(query)
+        """Compute query embedding, run pgvector kNN, return top-K candidates.
+
+        β F2 fix (C2): use request-scoped cache. SemanticRouter (β stage 0)
+        and stage 5 SEMANTIC compute the same query embedding within a single
+        request — without the cache, gRPC Encode would be called twice.
+        Cache is initialized per-request via FastAPI middleware (see ai/api.py).
+        """
+        vec = await get_embedding_cached(query)
         if vec is None:
             logger.warning("Stage 5 SEMANTIC: embedding unavailable, skipping")
             return []
 
         # Stringify vec so asyncpg can pass it as text; SQL `$1::vector`
         # cast handles parsing. See module docstring for rationale.
-        vec_text = _vec_to_pgvector_text(vec)
+        vec_text = vec_to_pgvector_text(vec)
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(SEMANTIC_SQL, vec_text, factoryId, businessType, self.top_k)
 

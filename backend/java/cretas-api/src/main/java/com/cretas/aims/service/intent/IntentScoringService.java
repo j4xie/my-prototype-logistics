@@ -20,7 +20,12 @@ import java.util.List;
  *
  * @author Cretas Team
  * @version 2.0.0 (refactored from AIIntentServiceImpl)
+ *
+ * @deprecated Phase 2B-β: replaced by Python {@code backend/python/ai/scoring/intent_scoring.py}.
+ * This interface still ships in Bucket B for now (no functional change),
+ * but no new callers should be added. Phase 3 will remove this entirely.
  */
+@Deprecated
 public interface IntentScoringService {
 
     /**

@@ -16,7 +16,12 @@ import com.cretas.aims.dto.intent.RouteDecision;
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-01-22
+ *
+ * @deprecated Phase 2B-β: replaced by Python {@code backend/python/ai/router/semantic_router.py}.
+ * This interface still ships in Bucket B for now (no functional change),
+ * but no new callers should be added. Phase 3 will remove this entirely.
  */
+@Deprecated
 public interface SemanticRouterService {
 
     /**

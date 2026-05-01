@@ -20,7 +20,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from ai.db import filter_intents_for_request, get_current_snapshot
@@ -29,11 +29,30 @@ from ai.dto import (
     IntentMatchRequest,
     IntentMatchResultDto,
 )
+from ai.embedding import _request_embedding_cache
 from ai.orchestrator import Orchestrator
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/ai", tags=["AI Intent"])
+
+
+# ======================================================================
+# β W6: request-scoped embedding cache reset
+# ======================================================================
+#
+# ai.embedding._request_embedding_cache is a ContextVar holding a per-request
+# {text → vector} cache that lets multiple match() calls within one request
+# share embedding lookups. FastAPI runs each request in its own asyncio task
+# context, so ContextVar values *should* be naturally isolated — but route
+# handlers reuse the same anyio worker and the default value is a mutable dict
+# shared across requests. Resetting via this Depends() seam guarantees a clean
+# {} per request and prevents cross-request leakage of cached vectors.
+
+
+async def reset_embedding_cache() -> None:
+    """β W6: reset request-scoped embedding cache before each /api/ai/* call."""
+    _request_embedding_cache.set({})
 
 
 # ======================================================================
@@ -119,7 +138,7 @@ async def _do_match(
 # ======================================================================
 
 
-@router.post("/intent/match")
+@router.post("/intent/match", dependencies=[Depends(reset_embedding_cache)])
 async def match_intent(request: Request, body: IntentMatchRequest):
     """Match user query → IntentMatchResultDto.
 
