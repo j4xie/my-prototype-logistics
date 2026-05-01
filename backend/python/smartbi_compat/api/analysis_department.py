@@ -513,3 +513,78 @@ async def _get_department_efficiency_matrix(
         "data":        chart_data,
         "options":     options,
     }
+
+
+async def _get_department_trend_comparison(
+    factory_id: str, start_date: date, end_date: date, period: str = "WEEK"
+) -> dict:
+    """Mirror Java DepartmentAnalysisServiceImpl.getDepartmentTrendComparison (line 354-416).
+
+    Empty trend → _create_empty_chart("LINE", "部门销售趋势对比").
+
+    Period defaults to "WEEK" per composite path (SmartBIServiceImpl:590).
+
+    Rule 2 — period key uses _get_period_key from analysis_finance.py
+    (post-PR #30 calendar-year fix).
+    """
+    rows = await _query_department_daily_trend(factory_id, start_date, end_date)
+    if not rows:
+        return _create_empty_chart("LINE", "部门销售趋势对比")
+
+    # Step 2: trendData = {period_key: {dept: amount}}
+    trend_data: dict[str, dict[str, Decimal]] = {}
+    for row in rows:
+        date_val = row["order_date"]
+        dept = (
+            str(row["department"])
+            if row.get("department") is not None
+            else "未知部门"     # Java line 372 fallback
+        )
+        amount = (
+            _to_decimal(row["total_amount"])
+            if row.get("total_amount") is not None
+            else Decimal("0")
+        )
+        period_key = _get_period_key(date_val, period)
+        period_dict = trend_data.setdefault(period_key, {})
+        if dept in period_dict:
+            period_dict[dept] += amount
+        else:
+            period_dict[dept] = amount
+
+    # Step 3: allPeriods (TreeSet → sorted), allDepartments (LinkedHashSet → insertion order)
+    all_periods = sorted(trend_data.keys())
+    all_departments: list[str] = []
+    seen = set()
+    for period_key in trend_data:
+        for dept in trend_data[period_key]:
+            if dept not in seen:
+                seen.add(dept)
+                all_departments.append(dept)
+
+    # Step 4: chartData per-period
+    chart_data = []
+    for period_key in all_periods:
+        point = {"period": period_key}
+        period_dict = trend_data.get(period_key, {})
+        for dept in all_departments:
+            amount = period_dict.get(dept, Decimal("0"))
+            point[dept] = _decimal_to_number(
+                amount.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            )
+        chart_data.append(point)
+
+    options = {
+        "series": list(all_departments),
+        "period": period,
+    }
+
+    return {
+        "chartType":   "LINE",
+        "title":       "部门销售趋势对比",
+        "xAxisField":  "period",
+        "yAxisField":  "amount",
+        "seriesField": "department",
+        "data":        chart_data,
+        "options":     options,
+    }
