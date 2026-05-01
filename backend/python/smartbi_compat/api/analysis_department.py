@@ -588,3 +588,56 @@ async def _get_department_trend_comparison(
         "data":        chart_data,
         "options":     options,
     }
+
+
+async def _get_department_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java SmartBIServiceImpl.getComprehensiveAnalysis "department" case
+    (line 586-591) + envelope (line 612-613).
+
+    ⚠️ Top-level `data.*` key order placeholder — actual Jackson HashMap hash-iter
+    order is TBD until F999 golden recorded (Task 15). PR-A first task post-impl
+    is to record golden + adjust this dict literal order if needed.
+
+    Java put-order: [ranking, completionRates, efficiencyMatrix, trendComparison,
+                     dateRange, generatedAt]
+    Java HashMap hash-iter order may differ; sister specs (cost / profit / payable
+    / receivable) empirically stable across JVM restarts.
+    """
+    ranking          = await _get_department_ranking          (factory_id, start_date, end_date)
+    completion_rates = await _get_department_completion_rates (factory_id, start_date, end_date)
+    efficiency_matrix = await _get_department_efficiency_matrix(factory_id, start_date, end_date)
+    trend_comparison = await _get_department_trend_comparison (factory_id, start_date, end_date, "WEEK")
+
+    # ⚠️ TBD: actual key order from F999 golden. Initial placeholder = Java put-order.
+    return {
+        "ranking":          ranking,
+        "completionRates":  completion_rates,
+        "efficiencyMatrix": efficiency_matrix,
+        "trendComparison":  trend_comparison,
+        "dateRange":        _build_date_range(start_date, end_date),
+        "generatedAt":      _utc_now_iso(),    # volatile, stripped by _strip_volatile in tests
+    }
+
+
+@router.get(
+    "/api/mobile/{factory_id}/smart-bi/analysis/department"
+)
+async def get_department_analysis(
+    factory_id: str,
+    startDate: date = Query(...),
+    endDate: date = Query(...),
+    department: Optional[str] = Query(None),    # accepted but IGNORED — mirror Java prod
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Mirror Java SmartBIAnalysisController.getDepartmentAnalysis (line 142-177).
+
+    ⚠️ `department` query param accepted but IGNORED — mirror Java prod behavior:
+    Controller's `if (smartBIService != null)` (line 153) ALWAYS true in prod
+    (SmartBIServiceImpl is unconditional @Service). Composite path bypasses
+    Controller's filter branch (line 162-170) entirely. Detail mode is dead
+    code in prod.
+    """
+    result = await _get_department_analysis(factory_id, startDate, endDate)
+    return wrap_response(result)
