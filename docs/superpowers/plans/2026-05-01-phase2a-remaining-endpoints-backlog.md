@@ -61,10 +61,10 @@
 |---|---|---|---|---|
 | 18 | `GET /analysis/finance?analysisType=receivable` | `metrics + agingChart` | 1 (per-type) | LOW (cost/profit 模式可复用) |
 | 19 | `GET /analysis/finance?analysisType=budget` | `metrics + comparisonChart` | 1 (per-type) | LOW |
-| 20 | `GET /analysis/department` | composite + 多 type? | 1-3 | MED (新 Java service 域) |
+| 20 | `GET /analysis/department` | composite | 1 | ✅ shipped (PR #36, 2026-05-01) |
 | 21 | `GET /analysis/region` | composite + 多 type? | 1-3 | MED (按地区聚合) |
-| 22 | `GET /analysis/production` | composite + 多 type? | 1-5 | HIGH (车间生产逻辑复杂) |
-| 23 | `GET /analysis/quality` | composite + 多 type? | 1-3 | MED (质检统计) |
+| ~~22~~ | ~~`GET /analysis/production`~~ | ⏸️ **deferred** | — | mock-only Java (见 §2.4) |
+| ~~23~~ | ~~`GET /analysis/quality`~~ | ⏸️ **deferred** | — | mock-only Java (见 §2.4) |
 | 24 | `GET /analysis/inventory` | composite + 多 type? | 1-5 | HIGH (库存动态查询) |
 | 25 | `GET /analysis/procurement` | composite + 多 type? | 1-3 | MED (采购统计) |
 | 26 | `POST /query` | NL→SQL 通用查询 | 1 | **VERY HIGH** (依赖 LLM + Tool-Skill, 可能 out-of-scope) |
@@ -78,6 +78,50 @@
 | 34 | `POST /query-templates` | 创建模板 | 1 | LOW (CRUD 标准) |
 | 35 | `PUT /query-templates/{id}` | 更新模板 | 1 | LOW |
 | 36 | `DELETE /query-templates/{id}` | 删除模板 | 1 | LOW |
+
+### 2.4 ⚠️ Deferred — Java mock-only services (不在 Phase 2A scope)
+
+| # | Java endpoint | 状态 | 阻塞原因 |
+|---|---|---|---|
+| 23 | `/analysis/quality` | ⏸️ deferred | Java `QualityAnalysisServiceImpl` 全 mock (`generateMockQualityData`, `Random(factoryId.hashCode())` LCG seed). Java 注释 line 401-402 自己说 "实际实现时应从 QualityInspection/ReworkRecord/DisposalRecord 实体查询", 真实 entity 未实现 |
+| 22 | `/analysis/production` | ⏸️ deferred | 同上, `generateMockProductionData` 同模式, 0 repository 注入 |
+
+#### 阻塞解除条件
+
+**Java backend 必须先实现以下 real entity + repository**:
+- `QualityInspection` + `QualityInspectionRepository` (质检记录)
+- `ReworkRecord` + `ReworkRecordRepository` (返工记录)
+- `DisposalRecord` + `DisposalRecordRepository` (报废处置记录)
+- 类似 production 域 entity (TBD)
+
+#### 为什么 mock 不能 byte-port
+
+- Java `Random(seed)` 用 Linear Congruential Generator (JLS specified): `seed = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)`
+- Python `random.Random` 用 Mersenne Twister, 算法完全不同, 同 seed 不同 sequence
+- 强行 port 意味着在 Python 复刻 Java LCG (~80 LOC `JavaRandom` class), 但 port 的是 stub 不是 real impl, 长期债 (Java 改 mock generator 必须 Python 同步)
+- Phase 2A goal 是 byte-shape parity port real Java impl, mock-port 违反此目标
+
+#### 何时重新派 chat
+
+Java backend 实现 real quality/production entity + Repository 后, 派新 chat 走完整 spec (brainstorm → 4-cycle audit → impl) 流程, 估时 8-12h per endpoint (跟其他 Tier 2 同档)。
+
+**发现 chat**: `phase2a/spec-quality` (Chat 4, 2026-05-01) 在 brainstorm Round 1 grep Java 源码时 surface — 没进入 spec drafting 阶段就 stopped + 改派 backlog map update。详 [§2.4 process rule 教训](#process-rule-教训) 末尾 organizer 加的"派 chat 前 grep mock 30s"动作。
+
+#### Process rule 教训
+
+派 spec chat 前, organizer 必须先 grep Java service impl 30 秒确认是 real DB query 还是 mock — 防 quality/production 同模式重蹈覆辙:
+
+```bash
+grep -nE "@Autowired|generateMock|Random\(|Math\.random|TODO.*实际实现" \
+  backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/{Service}AnalysisServiceImpl.java
+```
+
+判断标准:
+- 看到 `private final XxxRepository` 或 `@Autowired XxxRepository` → real, 派 spec chat OK
+- 看到 `generateMockXxxData(...)` 或 `Random(factoryId.hashCode())` → mock, 加入本 §2.4 deferred
+- 看到 `TODO 实际实现时应从 ... 查询` 注释 → 即使非 mock 也要二次评估
+
+---
 
 **SmartBIDashboardController (10 endpoint, 部分 in scope)**:
 
@@ -116,23 +160,21 @@
 
 | 端点 | 估时 | 风险 |
 |---|---|---|
-| /analysis/department | 8-12h | 新域 |
+| ~~/analysis/department~~ | ~~8-12h~~ | ✅ shipped (PR #36) |
 | /analysis/region | 6-10h | 按地区聚合, schema 待验 |
-| /analysis/quality | 8-12h | 质检统计 |
 | /analysis/procurement | 8-12h | 采购统计 |
 | /datasource/apply | 4-6h | 数据源应用逻辑 |
 
-**Tier 2 总计**: ~35-50h, 每个 sub-domain 独立 chat (跟 finance/sales 同 4 轮 audit pattern).
+**Tier 2 总计**: ~18-28h (department 已交付, quality 移到 §2.4 deferred).
 
 ### Tier 3 (HIGH risk, 大工程)
 
 | 端点 | 估时 | 风险 |
 |---|---|---|
-| /analysis/production | 15-25h | 车间生产逻辑复杂, 多 entity join |
 | /analysis/inventory | 12-20h | 库存动态查询 + RLS |
 | /drill-down | 15-25h | hierarchy + 跨表钻取, 现有 Java 复杂度高 |
 
-**Tier 3 总计**: ~45-70h, 需独立 spec brainstorm + 长 chat impl.
+**Tier 3 总计**: ~27-45h (production 移到 §2.4 deferred — Java 全 mock).
 
 ### Tier 4 (VERY HIGH risk, 可能 out-of-scope)
 
@@ -164,14 +206,16 @@
 - ROI 高 (CRUD 标准)
 
 **Wave 3** (Tier 2, 平行):
-- /analysis/department + /region + /quality + /procurement
-- 4 个独立 chat, 各 spec → plan → impl, ~8-12h each
-- 跟 finance/sales pattern 一致
+- ✅ /analysis/department (Chat 4, PR #36 shipped 2026-05-01)
+- 🚧 /analysis/region (sister Chat 5 in flight)
+- /analysis/procurement
+- ⏸️ ~~/analysis/quality~~ — 移到 §2.4 deferred (Java mock-only)
+- 3 (was 4) 独立 chat, 各 spec → plan → impl, ~8-12h each
 
 **Wave 4** (Tier 3, 串行):
-- /analysis/production (单独长 chat)
 - /analysis/inventory (单独长 chat)
 - /drill-down (单独长 chat)
+- ⏸️ ~~/analysis/production~~ — 移到 §2.4 deferred (Java mock-only)
 
 **最后**:
 - Dashboard endpoints (按需评估, 部分可能不需要 port — Java→Python 收益不明显)
@@ -195,7 +239,7 @@
 
 ## 6. 已知 patterns + rules
 
-(参考 `.claude/rules/python-java-port.md` 7 rules)
+(参考 `.claude/rules/python-java-port.md` 8 rules — Rule 8 入 main 2026-05-01 PR #35)
 
 - **Rule 1**: Null fallback 用 `is not None` 三元 (不 `or`)
 - **Rule 2**: WEEK period key 用 calendar year `d.year` (不 `isocalendar()[0]`)
@@ -204,6 +248,7 @@
 - **Rule 5**: 共享 SQL helpers `SELECT *`
 - **Rule 6**: 输入边界 None-check (新 helper 强制)
 - **Rule 7**: 浮点阈值用 `Decimal` 比较
+- **Rule 8**: `Map.of(N)` Jackson hash order — 录 golden 反推, 跨 JVM SALT32L flip 风险
 
 特别注意 (本 chat 项目):
 - Python 3.8 compat: `_to_thread` shim (不要 `asyncio.to_thread`)
@@ -214,11 +259,12 @@
 
 ## 7. Phase 2A 整体进度估算
 
-- ✅ 已 ship: 14 endpoints (~28%)
-- 🚧 in-flight (sister chat): 3 endpoints (budget-achievement done + yoy-mom WIP + category-comparison pending)
-- ❌ backlog: ~30 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~140-200h 工作量)
+- ✅ 已 ship: 15 endpoints (~30%, 含 PR #36 department spec)
+- 🚧 in-flight: receivable + budget impl (Wave 1) + region spec (Wave 3) + datasource fields/history (Wave 2)
+- ⏸️ deferred (§2.4): 2 endpoints (quality + production, Java mock-only)
+- ❌ backlog: ~26 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~120-170h 工作量, 减去 quality+production 的 23-37h)
 
-**Phase 2A 完整收尾估时**: 5-7 个有效 chat × 8-15h/chat = ~50-100h. 若并行 3-4 个 chat 同时进行, 实际墙钟 1-2 周.
+**Phase 2A 完整收尾估时**: 4-6 个有效 chat × 8-15h/chat = ~40-90h. 若并行 3-4 个 chat 同时进行, 实际墙钟 1-2 周.
 
 **Phase 2A 100% 完成后**: 才能考虑翻 nginx cutover (T6 of original Phase 2A spec) 把 `/api/mobile/{factoryId}/smart-bi/analysis/*` 路由从 Java 切到 Python.
 
