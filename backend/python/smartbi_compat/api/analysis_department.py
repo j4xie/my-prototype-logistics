@@ -332,3 +332,45 @@ def _build_date_range(start_date: date, end_date: date) -> dict:
         "originalExpression": f"{start_date} 至 {end_date}",
         "relative":           False,
     }
+
+
+async def _get_department_ranking(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java DepartmentAnalysisServiceImpl.getDepartmentRanking (line 64-108).
+
+    Empty rows → return []. Sort by salesAmount desc, build RankingItem entries.
+
+    RankingItem put-order (Java @Builder, RankingItem.java:22-53 declaration order):
+      [rank, name, value, target, completionRate, alertLevel]
+    """
+    rows = await _query_department_full(factory_id, start_date, end_date)
+    if not rows:
+        return []
+
+    aggregated = _aggregate_department_data(rows)
+
+    sorted_entries = sorted(
+        aggregated.items(),
+        key=lambda kv: kv[1]["salesAmount"],
+        reverse=True,
+    )
+
+    rankings = []
+    for rank, (dept, agg) in enumerate(sorted_entries, start=1):
+        cr = _calculate_completion_rate(agg["salesAmount"], agg["salesTarget"])
+        rankings.append({
+            "rank":           rank,
+            "name":           dept,
+            "value":          _decimal_to_number(
+                agg["salesAmount"].quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         _decimal_to_number(
+                agg["salesTarget"].quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "completionRate": _decimal_to_number(
+                cr.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "alertLevel":     _determine_target_completion_alert(cr),
+        })
+    return rankings
