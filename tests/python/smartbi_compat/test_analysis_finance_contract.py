@@ -1130,3 +1130,166 @@ class TestCostStructureArithmetic:
         item = _create_pie_data_item("X", Decimal("1"), Decimal("7"))
         assert item["value"] == 1
         assert item["percentage"] == 14.29
+
+
+class TestCostTrendArithmetic:
+    """Unit tests for _get_cost_trend_chart + _aggregate_cost_by_period + _get_period_key.
+
+    Verifies period aggregation, sort-by-period-key behavior, stacked series
+    structure, abs() defensive at aggregation level, and period_key format
+    for MONTH/QUARTER/WEEK/DAY (mid-year dates only — C1 ISO-year boundary
+    bug deferred to its own PR per brainstorm decision B-i).
+    """
+
+    def _run_chart(self, fake_finance, period="MONTH"):
+        """Run _get_cost_trend_chart with _query_finance_data mocked.
+
+        Returns chart dict from line 1213-1259 with chartType=BAR.
+        """
+        import asyncio
+        from datetime import date
+        from smartbi_compat.api import analysis_finance as af
+
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_cost_trend_chart(
+                "F", date(2025, 1, 1), date(2025, 12, 31), period
+            ))
+        finally:
+            af._query_finance_data = original
+
+    def test_empty_data_returns_empty_chartdata(self):
+        """Empty rows → chart_data=[] but options.stack + options.series (3 entries) full.
+
+        Java line 553-562 emits chart_data per period; with no periods, list is empty.
+        Options always emitted (stack=True + 3 series entries for material/labor/overhead).
+        """
+        async def fake_empty(*_a, **_k): return []
+        chart = self._run_chart(fake_empty)
+        assert chart["chartType"] == "BAR"
+        assert chart["title"] == "成本趋势分析"
+        assert chart["data"] == []
+        assert chart["options"]["stack"] is True
+        assert len(chart["options"]["series"]) == 3
+        assert chart["options"]["series"][0] == {"name": "原材料",   "stack": "cost"}
+        assert chart["options"]["series"][1] == {"name": "人工",     "stack": "cost"}
+        assert chart["options"]["series"][2] == {"name": "制造费用", "stack": "cost"}
+
+    def test_multi_month_aggregates_by_period_key(self):
+        """Three rows in different months → 3 chart points sorted by period key.
+
+        Java TreeMap → Python sorted(). Verifies January < March < June key order.
+        """
+        from datetime import date
+        from decimal import Decimal
+        async def fake_multi_month(*_a, **_k):
+            return [
+                {"material_cost": Decimal("10000"), "labor_cost": Decimal("5000"),
+                 "overhead_cost": Decimal("2000"), "total_cost": Decimal("17000"),
+                 "record_date": date(2025, 6, 15), "upload_id": 1},
+                {"material_cost": Decimal("20000"), "labor_cost": Decimal("8000"),
+                 "overhead_cost": Decimal("3000"), "total_cost": Decimal("31000"),
+                 "record_date": date(2025, 1, 10), "upload_id": 2},
+                {"material_cost": Decimal("15000"), "labor_cost": Decimal("6000"),
+                 "overhead_cost": Decimal("2500"), "total_cost": Decimal("23500"),
+                 "record_date": date(2025, 3, 5), "upload_id": 3},
+            ]
+        chart = self._run_chart(fake_multi_month)
+        assert len(chart["data"]) == 3
+        # Sorted ascending by period key (January first, June last)
+        assert chart["data"][0]["period"] == "2025-01"
+        assert chart["data"][1]["period"] == "2025-03"
+        assert chart["data"][2]["period"] == "2025-06"
+        # Spot-check materialCost values flow through correctly
+        assert chart["data"][0]["materialCost"] == 20000  # Jan
+        assert chart["data"][1]["materialCost"] == 15000  # Mar
+        assert chart["data"][2]["materialCost"] == 10000  # Jun
+
+    def test_stacked_series_three_categories_per_period(self):
+        """Each period emits 5 keys: [period, materialCost, laborCost, overheadCost, totalCost].
+
+        Java line 553-562 LinkedHashMap put-order. Verifies dict shape per period
+        + that options.series has exactly 3 (NOT 4 — total isn't a stacked series).
+        """
+        from datetime import date
+        from decimal import Decimal
+        async def fake_one_month(*_a, **_k):
+            return [{
+                "material_cost": Decimal("60000"),
+                "labor_cost":    Decimal("30000"),
+                "overhead_cost": Decimal("10000"),
+                "total_cost":    Decimal("100000"),
+                "record_date":   date(2025, 6, 1),
+                "upload_id":     1,
+            }]
+        chart = self._run_chart(fake_one_month)
+        assert len(chart["data"]) == 1
+        point = chart["data"][0]
+        # 5 keys in put-order
+        assert list(point.keys()) == ["period", "materialCost", "laborCost", "overheadCost", "totalCost"]
+        assert point["period"]       == "2025-06"
+        assert point["materialCost"] == 60000
+        assert point["laborCost"]    == 30000
+        assert point["overheadCost"] == 10000
+        assert point["totalCost"]    == 100000
+        # Series only stacks the 3 cost categories (not total)
+        assert len(chart["options"]["series"]) == 3
+
+    def test_negative_cost_abs_defensive_in_trend_aggregation(self):
+        """Negative cost rows → _aggregate_cost_by_period applies .abs() per slot.
+
+        Java P0-1 Bug B (line 1452-1467 setdefault accumulator). Verifies abs()
+        at aggregate-helper level, exposed through chart function. Distinct from
+        test_negative_cost_abs_defensive_in_structure which tests structure-chart's
+        own sum() (also abs-defensive at line 1172-1184 of analysis_finance.py).
+        """
+        from datetime import date
+        from decimal import Decimal
+        async def fake_negatives(*_a, **_k):
+            return [{
+                "material_cost": Decimal("-40000"),
+                "labor_cost":    Decimal("-15000"),
+                "overhead_cost": Decimal("-5000"),
+                "total_cost":    Decimal("-60000"),
+                "record_date":   date(2025, 6, 1),
+                "upload_id":     1,
+            }]
+        chart = self._run_chart(fake_negatives)
+        assert len(chart["data"]) == 1
+        point = chart["data"][0]
+        assert point["materialCost"] == 40000  # abs(-40000)
+        assert point["laborCost"]    == 15000  # abs(-15000)
+        assert point["overheadCost"] == 5000   # abs(-5000)
+        assert point["totalCost"]    == 60000  # abs(-60000)
+
+    def test_get_period_key_format_yyyy_mm_yyyy_qN_yyyy_Wnn(self):
+        """Direct unit test of _get_period_key for all 4 period types.
+
+        WEEK uses mid-year date (2025-06-15) per brainstorm decision B-i to avoid
+        C1 ISO-year boundary bug (Rule 2 violation on main; deferred to its own PR).
+
+        Java FinanceAnalysisServiceImpl.getPeriodKey line 1472-1487.
+        """
+        from datetime import date
+        from smartbi_compat.api.analysis_finance import _get_period_key
+
+        # MONTH: yyyy-MM (zero-padded month) — Java line 1486 default branch
+        assert _get_period_key(date(2025, 1, 5), "MONTH")  == "2025-01"
+        assert _get_period_key(date(2025, 6, 15), "MONTH") == "2025-06"
+        assert _get_period_key(date(2025, 12, 31), "MONTH") == "2025-12"
+
+        # QUARTER: yyyy-Qn — Java line 1483-1485
+        assert _get_period_key(date(2025, 1, 5),   "QUARTER") == "2025-Q1"
+        assert _get_period_key(date(2025, 4, 15),  "QUARTER") == "2025-Q2"
+        assert _get_period_key(date(2025, 8, 20),  "QUARTER") == "2025-Q3"
+        assert _get_period_key(date(2025, 11, 10), "QUARTER") == "2025-Q4"
+
+        # WEEK: yyyy-Wnn (ISO week, 2-digit zero-padded) — mid-year dates only
+        # 2025-06-15 (Sunday) is in ISO week 24 of calendar year 2025
+        assert _get_period_key(date(2025, 6, 15), "WEEK") == "2025-W24"
+        # 2025-01-15 (Wednesday) is in ISO week 03
+        assert _get_period_key(date(2025, 1, 15), "WEEK") == "2025-W03"
+
+        # DAY: yyyy-MM-dd — Java line 1474-1476
+        assert _get_period_key(date(2025, 6, 15), "DAY") == "2025-06-15"
