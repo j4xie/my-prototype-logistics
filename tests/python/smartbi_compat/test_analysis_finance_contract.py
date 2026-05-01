@@ -2469,3 +2469,149 @@ class TestBudgetExecutionWaterfallArithmetic:
         assert decrease_items[0]["name"] == "1月"
         # remaining = 10000 - 100 = 9900
         assert chart["data"][-1]["value"] == 9900
+
+
+class TestBudgetVsActualChartArithmetic:
+    """Unit tests for _get_budget_vs_actual_chart arithmetic branches.
+
+    Spec ref: §5.2 + §3.5 algorithm.
+
+    Verifies per-category aggregation (LinkedHashMap put-order), executionRate
+    short-circuit (budget=0), per-category alertLevel via reused helper, null
+    category falls to '其他' bucket, options.series Map.of(2) hash order
+    [color, name] (Rule 8 verified).
+    """
+
+    def _run_chart(self, fake_finance, start_date=None, end_date=None):
+        """Run _get_budget_vs_actual_chart with _query_finance_data mocked."""
+        import asyncio
+        from datetime import date as _date
+        from smartbi_compat.api import analysis_finance as af
+
+        if start_date is None:
+            start_date = _date(2025, 1, 1)
+        if end_date is None:
+            end_date = _date(2025, 12, 31)
+
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_budget_vs_actual_chart("F", start_date, end_date))
+        finally:
+            af._query_finance_data = original
+
+    def test_empty_data_returns_empty_chartdata(self):
+        """Empty rows → data=[] but options 完整 (groupedBar + series 2 entries).
+
+        chartType=BAR, title fixed, options.series has 2 Map.of(2) entries with
+        Rule 8 hash order [color, name].
+        """
+        async def fake_empty(*_a, **_k): return []
+        chart = self._run_chart(fake_empty)
+        assert chart["chartType"] == "BAR"
+        assert chart["title"] == "预算 vs 实际对比"
+        assert chart["data"] == []
+        # options always emitted (groupedBar + 2 series entries)
+        assert chart["options"]["groupedBar"] is True
+        assert len(chart["options"]["series"]) == 2
+        # Rule 8: Map.of(2) hash order [color, name]
+        assert list(chart["options"]["series"][0].keys()) == ["color", "name"]
+        assert chart["options"]["series"][0] == {"color": "#5470c6", "name": "预算"}
+        assert chart["options"]["series"][1] == {"color": "#91cc75", "name": "实际"}
+
+    def test_per_category_aggregation(self):
+        """2 categories → 2 chart items, budget/actual sums correct per category.
+
+        Category A: budget=1000+500=1500, actual=800+400=1200
+        Category B: budget=2000, actual=1500
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_two_cats(*_a, **_k):
+            return [
+                {"budget_amount": Decimal("1000"), "actual_amount": Decimal("800"),
+                 "category": "A", "record_date": _date(2025, 6, 15), "upload_id": 1},
+                {"budget_amount": Decimal("500"), "actual_amount": Decimal("400"),
+                 "category": "A", "record_date": _date(2025, 7, 15), "upload_id": 1},
+                {"budget_amount": Decimal("2000"), "actual_amount": Decimal("1500"),
+                 "category": "B", "record_date": _date(2025, 8, 15), "upload_id": 1},
+            ]
+        chart = self._run_chart(fake_two_cats)
+        assert len(chart["data"]) == 2
+        # First-seen-key order preserved (LinkedHashMap mirror)
+        items_by_cat = {item["category"]: item for item in chart["data"]}
+        assert items_by_cat["A"]["budget"] == 1500
+        assert items_by_cat["A"]["actual"] == 1200
+        assert items_by_cat["A"]["variance"] == -300  # 1200 - 1500
+        assert items_by_cat["B"]["budget"] == 2000
+        assert items_by_cat["B"]["actual"] == 1500
+        assert items_by_cat["B"]["variance"] == -500
+        # 6-key shape (LinkedHashMap put-order verified)
+        assert list(chart["data"][0].keys()) == [
+            "category", "budget", "actual", "variance", "executionRate", "alertLevel",
+        ]
+
+    def test_null_category_falls_to_other(self):
+        """row.category=None → bucket "其他" (Java line 991 default).
+
+        Verifies the null-fallback to "其他" string. Python's
+        `r.get("category") if r.get("category") is not None else "其他"` mirrors
+        Java ternary at line 991.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_null_cat(*_a, **_k):
+            return [
+                {"budget_amount": Decimal("1000"), "actual_amount": Decimal("800"),
+                 "category": None, "record_date": _date(2025, 6, 15), "upload_id": 1},
+                {"budget_amount": Decimal("500"), "actual_amount": Decimal("400"),
+                 "category": "B", "record_date": _date(2025, 7, 15), "upload_id": 1},
+            ]
+        chart = self._run_chart(fake_null_cat)
+        cats = {item["category"] for item in chart["data"]}
+        assert "其他" in cats
+        assert "B" in cats
+
+    def test_execution_rate_alert_per_category(self):
+        """Per-category executionRate routes through _determine_budget_achievement_alert.
+
+        Category A: budget=1000, actual=1300 → rate=130 → RED (>120).
+        Category B: budget=1000, actual=110 → rate=11 → GREEN (<100).
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_mixed(*_a, **_k):
+            return [
+                {"budget_amount": Decimal("1000"), "actual_amount": Decimal("1300"),
+                 "category": "A", "record_date": _date(2025, 6, 15), "upload_id": 1},
+                {"budget_amount": Decimal("1000"), "actual_amount": Decimal("110"),
+                 "category": "B", "record_date": _date(2025, 7, 15), "upload_id": 1},
+            ]
+        chart = self._run_chart(fake_mixed)
+        items_by_cat = {item["category"]: item for item in chart["data"]}
+        assert items_by_cat["A"]["executionRate"] == 130
+        assert items_by_cat["A"]["alertLevel"] == "RED"
+        assert items_by_cat["B"]["executionRate"] == 11
+        assert items_by_cat["B"]["alertLevel"] == "GREEN"
+
+    def test_zero_budget_category_execution_rate_zero(self):
+        """budget=0 actual>0 → executionRate=0 (Java line 1005 short-circuit).
+
+        Avoids ArithmeticException; alertLevel falls through to GREEN
+        (rate=0 fails both >120 and >100 checks).
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_zero_budget(*_a, **_k):
+            return [
+                {"budget_amount": Decimal("0"), "actual_amount": Decimal("500"),
+                 "category": "A", "record_date": _date(2025, 6, 15), "upload_id": 1},
+            ]
+        chart = self._run_chart(fake_zero_budget)
+        assert len(chart["data"]) == 1
+        item = chart["data"][0]
+        assert item["category"] == "A"
+        assert item["budget"] == 0
+        assert item["actual"] == 500
+        assert item["executionRate"] == 0  # short-circuit
+        assert item["alertLevel"] == "GREEN"  # 0 < 100, GREEN by default
