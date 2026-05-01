@@ -2086,6 +2086,98 @@ async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
     )
 
 
+async def _get_receivable_metrics(
+    factory_id: str, end_date: date
+) -> list[dict]:
+    """5 metrics: AR_BALANCE / COLLECTION_RATE / AGING_30_RATIO / AGING_60_RATIO / AGING_90_RATIO.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableMetrics (line 627-732).
+    Data window: [end_date - 1 year, end_date] (Java line 631 minusYears(1)).
+    """
+    start_window = end_date - relativedelta(years=1)
+    ar_data = await _query_finance_data(factory_id, "AR", start_window, end_date)
+
+    # Java line 636-639 — totalReceivable, null-filtered (Rule 1)
+    total_receivable = sum(
+        (_to_decimal(r["receivable_amount"])
+         for r in ar_data
+         if r.get("receivable_amount") is not None),
+        Decimal("0"),
+    )
+    # Java line 641-644 — totalCollection
+    total_collection = sum(
+        (_to_decimal(r["collection_amount"])
+         for r in ar_data
+         if r.get("collection_amount") is not None),
+        Decimal("0"),
+    )
+
+    metrics: list[dict] = []
+
+    # ===== Metric 1: AR_BALANCE (Java line 647-656) =====
+    ar_balance = total_receivable - total_collection
+    metrics.append(_new_metric_result_dict(
+        metric_code="AR_BALANCE",
+        metric_name="应收余额",
+        value=_decimal_to_number(ar_balance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        formatted_value=_format_currency(ar_balance),
+        unit="元",
+        alert_level="GREEN",  # Java line 654 — hardcoded GREEN
+        description="尚未收回的应收账款总额",
+    ))
+
+    # ===== Metric 2: COLLECTION_RATE (Java line 658-670) =====
+    # Java line 659 — zero-guard (totalReceivable > 0)
+    collection_rate = (
+        total_collection / total_receivable * Decimal("100")
+        if total_receivable > Decimal("0")
+        else Decimal("0")
+    )
+    metrics.append(_new_metric_result_dict(
+        metric_code="COLLECTION_RATE",
+        metric_name="回款率",
+        value=_decimal_to_number(collection_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        formatted_value=str(collection_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)) + "%",
+        unit="%",
+        alert_level=_determine_collection_rate_alert(collection_rate),
+        description="已回款金额占应收总额的比例",
+    ))
+
+    # ===== Aging buckets (Java line 673-679) =====
+    aging_buckets = _calculate_aging_buckets(ar_data)
+    over30 = (
+        aging_buckets[AGING_BUCKET_31_60]
+        + aging_buckets[AGING_BUCKET_61_90]
+        + aging_buckets[AGING_BUCKET_OVER_90]
+    )
+    over60 = aging_buckets[AGING_BUCKET_61_90] + aging_buckets[AGING_BUCKET_OVER_90]
+    over90 = aging_buckets[AGING_BUCKET_OVER_90]
+    total_for_ratio = sum(aging_buckets.values(), Decimal("0"))
+
+    # ===== Metric 3-5: AGING_30/60/90_RATIO (Java line 683-728) =====
+    for ratio_value, code, name, desc, threshold_func in [
+        (over30, "AGING_30_RATIO", "30天以上账龄占比", "账龄超过30天的应收款占比", _aging_30_alert),
+        (over60, "AGING_60_RATIO", "60天以上账龄占比", "账龄超过60天的应收款占比", _aging_60_alert),
+        (over90, "AGING_90_RATIO", "90天以上账龄占比", "账龄超过90天的高风险应收款占比", _aging_90_alert),
+    ]:
+        ratio = (
+            ratio_value / total_for_ratio * Decimal("100")
+            if total_for_ratio > Decimal("0")
+            else Decimal("0")
+        )
+        metrics.append(_new_metric_result_dict(
+            metric_code=code,
+            metric_name=name,
+            value=_decimal_to_number(ratio.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            formatted_value=str(ratio.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)) + "%",
+            unit="%",
+            alert_level=threshold_func(ratio),
+            description=desc,
+        ))
+
+    return metrics
+
+
 # ============================================================
 # Section 3b: Payable sub-services real impls (Phase E)
 # Mirror Java FinanceAnalysisServiceImpl getPayableMetrics + getPayableAgingChart.

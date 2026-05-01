@@ -402,3 +402,109 @@ class TestReceivableAgingChartRealImpl:
 
         assert captured["start"] == date(2023, 2, 28)  # relativedelta clamps to Feb 28
         assert captured["end"] == date(2024, 2, 29)
+
+
+class TestReceivableMetricsImpl:
+    """Mirror Java FinanceAnalysisServiceImpl.getReceivableMetrics (line 627-732).
+    Empty-data path produces 5 metrics with value=0; F999 golden lock."""
+
+    @pytest.mark.asyncio
+    async def test_empty_data_emits_5_metrics_f999_shape(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F999", date(2025, 12, 31))
+
+        assert len(metrics) == 5
+        codes = [m["metricCode"] for m in metrics]
+        assert codes == ["AR_BALANCE", "COLLECTION_RATE", "AGING_30_RATIO", "AGING_60_RATIO", "AGING_90_RATIO"]
+        names = [m["metricName"] for m in metrics]
+        assert names == ["应收余额", "回款率", "30天以上账龄占比", "60天以上账龄占比", "90天以上账龄占比"]
+        # All values 0
+        assert all(m["value"] == 0 for m in metrics)
+        # AR_BALANCE alertLevel hardcoded GREEN
+        assert metrics[0]["alertLevel"] == "GREEN"
+        # COLLECTION_RATE: 0 < 60 → RED
+        assert metrics[1]["alertLevel"] == "RED"
+        # 30/60/90 ratio: 0 not > threshold → GREEN
+        assert metrics[2]["alertLevel"] == "GREEN"
+        assert metrics[3]["alertLevel"] == "GREEN"
+        assert metrics[4]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_normal_data_arithmetic_shape(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            # 1000 receivable, 600 collected, 1 row aged 15
+            return [{"receivable_amount": "1000", "collection_amount": "600", "aging_days": 15}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F001", date(2025, 12, 31))
+
+        # AR_BALANCE = 1000 - 600 = 400
+        assert metrics[0]["value"] == 400
+        assert metrics[0]["formattedValue"] == "400.00"
+        assert metrics[0]["unit"] == "元"
+        # COLLECTION_RATE = 600/1000*100 = 60.00 → boundary 60 NOT < 60 → YELLOW
+        assert metrics[1]["value"] == 60
+        assert metrics[1]["formattedValue"] == "60.00%"
+        assert metrics[1]["unit"] == "%"
+        assert metrics[1]["alertLevel"] == "YELLOW"
+        # All outstanding (400) is in 0-30天 bucket → over30/60/90 ratios all = 0
+        assert metrics[2]["value"] == 0  # AGING_30_RATIO
+        assert metrics[3]["value"] == 0
+        assert metrics[4]["value"] == 0
+
+    @pytest.mark.asyncio
+    async def test_zero_receivable_collection_rate_zero(self, monkeypatch):
+        """Zero-guard line 659: total_receivable=0 → collection_rate=0 (not div-by-zero)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F999", date(2025, 12, 31))
+        assert metrics[1]["metricCode"] == "COLLECTION_RATE"
+        assert metrics[1]["value"] == 0
+        assert metrics[1]["alertLevel"] == "RED"  # 0 < 60
+
+    @pytest.mark.asyncio
+    async def test_metric_envelope_has_11_fields(self, monkeypatch):
+        """F999 golden lock — _new_metric_result_dict emits all 11 Java MetricResult fields."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F999", date(2025, 12, 31))
+        expected_keys = {
+            "metricCode", "metricName", "value", "formattedValue", "unit",
+            "changePercent", "changeDirection", "changeValue",
+            "alertLevel", "dimensionValue", "description",
+        }
+        for m in metrics:
+            assert set(m.keys()) == expected_keys
+
+    @pytest.mark.asyncio
+    async def test_descriptions_match_f999_golden(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        metrics = await analysis_finance._get_receivable_metrics("F999", date(2025, 12, 31))
+        descs = [m["description"] for m in metrics]
+        assert descs == [
+            "尚未收回的应收账款总额",
+            "已回款金额占应收总额的比例",
+            "账龄超过30天的应收款占比",
+            "账龄超过60天的应收款占比",
+            "账龄超过90天的高风险应收款占比",
+        ]
