@@ -5,6 +5,8 @@
 > **写作日期**: 2026-05-01
 > **当前 main HEAD**: `8031f2644` (PR #30 C1 fix merged 后)
 > **Phase 2A 范围锁定** (`project_apr30_tool_skill_stays_java.md`): 仅 SmartBI analysis/ops endpoints byte-shape Python port. 不含 337 tools / 16 Skill / AIIntentService — 全留 Java.
+>
+> **Phase 2A 范围 update (2026-05-01)**: `/datasource/{id}/preview` 因 Java 端是 stub (`SmartBiSchemaServiceImpl.previewSchemaChanges` line 96-105 永远返 `noChanges` envelope, 不读 input, 不调 LLM; 此前 LLM-coupled 描述基于 `SchemaChangePreview` DTO 字段名假设错误) 移到 §2.4 deferred (跟 PR #37 quality/production 同模式). 见 §2.4 "/preview" 子节.
 
 ---
 
@@ -71,7 +73,7 @@
 | 27 | `POST /drill-down` | 钻取分析 | 1 | HIGH (依赖 hierarchy + 多表 join) |
 | 28 | `GET /incentive-plan/{targetType}/{targetId}` | | 1 | MED |
 | 29 | `POST /datasource/upload` (multipart) | Excel 上传 | 1 | LOW (跟 Excel 模块共享) |
-| 30 | `GET /datasource/{id}/preview` | | 1 | LOW |
+| ~~30~~ | ~~`GET /datasource/{id}/preview`~~ | ⏸️ **deferred** | — | Java stub-only (见 §2.4) |
 | 31 | `POST /datasource/apply` | 应用数据源 | 1 | MED |
 | 32 | `GET /datasource/{id}/fields` | | 1 | LOW |
 | 33 | `GET /datasource/{id}/history` | | 1 | LOW |
@@ -85,8 +87,9 @@
 |---|---|---|---|
 | 23 | `/analysis/quality` | ⏸️ deferred | Java `QualityAnalysisServiceImpl` 全 mock (`generateMockQualityData`, `Random(factoryId.hashCode())` LCG seed). Java 注释 line 401-402 自己说 "实际实现时应从 QualityInspection/ReworkRecord/DisposalRecord 实体查询", 真实 entity 未实现 |
 | 22 | `/analysis/production` | ⏸️ deferred | 同上, `generateMockProductionData` 同模式, 0 repository 注入 |
+| 30 | `GET /datasource/{id}/preview` | ⏸️ deferred | Java `SmartBiSchemaServiceImpl.previewSchemaChanges` (line 96-105) 是 stub: `return SchemaChangePreview.noChanges(...)` 永远返同 envelope, 不读 input, 不调 LLM, 不读临时 schema 变更存储. 真实 impl pending Java 实现 "实现从临时存储获取待应用的变更" (TODO line 100). DTO `SchemaChangePreview` 有 LLM-shaped fields (`suggestedMappings` / `warningMessage` / `affectedReportsCount`) 但 stub 永远不 set. Class doc 自身 line 38: "注意：当前为 Stub 实现，部分方法返回模拟数据。" |
 
-#### 阻塞解除条件
+#### 阻塞解除条件 (针对 quality + production)
 
 **Java backend 必须先实现以下 real entity + repository**:
 - `QualityInspection` + `QualityInspectionRepository` (质检记录)
@@ -94,32 +97,57 @@
 - `DisposalRecord` + `DisposalRecordRepository` (报废处置记录)
 - 类似 production 域 entity (TBD)
 
-#### 为什么 mock 不能 byte-port
+#### 阻塞解除条件 (针对 /preview)
+
+**Java backend 必须先实现**:
+- 临时 schema 变更存储读取逻辑 (currently TODO `SmartBiSchemaServiceImpl.previewSchemaChanges` line 100 "实现从临时存储获取待应用的变更")
+- 真实 LLM mapping suggestions 调用路径 (currently TODO `uploadAndDetectSchema` line 88 "使用 LLM 推断字段含义", 不在 `previewSchemaChanges` path 里)
+- `SchemaChangePreview` DTO 各 factory method 真实使用 — 当前仅 `noChanges(...)` 被调; `requiresApproval(...)` 与 `autoApplicable(...)` 工厂从未触发
+- `SmartBiSchemaServiceImpl` `@RequiredArgsConstructor` 仅注入 3 个 repository (line 49-51), 真实 LLM-coupled 实现需新增 `DashScopeClient` / `LLMFieldMappingService` 注入
+
+#### 为什么 mock 不能 byte-port (针对 quality + production)
 
 - Java `Random(seed)` 用 Linear Congruential Generator (JLS specified): `seed = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)`
 - Python `random.Random` 用 Mersenne Twister, 算法完全不同, 同 seed 不同 sequence
 - 强行 port 意味着在 Python 复刻 Java LCG (~80 LOC `JavaRandom` class), 但 port 的是 stub 不是 real impl, 长期债 (Java 改 mock generator 必须 Python 同步)
 - Phase 2A goal 是 byte-shape parity port real Java impl, mock-port 违反此目标
 
+#### 为什么 stub 不 byte-port (针对 /preview)
+
+- Java 永远返 `noChanges(datasource.name, datasource.schemaVersion)` — 是 deterministic envelope, *理论*可 byte-port
+- 但 byte-port 一个永远固定的 stub 没有 byte-shape parity 价值 — Phase 2A goal 是 port real impl, port 一个 hard-coded `noChanges` 输出不验证任何业务逻辑等价
+- 真实 Java impl 落地后 (临时存储 + LLM mapping) 必须重写 spec — 现在 port 只是无谓 churn (跟 mock-port 同一论)
+- PR #39 commit message 已写 "/preview deferred", 这次只是把决策正式落到 backlog map + 给出技术依据
+
 #### 何时重新派 chat
 
-Java backend 实现 real quality/production entity + Repository 后, 派新 chat 走完整 spec (brainstorm → 4-cycle audit → impl) 流程, 估时 8-12h per endpoint (跟其他 Tier 2 同档)。
+- **quality / production**: Java backend 实现 real entity + Repository 后, 派新 chat 走完整 spec (brainstorm → 4-cycle audit → impl) 流程, 估时 8-12h per endpoint (跟其他 Tier 2 同档)
+- **/preview**: Java backend 实现真实 schema 临时存储读取 + LLM mapping 调用后, 派新 spec chat. 估时 8-12h (取决 LLM 真实 vs deterministic schema diff 比例)
 
-**发现 chat**: `phase2a/spec-quality` (Chat 4, 2026-05-01) 在 brainstorm Round 1 grep Java 源码时 surface — 没进入 spec drafting 阶段就 stopped + 改派 backlog map update。详 [§2.4 process rule 教训](#process-rule-教训) 末尾 organizer 加的"派 chat 前 grep mock 30s"动作。
+**发现 chat**:
+- `phase2a/spec-quality` (Chat 4, 2026-05-01) — quality + production deferral, brainstorm Round 1 grep Java 源码时 surface mock pattern
+- `phase2a/spec-preview` (Chat 5, 2026-05-01) — /preview deferral, prereq grep Java service impl 时 surface stub pattern (`@RequiredArgsConstructor` 仅 repo 注入 + 方法体仅 `findById` + `noChanges` return)
 
 #### Process rule 教训
 
-派 spec chat 前, organizer 必须先 grep Java service impl 30 秒确认是 real DB query 还是 mock — 防 quality/production 同模式重蹈覆辙:
+派 spec chat 前, organizer 必须先 grep Java service impl 30 秒确认是 real DB query / 真 LLM call 还是 mock / stub — 防 quality/production/preview 同模式重蹈覆辙:
 
 ```bash
+# Mock 检测 (quality / production 模式)
 grep -nE "@Autowired|generateMock|Random\(|Math\.random|TODO.*实际实现" \
   backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/{Service}AnalysisServiceImpl.java
+
+# Stub 检测 (preview 模式) — 检查方法体是否仅含 unconditional default-envelope return
+grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|return.*\.noChanges\(|当前.*Stub" \
+  backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/{Service}ServiceImpl.java
 ```
 
 判断标准:
-- 看到 `private final XxxRepository` 或 `@Autowired XxxRepository` → real, 派 spec chat OK
+- 看到 `private final XxxRepository` 或 `@Autowired XxxRepository` (真 DB) **以及** 方法体含真实 query/聚合逻辑 → real, 派 spec chat OK
 - 看到 `generateMockXxxData(...)` 或 `Random(factoryId.hashCode())` → mock, 加入本 §2.4 deferred
-- 看到 `TODO 实际实现时应从 ... 查询` 注释 → 即使非 mock 也要二次评估
+- 看到方法体仅 `findById(...)` + `return XxxDTO.defaultFactory(...)` 无业务计算 → stub, 加入本 §2.4 deferred
+- 看到 `TODO 实际实现时应从 ... 查询` 或 `当前为 Stub 实现` 注释 → 即使非 mock 也要二次评估
+- 看到 `@RequiredArgsConstructor` 后字段全是 repository (无 `DashScopeClient`/`LlmService`) 但 task 描述说 "LLM-coupled" → 不一致, 必须停手 ping organizer
 
 ---
 
@@ -150,7 +178,7 @@ grep -nE "@Autowired|generateMock|Random\(|Math\.random|TODO.*实际实现" \
 |---|---|---|
 | /finance?type=receivable | 4-6h | cost/profit pattern 直接复用 |
 | /finance?type=budget | 4-6h | 同上 |
-| /datasource/{id}/preview/fields/history | 1-2h each | 简单 query, 标准 byte-shape |
+| /datasource/{id}/fields/history | 1-2h each | 简单 query, 标准 byte-shape (preview deferred §2.4) |
 | /query-templates POST/PUT/DELETE | 2-3h each | CRUD, 标准 |
 | /incentive-plan | 3-4h | metric 查询 |
 
@@ -261,8 +289,8 @@ grep -nE "@Autowired|generateMock|Random\(|Math\.random|TODO.*实际实现" \
 
 - ✅ 已 ship: 15 endpoints (~30%, 含 PR #36 department spec)
 - 🚧 in-flight: receivable + budget impl (Wave 1) + region spec (Wave 3) + datasource fields/history (Wave 2)
-- ⏸️ deferred (§2.4): 2 endpoints (quality + production, Java mock-only)
-- ❌ backlog: ~26 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~120-170h 工作量, 减去 quality+production 的 23-37h)
+- ⏸️ deferred (§2.4): 3 endpoints (quality + production Java mock-only; /preview Java stub-only)
+- ❌ backlog: ~25 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~118-168h 工作量, 减去 quality+production+preview 的 24-38h)
 
 **Phase 2A 完整收尾估时**: 4-6 个有效 chat × 8-15h/chat = ~40-90h. 若并行 3-4 个 chat 同时进行, 实际墙钟 1-2 周.
 
