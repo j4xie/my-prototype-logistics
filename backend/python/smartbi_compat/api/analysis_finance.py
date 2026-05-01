@@ -30,6 +30,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
+from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
@@ -38,6 +39,38 @@ from smartbi_compat.schema_compat import wrap_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ============================================================
+# Section 0b: Receivable constants (Phase 2A receivable per-type)
+# Mirror Java FinanceAnalysisService interface line 37-43 (4 bucket name constants),
+# FinanceAnalysisServiceImpl line 104-105 (AGING_90 thresholds),
+# and FinanceAnalysisServiceImpl line 1590-1603 (bucket → alert level map).
+# ============================================================
+
+AGING_BUCKET_0_30 = "0-30天"
+AGING_BUCKET_31_60 = "31-60天"
+AGING_BUCKET_61_90 = "61-90天"
+AGING_BUCKET_OVER_90 = "90天以上"
+
+# Java FinanceAnalysisServiceImpl line 600 — Arrays.asList(0_30, 31_60, 61_90, OVER_90)
+AGING_BUCKETS_ORDER = [
+    AGING_BUCKET_0_30,
+    AGING_BUCKET_31_60,
+    AGING_BUCKET_61_90,
+    AGING_BUCKET_OVER_90,
+]
+
+# Java FinanceAnalysisServiceImpl line 1590-1603 — hardcoded bucket → alertLevel map
+_AGING_BUCKET_ALERT_LEVELS = {
+    AGING_BUCKET_0_30: "GREEN",
+    AGING_BUCKET_31_60: "YELLOW",
+    AGING_BUCKET_61_90: "YELLOW",
+    AGING_BUCKET_OVER_90: "RED",
+}
+
+# Java FinanceAnalysisServiceImpl line 104-105
+AGING_90_RED_THRESHOLD = 20.0
+AGING_90_YELLOW_THRESHOLD = 10.0
 
 # ============================================================
 # Section 1: Shared DTO dict factories (copy from sister analysis_sales.py)
@@ -1107,6 +1140,120 @@ def _get_period_key(d: date, period: str) -> str:
     return d.strftime("%Y-%m")
 
 
+def _get_aging_bucket_alert_level(bucket: str) -> str:
+    """Hardcoded bucket → alertLevel map.
+    Mirror Java FinanceAnalysisServiceImpl.getAgingBucketAlertLevel (line 1590-1603).
+    Unknown bucket defaults to GREEN (Java map.getOrDefault behavior).
+    """
+    return _AGING_BUCKET_ALERT_LEVELS.get(bucket, "GREEN")
+
+
+def _calculate_aging_buckets(ar_data: list[dict]) -> dict[str, Decimal]:
+    """4-bucket outstanding aggregation by aging_days.
+
+    Mirror Java FinanceAnalysisServiceImpl.calculateAgingBuckets (line 1492-1524).
+
+    For each row:
+      - outstanding = receivable_amount - collection_amount (null treated as 0 per Rule 1)
+      - skip if outstanding <= 0 (Java line 1505)
+      - bucket by aging_days (null fallback to 0 per Java line 1500):
+        <= 30 → 0-30天, <= 60 → 31-60天, <= 90 → 61-90天, else → 90天以上
+
+    Returns dict with all 4 buckets initialized to Decimal('0').
+    """
+    buckets: dict[str, Decimal] = {b: Decimal("0") for b in AGING_BUCKETS_ORDER}
+
+    for row in ar_data:
+        # Java line 1500 — null aging_days fallback to 0
+        aging_days = (
+            int(row["aging_days"])
+            if row.get("aging_days") is not None
+            else 0
+        )
+        # Java line 1501-1503 — receivable/collection null guards (Rule 1 — explicit `is not None`)
+        receivable = (
+            _to_decimal(row["receivable_amount"])
+            if row.get("receivable_amount") is not None
+            else Decimal("0")
+        )
+        collection = (
+            _to_decimal(row["collection_amount"])
+            if row.get("collection_amount") is not None
+            else Decimal("0")
+        )
+        outstanding = receivable - collection
+        # Java line 1505 — skip non-positive outstanding
+        if outstanding <= Decimal("0"):
+            continue
+
+        # Java line 1510-1518 — bucket assignment
+        if aging_days <= 30:
+            bucket = AGING_BUCKET_0_30
+        elif aging_days <= 60:
+            bucket = AGING_BUCKET_31_60
+        elif aging_days <= 90:
+            bucket = AGING_BUCKET_61_90
+        else:
+            bucket = AGING_BUCKET_OVER_90
+        buckets[bucket] += outstanding
+
+    return buckets
+
+
+def _determine_collection_rate_alert(rate: Decimal) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.determineCollectionRateAlertLevel (line 1639-1644).
+
+    Thresholds use < (not <=); boundary 60/80 falls into LOWER level.
+    Rule 7: integer thresholds → float() cast OK (matches Java doubleValue()).
+    """
+    v = float(rate)
+    if v < 60:
+        return "RED"
+    if v < 80:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _aging_30_alert(ratio: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl line 491-494: >50 RED, >25 YELLOW, else GREEN.
+
+    Boundary 25/50 falls into LOWER level (Java > strict).
+    """
+    v = float(ratio)
+    if v > 50:
+        return "RED"
+    if v > 25:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _aging_60_alert(ratio: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl line 485-488: >30 RED, >15 YELLOW, else GREEN.
+
+    Boundary 15/30 falls into LOWER level.
+    """
+    v = float(ratio)
+    if v > 30:
+        return "RED"
+    if v > 15:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _aging_90_alert(ratio: Decimal) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl line 715-719:
+    >AGING_90_RED_THRESHOLD (20.0) RED, >AGING_90_YELLOW_THRESHOLD (10.0) YELLOW, else GREEN.
+
+    Boundary 10/20 falls into LOWER level.
+    """
+    v = float(ratio)
+    if v > AGING_90_RED_THRESHOLD:
+        return "RED"
+    if v > AGING_90_YELLOW_THRESHOLD:
+        return "YELLOW"
+    return "GREEN"
+
+
 # Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
 COST_CATEGORY_MATERIAL = "原材料"
 COST_CATEGORY_LABOR    = "人工"
@@ -1894,29 +2041,277 @@ async def _get_cost_trend_chart(
 
 
 async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
-    """F999 empty-state — Java getReceivableAgingChart ALWAYS emits 4 aging buckets
-    even when AR=0 (per A.2). chartType=BAR (NOT PIE). A.5 golden verified shape.
+    """4-bucket BAR chart of outstanding AR by aging.
 
-    4 buckets (in order): 0-30天 (GREEN), 31-60天 (YELLOW), 61-90天 (YELLOW), 90天以上 (RED).
-    Each bucket: {agingBucket, amount=0, percentage=0, alertLevel}.
-    options={colors: ["#91cc75", "#fac858", "#ee6666", "#c23531"], showAlert: true}.
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableAgingChart (line 586-624).
+    Data window: [end_date - 1 year, end_date] using dateutil.relativedelta (leap-year safe).
+
+    Composite path (_get_comprehensive_finance_analysis) calls this — replacement keeps
+    {agingBucket, amount, percentage, alertLevel} shape so composite F999 golden stays valid.
     """
+    # Java line 591 — date.minusYears(1). Use relativedelta (calendar-aware leap-year clamp).
+    start_window = end_date - relativedelta(years=1)
+    ar_data = await _query_finance_data(factory_id, "AR", start_window, end_date)
+
+    aging_buckets = _calculate_aging_buckets(ar_data)
+    total_ar = sum(aging_buckets.values(), Decimal("0"))
+
+    chart_data: list[dict] = []
+    for bucket in AGING_BUCKETS_ORDER:  # Java line 600 fixed order
+        amount = aging_buckets.get(bucket, Decimal("0"))
+        # Java line 605 — zero-guard
+        percentage = (
+            amount / total_ar * Decimal("100")
+            if total_ar > Decimal("0")
+            else Decimal("0")
+        )
+        chart_data.append({
+            "agingBucket": bucket,
+            "amount": _decimal_to_number(amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "percentage": _decimal_to_number(percentage.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "alertLevel": _get_aging_bucket_alert_level(bucket),
+        })
+
     return _new_chart_config_dict(
         chart_type="BAR",
         title="应收账款账龄分布",
         series_field=None,
-        data=[
-            {"agingBucket": "0-30天",  "amount": 0, "percentage": 0, "alertLevel": "GREEN"},
-            {"agingBucket": "31-60天", "amount": 0, "percentage": 0, "alertLevel": "YELLOW"},
-            {"agingBucket": "61-90天", "amount": 0, "percentage": 0, "alertLevel": "YELLOW"},
-            {"agingBucket": "90天以上","amount": 0, "percentage": 0, "alertLevel": "RED"},
-        ],
+        data=chart_data,
         options={
             "colors": ["#91cc75", "#fac858", "#ee6666", "#c23531"],
             "showAlert": True,
         },
         xaxis_field="agingBucket",
         yaxis_field="amount",
+    )
+
+
+async def _get_receivable_metrics(
+    factory_id: str, end_date: date
+) -> list[dict]:
+    """5 metrics: AR_BALANCE / COLLECTION_RATE / AGING_30_RATIO / AGING_60_RATIO / AGING_90_RATIO.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableMetrics (line 627-732).
+    Data window: [end_date - 1 year, end_date] (Java line 631 minusYears(1)).
+    """
+    start_window = end_date - relativedelta(years=1)
+    ar_data = await _query_finance_data(factory_id, "AR", start_window, end_date)
+
+    # Java line 636-639 — totalReceivable, null-filtered (Rule 1)
+    total_receivable = sum(
+        (_to_decimal(r["receivable_amount"])
+         for r in ar_data
+         if r.get("receivable_amount") is not None),
+        Decimal("0"),
+    )
+    # Java line 641-644 — totalCollection
+    total_collection = sum(
+        (_to_decimal(r["collection_amount"])
+         for r in ar_data
+         if r.get("collection_amount") is not None),
+        Decimal("0"),
+    )
+
+    metrics: list[dict] = []
+
+    # ===== Metric 1: AR_BALANCE (Java line 647-656) =====
+    ar_balance = total_receivable - total_collection
+    metrics.append(_new_metric_result_dict(
+        metric_code="AR_BALANCE",
+        metric_name="应收余额",
+        value=_decimal_to_number(ar_balance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        formatted_value=_format_currency(ar_balance),
+        unit="元",
+        alert_level="GREEN",  # Java line 654 — hardcoded GREEN
+        description="尚未收回的应收账款总额",
+    ))
+
+    # ===== Metric 2: COLLECTION_RATE (Java line 658-670) =====
+    # Java line 659 — zero-guard (totalReceivable > 0)
+    collection_rate = (
+        total_collection / total_receivable * Decimal("100")
+        if total_receivable > Decimal("0")
+        else Decimal("0")
+    )
+    metrics.append(_new_metric_result_dict(
+        metric_code="COLLECTION_RATE",
+        metric_name="回款率",
+        value=_decimal_to_number(collection_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        formatted_value=str(collection_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)) + "%",
+        unit="%",
+        alert_level=_determine_collection_rate_alert(collection_rate),
+        description="已回款金额占应收总额的比例",
+    ))
+
+    # ===== Aging buckets (Java line 673-679) =====
+    aging_buckets = _calculate_aging_buckets(ar_data)
+    over30 = (
+        aging_buckets[AGING_BUCKET_31_60]
+        + aging_buckets[AGING_BUCKET_61_90]
+        + aging_buckets[AGING_BUCKET_OVER_90]
+    )
+    over60 = aging_buckets[AGING_BUCKET_61_90] + aging_buckets[AGING_BUCKET_OVER_90]
+    over90 = aging_buckets[AGING_BUCKET_OVER_90]
+    total_for_ratio = sum(aging_buckets.values(), Decimal("0"))
+
+    # ===== Metric 3-5: AGING_30/60/90_RATIO (Java line 683-728) =====
+    for ratio_value, code, name, desc, threshold_func in [
+        (over30, "AGING_30_RATIO", "30天以上账龄占比", "账龄超过30天的应收款占比", _aging_30_alert),
+        (over60, "AGING_60_RATIO", "60天以上账龄占比", "账龄超过60天的应收款占比", _aging_60_alert),
+        (over90, "AGING_90_RATIO", "90天以上账龄占比", "账龄超过90天的高风险应收款占比", _aging_90_alert),
+    ]:
+        ratio = (
+            ratio_value / total_for_ratio * Decimal("100")
+            if total_for_ratio > Decimal("0")
+            else Decimal("0")
+        )
+        metrics.append(_new_metric_result_dict(
+            metric_code=code,
+            metric_name=name,
+            value=_decimal_to_number(ratio.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            formatted_value=str(ratio.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)) + "%",
+            unit="%",
+            alert_level=threshold_func(ratio),
+            description=desc,
+        ))
+
+    return metrics
+
+
+async def _get_overdue_customer_ranking(
+    factory_id: str, end_date: date
+) -> list[dict]:
+    """Top-10 customers by overdue outstanding amount.
+
+    Mirror Java FinanceAnalysisServiceImpl.getOverdueCustomerRanking (line 734-783).
+    1-year window. Per-customer aggregation (sum outstanding, max aging_days).
+    AlertLevel by max aging: >90 RED, >60 YELLOW, else GREEN.
+    """
+    start_window = end_date - relativedelta(years=1)
+    ar_data = await _query_finance_data(factory_id, "AR", start_window, end_date)
+
+    # Java line 741-756 — per-customer aggregation. Python dict 3.7+ insertion-order
+    # parity with Java LinkedHashMap.
+    customer_overdue: dict[str, list] = {}  # name → [Decimal total, int max_aging]
+    for row in ar_data:
+        customer_name = row.get("customer_name")
+        aging_days = row.get("aging_days")
+        # Java line 743 — 3-condition guard (Rule 1 — explicit None checks)
+        if customer_name is None or aging_days is None or aging_days <= 0:
+            continue
+        receivable = (
+            _to_decimal(row["receivable_amount"])
+            if row.get("receivable_amount") is not None
+            else Decimal("0")
+        )
+        collection = (
+            _to_decimal(row["collection_amount"])
+            if row.get("collection_amount") is not None
+            else Decimal("0")
+        )
+        outstanding = receivable - collection
+        # Java line 751 — outstanding > 0 only
+        if outstanding <= Decimal("0"):
+            continue
+        if customer_name not in customer_overdue:
+            customer_overdue[customer_name] = [Decimal("0"), 0]
+        customer_overdue[customer_name][0] += outstanding
+        # Java line 754 — track max aging
+        customer_overdue[customer_name][1] = max(
+            customer_overdue[customer_name][1], int(aging_days)
+        )
+
+    # Java line 760-763 — sort desc by overdue, top-10
+    sorted_customers = sorted(
+        customer_overdue.items(),
+        key=lambda kv: kv[1][0],
+        reverse=True,
+    )[:10]
+
+    rankings: list[dict] = []
+    for rank, (customer, (total, max_aging)) in enumerate(sorted_customers, start=1):
+        # Java line 767-772 — alertLevel by max aging
+        if max_aging > 90:
+            alert = "RED"
+        elif max_aging > 60:
+            alert = "YELLOW"
+        else:
+            alert = "GREEN"
+        rankings.append(_new_ranking_item_dict(
+            rank=rank,
+            name=customer,
+            value=_decimal_to_number(total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            alert_level=alert,
+        ))
+
+    return rankings
+
+
+async def _get_receivable_trend_chart(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Monthly LINE_BAR chart of receivable / collection / balance.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableTrendChart (line 786-827).
+    Uses [start_date, end_date] window (NOT 1-year).
+
+    options.series key order locked from F999 golden (Java Map.of(2) hash order
+    emits {name, type} per Rule 8). data items: {period, receivable, collection, balance}.
+    """
+    ar_data = await _query_finance_data(factory_id, "AR", start_date, end_date)
+
+    # Java line 793 — TreeMap = sorted by key (yyyy-MM string sort = chronological)
+    monthly_data: dict[str, list] = {}  # period → [Decimal receivable, Decimal collection]
+    for row in ar_data:
+        # Defensive null-check (Rule 1) — record_date should always be present
+        record_date = row.get("record_date")
+        if record_date is None:
+            continue
+        month_key = record_date.strftime("%Y-%m")  # Java line 795 yyyy-MM
+        if month_key not in monthly_data:
+            monthly_data[month_key] = [Decimal("0"), Decimal("0")]
+        receivable = (
+            _to_decimal(row["receivable_amount"])
+            if row.get("receivable_amount") is not None
+            else Decimal("0")
+        )
+        collection = (
+            _to_decimal(row["collection_amount"])
+            if row.get("collection_amount") is not None
+            else Decimal("0")
+        )
+        monthly_data[month_key][0] += receivable
+        monthly_data[month_key][1] += collection
+
+    # Java line 793 — TreeMap natural ordering
+    chart_data: list[dict] = []
+    for month_key in sorted(monthly_data.keys()):
+        receivable, collection = monthly_data[month_key]
+        chart_data.append({
+            "period": month_key,
+            "receivable": _decimal_to_number(receivable.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "collection": _decimal_to_number(collection.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "balance": _decimal_to_number((receivable - collection).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        })
+
+    # Java line 812-817 — options.series. Each item is Map.of("name", ..., "type", ...).
+    # Rule 8 — F999 golden shows {name, type} order; Python literal mirrors it.
+    options = {
+        "series": [
+            {"name": "应收金额", "type": "bar"},
+            {"name": "回款金额", "type": "bar"},
+            {"name": "应收余额", "type": "line"},
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",  # Java line 820
+        title="应收账款趋势",
+        series_field=None,
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="balance",
     )
 
 
@@ -2133,6 +2528,35 @@ async def _get_payable_analysis(factory_id: str, start_date: date, end_date: dat
         "metrics":    metrics,
         "agingChart": aging_chart,
         "startDate":  start_date.isoformat(),
+    }
+
+
+async def _get_receivable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
+    """Receivable per-type analysis (analysisType=receivable).
+
+    Mirror Java SmartBIAnalysisController.getFinanceAnalysis receivable branch
+    (line ~244-254) which calls FinanceAnalysisService methods. 6-key envelope.
+
+    Sub-services use 1-year window for metrics/agingChart/overdueRanking;
+    trendChart uses [start_date, end_date].
+
+    Java HashMap put-order is startDate/endDate/metrics/agingChart/overdueRanking/trendChart,
+    but Jackson serialization re-orders by HashMap hash. F999 golden actual order:
+    [endDate, overdueRanking, metrics, agingChart, trendChart, startDate].
+    Compare uses dict-eq (key order ignored) per Phase 2A foundation gate.
+    """
+    metrics = await _get_receivable_metrics(factory_id, end_date)
+    aging_chart = await _get_receivable_aging_chart(factory_id, end_date)
+    overdue_ranking = await _get_overdue_customer_ranking(factory_id, end_date)
+    trend_chart = await _get_receivable_trend_chart(factory_id, start_date, end_date)
+
+    return {
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "metrics": metrics,
+        "agingChart": aging_chart,
+        "overdueRanking": overdue_ranking,
+        "trendChart": trend_chart,
     }
 
 
@@ -2465,7 +2889,8 @@ async def get_finance_analysis(
       analysisType=payable     → payable per-type (4-key shape, real impl Phase E)
       analysisType=profit      → profit per-type (PR #21 + #22 sales fallback)
       analysisType=cost        → cost per-type (PR #25 structure + trend)
-      analysisType=budget      → budget per-type (this PR, 5-key dispatcher)
+      analysisType=budget      → budget per-type (PR #38, 5-key dispatcher)
+      analysisType=receivable  → receivable per-type (PR #42, 6-key shape)
       analysisType=other       → 501 envelope (un-ported, see spec §6 / §12)
     """
     range_ = DateRange.custom(startDate, endDate)
@@ -2488,6 +2913,10 @@ async def get_finance_analysis(
 
     if analysisType == "budget":
         result = await _get_budget_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    if analysisType == "receivable":
+        result = await _get_receivable_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
     return wrap_response(

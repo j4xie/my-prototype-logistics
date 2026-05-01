@@ -141,14 +141,14 @@ class TestAnalysisFinanceComposite:
                 f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
             )
 
-    def test_f999_unimplemented_analysisType_returns_501(self, client):
-        """Verify 501 path for un-ported analysisTypes.
+    def test_f999_unknown_analysisType_returns_501(self, client):
+        """Verify dispatcher catchall 501 path for unknown analysisType strings.
 
-        C3 robust pattern: list reflects current main state at time of this PR.
-        profit/payable/cost/budget are real impl; receivable remains 501 until its PR-A merges.
-        Sister chats merging concurrently must rebase + regenerate this list (drop their endpoint).
+        Post receivable PR (#42): payable/profit/cost/budget/receivable are all real impl.
+        Only unknown strings fall through to the 501 envelope. Use a deterministically-invalid
+        string so this test stays stable across future per-type ports.
         """
-        for at in ["receivable"]:
+        for at in ["nonexistent_analysis_type"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
                 f"?startDate=2025-01-01&endDate=2025-12-31&analysisType={at}",
@@ -1826,3 +1826,190 @@ class TestAnalysisFinanceBudget:
             f"comparison range missing — expected {expected_comparison_range}, "
             f"got ranges {ranges}"
         )
+
+
+class TestAnalysisFinanceReceivableSmoke:
+    """Integration smoke for receivable per-type dispatcher branch.
+    Full byte-shape gate is in TestAnalysisFinanceReceivable below (Task 11)."""
+
+    def test_receivable_branch_returns_200_with_6_key_envelope(self, client, monkeypatch):
+        """analysisType=receivable hits new branch; returns 6-key envelope."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        data = resp.json()["data"]
+        # 6-key envelope (key order may vary; dict-eq compare in Task 11)
+        assert set(data.keys()) == {"startDate", "endDate", "metrics", "agingChart", "overdueRanking", "trendChart"}
+        assert data["startDate"] == "2025-01-01"
+        assert data["endDate"] == "2025-12-31"
+        assert isinstance(data["metrics"], list) and len(data["metrics"]) == 5
+        assert data["overdueRanking"] == []
+        assert data["agingChart"]["chartType"] == "BAR"
+        assert data["trendChart"]["chartType"] == "LINE_BAR"
+
+
+class TestAnalysisFinanceReceivable:
+    """F999 byte-shape gate for receivable per-type path (analysisType=receivable).
+
+    Compare mode: dict-eq (Phase 2A foundation default; key order ignored).
+    Golden source: tests/fixtures/java-smartbi-golden/analysis-finance-F999-receivable.json
+    Recorded Apr 30 2026 against test env Java backend (port 10011).
+    """
+
+    def test_f999_receivable_data_keys_match_golden(self, client, monkeypatch):
+        """Verify all 6 envelope keys present (key order may differ — dict-eq below)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = set(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-receivable.json", encoding="utf-8") as f:
+            golden_response = json.load(f)["response"]
+            golden_data_keys = set(golden_response["data"].keys())
+        assert py_data_keys == golden_data_keys, (
+            f"data key set mismatch:\n"
+            f"  python: {sorted(py_data_keys)}\n"
+            f"  golden: {sorted(golden_data_keys)}"
+        )
+
+    def test_f999_receivable_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block (envelope skipped per A.5 finding).
+        Mocks _query_finance_data to return [] (F999 has no AR data)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-receivable.json", encoding="utf-8") as f:
+            golden_response = json.load(f)["response"]
+            golden_data = _strip_volatile(golden_response["data"])
+
+        if py_data != golden_data:
+            # Pretty-print divergence to make Phase 2A debug fast
+            import difflib
+            py_str = json.dumps(py_data, ensure_ascii=False, indent=2, sort_keys=True)
+            golden_str = json.dumps(golden_data, ensure_ascii=False, indent=2, sort_keys=True)
+            diff = "\n".join(difflib.unified_diff(
+                golden_str.splitlines(), py_str.splitlines(),
+                fromfile="golden", tofile="python", lineterm="", n=3,
+            ))
+            pytest.fail(f"F999 receivable byte-shape mismatch:\n{diff}")
+
+    def test_f999_composite_receivable_aging_shape_locked(self, client, monkeypatch):
+        """Post stub-replacement (Task 6), composite path's receivableAging is real impl.
+        Verify: envelope key set unchanged + 4-bucket shape + alertLevel hardcoded map.
+
+        This test is the contract gate for the transparent upgrade. If it fails after
+        replacing the stub, the composite F999 golden would also have to be re-recorded.
+
+        Task 6 replaced _get_receivable_aging_chart stub with real impl. Composite path
+        (_get_comprehensive_finance_analysis) calls this same function directly, so it
+        silently upgraded too. When Task 6 impl produces identical output for empty AR data
+        (no receivables), golden remains valid and this test locks the composite side-effect."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31",  # NO analysisType = composite path
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()["data"]
+
+        # Composite envelope unchanged (7 top-level keys per existing golden)
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-composite.json", encoding="utf-8") as f:
+            golden_data = json.load(f)["data"]
+        assert set(data.keys()) == set(golden_data.keys()), (
+            f"composite data envelope key set changed:\n"
+            f"  python: {sorted(data.keys())}\n"
+            f"  golden: {sorted(golden_data.keys())}"
+        )
+
+        # receivableAging shape locked (was stub returning placeholder, now real impl)
+        items = data.get("receivableAging", {}).get("data", [])
+        assert len(items) == 4, f"expected 4 aging buckets, got {len(items)}"
+
+        # Verify each item has expected schema
+        for item in items:
+            assert set(item.keys()) == {"agingBucket", "amount", "percentage", "alertLevel"}, (
+                f"aging bucket item schema mismatch, got keys: {set(item.keys())}"
+            )
+
+        # bucket order locked (Java line 600 fixed order: 0-30, 31-60, 61-90, 90+)
+        actual_buckets = [i["agingBucket"] for i in items]
+        expected_buckets = ["0-30天", "31-60天", "61-90天", "90天以上"]
+        assert actual_buckets == expected_buckets, (
+            f"aging bucket order changed:\n"
+            f"  actual:   {actual_buckets}\n"
+            f"  expected: {expected_buckets}"
+        )
+
+        # alertLevel hardcoded map (regardless of amount; Java line ~625)
+        actual_alerts = [i["alertLevel"] for i in items]
+        expected_alerts = ["GREEN", "YELLOW", "YELLOW", "RED"]
+        assert actual_alerts == expected_alerts, (
+            f"alertLevel map changed:\n"
+            f"  actual:   {actual_alerts}\n"
+            f"  expected: {expected_alerts}"
+        )
+
+        # Empty AR data → all amounts/percentages 0
+        for i, item in enumerate(items):
+            assert item["amount"] == 0, f"bucket {i} amount should be 0, got {item['amount']}"
+            assert item["percentage"] == 0, f"bucket {i} percentage should be 0, got {item['percentage']}"
+
+    @pytest.mark.skip(reason="manual smoke against test env Java backend (port 10011)")
+    def test_f001_receivable_byte_shape_manual(self, client):
+        """F001 manual smoke. Run by hand:
+            pytest -v -m '' --no-skip tests/python/smartbi_compat/test_analysis_finance_contract.py::TestAnalysisFinanceReceivable::test_f001_receivable_byte_shape_manual
+
+        Requires:
+          - Test env Java backend running on port 10011 with F001 fixture data
+          - cretas_pool / smartbi_user GRANTs configured
+          - Python service running locally with the same DB pool
+
+        Compares full byte-shape against analysis-finance-F001-receivable.json.
+        """
+        resp = client.get(
+            "/api/mobile/F001/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F001')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F001-receivable.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        assert py_data == golden_data, "F001 byte-shape mismatch — re-record golden if Java logic changed"
