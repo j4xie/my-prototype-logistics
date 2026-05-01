@@ -306,8 +306,30 @@ async def create_query_template(
     pool = await get_smartbi_pool()
     async with pool.acquire() as conn:
         if body.id is not None:
-            # T6 verbatim mirror: client-supplied id triggers JPA MERGE behavior.
-            # Implement as INSERT ... ON CONFLICT (id) DO UPDATE — matches JPA persist-or-update.
+            # T6 verbatim mirror: client-supplied id triggers JPA save() MERGE behavior.
+            # PostgreSQL `INSERT ... ON CONFLICT (id) DO UPDATE` matches JPA persist-or-update.
+            #
+            # ⚠️ Q1 NUANCE: ON CONFLICT SET clause must list EXACTLY the 5 fields PUT updates.
+            # DO NOT use `EXCLUDED.*` shorthand or `SET (...) = (excluded...)` — those would
+            # also overwrite columns JPA merge() leaves alone.
+            #
+            # Verified prerequisites:
+            # - SmartBiQueryTemplate has NO @Version field → no optimistic-lock version bump
+            #   to mirror. (If @Version were present, we'd need explicit `version = version + 1`
+            #   in the UPDATE SET, since ON CONFLICT does NOT auto-increment Hibernate version.)
+            # - factory_id, created_at, updated_at, deleted_at are NOT in the SET clause:
+            #     * factory_id: JPA merge() preserves existing entity's factoryId (matches T6 bug —
+            #       merge does not overwrite factoryId from the merge source's factoryId field if
+            #       reference attached; but for transient entity merge it DOES update — keep mirroring
+            #       Java behavior, which here is SET NEW factory_id from path. See note below.)
+            #     * created_at: existing row's createdAt preserved (BaseEntity @CreatedDate immutable).
+            #     * updated_at: explicit NOW() set in SET clause (do not rely on DB trigger).
+            #     * deleted_at: never modified by POST.
+            #
+            # NOTE on factory_id during MERGE: Java JPA `merge()` with detached entity that has
+            # different factoryId WILL update factory_id (it's a regular updatable column). So the
+            # T6 cross-factory hijack DOES change factory_id ownership. We SET factory_id = $2
+            # in ON CONFLICT to faithfully reproduce this — see spec §5.2 test #5 assertion.
             sql = """
                 INSERT INTO smart_bi_query_templates
                     (id, factory_id, name, category, description, query_template, parameters,
@@ -321,6 +343,7 @@ async def create_query_template(
                     query_template = EXCLUDED.query_template,
                     parameters = EXCLUDED.parameters,
                     updated_at = NOW()
+                    -- DO NOT touch: created_at (immutable), deleted_at (POST never undeletes)
                 RETURNING *
             """
             row = await conn.fetchrow(
@@ -482,10 +505,22 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ..." 
 1. Record golden #1 (POST happy) on cold Java backend.
 2. Restart `cretas-backend` (or `cretas-backend-test`), record golden #1 again to second tempfile.
 3. Restart again, record to third tempfile.
-4. Diff the 3 files. If identical → field order stable, commit golden #1 as-is.
-5. If field order flips between any pair → document accepted shape divergence in spec §7 + emit a Python-side **canonicalize-before-compare** helper that sorts the entity dict keys before dict-eq.
+4. Diff the 3 files. **Diff classification** (Q2 NUANCE):
+
+   | Diff observed | Meaning | Action |
+   |---|---|---|
+   | `timestamp` microseconds differ | **Expected** (volatile per-request value) | `_strip_volatile` envelope helper handles it (already required) |
+   | `data.createdAt` / `data.updatedAt` microseconds differ | **Expected** (volatile NOW() values) | `_strip_volatile` strips both fields too |
+   | Field **KEY order** differs | **Reflection flip** — Lombok @Data + Jackson reflection cache state-dependent | Emit `canonicalize_entity_keys` helper in `tests/contract/conftest.py` that sorts dict keys before dict-eq. Document accepted shape divergence in spec §7. **Candidate Rule 9** for `python-java-port.md` if observed across ≥2 sister CRUD chats. |
+   | Field **VALUE** (other than timestamps) differs | **BUG** — should never happen on identical request | Stop, investigate. Likely a non-deterministic field source (UUID generation, system clock dependency, etc.). Do NOT proceed until root-caused. |
+
+5. If only timestamp diffs → commit golden #1 as-is, `_strip_volatile` handles all volatility.
+6. If key order flip detected → commit canonicalized golden + emit canonicalize helper + document in §7.
+7. If value flip detected → escalate, do not ship.
 
 This nuance is NOT in Rule 8 (Rule 8 is Map.of, not Lombok reflection), but follows the same byte-shape parity defensive principle. Adding to `python-java-port.md` Rule history if T7 flip is observed.
+
+**Why 3× recordings (not 2×)**: First record may catch hotspot pre-JIT state, second post-JIT, third stabilized. Diff pattern (1≠2 but 2=3) reveals JIT-induced flip; (1=2=3) confirms stability. 2× is insufficient to distinguish JIT-warmup-noise from actual reflection-flip.
 
 ### 4.4 Byte-shape gate test
 
@@ -576,7 +611,20 @@ async def test_post_with_id_does_not_overwrite_other_factory_template(
 
 ### 5.3 Mock pattern (mirror sub-endpoints + datasource)
 
-Use existing `mock_smartbi_pool` fixture from `tests/contract/conftest.py`. For test #5, use `smartbi_pool_with_isolation` (real test DB instance) since DB state assertion is required — pure mock cannot verify INSERT/UPDATE side effects.
+Use existing `mock_smartbi_pool` fixture from `tests/contract/conftest.py` for tests #1-#4 (byte-shape parity — pure mock sufficient).
+
+For test #5 (T6 defensive cross-factory hijack), use `smartbi_pool_with_isolation` — **a NEW fixture** since DB state assertion (`SELECT factory_id, name FROM smart_bi_query_templates WHERE id = 42` after the hijack POST) cannot be verified by a pure-mock pool.
+
+**Q3 NUANCE — fixture creation is its own plan task**:
+- **Fixture name**: `smartbi_pool_with_isolation` (function-level scope: per-test isolated transaction wrapped, rolled back at teardown).
+- **File location**: `tests/python/smartbi_compat/conftest.py` — add to existing file, do NOT create a new conftest.
+- **Implementation**: `pytest_asyncio.fixture(scope="function")` that opens a real connection to test smartbi DB, wraps each test body in a transaction, rolls back at teardown. Avoids per-test cleanup logic + provides cross-test isolation.
+- **Reusability rationale**: This fixture is infra, not test logic. **Future Tier 1 CRUD chats (any sister chat porting write endpoints requiring DB-state assertion) will reuse it.** Justifies separating from test #5 logic in plan task list.
+- **Plan task split**:
+  - Task X: Create `smartbi_pool_with_isolation` fixture in `tests/python/smartbi_compat/conftest.py` (~30 LOC).
+  - Task Y: Use the fixture in `test_post_with_id_does_not_overwrite_other_factory_template`.
+
+**Module-level vs function-level scope decision**: Use function-level. Module-level scope optimization is a follow-up if future test suite grows large — premature now.
 
 ---
 
