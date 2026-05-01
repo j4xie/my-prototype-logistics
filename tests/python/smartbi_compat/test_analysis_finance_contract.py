@@ -142,8 +142,13 @@ class TestAnalysisFinanceComposite:
             )
 
     def test_f999_unimplemented_analysisType_returns_501(self, client):
-        """Verify 501 path for un-ported analysisTypes (payable + profit now real impl, excluded)."""
-        for at in ["cost", "receivable", "budget"]:
+        """Verify 501 path for un-ported analysisTypes.
+
+        C3 robust pattern: list reflects current main state at time of this PR.
+        profit/payable/cost are real impl; receivable + budget remain 501 until their PR-As merge.
+        Sister chats merging concurrently must rebase + regenerate this list (drop their endpoint).
+        """
+        for at in ["receivable", "budget"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
                 f"?startDate=2025-01-01&endDate=2025-12-31&analysisType={at}",
@@ -779,3 +784,182 @@ class TestProfitTrendChartArithmetic:
             return []
         chart = self._run_chart(fake_finance)
         assert chart["data"][0]["period"] == "2025-01"
+
+
+class TestAnalysisFinanceCost:
+    """F999 byte-shape gate for cost per-type path (analysisType=cost, real impl).
+
+    Mocks _query_finance_data to return [] (matches F999 empty state).
+    Compares response['data'] against recorded golden (flat shape via golden conversion in A.2).
+    """
+
+    def test_f999_cost_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: top-level data keys order matches Jackson HashMap order in golden.
+
+        Golden order (Apr 29 recorded): [endDate, trendChart, startDate, structureChart]
+        """
+        async def fake_query(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=cost",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-cost.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+
+        assert py_data_keys == golden_data_keys, (
+            f"data key order mismatch:\n"
+            f"  python: {py_data_keys}\n"
+            f"  golden: {golden_data_keys}"
+        )
+
+    def test_f999_cost_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block (envelope skipped via _strip_volatile).
+
+        Mocks _query_finance_data to return [] (F999 empty state).
+        Compares response['data'] against recorded golden after stripping volatile keys.
+        """
+        async def fake_query(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=cost",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-cost.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        if py_data != golden_data:
+            diffs = {}
+            for k in set(py_data.keys()) | set(golden_data.keys()):
+                if py_data.get(k) != golden_data.get(k):
+                    diffs[k] = {
+                        "python": py_data.get(k),
+                        "golden": golden_data.get(k),
+                    }
+            pytest.fail(
+                f"BYTE SHAPE MISMATCH (cost) on {list(diffs.keys())}\n"
+                f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
+            )
+
+
+class TestCostHelpers:
+    """Cost helper unit tests (PR-A; will be supplanted by PR-B arithmetic class)."""
+
+    def test_new_cost_series_entry_key_order(self):
+        from smartbi_compat.api.analysis_finance import _new_cost_series_entry
+        entry = _new_cost_series_entry(name="原材料", stack="cost")
+        assert list(entry.keys()) == ["name", "stack"]
+        assert entry == {"name": "原材料", "stack": "cost"}
+
+    def test_cost_category_constants(self):
+        from smartbi_compat.api.analysis_finance import (
+            COST_CATEGORY_MATERIAL,
+            COST_CATEGORY_LABOR,
+            COST_CATEGORY_OVERHEAD,
+        )
+        assert COST_CATEGORY_MATERIAL == "原材料"
+        assert COST_CATEGORY_LABOR == "人工"
+        assert COST_CATEGORY_OVERHEAD == "制造费用"
+
+    def test_create_pie_data_item_total_positive(self):
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        from decimal import Decimal
+        item = _create_pie_data_item("原材料", Decimal("60000"), Decimal("100000"))
+        assert list(item.keys()) == ["category", "value", "percentage"]
+        assert item["category"] == "原材料"
+        assert item["value"] == 60000  # int via _decimal_to_number
+        # Java setScale(2, HALF_UP): 60.00 → Jackson trims → 60.0; dict-eq tolerates 60 == 60.0
+        assert item["percentage"] in (60, 60.0)
+
+    def test_create_pie_data_item_total_zero_returns_zero_percentage(self):
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        from decimal import Decimal
+        item = _create_pie_data_item("原材料", Decimal("0"), Decimal("0"))
+        assert item["percentage"] == 0  # Java line 1572 returns BigDecimal.ZERO
+
+    def test_create_pie_data_item_percentage_rounding(self):
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        from decimal import Decimal
+        # 1/3 * 100 = 33.3333... → Java 2-stage:
+        # divide(SCALE=4 HALF_UP) = 0.3333, multiply(100) = 33.3300, setScale(2 HALF_UP) = 33.33
+        item = _create_pie_data_item("X", Decimal("1"), Decimal("3"))
+        assert item["percentage"] == 33.33
+
+    def test_aggregate_cost_by_period_single_month(self):
+        from smartbi_compat.api.analysis_finance import _aggregate_cost_by_period
+        from decimal import Decimal
+        from datetime import date
+        rows = [{
+            "material_cost": Decimal("60000"),
+            "labor_cost": Decimal("30000"),
+            "overhead_cost": Decimal("10000"),
+            "total_cost": Decimal("100000"),
+            "record_date": date(2025, 6, 15),
+        }]
+        result = _aggregate_cost_by_period(rows, "MONTH")
+        assert "2025-06" in result
+        slot = result["2025-06"]
+        assert slot[0] == Decimal("60000")  # material
+        assert slot[1] == Decimal("30000")  # labor
+        assert slot[2] == Decimal("10000")  # overhead
+        assert slot[3] == Decimal("100000")  # total
+
+    def test_aggregate_cost_by_period_negative_abs_defensive(self):
+        from smartbi_compat.api.analysis_finance import _aggregate_cost_by_period
+        from decimal import Decimal
+        from datetime import date
+        # Java P0-1 Bug B: Excel 历史数据可能存负值 cost，所有成本项 .abs() 强制取正
+        rows = [{
+            "material_cost": Decimal("-50000"),  # negative
+            "labor_cost": None,  # None → skip per Rule 1
+            "overhead_cost": Decimal("0"),  # zero is valid (not None)
+            "total_cost": Decimal("-50000"),
+            "record_date": date(2025, 6, 1),
+        }]
+        result = _aggregate_cost_by_period(rows, "MONTH")
+        slot = result["2025-06"]
+        assert slot[0] == Decimal("50000")  # abs(-50000)
+        assert slot[1] == Decimal("0")  # None skipped, slot remains 0
+        assert slot[2] == Decimal("0")  # 0 valid contribution
+        assert slot[3] == Decimal("50000")  # abs(-50000)
+
+    @pytest.mark.asyncio
+    async def test_get_cost_trend_chart_empty_returns_full_options(self, monkeypatch):
+        from smartbi_compat.api.analysis_finance import _get_cost_trend_chart
+        from datetime import date
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        result = await _get_cost_trend_chart("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert result["chartType"] == "BAR"
+        assert result["title"] == "成本趋势分析"
+        assert result["data"] == []
+        assert result["options"]["stack"] is True
+        assert len(result["options"]["series"]) == 3
+        assert result["options"]["series"][0] == {"name": "原材料", "stack": "cost"}
+        assert result["options"]["series"][1] == {"name": "人工", "stack": "cost"}
+        assert result["options"]["series"][2] == {"name": "制造费用", "stack": "cost"}

@@ -30,7 +30,6 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import text
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
@@ -201,6 +200,62 @@ def _new_chart_config_dict(
         "xaxisField": xaxis_field,
         "yaxisField": yaxis_field,
     }
+
+
+
+def _new_cost_series_entry(name: str, stack: str) -> dict:
+    """Mirror Java Map.of("name", X, "stack", Y) — Map.of(2) iteration order observed
+    in F999 golden = [name, stack] (matches put-order for n=2)."""
+    return {"name": name, "stack": stack}
+
+
+
+def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict:
+    """Java FinanceAnalysisServiceImpl.createPieDataItem line 1566-1573 1:1 mirror.
+
+    LinkedHashMap key 顺序: [category, value, percentage]
+    percentage = (value/total * 100).setScale(DISPLAY_SCALE=2, HALF_UP) if total > 0 else BigDecimal.ZERO
+    Java 2-stage divide: divide(total, SCALE=4, HALF_UP).multiply(100).setScale(2, HALF_UP)
+    """
+    if total > Decimal("0"):
+        # Java line 1571: divide(total, SCALE=4, HALF_UP) → multiply(100) → setScale(2, HALF_UP)
+        percentage = (
+            (value / total).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    else:
+        percentage = Decimal("0")
+
+    return {
+        "category":   category,
+        "value":      _decimal_to_number(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        "percentage": _decimal_to_number(percentage),
+    }
+
+
+
+def _aggregate_cost_by_period(
+    cost_records: list[dict], period: str
+) -> dict[str, list[Decimal]]:
+    """Java FinanceAnalysisServiceImpl.aggregateCostByPeriod line 1452-1467 1:1 mirror.
+
+    TreeMap → Python dict (caller does sorted() for ordering). 每 period 4 个 BigDecimal:
+    [material, labor, overhead, total]，全部 .abs() defensive (Java P0-1 Bug B).
+    Rule 1: is not None 三元，禁 truthy fallback (skip None entirely; preserve Decimal("0")).
+    """
+    result: dict[str, list[Decimal]] = {}
+    for c in cost_records:
+        key = _get_period_key(c["record_date"], period)
+        slot = result.setdefault(key, [Decimal("0")] * 4)
+        if c.get("material_cost") is not None:
+            slot[0] += abs(_to_decimal(c["material_cost"]))
+        if c.get("labor_cost") is not None:
+            slot[1] += abs(_to_decimal(c["labor_cost"]))
+        if c.get("overhead_cost") is not None:
+            slot[2] += abs(_to_decimal(c["overhead_cost"]))
+        if c.get("total_cost") is not None:
+            slot[3] += abs(_to_decimal(c["total_cost"]))
+    return result
 
 
 
@@ -416,6 +471,12 @@ def _get_period_key(d: date, period: str) -> str:
         return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
     # MONTH or default
     return d.strftime("%Y-%m")
+
+
+# Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
+COST_CATEGORY_MATERIAL = "原材料"
+COST_CATEGORY_LABOR    = "人工"
+COST_CATEGORY_OVERHEAD = "制造费用"
 
 
 VOLATILE_KEYS = frozenset({
@@ -1093,23 +1154,108 @@ async def _get_profit_trend_chart(
     )
 
 
-async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
-    """F999 empty-state — Java getCostStructureChart returns ChartConfig with empty data.
-    A.5 golden verified shape: chartType=PIE, title='成本结构分析',
-    xaxisField='category', yaxisField='value', seriesField=null, data=[],
-    options={showPercentage: true, colors: ["#5470c6", "#91cc75", "#fac858"]}.
+async def _get_cost_structure_chart(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java FinanceAnalysisServiceImpl.getCostStructureChart line 499-540 1:1 mirror.
+
+    Composite + per-type 共享。Signature changed from (factory_id, range_: DateRange)
+    to (factory_id, start_date, end_date) per Rule 3 (Java getCostStructureChart 签名)。
+    Composite caller (_get_comprehensive_finance_analysis) updated in Phase E.
+
+    F999 empty case: cost_records=[] → totalCost=0 → empty data list with full options。
     """
+    cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+
+    # Java line 507-516: aggregate three cost categories with .abs() defensive (Rule 1)
+    material_cost = sum(
+        (abs(_to_decimal(r["material_cost"])) for r in cost_records
+         if r.get("material_cost") is not None),
+        Decimal("0"),
+    )
+    labor_cost = sum(
+        (abs(_to_decimal(r["labor_cost"])) for r in cost_records
+         if r.get("labor_cost") is not None),
+        Decimal("0"),
+    )
+    overhead_cost = sum(
+        (abs(_to_decimal(r["overhead_cost"])) for r in cost_records
+         if r.get("overhead_cost") is not None),
+        Decimal("0"),
+    )
+
+    total_cost = material_cost + labor_cost + overhead_cost
+
+    # Java line 521-526: data items only if total > 0; empty list otherwise
+    chart_data: list[dict] = []
+    if total_cost > Decimal("0"):
+        chart_data.append(_create_pie_data_item(COST_CATEGORY_MATERIAL, material_cost, total_cost))
+        chart_data.append(_create_pie_data_item(COST_CATEGORY_LABOR,    labor_cost,    total_cost))
+        chart_data.append(_create_pie_data_item(COST_CATEGORY_OVERHEAD, overhead_cost, total_cost))
+
+    # Java line 528-530 LinkedHashMap → Python insertion order
+    options = {
+        "showPercentage": True,
+        "colors": ["#5470c6", "#91cc75", "#fac858"],
+    }
+
     return _new_chart_config_dict(
         chart_type="PIE",
         title="成本结构分析",
         series_field=None,
-        data=[],
-        options={
-            "showPercentage": True,
-            "colors": ["#5470c6", "#91cc75", "#fac858"],
-        },
+        data=chart_data,
+        options=options,
         xaxis_field="category",
         yaxis_field="value",
+    )
+
+
+async def _get_cost_trend_chart(
+    factory_id: str, start_date: date, end_date: date, period: str = "MONTH"
+) -> dict:
+    """Java FinanceAnalysisServiceImpl.getCostTrendChart line 542-581 1:1 mirror.
+
+    Per-type 唯一调用方（composite 路径不调）。空数据 → empty chart_data，
+    options 完整保留。Period default "MONTH" matches Java line 246 controller call。
+    """
+    cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+
+    aggregated = _aggregate_cost_by_period(cost_records, period)
+
+    # Java line 553-562 LinkedHashMap chart point: [period, materialCost, laborCost, overheadCost, totalCost]
+    chart_data = []
+    for period_key in sorted(aggregated.keys()):  # TreeMap → sorted Python
+        values = aggregated[period_key]  # [material, labor, overhead, total]
+        # I-1 fix (final review): Java line 553-562 emits raw BigDecimal without setScale —
+        # cost trendChart differs from profit's getProfitTrendChart (which DOES setScale).
+        # DB columns are precision=15 scale=2, so accumulated sums preserve scale 2 naturally.
+        # No quantize() here = exact 1:1 mirror of Java behavior. Sister chats note this.
+        chart_data.append({
+            "period":       period_key,
+            "materialCost": _decimal_to_number(values[0]),
+            "laborCost":    _decimal_to_number(values[1]),
+            "overheadCost": _decimal_to_number(values[2]),
+            "totalCost":    _decimal_to_number(values[3]),
+        })
+
+    # Java line 564-570: LinkedHashMap[stack, series] outer; series items Map.of(2) {name, stack}
+    options = {
+        "stack": True,
+        "series": [
+            _new_cost_series_entry(name=COST_CATEGORY_MATERIAL, stack="cost"),
+            _new_cost_series_entry(name=COST_CATEGORY_LABOR,    stack="cost"),
+            _new_cost_series_entry(name=COST_CATEGORY_OVERHEAD, stack="cost"),
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="成本趋势分析",
+        series_field="costType",
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="totalCost",
     )
 
 
@@ -1277,7 +1423,7 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
     """
     overview         = await _get_finance_overview(factory_id, range_)
     profit_metrics   = await _get_profit_metrics(factory_id, range_)
-    cost_structure   = await _get_cost_structure_chart(factory_id, range_)
+    cost_structure   = await _get_cost_structure_chart(factory_id, range_.start_date, range_.end_date)
     receivable_aging = await _get_receivable_aging_chart(factory_id, range_.end_date)
 
     return {
@@ -1287,6 +1433,27 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
         "generatedAt":      _utc_now_iso(),
         "profitMetrics":    profit_metrics,
         "receivableAging":  receivable_aging,
+    }
+
+
+async def _get_cost_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java SmartBIAnalysisController.getFinanceAnalysis cost branch line 247-249.
+
+    Java HashMap put order: startDate / endDate / structureChart / trendChart
+    Recorded F999 Jackson order (HashMap hash, NOT put-order):
+      [endDate, trendChart, startDate, structureChart]
+    Source: tests/fixtures/java-smartbi-golden/analysis-finance-F999-cost.json
+    """
+    structure_chart = await _get_cost_structure_chart(factory_id, start_date, end_date)
+    trend_chart     = await _get_cost_trend_chart(factory_id, start_date, end_date, "MONTH")
+
+    return {
+        "endDate":        end_date.isoformat(),
+        "trendChart":     trend_chart,
+        "startDate":      start_date.isoformat(),
+        "structureChart": structure_chart,
     }
 
 
@@ -1367,6 +1534,10 @@ async def get_finance_analysis(
 
     if analysisType == "profit":
         result = await _get_profit_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    if analysisType == "cost":
+        result = await _get_cost_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
     return wrap_response(
