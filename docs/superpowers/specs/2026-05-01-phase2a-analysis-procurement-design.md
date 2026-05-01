@@ -209,7 +209,7 @@ PR-C (arithmetic depth tests):
 | `determineConcentrationAlertLevel` | 同上, 1109-1116 | 60/40 INVERSE, returns String |
 | `determineChangeDirection` | 同上, 1122-1133 | UP/DOWN/STABLE |
 | `MetricCalculatorServiceImpl.calculateMomGrowth` | `MetricCalculatorServiceImpl.java:425-438` | **T9**: 3 edge cases + `.abs()` denom |
-| `MaterialBatch.getTotalValue` | `MaterialBatch.java:216-...` (entity `@Transient`) | `unitPrice × receiptQuantity`, both null-check returns ZERO |
+| `MaterialBatch.getTotalValue` (alias) + `getTotalPrice` (impl) | `MaterialBatch.java:205-219` (`@Transient`) | `getTotalValue()` (line 216-219) is alias for `getTotalPrice()` (line 205-211); formula `unitPrice × receiptQuantity`, both null-check returns ZERO |
 | `MaterialBatchRepository.findByFactoryIdAndStatus` | `MaterialBatchRepository.java:134-146` | JPA derived, **NO ORDER BY** (T3) |
 | `SupplierRepository.findByFactoryIdAndIsActive` | `SupplierRepository.java:43` | derived, NO ORDER BY |
 | `SupplierRepository.findById` | inherited JpaRepository | **No factoryId filter** (T11 deferred) |
@@ -226,6 +226,8 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query
 
 from smartbi_compat.api.analysis_finance import (
+    _get_period_key,         # Rule 2 — calendar-year WEEK fix (post-PR #30 commit 8031f2644)
+                              # Used by §3.10d _get_procurement_trend_chart for WEEK period (sister composite reuse)
     _strip_volatile,         # already covers "lastUpdated" key
     VOLATILE_KEYS,
     _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
@@ -234,6 +236,10 @@ from smartbi_compat.api.analysis_finance import (
     _fetch_all,
     wrap_response,
 )
+
+# python-dateutil for `_minus_months(date, n)` helper used in §3.10b _get_cost_metrics
+# (mirror Java startDate.minusMonths(1) — calendar-month arithmetic respecting end-of-month)
+from dateutil.relativedelta import relativedelta
 
 from smartbi_compat.auth import verify_factory_access, AuthContext
 ```
@@ -661,6 +667,321 @@ async def _get_supplier_evaluation(
     }
 ```
 
+### 3.10a `_get_supplier_ranking` (delegates to `_calculate_supplier_ranking_from_data`)
+
+```python
+async def _get_supplier_ranking(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java getSupplierRanking (line 333-340) — delegates to
+    calculateSupplierRankingFromData.
+    """
+    batches = await _query_material_batches_in_range(factory_id, start_date, end_date)
+    return await _calculate_supplier_ranking_from_data(factory_id, batches)
+
+
+async def _calculate_supplier_ranking_from_data(
+    factory_id: str, batches: list[dict]
+) -> list[dict]:
+    """Mirror Java calculateSupplierRankingFromData (line 684-739).
+
+    ⚠️ T11 enforced: Java uses `supplierRepository.findById(supplierId)` (line 720)
+    without factoryId — Python uses `_query_supplier_by_id(supplier_id, factory_id)`
+    which adds `AND factory_id=$X`.
+
+    ⚠️ T11 fallback: Java line 721 `.orElse(supplierId)` — if supplier not found,
+    use supplier_id literal as name. Python mirror.
+
+    RankingItem JSON shape (Java @Builder field order):
+      [rank, name, value, target, completionRate, alertLevel]
+
+    Algorithm:
+    1. groupBy supplier_id, sum getTotalValue → supplier_values dict
+    2. groupBy supplier_id, count → supplier_batch_counts dict
+    3. Sum all supplier_values → totalValue
+    4. Sort supplier_values entries by value desc (T4 pattern)
+    5. For each: lookup supplier name (T11 enforced query),
+       compute percentage = value/total * 100,
+       compute qualityRate via _calculate_quality_score,
+       alertLevel via _determine_quality_alert_level (90/95)
+    """
+    # Step 1: group by supplier_id, sum total_value
+    supplier_values: dict[str, Decimal] = {}
+    for b in batches:
+        sid = b.get("supplier_id")
+        if sid is not None:
+            up = b.get("unit_price")
+            rq = b.get("receipt_quantity")
+            tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
+            supplier_values[sid] = supplier_values.get(sid, Decimal("0")) + tv
+
+    # Step 2: group by supplier_id, count batches
+    supplier_batch_counts: dict[str, int] = {}
+    for b in batches:
+        sid = b.get("supplier_id")
+        if sid is not None:
+            supplier_batch_counts[sid] = supplier_batch_counts.get(sid, 0) + 1
+
+    if not supplier_values:
+        return []
+
+    # Step 3: total value across all suppliers
+    total_value = sum(supplier_values.values(), Decimal("0"))
+
+    # Step 4: sort by value desc (T4 — Python sorted() stable matches Java Stream.sorted)
+    sorted_entries = sorted(supplier_values.items(), key=lambda kv: kv[1], reverse=True)
+
+    # Step 5: build RankingItem entries
+    rankings = []
+    for rank, (supplier_id, value) in enumerate(sorted_entries, start=1):
+        batch_count = supplier_batch_counts.get(supplier_id, 0)
+        percentage = (
+            (value / total_value).quantize(_SCALE, rounding=_QUANTIZE_HALF_UP) * Decimal("100")
+            if total_value > Decimal("0")
+            else Decimal("0")
+        )
+        # T11 enforced query (factory_id filter) — fallback to supplier_id literal if not found
+        supplier = await _query_supplier_by_id(supplier_id, factory_id)
+        supplier_name = supplier["name"] if supplier else supplier_id
+
+        # Quality rate via dimension scorer + alert level
+        supplier_batches = [b for b in batches if b.get("supplier_id") == supplier_id]
+        quality_rate = _calculate_quality_score(supplier_batches)
+        alert_level = _determine_quality_alert_level(quality_rate)
+
+        rankings.append({
+            "rank":           rank,
+            "name":           supplier_name,
+            "value":          _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "target":         batch_count,    # Java uses `new BigDecimal(batchCount)` — int → number
+            "completionRate": _decimal_to_number(percentage.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "alertLevel":     alert_level,
+        })
+
+    return rankings
+```
+
+⚠️ §3.10a — `target` field semantically holds batch count (int), NOT a sales target. Java uses RankingItem.target field for arbitrary numeric metadata. Python preserves int directly via `_decimal_to_number(Decimal(batch_count))` or just int (golden record verifies serialization).
+
+### 3.10b `_get_cost_metrics` (5 metrics)
+
+```python
+async def _get_cost_metrics(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java getCostMetrics (line 282-329).
+
+    Returns 5 MetricResult entries (when previous period non-empty):
+      [PROCUREMENT_AMOUNT, BATCH_COUNT, AVG_UNIT_PRICE, MAX_UNIT_PRICE, PROCUREMENT_MOM_GROWTH]
+
+    Or 4 entries if previous-month batches empty (skips MoM).
+
+    MetricResult JSON shape (Java @Builder field order):
+      [metricCode, metricName, value, formattedValue, unit, dimensionValue,
+       changeValue, changePercent, changeDirection, alertLevel, description]
+    Empty-fallback fields emit null per Lombok @Builder default.
+
+    MAX_UNIT_PRICE conditional: only emitted if any batch has non-null unit_price
+    (Java line 302-314 `Optional.max(...).isPresent()`).
+    """
+    batches = await _query_material_batches_in_range(factory_id, start_date, end_date)
+    metrics: list[dict] = []
+
+    # Metric 1: PROCUREMENT_AMOUNT
+    total_amount = _calculate_total_value(batches)
+    metrics.append(_metric_result_of("PROCUREMENT_AMOUNT", "采购总额", total_amount, "元"))
+
+    # Metric 2: BATCH_COUNT
+    metrics.append(_metric_result_of("BATCH_COUNT", "采购批次", Decimal(len(batches)), "批"))
+
+    # Metric 3: AVG_UNIT_PRICE
+    avg_price = _calculate_average_unit_price(batches)
+    metrics.append(_metric_result_of("AVG_UNIT_PRICE", "平均单价", avg_price, "元"))
+
+    # Metric 4: MAX_UNIT_PRICE (conditional — Java line 302-314)
+    valid_priced = [b for b in batches if b.get("unit_price") is not None]
+    if valid_priced:
+        max_batch = max(valid_priced, key=lambda b: _to_decimal(b["unit_price"]))
+        max_unit_price = _to_decimal(max_batch["unit_price"])
+        metrics.append({
+            "metricCode":      "MAX_UNIT_PRICE",
+            "metricName":      "最高单价",
+            "value":           _decimal_to_number(max_unit_price),
+            "formattedValue":  None,    # Java doesn't set formattedValue here
+            "unit":            "元",
+            "dimensionValue":  max_batch.get("material_type_id"),
+            "changeValue":     None,
+            "changePercent":   None,
+            "changeDirection": None,
+            "alertLevel":      "GREEN",    # Java line 312 explicit GREEN
+            "description":     None,
+        })
+
+    # Metric 5: MoM growth — conditional on previous period non-empty
+    previous_start = start_date.replace(month=start_date.month) - _months(1)  # placeholder; impl uses dateutil or manual
+    # ⚠️ Python date arithmetic: start_date.minusMonths(1) Java equivalent
+    # Java line 317-318:
+    #   LocalDate previousStart = startDate.minusMonths(1);
+    #   LocalDate previousEnd = endDate.minusMonths(1);
+    # Python: from dateutil.relativedelta import relativedelta
+    #   previous_start = start_date - relativedelta(months=1)
+    #   previous_end = end_date - relativedelta(months=1)
+    previous_start, previous_end = _minus_months(start_date, 1), _minus_months(end_date, 1)
+    previous_batches = await _query_material_batches_in_range(factory_id, previous_start, previous_end)
+
+    if previous_batches:
+        previous_amount = _calculate_total_value(previous_batches)
+        mom_growth = _calculate_mom_growth(total_amount, previous_amount)
+        direction = _determine_change_direction(mom_growth)
+        metrics.append({
+            "metricCode":      "PROCUREMENT_MOM_GROWTH",
+            "metricName":      "采购环比增长",
+            "value":           _decimal_to_number(mom_growth.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "formattedValue":  None,
+            "unit":            "%",
+            "dimensionValue":  None,
+            "changeValue":     _decimal_to_number(mom_growth),    # Java line 324: changeValue = momGrowth
+            "changePercent":   _decimal_to_number(mom_growth),
+            "changeDirection": direction,
+            "alertLevel":      None,    # Java MetricResult.ofWithTrend doesn't set alert
+            "description":     None,
+        })
+
+    return metrics
+```
+
+⚠️ §3.10b uses `_metric_result_of` (helper builder) + `_minus_months(d, n)` (date arithmetic). Both are utility helpers — PR-A first task to implement (~10 LOC each) using `python-dateutil` (likely already in requirements) or manual month arithmetic.
+
+### 3.10c `_get_material_category_ranking` (T4 + percentage)
+
+```python
+async def _get_material_category_ranking(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java getMaterialCategoryRanking (line 342-385).
+
+    Algorithm:
+    1. groupBy material_type_id (skip null), sum total_value
+    2. Sum all → totalValue
+    3. Sort entries by value desc (T4 pattern)
+    4. For each: percentage = value/total * 100, no alert (NO determine_X_alert_level)
+
+    RankingItem fields (Java line ~378-385):
+      [rank, name, value, completionRate (= percentage)]
+    NO target / alertLevel — emit null/missing.
+    """
+    batches = await _query_material_batches_in_range(factory_id, start_date, end_date)
+
+    # Step 1: groupBy material_type_id
+    category_values: dict[str, Decimal] = {}
+    for b in batches:
+        mtid = b.get("material_type_id")
+        if mtid is not None:
+            up = b.get("unit_price")
+            rq = b.get("receipt_quantity")
+            tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
+            category_values[mtid] = category_values.get(mtid, Decimal("0")) + tv
+
+    if not category_values:
+        return []
+
+    total_value = sum(category_values.values(), Decimal("0"))
+
+    # Step 3: sort by value desc
+    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+
+    rankings = []
+    for rank, (mtid, value) in enumerate(sorted_entries, start=1):
+        percentage = (
+            (value / total_value).quantize(_SCALE, rounding=_QUANTIZE_HALF_UP) * Decimal("100")
+            if total_value > Decimal("0")
+            else Decimal("0")
+        )
+        rankings.append({
+            "rank":           rank,
+            "name":           mtid,
+            "value":          _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "target":         None,    # Java doesn't set target
+            "completionRate": _decimal_to_number(percentage.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "alertLevel":     None,    # Java doesn't set alert
+        })
+    return rankings
+```
+
+### 3.10d `_get_procurement_trend_chart` (period dispatcher)
+
+```python
+async def _get_procurement_trend_chart(
+    factory_id: str, start_date: date, end_date: date, period: str = "MONTH"
+) -> dict:
+    """Mirror Java getProcurementTrendChart (line 387-...) → buildProcurementTrendChartFromData
+    (line 744-782).
+
+    Period-based aggregation:
+      DAY   → date.toString() = ISO yyyy-MM-dd                 (line 791)
+      WEEK  → ISO week per Rule 2 (calendar year + ISO week)   (line ~810, mirror analysis_finance._get_period_key)
+      MONTH → "yyyy-MM" (line ~825)
+
+    ⚠️ Rule 2 lock — when period="WEEK", Python MUST import _get_period_key from
+    analysis_finance.py (post-PR #30 calendar-year fix commit `8031f2644`).
+    Composite trend mode hardcodes period="MONTH" so Rule 2 not directly hit
+    in PR-A, but PR-C `test_period_key_calendar_year` regression covers WEEK
+    edge case for sister specs reusing this function.
+
+    Java line 760-768: sort by period key (TreeMap → sorted dict) + LinkedHashMap
+    chart point with [date, amount] keys.
+
+    Java line 770-772: options LinkedHashMap [showDataLabels=false, smooth=true].
+    """
+    batches = await _query_material_batches_in_range(factory_id, start_date, end_date)
+
+    period_values: dict[str, Decimal] = {}
+    for b in batches:
+        rd = b.get("receipt_date")
+        if rd is None:
+            continue
+        # Period key by aggregation type
+        period_upper = period.upper()
+        if period_upper == "WEEK":
+            period_key = _get_period_key(rd, "WEEK")    # Rule 2 — import from analysis_finance
+        elif period_upper == "MONTH":
+            period_key = f"{rd.year}-{rd.month:02d}"
+        else:    # DAY default
+            period_key = rd.isoformat()
+        up = b.get("unit_price")
+        rq = b.get("receipt_quantity")
+        tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
+        period_values[period_key] = period_values.get(period_key, Decimal("0")) + tv
+
+    # Java line 760-768: sort by period key (TreeMap → sorted())
+    sorted_keys = sorted(period_values.keys())
+    chart_data = []
+    for period_key in sorted_keys:
+        chart_data.append({
+            "date":   period_key,
+            "amount": _decimal_to_number(
+                period_values[period_key].quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        })
+
+    options = {
+        "showDataLabels": False,
+        "smooth":         True,
+    }
+
+    return {
+        "chartType":   "LINE",
+        "title":       "采购趋势",
+        "xAxisField":  "date",
+        "yAxisField":  "amount",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+    }
+```
+
+⚠️ §3.10d imports `_get_period_key` from `analysis_finance.py` for WEEK case — needs §3.2 import addition.
+
 ### 3.10 `_get_purchase_cost_analysis` (T4 groupingBy + sort pattern)
 
 ```python
@@ -774,20 +1095,29 @@ async def _get_procurement_overview(
 
 def _build_empty_dashboard() -> dict:
     """Mirror Java buildEmptyDashboard (line 1011-1025).
-    Empty arrays/maps + 1 placeholder AIInsight "暂无采购数据".
+
+    ⚠️ C2 fix (Round 4 audit) — exact Java strings, NOT placeholder text:
+    Java line 1016-1022 (verbatim):
+      .aiInsights(Collections.singletonList(AIInsight.builder()
+              .level("YELLOW")                                      ← NOT "INFO"
+              .category("数据状态")
+              .message("当前时间范围内暂无采购数据")                 ← NOT "暂无采购数据"
+              .actionSuggestion("请调整时间范围或录入采购数据")     ← NOT None
+              .build()))
+      .suggestions(Collections.singletonList("请先录入采购数据以开始分析"))  ← NOT []
     """
     return {
         "kpiCards":    [],
         "charts":      {},
         "rankings":    {},
         "aiInsights":  [{
-            "level":            "INFO",
+            "level":            "YELLOW",
             "category":         "数据状态",
-            "message":          "暂无采购数据",
-            "actionSuggestion": None,
+            "message":          "当前时间范围内暂无采购数据",
+            "actionSuggestion": "请调整时间范围或录入采购数据",
             "relatedEntity":    None,
         }],
-        "suggestions": [],
+        "suggestions": ["请先录入采购数据以开始分析"],
         "lastUpdated": _utc_now_iso(),    # Still emits volatile field even on empty
     }
 ```
@@ -838,6 +1168,14 @@ def _generate_ai_insights(
             })
 
     # Check 2: top supplier (info-level, requires lookup)
+    # ⚠️ Round 4 audit I4 fix — function signature MUST include factory_id parameter
+    # for T11 enforced supplier name lookup. Update §3.11 _get_procurement_overview
+    # to pass factory_id when calling _generate_ai_insights. PR-B implementer
+    # MUST refactor signature; do NOT ship `supplier_name = "未知供应商"` placeholder
+    # below — that hardcoded fallback would FAIL byte-shape vs Java which calls
+    # `supplierRepository.findById(supplierId).map(::getName).orElse(...)` and gets
+    # real supplier names.
+
     supplier_values: dict[str, Decimal] = {}
     for b in batches:
         sid = b.get("supplier_id")
@@ -850,12 +1188,11 @@ def _generate_ai_insights(
     if supplier_values:
         top_sid = max(supplier_values.keys(), key=lambda k: supplier_values[k])
         top_value = supplier_values[top_sid]
-        # Java line 960: supplierRepository.findById(topSupplier.getKey())
-        # Python uses _query_supplier_by_id with factory_id filter (T11 safer)
-        # but since _generate_ai_insights doesn't have factory_id in scope,
-        # caller must pass it. Plan: refactor signature in PR-B to thread factory_id.
-        # For now, mirror Java behavior with name fallback:
-        supplier_name = "未知供应商"  # PR-B impl: query supplier name via factory_id
+        # PR-B refactor target: signature is `_generate_ai_insights(factory_id, batches, kpi_cards)`
+        # then here: `supplier = await _query_supplier_by_id(top_sid, factory_id)`
+        #            `supplier_name = supplier["name"] if supplier else top_sid`  (mirror Java line 720-721)
+        # Below is illustrative-only — actual PR-B impl pulls supplier name via T11 enforced query.
+        supplier_name = "<TBD-PR-B: query via factory_id>"
         insights.append({
             "level":            "INFO",
             "category":         "采购分布",
@@ -867,7 +1204,11 @@ def _generate_ai_insights(
     return insights
 ```
 
-⚠️ §3.12 注意 — `_generate_ai_insights` 签名在 PR-B 实施时可能需加 `factory_id` 参数 to look up supplier name (T11 enforced query). Plan 阶段决定 signature shape。
+⚠️ §3.12 — Round 4 audit I4 fix: `_generate_ai_insights` signature **MUST** be refactored to `(factory_id, batches, kpi_cards)` in PR-B. The `supplier_name = "<TBD-PR-B: query via factory_id>"` placeholder above is illustrative only. PR-B 实施时:
+1. 加 `factory_id: str` 作首参数
+2. 调用 `await _query_supplier_by_id(top_sid, factory_id)` (T11 enforced query)
+3. Fallback name: `supplier["name"] if supplier else top_sid` (mirror Java line 720-721 `.orElse(supplierId)`)
+4. Update caller `_get_procurement_overview` (§3.11) 传 `auth.factory_id`
 
 ### 3.13 主 dispatcher
 
@@ -1025,10 +1366,12 @@ async def _get_procurement_analysis(
       "charts": {},
       "rankings": {},
       "aiInsights": [{
-        "level": "INFO", "category": "数据状态", "message": "暂无采购数据",
-        "actionSuggestion": null, "relatedEntity": null
+        "level": "YELLOW", "category": "数据状态",
+        "message": "当前时间范围内暂无采购数据",
+        "actionSuggestion": "请调整时间范围或录入采购数据",
+        "relatedEntity": null
       }],
-      "suggestions": [],
+      "suggestions": ["请先录入采购数据以开始分析"],
       "lastUpdated": "<volatile>"
     }
   }
@@ -1072,7 +1415,7 @@ class TestAnalysisProcurementOverviewMode:
         # [kpiCards, charts, rankings, aiInsights, suggestions, lastUpdated]
 ```
 
-### 5.3 PR-C arithmetic depth tests (24 tests across 7 classes)
+### 5.3 PR-C arithmetic depth tests (33 tests across 7 classes)
 
 | Class | Tests | 覆盖 |
 |---|---|---|
@@ -1080,7 +1423,7 @@ class TestAnalysisProcurementOverviewMode:
 | `TestProcurementSupplierEvaluationArithmetic` | 7 | 5 dimension scorers (1 each) + stability score `100 - cv*100` clamped boundary + empty-batches case |
 | `TestProcurementCostMetricsArithmetic` | 5 | total / avg unit price (filter > 0) / max unit price / batch count / MoM growth |
 | `TestProcurementTrendChartArithmetic` | 3 | MONTH period / multi-month aggregation / sorted period axis |
-| `TestProcurementOverviewArithmetic` | 5 | KPI build / AI insights concentration RED+YELLOW / suggestions trigger conditions / empty dashboard / charts key naming |
+| `TestProcurementOverviewArithmetic` | 6 | KPI build / AI insights concentration RED+YELLOW / suggestions trigger conditions / empty dashboard exact strings (C2 verify) / charts key naming / **concentration formula precision byte-eq** (Round 4 audit gap fix: `max=Decimal("60"), total=Decimal("100") → 60.0000` exactly) |
 | `TestProcurementMoMGrowthArithmetic` | 4 | T9 edge cases: prev=null / prev=0 / current=null / **negative previous .abs() denom** |
 | `TestProcurementConcentrationAlertArithmetic` | 4 | T1 inverse: 39.99→GREEN / 40.0→GREEN (strict `> 40`) / 40.01→YELLOW / 60.0→YELLOW / 60.01→RED |
 
@@ -1168,14 +1511,14 @@ cost spec §5.4 同模式 — Java backend record + Python curl + dict-eq diff�
 
 **依赖**: PR-A merged
 
-### PR-C — procurement arithmetic depth (7 test classes, 32 tests)
+### PR-C — procurement arithmetic depth (7 test classes, 33 tests)
 
-Wait — let me recount: 4 + 7 + 5 + 3 + 5 + 4 + 4 = **32 tests**. (Updated table heading.)
+Test count: 4 (ranking) + 7 (evaluation) + 5 (cost metrics) + 3 (trend) + 6 (overview) + 4 (MoM) + 4 (concentration) = **33 tests**.
 
 **Title**: `Phase 2A: /analysis/procurement arithmetic depth tests`
 
 **Scope**:
-- §5.3 7 test classes, 32 tests 总
+- §5.3 7 test classes, 33 tests 总
 - T9 MoM growth edge cases (4 boundary tests including negative previous .abs() denom)
 - T1 concentration inverse threshold boundary (4 tests)
 - 5 dimension scorers boundary (clamp [0, 100], default scores, empty batches)
@@ -1183,7 +1526,7 @@ Wait — let me recount: 4 + 7 + 5 + 3 + 5 + 4 + 4 = **32 tests**. (Updated tabl
 
 **LOC 估**: ~330 (tests only)
 
-**CI gate**: PR-B baseline + 32 tests
+**CI gate**: PR-B baseline + 33 tests
 
 ### 顺序
 
