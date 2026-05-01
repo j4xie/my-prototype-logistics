@@ -1,0 +1,93 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=aging",
+  "factory": "F999",
+  "response": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "agingMetrics": [
+        {
+          "metricCode": "SLOW_MOVING_RATE",
+          "metricName": "呆滞库存率",
+          "value": 0.0,
+          "formattedValue": "0.0%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "90天以上库龄占比"
+        },
+        {
+          "metricCode": "SLOW_MOVING_VALUE",
+          "metricName": "呆滞库存价值",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "endDate": "2025-01-31",
+      "longAgingBatches": [],
+      "agingChart": {
+        "chartType": "BAR",
+        "title": "库龄分布",
+        "seriesField": null,
+        "data": [
+          {
+            "aging": "0-30天",
+            "value": 0.0
+          },
+          {
+            "aging": "31-60天",
+            "value": 0.0
+          },
+          {
+            "aging": "61-90天",
+            "value": 0.0
+          },
+          {
+            "aging": "90天以上",
+            "value": 0.0
+          }
+        ],
+        "options": {
+          "showDataLabels": true,
+          "colors": [
+            "#52c41a",
+            "#1890ff",
+            "#faad14",
+            "#ff4d4f"
+          ]
+        },
+        "xaxisField": "aging",
+        "yaxisField": "value"
+      },
+      "startDate": "2025-01-01"
+    },
+    "timestamp": "2026-05-02T05:53:38.281025846",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "_meta": {
+    "name": "analysis-inventory-type-aging",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-01-31",
+      "analysisType": "aging"
+    },
+    "factory": "F999",
+    "javaPort": 10011
+  }
+}
