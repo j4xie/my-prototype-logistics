@@ -770,17 +770,20 @@ async def _get_yoy_mom_chart(
 
     metric_name = _get_metric_display_name(metric)
 
-    # Map.of(4) Jackson hash order: golden recording verifies (Phase C.4)
+    # Map.of(4) Jackson hash order — recorded from live Java (Phase C.4 goldens):
+    # yAxis[i]: ['position', 'name'] (Map.of(2) hash differs from profit's _new_yaxis_entry ['name','position'])
+    # series[i]: ['yAxisIndex', 'type', 'name', 'color'] (Map.of(4) order, same as budget-achievement)
+    # Do NOT use _new_yaxis_entry here — it returns ['name','position'] which mismatches this endpoint.
     options = {
         "yAxis": [
-            _new_yaxis_entry(name="金额", position="left"),
-            _new_yaxis_entry(name="增长率(%)", position="right"),
+            {"position": "left", "name": "金额"},
+            {"position": "right", "name": "增长率(%)"},
         ],
         "series": [
-            {"color": "#5470c6", "name": "本期", "type": "bar", "yAxisIndex": 0},
-            {"color": "#91cc75", "name": "同期", "type": "bar", "yAxisIndex": 0},
-            {"color": "#ee6666", "name": "同比增长率", "type": "line", "yAxisIndex": 1},
-            {"color": "#fac858", "name": "环比增长率", "type": "line", "yAxisIndex": 1},
+            {"yAxisIndex": 0, "type": "bar", "name": "本期", "color": "#5470c6"},
+            {"yAxisIndex": 0, "type": "bar", "name": "同期", "color": "#91cc75"},
+            {"yAxisIndex": 1, "type": "line", "name": "同比增长率", "color": "#ee6666"},
+            {"yAxisIndex": 1, "type": "line", "name": "环比增长率", "color": "#fac858"},
         ],
         "tooltip": {"trigger": "axis"},
     }
