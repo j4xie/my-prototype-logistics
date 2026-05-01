@@ -2013,3 +2013,91 @@ class TestAnalysisFinanceReceivable:
             golden_data = _strip_volatile(json.load(f)["data"])
 
         assert py_data == golden_data, "F001 byte-shape mismatch — re-record golden if Java logic changed"
+
+
+class TestBudgetHelpers:
+    """Helper-level direct coverage for budget alert helpers + waterfall item factory.
+
+    Spec ref: 2026-05-01-phase2a-analysis-finance-budget-design.md §5.2.
+
+    Companion to chart-function-level classes (TestBudgetMetricsArithmetic +
+    TestBudgetExecutionWaterfallArithmetic + TestBudgetVsActualChartArithmetic).
+    Defense in depth — same logic exercised at two layers.
+
+    Tests imports helpers from analysis_finance module directly; no mocking required.
+    """
+
+    def test_create_waterfall_item_key_order(self):
+        """LinkedHashMap put-order [name, value, type] + value setScale(2, HALF_UP).
+
+        Java line 1579-1585 mirror.
+        """
+        from decimal import Decimal
+        from smartbi_compat.api.analysis_finance import _create_waterfall_item
+        item = _create_waterfall_item("年度预算", Decimal("12345.678"), "total")
+        # Key order verified
+        assert list(item.keys()) == ["name", "value", "type"]
+        # value setScale(2, HALF_UP): 12345.678 → 12345.68 (last digit 8 rounds up from 7)
+        assert item["value"] == 12345.68
+        assert item["name"] == "年度预算"
+        assert item["type"] == "total"
+
+    def test_determine_budget_variance_rate_alert_thresholds_positive(self):
+        """NEW helper: positive variance rate thresholds.
+
+        >20 RED, >10 YELLOW, else GREEN. Boundary: exactly 20 → YELLOW (NOT RED);
+        exactly 10 → GREEN (NOT YELLOW). Java MetricCalculatorServiceImpl line 515-519.
+        """
+        from decimal import Decimal
+        from smartbi_compat.api.analysis_finance import _determine_budget_variance_rate_alert
+        # >20 → RED
+        assert _determine_budget_variance_rate_alert(Decimal("20.01")) == "RED"
+        assert _determine_budget_variance_rate_alert(Decimal("100")) == "RED"
+        # ==20 → YELLOW (boundary, NOT RED)
+        assert _determine_budget_variance_rate_alert(Decimal("20")) == "YELLOW"
+        # >10 → YELLOW
+        assert _determine_budget_variance_rate_alert(Decimal("10.01")) == "YELLOW"
+        assert _determine_budget_variance_rate_alert(Decimal("15")) == "YELLOW"
+        # ==10 → GREEN (boundary, NOT YELLOW)
+        assert _determine_budget_variance_rate_alert(Decimal("10")) == "GREEN"
+        # <10 → GREEN
+        assert _determine_budget_variance_rate_alert(Decimal("5")) == "GREEN"
+        assert _determine_budget_variance_rate_alert(Decimal("0")) == "GREEN"
+
+    def test_determine_budget_variance_rate_alert_thresholds_negative(self):
+        """NEW helper abs application: negative variance rates use abs() for thresholds.
+
+        -25 → RED (abs=25>20), -15 → YELLOW (abs=15>10), -5 → GREEN. Sign-symmetric
+        because Java uses Math.abs(v) at line 516.
+        """
+        from decimal import Decimal
+        from smartbi_compat.api.analysis_finance import _determine_budget_variance_rate_alert
+        assert _determine_budget_variance_rate_alert(Decimal("-25")) == "RED"
+        assert _determine_budget_variance_rate_alert(Decimal("-100")) == "RED"
+        # Boundary: -20 → YELLOW (abs=20, NOT > 20)
+        assert _determine_budget_variance_rate_alert(Decimal("-20")) == "YELLOW"
+        assert _determine_budget_variance_rate_alert(Decimal("-15")) == "YELLOW"
+        # Boundary: -10 → GREEN (abs=10, NOT > 10)
+        assert _determine_budget_variance_rate_alert(Decimal("-10")) == "GREEN"
+        assert _determine_budget_variance_rate_alert(Decimal("-5")) == "GREEN"
+
+    def test_reused_achievement_alert_handles_negative_execution_rate(self):
+        """REUSED helper edge case: negative execution rate falls through to GREEN.
+
+        Negative actual values (per F2 raw accumulation) can produce negative
+        executionRate. Java line 1649-1654 (`v > 120` then `v > 100`) — negative
+        values fail both checks → GREEN by default. Mirrors Java behavior.
+
+        This test守住 budget per-type **跨场景 reuse 不引入 regression** (negative
+        rate scenario specific to per-type's no-abs() behavior, F2 risk).
+        """
+        from decimal import Decimal
+        from smartbi_compat.api.analysis_finance import _determine_budget_achievement_alert
+        # Negative rate → GREEN (default branch)
+        assert _determine_budget_achievement_alert(Decimal("-50")) == "GREEN"
+        assert _determine_budget_achievement_alert(Decimal("-200")) == "GREEN"
+        # Reaffirm positive thresholds (sanity check helper unchanged)
+        assert _determine_budget_achievement_alert(Decimal("121")) == "RED"
+        assert _determine_budget_achievement_alert(Decimal("101")) == "YELLOW"
+        assert _determine_budget_achievement_alert(Decimal("100")) == "GREEN"
+        assert _determine_budget_achievement_alert(Decimal("0")) == "GREEN"
