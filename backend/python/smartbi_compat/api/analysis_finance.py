@@ -30,7 +30,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
@@ -737,6 +737,63 @@ async def _calculate_quarter_range_yoy_mom(
             current_quarter = 1
             current_year += 1
     return result
+
+
+async def _get_yoy_mom_chart(
+    factory_id: str,
+    period_type: str,
+    start_period: str,
+    end_period: Optional[str],
+    metric: str = "revenue",
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getYoYMoMComparisonChart (line 1200-1254).
+
+    Dispatches to 4 sub-impl based on period_type. MONTH_RANGE/QUARTER_RANGE require
+    end_period — raises HTTP 400 if missing (audit I-8 fix).
+    """
+    if period_type == "MONTH":
+        chart_data = await _calculate_month_yoy_mom(factory_id, start_period, metric)
+    elif period_type == "QUARTER":
+        chart_data = await _calculate_quarter_yoy_mom(factory_id, start_period, metric)
+    elif period_type == "MONTH_RANGE":
+        if end_period is None:
+            raise HTTPException(status_code=400, detail="endPeriod required for MONTH_RANGE")
+        chart_data = await _calculate_month_range_yoy_mom(factory_id, start_period, end_period, metric)
+    elif period_type == "QUARTER_RANGE":
+        if end_period is None:
+            raise HTTPException(status_code=400, detail="endPeriod required for QUARTER_RANGE")
+        chart_data = await _calculate_quarter_range_yoy_mom(factory_id, start_period, end_period, metric)
+    else:
+        # Java line 1224-1226: default fallback to MONTH with warning
+        logger.warning("Unknown periodType=%s, using MONTH default", period_type)
+        chart_data = await _calculate_month_yoy_mom(factory_id, start_period, metric)
+
+    metric_name = _get_metric_display_name(metric)
+
+    # Map.of(4) Jackson hash order: golden recording verifies (Phase C.4)
+    options = {
+        "yAxis": [
+            _new_yaxis_entry(name="金额", position="left"),
+            _new_yaxis_entry(name="增长率(%)", position="right"),
+        ],
+        "series": [
+            {"color": "#5470c6", "name": "本期", "type": "bar", "yAxisIndex": 0},
+            {"color": "#91cc75", "name": "同期", "type": "bar", "yAxisIndex": 0},
+            {"color": "#ee6666", "name": "同比增长率", "type": "line", "yAxisIndex": 1},
+            {"color": "#fac858", "name": "环比增长率", "type": "line", "yAxisIndex": 1},
+        ],
+        "tooltip": {"trigger": "axis"},
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",
+        title=f"{metric_name}同比环比分析",
+        series_field="metric",
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="currentValue",
+    )
 
 
 async def _get_budget_achievement_chart(
@@ -1955,4 +2012,20 @@ async def get_budget_achievement(
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getBudgetAchievementChart line 276-292."""
     result = await _get_budget_achievement_chart(auth.factory_id, year, metric)
+    return wrap_response(result)
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/yoy-mom")
+async def get_yoy_mom(
+    factory_id: str,
+    periodType: str = Query(...),
+    startPeriod: str = Query(...),
+    endPeriod: Optional[str] = Query(None),
+    metric: str = Query("revenue"),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getYoYMoMComparisonChart line 294-312."""
+    result = await _get_yoy_mom_chart(
+        auth.factory_id, periodType, startPeriod, endPeriod, metric
+    )
     return wrap_response(result)
