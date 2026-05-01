@@ -1439,3 +1439,384 @@ class TestReceivableTrendDepth:
         )
         for item in result["data"]:
             assert list(item.keys()) == ["period", "receivable", "collection", "balance"]
+
+
+class TestPayableAgingBucketDepth:
+    """PR-B depth — aging-day boundaries for payable aging chart bucket assignment.
+
+    Tests boundaries of the inlined bucket logic in _get_payable_aging_chart
+    (line 2400-2414): aging_days <= 30/60/90/else chain, outstanding<=0 skip,
+    null aging_days fallback (Java `r.get("aging_days") or 0` → 0).
+
+    NOTE: Payable's bucket logic is inlined (not in a separate utility like
+    receivable's _calculate_aging_buckets), so we test it through the chart
+    function. Fewer tests than receivable PR-B Task 1 because payable has
+    no alertLevel per bucket and no shared utility.
+    """
+
+    @staticmethod
+    async def _run_chart(monkeypatch, rows):
+        """Run _get_payable_aging_chart with _query_finance_payable_data mocked."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, end_date):
+            return rows
+        monkeypatch.setattr(analysis_finance, "_query_finance_payable_data", fake_query)
+        return await analysis_finance._get_payable_aging_chart("F001", date(2025, 12, 31))
+
+    @pytest.mark.parametrize("aging_days,expected_bucket", [
+        (-1,  "0-30天"),    # negative → falls to 0-30 (aging<=30 catches negatives via `or 0` for None or via direct compare)
+        (0,   "0-30天"),    # boundary low
+        (30,  "0-30天"),    # boundary high of first bucket (<=)
+        (31,  "31-60天"),   # boundary low of second bucket
+        (60,  "31-60天"),   # boundary high of second bucket
+        (61,  "61-90天"),   # boundary low of third bucket
+        (90,  "61-90天"),   # boundary high of third bucket
+        (91,  "90天以上"),  # boundary low of fourth bucket
+    ])
+    @pytest.mark.asyncio
+    async def test_aging_day_boundary_assignment(self, aging_days, expected_bucket, monkeypatch):
+        """Boundary value falls into LOWER bucket per Java <= chain (line 2407-2413)."""
+        rows = [{"payable_amount": "1000", "payment_amount": "0", "aging_days": aging_days}]
+        chart = await self._run_chart(monkeypatch, rows)
+        # Exactly one bucket gets the 1000; others stay 0
+        for item in chart["data"]:
+            if item["agingBucket"] == expected_bucket:
+                assert item["amount"] == 1000, (
+                    f"aging_days={aging_days} expected {expected_bucket}=1000, got {item['amount']}"
+                )
+            else:
+                assert item["amount"] == 0, (
+                    f"aging_days={aging_days} expected only {expected_bucket} populated, "
+                    f"but {item['agingBucket']} = {item['amount']}"
+                )
+
+    @pytest.mark.parametrize("payable,payment,desc", [
+        ("100", "100", "outstanding=0 (equal) → skipped per line 2404"),
+        ("50",  "100", "outstanding<0 (overpaid) → skipped"),
+        ("0.01","0",   "outstanding=0.01 (just-positive) → kept (Decimal precision)"),
+    ])
+    @pytest.mark.asyncio
+    async def test_outstanding_threshold_strict_gt_zero(self, payable, payment, desc, monkeypatch):
+        """Java line 2404: `if outstanding <= 0 continue` — boundary outstanding=0 skipped."""
+        rows = [{"payable_amount": payable, "payment_amount": payment, "aging_days": 15}]
+        chart = await self._run_chart(monkeypatch, rows)
+        outstanding = Decimal(payable) - Decimal(payment)
+        if outstanding > Decimal("0"):
+            # Should be in 0-30天 bucket (Rule 4: amount serialized as float/int)
+            first_bucket = next(d for d in chart["data"] if d["agingBucket"] == "0-30天")
+            # Compare as float since _decimal_to_number converts to int/float
+            expected = float(outstanding) if outstanding != outstanding.to_integral_value() else int(outstanding)
+            assert first_bucket["amount"] == expected, desc
+        else:
+            # All buckets should be 0
+            assert all(d["amount"] == 0 for d in chart["data"]), desc
+
+    @pytest.mark.asyncio
+    async def test_null_aging_days_fallback_to_zero_bucket(self, monkeypatch):
+        """Java line 2406: `aging = r.get("aging_days") or 0` — None → 0 → 0-30天 bucket.
+
+        For int aging_days column, `or 0` is equivalent to is-not-None ternary
+        (both produce 0 for None and 0 for 0). Pinning current behavior.
+        """
+        rows = [{"payable_amount": "1000", "payment_amount": "0", "aging_days": None}]
+        chart = await self._run_chart(monkeypatch, rows)
+        first_bucket = next(d for d in chart["data"] if d["agingBucket"] == "0-30天")
+        assert first_bucket["amount"] == 1000
+
+    @pytest.mark.asyncio
+    async def test_multi_row_same_bucket_aggregates(self, monkeypatch):
+        """Multiple rows in same bucket → outstanding sums."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 10},
+            {"payable_amount": "200", "payment_amount": "0", "aging_days": 20},
+            {"payable_amount": "300", "payment_amount": "0", "aging_days": 30},
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        first_bucket = next(d for d in chart["data"] if d["agingBucket"] == "0-30天")
+        assert first_bucket["amount"] == 600  # 100 + 200 + 300
+
+    @pytest.mark.asyncio
+    async def test_distributes_across_all_4_buckets(self, monkeypatch):
+        """One row per bucket → 4 distinct totals."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 15},   # 0-30
+            {"payable_amount": "200", "payment_amount": "0", "aging_days": 45},   # 31-60
+            {"payable_amount": "300", "payment_amount": "0", "aging_days": 75},   # 61-90
+            {"payable_amount": "400", "payment_amount": "0", "aging_days": 120},  # 90+
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        buckets = {d["agingBucket"]: d["amount"] for d in chart["data"]}
+        assert buckets["0-30天"]   == 100
+        assert buckets["31-60天"]  == 200
+        assert buckets["61-90天"]  == 300
+        assert buckets["90天以上"] == 400
+
+
+class TestPayableMetricsArithmeticDepth:
+    """PR-B depth — formula arithmetic for 2 payable metrics.
+
+    Mirror Java FinanceAnalysisServiceImpl.getPayableMetrics (line 870-918).
+    Tests AP_BALANCE basic arithmetic + AP_TURNOVER_DAYS multi-stage Decimal pipeline.
+
+    Both metrics hardcode alertLevel="GREEN" regardless of value (no threshold helpers
+    for payable — distinct from receivable which has 4 alert helpers).
+    """
+
+    @staticmethod
+    async def _run_metrics(monkeypatch, rows):
+        """Run _get_payable_metrics with _query_finance_payable_data mocked."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, end_date):
+            return rows
+        monkeypatch.setattr(analysis_finance, "_query_finance_payable_data", fake_query)
+        return await analysis_finance._get_payable_metrics("F001", date(2025, 12, 31))
+
+    # ===== AP_BALANCE arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_basic_subtraction(self, monkeypatch):
+        """AP_BALANCE = totalPayable - totalPayment. 3000 payable - 1200 payment = 1800."""
+        rows = [{"payable_amount": "3000", "payment_amount": "1200", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["metricCode"] == "AP_BALANCE"
+        assert metrics[0]["value"] == 1800
+        assert metrics[0]["formattedValue"] == "1,800.00"  # thousands separator
+        assert metrics[0]["unit"] == "元"
+        assert metrics[0]["alertLevel"] == "GREEN"  # hardcoded
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_negative_when_overpaid(self, monkeypatch):
+        """totalPayment > totalPayable → ap_balance < 0. AP_BALANCE keeps GREEN
+        (Java line 877 hardcoded), no alert flip."""
+        rows = [{"payable_amount": "1000", "payment_amount": "1500", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == -500
+        assert metrics[0]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_quantize_half_up_two_decimals(self, monkeypatch):
+        """Decimal('0.005').quantize(0.01, HALF_UP) = 0.01.
+        payable=1000.005, payment=0 → balance=1000.005 → 1000.01."""
+        rows = [{"payable_amount": "1000.005", "payment_amount": "0", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == 1000.01
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_empty_data_zero(self, monkeypatch):
+        """No rows → totalPayable=0, totalPayment=0, balance=0."""
+        rows = []
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == 0
+        assert metrics[0]["formattedValue"] == "0.00"
+        assert metrics[0]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_aggregates_across_rows(self, monkeypatch):
+        """Multiple rows → sums applied per side: payable summed, payment summed, then subtracted."""
+        rows = [
+            {"payable_amount": "1000", "payment_amount": "200", "aging_days": 30},
+            {"payable_amount": "500",  "payment_amount": "100", "aging_days": 60},
+            {"payable_amount": "300",  "payment_amount": "50",  "aging_days": 90},
+        ]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        # totalPayable = 1800, totalPayment = 350, balance = 1450
+        assert metrics[0]["value"] == 1450
+
+    # ===== AP_TURNOVER_DAYS arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_zero_guard_when_no_payment(self, monkeypatch):
+        """totalPayment=0 → daily_payment=0 → zero-guard skips division → turnover_days=0.
+
+        Java line 904: `if dailyPayment > 0` ternary.
+        """
+        rows = [{"payable_amount": "1000", "payment_amount": "0", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[1]["metricCode"] == "AP_TURNOVER_DAYS"
+        assert metrics[1]["value"] == 0
+        assert metrics[1]["formattedValue"] == "0天"
+        assert metrics[1]["unit"] == "天"
+        assert metrics[1]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_full_formula(self, monkeypatch):
+        """Multi-stage Decimal pipeline:
+
+        totalPayable = 73000, totalPayment = 365, ap_balance = 72635
+        avg_payable = 72635 / 2 = 36317.5  → quantize(0.0001) = 36317.5000
+        daily_payment = 365 / 365 = 1.0     → quantize(0.0001) = 1.0000
+        turnover = 36317.5 / 1 = 36317.5    → quantize(0.0001) = 36317.5000
+        final value = quantize(Decimal("1"), HALF_UP) = 36318 (HALF_UP rounds .5 up)
+        """
+        rows = [{"payable_amount": "73000", "payment_amount": "365", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[1]["value"] == 36318
+        assert metrics[1]["formattedValue"] == "36318天"
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_simple_full_year(self, monkeypatch):
+        """Round-numbers test:
+        payable=730, payment=365 → balance=365 → avg=182.5 → daily=1 → turnover=182.5 → 183 (HALF_UP)
+        """
+        rows = [{"payable_amount": "730", "payment_amount": "365", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        # ap_balance = 730 - 365 = 365
+        # avg_payable = 365/2 = 182.5 → quantize(0.0001) = 182.5000
+        # daily_payment = 365/365 = 1.0 → quantize(0.0001) = 1.0000
+        # turnover = 182.5/1 = 182.5 → quantize(0.0001) = 182.5000
+        # final = quantize(Decimal("1"), HALF_UP) = 183 (.5 rounds up)
+        assert metrics[1]["value"] == 183
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_negative_balance(self, monkeypatch):
+        """Overpaid case: balance<0 → avg_payable<0 → turnover<0.
+        AlertLevel still GREEN (hardcoded line 920)."""
+        rows = [{"payable_amount": "100", "payment_amount": "365", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        # ap_balance = 100 - 365 = -265
+        # avg_payable = -265/2 = -132.5 → quantize(0.0001) = -132.5000
+        # daily_payment = 365/365 = 1.0 → quantize(0.0001) = 1.0000
+        # turnover = -132.5 / 1 = -132.5 → quantize(0.0001) = -132.5000
+        # final quantize(1, HALF_UP) on -132.5 → Decimal HALF_UP rounds toward higher absolute → -133
+        assert metrics[1]["value"] == -133
+        assert metrics[1]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_metrics_envelope_has_11_fields(self, monkeypatch):
+        """Both metrics emit all 11 Java MetricResult fields (per Lombok @Data)."""
+        rows = []
+        metrics = await self._run_metrics(monkeypatch, rows)
+        expected_keys = {
+            "metricCode", "metricName", "value", "formattedValue", "unit",
+            "changePercent", "changeDirection", "changeValue",
+            "alertLevel", "dimensionValue", "description",
+        }
+        for m in metrics:
+            assert set(m.keys()) == expected_keys
+
+    @pytest.mark.asyncio
+    async def test_metrics_descriptions_match_java(self, monkeypatch):
+        """Lock exact Chinese descriptions from Java line 882/909."""
+        rows = []
+        metrics = await self._run_metrics(monkeypatch, rows)
+        descs = [m["description"] for m in metrics]
+        assert descs == [
+            "尚未支付的应付账款总额",  # AP_BALANCE
+            "平均付款周期",                # AP_TURNOVER_DAYS
+        ]
+
+    @pytest.mark.asyncio
+    async def test_metrics_value_is_int_when_integral(self, monkeypatch):
+        """Rule 4 — _decimal_to_number returns int for integer-valued Decimals.
+        AP_TURNOVER_DAYS quantizes to scale=1 (Decimal('1')) so result is always integer.
+        AP_BALANCE may be float when fractional, int when whole.
+        """
+        rows = [{"payable_amount": "100", "payment_amount": "50", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == 50
+        assert isinstance(metrics[0]["value"], int)  # 50.00 → integral → int
+        assert isinstance(metrics[1]["value"], int)  # turnover_days always integer per scale=1
+
+
+class TestPayableAgingChartShapeDepth:
+    """PR-B depth — chart shape regression for _get_payable_aging_chart.
+
+    Locks payable's shape distinctions from receivable:
+      - data items: 3 keys (NO alertLevel)
+      - options: 1 key (NO showAlert)
+      - colors palette: blue/purple/violet/pink (NOT receivable's green/yellow/red)
+      - title: "应付账款账龄分布" (NOT "应收...")
+      - chartType=BAR (same as receivable)
+    """
+
+    @staticmethod
+    async def _run_chart(monkeypatch, rows):
+        """Run _get_payable_aging_chart with _query_finance_payable_data mocked."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, end_date):
+            return rows
+        monkeypatch.setattr(analysis_finance, "_query_finance_payable_data", fake_query)
+        return await analysis_finance._get_payable_aging_chart("F001", date(2025, 12, 31))
+
+    @pytest.mark.asyncio
+    async def test_data_item_has_exactly_3_keys_no_alertLevel(self, monkeypatch):
+        """Each data item has 3 keys: {agingBucket, amount, percentage}.
+        NO alertLevel (which receivable has). Regression guard for shape divergence."""
+        rows = [{"payable_amount": "100", "payment_amount": "0", "aging_days": 30}]
+        chart = await self._run_chart(monkeypatch, rows)
+        for item in chart["data"]:
+            assert set(item.keys()) == {"agingBucket", "amount", "percentage"}, (
+                f"payable aging chart item should have 3 keys (no alertLevel), got {list(item.keys())}"
+            )
+
+    @pytest.mark.asyncio
+    async def test_options_has_only_colors_no_showAlert(self, monkeypatch):
+        """options has 1 key {colors}. NO showAlert (which receivable has)."""
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert set(chart["options"].keys()) == {"colors"}, (
+            f"payable options should have only 'colors', got {list(chart['options'].keys())}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_colors_palette_matches_payable_pattern(self, monkeypatch):
+        """Locked colors: blue/purple-blue/violet/pink (Java line 858 — NOT receivable's GR/Y/R)."""
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert chart["options"]["colors"] == ["#73c0de", "#5470c6", "#9a60b4", "#ea7ccc"]
+
+    @pytest.mark.asyncio
+    async def test_chart_envelope_matches_payable_signature(self, monkeypatch):
+        """Lock chartType=BAR + title="应付账款账龄分布" + xaxisField/yaxisField shape.
+
+        chartType=BAR (same as receivable) but title differs from receivable's "应收..."
+        """
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert chart["chartType"] == "BAR"
+        assert chart["title"] == "应付账款账龄分布"
+        assert chart["seriesField"] is None
+        assert chart["xaxisField"] == "agingBucket"
+        assert chart["yaxisField"] == "amount"
+
+    @pytest.mark.asyncio
+    async def test_empty_data_emits_4_zero_buckets(self, monkeypatch):
+        """No rows → 4 buckets all (0, 0). Matches Java line 853-866 always-emit pattern."""
+        rows = []
+        chart = await self._run_chart(monkeypatch, rows)
+        assert len(chart["data"]) == 4
+        assert [d["agingBucket"] for d in chart["data"]] == ["0-30天", "31-60天", "61-90天", "90天以上"]
+        assert all(d["amount"] == 0 and d["percentage"] == 0 for d in chart["data"])
+
+    @pytest.mark.asyncio
+    async def test_percentage_zero_guard_when_total_ap_zero(self, monkeypatch):
+        """Java line 2421-2422: `if total_ap > 0` guards percentage calc.
+        When all rows skipped (outstanding<=0), total_ap=0 → all percentages=0."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "100", "aging_days": 30},  # outstanding=0 skip
+            {"payable_amount": "50",  "payment_amount": "100", "aging_days": 60},  # outstanding<0 skip
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        assert all(d["percentage"] == 0 for d in chart["data"])
+        assert all(d["amount"] == 0 for d in chart["data"])
+
+    @pytest.mark.asyncio
+    async def test_percentage_quantize_two_decimal(self, monkeypatch):
+        """Java line 2422: `(amount / total_ap).quantize(0.0001, HALF_UP) * 100`.
+        For 1/3 → 0.3333 * 100 = 33.33 (not 33.34).
+
+        Three rows in 3 different buckets, equal amounts → 33.33% each."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 15},   # 0-30
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 45},   # 31-60
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 75},   # 61-90
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        # Total = 300, each bucket = 100, percentage each = 33.33
+        for item in chart["data"][:3]:
+            assert item["percentage"] == 33.33, f"{item['agingBucket']} expected 33.33, got {item['percentage']}"
+        # 4th bucket (90天以上) should be 0
+        assert chart["data"][3]["percentage"] == 0
