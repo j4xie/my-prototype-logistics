@@ -482,6 +482,255 @@ def _determine_loss_rate_alert_level(loss_rate: Decimal) -> str:
 # ============================================================
 
 
+# ============================================================
+# Section 5a: Turnover mode (Task 9)
+# Mirror Java InventoryHealthAnalysisServiceImpl L141-288 (3 sub-services).
+# ============================================================
+
+
+def _plus_months(d: date, n: int) -> date:
+    """Mirror Java LocalDate.plusMonths(n). Calendar-month arithmetic with
+    end-of-month clamping (Java Jan 31 + 1 month = Feb 28/29).
+
+    Used by `_get_turnover_trend_chart` for MONTH iteration.
+    """
+    import calendar as _cal
+    year = d.year
+    month = d.month + n
+    while month > 12:
+        year += 1
+        month -= 12
+    while month < 1:
+        year -= 1
+        month += 12
+    # Clamp day to last day of target month
+    last_day = _cal.monthrange(year, month)[1]
+    return date(year, month, min(d.day, last_day))
+
+
+def _one_day():
+    from datetime import timedelta
+    return timedelta(days=1)
+
+
+def _metric_result_of(code: str, name: str, value: Decimal, unit: str) -> dict:
+    """Mirror Java MetricResult.of(code, name, value, unit) static factory.
+
+    @Builder default emits null for unset fields EXCEPT alertLevel which
+    defaults to GREEN per Java MetricResult.of behavior (golden verified).
+
+    Key order mirrors Java Jackson serialization order (golden verified):
+      [metricCode, metricName, value, formattedValue, unit, changePercent,
+       changeDirection, changeValue, alertLevel, dimensionValue, description]
+    """
+    return {
+        "metricCode":      code,
+        "metricName":      name,
+        "value":           _decimal_to_number(value),
+        "formattedValue":  None,
+        "unit":            unit,
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      "GREEN",
+        "dimensionValue":  None,
+        "description":     None,
+    }
+
+
+async def _get_turnover_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """4 metrics: TURNOVER_RATE / INVENTORY_DAYS / CONSUMPTION_AMOUNT / INVENTORY_VALUE.
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getTurnoverAnalysis L141-203.
+    Spec §3.7.1.
+    """
+    current_inventory_value = await _query_inventory_value_total(factory_id)
+    # _query_inventory_value_total already coalesces null → Decimal('0')
+
+    consumptions = await _query_material_consumptions_in_range(factory_id, start_date, end_date)
+    total_consumption = Decimal("0")
+    for c in consumptions:
+        tc = c.get("total_cost")
+        if tc is not None:
+            total_consumption += _to_decimal(tc)
+
+    days_between = (end_date - start_date).days + 1
+    annualized = (total_consumption * Decimal("365") / Decimal(days_between)).quantize(
+        _SCALE, rounding=_QUANTIZE_HALF_UP
+    )
+
+    if current_inventory_value > Decimal("0"):
+        turnover_rate = (annualized / current_inventory_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        )
+    else:
+        turnover_rate = Decimal("0")
+
+    metrics: list[dict] = []
+
+    # Metric 1: TURNOVER_RATE
+    # Key order mirrors golden: [metricCode, metricName, value, formattedValue, unit,
+    #   changePercent, changeDirection, changeValue, alertLevel, dimensionValue, description]
+    turnover_display = turnover_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    metrics.append({
+        "metricCode":      "TURNOVER_RATE",
+        "metricName":      "库存周转率",
+        "value":           _decimal_to_number(turnover_display),
+        "formattedValue":  f"{float(turnover_rate):.1f} 次/年",  # Java %.1f doubleValue
+        "unit":            "次/年",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      _determine_turnover_alert_level(turnover_rate),
+        "dimensionValue":  None,
+        "description":     None,
+    })
+
+    # Metric 2: INVENTORY_DAYS — Java fallback 999 when turnover_rate <= 0
+    if turnover_rate > Decimal("0"):
+        inventory_days = (Decimal("365") / turnover_rate).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        )
+    else:
+        inventory_days = Decimal("999")
+    inv_days_zero_scale = inventory_days.quantize(Decimal("1"), rounding=_QUANTIZE_HALF_UP)
+    metrics.append({
+        "metricCode":      "INVENTORY_DAYS",
+        "metricName":      "库存天数",
+        "value":           _decimal_to_number(inv_days_zero_scale),
+        "formattedValue":  f"{float(inventory_days):.0f} 天",
+        "unit":            "天",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      _determine_inventory_days_alert_level(inventory_days),
+        "dimensionValue":  None,
+        "description":     None,
+    })
+
+    # Metric 3: CONSUMPTION_AMOUNT (MetricResult.of factory — no formattedValue, alertLevel=GREEN)
+    metrics.append(_metric_result_of("CONSUMPTION_AMOUNT", "期间消耗", total_consumption, "元"))
+
+    # Metric 4: INVENTORY_VALUE
+    metrics.append(_metric_result_of("INVENTORY_VALUE", "库存价值", current_inventory_value, "元"))
+
+    return metrics
+
+
+async def _get_turnover_trend_chart(
+    factory_id: str, start_date: date, end_date: date, period: str = "MONTH"
+) -> dict:
+    """LINE chart with MONTH iteration. Mirror Java L207-251. Spec §3.7.2.
+
+    ⚠️ Period parameter is **ignored** by Java impl. Python mirror: always do MONTH
+    iteration (controller hardcodes "MONTH" anyway).
+
+    trendChart key order (golden verified, Rule 8):
+      [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+    Note: xaxisField / yaxisField — all lowercase (Java camelCase → Jackson → lowercase).
+    """
+    chart_data: list[dict] = []
+    current = start_date.replace(day=1)
+
+    while current <= end_date:
+        # plusMonths(1).minusDays(1) — last day of current month
+        month_end = _plus_months(current, 1) - _one_day()
+        if month_end > end_date:
+            month_end = end_date
+
+        month_consumptions = await _query_material_consumptions_in_range(
+            factory_id, current, month_end
+        )
+        month_consumption = Decimal("0")
+        for c in month_consumptions:
+            tc = c.get("total_cost")
+            if tc is not None:
+                month_consumption += _to_decimal(tc)
+
+        chart_data.append({
+            "month":       f"{current.year}-{current.month:02d}",
+            "consumption": _decimal_to_number(
+                month_consumption.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        })
+        current = _plus_months(current, 1)
+
+    options = {
+        "showDataLabels": False,
+        "smooth":         True,
+    }
+
+    return {
+        "chartType":   "LINE",
+        "title":       "消耗趋势",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+        "xaxisField":  "month",
+        "yaxisField":  "consumption",
+    }
+
+
+async def _get_turnover_by_category(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Ranking sorted desc by total cost. Mirror Java L255-288. Spec §3.7.3.
+
+    ⚠️ start_date/end_date parameters are **NOT used** by Java impl (line 258 only
+    queries findByFactoryIdAndStatus, no time filter). Python mirror — accepts
+    parameters for signature parity but ignores them.
+    """
+    batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    category_values: dict[str, Decimal] = {}
+    for b in batches:
+        mtid = b.get("material_type_id")
+        if mtid is not None:
+            cq = _get_current_quantity(b)
+            up = b.get("unit_price")
+            up_dec = _to_decimal(up) if up is not None else Decimal("0")
+            value = cq * up_dec
+            category_values[mtid] = category_values.get(mtid, Decimal("0")) + value
+
+    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+
+    rankings = []
+    for rank, (mtid, value) in enumerate(sorted_entries, start=1):
+        rankings.append({
+            "rank":           rank,
+            "name":           mtid,
+            "value":          _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         None,
+            "completionRate": None,
+            "alertLevel":     "GREEN",
+        })
+    return rankings
+
+
+async def _get_turnover_mode(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Turnover mode entry — composes 3 sub-services into 5-key envelope.
+
+    F999 golden Jackson HashMap key order (verified): [endDate, ranking, metrics,
+    trendChart, startDate]. Python dict literal mirrors exactly.
+    """
+    metrics = await _get_turnover_analysis(factory_id, start_date, end_date)
+    ranking = await _get_turnover_by_category(factory_id, start_date, end_date)
+    trend_chart = await _get_turnover_trend_chart(factory_id, start_date, end_date)
+    return {
+        "endDate":    end_date.isoformat(),
+        "ranking":    ranking,
+        "metrics":    metrics,
+        "trendChart": trend_chart,
+        "startDate":  start_date.isoformat(),
+    }
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
@@ -499,7 +748,10 @@ async def get_inventory_analysis(
       analysisType empty     → default getInventoryHealth (501 in PR-A; PR-B real impl)
       analysisType=other     → 501 envelope (un-ported)
     """
-    # Skeleton: 501 fallback for everything. Modes wired in Tasks 9-11.
+    if analysisType == "turnover":
+        result = await _get_turnover_mode(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+    # expiry / aging modes wired in Tasks 10-11
     return wrap_response(
         data=None,
         success=False,
