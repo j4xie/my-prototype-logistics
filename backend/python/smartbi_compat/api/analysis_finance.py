@@ -2178,6 +2178,75 @@ async def _get_receivable_metrics(
     return metrics
 
 
+async def _get_overdue_customer_ranking(
+    factory_id: str, end_date: date
+) -> list[dict]:
+    """Top-10 customers by overdue outstanding amount.
+
+    Mirror Java FinanceAnalysisServiceImpl.getOverdueCustomerRanking (line 734-783).
+    1-year window. Per-customer aggregation (sum outstanding, max aging_days).
+    AlertLevel by max aging: >90 RED, >60 YELLOW, else GREEN.
+    """
+    start_window = end_date - relativedelta(years=1)
+    ar_data = await _query_finance_data(factory_id, "AR", start_window, end_date)
+
+    # Java line 741-756 — per-customer aggregation. Python dict 3.7+ insertion-order
+    # parity with Java LinkedHashMap.
+    customer_overdue: dict[str, list] = {}  # name → [Decimal total, int max_aging]
+    for row in ar_data:
+        customer_name = row.get("customer_name")
+        aging_days = row.get("aging_days")
+        # Java line 743 — 3-condition guard (Rule 1 — explicit None checks)
+        if customer_name is None or aging_days is None or aging_days <= 0:
+            continue
+        receivable = (
+            _to_decimal(row["receivable_amount"])
+            if row.get("receivable_amount") is not None
+            else Decimal("0")
+        )
+        collection = (
+            _to_decimal(row["collection_amount"])
+            if row.get("collection_amount") is not None
+            else Decimal("0")
+        )
+        outstanding = receivable - collection
+        # Java line 751 — outstanding > 0 only
+        if outstanding <= Decimal("0"):
+            continue
+        if customer_name not in customer_overdue:
+            customer_overdue[customer_name] = [Decimal("0"), 0]
+        customer_overdue[customer_name][0] += outstanding
+        # Java line 754 — track max aging
+        customer_overdue[customer_name][1] = max(
+            customer_overdue[customer_name][1], int(aging_days)
+        )
+
+    # Java line 760-763 — sort desc by overdue, top-10
+    sorted_customers = sorted(
+        customer_overdue.items(),
+        key=lambda kv: kv[1][0],
+        reverse=True,
+    )[:10]
+
+    rankings: list[dict] = []
+    for rank, (customer, (total, max_aging)) in enumerate(sorted_customers, start=1):
+        # Java line 767-772 — alertLevel by max aging
+        if max_aging > 90:
+            alert = "RED"
+        elif max_aging > 60:
+            alert = "YELLOW"
+        else:
+            alert = "GREEN"
+        rankings.append(_new_ranking_item_dict(
+            rank=rank,
+            name=customer,
+            value=_decimal_to_number(total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            alert_level=alert,
+        ))
+
+    return rankings
+
+
 # ============================================================
 # Section 3b: Payable sub-services real impls (Phase E)
 # Mirror Java FinanceAnalysisServiceImpl getPayableMetrics + getPayableAgingChart.
