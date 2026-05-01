@@ -1,102 +1,102 @@
-{
-  "verb": "GET",
-  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=turnover",
-  "factory": "F999",
-  "response": {
-    "code": 200,
-    "message": "≤Ÿ◊˜≥…π¶",
-    "data": {
-      "endDate": "2025-01-31",
-      "ranking": [],
-      "metrics": [
-        {
-          "metricCode": "TURNOVER_RATE",
-          "metricName": "ø‚¥Ê÷‹◊™¬ ",
-          "value": 0.0,
-          "formattedValue": "0.0 ¥Œ/ƒÍ",
-          "unit": "¥Œ/ƒÍ",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "RED",
-          "dimensionValue": null,
-          "description": null
-        },
-        {
-          "metricCode": "INVENTORY_DAYS",
-          "metricName": "ø‚¥ÊÃÏ ˝",
-          "value": 999,
-          "formattedValue": "999 ÃÏ",
-          "unit": "ÃÏ",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "RED",
-          "dimensionValue": null,
-          "description": null
-        },
-        {
-          "metricCode": "CONSUMPTION_AMOUNT",
-          "metricName": "∆⁄º‰œ˚∫ƒ",
-          "value": 0,
-          "formattedValue": null,
-          "unit": "‘™",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": null
-        },
-        {
-          "metricCode": "INVENTORY_VALUE",
-          "metricName": "ø‚¥Êº€÷µ",
-          "value": 0,
-          "formattedValue": null,
-          "unit": "‘™",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": null
-        }
-      ],
-      "trendChart": {
-        "chartType": "LINE",
-        "title": "œ˚∫ƒ«˜ ∆",
-        "seriesField": null,
-        "data": [
-          {
-            "month": "2025-01",
-            "consumption": 0.0
-          }
-        ],
-        "options": {
-          "showDataLabels": false,
-          "smooth": true
-        },
-        "xaxisField": "month",
-        "yaxisField": "consumption"
-      },
-      "startDate": "2025-01-01"
-    },
-    "timestamp": "2026-05-02T05:53:26.895429052",
-    "success": true,
-    "actionHint": null,
-    "severity": null,
-    "hintTarget": null
-  },
-  "_meta": {
-    "name": "analysis-inventory-type-turnover",
-    "verb": "GET",
-    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-01-31",
-      "analysisType": "turnover"
-    },
-    "factory": "F999",
-    "javaPort": 10011
-  }
-}
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=turnover",
+  "factory": "F999",
+  "response": {
+    "code": 200,
+    "message": "Êìç‰ΩúÊàêÂäü",
+    "data": {
+      "endDate": "2025-01-31",
+      "ranking": [],
+      "metrics": [
+        {
+          "metricCode": "TURNOVER_RATE",
+          "metricName": "Â∫ìÂ≠òÂë®ËΩ¨Áéá",
+          "value": 0.0,
+          "formattedValue": "0.0 Ê¨°/Âπ¥",
+          "unit": "Ê¨°/Âπ¥",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "INVENTORY_DAYS",
+          "metricName": "Â∫ìÂ≠òÂ§©Êï∞",
+          "value": 999,
+          "formattedValue": "999 Â§©",
+          "unit": "Â§©",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "CONSUMPTION_AMOUNT",
+          "metricName": "ÊúüÈó¥Ê∂àËÄó",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "ÂÖÉ",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "INVENTORY_VALUE",
+          "metricName": "Â∫ìÂ≠ò‰ª∑ÂÄº",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "ÂÖÉ",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "trendChart": {
+        "chartType": "LINE",
+        "title": "Ê∂àËÄóË∂ãÂäø",
+        "seriesField": null,
+        "data": [
+          {
+            "month": "2025-01",
+            "consumption": 0.0
+          }
+        ],
+        "options": {
+          "showDataLabels": false,
+          "smooth": true
+        },
+        "xaxisField": "month",
+        "yaxisField": "consumption"
+      },
+      "startDate": "2025-01-01"
+    },
+    "timestamp": "2026-05-02T05:53:26.895429052",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "_meta": {
+    "name": "analysis-inventory-type-turnover",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-01-31",
+      "analysisType": "turnover"
+    },
+    "factory": "F999",
+    "javaPort": 10011
+  }
+}

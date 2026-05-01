@@ -1,93 +1,93 @@
-{
-  "verb": "GET",
-  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=aging",
-  "factory": "F999",
-  "response": {
-    "code": 200,
-    "message": "≤Ÿ◊˜≥…π¶",
-    "data": {
-      "agingMetrics": [
-        {
-          "metricCode": "SLOW_MOVING_RATE",
-          "metricName": "¥Ù÷Õø‚¥Ê¬ ",
-          "value": 0.0,
-          "formattedValue": "0.0%",
-          "unit": "%",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": "90ÃÏ“‘…œø‚¡‰’º±»"
-        },
-        {
-          "metricCode": "SLOW_MOVING_VALUE",
-          "metricName": "¥Ù÷Õø‚¥Êº€÷µ",
-          "value": 0,
-          "formattedValue": null,
-          "unit": "‘™",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": null
-        }
-      ],
-      "endDate": "2025-01-31",
-      "longAgingBatches": [],
-      "agingChart": {
-        "chartType": "BAR",
-        "title": "ø‚¡‰∑÷≤º",
-        "seriesField": null,
-        "data": [
-          {
-            "aging": "0-30ÃÏ",
-            "value": 0.0
-          },
-          {
-            "aging": "31-60ÃÏ",
-            "value": 0.0
-          },
-          {
-            "aging": "61-90ÃÏ",
-            "value": 0.0
-          },
-          {
-            "aging": "90ÃÏ“‘…œ",
-            "value": 0.0
-          }
-        ],
-        "options": {
-          "showDataLabels": true,
-          "colors": [
-            "#52c41a",
-            "#1890ff",
-            "#faad14",
-            "#ff4d4f"
-          ]
-        },
-        "xaxisField": "aging",
-        "yaxisField": "value"
-      },
-      "startDate": "2025-01-01"
-    },
-    "timestamp": "2026-05-02T05:53:38.281025846",
-    "success": true,
-    "actionHint": null,
-    "severity": null,
-    "hintTarget": null
-  },
-  "_meta": {
-    "name": "analysis-inventory-type-aging",
-    "verb": "GET",
-    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-01-31",
-      "analysisType": "aging"
-    },
-    "factory": "F999",
-    "javaPort": 10011
-  }
-}
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=aging",
+  "factory": "F999",
+  "response": {
+    "code": 200,
+    "message": "Êìç‰ΩúÊàêÂäü",
+    "data": {
+      "agingMetrics": [
+        {
+          "metricCode": "SLOW_MOVING_RATE",
+          "metricName": "ÂëÜÊªûÂ∫ìÂ≠òÁéá",
+          "value": 0.0,
+          "formattedValue": "0.0%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "90Â§©‰ª•‰∏äÂ∫ìÈæÑÂç†ÊØî"
+        },
+        {
+          "metricCode": "SLOW_MOVING_VALUE",
+          "metricName": "ÂëÜÊªûÂ∫ìÂ≠ò‰ª∑ÂÄº",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "ÂÖÉ",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "endDate": "2025-01-31",
+      "longAgingBatches": [],
+      "agingChart": {
+        "chartType": "BAR",
+        "title": "Â∫ìÈæÑÂàÜÂ∏É",
+        "seriesField": null,
+        "data": [
+          {
+            "aging": "0-30Â§©",
+            "value": 0.0
+          },
+          {
+            "aging": "31-60Â§©",
+            "value": 0.0
+          },
+          {
+            "aging": "61-90Â§©",
+            "value": 0.0
+          },
+          {
+            "aging": "90Â§©‰ª•‰∏ä",
+            "value": 0.0
+          }
+        ],
+        "options": {
+          "showDataLabels": true,
+          "colors": [
+            "#52c41a",
+            "#1890ff",
+            "#faad14",
+            "#ff4d4f"
+          ]
+        },
+        "xaxisField": "aging",
+        "yaxisField": "value"
+      },
+      "startDate": "2025-01-01"
+    },
+    "timestamp": "2026-05-02T05:53:38.281025846",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "_meta": {
+    "name": "analysis-inventory-type-aging",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-01-31",
+      "analysisType": "aging"
+    },
+    "factory": "F999",
+    "javaPort": 10011
+  }
+}

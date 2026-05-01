@@ -1,138 +1,138 @@
-{
-  "verb": "GET",
-  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=expiry",
-  "factory": "F999",
-  "response": {
-    "code": 200,
-    "message": "²Ù×÷³É¹¦",
-    "data": {
-      "riskAnalysis": [
-        {
-          "metricCode": "EXPIRY_RISK_RATE",
-          "metricName": "ÁÙÆÚ·çÏÕÂÊ",
-          "value": 0.0,
-          "formattedValue": "0.0%",
-          "unit": "%",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": "30ÌìÄÚÁÙÆÚ¿â´æÕ¼±È"
-        },
-        {
-          "metricCode": "EXPIRING_COUNT",
-          "metricName": "ÁÙÆÚÅú´ÎÊý",
-          "value": 0,
-          "formattedValue": "0 Åú",
-          "unit": "Åú",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": null
-        },
-        {
-          "metricCode": "HIGH_RISK_COUNT",
-          "metricName": "¸ß·çÏÕÅú´Î",
-          "value": 0,
-          "formattedValue": "0 Åú",
-          "unit": "Åú",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": "7ÌìÄÚ¹ýÆÚ"
-        },
-        {
-          "metricCode": "EXPIRED_COUNT",
-          "metricName": "ÒÑ¹ýÆÚÅú´Î",
-          "value": 0,
-          "formattedValue": "0 Åú",
-          "unit": "Åú",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": null
-        },
-        {
-          "metricCode": "EXPIRING_VALUE",
-          "metricName": "ÁÙÆÚ¿â´æ¼ÛÖµ",
-          "value": 0,
-          "formattedValue": null,
-          "unit": "Ôª",
-          "changePercent": null,
-          "changeDirection": null,
-          "changeValue": null,
-          "alertLevel": "GREEN",
-          "dimensionValue": null,
-          "description": null
-        }
-      ],
-      "endDate": "2025-01-31",
-      "riskChart": {
-        "chartType": "PIE",
-        "title": "ÁÙÆÚ·çÏÕ·Ö²¼",
-        "seriesField": null,
-        "data": [
-          {
-            "status": "Õý³££¨>30Ìì£©",
-            "value": 0.0
-          },
-          {
-            "status": "¹Ø×¢£¨15-30Ìì£©",
-            "value": 0.0
-          },
-          {
-            "status": "Ô¤¾¯£¨7-15Ìì£©",
-            "value": 0.0
-          },
-          {
-            "status": "½ô¼±£¨<7Ìì£©",
-            "value": 0.0
-          },
-          {
-            "status": "ÎÞ±£ÖÊÆÚ",
-            "value": 0.0
-          }
-        ],
-        "options": {
-          "showPercentage": true,
-          "showLegend": true,
-          "colors": [
-            "#52c41a",
-            "#faad14",
-            "#ff7a45",
-            "#ff4d4f",
-            "#8c8c8c"
-          ]
-        },
-        "xaxisField": "status",
-        "yaxisField": "value"
-      },
-      "expiringBatches": [],
-      "startDate": "2025-01-01"
-    },
-    "timestamp": "2026-05-02T05:53:35.099301784",
-    "success": true,
-    "actionHint": null,
-    "severity": null,
-    "hintTarget": null
-  },
-  "_meta": {
-    "name": "analysis-inventory-type-expiry",
-    "verb": "GET",
-    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-01-31",
-      "analysisType": "expiry"
-    },
-    "factory": "F999",
-    "javaPort": 10011
-  }
-}
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/inventory?startDate=2025-01-01&endDate=2025-01-31&analysisType=expiry",
+  "factory": "F999",
+  "response": {
+    "code": 200,
+    "message": "æ“ä½œæˆåŠŸ",
+    "data": {
+      "riskAnalysis": [
+        {
+          "metricCode": "EXPIRY_RISK_RATE",
+          "metricName": "ä¸´æœŸé£Žé™©çŽ‡",
+          "value": 0.0,
+          "formattedValue": "0.0%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "30å¤©å†…ä¸´æœŸåº“å­˜å æ¯”"
+        },
+        {
+          "metricCode": "EXPIRING_COUNT",
+          "metricName": "ä¸´æœŸæ‰¹æ¬¡æ•°",
+          "value": 0,
+          "formattedValue": "0 æ‰¹",
+          "unit": "æ‰¹",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "HIGH_RISK_COUNT",
+          "metricName": "é«˜é£Žé™©æ‰¹æ¬¡",
+          "value": 0,
+          "formattedValue": "0 æ‰¹",
+          "unit": "æ‰¹",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "7å¤©å†…è¿‡æœŸ"
+        },
+        {
+          "metricCode": "EXPIRED_COUNT",
+          "metricName": "å·²è¿‡æœŸæ‰¹æ¬¡",
+          "value": 0,
+          "formattedValue": "0 æ‰¹",
+          "unit": "æ‰¹",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "EXPIRING_VALUE",
+          "metricName": "ä¸´æœŸåº“å­˜ä»·å€¼",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "å…ƒ",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "endDate": "2025-01-31",
+      "riskChart": {
+        "chartType": "PIE",
+        "title": "ä¸´æœŸé£Žé™©åˆ†å¸ƒ",
+        "seriesField": null,
+        "data": [
+          {
+            "status": "æ­£å¸¸ï¼ˆ>30å¤©ï¼‰",
+            "value": 0.0
+          },
+          {
+            "status": "å…³æ³¨ï¼ˆ15-30å¤©ï¼‰",
+            "value": 0.0
+          },
+          {
+            "status": "é¢„è­¦ï¼ˆ7-15å¤©ï¼‰",
+            "value": 0.0
+          },
+          {
+            "status": "ç´§æ€¥ï¼ˆ<7å¤©ï¼‰",
+            "value": 0.0
+          },
+          {
+            "status": "æ— ä¿è´¨æœŸ",
+            "value": 0.0
+          }
+        ],
+        "options": {
+          "showPercentage": true,
+          "showLegend": true,
+          "colors": [
+            "#52c41a",
+            "#faad14",
+            "#ff7a45",
+            "#ff4d4f",
+            "#8c8c8c"
+          ]
+        },
+        "xaxisField": "status",
+        "yaxisField": "value"
+      },
+      "expiringBatches": [],
+      "startDate": "2025-01-01"
+    },
+    "timestamp": "2026-05-02T05:53:35.099301784",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "_meta": {
+    "name": "analysis-inventory-type-expiry",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-01-31",
+      "analysisType": "expiry"
+    },
+    "factory": "F999",
+    "javaPort": 10011
+  }
+}
