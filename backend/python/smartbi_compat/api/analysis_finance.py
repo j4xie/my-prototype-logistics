@@ -2244,6 +2244,84 @@ async def _get_budget_metrics(factory_id: str, year: int, month: int) -> list[di
     ]
 
 
+async def _get_budget_execution_waterfall(factory_id: str, year: int) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetExecutionWaterfall (line 923-979).
+
+    Signature `(factory_id, year)` per Rule 3 — Java takes (int year), Python mirrors.
+    Date range derived: [year-01-01, year-12-31].
+
+    Returns ChartConfig dict (chartType=WATERFALL).
+
+    Edge cases:
+    - Empty budget_data → annual_budget=0, no monthly decreases, chart_data=[
+        年度预算 0 total, 剩余预算 0 total] (length 2)
+    - All 12 months had actuals>0 → length 14 (1 total + 12 decrease + 1 total)
+    - Months with actual<=0 skipped per Java line 956 `compareTo(BigDecimal.ZERO) > 0`
+    - Java line 941 NPEs on null record_date — Python defensive skip (data quality
+      divergence per spec §8 IC1 risk; Phase 3.B/C cleanup retrofits cost too).
+    """
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+
+    budget_data = await _query_finance_data(factory_id, "BUDGET", start_date, end_date)
+
+    # Java line 933-936: raw sum (NOT abs, F2 raw mirror)
+    annual_budget = sum(
+        (_to_decimal(r["budget_amount"]) for r in budget_data
+         if r.get("budget_amount") is not None),
+        Decimal("0"),
+    )
+
+    # Java line 939-944: aggregate per month (TreeMap → sorted insertion order)
+    monthly_actual: dict[int, Decimal] = {}
+    for r in budget_data:
+        # Defensive skip if record_date is None (Java line 941 NPEs)
+        rec_date = r.get("record_date")
+        if rec_date is None:
+            continue
+        month = rec_date.month
+        # Java line 942: null actual → BigDecimal.ZERO (NOT skip), then merge add
+        actual = (
+            _to_decimal(r["actual_amount"])
+            if r.get("actual_amount") is not None
+            else Decimal("0")
+        )
+        monthly_actual[month] = monthly_actual.get(month, Decimal("0")) + actual
+
+    # Java line 947-963: build waterfall data list
+    chart_data: list[dict] = [
+        _create_waterfall_item("年度预算", annual_budget, "total"),
+    ]
+    remaining = annual_budget
+    # Iterate 1..12 in order (Java line 954)
+    for month in range(1, 13):
+        actual = monthly_actual.get(month, Decimal("0"))
+        # Java line 956: only emit decrease if actual > 0
+        if actual > Decimal("0"):
+            chart_data.append(_create_waterfall_item(f"{month}月", -actual, "decrease"))
+            remaining -= actual
+    chart_data.append(_create_waterfall_item("剩余预算", remaining, "total"))
+
+    # Java line 965-969: LinkedHashMap put-order [waterfallType, increaseColor,
+    # decreaseColor, totalColor] verified via F999 golden line 43-48
+    options = {
+        "waterfallType": True,
+        "increaseColor": "#91cc75",
+        "decreaseColor": "#ee6666",
+        "totalColor": "#5470c6",
+    }
+
+    return _new_chart_config_dict(
+        chart_type="WATERFALL",
+        title=f"{year}年预算执行瀑布图",
+        series_field=None,
+        data=chart_data,
+        options=options,
+        xaxis_field="name",
+        yaxis_field="value",
+    )
+
+
 # ============================================================
 # Section 5: Route handler
 # ============================================================
