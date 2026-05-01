@@ -142,7 +142,7 @@ async def get_datasource_fields(
         return wrap_response(
             data=None,
             success=False,
-            code=500,
+            code=400,
             message=f"Get field definitions failed: 数据源不存在: {datasource_id}",
         )
     return wrap_response(data=[_field_def_to_json(r) for r in rows])
