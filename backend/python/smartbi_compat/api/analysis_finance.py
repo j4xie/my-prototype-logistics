@@ -619,6 +619,126 @@ async def _get_metric_value_for_quarter(
     )
 
 
+async def _calculate_month_yoy_mom(
+    factory_id: str, period: str, metric: str
+) -> list:
+    """Mirror Java calculateMonthYoYMoM (line 1825-1864).
+
+    period format: 'YYYY-MM'. Returns single chart point.
+    """
+    year, month = map(int, period.split("-"))
+    current_ym = (year, month)
+    last_year_ym = (year - 1, month)
+    last_month_y, last_month_m = (year, month - 1) if month > 1 else (year - 1, 12)
+    last_period_ym = (last_month_y, last_month_m)
+
+    current_value = await _get_metric_value_for_period(factory_id, current_ym, metric)
+    last_year_value = await _get_metric_value_for_period(factory_id, last_year_ym, metric)
+    last_period_value = await _get_metric_value_for_period(factory_id, last_period_ym, metric)
+
+    yoy_growth_rate = _safe_growth_rate(current_value, last_year_value)
+    mom_growth_rate = _safe_growth_rate(current_value, last_period_value)
+
+    return [{
+        "period": period,
+        "currentValue": _decimal_to_number(current_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastYearValue": _decimal_to_number(last_year_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastPeriodValue": _decimal_to_number(last_period_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyGrowthRate": _decimal_to_number(yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momGrowthRate": _decimal_to_number(mom_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyChange": _decimal_to_number((current_value - last_year_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momChange": _decimal_to_number((current_value - last_period_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+    }]
+
+
+async def _calculate_quarter_yoy_mom(
+    factory_id: str, period: str, metric: str
+) -> list:
+    """Mirror Java calculateQuarterYoYMoM (line 1869-1913).
+
+    period format: 'YYYY-Qn' (e.g. '2026-Q1'). Returns single chart point.
+    Note: yoy field name is `momGrowthRate` even though it's QoQ — Java reuses field name.
+    """
+    parts = period.split("-Q")
+    year = int(parts[0])
+    quarter = int(parts[1])
+
+    last_year_q = quarter
+    last_year_y = year - 1
+    last_quarter_q = 4 if quarter == 1 else quarter - 1
+    last_quarter_y = year - 1 if quarter == 1 else year
+
+    current_value = await _get_metric_value_for_quarter(factory_id, year, quarter, metric)
+    last_year_value = await _get_metric_value_for_quarter(factory_id, last_year_y, last_year_q, metric)
+    last_quarter_value = await _get_metric_value_for_quarter(factory_id, last_quarter_y, last_quarter_q, metric)
+
+    yoy_growth_rate = _safe_growth_rate(current_value, last_year_value)
+    qoq_growth_rate = _safe_growth_rate(current_value, last_quarter_value)
+
+    return [{
+        "period": period,
+        "currentValue": _decimal_to_number(current_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastYearValue": _decimal_to_number(last_year_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastPeriodValue": _decimal_to_number(last_quarter_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyGrowthRate": _decimal_to_number(yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momGrowthRate": _decimal_to_number(qoq_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyChange": _decimal_to_number((current_value - last_year_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momChange": _decimal_to_number((current_value - last_quarter_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+    }]
+
+
+async def _calculate_month_range_yoy_mom(
+    factory_id: str, start_period: str, end_period: str, metric: str
+) -> list:
+    """Mirror Java calculateMonthRangeYoYMoM (line 1918-1932).
+
+    Iterates from start_period to end_period (inclusive), calling _calculate_month_yoy_mom
+    per month. Each iteration emits 1 chart point.
+    """
+    start_year, start_month = map(int, start_period.split("-"))
+    end_year, end_month = map(int, end_period.split("-"))
+
+    result = []
+    current_year, current_month = start_year, start_month
+    while (current_year, current_month) <= (end_year, end_month):
+        period = f"{current_year}-{current_month:02d}"
+        month_data = await _calculate_month_yoy_mom(factory_id, period, metric)
+        result.extend(month_data)
+        if current_month == 12:
+            current_year += 1
+            current_month = 1
+        else:
+            current_month += 1
+    return result
+
+
+async def _calculate_quarter_range_yoy_mom(
+    factory_id: str, start_period: str, end_period: str, metric: str
+) -> list:
+    """Mirror Java calculateQuarterRangeYoYMoM (line 1937-1965).
+
+    Iterates from start_period (YYYY-Qn) to end_period inclusive, calling
+    _calculate_quarter_yoy_mom per quarter.
+    """
+    start_year_str, start_q_str = start_period.split("-Q")
+    end_year_str, end_q_str = end_period.split("-Q")
+    start_year, start_q = int(start_year_str), int(start_q_str)
+    end_year, end_q = int(end_year_str), int(end_q_str)
+
+    result = []
+    current_year, current_quarter = start_year, start_q
+    # Java line 1951: while (currentYear < endYear || (currentYear == endYear && currentQuarter <= endQuarter))
+    while current_year < end_year or (current_year == end_year and current_quarter <= end_q):
+        period = f"{current_year}-Q{current_quarter}"
+        quarter_data = await _calculate_quarter_yoy_mom(factory_id, period, metric)
+        result.extend(quarter_data)
+        current_quarter += 1
+        if current_quarter > 4:
+            current_quarter = 1
+            current_year += 1
+    return result
+
+
 async def _get_budget_achievement_chart(
     factory_id: str, year: int, metric: str = "revenue"
 ) -> dict:
