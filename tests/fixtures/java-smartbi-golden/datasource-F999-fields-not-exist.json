@@ -1,0 +1,10 @@
+{
+  "code": 400,
+  "message": "Get field definitions failed: 数据源不存在: 999999",
+  "data": null,
+  "timestamp": "2026-05-02T00:39:22.448781837",
+  "success": false,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

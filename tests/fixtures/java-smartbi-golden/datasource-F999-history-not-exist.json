@@ -1,0 +1,10 @@
+{
+  "code": 400,
+  "message": "Get history failed: 数据源不存在: 999999",
+  "data": null,
+  "timestamp": "2026-05-02T01:04:24.786492069",
+  "success": false,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
