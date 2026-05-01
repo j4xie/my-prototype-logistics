@@ -2322,6 +2322,94 @@ async def _get_budget_execution_waterfall(factory_id: str, year: int) -> dict:
     )
 
 
+async def _get_budget_vs_actual_chart(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetVsActualChart (line 982-1028).
+
+    Signature `(factory_id, start_date, end_date)` per Rule 3 — matches Java
+    (LocalDate startDate, LocalDate endDate).
+
+    Returns ChartConfig dict (chartType=BAR).
+
+    Per-category aggregation with LinkedHashMap put-order. Each chart_data item
+    has 6 keys [category, budget, actual, variance, executionRate, alertLevel]
+    (verified via Java line 1000-1010 LinkedHashMap put sequence).
+
+    Java line 1005-1007 emits raw 4-decimal executionRate (no setScale(2));
+    Python `_decimal_to_number(Decimal("33.3300"))` → `33.33` matches Jackson's
+    BigDecimal stripping behavior. Empty-data F999 case verified.
+
+    Rule 8 caveat: comparison.options.series Map.of(2) entries serialize as
+    [color, name] (Jackson hash order, NOT Java source param order which is
+    [name, color]). Verified via F999 golden line 13-20.
+    """
+    budget_data = await _query_finance_data(factory_id, "BUDGET", start_date, end_date)
+
+    # Java line 989-995: per-category aggregate (LinkedHashMap insertion order)
+    category_data: dict[str, list[Decimal]] = {}
+    for r in budget_data:
+        category = r.get("category") if r.get("category") is not None else "其他"
+        slot = category_data.setdefault(category, [Decimal("0"), Decimal("0")])
+        # Java line 993: null → BigDecimal.ZERO, NOT skip
+        budget_amount = (
+            _to_decimal(r["budget_amount"])
+            if r.get("budget_amount") is not None
+            else Decimal("0")
+        )
+        actual_amount = (
+            _to_decimal(r["actual_amount"])
+            if r.get("actual_amount") is not None
+            else Decimal("0")
+        )
+        slot[0] += budget_amount
+        slot[1] += actual_amount
+
+    # Java line 998-1011: build per-category chart_data (LinkedHashMap put-order)
+    chart_data: list[dict] = []
+    for category, values in category_data.items():
+        # Java line 1005-1007: divide(SCALE=4, HALF_UP).multiply(100), NO final setScale(2)
+        if values[0] > Decimal("0"):
+            execution_rate = (values[1] / values[0]).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            ) * Decimal("100")
+        else:
+            execution_rate = Decimal("0")
+
+        chart_data.append({
+            "category": category,
+            # Java line 1001-1004: raw budget/actual/variance (NO setScale, accumulator
+            # preserves DB scale=2). I-1 fix mirror.
+            "budget": _decimal_to_number(values[0]),
+            "actual": _decimal_to_number(values[1]),
+            "variance": _decimal_to_number(values[1] - values[0]),
+            "executionRate": _decimal_to_number(execution_rate),
+            # Pass raw 4-decimal execution_rate into helper for boundary precision
+            # (mirrors Java line 1009 calling helper before any setScale)
+            "alertLevel": _determine_budget_achievement_alert(execution_rate),
+        })
+
+    # Java line 1013-1018: options (outer LinkedHashMap put-order;
+    # series items Map.of(2) → Rule 8 hash order [color, name])
+    options = {
+        "groupedBar": True,
+        "series": [
+            {"color": "#5470c6", "name": "预算"},   # Map.of(2) Jackson hash: [color, name]
+            {"color": "#91cc75", "name": "实际"},   # NOT Java source [name, color] order
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="预算 vs 实际对比",
+        series_field=None,
+        data=chart_data,
+        options=options,
+        xaxis_field="category",
+        yaxis_field="budget",
+    )
+
+
 # ============================================================
 # Section 5: Route handler
 # ============================================================
