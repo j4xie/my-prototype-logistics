@@ -130,10 +130,9 @@ async def _get_budget_achievement_chart(
     achievementRate, variance, alertLevel}. Always emits 12 month entries
     (even when 0 data — Java line 1132-1135 pre-fills monthlyData with zeros).
     """
-    from datetime import date as date_
-
-    start_date = date_(year, 1, 1)
-    end_date = date_(year, 12, 31)
+    # audit I-7 fix: use module-level `date` (existing import line 28), no alias
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
 
     budget_data = await _query_finance_data(
         factory_id, "BUDGET", start_date, end_date
@@ -291,8 +290,14 @@ async def _get_yoy_mom_chart(
     elif period_type == "QUARTER":
         chart_data = await _calculate_quarter_yoy_mom(factory_id, start_period, metric)
     elif period_type == "MONTH_RANGE":
+        # audit I-8 fix: end_period required for range types
+        if end_period is None:
+            raise HTTPException(status_code=400, detail="endPeriod required for MONTH_RANGE")
         chart_data = await _calculate_month_range_yoy_mom(factory_id, start_period, end_period, metric)
     elif period_type == "QUARTER_RANGE":
+        # audit I-8 fix: end_period required for range types
+        if end_period is None:
+            raise HTTPException(status_code=400, detail="endPeriod required for QUARTER_RANGE")
         chart_data = await _calculate_quarter_range_yoy_mom(factory_id, start_period, end_period, metric)
     else:
         # Java line 1224-1226 default fallback
@@ -475,13 +480,12 @@ async def _get_category_comparison_chart(
     Queries smart_bi_sales_data for both years via _query_finance_sales_fallback.
     Aggregates by product_category, computes ratio/yoy growth, sorts by currentAmount desc.
     """
-    from datetime import date as date_
-
+    # audit I-7 fix: use module-level `date` (existing import line 28), no alias
     current_sales = await _query_finance_sales_fallback(
-        factory_id, date_(year, 1, 1), date_(year, 12, 31)
+        factory_id, date(year, 1, 1), date(year, 12, 31)
     )
     compare_sales = await _query_finance_sales_fallback(
-        factory_id, date_(compare_year, 1, 1), date_(compare_year, 12, 31)
+        factory_id, date(compare_year, 1, 1), date(compare_year, 12, 31)
     )
 
     current_category_amount = _aggregate_sales_by_category(current_sales)
@@ -575,13 +579,24 @@ async def _get_category_comparison_chart(
 
 
 def _aggregate_sales_by_category(sales_rows: list[dict]) -> dict[str, Decimal]:
-    """Mirror Java line 2070-2087. Groups by product_category, sums amount.
-    Java behavior: when category is null/empty → grouped under '其他' bucket.
+    """Mirror Java FinanceAnalysisServiceImpl.aggregateSalesByCategory (line 2070-2087).
+
+    Groups by product_category, sums amount. Java behavior (line 2074):
+      `getProductCategory() != null ? getProductCategory() : "其他"`
+    — uses NULL check, NOT falsy. Empty string `""` is bucketed under `""` (not `"其他"`).
+
+    **Audit C-2 fix**: Python `or "其他"` collapses both None AND `""` to `"其他"` —
+    diverges from Java for rows with empty-string product_category. Use explicit
+    `is not None` to match Java exactly.
+
+    Amount handling per Rule 1 (audit M-6 fix): explicit `is not None` check, not `or 0`.
     """
     result: dict[str, Decimal] = {}
     for row in sales_rows:
-        cat = row.get("product_category") or "其他"
-        amount = _to_decimal(row.get("amount") or 0)
+        raw_cat = row.get("product_category")
+        cat = raw_cat if raw_cat is not None else "其他"
+        raw_amt = row.get("amount")
+        amount = _to_decimal(raw_amt) if raw_amt is not None else Decimal("0")
         result[cat] = result.get(cat, Decimal("0")) + amount
     return result
 ```
@@ -752,13 +767,15 @@ monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fa
 | `test_zero_budget_zero_achievement_rate` | budget=0 → rate=0 (避免 div0) |
 | `test_always_emits_12_months` | 即使 0 records 也 emit 12 entries |
 
-**`TestYoYMoMComparisonChart`** — 4 tests:
+**`TestYoYMoMComparisonChart`** — 6 tests (audit I-6 + I-8 add 2):
 | Test | Branch |
 |---|---|
 | `test_month_periodtype_yoy_mom_calc` | yoy = (cur-lastYear)/lastYear*100 |
 | `test_quarter_periodtype_dispatches_to_quarter_calc` | QUARTER branch hit |
+| `test_month_range_requires_end_period` | audit I-8: MONTH_RANGE w/o endPeriod → HTTP 400 |
 | `test_unknown_periodtype_falls_back_to_month` | 未知 periodType → MONTH default + warning log |
 | `test_zero_base_growth_rate_zero` | lastYear=0 → growth=0 (avoid div0) |
+| `test_cost_metric_uses_finance_data_not_sales` | audit I-6: metric=cost → `_query_finance_data("COST")` 而非 `_query_finance_sales_fallback` |
 
 **`TestCategoryComparisonChart`** — 3 tests:
 | Test | Branch |
@@ -767,7 +784,7 @@ monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fa
 | `test_sort_by_current_amount_desc` | 数据按 currentAmount 降序 |
 | `test_new_category_yoy_growth_100` | compare=0, current>0 → yoyGrowth=100 |
 
-总 17 tests (6 byte gate + 11 unit tests).
+总 19 tests (6 byte gate + 13 unit tests, +2 from audit I-6/I-8).
 
 ### 5.3 F001 真窗 (不进 CI)
 
@@ -814,7 +831,7 @@ monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fa
 
 LOC 估计: ~700 (impl 400 + tests 250 + spec/plan 50).
 
-CI gate: pytest 244 (PR-B baseline) + 17 new = 261 全过.
+CI gate: pytest 244 (PR-B baseline) + 19 new = 263 全过 (audit-fix +2).
 
 ---
 
@@ -826,6 +843,8 @@ CI gate: pytest 244 (PR-B baseline) + 17 new = 261 全过.
 | `_query_finance_data` w/ "COST" record_type 在 cretas_db 是否存在 | hotfix 已确认 cretas_user 有 GRANT, prod 6235 行 live data; F999 empty path validated. (audit C-1 fix: revenue/profit/gross_margin 不再用 finance_data, 改用 sales) |
 | `_aggregate_sales_by_category` w/ null category Java 行为 | Java line 2074: `data.getProductCategory() != null ? data.getProductCategory() : "其他"` — 已 1:1 mirror with `or "其他"` in Python |
 | sales_data 行序非确定 (无 ORDER BY in Java repo) | audit C-3 fix: golden 录的是 Java 实际 emit 顺序; Python 用 `_query_finance_sales_fallback` (asyncpg) 行序可能不同. 加 `ORDER BY id` 到 Python SQL 强制 PK 序 (与 Java JPA default 一致) |
+| MONTH_RANGE / QUARTER_RANGE N+1 async DB calls (12-month range = 36 calls) | 接受 Java parity 行为 (Java 也是 serial); 加 timeout 兜底 (FastAPI default 60s 够用); 大 range >24 month 风险, 监控 405 if hit |
+| `endPeriod` 必须存在 for MONTH_RANGE / QUARTER_RANGE | audit I-8 fix: dispatcher 加 None-guard, 抛 HTTP 400 (不 silently fallback 到 MONTH) |
 | sales 跨年 (2024 + 2025) 1+ 年 date range | `_query_finance_sales_fallback` 不限制 date range 长度; Java 也不限 |
 | F001 sub-endpoint 数据可能没 — 跟 profit F001 一样空 | 与 profit F001 同 (录但不 enforce); F001 golden 仅 sister 参考 |
 | budget-achievement metric 默认 "revenue" 但 Java 默认 也是 "revenue" | 已 1:1 mirror; 只改 default 时同步改 Java |
