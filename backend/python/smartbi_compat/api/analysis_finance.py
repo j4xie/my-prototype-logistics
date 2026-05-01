@@ -2410,6 +2410,41 @@ async def _get_budget_vs_actual_chart(
     )
 
 
+async def _get_budget_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis budget branch
+    line 258-263.
+
+    Internal year/month derivation (Java line 259-260):
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+
+    F1 — 3 sub-services use 3 different date scopes (per spec §3.2):
+      - metrics:    [date(year, month, 1), date(year, month, last_day)]  # endDate's month only
+      - waterfall:  [date(year, 1, 1), date(year, 12, 31)]                # full calendar year
+      - comparison: [start_date, end_date]                                 # dispatcher range
+
+    Returns 5-key dict in **verified Jackson hash order** (recorded F999/F001 golden):
+        [comparison, endDate, waterfall, metrics, startDate]
+    """
+    year = end_date.year
+    month = end_date.month
+
+    metrics = await _get_budget_metrics(factory_id, year, month)
+    waterfall = await _get_budget_execution_waterfall(factory_id, year)
+    comparison = await _get_budget_vs_actual_chart(factory_id, start_date, end_date)
+
+    return {
+        # Verified Jackson hash order from F999 golden line 4-107 (2026-05-02 recording)
+        "comparison": comparison,
+        "endDate": end_date.isoformat(),
+        "waterfall": waterfall,
+        "metrics": metrics,
+        "startDate": start_date.isoformat(),
+    }
+
+
 # ============================================================
 # Section 5: Route handler
 # ============================================================
