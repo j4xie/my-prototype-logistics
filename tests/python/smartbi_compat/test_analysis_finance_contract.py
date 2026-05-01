@@ -862,7 +862,12 @@ class TestAnalysisFinanceCost:
 
 
 class TestCostHelpers:
-    """Cost helper unit tests (PR-A; will be supplanted by PR-B arithmetic class)."""
+    """Cost helper unit tests — helper-level direct coverage (PR-A baseline).
+
+    Companion to TestCostStructureArithmetic + TestCostTrendArithmetic
+    (chart-function-level coverage). Defense in depth: same logic exercised
+    at two layers — if one layer's mock rots, the other still catches regression.
+    """
 
     def test_new_cost_series_entry_key_order(self):
         from smartbi_compat.api.analysis_finance import _new_cost_series_entry
