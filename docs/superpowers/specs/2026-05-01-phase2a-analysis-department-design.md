@@ -12,7 +12,7 @@
 - PR #25 + #28 — finance cost per-type + arithmetic depth tests
 - **PR #30 — `_get_period_key` WEEK calendar-year fix** (commit `8031f2644`, Rule 2 compliance) — 本 spec 直接 import, 不重复定义
 - PR #31 — Phase 2A 剩余 endpoints backlog map
-- 🚧 PR #35 (mergeable, awaiting admin merge) — Rule 8 入 `python-java-port.md` (`Map.of(N)` Jackson hash order)。本 spec 当前**经验性引用** sister specs (receivable line 677 / sales-rankings line 363 / alerts line 35)；PR #35 merge 后 polish §3.7 / §8 / §9 cite Rule 8。
+- **PR #35 — Rule 8** (`Map.of(N)` Jackson hash order, merged commit `5d284d38d`) — `.claude/rules/python-java-port.md:329` Rule 8。本 spec §3.7 / §8 / §9 直接引用。
 
 **Sister chats unblocked by this spec**:
 - `phase2a/t-region` — region composite analysis (similar 4 sub-service shape)
@@ -21,8 +21,8 @@
 - (其余 Tier 2 域参见 backlog map)
 
 **Inherited audit constraints**:
-- 全部参见 [`.claude/rules/python-java-port.md`](../../../.claude/rules/python-java-port.md) Rule 1-7
-- Rule 8 待 PR #35 merge 后引用
+- 全部参见 [`.claude/rules/python-java-port.md`](../../../.claude/rules/python-java-port.md) Rule 1-8
+- Rule 8 (Map.of(N) Jackson hash order, line 329) 直接引用 §3.7 / §8
 
 **Audit history**:
 - Round 1 self-review + Round 2 evidence-based lock-in (T1/T2/T3 grep verify)
@@ -581,13 +581,14 @@ async def _get_department_efficiency_matrix(
 
     options LinkedHashMap (Java line 260-272) put-order:
       [quadrantLines, quadrantLabels, bubbleSizeField, colorField]
-    quadrantLines = Map.of(2): {xAxis, yAxis}                           ⚠️ I1 SALT flip risk
-    quadrantLabels = Map.of(4): {q1, q2, q3, q4}                        ⚠️ I1 SALT flip risk
+    quadrantLines = Map.of(2): {xAxis, yAxis}                           ⚠️ Rule 8 SALT flip risk
+    quadrantLabels = Map.of(4): {q1, q2, q3, q4}                        ⚠️ Rule 8 SALT flip risk
 
-    ⚠️ I1 lock — Map.of(2) and Map.of(4) iteration order is JVM-randomized
-    (`ImmutableCollections.SALT32L`) since Java 9. Python emits canonical
-    insertion order matching FIRST-recorded golden; if golden-flip detected
-    across Java backend restarts, document as accepted divergence in §8.
+    ⚠️ Rule 8 (`.claude/rules/python-java-port.md:329`) — `Map.of(N)` iteration
+    order is JVM-randomized (`ImmutableCollections.SALT32L`) since Java 9.
+    Python emits canonical insertion order matching FIRST-recorded golden;
+    if golden-flip detected across Java backend restarts, document as accepted
+    divergence in §8.
 
     ChartConfig final shape (Java line 274-282):
       {chartType: "SCATTER", title: "部门效率矩阵",
@@ -1208,7 +1209,7 @@ Cost spec 同模式: `scripts/record-java-golden.sh --compare` post-deploy smoke
 | 风险 | Mitigation |
 |---|---|
 | Top-level HashMap key 跨 JVM 顺序 flip | String key hashCode deterministic per Java spec; sister specs (cost / profit / payable / receivable) 经验跨 JVM stable. Mitigation: 录一次 F999 golden 即可 (§4.2 step 1); 若 PR-A CI 在不同 Java 实例首次 record 时发现 mismatch, 按 receivable spec line 677 pattern: re-record + update Python emit-order |
-| `Map.of(2)` quadrantLines / `Map.of(4)` quadrantLabels SALT32L per-JVM flip | F999 empty case 不触发 (efficiencyMatrix=empty scatter, options=null). PR-B 非空 case 必发. Mitigation: §4.2 step 5x record golden 跨 Java backend restart; Python emit 固定 canonical insertion order (matching first-record); 若 flip detected, 标 §8 known shape divergence (acceptable — 业务字段值不变只是 key 顺序) 或 patch Java 改 LinkedHashMap (out of Phase 2A scope). PR #35 merge 后引用 Rule 8 |
+| `Map.of(2)` quadrantLines / `Map.of(4)` quadrantLabels SALT32L per-JVM flip (Rule 8) | F999 empty case 不触发 (efficiencyMatrix=empty scatter, options=null). PR-B 非空 case 必发. Mitigation per Rule 8 (`.claude/rules/python-java-port.md:329`): §4.2 step 5x record golden 跨 Java backend restart; Python emit 固定 canonical insertion order (matching first-record); 若 flip detected, 标 §8 known shape divergence (acceptable — 业务字段值不变只是 key 顺序) 或 patch Java 改 LinkedHashMap (out of Phase 2A scope) |
 | `findByFactoryIdAndRecordDateBetween` JPA 无 ORDER BY | Python `_query_department_full` 加 `ORDER BY id` 保证 deterministic. F999 empty 不触发, F001 真窗 smoke 验证。Java 端推荐同样 fix (out of scope) |
 | `findDepartmentDailyTrend` same-date dept 顺序未指定 | Verbatim mirror Java `ORDER BY order_date` only (无 dept). Python NOT 加 ORDER BY department, 否则跨 PG 实例顺序差异打破 Java parity. F999 empty 不触发, F001 同一 PG 实例下顺序 stable, PR-B test 显式 verify 同日多 dept 顺序未指定 |
 | `_determine_quadrant` 优化 trap (lift avg out of per-point loop) | §3.6 explicit lock "DO NOT lift avg out of per-point loop" + PR-B test `test_quadrant_per_point_recompute_byte_equal` 显式比对 single-pass vs per-point 结果 (single-pass 跟 Java byte 不同, byte gate fail) |
@@ -1235,7 +1236,7 @@ Cost spec 同模式: `scripts/record-java-golden.sh --compare` post-deploy smoke
 - Existing Python (alerts handler): `backend/python/smartbi_compat/api/analysis.py:340-360` (`_query_department_data` + `_generate_department_alerts` — 不同 scope, 不复用)
 - Live Java backend (test env): `47.100.235.168:10011`
 - PR #30 lineage (Rule 2 calendar-year fix): commit `8031f2644`
-- PR #35 (待 merge, Rule 8 Map.of(N) Jackson hash order): branch `rules/rule-8-map-of-jackson-order` — merge 后 polish §3.7 / §8 / §9 cite Rule 8 替代 inline reasoning
-- Audit constraints: `.claude/rules/python-java-port.md` Rule 1-7 (Rule 8 post-PR #35)
+- PR #35 lineage (Rule 8 Map.of(N) Jackson hash order): commit `5d284d38d` — `.claude/rules/python-java-port.md:329`
+- Audit constraints: `.claude/rules/python-java-port.md` Rule 1-8
 - Backlog map: `docs/superpowers/plans/2026-05-01-phase2a-remaining-endpoints-backlog.md`
 - Phase 2A scope lock: memory `project_apr30_tool_skill_stays_java.md`
