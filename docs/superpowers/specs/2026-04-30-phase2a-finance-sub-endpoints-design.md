@@ -845,6 +845,7 @@ CI gate: pytest 244 (PR-B baseline) + 19 new = 263 全过 (audit-fix +2).
 | sales_data 行序非确定 (无 ORDER BY in Java repo) | audit C-3 fix: golden 录的是 Java 实际 emit 顺序; Python 用 `_query_finance_sales_fallback` (asyncpg) 行序可能不同. 加 `ORDER BY id` 到 Python SQL 强制 PK 序 (与 Java JPA default 一致) |
 | MONTH_RANGE / QUARTER_RANGE N+1 async DB calls (12-month range = 36 calls) | 接受 Java parity 行为 (Java 也是 serial); 加 timeout 兜底 (FastAPI default 60s 够用); 大 range >24 month 风险, 监控 405 if hit |
 | `endPeriod` 必须存在 for MONTH_RANGE / QUARTER_RANGE | audit I-8 fix: dispatcher 加 None-guard, 抛 HTTP 400 (不 silently fallback 到 MONTH) |
+| `Map.of(3)` summary 字段顺序 (category-comparison) | audit-3 minor: golden 录制时 capture 真实顺序; spec 现在用 insertion-order 但 Jackson 可能 hash-order 不同 |
 | sales 跨年 (2024 + 2025) 1+ 年 date range | `_query_finance_sales_fallback` 不限制 date range 长度; Java 也不限 |
 | F001 sub-endpoint 数据可能没 — 跟 profit F001 一样空 | 与 profit F001 同 (录但不 enforce); F001 golden 仅 sister 参考 |
 | budget-achievement metric 默认 "revenue" 但 Java 默认 也是 "revenue" | 已 1:1 mirror; 只改 default 时同步改 Java |
