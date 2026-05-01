@@ -1002,6 +1002,254 @@ async def _get_expiry_mode(
     }
 
 
+# ============================================================
+# Section 5c: Aging mode (Task 11)
+# Mirror Java InventoryHealthAnalysisServiceImpl L660-818 (3 sub-services).
+# ============================================================
+
+
+async def _get_aging_metrics(factory_id: str) -> list[dict]:
+    """3 metrics: SLOW_MOVING_RATE / SLOW_MOVING_VALUE / AVG_AGING_DAYS (Optional).
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getAgingMetrics L720-770.
+    Spec §3.7.7.
+
+    AVG_AGING_DAYS is conditionally emitted (only when batches with receipt_date exist).
+    SLOW_MOVING_RATE has INLINE alert: >20 RED, >10 YELLOW, else GREEN (T-INV-1 inline site #3).
+    Uses date.today() (test monkeypatch target).
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+    metrics: list[dict] = []
+
+    total_value = _calculate_total_inventory_value(all_batches)
+
+    slow_moving_value = Decimal("0")
+    for b in all_batches:
+        rd = b.get("receipt_date")
+        if rd is None:
+            continue
+        age_days = (today - rd).days
+        if age_days > _AGING_WARNING:
+            cq = _get_current_quantity(b)
+            up = b.get("unit_price")
+            up_dec = _to_decimal(up) if up is not None else Decimal("0")
+            slow_moving_value += cq * up_dec
+
+    if total_value > Decimal("0"):
+        slow_moving_rate = (slow_moving_value / total_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        ) * Decimal("100")
+    else:
+        slow_moving_rate = Decimal("0")
+
+    # Inline alert (T-INV-1 inline site #3): NOT extracted as helper
+    if slow_moving_rate > _SLOW_MOVING_RED_INLINE:
+        slow_alert = "RED"
+    elif slow_moving_rate > _SLOW_MOVING_YELLOW_INLINE:
+        slow_alert = "YELLOW"
+    else:
+        slow_alert = "GREEN"
+
+    rate_display = slow_moving_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    metrics.append({
+        "metricCode":      "SLOW_MOVING_RATE",
+        "metricName":      "呆滞库存率",
+        "value":           _decimal_to_number(rate_display),
+        "formattedValue":  f"{float(slow_moving_rate):.1f}%",
+        "unit":            "%",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      slow_alert,
+        "dimensionValue":  None,
+        "description":     "90天以上库龄占比",
+    })
+
+    metrics.append(_metric_result_of("SLOW_MOVING_VALUE", "呆滞库存价值", slow_moving_value, "元"))
+
+    # AVG_AGING_DAYS conditional (Java L764 isPresent check)
+    age_days_list = [
+        (today - b["receipt_date"]).days
+        for b in all_batches
+        if b.get("receipt_date") is not None
+    ]
+    if age_days_list:
+        # Compute as Decimal mean, then setScale(0, HALF_UP) — mirror Java L766
+        avg_days = (Decimal(sum(age_days_list)) / Decimal(len(age_days_list))).quantize(
+            Decimal("1"), rounding=_QUANTIZE_HALF_UP
+        )
+        metrics.append(_metric_result_of("AVG_AGING_DAYS", "平均库龄", avg_days, "天"))
+
+    return metrics
+
+
+async def _get_inventory_aging_chart(factory_id: str) -> dict:
+    """BAR chart, 4-bucket LinkedHashMap pre-populate.
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getInventoryAgingChart L660-716.
+    Spec §3.7.8.
+
+    T-INV-5: Pre-populate 4 buckets in EXACT Java LinkedHashMap insertion order:
+      ["0-30天", "31-60天", "61-90天", "90天以上"]
+
+    Aging bucket boundaries (Java L684-692, inclusive <= upper):
+      ageDays <= 30 → "0-30天"
+      ageDays <= 60 → "31-60天"   (31..60)
+      ageDays <= 90 → "61-90天"   (61..90)
+      else          → "90天以上"  (91+)
+      receipt_date null → "90天以上" (T-INV-3 special case, Java L678-680)
+
+    Bucket item shape: {aging, value} — 2 keys (golden-verified, NOT agingRange/bucketName).
+    Options: {showDataLabels, colors} — 2 keys (golden-verified).
+    Key order mirrors golden (Rule 8):
+      [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+    xaxisField/yaxisField LOWERCASE (golden-verified, Lombok-Jackson demangling).
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    # T-INV-5: pre-populate in EXACT Java LinkedHashMap insertion order
+    aging_distribution: dict = {
+        "0-30天":   Decimal("0"),
+        "31-60天":  Decimal("0"),
+        "61-90天":  Decimal("0"),
+        "90天以上": Decimal("0"),
+    }
+
+    for batch in all_batches:
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        receipt_date = batch.get("receipt_date")
+        if receipt_date is None:
+            # T-INV-3: null receipt_date → "90天以上"
+            aging_distribution["90天以上"] += value
+            continue
+
+        age_days = (today - receipt_date).days
+        if age_days <= _AGING_FRESH:
+            aging_distribution["0-30天"] += value
+        elif age_days <= _AGING_NORMAL:
+            aging_distribution["31-60天"] += value
+        elif age_days <= _AGING_WARNING:
+            aging_distribution["61-90天"] += value
+        else:
+            aging_distribution["90天以上"] += value
+
+    chart_data = [
+        {
+            "aging": age_label,
+            "value": _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        }
+        for age_label, value in aging_distribution.items()
+    ]
+
+    options = {
+        "showDataLabels": True,
+        "colors":         ["#52c41a", "#1890ff", "#faad14", "#ff4d4f"],
+    }
+
+    return {
+        "chartType":   "BAR",
+        "title":       "库龄分布",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+        "xaxisField":  "aging",
+        "yaxisField":  "value",
+    }
+
+
+async def _get_long_aging_batches_ranking(
+    factory_id: str, min_days: int = 60
+) -> list[dict]:
+    """Age desc sort, limit 20.
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getLongAgingBatchesRanking L774-818.
+    Spec §3.7.9.
+
+    Filter: aging_days >= min_days (INCLUSIVE >=, T-INV-14 lock — ageDays==60 IS included).
+    Sort: ageDays DESC (older batches first, Java L787-789).
+    Inline alert (T-INV-1 inline site #2, NOT extracted):
+      > 120 days → RED, > 90 days → YELLOW, else GREEN (INVERSE direction).
+
+    Note: ageDays in [60, 90] → GREEN (filter passes >= 60, alert else clause).
+    Uses date.today() (test monkeypatch target).
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    filtered = [
+        b for b in all_batches
+        if b.get("receipt_date") is not None
+        and (today - b["receipt_date"]).days >= min_days
+    ]
+
+    # Java L787-789: sort by ageDays DESC (older batches first)
+    filtered.sort(
+        key=lambda b: (today - b["receipt_date"]).days,
+        reverse=True,
+    )
+    long_aging = filtered[:20]
+
+    rankings = []
+    for rank, batch in enumerate(long_aging, start=1):
+        age_days = (today - batch["receipt_date"]).days
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        # Inline alert (T-INV-1 inline site #2): NOT extracted as named helper
+        if age_days > _LONG_AGING_RANKING_RED_DAYS:
+            alert_level = "RED"
+        elif age_days > _LONG_AGING_RANKING_YELLOW_DAYS:
+            alert_level = "YELLOW"
+        else:
+            alert_level = "GREEN"
+
+        rankings.append({
+            "rank":           rank,
+            "name":           batch.get("batch_number"),
+            "value":          _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         age_days,
+            "completionRate": _decimal_to_number(
+                cq.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "alertLevel":     alert_level,
+        })
+
+    return rankings
+
+
+async def _get_aging_mode(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Aging mode entry — composes 3 sub-services into 5-key envelope.
+
+    F999 golden Jackson HashMap key order (verified):
+      [agingMetrics, endDate, longAgingBatches, agingChart, startDate]
+    Python dict literal mirrors exactly.
+    """
+    aging_metrics = await _get_aging_metrics(factory_id)
+    aging_chart = await _get_inventory_aging_chart(factory_id)
+    long_aging_batches = await _get_long_aging_batches_ranking(factory_id, min_days=60)
+    return {
+        "agingMetrics":     aging_metrics,
+        "endDate":          end_date.isoformat(),
+        "longAgingBatches": long_aging_batches,
+        "agingChart":       aging_chart,
+        "startDate":        start_date.isoformat(),
+    }
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
@@ -1013,9 +1261,9 @@ async def get_inventory_analysis(
     """Java SmartBIAnalysisController.getInventoryAnalysis line 411-448.
 
     Branches:
-      analysisType=turnover  → turnover per-type (5-key envelope, PR-A — wired in Task 9)
-      analysisType=expiry    → expiry per-type (5-key envelope, PR-A — wired in Task 10)
-      analysisType=aging     → aging per-type (5-key envelope, PR-A — wired in Task 11)
+      analysisType=turnover  → turnover per-type (5-key envelope, PR-A Task 9)
+      analysisType=expiry    → expiry per-type (5-key envelope, PR-A Task 10)
+      analysisType=aging     → aging per-type (5-key envelope, PR-A Task 11)
       analysisType empty     → default getInventoryHealth (501 in PR-A; PR-B real impl)
       analysisType=other     → 501 envelope (un-ported)
     """
@@ -1025,7 +1273,10 @@ async def get_inventory_analysis(
     if analysisType == "expiry":
         result = await _get_expiry_mode(auth.factory_id, startDate, endDate)
         return wrap_response(result)
-    # aging mode wired in Task 11
+    if analysisType == "aging":
+        result = await _get_aging_mode(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+    # All 3 PR-A modes wired. Default mode (PR-B) and unknown types still 501.
     return wrap_response(
         data=None,
         success=False,
