@@ -1115,6 +1115,8 @@ try:
     app.include_router(smartbi_compat_dashboard.router, tags=["SmartBI Compat: Dashboard"])
     app.include_router(analysis_sales.router, tags=["smartbi-compat-sales"])
     app.include_router(analysis_finance.router, tags=["SmartBI Compat: Analysis Finance"])
+    from smartbi_compat.api import datasource as smartbi_compat_datasource
+    app.include_router(smartbi_compat_datasource.router, tags=["SmartBI Compat: Datasource"])
     _smartbi_compat_available = True
     logger.info("SmartBI compat routes registered (Phase 2A)")
 except ImportError as e:
