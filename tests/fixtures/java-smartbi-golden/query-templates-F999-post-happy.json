@@ -1,0 +1,22 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "createdAt": "2026-05-02T02:37:17.984275016",
+    "updatedAt": "2026-05-02T02:37:17.984275016",
+    "deletedAt": null,
+    "id": 45,
+    "factoryId": "F999",
+    "name": "golden_post",
+    "category": "test",
+    "description": "POST happy golden",
+    "queryTemplate": "SELECT 1",
+    "parameters": "[]",
+    "deleted": false
+  },
+  "timestamp": "2026-05-02T02:37:17.986436102",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

@@ -1,0 +1,22 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "createdAt": "2026-05-02T02:37:17.984275",
+    "updatedAt": "2026-05-02T02:37:17.993803529",
+    "deletedAt": null,
+    "id": 45,
+    "factoryId": "F999",
+    "name": "golden_put",
+    "category": "updated",
+    "description": "PUT happy golden",
+    "queryTemplate": "SELECT 2",
+    "parameters": "[\"u\"]",
+    "deleted": false
+  },
+  "timestamp": "2026-05-02T02:37:17.994846171",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

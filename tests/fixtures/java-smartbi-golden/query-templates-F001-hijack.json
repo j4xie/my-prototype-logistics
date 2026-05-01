@@ -1,0 +1,22 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "createdAt": null,
+    "updatedAt": "2026-05-02T02:37:18.017844798",
+    "deletedAt": null,
+    "id": 46,
+    "factoryId": "F001",
+    "name": "hijacked_golden",
+    "category": "evil",
+    "description": "T6 hijack golden",
+    "queryTemplate": "DROP",
+    "parameters": "[\"x\"]",
+    "deleted": false
+  },
+  "timestamp": "2026-05-02T02:37:18.018933671",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

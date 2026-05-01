@@ -1119,6 +1119,8 @@ try:
     app.include_router(smartbi_compat_datasource.router, tags=["SmartBI Compat: Datasource"])
     from smartbi_compat.api import incentive_plan as smartbi_compat_incentive_plan
     app.include_router(smartbi_compat_incentive_plan.router, tags=["SmartBI Compat: Incentive Plan"])
+    from smartbi_compat.api import query_templates_write as smartbi_compat_query_templates_write
+    app.include_router(smartbi_compat_query_templates_write.router, tags=["SmartBI Compat: Query Templates Write"])
     _smartbi_compat_available = True
     logger.info("SmartBI compat routes registered (Phase 2A)")
 except ImportError as e:
