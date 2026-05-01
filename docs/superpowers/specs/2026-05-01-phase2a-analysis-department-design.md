@@ -151,8 +151,9 @@ PR-B:
 | `calculateCompletionRate` | 同上, 610-616 | divide-by-zero → `Decimal("0")` |
 | `determineQuadrant` | 同上, 621-653 | re-iterate aggregated for avg per call (don't optimize) |
 | `getPeriodKey` | 同上, 594-605 | calendar year + ISO week (Rule 2 compliant, post-PR #30) |
-| `MetricCalculatorServiceImpl.determineAlertLevel(TARGET_COMPLETION)` | `MetricCalculatorServiceImpl.java:457-461` | **hardcoded 60/85** (NOT alert_thresholds.json 80) |
-| `findDepartmentDailyTrend` SQL | `SmartBiSalesDataRepository.java:107-110` | `SELECT order_date, department, SUM(amount) ... GROUP BY order_date, department ORDER BY order_date` |
+| `MetricCalculatorServiceImpl.determineAlertLevel(TARGET_COMPLETION)` | `MetricCalculatorServiceImpl.java:458-461` | **hardcoded 60/85** (NOT alert_thresholds.json 80) |
+| `MetricCalculatorServiceImpl.formatMetricValue` % branch | `MetricCalculatorServiceImpl.java:576-578` | `DecimalFormat("#,##0.00").format(value) + "%"` — **千分位格式**, Python `f"{value:,.2f}%"` |
+| `findDepartmentDailyTrend` SQL | `SmartBiSalesDataRepository.java:105-112` | `SELECT order_date, department, SUM(amount) ... GROUP BY order_date, department ORDER BY order_date` |
 | `findByFactoryIdAndRecordDateBetween` | `SmartBiDepartmentDataRepository.java:33-35` | **JPA derived query, NO ORDER BY** — Python 必须加 ORDER BY id |
 | `ChartConfig` DTO | `ChartConfig.java:32-68` | **无 @JsonInclude 注解** → Jackson default 序列化 null 字段为 `null` (NOT omit) |
 | `DateRange.custom` | `DateRange.java:266-274` | 全确定: granularity infer / originalExpression str format / relative=false |
@@ -372,7 +373,7 @@ def _calculate_completion_rate(
 
 def _determine_target_completion_alert(value: Decimal) -> str:
     """Mirror Java MetricCalculatorServiceImpl.determineAlertLevel(TARGET_COMPLETION)
-    (line 457-461):
+    (line 458-461):
 
       double v = value.doubleValue();
       if (v < 60) return RED;
@@ -530,8 +531,13 @@ async def _get_department_completion_rates(
       [metricCode, metricName, value, formattedValue, unit, dimensionValue, alertLevel]
 
     formattedValue = `metricCalculatorService.formatMetricValue(TARGET_COMPLETION, value)`
-    — Java impl returns f"{value:.2f}%" pattern (TBD verify with golden record;
-    PR-B test asserts exact format string).
+    — Java impl `MetricCalculatorServiceImpl.java:576-578`:
+        if ("%".equals(unit)) {
+            return new DecimalFormat("#,##0.00").format(value) + "%";
+        }
+    → 千分位 + 2 位小数 + "%" 后缀。Python equivalent: `f"{value:,.2f}%"`.
+    例如 cr=Decimal("1234.56") → Java "1,234.56%" / Python f"{cr:,.2f}%" = "1,234.56%". ✓
+    PR-B test `test_formatted_value_thousands_separator` 显式验证 cr ≥ 1000 case.
     """
     rows = await _query_department_full(factory_id, start_date, end_date)
     if not rows:
@@ -547,7 +553,7 @@ async def _get_department_completion_rates(
             "metricCode":     "TARGET_COMPLETION",
             "metricName":     "目标完成率",
             "value":          _decimal_to_number(cr_display),
-            "formattedValue": f"{cr_display}%",    # TBD verify Java format
+            "formattedValue": f"{cr_display:,.2f}%",    # Java DecimalFormat("#,##0.00") + "%" — 千分位
             "unit":           "%",
             "dimensionValue": dept,
             "alertLevel":     _determine_target_completion_alert(cr),
@@ -1039,7 +1045,7 @@ class TestAnalysisDepartmentComposite:
 
 ### 5.2 Unit test 类（PR-B）— 4 sub-services 各一 class
 
-#### `TestDepartmentRankingArithmetic` (4 tests)
+#### `TestDepartmentRankingArithmetic` (5 tests)
 
 | Test | Branch covered |
 |---|---|
@@ -1047,14 +1053,17 @@ class TestAnalysisDepartmentComposite:
 | `test_sort_stability_tie_break` | 多 dept salesAmount 相同, sort stable (matches Java Stream.sorted) |
 | `test_completion_rate_zero_emits_alert_red` | `salesAmount=0 / target=10000 → cr=0 → alertLevel=RED` |
 | `test_completion_rate_85_boundary_emits_green` | `cr=85.0 → alertLevel=GREEN` (boundary `< 85` strict) |
+| `test_headcount_max_not_latest_by_date` | C1 verify — 同 dept 3 rows headcounts `[15, 8, 12]` 按 record_date 升序，efficiencyMatrix 用 max=15 (NOT 最后一条 12)。防 future maintainer 误读 Java code comment "人员数取最新记录" |
 
-#### `TestDepartmentCompletionRatesArithmetic` (3 tests)
+#### `TestDepartmentCompletionRatesArithmetic` (5 tests)
 
 | Test | Branch |
 |---|---|
 | `test_sort_by_completion_rate_desc` | 多 dept, completionRate 降序排 |
 | `test_target_zero_returns_completion_zero` | `target=0 → cr=Decimal("0")` (C4 fix verify) |
-| `test_formatted_value_percent_format` | `formattedValue == "85.00%"` exact format string |
+| `test_formatted_value_percent_format` | `formattedValue == "85.00%"` exact format string (无千分位 case) |
+| `test_formatted_value_thousands_separator` | cr ≥ 1000 case, e.g. `cr=Decimal("1234.56") → formattedValue=="1,234.56%"` (Java DecimalFormat #,##0.00 千分位) |
+| `test_completion_rate_arithmetic_order_byte_equal` | 用户 spotted bug verify — `actual=Decimal("33.333"), target=Decimal("9.7") → cr=Decimal("343.6392")` exactly (除法结果量化, NOT 乘法结果). Catches future port `(actual*100).quantize(...)/target` mistake |
 
 #### `TestDepartmentEfficiencyMatrixArithmetic` (6 tests)
 
@@ -1176,12 +1185,12 @@ Cost spec 同模式: `scripts/record-java-golden.sh --compare` post-deploy smoke
 **Title**: `Phase 2A: /analysis/department arithmetic depth tests (4 sub-services)`
 
 **Scope**:
-- §5.2 4 个 test class, 18 tests 总
+- §5.2 4 个 test class, **21 tests 总** (5 ranking + 5 completionRates + 6 efficiencyMatrix + 5 trendComparison)
 - Map.of SALT flip detection (本地手动跨 Java backend restart 录 golden)
 
-**LOC 估**: ~250 (tests only)
+**LOC 估**: ~280 (tests only, 比 cost PR-B 略多: +arithmetic byte-equal + headcount MAX trap + thousands separator)
 
-**CI gate**: PR-A baseline + 18 tests = 315
+**CI gate**: PR-A baseline + 21 tests = 318
 
 ### 顺序
 
@@ -1199,7 +1208,6 @@ Cost spec 同模式: `scripts/record-java-golden.sh --compare` post-deploy smoke
 6. pull main → writing-plans → PR-B plan
 7. PR-B impl → PR → squash merge
 8. cleanup worktree
-9. (PR #35 merge 后) polish §3.7 / §8 / §9 cite Rule 8 (cosmetic)
 ```
 
 ---
@@ -1213,13 +1221,13 @@ Cost spec 同模式: `scripts/record-java-golden.sh --compare` post-deploy smoke
 | `findByFactoryIdAndRecordDateBetween` JPA 无 ORDER BY | Python `_query_department_full` 加 `ORDER BY id` 保证 deterministic. F999 empty 不触发, F001 真窗 smoke 验证。Java 端推荐同样 fix (out of scope) |
 | `findDepartmentDailyTrend` same-date dept 顺序未指定 | Verbatim mirror Java `ORDER BY order_date` only (无 dept). Python NOT 加 ORDER BY department, 否则跨 PG 实例顺序差异打破 Java parity. F999 empty 不触发, F001 同一 PG 实例下顺序 stable, PR-B test 显式 verify 同日多 dept 顺序未指定 |
 | `_determine_quadrant` 优化 trap (lift avg out of per-point loop) | §3.6 explicit lock "DO NOT lift avg out of per-point loop" + PR-B test `test_quadrant_per_point_recompute_byte_equal` 显式比对 single-pass vs per-point 结果 (single-pass 跟 Java byte 不同, byte gate fail) |
-| `headcount` 误 port 成 SUM/latest | §3.4 wording "MAX, NOT latest-by-date" + Java comment misleading 警告 (人员数取最新记录 是错误注释, code 是 max). PR-B test `test_headcount_max_not_latest_by_date` (隐含在 ranking sort + ranking value 验证) |
+| `headcount` 误 port 成 SUM/latest | §3.4 wording "MAX, NOT latest-by-date" + Java comment misleading 警告 (人员数取最新记录 是错误注释, code 是 max). PR-B `TestDepartmentRankingArithmetic.test_headcount_max_not_latest_by_date` 显式 mock `[15, 8, 12]` by date 升序, assert efficiencyMatrix per-capita 用 max=15 |
 | `per_capita_sales/cost` 列误用 (从 SELECT * 直接读) | §3.4 explicit "ignore precomputed columns; recompute". PR-B mock data 含 `per_capita_*` 故意错误值, verify 输出值不等于 mock 值 (说明已 ignore) |
 | ChartConfig empty case `options` 字段 emit 错 | §3.8 lock emit `None` (mirror Jackson default no-@JsonInclude). PR-B test `test_*_empty_returns_empty_chart` 直接 byte-eq 验证 `options=None` |
 | TARGET_COMPLETION 阈值 sister bug (60/80 vs 60/85) | §3.5 inline `_DEPARTMENT_TARGET_COMPLETION_RED/_YELLOW = Decimal("60")/Decimal("85")` const, 不复用 alert_thresholds.py. Inline `_determine_target_completion_alert` 避免 sister 在写 region/quality/procurement spec 时误用 alert_thresholds.json |
 | `_calculate_completion_rate` 算式顺序错 (中间量化 vs 末尾量化) | §3.5 explicit `((actual * Decimal("100")) / target).quantize(SCALE)` mirror Java `actual.multiply(100).divide(target, SCALE, HALF_UP)` (除法结果量化, NOT 乘法结果). PR-B test 直接 assert byte-equal 边界 case (e.g. actual=Decimal("33.333"), target=Decimal("9.7") → cr=Decimal("343.6392")) |
 | WEEK period key 跨年 boundary Rule 2 violation | Import `_get_period_key` from `analysis_finance.py` (post-PR #30 calendar-year fix `8031f2644`). PR-B test `test_week_period_key_calendar_year_post_pr30` 跨年 boundary regression (e.g. 2024-12-30 → "2024-W01") |
-| `formattedValue` Java 实际 format string 待 verify | §3.7 `_get_department_completion_rates` placeholder `f"{cr_display}%"`. PR-A 第一步 record F999 (空) + small synthetic golden (PR-B test data) 验证 Java MetricCalculatorService.formatMetricValue 实际返回。如 Java 用千分位 (e.g. `"1,234.56%"`), Python 调整 |
+| `formattedValue` 千分位格式 (Java DecimalFormat #,##0.00) | RESOLVED — §3.1 line 155 + §3.7 line 533-540 + §3.7 dict literal line 556 用 `f"{cr_display:,.2f}%"` (千分位 + 2 位小数). PR-B `TestDepartmentCompletionRatesArithmetic.test_formatted_value_thousands_separator` 显式验证 cr ≥ 1000 case |
 | F999 真窗找不到 (factory_id=F999 不存在 / RLS 阻挡) | profit / cost spec 已建 F999 测试工厂 + RLS bypass。本 spec 直接复用. PR-A 验证 record-java-golden.sh F999 调用成功 |
 
 ---
