@@ -2041,23 +2041,42 @@ async def _get_cost_trend_chart(
 
 
 async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
-    """F999 empty-state — Java getReceivableAgingChart ALWAYS emits 4 aging buckets
-    even when AR=0 (per A.2). chartType=BAR (NOT PIE). A.5 golden verified shape.
+    """4-bucket BAR chart of outstanding AR by aging.
 
-    4 buckets (in order): 0-30天 (GREEN), 31-60天 (YELLOW), 61-90天 (YELLOW), 90天以上 (RED).
-    Each bucket: {agingBucket, amount=0, percentage=0, alertLevel}.
-    options={colors: ["#91cc75", "#fac858", "#ee6666", "#c23531"], showAlert: true}.
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableAgingChart (line 586-624).
+    Data window: [end_date - 1 year, end_date] using dateutil.relativedelta (leap-year safe).
+
+    Composite path (_get_comprehensive_finance_analysis) calls this — replacement keeps
+    {agingBucket, amount, percentage, alertLevel} shape so composite F999 golden stays valid.
     """
+    # Java line 591 — date.minusYears(1). Use relativedelta (calendar-aware leap-year clamp).
+    start_window = end_date - relativedelta(years=1)
+    ar_data = await _query_finance_data(factory_id, "AR", start_window, end_date)
+
+    aging_buckets = _calculate_aging_buckets(ar_data)
+    total_ar = sum(aging_buckets.values(), Decimal("0"))
+
+    chart_data: list[dict] = []
+    for bucket in AGING_BUCKETS_ORDER:  # Java line 600 fixed order
+        amount = aging_buckets.get(bucket, Decimal("0"))
+        # Java line 605 — zero-guard
+        percentage = (
+            amount / total_ar * Decimal("100")
+            if total_ar > Decimal("0")
+            else Decimal("0")
+        )
+        chart_data.append({
+            "agingBucket": bucket,
+            "amount": _decimal_to_number(amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "percentage": _decimal_to_number(percentage.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "alertLevel": _get_aging_bucket_alert_level(bucket),
+        })
+
     return _new_chart_config_dict(
         chart_type="BAR",
         title="应收账款账龄分布",
         series_field=None,
-        data=[
-            {"agingBucket": "0-30天",  "amount": 0, "percentage": 0, "alertLevel": "GREEN"},
-            {"agingBucket": "31-60天", "amount": 0, "percentage": 0, "alertLevel": "YELLOW"},
-            {"agingBucket": "61-90天", "amount": 0, "percentage": 0, "alertLevel": "YELLOW"},
-            {"agingBucket": "90天以上","amount": 0, "percentage": 0, "alertLevel": "RED"},
-        ],
+        data=chart_data,
         options={
             "colors": ["#91cc75", "#fac858", "#ee6666", "#c23531"],
             "showAlert": True,

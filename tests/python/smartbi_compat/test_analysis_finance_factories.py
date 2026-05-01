@@ -325,3 +325,80 @@ class TestReceivableAlertHelpers:
         assert _aging_90_alert(Decimal("10.01")) == "YELLOW"
         assert _aging_90_alert(Decimal("20")) == "YELLOW"
         assert _aging_90_alert(Decimal("20.01")) == "RED"
+
+
+class TestReceivableAgingChartRealImpl:
+    """Replace stub at line 2000 with real impl mirroring Java line 586-624.
+    Empty data path must still emit 4 buckets in fixed order (Java line 600)."""
+
+    @pytest.mark.asyncio
+    async def test_empty_data_emits_4_buckets(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        result = await analysis_finance._get_receivable_aging_chart("F999", date(2025, 12, 31))
+
+        assert result["chartType"] == "BAR"
+        assert result["title"] == "应收账款账龄分布"
+        assert result["seriesField"] is None
+        assert result["xaxisField"] == "agingBucket"
+        assert result["yaxisField"] == "amount"
+        assert result["options"] == {
+            "colors": ["#91cc75", "#fac858", "#ee6666", "#c23531"],
+            "showAlert": True,
+        }
+        # 4 buckets in fixed order, all amount=0/percentage=0
+        data = result["data"]
+        assert len(data) == 4
+        assert [d["agingBucket"] for d in data] == ["0-30天", "31-60天", "61-90天", "90天以上"]
+        assert all(d["amount"] == 0 and d["percentage"] == 0 for d in data)
+        # alertLevel hardcoded map (regardless of amount)
+        assert [d["alertLevel"] for d in data] == ["GREEN", "YELLOW", "YELLOW", "RED"]
+
+    @pytest.mark.asyncio
+    async def test_real_data_computes_amounts_and_percentages(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            assert record_type == "AR"
+            # 1y window check — start ≈ end - 1y
+            assert (end - start).days >= 364
+            return [
+                {"receivable_amount": "1000", "collection_amount": "200", "aging_days": 15},
+                {"receivable_amount": "500", "collection_amount": "0", "aging_days": 75},
+                {"receivable_amount": "300", "collection_amount": "0", "aging_days": 120},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        result = await analysis_finance._get_receivable_aging_chart("F001", date(2025, 12, 31))
+
+        # Total = 800 + 500 + 300 = 1600
+        data = result["data"]
+        assert data[0]["agingBucket"] == "0-30天"
+        assert data[0]["amount"] == 800   # 1000 - 200
+        assert data[0]["percentage"] == 50.0  # 800/1600 * 100
+        assert data[2]["agingBucket"] == "61-90天"
+        assert data[2]["amount"] == 500
+        assert data[3]["agingBucket"] == "90天以上"
+        assert data[3]["amount"] == 300
+
+    @pytest.mark.asyncio
+    async def test_uses_relativedelta_not_timedelta_365(self, monkeypatch):
+        """Leap-year boundary: end_date = 2024-02-29 should yield start_date = 2023-02-28
+        (relativedelta clamps), NOT 2023-03-01 (timedelta(days=365) wraps wrong)."""
+        from smartbi_compat.api import analysis_finance
+
+        captured = {}
+        async def fake_query(factory_id, record_type, start, end):
+            captured["start"] = start
+            captured["end"] = end
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        await analysis_finance._get_receivable_aging_chart("F999", date(2024, 2, 29))
+
+        assert captured["start"] == date(2023, 2, 28)  # relativedelta clamps to Feb 28
+        assert captured["end"] == date(2024, 2, 29)
