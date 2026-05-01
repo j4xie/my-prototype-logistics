@@ -1302,3 +1302,388 @@ class TestCostTrendArithmetic:
 
         # DAY: yyyy-MM-dd — Java line 1474-1476
         assert _get_period_key(date(2025, 6, 15), "DAY") == "2025-06-15"
+
+
+class TestBudgetAchievementChart:
+    """F999 byte-shape gate + arithmetic depth tests for /budget-achievement."""
+
+    def test_f999_budget_achievement_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: data keys order matches Java golden."""
+        async def fake_finance_empty(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_finance_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/budget-achievement"
+            "?year=2025&metric=revenue",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-budget-achievement.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+
+        assert py_data_keys == golden_data_keys, (
+            f"data key order mismatch:\n  python: {py_data_keys}\n  golden: {golden_data_keys}"
+        )
+
+    def test_f999_budget_achievement_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block for empty F999."""
+        async def fake_finance_empty(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_finance_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/budget-achievement"
+            "?year=2025&metric=revenue",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-budget-achievement.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        if py_data != golden_data:
+            diffs = {}
+            for k in set(py_data.keys()) | set(golden_data.keys()):
+                if py_data.get(k) != golden_data.get(k):
+                    diffs[k] = {"python": py_data.get(k), "golden": golden_data.get(k)}
+            pytest.fail(
+                f"BYTE SHAPE MISMATCH (budget-achievement) on {list(diffs.keys())}\n"
+                f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
+            )
+
+    def _run_chart(self, fake_finance):
+        """Call _get_budget_achievement_chart directly via asyncio."""
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_budget_achievement_chart("F", 2025, "revenue"))
+        finally:
+            af._query_finance_data = original
+
+    def test_budget_amount_always_returned_regardless_of_category(self):
+        """audit I-5 fix: Java fall-through returns budget_amount regardless of category match."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            return [
+                {"record_date": d(2025, 6, 1), "category": "其他类",
+                 "budget_amount": Decimal("100"), "actual_amount": Decimal("80")},
+            ]
+        chart = self._run_chart(fake)
+        june = chart["data"][5]
+        assert june["month"] == "6月"
+        assert june["budget"] == 100
+        assert june["actual"] == 80
+
+    def test_alert_level_thresholds(self):
+        """Verify >120 RED, >100 YELLOW, else GREEN."""
+        from datetime import date as d
+        from decimal import Decimal
+
+        async def fake_red(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 1, 1), "category": "x",
+                     "budget_amount": Decimal("100"), "actual_amount": Decimal("130")}]
+        chart = self._run_chart(fake_red)
+        assert chart["data"][0]["alertLevel"] == "RED"
+
+        async def fake_yellow(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 1, 1), "category": "x",
+                     "budget_amount": Decimal("100"), "actual_amount": Decimal("110")}]
+        chart = self._run_chart(fake_yellow)
+        assert chart["data"][0]["alertLevel"] == "YELLOW"
+
+        async def fake_green(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 1, 1), "category": "x",
+                     "budget_amount": Decimal("100"), "actual_amount": Decimal("100")}]
+        chart = self._run_chart(fake_green)
+        assert chart["data"][0]["alertLevel"] == "GREEN"
+
+    def test_zero_budget_zero_achievement_rate(self):
+        """budget=0 → rate=0 (avoid div0) per Java line 1158-1160."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 6, 1), "category": "x",
+                     "budget_amount": Decimal("0"), "actual_amount": Decimal("50")}]
+        chart = self._run_chart(fake)
+        june = chart["data"][5]
+        assert june["budget"] == 0
+        assert june["actual"] == 50
+        assert june["achievementRate"] == 0
+
+    def test_always_emits_12_months(self):
+        """Per Java line 1132-1135: pre-fill all 12 months even with 0 records."""
+        async def fake_empty(*_): return []
+        chart = self._run_chart(fake_empty)
+        assert len(chart["data"]) == 12
+        for i, point in enumerate(chart["data"], start=1):
+            assert point["month"] == f"{i}月"
+            assert point["budget"] == 0
+            assert point["actual"] == 0
+            assert point["alertLevel"] == "GREEN"
+
+
+class TestYoYMoMComparisonChart:
+    """F999 byte-shape gate + arithmetic tests for /yoy-mom."""
+
+    def test_f999_yoy_mom_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: data keys order matches Java golden."""
+        async def fake_finance(*_): return []
+        async def fake_sales(*_): return []
+        monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_data", fake_finance)
+        monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fallback", fake_sales)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/yoy-mom"
+            "?periodType=MONTH&startPeriod=2026-01&metric=revenue",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-yoy-mom.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+        assert py_data_keys == golden_data_keys
+
+    def test_f999_yoy_mom_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block.
+
+        F999 golden was recorded with real sales data for 2026-01 (currentValue=9920899.9)
+        and no data for 2025-01 (lastYear) or 2025-12 (lastPeriod).
+        We inject exactly that shape so Python output matches the Java golden.
+        """
+        from datetime import date as d
+        from decimal import Decimal
+
+        async def fake_finance(*_): return []
+
+        async def fake_sales(_fid, start, _end):
+            # 2026-01 → current period: inject amount matching golden's currentValue 9920899.9
+            if start == d(2026, 1, 1):
+                return [{"amount": Decimal("9920899.9"), "cost": Decimal("0")}]
+            # 2025-01 (lastYear) and 2025-12 (lastPeriod) → no data
+            return []
+
+        monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_data", fake_finance)
+        monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fallback", fake_sales)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/yoy-mom"
+            "?periodType=MONTH&startPeriod=2026-01&metric=revenue",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+        py_data = _strip_volatile(resp.json()["data"])
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-yoy-mom.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+        if py_data != golden_data:
+            diffs = {k: {"py": py_data.get(k), "g": golden_data.get(k)}
+                     for k in set(py_data) | set(golden_data)
+                     if py_data.get(k) != golden_data.get(k)}
+            pytest.fail(f"BYTE MISMATCH: {json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}")
+
+    def _run_chart(self, fake_sales=None, fake_finance=None, period_type="MONTH",
+                    start_period="2026-01", end_period=None, metric="revenue"):
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+        orig_sales = af._query_finance_sales_fallback
+        orig_finance = af._query_finance_data
+        try:
+            if fake_sales is not None:
+                af._query_finance_sales_fallback = fake_sales
+            if fake_finance is not None:
+                af._query_finance_data = fake_finance
+            return asyncio.run(af._get_yoy_mom_chart(
+                "F", period_type, start_period, end_period, metric
+            ))
+        finally:
+            af._query_finance_sales_fallback = orig_sales
+            af._query_finance_data = orig_finance
+
+    def test_month_periodtype_yoy_mom_calc(self):
+        """yoy = (cur-lastYear)/lastYear*100; mom = (cur-lastMonth)/lastMonth*100."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake_sales(_fid, start, _end):
+            # Inject different revenue for current/lastYear/lastMonth months
+            if start == d(2026, 1, 1): return [{"amount": Decimal("100"), "cost": Decimal("0")}]
+            if start == d(2025, 1, 1): return [{"amount": Decimal("80"), "cost": Decimal("0")}]
+            if start == d(2025, 12, 1): return [{"amount": Decimal("90"), "cost": Decimal("0")}]
+            return []
+        chart = self._run_chart(fake_sales=fake_sales)
+        point = chart["data"][0]
+        assert point["currentValue"] == 100
+        assert point["lastYearValue"] == 80
+        assert point["lastPeriodValue"] == 90
+        # yoy = (100-80)/80*100 = 25
+        assert point["yoyGrowthRate"] == 25
+        # mom = (100-90)/90*100 = 11.11 (rounded HALF_UP)
+        assert point["momGrowthRate"] == 11.11
+
+    def test_quarter_periodtype_dispatches_to_quarter_calc(self):
+        async def fake_sales(*_): return []
+        chart = self._run_chart(fake_sales=fake_sales, period_type="QUARTER", start_period="2026-Q1")
+        assert chart["data"][0]["period"] == "2026-Q1"
+
+    def test_month_range_requires_end_period(self):
+        """audit I-8: MONTH_RANGE without endPeriod → HTTP 400."""
+        from fastapi import HTTPException
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+        async def fake_sales(*_): return []
+        orig_sales = af._query_finance_sales_fallback
+        try:
+            af._query_finance_sales_fallback = fake_sales
+            with pytest.raises(HTTPException) as exc_info:
+                asyncio.run(af._get_yoy_mom_chart("F", "MONTH_RANGE", "2026-01", None, "revenue"))
+            assert exc_info.value.status_code == 400
+            assert "endPeriod required" in str(exc_info.value.detail)
+        finally:
+            af._query_finance_sales_fallback = orig_sales
+
+    def test_unknown_periodtype_falls_back_to_month(self):
+        """Unknown periodType → MONTH default + warning log."""
+        async def fake_sales(*_): return []
+        chart = self._run_chart(fake_sales=fake_sales, period_type="WEIRD", start_period="2026-01")
+        # Falls back to MONTH → emits 1 point
+        assert len(chart["data"]) == 1
+        assert chart["data"][0]["period"] == "2026-01"
+
+    def test_zero_base_growth_rate_zero(self):
+        """lastYearValue=0 → yoyGrowthRate=0 (avoid div0 per Java line 1839-1843)."""
+        async def fake_sales(*_): return []  # all periods empty → all values 0
+        chart = self._run_chart(fake_sales=fake_sales)
+        point = chart["data"][0]
+        assert point["currentValue"] == 0
+        assert point["lastYearValue"] == 0
+        assert point["yoyGrowthRate"] == 0
+        assert point["momGrowthRate"] == 0
+
+    def test_cost_metric_uses_finance_data_not_sales(self):
+        """audit I-6: metric=cost should query _query_finance_data (COST), not sales."""
+        from decimal import Decimal
+        finance_calls = []
+        sales_calls = []
+        async def fake_finance(_fid, rt, _s, _e):
+            finance_calls.append(rt)
+            return [{"total_cost": Decimal("500")}]
+        async def fake_sales(*_):
+            sales_calls.append(1)
+            return []
+        chart = self._run_chart(fake_sales=fake_sales, fake_finance=fake_finance, metric="cost")
+        # Cost branch should call _query_finance_data with "COST" 3 times (current + lastYear + lastPeriod)
+        assert finance_calls == ["COST", "COST", "COST"]
+        # Sales should NOT be called for cost metric
+        assert sales_calls == []
+        # currentValue = 500 (from total_cost sum)
+        assert chart["data"][0]["currentValue"] == 500
+
+
+class TestCategoryComparisonChart:
+    """F999 byte-shape gate + arithmetic tests for /category-comparison."""
+
+    def test_f999_category_comparison_data_keys_match_golden(self, client, monkeypatch):
+        async def fake_sales(*_): return []
+        monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fallback", fake_sales)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/category-comparison"
+            "?year=2025&compareYear=2024",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-category-comparison.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+        assert py_data_keys == golden_data_keys
+
+    def test_f999_category_comparison_byte_shape(self, client, monkeypatch):
+        async def fake_sales(*_): return []
+        monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fallback", fake_sales)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/category-comparison"
+            "?year=2025&compareYear=2024",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+        py_data = _strip_volatile(resp.json()["data"])
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-category-comparison.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+        if py_data != golden_data:
+            diffs = {k: {"py": py_data.get(k), "g": golden_data.get(k)}
+                     for k in set(py_data) | set(golden_data)
+                     if py_data.get(k) != golden_data.get(k)}
+            pytest.fail(f"BYTE MISMATCH (category-comparison): {json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}")
+
+    def _run_chart(self, fake_sales, year=2025, compare_year=2024):
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+        original = af._query_finance_sales_fallback
+        try:
+            af._query_finance_sales_fallback = fake_sales
+            return asyncio.run(af._get_category_comparison_chart("F", year, compare_year))
+        finally:
+            af._query_finance_sales_fallback = original
+
+    def test_category_aggregation_by_product_category(self):
+        """Groups by product_category, sums amount."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake_sales(_fid, start, _end):
+            if start == d(2025, 1, 1):
+                return [
+                    {"product_category": "A", "amount": Decimal("100")},
+                    {"product_category": "A", "amount": Decimal("50")},
+                    {"product_category": "B", "amount": Decimal("80")},
+                ]
+            return []
+        chart = self._run_chart(fake_sales)
+        # A=150, B=80 → sorted DESC by currentAmount
+        assert len(chart["data"]) == 2
+        assert chart["data"][0]["category"] == "A"
+        assert chart["data"][0]["currentAmount"] == 150
+        assert chart["data"][1]["category"] == "B"
+        assert chart["data"][1]["currentAmount"] == 80
+
+    def test_sort_by_current_amount_desc(self):
+        """data sorted by currentAmount descending (Java line 1327-1331)."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake_sales(_fid, start, _end):
+            if start == d(2025, 1, 1):
+                return [
+                    {"product_category": "low", "amount": Decimal("10")},
+                    {"product_category": "high", "amount": Decimal("100")},
+                    {"product_category": "mid", "amount": Decimal("50")},
+                ]
+            return []
+        chart = self._run_chart(fake_sales)
+        amounts = [p["currentAmount"] for p in chart["data"]]
+        assert amounts == sorted(amounts, reverse=True)
+
+    def test_new_category_yoy_growth_100(self):
+        """compare=0, current>0 → yoyGrowth=100 (Java line 1304-1308)."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake_sales(_fid, start, _end):
+            if start == d(2025, 1, 1):
+                return [{"product_category": "new", "amount": Decimal("50")}]
+            return []  # 2024 has no data
+        chart = self._run_chart(fake_sales)
+        new_cat = chart["data"][0]
+        assert new_cat["category"] == "new"
+        assert new_cat["currentAmount"] == 50
+        assert new_cat["compareAmount"] == 0
+        assert new_cat["yoyGrowthRate"] == 100

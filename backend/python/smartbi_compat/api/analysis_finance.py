@@ -24,12 +24,13 @@ Spec: docs/superpowers/specs/2026-04-29-phase2a-analysis-finance-foundation-desi
 """
 from __future__ import annotations
 
+import calendar
 import logging
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
@@ -57,7 +58,6 @@ def _infer_granularity(start: date, end: date) -> str:
             and start.year == end.year):
         return "YEAR"
     # First day of a month to last day of the same month
-    import calendar
     last_day = calendar.monthrange(start.year, start.month)[1]
     if (start.day == 1
             and end.year == start.year
@@ -418,6 +418,597 @@ def _format_currency(v: Optional[Decimal]) -> str:
     quantized = v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     # Python format with thousands separator: f"{x:,.2f}"
     return f"{quantized:,.2f}"
+
+
+def _get_budget_amount_by_metric(record: dict, metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetAmountByMetric (line 1716-1749).
+
+    Java fall-through: switch case has inner `if category contains keyword: return; break;`
+    but `break` exits switch and falls through to outer `return data.getBudgetAmount()` at
+    line 1748. So function ALWAYS returns budget_amount regardless of category match —
+    keyword filter is dead code in Java. Mirror this literally.
+
+    `metric` parameter accepted but unused (Java parity, future-proof).
+    """
+    if record.get("budget_amount") is None:
+        return Decimal("0")
+    return _to_decimal(record["budget_amount"])
+
+
+def _get_actual_amount_by_metric(record: dict, metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getActualAmountByMetric (line 1754-1786).
+
+    Same Java fall-through behavior as _get_budget_amount_by_metric — always returns
+    actual_amount regardless of category match.
+    """
+    if record.get("actual_amount") is None:
+        return Decimal("0")
+    return _to_decimal(record["actual_amount"])
+
+
+def _determine_budget_achievement_alert(achievement_rate: Decimal) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.determineBudgetAchievementAlertLevel
+    (line 1794-1799).
+
+      v > 120  → RED   (超支严重)
+      v > 100  → YELLOW (略有超支)
+      v <= 100 → GREEN  (正常)
+
+    Boundary: exactly 100 → GREEN; exactly 120 → YELLOW.
+    """
+    v = float(achievement_rate)
+    if v > 120:
+        return "RED"
+    if v > 100:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _get_metric_display_name(metric: Optional[str]) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricDisplayName (line 1804-1820)."""
+    if metric is None:
+        return "综合"
+    return {
+        "revenue": "收入",
+        "cost": "成本",
+        "expense": "费用",
+        "profit": "利润",
+        "gross_margin": "毛利率",
+    }.get(metric.lower(), "综合")
+
+
+def _safe_growth_rate(current: Decimal, base: Decimal) -> Decimal:
+    """Mirror Java growth rate formula at FinanceAnalysisServiceImpl.calculateMonthYoYMoM
+    line 1839-1850 etc. Returns scale=4 Decimal.
+
+    (current - base) / base * 100 with ROUND_HALF_UP, or Decimal("0") when base <= 0.
+    """
+    if base > Decimal("0"):
+        return ((current - base) / base * Decimal("100")).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        )
+    return Decimal("0")
+
+
+def _calculate_metric_from_sales(sales_rows: list[dict], metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.calculateMetricFromSales (line 2040-2065).
+
+    Pre-aggregates total_revenue + total_cost from sales_rows, then dispatches:
+      revenue       → total_revenue
+      profit        → total_revenue - total_cost
+      gross_margin  → (rev - cost) / rev * 100, scale=4 (or 0 if rev=0)
+      default       → total_revenue
+    """
+    metric_lower = (metric or "").lower()
+
+    total_revenue = sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+    # Java line 2046-2049: NO .abs() (unlike profit metrics path)
+    total_cost = sum(
+        (
+            _to_decimal(r["cost"])
+            for r in sales_rows
+            if r.get("cost") is not None
+        ),
+        Decimal("0"),
+    )
+
+    if metric_lower == "revenue":
+        return total_revenue
+    if metric_lower == "profit":
+        return total_revenue - total_cost
+    if metric_lower == "gross_margin":
+        if total_revenue > Decimal("0"):
+            return (
+                (total_revenue - total_cost) / total_revenue * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return Decimal("0")
+    # default
+    return total_revenue
+
+
+async def _get_metric_value_for_period(
+    factory_id: str, year_month: tuple, metric: str
+) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricValueForPeriod (line 1970-2000).
+
+    3 distinct branches by data source (audit C-1 fix):
+      revenue / profit / gross_margin → smart_bi_sales_data via _query_finance_sales_fallback
+      cost / expense                  → smart_bi_finance_data RecordType.COST, sum total_cost
+      default                         → smart_bi_sales_data, sum amount
+    """
+    year, month = year_month
+    last_day = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)
+    end_date = date(year, month, last_day)
+
+    metric_lower = (metric or "").lower()
+
+    if metric_lower in ("revenue", "profit", "gross_margin"):
+        sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+        return _calculate_metric_from_sales(sales_rows, metric_lower)
+
+    if metric_lower in ("cost", "expense"):
+        cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+        # Java line 1987-1990: sum total_cost (NOT actual_amount)
+        return sum(
+            (
+                _to_decimal(r["total_cost"])
+                for r in cost_records
+                if r.get("total_cost") is not None
+            ),
+            Decimal("0"),
+        )
+
+    # Default: sum amount from sales (Java line 1991-1998)
+    sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+    return sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+
+
+async def _get_metric_value_for_quarter(
+    factory_id: str, year: int, quarter: int, metric: str
+) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricValueForQuarter (line 2005-2035).
+
+    Same 3-branch structure as _get_metric_value_for_period, with quarter date math.
+    """
+    start_month = (quarter - 1) * 3 + 1
+    end_month = quarter * 3
+    last_day = calendar.monthrange(year, end_month)[1]
+    start_date = date(year, start_month, 1)
+    end_date = date(year, end_month, last_day)
+
+    metric_lower = (metric or "").lower()
+
+    if metric_lower in ("revenue", "profit", "gross_margin"):
+        sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+        return _calculate_metric_from_sales(sales_rows, metric_lower)
+
+    if metric_lower in ("cost", "expense"):
+        cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+        return sum(
+            (
+                _to_decimal(r["total_cost"])
+                for r in cost_records
+                if r.get("total_cost") is not None
+            ),
+            Decimal("0"),
+        )
+
+    sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+    return sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+
+
+async def _calculate_month_yoy_mom(
+    factory_id: str, period: str, metric: str
+) -> list:
+    """Mirror Java calculateMonthYoYMoM (line 1825-1864).
+
+    period format: 'YYYY-MM'. Returns single chart point.
+    """
+    year, month = map(int, period.split("-"))
+    current_ym = (year, month)
+    last_year_ym = (year - 1, month)
+    last_month_y, last_month_m = (year, month - 1) if month > 1 else (year - 1, 12)
+    last_period_ym = (last_month_y, last_month_m)
+
+    current_value = await _get_metric_value_for_period(factory_id, current_ym, metric)
+    last_year_value = await _get_metric_value_for_period(factory_id, last_year_ym, metric)
+    last_period_value = await _get_metric_value_for_period(factory_id, last_period_ym, metric)
+
+    yoy_growth_rate = _safe_growth_rate(current_value, last_year_value)
+    mom_growth_rate = _safe_growth_rate(current_value, last_period_value)
+
+    return [{
+        "period": period,
+        "currentValue": _decimal_to_number(current_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastYearValue": _decimal_to_number(last_year_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastPeriodValue": _decimal_to_number(last_period_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyGrowthRate": _decimal_to_number(yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momGrowthRate": _decimal_to_number(mom_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyChange": _decimal_to_number((current_value - last_year_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momChange": _decimal_to_number((current_value - last_period_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+    }]
+
+
+async def _calculate_quarter_yoy_mom(
+    factory_id: str, period: str, metric: str
+) -> list:
+    """Mirror Java calculateQuarterYoYMoM (line 1869-1913).
+
+    period format: 'YYYY-Qn' (e.g. '2026-Q1'). Returns single chart point.
+    Note: yoy field name is `momGrowthRate` even though it's QoQ — Java reuses field name.
+    """
+    parts = period.split("-Q")
+    year = int(parts[0])
+    quarter = int(parts[1])
+
+    last_year_q = quarter
+    last_year_y = year - 1
+    last_quarter_q = 4 if quarter == 1 else quarter - 1
+    last_quarter_y = year - 1 if quarter == 1 else year
+
+    current_value = await _get_metric_value_for_quarter(factory_id, year, quarter, metric)
+    last_year_value = await _get_metric_value_for_quarter(factory_id, last_year_y, last_year_q, metric)
+    last_quarter_value = await _get_metric_value_for_quarter(factory_id, last_quarter_y, last_quarter_q, metric)
+
+    yoy_growth_rate = _safe_growth_rate(current_value, last_year_value)
+    qoq_growth_rate = _safe_growth_rate(current_value, last_quarter_value)
+
+    return [{
+        "period": period,
+        "currentValue": _decimal_to_number(current_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastYearValue": _decimal_to_number(last_year_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "lastPeriodValue": _decimal_to_number(last_quarter_value.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyGrowthRate": _decimal_to_number(yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momGrowthRate": _decimal_to_number(qoq_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "yoyChange": _decimal_to_number((current_value - last_year_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        "momChange": _decimal_to_number((current_value - last_quarter_value).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+    }]
+
+
+async def _calculate_month_range_yoy_mom(
+    factory_id: str, start_period: str, end_period: str, metric: str
+) -> list:
+    """Mirror Java calculateMonthRangeYoYMoM (line 1918-1932).
+
+    Iterates from start_period to end_period (inclusive), calling _calculate_month_yoy_mom
+    per month. Each iteration emits 1 chart point.
+    """
+    start_year, start_month = map(int, start_period.split("-"))
+    end_year, end_month = map(int, end_period.split("-"))
+
+    result = []
+    current_year, current_month = start_year, start_month
+    while (current_year, current_month) <= (end_year, end_month):
+        period = f"{current_year}-{current_month:02d}"
+        month_data = await _calculate_month_yoy_mom(factory_id, period, metric)
+        result.extend(month_data)
+        if current_month == 12:
+            current_year += 1
+            current_month = 1
+        else:
+            current_month += 1
+    return result
+
+
+async def _calculate_quarter_range_yoy_mom(
+    factory_id: str, start_period: str, end_period: str, metric: str
+) -> list:
+    """Mirror Java calculateQuarterRangeYoYMoM (line 1937-1965).
+
+    Iterates from start_period (YYYY-Qn) to end_period inclusive, calling
+    _calculate_quarter_yoy_mom per quarter.
+    """
+    start_year_str, start_q_str = start_period.split("-Q")
+    end_year_str, end_q_str = end_period.split("-Q")
+    start_year, start_q = int(start_year_str), int(start_q_str)
+    end_year, end_q = int(end_year_str), int(end_q_str)
+
+    result = []
+    current_year, current_quarter = start_year, start_q
+    # Java line 1951: while (currentYear < endYear || (currentYear == endYear && currentQuarter <= endQuarter))
+    while current_year < end_year or (current_year == end_year and current_quarter <= end_q):
+        period = f"{current_year}-Q{current_quarter}"
+        quarter_data = await _calculate_quarter_yoy_mom(factory_id, period, metric)
+        result.extend(quarter_data)
+        current_quarter += 1
+        if current_quarter > 4:
+            current_quarter = 1
+            current_year += 1
+    return result
+
+
+def _aggregate_sales_by_category(sales_rows: list) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.aggregateSalesByCategory (line 2070-2087).
+
+    Java line 2074: `getProductCategory() != null ? getProductCategory() : "其他"` — uses
+    NULL check, NOT falsy. Empty string "" is bucketed under "" (not "其他").
+
+    audit C-2 fix: use explicit `is not None` to match Java exactly. Avoid Python `or` falsy
+    which would collapse "" to "其他" (divergence).
+
+    Amount handling per Rule 1 (audit M-6 fix): explicit `is not None` check.
+    """
+    result: dict = {}
+    for row in sales_rows:
+        raw_cat = row.get("product_category")
+        cat = raw_cat if raw_cat is not None else "其他"
+        raw_amt = row.get("amount")
+        amount = _to_decimal(raw_amt) if raw_amt is not None else Decimal("0")
+        result[cat] = result.get(cat, Decimal("0")) + amount
+    return result
+
+
+async def _get_category_comparison_chart(
+    factory_id: str, year: int, compare_year: int
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getCategoryStructureComparisonChart (line 1259-1365).
+
+    Queries smart_bi_sales_data for both years via _query_finance_sales_fallback.
+    Aggregates by product_category, computes ratio/yoy growth, sorts by currentAmount desc.
+    """
+    current_sales = await _query_finance_sales_fallback(
+        factory_id, date(year, 1, 1), date(year, 12, 31)
+    )
+    compare_sales = await _query_finance_sales_fallback(
+        factory_id, date(compare_year, 1, 1), date(compare_year, 12, 31)
+    )
+
+    current_category_amount = _aggregate_sales_by_category(current_sales)
+    compare_category_amount = _aggregate_sales_by_category(compare_sales)
+
+    current_total = sum(current_category_amount.values(), Decimal("0"))
+    compare_total = sum(compare_category_amount.values(), Decimal("0"))
+
+    # Java LinkedHashSet preserves first-encounter order
+    all_categories: list = []
+    seen: set = set()
+    for cat in list(current_category_amount.keys()) + list(compare_category_amount.keys()):
+        if cat not in seen:
+            seen.add(cat)
+            all_categories.append(cat)
+
+    chart_data: list = []
+    for category in all_categories:
+        current_amount = current_category_amount.get(category, Decimal("0"))
+        compare_amount = compare_category_amount.get(category, Decimal("0"))
+
+        if current_total > Decimal("0"):
+            current_ratio = (current_amount / current_total * Decimal("100")).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+        else:
+            current_ratio = Decimal("0")
+        if compare_total > Decimal("0"):
+            compare_ratio = (compare_amount / compare_total * Decimal("100")).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+        else:
+            compare_ratio = Decimal("0")
+
+        # Java line 1304-1308: yoyGrowthRate with new-category fallback
+        if compare_amount > Decimal("0"):
+            yoy_growth_rate = (
+                (current_amount - compare_amount) / compare_amount * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif current_amount > Decimal("0"):
+            yoy_growth_rate = Decimal("100")
+        else:
+            yoy_growth_rate = Decimal("0")
+
+        ratio_change = current_ratio - compare_ratio
+
+        chart_data.append({
+            "category": category,
+            "currentAmount": _decimal_to_number(current_amount.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareAmount": _decimal_to_number(compare_amount.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "currentRatio": _decimal_to_number(current_ratio.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareRatio": _decimal_to_number(compare_ratio.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "yoyGrowthRate": _decimal_to_number(yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "ratioChange": _decimal_to_number(ratio_change.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "currentYear": year,
+            "compareYear": compare_year,
+        })
+
+    # Java line 1327-1331: sort by currentAmount DESC
+    chart_data.sort(key=lambda x: x["currentAmount"], reverse=True)
+
+    if compare_total > Decimal("0"):
+        total_yoy_growth_rate = (
+            (current_total - compare_total) / compare_total * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        total_yoy_growth_rate = Decimal("0")
+
+    options = {
+        "groupedBar": True,
+        "yAxis": [
+            {"position": "left", "name": "金额"},
+            {"position": "right", "name": "同比增长率(%)"},
+        ],
+        "series": [
+            {"yAxisIndex": 0, "type": "bar", "name": f"{year}年", "color": "#5470c6"},
+            {"yAxisIndex": 0, "type": "bar", "name": f"{compare_year}年", "color": "#91cc75"},
+            {"yAxisIndex": 1, "type": "line", "name": "同比增长率", "color": "#ee6666"},
+        ],
+        "summary": {
+            # Map.of(3) hash order recorded from live Java F999 golden:
+            # ['totalYoyGrowthRate', 'compareTotal', 'currentTotal']
+            "totalYoyGrowthRate": _decimal_to_number(total_yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareTotal": _decimal_to_number(compare_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "currentTotal": _decimal_to_number(current_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        },
+    }
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title=f"{year}年 vs {compare_year}年 品类结构对比",
+        series_field="year",
+        data=chart_data,
+        options=options,
+        xaxis_field="category",
+        yaxis_field="currentAmount",
+    )
+
+
+async def _get_yoy_mom_chart(
+    factory_id: str,
+    period_type: str,
+    start_period: str,
+    end_period: Optional[str],
+    metric: str = "revenue",
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getYoYMoMComparisonChart (line 1200-1254).
+
+    Dispatches to 4 sub-impl based on period_type. MONTH_RANGE/QUARTER_RANGE require
+    end_period — raises HTTP 400 if missing (audit I-8 fix).
+    """
+    if period_type == "MONTH":
+        chart_data = await _calculate_month_yoy_mom(factory_id, start_period, metric)
+    elif period_type == "QUARTER":
+        chart_data = await _calculate_quarter_yoy_mom(factory_id, start_period, metric)
+    elif period_type == "MONTH_RANGE":
+        if end_period is None:
+            raise HTTPException(status_code=400, detail="endPeriod required for MONTH_RANGE")
+        chart_data = await _calculate_month_range_yoy_mom(factory_id, start_period, end_period, metric)
+    elif period_type == "QUARTER_RANGE":
+        if end_period is None:
+            raise HTTPException(status_code=400, detail="endPeriod required for QUARTER_RANGE")
+        chart_data = await _calculate_quarter_range_yoy_mom(factory_id, start_period, end_period, metric)
+    else:
+        # Java line 1224-1226: default fallback to MONTH with warning
+        logger.warning("Unknown periodType=%s, using MONTH default", period_type)
+        chart_data = await _calculate_month_yoy_mom(factory_id, start_period, metric)
+
+    metric_name = _get_metric_display_name(metric)
+
+    # Map.of(4) Jackson hash order — recorded from live Java (Phase C.4 goldens):
+    # yAxis[i]: ['position', 'name'] (Map.of(2) hash differs from profit's _new_yaxis_entry ['name','position'])
+    # series[i]: ['yAxisIndex', 'type', 'name', 'color'] (Map.of(4) order, same as budget-achievement)
+    # Do NOT use _new_yaxis_entry here — it returns ['name','position'] which mismatches this endpoint.
+    options = {
+        "yAxis": [
+            {"position": "left", "name": "金额"},
+            {"position": "right", "name": "增长率(%)"},
+        ],
+        "series": [
+            {"yAxisIndex": 0, "type": "bar", "name": "本期", "color": "#5470c6"},
+            {"yAxisIndex": 0, "type": "bar", "name": "同期", "color": "#91cc75"},
+            {"yAxisIndex": 1, "type": "line", "name": "同比增长率", "color": "#ee6666"},
+            {"yAxisIndex": 1, "type": "line", "name": "环比增长率", "color": "#fac858"},
+        ],
+        "tooltip": {"trigger": "axis"},
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",
+        title=f"{metric_name}同比环比分析",
+        series_field="metric",
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="currentValue",
+    )
+
+
+async def _get_budget_achievement_chart(
+    factory_id: str, year: int, metric: str = "revenue"
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetAchievementChart (line 1121-1195).
+
+    Always emits 12 month entries (Java line 1132-1135 pre-fills with zeros).
+    """
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+
+    budget_data = await _query_finance_data(
+        factory_id, "BUDGET", start_date, end_date
+    )
+
+    # Java line 1131-1135: TreeMap of 12 months pre-filled [budget=0, actual=0]
+    monthly_data: dict[int, list[Decimal]] = {
+        m: [Decimal("0"), Decimal("0")] for m in range(1, 13)
+    }
+
+    for record in budget_data:
+        if record.get("record_date") is None:
+            continue
+        month = record["record_date"].month
+        monthly_data[month][0] += _get_budget_amount_by_metric(record, metric)
+        monthly_data[month][1] += _get_actual_amount_by_metric(record, metric)
+
+    chart_data: list[dict] = []
+    for month in range(1, 13):
+        budget = monthly_data[month][0]
+        actual = monthly_data[month][1]
+        if budget > Decimal("0"):
+            achievement_rate = (
+                actual / budget * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            achievement_rate = Decimal("0")
+        # Note: alert uses scale=4 value (precision matters at boundary)
+        alert_level = _determine_budget_achievement_alert(achievement_rate)
+
+        chart_data.append({
+            "month": f"{month}月",
+            "budget": _decimal_to_number(budget.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "actual": _decimal_to_number(actual.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "achievementRate": _decimal_to_number(achievement_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "variance": _decimal_to_number((actual - budget).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "alertLevel": alert_level,
+        })
+
+    metric_name = _get_metric_display_name(metric)
+
+    # Map.of(4) Jackson hash order — recorded from live Java (Phase B.2 golden):
+    # yAxis[0]: ['position', 'name'] (Java Map.of(2) hash-order differs from profit's ['name','position'])
+    # yAxis[1]: ['position', 'min', 'name', 'max'] (Map.of(4) non-deterministic, captured empirically)
+    # series[i]: ['yAxisIndex', 'type', 'name', 'color'] (Map.of(4), differs from profit series Map.of(3))
+    # referenceLine: ['label', 'value'] (Map.of(2), captured empirically)
+    options = {
+        "yAxis": [
+            {"position": "left", "name": "金额"},
+            {"position": "right", "min": 0, "name": "达成率(%)", "max": 150},
+        ],
+        "series": [
+            {"yAxisIndex": 0, "type": "bar", "name": "预算", "color": "#5470c6"},
+            {"yAxisIndex": 0, "type": "bar", "name": "实际", "color": "#91cc75"},
+            {"yAxisIndex": 1, "type": "line", "name": "达成率", "color": "#ee6666"},
+        ],
+        "referenceLine": {"label": "目标线", "value": 100},
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",
+        title=f"{year}年{metric_name}预算达成分析",
+        series_field="metric",
+        data=chart_data,
+        options=options,
+        xaxis_field="month",
+        yaxis_field="budget",
+    )
 
 
 def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
@@ -1546,3 +2137,43 @@ async def get_finance_analysis(
         code=501,
         message=f"analysisType={analysisType} 尚未 port 至 Python，请暂用 Java endpoint 或等待 phase2a/t-finance-perX 副轨完成",
     )
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/budget-achievement")
+async def get_budget_achievement(
+    factory_id: str,
+    year: int = Query(...),
+    metric: str = Query("revenue"),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getBudgetAchievementChart line 276-292."""
+    result = await _get_budget_achievement_chart(auth.factory_id, year, metric)
+    return wrap_response(result)
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/yoy-mom")
+async def get_yoy_mom(
+    factory_id: str,
+    periodType: str = Query(...),
+    startPeriod: str = Query(...),
+    endPeriod: Optional[str] = Query(None),
+    metric: str = Query("revenue"),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getYoYMoMComparisonChart line 294-312."""
+    result = await _get_yoy_mom_chart(
+        auth.factory_id, periodType, startPeriod, endPeriod, metric
+    )
+    return wrap_response(result)
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/category-comparison")
+async def get_category_comparison(
+    factory_id: str,
+    year: int = Query(...),
+    compareYear: int = Query(...),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getCategoryStructureComparisonChart line 314-330."""
+    result = await _get_category_comparison_chart(auth.factory_id, year, compareYear)
+    return wrap_response(result)
