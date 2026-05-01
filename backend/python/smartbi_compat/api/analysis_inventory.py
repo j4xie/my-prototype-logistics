@@ -731,6 +731,277 @@ async def _get_turnover_mode(
     }
 
 
+# ============================================================
+# Section 5b: Expiry mode (Task 10)
+# Mirror Java InventoryHealthAnalysisServiceImpl L294-478 (3 sub-services).
+# ============================================================
+
+
+def _days(n: int):
+    from datetime import timedelta
+    return timedelta(days=n)
+
+
+async def _get_expiry_risk_analysis(factory_id: str) -> list[dict]:
+    """5 metrics: EXPIRY_RISK_RATE / EXPIRING_COUNT / HIGH_RISK_COUNT / EXPIRED_COUNT / EXPIRING_VALUE.
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getExpiryRiskAnalysis L294-371.
+    Spec §3.7.4. Uses `date.today()` (test monkeypatch target).
+    """
+    today = date.today()
+    warning_date = today + _days(_DEFAULT_EXPIRY_WARNING_DAYS)
+    high_risk_date = today + _days(_HIGH_RISK_EXPIRY_DAYS)
+
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+    expiring_batches = await _query_expiring_batches(factory_id, warning_date)
+    high_risk_batches = [
+        b for b in expiring_batches
+        if b.get("expire_date") is not None and b["expire_date"] <= high_risk_date
+    ]
+    expired_batches = await _query_expired_batches(factory_id)
+
+    total_value = _calculate_total_inventory_value(all_batches)
+    expiring_value = _calculate_total_inventory_value(expiring_batches)
+
+    if total_value > Decimal("0"):
+        expiry_risk_rate = (expiring_value / total_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        ) * Decimal("100")
+    else:
+        expiry_risk_rate = Decimal("0")
+
+    metrics: list[dict] = []
+    risk_display = expiry_risk_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+
+    # Metric 1: EXPIRY_RISK_RATE
+    # Key order mirrors golden (Rule 8):
+    #   [metricCode, metricName, value, formattedValue, unit, changePercent,
+    #    changeDirection, changeValue, alertLevel, dimensionValue, description]
+    metrics.append({
+        "metricCode":      "EXPIRY_RISK_RATE",
+        "metricName":      "临期风险率",
+        "value":           _decimal_to_number(risk_display),
+        "formattedValue":  f"{float(expiry_risk_rate):.1f}%",
+        "unit":            "%",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      _determine_expiry_risk_alert_level(expiry_risk_rate),
+        "dimensionValue":  None,
+        "description":     "30天内临期库存占比",
+    })
+
+    # Metric 2: EXPIRING_COUNT (inline alert: empty→GREEN, else→YELLOW)
+    expiring_count_alert = "GREEN" if not expiring_batches else "YELLOW"
+    metrics.append({
+        "metricCode":      "EXPIRING_COUNT",
+        "metricName":      "临期批次数",
+        "value":           len(expiring_batches),
+        "formattedValue":  f"{len(expiring_batches)} 批",
+        "unit":            "批",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      expiring_count_alert,
+        "dimensionValue":  None,
+        "description":     None,
+    })
+
+    # Metric 3: HIGH_RISK_COUNT (inline alert: empty→GREEN, else→RED; description "7天内过期")
+    high_risk_alert = "GREEN" if not high_risk_batches else "RED"
+    metrics.append({
+        "metricCode":      "HIGH_RISK_COUNT",
+        "metricName":      "高风险批次",
+        "value":           len(high_risk_batches),
+        "formattedValue":  f"{len(high_risk_batches)} 批",
+        "unit":            "批",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      high_risk_alert,
+        "dimensionValue":  None,
+        "description":     "7天内过期",
+    })
+
+    # Metric 4: EXPIRED_COUNT (inline alert: empty→GREEN, else→RED)
+    expired_alert = "GREEN" if not expired_batches else "RED"
+    metrics.append({
+        "metricCode":      "EXPIRED_COUNT",
+        "metricName":      "已过期批次",
+        "value":           len(expired_batches),
+        "formattedValue":  f"{len(expired_batches)} 批",
+        "unit":            "批",
+        "changePercent":   None,
+        "changeDirection": None,
+        "changeValue":     None,
+        "alertLevel":      expired_alert,
+        "dimensionValue":  None,
+        "description":     None,
+    })
+
+    # Metric 5: EXPIRING_VALUE (MetricResult.of factory — no formattedValue, alertLevel=GREEN)
+    metrics.append(_metric_result_of("EXPIRING_VALUE", "临期库存价值", expiring_value, "元"))
+
+    return metrics
+
+
+async def _get_expiring_batches_ranking(
+    factory_id: str, days_to_expiry: int = 30
+) -> list[dict]:
+    """FEFO sort by expire_date ASC, limit 20.
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getExpiringBatchesRanking L375-417.
+    Spec §3.7.5.
+
+    Inline alert (T-INV-1 inline site #1, NOT extracted as helper):
+      <= 7 days → RED, <= 15 days → YELLOW, else → GREEN
+    """
+    today = date.today()
+    warning_date = today + _days(days_to_expiry)
+    expiring_batches = await _query_expiring_batches(factory_id, warning_date)
+
+    # Java line 385-389: filter non-null expireDate (defensive — SQL BETWEEN already
+    # filters, but Java re-checks). Limit to 20. SQL already ORDER BY expire_date ASC.
+    filtered = [b for b in expiring_batches if b.get("expire_date") is not None]
+    sorted_batches = filtered[:20]
+
+    rankings = []
+    for rank, batch in enumerate(sorted_batches, start=1):
+        days_until_expiry = (batch["expire_date"] - today).days
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        # Inline alert (T-INV-1 inline site #1): NOT extracted as named helper
+        if days_until_expiry <= _EXPIRING_RANKING_RED_DAYS:
+            alert_level = "RED"
+        elif days_until_expiry <= _EXPIRING_RANKING_YELLOW_DAYS:
+            alert_level = "YELLOW"
+        else:
+            alert_level = "GREEN"
+
+        rankings.append({
+            "rank":           rank,
+            "name":           batch.get("batch_number"),
+            "value":          _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         days_until_expiry,
+            "completionRate": _decimal_to_number(
+                cq.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "alertLevel":     alert_level,
+        })
+
+    return rankings
+
+
+async def _get_expiry_risk_chart(factory_id: str) -> dict:
+    """PIE chart, 5-bucket LinkedHashMap pre-populate.
+
+    Mirror Java InventoryHealthAnalysisServiceImpl.getExpiryRiskChart L421-478.
+    Spec §3.7.6.
+
+    T-INV-5: 5 buckets pre-populated in exact Java LinkedHashMap insertion order.
+    Bucket item shape: {status, value} (golden-verified — 2 keys, NOT bucketName/agingBucket).
+    Options: {showPercentage, showLegend, colors} (golden-verified — 3 keys).
+
+    Boundary (Java L444-453, strict `<`):
+      < 7  → "紧急（<7天）"
+      < 15 → "预警（7-15天）"   (7..14)
+      < 30 → "关注（15-30天）"  (15..29)
+      else → "正常（>30天）"    (30+ falls here)
+      expireDate null → "无保质期"
+
+    riskChart key order (golden-verified, Rule 8):
+      [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+    Note: xaxisField / yaxisField are all-lowercase (Lombok-Jackson demangling).
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    # T-INV-5: Pre-populate dict in EXACT Java LinkedHashMap insertion order
+    risk_distribution: dict = {
+        "正常（>30天）":   Decimal("0"),
+        "关注（15-30天）": Decimal("0"),
+        "预警（7-15天）":  Decimal("0"),
+        "紧急（<7天）":    Decimal("0"),
+        "无保质期":        Decimal("0"),
+    }
+
+    for batch in all_batches:
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        expire_date = batch.get("expire_date")
+        if expire_date is None:
+            risk_distribution["无保质期"] += value
+            continue
+
+        days_until_expiry = (expire_date - today).days
+        if days_until_expiry < 7:
+            risk_distribution["紧急（<7天）"] += value
+        elif days_until_expiry < 15:
+            risk_distribution["预警（7-15天）"] += value
+        elif days_until_expiry < 30:
+            risk_distribution["关注（15-30天）"] += value
+        else:
+            risk_distribution["正常（>30天）"] += value
+
+    # Java L456-463: chart_data iterates dict.entries (preserves LinkedHashMap order)
+    chart_data = [
+        {
+            "status": status_label,
+            "value":  _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        }
+        for status_label, value in risk_distribution.items()
+    ]
+
+    options = {
+        "showPercentage": True,
+        "showLegend":     True,
+        "colors":         ["#52c41a", "#faad14", "#ff7a45", "#ff4d4f", "#8c8c8c"],
+    }
+
+    # Key order mirrors golden: [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+    # Note: lowercase xaxisField/yaxisField (golden-verified Rule 8, Lombok-Jackson demangling)
+    return {
+        "chartType":   "PIE",
+        "title":       "临期风险分布",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+        "xaxisField":  "status",
+        "yaxisField":  "value",
+    }
+
+
+async def _get_expiry_mode(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Expiry mode entry — composes 3 sub-services into 5-key envelope.
+
+    F999 golden Jackson HashMap key order (verified):
+      [riskAnalysis, endDate, riskChart, expiringBatches, startDate]
+    Python dict literal mirrors exactly.
+    """
+    risk_analysis = await _get_expiry_risk_analysis(factory_id)
+    expiring_batches = await _get_expiring_batches_ranking(factory_id, days_to_expiry=30)
+    risk_chart = await _get_expiry_risk_chart(factory_id)
+    return {
+        "riskAnalysis":    risk_analysis,
+        "endDate":         end_date.isoformat(),
+        "riskChart":       risk_chart,
+        "expiringBatches": expiring_batches,
+        "startDate":       start_date.isoformat(),
+    }
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
@@ -751,7 +1022,10 @@ async def get_inventory_analysis(
     if analysisType == "turnover":
         result = await _get_turnover_mode(auth.factory_id, startDate, endDate)
         return wrap_response(result)
-    # expiry / aging modes wired in Tasks 10-11
+    if analysisType == "expiry":
+        result = await _get_expiry_mode(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+    # aging mode wired in Task 11
     return wrap_response(
         data=None,
         success=False,
