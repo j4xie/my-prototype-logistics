@@ -1687,3 +1687,142 @@ class TestCategoryComparisonChart:
         assert new_cat["currentAmount"] == 50
         assert new_cat["compareAmount"] == 0
         assert new_cat["yoyGrowthRate"] == 100
+
+
+class TestAnalysisFinanceBudget:
+    """F999 byte-shape gate for /analysis/finance?analysisType=budget per-type path.
+
+    Spec ref: 2026-05-01-phase2a-analysis-finance-budget-design.md §5.1.
+
+    Mocks `_query_finance_data` to return [] (matches F999 empty state).
+    Compares response['data'] against recorded golden after _strip_volatile.
+
+    Goldens recorded 2026-05-02 from test env Java 10011 (prod 10010 inactive at
+    recording — F001 actually identical to F999 due to test-env empty data; true
+    F001 prod re-record is post-deploy smoke per spec §5.4).
+    """
+
+    def test_f999_budget_data_keys_match_golden(self, client, monkeypatch):
+        """Verify dispatcher emits 5 keys in Jackson hash order.
+
+        Expected order: [comparison, endDate, waterfall, metrics, startDate]
+        (verified via F999 golden line 4-107).
+        """
+        async def fake_query(*_args, **_kwargs):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        token = _make_token("F999")
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-12-31&analysisType=budget",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["success"] is True
+
+        data_keys = list(body["data"].keys())
+        assert data_keys == ["comparison", "endDate", "waterfall", "metrics", "startDate"], (
+            f"dispatcher key order divergence — expected Jackson hash order from "
+            f"recorded F999 golden, got {data_keys}"
+        )
+
+    def test_f999_budget_byte_shape(self, client, monkeypatch):
+        """Full dict-eq compare against committed F999 budget golden.
+
+        Strips volatile keys (timestamp / generatedAt / lastUpdated / cacheExpireAt)
+        from both sides before compare. Asserts complete byte-shape parity for
+        empty-data state.
+        """
+        async def fake_query(*_args, **_kwargs):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        token = _make_token("F999")
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-12-31&analysisType=budget",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200, response.text
+        actual = response.json()
+
+        golden_path = GOLDEN_DIR / "analysis-finance-F999-budget.json"
+        with open(golden_path, "r", encoding="utf-8") as f:
+            golden = json.load(f)
+
+        # Strip volatile keys + drop outer envelope shell (focus on data)
+        actual_stripped = _strip_volatile(actual)
+        golden_stripped = _strip_volatile(golden)
+
+        assert actual_stripped["data"] == golden_stripped["data"], (
+            f"data byte-shape divergence:\n"
+            f"actual:   {json.dumps(actual_stripped['data'], indent=2, ensure_ascii=False)[:1000]}\n"
+            f"golden:   {json.dumps(golden_stripped['data'], indent=2, ensure_ascii=False)[:1000]}"
+        )
+
+    def test_f999_budget_date_scope_matrix(self, client, monkeypatch):
+        """F1 contract: 3 sub-services query 3 different date ranges.
+
+        Per spec §3.2:
+          metrics:    endDate's month only [date(2025, 6, 1), date(2025, 6, 30)]
+          waterfall:  full year [date(2025, 1, 1), date(2025, 12, 31)]
+          comparison: dispatcher range [date(2025, 1, 1), date(2025, 6, 30)]
+
+        Captures every _query_finance_data call's (record_type, start, end)
+        and asserts the three calls match expected scopes.
+        """
+        from datetime import date as _date
+
+        captured_calls: list[tuple] = []
+
+        async def fake_query(factory_id, record_type, start, end):
+            captured_calls.append((record_type, start, end))
+            return []
+
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        token = _make_token("F999")
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-06-30&analysisType=budget",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200, response.text
+
+        # 3 sub-services should each call _query_finance_data exactly once
+        assert len(captured_calls) == 3, (
+            f"expected 3 calls (metrics + waterfall + comparison), got {len(captured_calls)}: "
+            f"{captured_calls}"
+        )
+
+        # All 3 must use record_type='BUDGET'
+        for rt, _, _ in captured_calls:
+            assert rt == "BUDGET", f"record_type divergence: expected 'BUDGET', got '{rt}'"
+
+        # Find each call by its start_date pattern (order is impl detail; treat as set)
+        ranges = {(s, e) for _, s, e in captured_calls}
+
+        expected_metrics_range = (_date(2025, 6, 1), _date(2025, 6, 30))
+        expected_waterfall_range = (_date(2025, 1, 1), _date(2025, 12, 31))
+        expected_comparison_range = (_date(2025, 1, 1), _date(2025, 6, 30))
+
+        assert expected_metrics_range in ranges, (
+            f"metrics range missing — expected {expected_metrics_range}, "
+            f"got ranges {ranges}"
+        )
+        assert expected_waterfall_range in ranges, (
+            f"waterfall range missing — expected {expected_waterfall_range}, "
+            f"got ranges {ranges}"
+        )
+        assert expected_comparison_range in ranges, (
+            f"comparison range missing — expected {expected_comparison_range}, "
+            f"got ranges {ranges}"
+        )
