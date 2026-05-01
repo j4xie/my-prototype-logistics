@@ -164,3 +164,32 @@ def _aggregate_department_data(
         # I3 — per_capita_sales / per_capita_cost columns IGNORED (recompute later)
 
     return result
+
+
+def _calculate_completion_rate(
+    actual: Decimal, target: Optional[Decimal]
+) -> Decimal:
+    """Mirror Java DepartmentAnalysisServiceImpl.calculateCompletionRate (line 610-616).
+
+    Java:
+      if (target == null || target.compareTo(BigDecimal.ZERO) == 0) {
+          return BigDecimal.ZERO;
+      }
+      return actual.multiply(BigDecimal.valueOf(100))
+                   .divide(target, SCALE, ROUNDING_MODE);
+
+    ⚠️ C4 lock — Python MUST use `target is None or target == Decimal("0")`,
+    NOT `if not target:` (Rule 1).
+
+    ⚠️ Arithmetic order — Java `.divide(target, SCALE=4, HALF_UP)` 把**除法结果**
+    量化到 4 位 HALF_UP, NOT 把乘法结果先量化。Python MUST mirror:
+       ((actual * 100) / target).quantize(SCALE, HALF_UP)
+    NOT
+       (actual * 100).quantize(SCALE, HALF_UP) / target    ← BUG 顺序反了
+    """
+    if target is None or target == Decimal("0"):
+        return Decimal("0")
+    # ✅ Mirror Java: 除法结果量化, NOT 乘法结果
+    return ((actual * Decimal("100")) / target).quantize(
+        _SCALE, rounding=_QUANTIZE_HALF_UP
+    )
