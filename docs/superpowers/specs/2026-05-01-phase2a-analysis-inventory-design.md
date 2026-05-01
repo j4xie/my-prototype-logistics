@@ -1607,3 +1607,934 @@ async def _get_long_aging_batches_ranking(
 
     return rankings
 ```
+
+### 3.8 Default mode `_get_inventory_health` (DashboardResponse, PR-B)
+
+```python
+async def _get_inventory_health(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java getInventoryHealth (L89-135).
+
+    DashboardResponse JSON shape (Java @Builder field order):
+      [kpiCards, charts, rankings, aiInsights, suggestions, lastUpdated]
+
+    Empty batches → buildEmptyDashboard (L1222-1236) — emits empty list/map +
+    1 AIInsight + 1 suggestion + lastUpdated still volatile.
+
+    ⚠️ T-INV-11 — recursive call chain (NOT optimized):
+      _get_inventory_health → _calculate_kpi_cards
+        → _get_turnover_analysis (3rd query of allBatches)
+        → _get_expiry_risk_analysis (3rd query of allBatches in expiry path)
+        → _get_health_score
+          → _get_turnover_analysis again
+          → _get_expiry_risk_analysis again
+          → _get_loss_analysis (NOT ported — would need T-INV-8 handling)
+          → _get_aging_metrics
+
+    ⚠️ T-INV-8 — getInventoryHealth charts list (Java L105-108) does NOT include
+    radar or loss-trend chart. Default mode charts are exactly:
+      [getInventoryAgingChart, getExpiryRiskChart, buildMaterialCategoryValueChart]
+    PR-B port reflects this — no radar, no loss-anything.
+
+    ⚠️ getHealthScore depends on _get_loss_analysis (Java L866-869 calls
+    getLossAnalysis to fetch LOSS_RATE for healthScore dimension #3). Since
+    PR-B does not port getLossAnalysis as a public method, _get_health_score
+    calls a private inline `_calculate_loss_rate_for_health_score(factory_id,
+    start_date, end_date)` helper that mirrors getLossAnalysis line 484-528
+    (just enough to compute LOSS_RATE; no public-facing metrics list).
+    """
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    if not all_batches:
+        return _build_empty_dashboard()
+
+    # Java line 101: kpiCards
+    metric_results = await _calculate_kpi_cards(all_batches, factory_id, start_date, end_date)
+    kpi_cards = _convert_to_kpi_cards(metric_results)
+
+    # Java line 105-108: charts list (3 charts) + LinkedHashMap by title.replace(" ", "_")
+    chart_list = [
+        await _get_inventory_aging_chart(factory_id),
+        await _get_expiry_risk_chart(factory_id),
+        _build_material_category_value_chart(all_batches),
+    ]
+    charts: dict[str, dict] = {}
+    for chart in chart_list:
+        title = chart.get("title")
+        key = title.replace(" ", "_") if title else f"chart_{len(charts)}"
+        charts[key] = chart
+
+    # Java line 115-119: rankings LinkedHashMap with keys "expiring", "aging"
+    expiring_ranking = await _get_expiring_batches_ranking(factory_id, _DEFAULT_EXPIRY_WARNING_DAYS)
+    aging_ranking = await _get_long_aging_batches_ranking(factory_id, _AGING_NORMAL)
+    rankings = {
+        "expiring": expiring_ranking,
+        "aging":    aging_ranking,
+    }
+
+    # Java line 122-125: rule-based generators (NO LLM)
+    ai_insights = _generate_ai_insights(all_batches, metric_results, factory_id)
+    suggestions = _generate_suggestions(all_batches, metric_results)
+
+    # Java line 127-134: DashboardResponse @Builder field order
+    return {
+        "kpiCards":    kpi_cards,
+        "charts":      charts,
+        "rankings":    rankings,
+        "aiInsights":  ai_insights,
+        "suggestions": suggestions,
+        "lastUpdated": _utc_now_iso(),    # T2 volatile, stripped by _strip_volatile
+    }
+
+
+async def _calculate_kpi_cards(
+    batches: list[dict], factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java calculateKpiCards (L1005-1053).
+
+    Returns 5 KPI metrics:
+      [INVENTORY_VALUE, BATCH_COUNT, TURNOVER_RATE, EXPIRY_RISK_RATE, HEALTH_SCORE]
+
+    ⚠️ KPI 3 (TURNOVER_RATE) and KPI 4 (EXPIRY_RISK_RATE) are pulled from
+    sub-service results via filter+findFirst. If sub-service returned no metric
+    with that code, the KPI is **omitted** (Java line 1035 `if (turnover != null)`).
+    """
+    kpi_cards: list[dict] = []
+
+    # KPI 1: INVENTORY_VALUE (computed directly from batches in-memory, NOT via
+    # _query_inventory_value_total — Java line 1010-1018 uses
+    # calculateTotalInventoryValue helper)
+    total_value = _calculate_total_inventory_value(batches)
+    kpi_cards.append({
+        "metricCode":      "INVENTORY_VALUE",
+        "metricName":      "库存总值",
+        "value":           _decimal_to_number(
+            total_value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+        ),
+        "formattedValue":  _format_currency(total_value),
+        "unit":            "元",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      "GREEN",
+        "description":     None,
+    })
+
+    # KPI 2: BATCH_COUNT
+    kpi_cards.append({
+        "metricCode":      "BATCH_COUNT",
+        "metricName":      "库存批次",
+        "value":           len(batches),
+        "formattedValue":  f"{len(batches):,}",   # Java %,d format
+        "unit":            "批",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      "GREEN",
+        "description":     None,
+    })
+
+    # KPI 3: TURNOVER_RATE — pulled from getTurnoverAnalysis result
+    turnover_metrics = await _get_turnover_analysis(factory_id, start_date, end_date)
+    turnover = next(
+        (m for m in turnover_metrics if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover is not None:
+        kpi_cards.append(turnover)
+
+    # KPI 4: EXPIRY_RISK_RATE — pulled from getExpiryRiskAnalysis result
+    expiry_metrics = await _get_expiry_risk_analysis(factory_id)
+    expiry_risk = next(
+        (m for m in expiry_metrics if m.get("metricCode") == "EXPIRY_RISK_RATE"),
+        None,
+    )
+    if expiry_risk is not None:
+        kpi_cards.append(expiry_risk)
+
+    # KPI 5: HEALTH_SCORE — always added (Java L1049-1050)
+    health_score = await _get_health_score(factory_id, start_date, end_date)
+    kpi_cards.append(health_score)
+
+    return kpi_cards
+
+
+def _build_material_category_value_chart(batches: list[dict]) -> dict:
+    """Mirror Java buildMaterialCategoryValueChart (L1068-1102).
+
+    PIE chart of top-10 material categories by total value.
+    Algorithm:
+      L1069-1077 categoryValues = groupingBy(materialTypeId,
+                                              reducing(currentQty * unitPrice))
+      L1079-1088 chartData = entries.sorted(byValue desc).limit(10)
+                                      .map(entry → {category, value (DISPLAY_SCALE=2)})
+      L1090-1092 options: [showPercentage=true, showLegend=true]
+    """
+    category_values: dict[str, Decimal] = {}
+    for b in batches:
+        mtid = b.get("material_type_id")
+        if mtid is None:
+            continue
+        cq = _get_current_quantity(b)
+        up = b.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+        category_values[mtid] = category_values.get(mtid, Decimal("0")) + value
+
+    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+    chart_data = [
+        {
+            "category": mtid,
+            "value":    _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        }
+        for mtid, value in sorted_entries[:10]
+    ]
+
+    options = {
+        "showPercentage": True,
+        "showLegend":     True,
+    }
+
+    return {
+        "chartType":   "PIE",
+        "title":       "材料类别库存占比",
+        "xAxisField":  "category",
+        "yAxisField":  "value",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+    }
+
+
+def _generate_ai_insights(
+    batches: list[dict], kpi_cards: list[dict], factory_id: str
+) -> list[dict]:
+    """Mirror Java generateAiInsights (L1107-1177).
+
+    Rule-based, NO LLM. 3 conditional insights:
+    1. Expiry risk:
+       - rate > EXPIRY_RED_THRESHOLD (15) → RED insight
+       - rate > EXPIRY_YELLOW_THRESHOLD (10) → YELLOW insight
+       - else: no insight
+    2. Turnover:
+       - rate < TURNOVER_RED_THRESHOLD (6) → RED insight
+       - rate < TURNOVER_YELLOW_THRESHOLD (12) → YELLOW insight
+       - else: no insight
+    3. Health score:
+       - score >= 80 → GREEN insight (good)
+       - else: no insight (Java only emits "good" message)
+
+    AIInsight JSON shape (Java @Builder):
+      [level, category, message, actionSuggestion]
+
+    ⚠️ %.1f / %.0f formatting trap — Java uses doubleValue() for format strings.
+    Python uses float() conversion of Decimal which can introduce display drift
+    for very precise values, but for byte-shape parity with golden recordings
+    (already capture Java output), Python str f"{float(...):.Nf}" matches.
+    """
+    insights: list[dict] = []
+
+    # Insight 1: Expiry risk
+    expiry_risk = next(
+        (m for m in kpi_cards if m.get("metricCode") == "EXPIRY_RISK_RATE"),
+        None,
+    )
+    if expiry_risk is not None and expiry_risk.get("value") is not None:
+        rate = _to_decimal(expiry_risk["value"])
+        if rate > _EXPIRY_RISK_RED:
+            insights.append({
+                "level":            "RED",
+                "category":         "临期风险",
+                "message":          f"临期风险率高达 {float(rate):.1f}%，需要立即处理",
+                "actionSuggestion": "建议优先消耗临期库存，考虑促销或转让处理",
+            })
+        elif rate > _EXPIRY_RISK_YELLOW:
+            insights.append({
+                "level":            "YELLOW",
+                "category":         "临期风险",
+                "message":          f"临期风险率为 {float(rate):.1f}%，需要关注",
+                "actionSuggestion": "建议制定临期库存消化计划",
+            })
+
+    # Insight 2: Turnover
+    turnover = next(
+        (m for m in kpi_cards if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover is not None and turnover.get("value") is not None:
+        rate = _to_decimal(turnover["value"])
+        if rate < _TURNOVER_RED:
+            insights.append({
+                "level":            "RED",
+                "category":         "周转效率",
+                "message":          f"库存周转率仅 {float(rate):.1f} 次/年，库存积压严重",
+                "actionSuggestion": "建议减少采购量，加快库存消化，优化安全库存设置",
+            })
+        elif rate < _TURNOVER_YELLOW:
+            insights.append({
+                "level":            "YELLOW",
+                "category":         "周转效率",
+                "message":          f"库存周转率 {float(rate):.1f} 次/年，有优化空间",
+                "actionSuggestion": "建议优化采购批次和频率，提高周转效率",
+            })
+
+    # Insight 3: Health score (only emits when score >= 80, NOT for low scores)
+    health_score = next(
+        (m for m in kpi_cards if m.get("metricCode") == "HEALTH_SCORE"),
+        None,
+    )
+    if health_score is not None and health_score.get("value") is not None:
+        score = _to_decimal(health_score["value"])
+        if score >= Decimal("80"):
+            insights.append({
+                "level":            "GREEN",
+                "category":         "整体健康",
+                "message":          f"库存健康评分 {float(score):.0f} 分，状况良好",
+                "actionSuggestion": "继续保持当前库存管理策略",
+            })
+
+    return insights
+
+
+def _generate_suggestions(batches: list[dict], kpi_cards: list[dict]) -> list[str]:
+    """Mirror Java generateSuggestions (L1182-1217).
+
+    Rule-based, returns list[str]. 3 conditional suggestions:
+    1. expiringCount > 0 (batches expiring within 30 days)
+    2. longAgingCount > 0 (batches with ageDays > 90)
+    3. turnover < TURNOVER_YELLOW_THRESHOLD (12)
+    """
+    suggestions: list[str] = []
+    today = date.today()
+
+    # Suggestion 1
+    warning_date = today + _days(_DEFAULT_EXPIRY_WARNING_DAYS)
+    expiring_count = sum(
+        1 for b in batches
+        if b.get("expire_date") is not None and b["expire_date"] <= warning_date
+    )
+    if expiring_count > 0:
+        suggestions.append(f"有 {expiring_count} 批库存将在30天内过期，建议优先安排使用")
+
+    # Suggestion 2
+    long_aging_count = sum(
+        1 for b in batches
+        if b.get("receipt_date") is not None
+        and (today - b["receipt_date"]).days > _AGING_WARNING
+    )
+    if long_aging_count > 0:
+        suggestions.append(f"有 {long_aging_count} 批库存库龄超过90天，建议检查使用计划或考虑处理")
+
+    # Suggestion 3
+    turnover = next(
+        (m for m in kpi_cards if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover is not None and turnover.get("value") is not None:
+        rate = _to_decimal(turnover["value"])
+        if rate < _TURNOVER_YELLOW:
+            suggestions.append("库存周转率偏低，建议优化安全库存设置，减少不必要的采购")
+
+    return suggestions
+
+
+def _build_empty_dashboard() -> dict:
+    """Mirror Java buildEmptyDashboard (L1222-1236).
+
+    Empty fallback when no batches found. Emits exact Java strings:
+      kpiCards: []
+      charts: {}
+      rankings: {}
+      aiInsights: 1 entry [level=YELLOW, category=数据状态, ...]
+      suggestions: ["请先录入库存数据以开始分析"]
+      lastUpdated: still volatile (gets stripped by _strip_volatile in tests)
+    """
+    return {
+        "kpiCards":    [],
+        "charts":      {},
+        "rankings":    {},
+        "aiInsights":  [{
+            "level":            "YELLOW",
+            "category":         "数据状态",
+            "message":          "当前暂无库存数据",
+            "actionSuggestion": "请先录入原材料批次数据",
+        }],
+        "suggestions": ["请先录入库存数据以开始分析"],
+        "lastUpdated": _utc_now_iso(),
+    }
+```
+
+### 3.9 `_get_health_score` (T-INV-9 asymmetric null mirror, Java L824-921)
+
+```python
+async def _get_health_score(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java getHealthScore (L824-921).
+
+    Returns single MetricResult (HEALTH_SCORE).
+
+    ⚠️⚠️ T-INV-9 — ASYMMETRIC NULL HANDLING (Java bug, port verbatim).
+
+    Algorithm (4 weighted dimensions, 30+30+20+20 = 100 max):
+
+    Dimension 1 — TURNOVER (max 30 pts), Java L830-844:
+      turnoverRate = getTurnoverAnalysis().filter(TURNOVER_RATE).findFirst().orElse(null)
+      if (turnoverRate != null && turnoverRate.value != null):
+        rate = turnoverRate.value
+        if (rate >= TURNOVER_YELLOW_THRESHOLD=12)  +30
+        elif (rate >= TURNOVER_RED_THRESHOLD=6)    +20
+        else                                        +10
+      // ⚠️ Java L835-844 has NO else branch — turnover null → 0 added (penalty)
+
+    Dimension 2 — EXPIRY (max 30 pts), Java L846-863:
+      expiryRisk = getExpiryRiskAnalysis().filter(EXPIRY_RISK_RATE).findFirst().orElse(null)
+      if (expiryRisk != null && expiryRisk.value != null):
+        rate = expiryRisk.value
+        if (rate < EXPIRY_YELLOW_THRESHOLD=10)  +30
+        elif (rate < EXPIRY_RED_THRESHOLD=15)   +20
+        else                                     +10
+      else:
+        // ⚠️ Java L862 — null → +30 (FULL POINTS, NOT penalty!)
+        +30
+
+    Dimension 3 — LOSS (max 20 pts), Java L865-882:
+      lossRate = getLossAnalysis().filter(LOSS_RATE).findFirst().orElse(null)
+      if (lossRate != null && lossRate.value != null):
+        rate = lossRate.value
+        if (rate < LOSS_YELLOW_THRESHOLD=2)  +20
+        elif (rate < LOSS_RED_THRESHOLD=5)   +12
+        else                                  +5
+      else:
+        // ⚠️ Java L881 — null → +20 (FULL POINTS)
+        +20
+
+    Dimension 4 — AGING (max 20 pts), Java L884-901:
+      slowMoving = getAgingMetrics().filter(SLOW_MOVING_RATE).findFirst().orElse(null)
+      if (slowMoving != null && slowMoving.value != null):
+        rate = slowMoving.value
+        if (rate < 10)  +20
+        elif (rate < 20) +12
+        else             +5
+      else:
+        // ⚠️ Java L899 — null → +20 (FULL POINTS)
+        +20
+
+    Overall alert (Java L903-910, inline ternary T-INV-1 site #4):
+      if score >= 80   GREEN
+      elif score >= 60 YELLOW
+      else             RED
+
+    Output (Java L912-920):
+      MetricResult: code=HEALTH_SCORE, name="库存健康评分",
+                    value=score.setScale(0, HALF_UP),
+                    formattedValue=String.format("%.0f 分", score.doubleValue()),
+                    unit="分", alertLevel=overallAlert,
+                    description="满分100分"
+
+    ⚠️⚠️ T-INV-9 spec decision: PORT VERBATIM. Do NOT make handling symmetric.
+    PR-C `TestInventoryHealthScoreAsymmetric` regression test asserts:
+      - all 4 metrics None: score = 0+30+20+20 = 70 (NOT 0)
+      - turnover None alone: score = 0 + (expiry/loss/aging contributions)
+      - expiry None alone: score = (turnover) + 30 + (loss/aging)
+    Cross-spec lineage: see §7 risk #2.
+    """
+    health_score = Decimal("0")
+
+    # Dimension 1 — TURNOVER (max 30 pts) — null → +0 (Java L835-844 NO else)
+    turnover_metrics = await _get_turnover_analysis(factory_id, start_date, end_date)
+    turnover_rate = next(
+        (m for m in turnover_metrics if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover_rate is not None and turnover_rate.get("value") is not None:
+        rate = _to_decimal(turnover_rate["value"])
+        if rate >= _TURNOVER_YELLOW:
+            health_score += Decimal("30")
+        elif rate >= _TURNOVER_RED:
+            health_score += Decimal("20")
+        else:
+            health_score += Decimal("10")
+    # else: +0 (T-INV-9 asymmetric — turnover null is penalty)
+
+    # Dimension 2 — EXPIRY (max 30 pts) — null → +30 (Java L862 FULL POINTS)
+    expiry_metrics = await _get_expiry_risk_analysis(factory_id)
+    expiry_risk = next(
+        (m for m in expiry_metrics if m.get("metricCode") == "EXPIRY_RISK_RATE"),
+        None,
+    )
+    if expiry_risk is not None and expiry_risk.get("value") is not None:
+        rate = _to_decimal(expiry_risk["value"])
+        if rate < _EXPIRY_RISK_YELLOW:
+            health_score += Decimal("30")
+        elif rate < _EXPIRY_RISK_RED:
+            health_score += Decimal("20")
+        else:
+            health_score += Decimal("10")
+    else:
+        health_score += Decimal("30")    # T-INV-9 asymmetric
+
+    # Dimension 3 — LOSS (max 20 pts) — null → +20 (Java L881 FULL POINTS)
+    loss_metrics = await _calculate_loss_rate_for_health_score(factory_id, start_date, end_date)
+    loss_rate = next(
+        (m for m in loss_metrics if m.get("metricCode") == "LOSS_RATE"),
+        None,
+    )
+    if loss_rate is not None and loss_rate.get("value") is not None:
+        rate = _to_decimal(loss_rate["value"])
+        if rate < _LOSS_RATE_YELLOW:
+            health_score += Decimal("20")
+        elif rate < _LOSS_RATE_RED:
+            health_score += Decimal("12")
+        else:
+            health_score += Decimal("5")
+    else:
+        health_score += Decimal("20")    # T-INV-9 asymmetric
+
+    # Dimension 4 — AGING (max 20 pts) — null → +20 (Java L899 FULL POINTS)
+    aging_metrics = await _get_aging_metrics(factory_id)
+    slow_moving = next(
+        (m for m in aging_metrics if m.get("metricCode") == "SLOW_MOVING_RATE"),
+        None,
+    )
+    if slow_moving is not None and slow_moving.get("value") is not None:
+        rate = _to_decimal(slow_moving["value"])
+        if rate < Decimal("10"):
+            health_score += Decimal("20")
+        elif rate < Decimal("20"):
+            health_score += Decimal("12")
+        else:
+            health_score += Decimal("5")
+    else:
+        health_score += Decimal("20")    # T-INV-9 asymmetric
+
+    # Overall alert (T-INV-1 inline site #4)
+    if health_score >= _HEALTH_SCORE_GREEN_MIN:
+        alert_level = "GREEN"
+    elif health_score >= _HEALTH_SCORE_YELLOW_MIN:
+        alert_level = "YELLOW"
+    else:
+        alert_level = "RED"
+
+    score_zero_scale = health_score.quantize(Decimal("1"), rounding=_QUANTIZE_HALF_UP)
+    return {
+        "metricCode":      "HEALTH_SCORE",
+        "metricName":      "库存健康评分",
+        "value":           _decimal_to_number(score_zero_scale),
+        "formattedValue":  f"{float(health_score):.0f} 分",
+        "unit":            "分",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      alert_level,
+        "description":     "满分100分",
+    }
+
+
+async def _calculate_loss_rate_for_health_score(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror subset of Java getLossAnalysis (L484-545) — ONLY LOSS_RATE metric.
+
+    Public getLossAnalysis is NOT controller-dispatched (see §1.3 out-of-scope),
+    but getHealthScore (Java L866-869) calls it for LOSS_RATE dimension input.
+
+    This helper computes JUST the LOSS_RATE metric for health score consumption.
+    Returns list[dict] (mirrors public getLossAnalysis return type) but with
+    only the LOSS_RATE entry — health score's filter+findFirst pattern works
+    transparently with this single-element list.
+
+    Algorithm (Java L484-528, just the LOSS_RATE pieces):
+      L490 allBatches = findByFactoryIdAndStatus(factoryId, AVAILABLE)
+      L491 totalInventoryValue = calculateTotalInventoryValue(allBatches)
+      L494-518 per batch, fetch adjustments in time range, accumulate by type:
+        - "loss" type → lossAmount += abs(adjQty) * unitPrice
+        - "damage" type → damageAmount += abs(adjQty) * unitPrice
+        - "correction" AND adjQty < 0 → correctionAmount += abs(adjQty) * unitPrice
+      L520 totalLoss = lossAmount + damageAmount + correctionAmount
+      L526-528 lossRate = (totalInventoryValue > 0)
+                          ? totalLoss / totalInventoryValue * 100 : 0
+                          ⚠️ T-INV-2 div guard
+
+    Returns: [{metricCode: "LOSS_RATE", value: lossRate, alertLevel: ...}]
+    """
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+    total_inventory_value = _calculate_total_inventory_value(all_batches)
+
+    loss_amount = Decimal("0")
+    damage_amount = Decimal("0")
+    correction_amount = Decimal("0")
+
+    for batch in all_batches:
+        adjustments = await _query_batch_adjustments_in_range(
+            batch["id"], start_date, end_date
+        )
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+
+        for adj in adjustments:
+            adj_qty = _to_decimal(adj["adjustment_quantity"])
+            adj_value = abs(adj_qty) * up_dec
+            adj_type = adj.get("adjustment_type")
+
+            if adj_type == "loss":
+                loss_amount += adj_value
+            elif adj_type == "damage":
+                damage_amount += adj_value
+            elif adj_type == "correction" and adj_qty < Decimal("0"):
+                correction_amount += adj_value
+
+    total_loss = loss_amount + damage_amount + correction_amount
+
+    if total_inventory_value > Decimal("0"):
+        loss_rate = (total_loss / total_inventory_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        ) * Decimal("100")
+    else:
+        loss_rate = Decimal("0")
+
+    rate_display = loss_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    return [{
+        "metricCode":      "LOSS_RATE",
+        "metricName":      "损耗率",
+        "value":           _decimal_to_number(rate_display),
+        "formattedValue":  f"{float(loss_rate):.2f}%",
+        "unit":            "%",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      _determine_loss_rate_alert_level(loss_rate),
+        "description":     None,
+    }]
+```
+
+---
+
+## 4. Byte-shape gate
+
+### 4.1 Golden recording (HARD prereq for impl plan)
+
+**Before** PR-A impl chat creates implementation plan, the spec author MUST record 4 goldens:
+
+```bash
+./scripts/record-java-golden.sh F999 \
+    /api/mobile/F999/smart-bi/analysis/inventory \
+    --params "startDate=2025-01-01&endDate=2025-01-31&analysisType=turnover" \
+    > tests/fixtures/java-smartbi-golden/analysis-inventory-F999-turnover.json
+
+./scripts/record-java-golden.sh F999 \
+    /api/mobile/F999/smart-bi/analysis/inventory \
+    --params "startDate=2025-01-01&endDate=2025-01-31&analysisType=expiry" \
+    > tests/fixtures/java-smartbi-golden/analysis-inventory-F999-expiry.json
+
+./scripts/record-java-golden.sh F999 \
+    /api/mobile/F999/smart-bi/analysis/inventory \
+    --params "startDate=2025-01-01&endDate=2025-01-31&analysisType=aging" \
+    > tests/fixtures/java-smartbi-golden/analysis-inventory-F999-aging.json
+
+./scripts/record-java-golden.sh F999 \
+    /api/mobile/F999/smart-bi/analysis/inventory \
+    --params "startDate=2025-01-01&endDate=2025-01-31" \
+    > tests/fixtures/java-smartbi-golden/analysis-inventory-F999-default.json
+```
+
+⚠️ **Golden record date sensitivity**: `getExpiryRiskAnalysis` and `getInventoryAgingChart`
+use `LocalDate.now()` (Java) / `date.today()` (Python). Goldens captured at date X will
+diverge from Python output at date Y unless test fixture mocks today's date.
+
+**Test impl strategy**: PR-A contract tests use `monkeypatch.setattr` on
+`smartbi_compat.api.analysis_inventory.date` to freeze today; goldens recorded
+at corresponding fixed date during impl phase.
+
+### 4.2 Byte-shape gate strategy
+
+- **Phase 2A gate**: dict-eq tolerance (numeric `0` vs `0.0` equivalent; trailing whitespace
+  in strings ignored). Same as procurement / department / region.
+- **Strict-byte gate (Phase 2B+)**: deferred. Requires canonical JSON serialization
+  comparison. Inventory has 16 LinkedHashMap order sites — strict-byte upgrade
+  will catch any insertion-order regression undetected by dict-eq.
+
+### 4.3 `_strip_volatile` extension
+
+Inventory `lastUpdated` already covered by `_strip_volatile` (`analysis_finance.VOLATILE_KEYS`
+includes `"lastUpdated"`). NO extension needed.
+
+Verification command (during PR-A impl):
+```python
+from smartbi_compat.api.analysis_finance import VOLATILE_KEYS
+assert "lastUpdated" in VOLATILE_KEYS
+```
+
+---
+
+## 5. Test strategy
+
+### 5.1 PR-A contract tests (per-mode goldens)
+
+**File**: `tests/python/smartbi_compat/test_analysis_inventory_contract.py`
+
+```python
+class TestAnalysisInventoryTurnoverMode:
+    """3 tests — empty/populated/edge"""
+    
+    def test_turnover_empty_factory(self, client, monkeypatch_today):
+        # Factory with no batches → metrics list empty/zeros
+        # Asserts dict-eq vs analysis-inventory-F999-turnover-empty.json
+        # (subset of golden where DB pre-seed empty)
+        
+    def test_turnover_populated_matches_golden(self, client, db_seed_inventory_full,
+                                                monkeypatch_today):
+        # F999 full seed; dict-eq vs main golden
+        
+    def test_turnover_zero_consumption_div_guard(self, client,
+                                                  db_seed_inventory_no_consumption):
+        # T-INV-2 div guard: turnoverRate = 0 when consumption empty
+        # inventoryDays = 999 (Java fallback)
+
+
+class TestAnalysisInventoryExpiryMode:
+    """3 tests — empty/populated/all-null-expiry"""
+
+    def test_expiry_all_no_expire_date(self, client, db_seed_inventory_null_expiry):
+        # All batches have expire_date=NULL
+        # → riskAnalysis.expiringBatches = 0, expiringBatchesRanking = []
+        # → riskChart.data: only "无保质期" bucket has value, others zero
+
+
+class TestAnalysisInventoryAgingMode:
+    """3 tests — empty/populated/null-receipt-date"""
+
+    def test_aging_null_receipt_date_bucket(self, client,
+                                             db_seed_inventory_null_receipt):
+        # T-INV-3: null receipt_date → "90天以上" bucket
+        # Verify aging chart bucket assignment
+```
+
+### 5.2 PR-B default mode tests (DashboardResponse + asymmetric null T-INV-9)
+
+```python
+class TestAnalysisInventoryDefaultMode:
+    """3 tests — empty/populated/T-INV-9 asymmetric"""
+
+    def test_default_empty_dashboard(self, client, db_seed_empty,
+                                      monkeypatch_today, strip_volatile):
+        # buildEmptyDashboard branch — assert exact AIInsight + suggestion strings
+
+    def test_default_populated_matches_golden(self, client, db_seed_inventory_full,
+                                                monkeypatch_today, strip_volatile):
+        # Full DashboardResponse vs golden, lastUpdated stripped
+
+    def test_default_health_score_asymmetric_null_regression(self, client,
+                                                              db_seed_inventory_partial):
+        # T-INV-9 — DB seed where SOME metric inputs null
+        # Assert score includes 30+20+20=70 from null defaults (NOT 0)
+```
+
+### 5.3 PR-C arithmetic depth tests
+
+```python
+class TestInventoryAlertHelpersArithmetic:
+    """4 named helpers × 4 boundary cases = 16 tests"""
+    # Turnover (regular): rate=5.99→RED, 6.0→YELLOW, 11.99→YELLOW, 12.0→GREEN
+    # InventoryDays (inverse): days=60.01→RED, 60.0→YELLOW, 30.01→YELLOW, 30.0→GREEN
+    # ExpiryRisk (inverse strict-): 15.0→YELLOW (NOT RED!), 15.01→RED,
+    #                                10.0→GREEN (NOT YELLOW!), 10.01→YELLOW
+    # LossRate (inverse strict-): 5.0→YELLOW, 5.01→RED, 2.0→GREEN, 2.01→YELLOW
+
+class TestInventoryDivByZeroGuards:
+    """5 sites × 3 cases = 15 tests"""
+    # Each site: denominator=0 (returns 0 or fallback), denominator=tiny epsilon
+    # (computes), denominator=normal (computes)
+
+class TestInventoryDateArithmetic:
+    """Annualization + days-until-expiry signed semantics + null receipt → '90天以上'"""
+
+class TestInventoryLinkedHashMapOrder:
+    """Regression — assert chart_data list order matches Java pre-population:
+       expiry-risk-chart [正常, 关注, 预警, 紧急, 无保质期] (5 buckets)
+       aging-chart [0-30, 31-60, 61-90, 90以上] (4 buckets)
+       material-category-chart top-10 sorted desc by value"""
+
+class TestInventoryLossTrendChartMock:
+    """T-INV-8 — assert _get_loss_trend_chart NOT exported from analysis_inventory.py.
+       Defensive: if future commit adds it, this test FAILS to force review."""
+
+class TestInventoryHealthScoreAsymmetric:
+    """T-INV-9 regression. 5 cases:
+       - all 4 inputs None → 0 + 30 + 20 + 20 = 70 (NOT 0)
+       - all 4 inputs non-null full points → 30+30+20+20 = 100
+       - all 4 inputs non-null worst → 10+10+5+5 = 30
+       - turnover None alone → 0 + (other 3 contributions, depending)
+       - expiry None alone → (turnover) + 30 + (loss/aging)"""
+
+class TestInventoryAgingBucketBoundaries:
+    """4 boundaries × 2 sides = 8 tests (30/31, 60/61, 90/91, null receipt)"""
+
+class TestInventoryGetCurrentQuantityFormula:
+    """T-INV-13. Cases:
+       - receiptQuantity null → ZERO regardless of other fields
+       - usedQuantity null → treated as 0
+       - reservedQuantity null → treated as 0
+       - all 3 non-null → receiptQty - usedQty - reservedQty"""
+
+class TestInventoryExpiringRankingInlineAlert:
+    """4 boundary tests for 7/15 days inline ternary"""
+
+class TestInventoryLongAgingRankingInlineAlert:
+    """4 boundary tests for 90/120 days inline ternary"""
+```
+
+---
+
+## 6. PR slicing
+
+| PR | Scope | Estimated LOC | Goldens | Audit cycles |
+|---|---|---|---|---|
+| **PR-A** | per-type 3 modes (turnover/expiry/aging) + 9 sub-services + 4 named alert helpers + 6 SQL helpers + 4 inline alert sites | ~750 LOC code + ~400 LOC tests | F999-turnover, F999-expiry, F999-aging | 2 cycles |
+| **PR-B** | default mode `getInventoryHealth` + DashboardResponse builders + `_get_health_score` (T-INV-9) + `_calculate_loss_rate_for_health_score` (private subset) + `_build_material_category_value_chart` + `_generate_ai_insights` + `_generate_suggestions` + `_build_empty_dashboard` | ~450 LOC code + ~200 LOC tests | F999-default | 2 cycles |
+| **PR-C** | 10 arithmetic-depth test classes covering 4 alert helpers / 5 div-by-zero guards / date arithmetic / LinkedHashMap order regression / mock-zero / asymmetric null / aging bucket / current-quantity formula / 2 inline rankings | 0 LOC code + ~600 LOC tests | (none new) | 1 cycle |
+
+**Sequencing**:
+1. **Spec PR (this)** — merged first, no impl
+2. **PR-A** — depends on Spec PR + 3 goldens recorded; impl chat starts here
+3. **PR-B** — depends on PR-A merged (uses helpers from PR-A); 1 golden recorded
+4. **PR-C** — depends on PR-B merged; pure tests, no impl
+
+---
+
+## 7. Open risks
+
+### Risk 1 — T-INV-8 mock taxonomy ambiguity (resolved)
+
+**State**: resolved via §1.3 mock taxonomy A/B documentation.
+
+**Cross-spec lineage**:
+- PR #37 (类别 A defer): quality + production full-mock generators deferred entirely.
+- This spec (类别 B mirror): inventory `getLossTrendChart` hardcoded zeros literal-mirror.
+
+**Future work**: when sister specs touch other Java services with mock-shaped behavior,
+they must pick A or B per the §1.3 table. Spec author flag any ambiguous cases for
+explicit decision in the brainstorm Round 1.
+
+### Risk 2 — T-INV-9 asymmetric null Java side cleanup (deferred)
+
+**State**: Java `getHealthScore` L835/862/881/899 has asymmetric null handling.
+Almost certainly unintended (turnover null=0pts vs expiry/loss/aging null=full pts).
+
+**Decision**: PORT VERBATIM. Phase 2A byte-shape parity > defensive fix.
+
+**Cross-spec lineage** (mirror Rule 3 1:1 mirror Java semantics):
+- department PR #36 §3.4 'C1 wording mismatch': Java comment 跟 impl 不一致 (说 "取最新记录"
+  but actually MAX); spec ports verbatim impl, comment不对齐 stays.
+- profit/cost specs in main: BigDecimal.ZERO division-by-zero guard 1:1 mirror, 不 paper
+  over edge cases.
+- Rule 3 spirit: 1:1 mirror Java semantics, byte-shape parity > defensive fix.
+
+**Cleanup follow-up** (Phase 3+, NOT this PR):
+- Java side `getHealthScore` should normalize null handling (probably: turnover null
+  also +30 to match symmetry, OR all 4 dims null → 0 to make "no data" deterministic).
+- Once Java side fixed, Python port via fresh golden recording + dict-eq diff.
+- Backlog item co-tracked with T6 nginx cutover.
+
+### Risk 3 — T-INV-12 `findExpiringBatches` single-col ORDER BY tiebreaker
+
+**State**: Java `MaterialBatchRepository.findExpiringBatches` (L173-177) `ORDER BY
+m.expireDate ASC` (single col). Same-expire-date rows return non-deterministic
+secondary order from PostgreSQL.
+
+**Decision** (per user lock-in): Python mirrors exact Java SQL — single col `ORDER BY
+expire_date ASC`, NO `id` tiebreaker.
+
+**Cleanup follow-up** (Phase 3+, NOT this PR):
+- Java side should add `, id ASC` secondary tiebreaker.
+- Once Java side fixed, Python adds `id` tiebreaker too via fresh golden recording.
+
+### Risk 4 — `MetricCalculatorService` dead-code injection (Java side)
+
+**State**: `InventoryHealthAnalysisServiceImpl` constructor injects `MetricCalculatorService`
+but `grep metricCalculatorService\\.` in the impl returns 0 business calls. Field is
+unused dead code.
+
+**Decision**: Python ignores. Does NOT import `_calculate_mom_growth` or hoist any helper.
+
+**Cleanup follow-up** (Phase 3+): Java side remove unused field.
+
+### Risk 5 — `getCurrentQuantity` SQL vs @Transient null-handling divergence (T-INV-13)
+
+**State**: §3.3 `_query_inventory_value_total` mirrors SQL behavior (NULL propagates →
+row drops); §3.5 `_get_current_quantity` mirrors @Transient (null usedQty/reservedQty
+→ ZERO default). Two paths produce different values when receiptQuantity non-null
+but usedQuantity OR reservedQuantity null.
+
+**Decision**: Mirror Java behavior on both paths exactly. PR-C
+`TestInventoryGetCurrentQuantityFormula` locks in-memory path; SQL path
+not separately tested (mirror ≡ SQL parity).
+
+**Cleanup follow-up** (Phase 3+): Java side normalize @Transient and SQL formulas
+(probably make SQL `COALESCE(used, 0)` etc to match @Transient). Once Java
+fixed, golden re-record + dict-eq.
+
+### Risk 6 — `LocalDate.now()` / `date.today()` timezone & test determinism
+
+**State**: 5 sub-services use `LocalDate.now()` (Java) / `date.today()` (Python):
+`getExpiryRiskAnalysis`, `getExpiringBatchesRanking`, `getExpiryRiskChart`,
+`getInventoryAgingChart`, `getAgingMetrics`, `getLongAgingBatchesRanking`,
+`generateSuggestions`.
+
+**Decision**: Goldens record at known Beijing-time date (server time is UTC+8).
+Tests `monkeypatch.setattr` `analysis_inventory.date` to the recording date
+to ensure deterministic byte parity.
+
+**Cleanup follow-up**: not strictly needed; pattern works. Phase 3+ if test
+infrastructure standardizes a "frozen time" decorator, refactor.
+
+---
+
+## 8. References
+
+- [`.claude/rules/python-java-port.md`](../../../.claude/rules/python-java-port.md) — Rule 1-8
+  - Rule 1: explicit `is not None` (not Python `or` falsy)
+  - Rule 2: WEEK calendar-year (NOT triggered — inventory hardcodes MONTH iteration)
+  - Rule 3: 1:1 mirror Java signatures + semantics
+  - Rule 4: `_decimal_to_number` for FastAPI Decimal serialization
+  - Rule 5: SELECT * for shared SQL helpers
+  - Rule 6: input boundary None-check on new SQL helpers
+  - Rule 7: Decimal threshold compare for non-integer thresholds (NOT triggered for inventory — all integer thresholds)
+  - Rule 8: `Map.of(N)` Jackson hash order — **NOT triggered** (inventory has 0 `Map.of` sites; all `LinkedHashMap.put()` + `Arrays.asList`)
+
+- [PR #18 finance payable spec](https://github.com/j4xie/my-prototype-logistics/pull/18) — per-type pattern source
+- [PR #21+#22 finance profit](https://github.com/j4xie/my-prototype-logistics/pull/21) — per-type peers
+- [PR #25+#28 finance cost](https://github.com/j4xie/my-prototype-logistics/pull/25) — per-type peers + arithmetic depth
+- [PR #30 `_get_period_key` calendar-year fix](https://github.com/j4xie/my-prototype-logistics/pull/30)
+- [PR #32 finance 3 sub-endpoints](https://github.com/j4xie/my-prototype-logistics/pull/32) — first Map.of(N) trap discovery
+- [PR #33+#34 finance receivable+budget specs](https://github.com/j4xie/my-prototype-logistics/pull/33)
+- [PR #35 Rule 8 入 python-java-port.md](https://github.com/j4xie/my-prototype-logistics/pull/35)
+- [PR #36 `/analysis/department` composite spec](https://github.com/j4xie/my-prototype-logistics/pull/36) — sister Tier 2 lock-in 模式 + C1 wording 模式 (T-INV-9 lineage)
+- **[PR #37 defer quality + production](https://github.com/j4xie/my-prototype-logistics/pull/37) — 类别 A mock-defer 决策 (cross-ref §1.3)**
+- [PR #38 finance budget per-type real impl](https://github.com/j4xie/my-prototype-logistics/pull/38) — PR-A pattern
+- [PR #39 `/datasource` fields + history GET](https://github.com/j4xie/my-prototype-logistics/pull/39)
+- **[PR #40 `/analysis/procurement` per-type spec](https://github.com/j4xie/my-prototype-logistics/pull/40) — Tier 2 直接前驱, 4-mode dispatcher 模板源**
+- [PR #41 `/analysis/region` per-type spec](https://github.com/j4xie/my-prototype-logistics/pull/41) — sister Tier 2
+
+**Java source files** (read locks):
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/controller/SmartBIAnalysisController.java:411-448` — controller dispatcher
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/InventoryHealthAnalysisServiceImpl.java` — 1352 LOC service impl
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/InventoryHealthAnalysisService.java` — interface (15 methods)
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/MaterialBatch.java:167-175` — `getCurrentQuantity()` @Transient formula
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/enums/MaterialBatchStatus.java`
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/repository/MaterialBatchRepository.java:134-197` — 4 query methods used
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/repository/MaterialConsumptionRepository.java:40-44` — `findByTimeRange`
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/repository/MaterialBatchAdjustmentRepository.java:33` — `findByMaterialBatchIdAnd...OrderByAdjustmentTimeDesc`
+
+**Python sister modules** (import targets):
+- `backend/python/smartbi_compat/api/analysis_finance.py` — Tier 1 baseline (`_strip_volatile`, `VOLATILE_KEYS`, `_decimal_to_number`, `_to_decimal`, `_utc_now_iso`, `_fetch_all`, `wrap_response`)
+- `backend/python/smartbi_compat/auth.py` — `verify_factory_access`, `AuthContext`
+
+**Audit history**: see frontmatter top.
