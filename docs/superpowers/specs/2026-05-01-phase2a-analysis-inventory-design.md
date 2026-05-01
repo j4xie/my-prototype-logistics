@@ -771,3 +771,839 @@ def _determine_loss_rate_alert_level(loss_rate: Decimal) -> str:
 | `getHealthScore` overall | L903-910 | `>= 80 → GREEN; >= 60 → YELLOW; else RED` (regular direction) | inline if/elif in `_get_health_score` (PR-B) |
 
 ⚠️ Spec **不抽出**这 4 个 inline 为 helper. Java 1:1 mirror = inline. Sister specs (procurement #40 §3.7) 同 pattern.
+
+### 3.7 Mode dispatcher + 9 sub-services (PR-A)
+
+```python
+analysis_inventory_router = APIRouter()
+
+
+@analysis_inventory_router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
+async def get_inventory_analysis(
+    factory_id: str,
+    startDate: date = Query(..., description="Start date"),
+    endDate: date = Query(..., description="End date"),
+    analysisType: Optional[str] = Query(None, description="turnover/expiry/aging or null=overview"),
+    auth: AuthContext = Depends(verify_factory_access),
+) -> dict:
+    """Mirror Java SmartBIAnalysisController.getInventoryAnalysis (L411-448).
+
+    Dispatcher by analysisType. Returns wrap_response shape:
+      {success: bool, data: {...}, message: str}
+    """
+    result: dict[str, Any] = {
+        "startDate": startDate.isoformat(),
+        "endDate": endDate.isoformat(),
+    }
+
+    if analysisType == "turnover":
+        result["metrics"] = await _get_turnover_analysis(factory_id, startDate, endDate)
+        result["ranking"] = await _get_turnover_by_category(factory_id, startDate, endDate)
+        result["trendChart"] = await _get_turnover_trend_chart(factory_id, startDate, endDate, "MONTH")
+    elif analysisType == "expiry":
+        result["riskAnalysis"] = await _get_expiry_risk_analysis(factory_id)
+        result["expiringBatches"] = await _get_expiring_batches_ranking(factory_id, _DEFAULT_EXPIRY_WARNING_DAYS)
+        result["riskChart"] = await _get_expiry_risk_chart(factory_id)
+    elif analysisType == "aging":
+        result["agingMetrics"] = await _get_aging_metrics(factory_id)
+        result["agingChart"] = await _get_inventory_aging_chart(factory_id)
+        result["longAgingBatches"] = await _get_long_aging_batches_ranking(factory_id, _AGING_NORMAL)
+    else:
+        # default mode → DashboardResponse (PR-B)
+        result["overview"] = await _get_inventory_health(factory_id, startDate, endDate)
+
+    return wrap_response(result)
+```
+
+#### 3.7.1 `_get_turnover_analysis` (4 metrics, mirror Java L141-203)
+
+```python
+async def _get_turnover_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java getTurnoverAnalysis (L141-203).
+
+    Returns 4 MetricResult entries:
+      [TURNOVER_RATE, INVENTORY_DAYS, CONSUMPTION_AMOUNT, INVENTORY_VALUE]
+
+    Algorithm (Java line refs):
+      L147 currentInventoryValue = repo.calculateInventoryValue(factoryId)  // null → ZERO
+      L153-156 consumptions = repo.findByTimeRange(factoryId, atStartOfDay, atTime(23,59,59))
+      L158-161 totalConsumption = sum(c.totalCost where non-null)
+      L164 daysBetween = ChronoUnit.DAYS.between(start, end) + 1
+      L165-167 annualizedConsumption = totalConsumption * 365 / daysBetween (SCALE=4)
+      L169-171 turnoverRate = (currentInventoryValue > 0) ? annualized/inventory : ZERO  ⚠️ T-INV-2 div guard
+      L173-180 metric 1: TURNOVER_RATE (DISPLAY_SCALE=2, alert via _determine_turnover_alert_level)
+      L183-185 inventoryDays = (turnoverRate > 0) ? 365/turnoverRate : 999  ⚠️ T-INV-2 div guard, fallback 999
+      L187-194 metric 2: INVENTORY_DAYS (setScale(0, HALF_UP), alert _determine_inventory_days_alert_level)
+      L197 metric 3: CONSUMPTION_AMOUNT (MetricResult.of factory; no setScale, no alertLevel)
+      L200 metric 4: INVENTORY_VALUE (MetricResult.of factory)
+    """
+    current_inventory_value = await _query_inventory_value_total(factory_id)
+    # _query_inventory_value_total already coalesces null → Decimal('0')
+
+    consumptions = await _query_material_consumptions_in_range(factory_id, start_date, end_date)
+    total_consumption = Decimal("0")
+    for c in consumptions:
+        tc = c.get("total_cost")
+        if tc is not None:
+            total_consumption += _to_decimal(tc)
+
+    days_between = (end_date - start_date).days + 1
+    annualized = (total_consumption * Decimal("365") / Decimal(days_between)).quantize(
+        _SCALE, rounding=_QUANTIZE_HALF_UP
+    )
+
+    if current_inventory_value > Decimal("0"):
+        turnover_rate = (annualized / current_inventory_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        )
+    else:
+        turnover_rate = Decimal("0")
+
+    metrics: list[dict] = []
+
+    # Metric 1: TURNOVER_RATE
+    turnover_display = turnover_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    metrics.append({
+        "metricCode":      "TURNOVER_RATE",
+        "metricName":      "库存周转率",
+        "value":           _decimal_to_number(turnover_display),
+        "formattedValue":  f"{float(turnover_rate):.1f} 次/年",  # Java %.1f doubleValue
+        "unit":            "次/年",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      _determine_turnover_alert_level(turnover_rate),
+        "description":     None,
+    })
+
+    # Metric 2: INVENTORY_DAYS — Java fallback 999 when turnover_rate <= 0
+    if turnover_rate > Decimal("0"):
+        inventory_days = (Decimal("365") / turnover_rate).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        )
+    else:
+        inventory_days = Decimal("999")
+    inv_days_zero_scale = inventory_days.quantize(Decimal("1"), rounding=_QUANTIZE_HALF_UP)
+    metrics.append({
+        "metricCode":      "INVENTORY_DAYS",
+        "metricName":      "库存天数",
+        "value":           _decimal_to_number(inv_days_zero_scale),
+        "formattedValue":  f"{float(inventory_days):.0f} 天",
+        "unit":            "天",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      _determine_inventory_days_alert_level(inventory_days),
+        "description":     None,
+    })
+
+    # Metric 3: CONSUMPTION_AMOUNT (MetricResult.of factory — no formattedValue, no alert)
+    metrics.append(_metric_result_of("CONSUMPTION_AMOUNT", "期间消耗", total_consumption, "元"))
+
+    # Metric 4: INVENTORY_VALUE
+    metrics.append(_metric_result_of("INVENTORY_VALUE", "库存价值", current_inventory_value, "元"))
+
+    return metrics
+
+
+def _metric_result_of(code: str, name: str, value: Decimal, unit: str) -> dict:
+    """Mirror Java MetricResult.of(code, name, value, unit) static factory.
+
+    @Builder default emits null for unset fields.
+    """
+    return {
+        "metricCode":      code,
+        "metricName":      name,
+        "value":           _decimal_to_number(value),
+        "formattedValue":  None,
+        "unit":            unit,
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      None,
+        "description":     None,
+    }
+```
+
+#### 3.7.2 `_get_turnover_trend_chart` (LINE chart, MONTH iteration mirror)
+
+```python
+async def _get_turnover_trend_chart(
+    factory_id: str, start_date: date, end_date: date, period: str = "MONTH"
+) -> dict:
+    """Mirror Java getTurnoverTrendChart (L207-251).
+
+    Java 简化处理: 月度迭代 (line 213 注释), 不真正按 period 参数分支:
+      L214 current = startDate.withDayOfMonth(1)
+      L215-237 while !current.isAfter(endDate):
+        monthEnd = min(current.plusMonths(1).minusDays(1), endDate)
+        consumptions = findByTimeRange(current.atStartOfDay, monthEnd.atTime(23,59,59))
+        monthConsumption = sum(c.totalCost where non-null)
+        chartData.add({"month": "yyyy-MM", "consumption": monthConsumption.setScale(2)})
+        current = current.plusMonths(1)
+      L239-241 options: showDataLabels=false, smooth=true
+
+    ⚠️ Period parameter is **ignored** by Java impl. Python mirror: ignore parameter
+    (or at least always do MONTH iteration). Spec keeps `period` parameter for
+    signature parity but doesn't dispatch on it — controller hardcodes "MONTH" anyway.
+
+    ⚠️ T-INV-7 atTime(23, 59, 59) — same trap as _query_material_consumptions_in_range.
+    """
+    chart_data: list[dict] = []
+    current = start_date.replace(day=1)
+
+    while current <= end_date:
+        # plusMonths(1).minusDays(1) — last day of current month
+        month_end = _plus_months(current, 1) - _one_day()
+        if month_end > end_date:
+            month_end = end_date
+
+        month_consumptions = await _query_material_consumptions_in_range(
+            factory_id, current, month_end
+        )
+        month_consumption = Decimal("0")
+        for c in month_consumptions:
+            tc = c.get("total_cost")
+            if tc is not None:
+                month_consumption += _to_decimal(tc)
+
+        chart_data.append({
+            "month":       f"{current.year}-{current.month:02d}",
+            "consumption": _decimal_to_number(
+                month_consumption.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        })
+        current = _plus_months(current, 1)
+
+    options = {
+        "showDataLabels": False,
+        "smooth":         True,
+    }
+
+    return {
+        "chartType":   "LINE",
+        "title":       "消耗趋势",
+        "xAxisField":  "month",
+        "yAxisField":  "consumption",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+    }
+
+
+def _plus_months(d: date, n: int) -> date:
+    """Mirror Java LocalDate.plusMonths(n). Calendar-month arithmetic with
+    end-of-month clamping (Java Jan 31 + 1 month = Feb 28/29).
+
+    Inline impl (avoids dateutil dep, sister specs procurement §3.10b 同 pattern):
+    """
+    year = d.year
+    month = d.month + n
+    while month > 12:
+        year += 1
+        month -= 12
+    while month < 1:
+        year -= 1
+        month += 12
+    # Clamp day to last day of target month
+    import calendar as _cal
+    last_day = _cal.monthrange(year, month)[1]
+    return date(year, month, min(d.day, last_day))
+
+
+def _one_day():
+    from datetime import timedelta
+    return timedelta(days=1)
+```
+
+#### 3.7.3 `_get_turnover_by_category` (ranking, mirror Java L255-288)
+
+```python
+async def _get_turnover_by_category(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java getTurnoverByCategory (L255-288).
+
+    ⚠️ start_date/end_date parameters are **NOT used** by Java impl (line 258 only
+    queries findByFactoryIdAndStatus, no time filter). Python mirror — accepts
+    parameters for signature parity but ignores them.
+
+    Algorithm:
+      L258 batches = findByFactoryIdAndStatus(factoryId, AVAILABLE)
+      L261-269 categoryValues = groupingBy(materialTypeId,
+                                            reducing(ZERO, b.currentQuantity * unitPrice, ::add))
+      L274-276 sorted = entries.sorted(comparingByValue().reversed())
+      L278-285 RankingItem entries: rank, name=materialTypeId, value, alertLevel=GREEN
+
+    RankingItem fields (Java @Builder):
+      [rank, name, value, target, completionRate, alertLevel]
+    target/completionRate NOT set → null in JSON.
+    """
+    batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    category_values: dict[str, Decimal] = {}
+    for b in batches:
+        mtid = b.get("material_type_id")
+        if mtid is not None:
+            cq = _get_current_quantity(b)
+            up = b.get("unit_price")
+            up_dec = _to_decimal(up) if up is not None else Decimal("0")
+            value = cq * up_dec
+            category_values[mtid] = category_values.get(mtid, Decimal("0")) + value
+
+    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+
+    rankings = []
+    for rank, (mtid, value) in enumerate(sorted_entries, start=1):
+        rankings.append({
+            "rank":           rank,
+            "name":           mtid,
+            "value":          _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         None,
+            "completionRate": None,
+            "alertLevel":     "GREEN",
+        })
+    return rankings
+```
+
+#### 3.7.4 `_get_expiry_risk_analysis` (5 metrics, Java L294-371)
+
+```python
+async def _get_expiry_risk_analysis(factory_id: str) -> list[dict]:
+    """Mirror Java getExpiryRiskAnalysis (L294-371).
+
+    Returns 5 MetricResult entries:
+      [EXPIRY_RISK_RATE, EXPIRING_COUNT, HIGH_RISK_COUNT, EXPIRED_COUNT, EXPIRING_VALUE]
+
+    ⚠️ Uses `LocalDate.now()` (line 298). Python equivalent: `date.today()` BUT this
+    breaks byte-parity across timezones. Spec decision: use Python `date.today()`
+    (mirror Java behavior of pulling system clock); golden record at known fixed
+    date during impl phase. Test mock can monkeypatch `date.today()` for determinism.
+
+    Algorithm:
+      L298 today = LocalDate.now()
+      L299-300 warningDate = today + 30 days; highRiskDate = today + 7 days
+      L303 allBatches = findByFactoryIdAndStatus(factoryId, AVAILABLE)
+      L306 expiringBatches = findExpiringBatches(factoryId, warningDate)
+      L309-311 highRiskBatches = expiringBatches.filter(expireDate <= highRiskDate)
+      L314 expiredBatches = findExpiredBatches(factoryId)
+      L317 totalValue = calculateTotalInventoryValue(allBatches)
+      L318 expiringValue = calculateTotalInventoryValue(expiringBatches)
+      L319-321 expiryRiskRate = (totalValue > 0) ? expiringValue/totalValue * 100 : 0
+                                                                 ⚠️ T-INV-2 div guard
+      L323-331 metric 1: EXPIRY_RISK_RATE (alert via _determine_expiry_risk_alert_level,
+                                            description "30天内临期库存占比")
+      L333-342 metric 2: EXPIRING_COUNT (alert: empty→GREEN, else→YELLOW; inline)
+      L344-354 metric 3: HIGH_RISK_COUNT (alert: empty→GREEN, else→RED; inline,
+                                          description "7天内过期")
+      L356-365 metric 4: EXPIRED_COUNT (alert: empty→GREEN, else→RED; inline)
+      L367 metric 5: EXPIRING_VALUE (MetricResult.of factory)
+    """
+    today = date.today()
+    warning_date = today + _days(_DEFAULT_EXPIRY_WARNING_DAYS)
+    high_risk_date = today + _days(_HIGH_RISK_EXPIRY_DAYS)
+
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+    expiring_batches = await _query_expiring_batches(factory_id, warning_date)
+    high_risk_batches = [
+        b for b in expiring_batches
+        if b.get("expire_date") is not None and b["expire_date"] <= high_risk_date
+    ]
+    expired_batches = await _query_expired_batches(factory_id)
+
+    total_value = _calculate_total_inventory_value(all_batches)
+    expiring_value = _calculate_total_inventory_value(expiring_batches)
+
+    if total_value > Decimal("0"):
+        expiry_risk_rate = (expiring_value / total_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        ) * Decimal("100")
+    else:
+        expiry_risk_rate = Decimal("0")
+
+    metrics: list[dict] = []
+    risk_display = expiry_risk_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+
+    # Metric 1: EXPIRY_RISK_RATE
+    metrics.append({
+        "metricCode":      "EXPIRY_RISK_RATE",
+        "metricName":      "临期风险率",
+        "value":           _decimal_to_number(risk_display),
+        "formattedValue":  f"{float(expiry_risk_rate):.1f}%",
+        "unit":            "%",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      _determine_expiry_risk_alert_level(expiry_risk_rate),
+        "description":     "30天内临期库存占比",
+    })
+
+    # Metric 2: EXPIRING_COUNT (inline alert)
+    expiring_count_alert = "GREEN" if not expiring_batches else "YELLOW"
+    metrics.append({
+        "metricCode":      "EXPIRING_COUNT",
+        "metricName":      "临期批次数",
+        "value":           len(expiring_batches),  # Java new BigDecimal(int) → number
+        "formattedValue":  f"{len(expiring_batches)} 批",
+        "unit":            "批",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      expiring_count_alert,
+        "description":     None,
+    })
+
+    # Metric 3: HIGH_RISK_COUNT (inline alert)
+    high_risk_alert = "GREEN" if not high_risk_batches else "RED"
+    metrics.append({
+        "metricCode":      "HIGH_RISK_COUNT",
+        "metricName":      "高风险批次",
+        "value":           len(high_risk_batches),
+        "formattedValue":  f"{len(high_risk_batches)} 批",
+        "unit":            "批",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      high_risk_alert,
+        "description":     "7天内过期",
+    })
+
+    # Metric 4: EXPIRED_COUNT (inline alert)
+    expired_alert = "GREEN" if not expired_batches else "RED"
+    metrics.append({
+        "metricCode":      "EXPIRED_COUNT",
+        "metricName":      "已过期批次",
+        "value":           len(expired_batches),
+        "formattedValue":  f"{len(expired_batches)} 批",
+        "unit":            "批",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      expired_alert,
+        "description":     None,
+    })
+
+    # Metric 5: EXPIRING_VALUE (MetricResult.of factory)
+    metrics.append(_metric_result_of("EXPIRING_VALUE", "临期库存价值", expiring_value, "元"))
+
+    return metrics
+
+
+def _days(n: int):
+    from datetime import timedelta
+    return timedelta(days=n)
+```
+
+#### 3.7.5 `_get_expiring_batches_ranking` (FEFO sort + inline 7/15/30 alert, Java L375-417)
+
+```python
+async def _get_expiring_batches_ranking(
+    factory_id: str, days_to_expiry: int = 30
+) -> list[dict]:
+    """Mirror Java getExpiringBatchesRanking (L375-417).
+
+    Algorithm:
+      L378 warningDate = LocalDate.now() + daysToExpiry
+      L379 expiringBatches = findExpiringBatches(factoryId, warningDate)
+      L385-389 sorted = filter(expireDate non-null).sorted(byExpireDate ASC).limit(20)
+      L391-414 per batch:
+        daysUntilExpiry = ChronoUnit.DAYS.between(today, expireDate)
+        value = currentQuantity * (unitPrice ?: ZERO)
+        alertLevel inline (T-INV-1 inline site #1):
+          <= 7 → RED, <= 15 → YELLOW, else GREEN
+        RankingItem: rank, name=batchNumber, value, target=daysUntilExpiry,
+                     completionRate=currentQuantity, alertLevel
+
+    ⚠️ Note: `_query_expiring_batches` returns rows already ORDER BY expire_date ASC
+    (mirror Java SQL). But Java additionally filters non-null expireDate after fetch
+    (line 386 — defensive) and limits to 20. Python mirror.
+    """
+    today = date.today()
+    warning_date = today + _days(days_to_expiry)
+    expiring_batches = await _query_expiring_batches(factory_id, warning_date)
+
+    # Java line 385-389: filter non-null expireDate (defensive — query already filters
+    # via BETWEEN CURRENT_DATE AND :warningDate, but Java still re-checks)
+    filtered = [b for b in expiring_batches if b.get("expire_date") is not None]
+    # SQL already ORDER BY expire_date ASC; limit 20
+    sorted_batches = filtered[:20]
+
+    rankings = []
+    for rank, batch in enumerate(sorted_batches, start=1):
+        days_until_expiry = (batch["expire_date"] - today).days
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        # Inline alert (T-INV-1 inline site #1): NOT extracted as helper
+        if days_until_expiry <= _EXPIRING_RANKING_RED_DAYS:
+            alert_level = "RED"
+        elif days_until_expiry <= _EXPIRING_RANKING_YELLOW_DAYS:
+            alert_level = "YELLOW"
+        else:
+            alert_level = "GREEN"
+
+        rankings.append({
+            "rank":           rank,
+            "name":           batch.get("batch_number"),
+            "value":          _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         days_until_expiry,    # Java new BigDecimal(long) → number
+            "completionRate": _decimal_to_number(
+                cq.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "alertLevel":     alert_level,
+        })
+
+    return rankings
+```
+
+#### 3.7.6 `_get_expiry_risk_chart` (PIE chart, 5-bucket LinkedHashMap, Java L421-478)
+
+```python
+async def _get_expiry_risk_chart(factory_id: str) -> dict:
+    """Mirror Java getExpiryRiskChart (L421-478).
+
+    ⚠️ T-INV-5 — LinkedHashMap pre-populates 5 buckets in EXACT order:
+      ["正常（>30天）", "关注（15-30天）", "预警（7-15天）", "紧急（<7天）", "无保质期"]
+    Python dict literal must mirror insertion order.
+
+    ⚠️ NOTE: chart `data` array iterates dict.entries — pre-populated zero buckets
+    EMIT (not filtered like getLossReasonChart L597). Output is always 5 entries.
+
+    ⚠️ Bucket boundary trap (Java L444-453, **strict `<` boundaries**):
+      < 7  → "紧急（<7天）"
+      < 15 → "预警（7-15天）"   (i.e., 7..14 fall here)
+      < 30 → "关注（15-30天）"  (i.e., 15..29 fall here)
+      else → "正常（>30天）"    (i.e., 30+ falls here, despite label "(>30天)")
+      expireDate null → "无保质期"
+
+    options LinkedHashMap order: [showPercentage, showLegend, colors] (Java L466-468)
+    colors Arrays.asList — 5 elements, must match bucket count + order:
+      ["#52c41a", "#faad14", "#ff7a45", "#ff4d4f", "#8c8c8c"]
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    # T-INV-5: Pre-populate dict in EXACT Java insertion order
+    risk_distribution: dict[str, Decimal] = {
+        "正常（>30天）":   Decimal("0"),
+        "关注（15-30天）": Decimal("0"),
+        "预警（7-15天）":  Decimal("0"),
+        "紧急（<7天）":    Decimal("0"),
+        "无保质期":        Decimal("0"),
+    }
+
+    for batch in all_batches:
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        expire_date = batch.get("expire_date")
+        if expire_date is None:
+            risk_distribution["无保质期"] += value
+            continue
+
+        days_until_expiry = (expire_date - today).days
+        if days_until_expiry < 7:
+            risk_distribution["紧急（<7天）"] += value
+        elif days_until_expiry < 15:
+            risk_distribution["预警（7-15天）"] += value
+        elif days_until_expiry < 30:
+            risk_distribution["关注（15-30天）"] += value
+        else:
+            risk_distribution["正常（>30天）"] += value
+
+    # Java L456-463: chart_data iterates dict.entries (preserves insertion order)
+    chart_data = [
+        {
+            "status": status_label,
+            "value":  _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        }
+        for status_label, value in risk_distribution.items()
+    ]
+
+    options = {
+        "showPercentage": True,
+        "showLegend":     True,
+        "colors":         ["#52c41a", "#faad14", "#ff7a45", "#ff4d4f", "#8c8c8c"],
+    }
+
+    return {
+        "chartType":   "PIE",
+        "title":       "临期风险分布",
+        "xAxisField":  "status",
+        "yAxisField":  "value",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+    }
+```
+
+#### 3.7.7 `_get_aging_metrics` (3 metrics + inline 10/20 alert, Java L720-770)
+
+```python
+async def _get_aging_metrics(factory_id: str) -> list[dict]:
+    """Mirror Java getAgingMetrics (L720-770).
+
+    Returns 2 or 3 MetricResult (AVG_AGING_DAYS conditional):
+      [SLOW_MOVING_RATE, SLOW_MOVING_VALUE, AVG_AGING_DAYS?]
+
+    Algorithm:
+      L723 today = LocalDate.now()
+      L724 allBatches = findByFactoryIdAndStatus(factoryId, AVAILABLE)
+      L727 totalValue = calculateTotalInventoryValue(allBatches)
+      L730-735 slowMovingValue = sum(currentQty * unitPrice for batches with
+                                      receiptDate non-null AND ageDays > 90)
+      L737-739 slowMovingRate = (totalValue > 0) ? slowMovingValue/totalValue * 100 : 0
+                                                                  ⚠️ T-INV-2 div guard
+      L741-753 metric 1: SLOW_MOVING_RATE (inline alert >20 RED, >10 YELLOW, else GREEN —
+                                            T-INV-1 inline site #3)
+      L756 metric 2: SLOW_MOVING_VALUE (MetricResult.of factory)
+      L759-762 avgAging = mapToLong(daysBetween).average() → OptionalDouble
+      L764-767 metric 3 conditional: only if avgAging.isPresent()
+                                      AVG_AGING_DAYS = new BigDecimal(avgAging.getAsDouble()).setScale(0)
+
+    ⚠️ T-INV-3 ChronoUnit.DAYS.between(receiptDate, today) — for non-null receipt_date.
+    ⚠️ Java line 766: avgAging.getAsDouble() returns double, then new BigDecimal(double).
+       Double-to-BigDecimal can introduce precision artifacts. Python equivalent:
+       avg_days = sum / count → Decimal directly, OR statistics.mean → Decimal.
+       Spec recommends: compute as Decimal arithmetic from start to avoid drift.
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+    metrics: list[dict] = []
+
+    total_value = _calculate_total_inventory_value(all_batches)
+
+    slow_moving_value = Decimal("0")
+    for b in all_batches:
+        rd = b.get("receipt_date")
+        if rd is None:
+            continue
+        age_days = (today - rd).days
+        if age_days > _AGING_WARNING:
+            cq = _get_current_quantity(b)
+            up = b.get("unit_price")
+            up_dec = _to_decimal(up) if up is not None else Decimal("0")
+            slow_moving_value += cq * up_dec
+
+    if total_value > Decimal("0"):
+        slow_moving_rate = (slow_moving_value / total_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        ) * Decimal("100")
+    else:
+        slow_moving_rate = Decimal("0")
+
+    # Inline alert (T-INV-1 inline site #3): NOT extracted as helper
+    if slow_moving_rate > _SLOW_MOVING_RED_INLINE:
+        slow_alert = "RED"
+    elif slow_moving_rate > _SLOW_MOVING_YELLOW_INLINE:
+        slow_alert = "YELLOW"
+    else:
+        slow_alert = "GREEN"
+
+    rate_display = slow_moving_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    metrics.append({
+        "metricCode":      "SLOW_MOVING_RATE",
+        "metricName":      "呆滞库存率",
+        "value":           _decimal_to_number(rate_display),
+        "formattedValue":  f"{float(slow_moving_rate):.1f}%",
+        "unit":            "%",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      slow_alert,
+        "description":     "90天以上库龄占比",
+    })
+
+    metrics.append(_metric_result_of("SLOW_MOVING_VALUE", "呆滞库存价值", slow_moving_value, "元"))
+
+    # AVG_AGING_DAYS conditional (Java L764 isPresent check)
+    age_days_list = [
+        (today - b["receipt_date"]).days
+        for b in all_batches
+        if b.get("receipt_date") is not None
+    ]
+    if age_days_list:
+        # Compute as Decimal mean, then setScale(0, HALF_UP) — mirror Java L766
+        avg_days = (Decimal(sum(age_days_list)) / Decimal(len(age_days_list))).quantize(
+            Decimal("1"), rounding=_QUANTIZE_HALF_UP
+        )
+        metrics.append(_metric_result_of("AVG_AGING_DAYS", "平均库龄", avg_days, "天"))
+
+    return metrics
+```
+
+#### 3.7.8 `_get_inventory_aging_chart` (BAR chart, 4-bucket LinkedHashMap, Java L660-716)
+
+```python
+async def _get_inventory_aging_chart(factory_id: str) -> dict:
+    """Mirror Java getInventoryAgingChart (L660-716).
+
+    ⚠️ T-INV-5 — LinkedHashMap pre-populates 4 buckets in EXACT order:
+      ["0-30天", "31-60天", "61-90天", "90天以上"]
+    Python dict literal must mirror.
+
+    ⚠️ Aging bucket boundaries (Java L684-692, **inclusive `<=` upper**):
+      ageDays <= 30 → "0-30天"
+      ageDays <= 60 → "31-60天"   (i.e., 31..60 fall here)
+      ageDays <= 90 → "61-90天"   (i.e., 61..90 fall here)
+      else          → "90天以上"  (i.e., 91+)
+      receipt_date null → "90天以上" (Java L678-680, special case)
+
+    ⚠️ T-INV-3 — null receipt_date is bucketed into "90天以上", NOT "0-30天".
+    PR-C `TestInventoryAgingBucketBoundaries` 显式 test 此 case.
+
+    options LinkedHashMap order: [showDataLabels, colors]
+    colors: ["#52c41a", "#1890ff", "#faad14", "#ff4d4f"] — 4 elements
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    # T-INV-5: pre-populate in EXACT Java order
+    aging_distribution: dict[str, Decimal] = {
+        "0-30天":   Decimal("0"),
+        "31-60天":  Decimal("0"),
+        "61-90天":  Decimal("0"),
+        "90天以上": Decimal("0"),
+    }
+
+    for batch in all_batches:
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        receipt_date = batch.get("receipt_date")
+        if receipt_date is None:
+            aging_distribution["90天以上"] += value
+            continue
+
+        age_days = (today - receipt_date).days
+        if age_days <= _AGING_FRESH:
+            aging_distribution["0-30天"] += value
+        elif age_days <= _AGING_NORMAL:
+            aging_distribution["31-60天"] += value
+        elif age_days <= _AGING_WARNING:
+            aging_distribution["61-90天"] += value
+        else:
+            aging_distribution["90天以上"] += value
+
+    chart_data = [
+        {
+            "aging": age_label,
+            "value": _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        }
+        for age_label, value in aging_distribution.items()
+    ]
+
+    options = {
+        "showDataLabels": True,
+        "colors":         ["#52c41a", "#1890ff", "#faad14", "#ff4d4f"],
+    }
+
+    return {
+        "chartType":   "BAR",
+        "title":       "库龄分布",
+        "xAxisField":  "aging",
+        "yAxisField":  "value",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+    }
+```
+
+#### 3.7.9 `_get_long_aging_batches_ranking` (age desc sort + inline 90/120 alert, Java L774-818)
+
+```python
+async def _get_long_aging_batches_ranking(
+    factory_id: str, min_days: int = 60
+) -> list[dict]:
+    """Mirror Java getLongAgingBatchesRanking (L774-818).
+
+    Algorithm:
+      L777 today = LocalDate.now()
+      L778 allBatches = findByFactoryIdAndStatus(factoryId, AVAILABLE)
+      L784-791 longAgingBatches = filter(receiptDate non-null)
+                                       .filter(ageDays >= minDays)
+                                       .sorted(by ageDays DESC)  ← Java line 787-789
+                                       .limit(20)
+      L793-815 per batch:
+        ageDays = ChronoUnit.DAYS.between(receiptDate, today)
+        value = currentQuantity * (unitPrice ?: ZERO)
+        alertLevel inline (T-INV-1 inline site #2):
+          > 120 → RED, > 90 → YELLOW, else GREEN
+        RankingItem: rank, name=batchNumber, value, target=ageDays,
+                     completionRate=currentQuantity, alertLevel
+
+    ⚠️ Note Java L786 uses `>= minDays` (inclusive) for filter, default 60.
+    Note `>= 60` filter then `> 90` YELLOW threshold means ageDays in [60, 90]
+    falls to GREEN (the inline else clause). PR-C boundary test verifies.
+    """
+    today = date.today()
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    filtered = [
+        b for b in all_batches
+        if b.get("receipt_date") is not None
+        and (today - b["receipt_date"]).days >= min_days
+    ]
+
+    # Java line 787-789: sort by ageDays DESC (older batches first)
+    filtered.sort(
+        key=lambda b: (today - b["receipt_date"]).days,
+        reverse=True,
+    )
+    long_aging = filtered[:20]
+
+    rankings = []
+    for rank, batch in enumerate(long_aging, start=1):
+        age_days = (today - batch["receipt_date"]).days
+        cq = _get_current_quantity(batch)
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+
+        # Inline alert (T-INV-1 inline site #2): NOT extracted
+        if age_days > _LONG_AGING_RANKING_RED_DAYS:
+            alert_level = "RED"
+        elif age_days > _LONG_AGING_RANKING_YELLOW_DAYS:
+            alert_level = "YELLOW"
+        else:
+            alert_level = "GREEN"
+
+        rankings.append({
+            "rank":           rank,
+            "name":           batch.get("batch_number"),
+            "value":          _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "target":         age_days,
+            "completionRate": _decimal_to_number(
+                cq.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "alertLevel":     alert_level,
+        })
+
+    return rankings
+```
