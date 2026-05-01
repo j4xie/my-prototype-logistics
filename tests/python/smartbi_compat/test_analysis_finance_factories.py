@@ -1157,3 +1157,131 @@ class TestReceivableAlertLevelTable:
         assert _aging_30_alert(Decimal("25")) != "YELLOW"
         assert _aging_60_alert(Decimal("15")) != "YELLOW"
         assert _aging_90_alert(Decimal("10")) != "YELLOW"
+
+
+class TestOverdueRankingDepth:
+    """PR-B depth — top-10 cap edge + dedup arithmetic for _get_overdue_customer_ranking.
+
+    Mirror Java FinanceAnalysisServiceImpl.getOverdueCustomerRanking (line 734-783).
+    PR-A tested basic shape + 4 skip guards; PR-B locks ordering edge cases.
+    """
+
+    @pytest.mark.asyncio
+    async def test_exactly_10_customers_returns_all(self, monkeypatch):
+        """10 customers → top-10 cap not triggered, all returned."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": f"C{i:02d}",
+                 "receivable_amount": str(100 - i),
+                 "collection_amount": "0",
+                 "aging_days": 60}
+                for i in range(10)
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert len(result) == 10
+        # Rank 1..10 sequence
+        assert [r["rank"] for r in result] == list(range(1, 11))
+
+    @pytest.mark.asyncio
+    async def test_11_customers_caps_at_10(self, monkeypatch):
+        """11 customers → bottom one (rank 11) dropped (Java line 762 `[:10]`)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": f"C{i:02d}",
+                 "receivable_amount": str(100 - i),  # decreasing → first 10 are top
+                 "collection_amount": "0",
+                 "aging_days": 60}
+                for i in range(11)
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert len(result) == 10
+        # Last rank = 10 (NOT 11)
+        assert result[-1]["rank"] == 10
+        # Excluded: C10 (smallest amount = 90, dropped)
+        names = [r["name"] for r in result]
+        assert "C10" not in names
+        assert "C00" in names  # largest amount = 100, kept
+
+    @pytest.mark.asyncio
+    async def test_dedup_preserves_max_aging_across_rows(self, monkeypatch):
+        """Same customer with multiple rows → max aging tracked across all rows.
+
+        Customer "Acme" has 3 rows: aging=30/100/60. Max = 100 → alertLevel=RED.
+        """
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": "Acme", "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+                {"customer_name": "Acme", "receivable_amount": "500",  "collection_amount": "0", "aging_days": 100},
+                {"customer_name": "Acme", "receivable_amount": "200",  "collection_amount": "0", "aging_days": 60},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert len(result) == 1
+        assert result[0]["name"] == "Acme"
+        assert result[0]["value"] == 1700  # 1000 + 500 + 200 aggregated
+        assert result[0]["alertLevel"] == "RED"  # max(30, 100, 60) = 100 > 90
+
+    @pytest.mark.asyncio
+    async def test_alertlevel_max_aging_strict_gt_boundary(self, monkeypatch):
+        """Java line 767-772: max_aging > 90 RED, > 60 YELLOW, else GREEN.
+        Boundary aging = 60 / 90 falls into LOWER level."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": "RedCust",      "receivable_amount": "100", "collection_amount": "0", "aging_days": 91},
+                {"customer_name": "BoundaryRed",  "receivable_amount": "100", "collection_amount": "0", "aging_days": 90},  # boundary → YELLOW
+                {"customer_name": "YellowCust",   "receivable_amount": "100", "collection_amount": "0", "aging_days": 61},
+                {"customer_name": "BoundaryYell", "receivable_amount": "100", "collection_amount": "0", "aging_days": 60},  # boundary → GREEN
+                {"customer_name": "GreenCust",    "receivable_amount": "100", "collection_amount": "0", "aging_days": 1},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        by_name = {r["name"]: r["alertLevel"] for r in result}
+        assert by_name["RedCust"] == "RED"           # 91 > 90
+        assert by_name["BoundaryRed"] == "YELLOW"    # 90 NOT > 90 → falls to YELLOW
+        assert by_name["YellowCust"] == "YELLOW"     # 61 > 60
+        assert by_name["BoundaryYell"] == "GREEN"    # 60 NOT > 60 → falls to GREEN
+        assert by_name["GreenCust"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_sort_stable_when_amounts_tied(self, monkeypatch):
+        """When 2 customers have identical outstanding, Python sorted() is stable —
+        insertion order is preserved among ties (mirrors Java LinkedHashMap iteration).
+
+        First customer in input → first in output for tied amounts.
+        """
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"customer_name": "First",  "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+                {"customer_name": "Second", "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+                {"customer_name": "Third",  "receivable_amount": "1000", "collection_amount": "0", "aging_days": 30},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert [r["name"] for r in result] == ["First", "Second", "Third"]
+        # All equal value → ranks 1, 2, 3 (NOT all rank 1 — Java enumerate semantics)
+        assert [r["rank"] for r in result] == [1, 2, 3]
+
+    @pytest.mark.asyncio
+    async def test_ranking_value_quantize_half_up(self, monkeypatch):
+        """Decimal('1234.567').quantize(0.01, HALF_UP) = 1234.57.
+        Verify ranking value emits to 2 decimals via _decimal_to_number."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"customer_name": "FractionCust", "receivable_amount": "1234.567",
+                     "collection_amount": "0", "aging_days": 60}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
+        assert result[0]["value"] == 1234.57
