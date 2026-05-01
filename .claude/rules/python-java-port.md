@@ -1,6 +1,6 @@
 # Java→Python Port 规范
 
-**最后更新**: 2026-04-30
+**最后更新**: 2026-05-01
 **适用范围**: Phase 2A SmartBI analysis endpoint port + 未来 Phase 2B+ 任何 Java→Python 字节级 parity port。
 
 ---
@@ -326,6 +326,95 @@ profit `_determine_gross_margin_alert` 用 `float()`（OK，整数阈值）。Si
 
 ---
 
+## ⛔ Rule 8: `Map.of(N)` 序列化 key order 不可凭直觉，必须录 golden 反推
+
+### 反 pattern（Python dict insertion order ≠ Java Map.of Jackson order）
+
+```java
+// Java: Jackson 序列化 Map.of 时, key order 由 Map.of 内部 hash 决定，
+// 同一组 key 在 Map.of(2)/Map.of(3)/Map.of(4) 下产生不同 order，
+// 跟传入 Map.of 的参数顺序 **无关**。
+return Map.of(
+    "type", "BAR",
+    "name", "销售额",
+    "yAxisIndex", 0,
+    "color", "#5470c6"
+);
+// Jackson 实际输出 (Map.of(4)): {"yAxisIndex": 0, "type": "BAR", "name": "...", "color": "..."}
+//                                  ^^^^^^^^^^^ hash 决定的 order, 不是传入 order
+```
+
+```python
+# ❌ BAD: 凭直觉按 Java 源码顺序写 dict
+def _new_series_entry(type_, name, y_axis_index, color):
+    return {
+        "type": type_,
+        "name": name,
+        "yAxisIndex": y_axis_index,
+        "color": color,
+    }
+# Python 3.8+ dict 保 insertion order → 输出 {"type":..., "name":..., "yAxisIndex":..., "color":...}
+# 跟 Java 实际 Jackson 输出 {"yAxisIndex":..., "type":..., "name":..., "color":...} byte-shape 不一致
+```
+
+### 正 pattern
+
+```python
+# ✅ GOOD: 录 golden 反推 Java 真实 order, Python literal 严格 mirror
+def _new_series_entry(type_, name, y_axis_index, color):
+    return {
+        "yAxisIndex": y_axis_index,  # Map.of(4) hash order
+        "type": type_,
+        "name": name,
+        "color": color,
+    }
+```
+
+### 录 golden 反推 order 的步骤
+
+1. **跑 Java 端真实 endpoint**（dev/staging/prod）拿 raw JSON response：
+   ```bash
+   ./scripts/record-java-golden.sh F999 <factoryId> <endpoint> <args> > tests/fixtures/java-smartbi-golden/<name>.json
+   ```
+2. **检查 golden 中每个 Map.of(N) 出现位置的 key order**（用 jq 或肉眼）。
+3. **Python literal dict 按 golden order 重写**，不是按 Java 源码 Map.of 参数顺序。
+4. **F999 byte-shape gate** dict-eq 比较通过即 OK。**strict-byte gate** 必须 char-by-char identical（Phase 2A 暂用 dict-eq，但 Phase 3+ 上 strict 时 order 必须严格）。
+
+### 何时这个 rule 适用
+
+- Java 端**任何** `Map.of(N)` / `Map.entry(...)` / `LinkedHashMap` 直接 return 给 Jackson 序列化的位置
+- 特别注意 `Map.of(2)` / `Map.of(3)` / `Map.of(4)` 各自 hash 算法不同, 同一组 key 跨 N 也不同
+- `LinkedHashMap` 保 insertion order, 反而是 Python literal dict 直接 mirror 的标准 case
+- **不适用**：Java 端用 DTO class（Lombok `@Data`） + Jackson `@JsonPropertyOrder` 显式标注的 — 那种 order 是 deterministic 按 annotation
+
+### 跨 spec patterns（已踩过的坑）
+
+| Spec | Map.of(N) 位置 | 实际 Java order |
+|---|---|---|
+| sub-endpoints `_get_yoy_mom_chart` | yAxis | `Map.of(2)`: `[position, name]` |
+| sub-endpoints `_get_yoy_mom_chart` | series | `Map.of(4)`: `[yAxisIndex, type, name, color]` |
+| sub-endpoints `_get_yoy_mom_chart` | summary | `Map.of(3)`: `[totalYoYGrowthRate, compareTotal, currentTotal]` |
+| profit chart | `_new_yaxis_entry` helper | `[name, position]` (跟 sub-endpoints `Map.of(2)` 不同！) |
+
+⚠️ **不同 chart 函数的 Map.of(2) 输出可能不同 order** — `_new_yaxis_entry` helper 跟 sub-endpoints 直接 inline 的 yAxis 是不同 Java 调用站点, hash 可能不同 carry-over。**不要假设可复用 helper 的 order**, 各自录 golden 验证。
+
+### Why
+
+- Java `Map.of(N)` 内部用 `MapN<K,V>` 类（N=1..10），hash 算法跟 N 绑定，N 不同 hash table 不同
+- Jackson 序列化时按 hash table iteration order 输出
+- Python `dict` 自 3.7 起保证 insertion order — 直接 literal 写出的 order 才是 actual order
+- Java 源码看到的 `Map.of("a", 1, "b", 2)` 参数顺序 `a, b` **不等于** Jackson 输出顺序
+
+### 跟 Rule 4 的关系
+
+Rule 4（Decimal serialization）+ Rule 8（key order）合起来才能完整描述 byte-shape parity 输出层。Rule 4 管 value 序列化形式，Rule 8 管 key 顺序。
+
+### Audit 来源
+
+sub-endpoints PR #32（2026-05-01 ship）— Chat 3 在 impl 阶段录 F999/F001 goldens 时发现 3 个 Map.of(N) 都被 Python literal dict insertion order 写错。修法：dict literal 按 golden 实际 order 重写，留 `_new_yaxis_entry` helper 不动（它服务 profit chart, order 跟 sub-endpoints 不同, 不能 cross-use）。
+
+---
+
 ## 工具 + 配置 reference
 
 ### `_decimal_to_number` helper
@@ -379,5 +468,6 @@ monkeypatch.setattr(
 | profit chat reviewer audit (2026-04-30) | Rule 1（`or` falsy total_cost）/ Rule 2 / Rule 3 / Rule 5 / Rule 6 / Rule 7 |
 | payable PR #18 retrospect | Rule 4（Decimal serialization 一致性） |
 | cost chat reviewer audit (2026-04-30) | Rule 1（`if x:` truthy-check 形式）/ Rule 5（legacy 例外）/ Rule 6（narrowed scope） |
+| sub-endpoints PR #32 impl (2026-05-01) | Rule 8（Map.of(N) Jackson hash order — 3 个不同 N 全踩坑） |
 
 后续 sister chats（receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
