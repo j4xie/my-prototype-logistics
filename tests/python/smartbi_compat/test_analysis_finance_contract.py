@@ -1302,3 +1302,134 @@ class TestCostTrendArithmetic:
 
         # DAY: yyyy-MM-dd — Java line 1474-1476
         assert _get_period_key(date(2025, 6, 15), "DAY") == "2025-06-15"
+
+
+class TestBudgetAchievementChart:
+    """F999 byte-shape gate + arithmetic depth tests for /budget-achievement."""
+
+    def test_f999_budget_achievement_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: data keys order matches Java golden."""
+        async def fake_finance_empty(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_finance_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/budget-achievement"
+            "?year=2025&metric=revenue",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-budget-achievement.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+
+        assert py_data_keys == golden_data_keys, (
+            f"data key order mismatch:\n  python: {py_data_keys}\n  golden: {golden_data_keys}"
+        )
+
+    def test_f999_budget_achievement_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block for empty F999."""
+        async def fake_finance_empty(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_finance_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance/budget-achievement"
+            "?year=2025&metric=revenue",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-budget-achievement.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        if py_data != golden_data:
+            diffs = {}
+            for k in set(py_data.keys()) | set(golden_data.keys()):
+                if py_data.get(k) != golden_data.get(k):
+                    diffs[k] = {"python": py_data.get(k), "golden": golden_data.get(k)}
+            pytest.fail(
+                f"BYTE SHAPE MISMATCH (budget-achievement) on {list(diffs.keys())}\n"
+                f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
+            )
+
+    def _run_chart(self, fake_finance):
+        """Call _get_budget_achievement_chart directly via asyncio."""
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_budget_achievement_chart("F", 2025, "revenue"))
+        finally:
+            af._query_finance_data = original
+
+    def test_budget_amount_always_returned_regardless_of_category(self):
+        """audit I-5 fix: Java fall-through returns budget_amount regardless of category match."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            return [
+                {"record_date": d(2025, 6, 1), "category": "其他类",
+                 "budget_amount": Decimal("100"), "actual_amount": Decimal("80")},
+            ]
+        chart = self._run_chart(fake)
+        june = chart["data"][5]
+        assert june["month"] == "6月"
+        assert june["budget"] == 100
+        assert june["actual"] == 80
+
+    def test_alert_level_thresholds(self):
+        """Verify >120 RED, >100 YELLOW, else GREEN."""
+        from datetime import date as d
+        from decimal import Decimal
+
+        async def fake_red(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 1, 1), "category": "x",
+                     "budget_amount": Decimal("100"), "actual_amount": Decimal("130")}]
+        chart = self._run_chart(fake_red)
+        assert chart["data"][0]["alertLevel"] == "RED"
+
+        async def fake_yellow(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 1, 1), "category": "x",
+                     "budget_amount": Decimal("100"), "actual_amount": Decimal("110")}]
+        chart = self._run_chart(fake_yellow)
+        assert chart["data"][0]["alertLevel"] == "YELLOW"
+
+        async def fake_green(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 1, 1), "category": "x",
+                     "budget_amount": Decimal("100"), "actual_amount": Decimal("100")}]
+        chart = self._run_chart(fake_green)
+        assert chart["data"][0]["alertLevel"] == "GREEN"
+
+    def test_zero_budget_zero_achievement_rate(self):
+        """budget=0 → rate=0 (avoid div0) per Java line 1158-1160."""
+        from datetime import date as d
+        from decimal import Decimal
+        async def fake(_fid, _rt, _s, _e):
+            return [{"record_date": d(2025, 6, 1), "category": "x",
+                     "budget_amount": Decimal("0"), "actual_amount": Decimal("50")}]
+        chart = self._run_chart(fake)
+        june = chart["data"][5]
+        assert june["budget"] == 0
+        assert june["actual"] == 50
+        assert june["achievementRate"] == 0
+
+    def test_always_emits_12_months(self):
+        """Per Java line 1132-1135: pre-fill all 12 months even with 0 records."""
+        async def fake_empty(*_): return []
+        chart = self._run_chart(fake_empty)
+        assert len(chart["data"]) == 12
+        for i, point in enumerate(chart["data"], start=1):
+            assert point["month"] == f"{i}月"
+            assert point["budget"] == 0
+            assert point["actual"] == 0
+            assert point["alertLevel"] == "GREEN"
