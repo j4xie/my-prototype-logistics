@@ -30,6 +30,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
+from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
@@ -38,6 +39,38 @@ from smartbi_compat.schema_compat import wrap_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ============================================================
+# Section 0b: Receivable constants (Phase 2A receivable per-type)
+# Mirror Java FinanceAnalysisService interface line 37-43 (4 bucket name constants),
+# FinanceAnalysisServiceImpl line 104-105 (AGING_90 thresholds),
+# and FinanceAnalysisServiceImpl line 1590-1603 (bucket → alert level map).
+# ============================================================
+
+AGING_BUCKET_0_30 = "0-30天"
+AGING_BUCKET_31_60 = "31-60天"
+AGING_BUCKET_61_90 = "61-90天"
+AGING_BUCKET_OVER_90 = "90天以上"
+
+# Java FinanceAnalysisServiceImpl line 600 — Arrays.asList(0_30, 31_60, 61_90, OVER_90)
+AGING_BUCKETS_ORDER = [
+    AGING_BUCKET_0_30,
+    AGING_BUCKET_31_60,
+    AGING_BUCKET_61_90,
+    AGING_BUCKET_OVER_90,
+]
+
+# Java FinanceAnalysisServiceImpl line 1590-1603 — hardcoded bucket → alertLevel map
+_AGING_BUCKET_ALERT_LEVELS = {
+    AGING_BUCKET_0_30: "GREEN",
+    AGING_BUCKET_31_60: "YELLOW",
+    AGING_BUCKET_61_90: "YELLOW",
+    AGING_BUCKET_OVER_90: "RED",
+}
+
+# Java FinanceAnalysisServiceImpl line 104-105
+AGING_90_RED_THRESHOLD = 20.0
+AGING_90_YELLOW_THRESHOLD = 10.0
 
 # ============================================================
 # Section 1: Shared DTO dict factories (copy from sister analysis_sales.py)
