@@ -1,0 +1,113 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "comparison": {
+      "chartType": "BAR",
+      "title": "预算 vs 实际对比",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "groupedBar": true,
+        "series": [
+          {
+            "color": "#5470c6",
+            "name": "预算"
+          },
+          {
+            "color": "#91cc75",
+            "name": "实际"
+          }
+        ]
+      },
+      "xaxisField": "category",
+      "yaxisField": "budget"
+    },
+    "endDate": "2025-12-31",
+    "waterfall": {
+      "chartType": "WATERFALL",
+      "title": "2025年预算执行瀑布图",
+      "seriesField": null,
+      "data": [
+        {
+          "name": "年度预算",
+          "value": 0.0,
+          "type": "total"
+        },
+        {
+          "name": "剩余预算",
+          "value": 0.0,
+          "type": "total"
+        }
+      ],
+      "options": {
+        "waterfallType": true,
+        "increaseColor": "#91cc75",
+        "decreaseColor": "#ee6666",
+        "totalColor": "#5470c6"
+      },
+      "xaxisField": "name",
+      "yaxisField": "value"
+    },
+    "metrics": [
+      {
+        "metricCode": "BUDGET_EXECUTION",
+        "metricName": "预算执行率",
+        "value": 0.0,
+        "formattedValue": "0.00%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "实际支出占预算的比例"
+      },
+      {
+        "metricCode": "BUDGET_VARIANCE",
+        "metricName": "预算差异",
+        "value": 0.0,
+        "formattedValue": "0.00",
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "实际支出与预算的差额"
+      },
+      {
+        "metricCode": "BUDGET_VARIANCE_RATE",
+        "metricName": "预算偏差率",
+        "value": 0.0,
+        "formattedValue": "0.00%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "预算差异占预算的比例"
+      },
+      {
+        "metricCode": "BUDGET_REMAINING",
+        "metricName": "预算剩余",
+        "value": 0.0,
+        "formattedValue": "0.00",
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "剩余可用预算额度"
+      }
+    ],
+    "startDate": "2025-01-01"
+  },
+  "timestamp": "2026-05-02T00:11:21.859115272",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

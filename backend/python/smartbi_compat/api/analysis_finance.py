@@ -234,6 +234,26 @@ def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict
 
 
 
+def _create_waterfall_item(name: str, value: Decimal, type_: str) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.createWaterfallItem (line 1579-1585).
+
+    LinkedHashMap put-order: [name, value, type] verified via F999 budget golden
+    waterfall.data[0] (name=年度预算, value=0.0, type=total).
+
+    `type_` parameter name (with trailing underscore) avoids Python `type` builtin
+    shadowing. JSON output key remains `"type"` per Java parity.
+
+    `value` MUST be Decimal (not int/float); applies setScale(DISPLAY_SCALE=2, HALF_UP)
+    inside before _decimal_to_number serialization.
+    """
+    return {
+        "name": name,
+        "value": _decimal_to_number(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        "type": type_,
+    }
+
+
+
 def _aggregate_cost_by_period(
     cost_records: list[dict], period: str
 ) -> dict[str, list[Decimal]]:
@@ -460,6 +480,29 @@ def _determine_budget_achievement_alert(achievement_rate: Decimal) -> str:
     if v > 120:
         return "RED"
     if v > 100:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_budget_variance_rate_alert(rate: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl.determineAlertLevel BUDGET_VARIANCE_RATE
+    case (line 515-519).
+
+      abs(v) > 20 → RED   (偏差超过 20%)
+      abs(v) > 10 → YELLOW (偏差 10-20%)
+      else        → GREEN  (正常)
+
+    Note: Python端必须加前缀消岐义 (Java 是跨 service 调用 metricCalculatorService
+    .determineAlertLevel — Python 无 service 边界，函数名自带 disambiguation)。
+
+    Boundary: exactly 20 → YELLOW (NOT RED); exactly 10 → GREEN (NOT YELLOW).
+
+    Sign-symmetric: -25 → RED (abs=25 > 20), -15 → YELLOW (abs=15 > 10), -5 → GREEN.
+    """
+    v = abs(float(rate))
+    if v > 20:
+        return "RED"
+    if v > 10:
         return "YELLOW"
     return "GREEN"
 
@@ -2094,6 +2137,315 @@ async def _get_payable_analysis(factory_id: str, start_date: date, end_date: dat
 
 
 # ============================================================
+# Section 4d: Budget per-type real impl (Phase 2A)
+# ============================================================
+
+
+async def _get_budget_metrics(factory_id: str, year: int, month: int) -> list[dict]:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetMetrics (line 1031-1116).
+
+    Signature `(factory_id, year, month)` per Rule 3 — does NOT take date_range
+    because Java method takes (int year, int month). Date range derived inside:
+        start_date = date(year, month, 1)
+        end_date = date(year, month, calendar.monthrange(year, month)[1])
+
+    Emits 4 MetricResult entries (BUDGET_EXECUTION / BUDGET_VARIANCE /
+    BUDGET_VARIANCE_RATE / BUDGET_REMAINING) using _new_metric_result_dict
+    (11-field DTO shape verified via F999 golden).
+
+    F2 risk: NO `.abs()` defensive on budget_amount/actual_amount per Rule 3 raw
+    mirror of Java line 1044-1052. Raw accumulation matches Java exactly.
+    """
+    start_date = date(year, month, 1)
+    end_date = date(year, month, calendar.monthrange(year, month)[1])
+
+    budget_data = await _query_finance_data(factory_id, "BUDGET", start_date, end_date)
+
+    # Java line 1044-1047: raw sum of budget_amount (NOT abs, F2 raw mirror Rule 3)
+    total_budget = sum(
+        (_to_decimal(r["budget_amount"]) for r in budget_data
+         if r.get("budget_amount") is not None),
+        Decimal("0"),
+    )
+    # Java line 1049-1052: raw sum of actual_amount
+    total_actual = sum(
+        (_to_decimal(r["actual_amount"]) for r in budget_data
+         if r.get("actual_amount") is not None),
+        Decimal("0"),
+    )
+
+    # BUDGET_EXECUTION (Java line 1054-1071)
+    if total_budget > Decimal("0"):
+        execution_rate_raw = (total_actual / total_budget).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        ) * Decimal("100")
+    else:
+        execution_rate_raw = Decimal("0")
+    execution_rate_display = execution_rate_raw.quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+    # BUDGET_VARIANCE (Java line 1074-1085)
+    variance = total_actual - total_budget
+    variance_display = variance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    # BUDGET_VARIANCE_RATE (Java line 1088-1099)
+    if total_budget > Decimal("0"):
+        variance_rate_raw = (variance / total_budget).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        ) * Decimal("100")
+    else:
+        variance_rate_raw = Decimal("0")
+    variance_rate_display = variance_rate_raw.quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+    # BUDGET_REMAINING (Java line 1102-1113)
+    remaining = total_budget - total_actual
+    remaining_display = remaining.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    return [
+        _new_metric_result_dict(
+            metric_code="BUDGET_EXECUTION",
+            metric_name="预算执行率",
+            value=_decimal_to_number(execution_rate_display),
+            formatted_value=f"{execution_rate_display}%",
+            unit="%",
+            alert_level=_determine_budget_achievement_alert(execution_rate_raw),
+            description="实际支出占预算的比例",
+        ),
+        _new_metric_result_dict(
+            metric_code="BUDGET_VARIANCE",
+            metric_name="预算差异",
+            value=_decimal_to_number(variance_display),
+            formatted_value=_format_currency(variance),
+            unit="元",
+            alert_level="YELLOW" if variance > Decimal("0") else "GREEN",
+            description="实际支出与预算的差额",
+        ),
+        _new_metric_result_dict(
+            metric_code="BUDGET_VARIANCE_RATE",
+            metric_name="预算偏差率",
+            value=_decimal_to_number(variance_rate_display),
+            formatted_value=f"{variance_rate_display}%",
+            unit="%",
+            alert_level=_determine_budget_variance_rate_alert(variance_rate_raw),
+            description="预算差异占预算的比例",
+        ),
+        _new_metric_result_dict(
+            metric_code="BUDGET_REMAINING",
+            metric_name="预算剩余",
+            value=_decimal_to_number(remaining_display),
+            formatted_value=_format_currency(remaining),
+            unit="元",
+            alert_level="GREEN" if remaining >= Decimal("0") else "RED",
+            description="剩余可用预算额度",
+        ),
+    ]
+
+
+async def _get_budget_execution_waterfall(factory_id: str, year: int) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetExecutionWaterfall (line 923-979).
+
+    Signature `(factory_id, year)` per Rule 3 — Java takes (int year), Python mirrors.
+    Date range derived: [year-01-01, year-12-31].
+
+    Returns ChartConfig dict (chartType=WATERFALL).
+
+    Edge cases:
+    - Empty budget_data → annual_budget=0, no monthly decreases, chart_data=[
+        年度预算 0 total, 剩余预算 0 total] (length 2)
+    - All 12 months had actuals>0 → length 14 (1 total + 12 decrease + 1 total)
+    - Months with actual<=0 skipped per Java line 956 `compareTo(BigDecimal.ZERO) > 0`
+    - Java line 941 NPEs on null record_date — Python defensive skip (data quality
+      divergence per spec §8 IC1 risk; Phase 3.B/C cleanup retrofits cost too).
+    """
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+
+    budget_data = await _query_finance_data(factory_id, "BUDGET", start_date, end_date)
+
+    # Java line 933-936: raw sum (NOT abs, F2 raw mirror)
+    annual_budget = sum(
+        (_to_decimal(r["budget_amount"]) for r in budget_data
+         if r.get("budget_amount") is not None),
+        Decimal("0"),
+    )
+
+    # Java line 939-944: aggregate per month (TreeMap → sorted insertion order)
+    monthly_actual: dict[int, Decimal] = {}
+    for r in budget_data:
+        # Defensive skip if record_date is None (Java line 941 NPEs)
+        rec_date = r.get("record_date")
+        if rec_date is None:
+            continue
+        month = rec_date.month
+        # Java line 942: null actual → BigDecimal.ZERO (NOT skip), then merge add
+        actual = (
+            _to_decimal(r["actual_amount"])
+            if r.get("actual_amount") is not None
+            else Decimal("0")
+        )
+        monthly_actual[month] = monthly_actual.get(month, Decimal("0")) + actual
+
+    # Java line 947-963: build waterfall data list
+    chart_data: list[dict] = [
+        _create_waterfall_item("年度预算", annual_budget, "total"),
+    ]
+    remaining = annual_budget
+    # Iterate 1..12 in order (Java line 954)
+    for month in range(1, 13):
+        actual = monthly_actual.get(month, Decimal("0"))
+        # Java line 956: only emit decrease if actual > 0
+        if actual > Decimal("0"):
+            chart_data.append(_create_waterfall_item(f"{month}月", -actual, "decrease"))
+            remaining -= actual
+    chart_data.append(_create_waterfall_item("剩余预算", remaining, "total"))
+
+    # Java line 965-969: LinkedHashMap put-order [waterfallType, increaseColor,
+    # decreaseColor, totalColor] verified via F999 golden line 43-48
+    options = {
+        "waterfallType": True,
+        "increaseColor": "#91cc75",
+        "decreaseColor": "#ee6666",
+        "totalColor": "#5470c6",
+    }
+
+    return _new_chart_config_dict(
+        chart_type="WATERFALL",
+        title=f"{year}年预算执行瀑布图",
+        series_field=None,
+        data=chart_data,
+        options=options,
+        xaxis_field="name",
+        yaxis_field="value",
+    )
+
+
+async def _get_budget_vs_actual_chart(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetVsActualChart (line 982-1028).
+
+    Signature `(factory_id, start_date, end_date)` per Rule 3 — matches Java
+    (LocalDate startDate, LocalDate endDate).
+
+    Returns ChartConfig dict (chartType=BAR).
+
+    Per-category aggregation with LinkedHashMap put-order. Each chart_data item
+    has 6 keys [category, budget, actual, variance, executionRate, alertLevel]
+    (verified via Java line 1000-1010 LinkedHashMap put sequence).
+
+    Java line 1005-1007 emits raw 4-decimal executionRate (no setScale(2));
+    Python `_decimal_to_number(Decimal("33.3300"))` → `33.33` matches Jackson's
+    BigDecimal stripping behavior. Empty-data F999 case verified.
+
+    Rule 8 caveat: comparison.options.series Map.of(2) entries serialize as
+    [color, name] (Jackson hash order, NOT Java source param order which is
+    [name, color]). Verified via F999 golden line 13-20.
+    """
+    budget_data = await _query_finance_data(factory_id, "BUDGET", start_date, end_date)
+
+    # Java line 989-995: per-category aggregate (LinkedHashMap insertion order)
+    category_data: dict[str, list[Decimal]] = {}
+    for r in budget_data:
+        category = r.get("category") if r.get("category") is not None else "其他"
+        slot = category_data.setdefault(category, [Decimal("0"), Decimal("0")])
+        # Java line 993: null → BigDecimal.ZERO, NOT skip
+        budget_amount = (
+            _to_decimal(r["budget_amount"])
+            if r.get("budget_amount") is not None
+            else Decimal("0")
+        )
+        actual_amount = (
+            _to_decimal(r["actual_amount"])
+            if r.get("actual_amount") is not None
+            else Decimal("0")
+        )
+        slot[0] += budget_amount
+        slot[1] += actual_amount
+
+    # Java line 998-1011: build per-category chart_data (LinkedHashMap put-order)
+    chart_data: list[dict] = []
+    for category, values in category_data.items():
+        # Java line 1005-1007: divide(SCALE=4, HALF_UP).multiply(100), NO final setScale(2)
+        if values[0] > Decimal("0"):
+            execution_rate = (values[1] / values[0]).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            ) * Decimal("100")
+        else:
+            execution_rate = Decimal("0")
+
+        chart_data.append({
+            "category": category,
+            # Java line 1001-1004: raw budget/actual/variance (NO setScale, accumulator
+            # preserves DB scale=2). I-1 fix mirror.
+            "budget": _decimal_to_number(values[0]),
+            "actual": _decimal_to_number(values[1]),
+            "variance": _decimal_to_number(values[1] - values[0]),
+            "executionRate": _decimal_to_number(execution_rate),
+            # Pass raw 4-decimal execution_rate into helper for boundary precision
+            # (mirrors Java line 1009 calling helper before any setScale)
+            "alertLevel": _determine_budget_achievement_alert(execution_rate),
+        })
+
+    # Java line 1013-1018: options (outer LinkedHashMap put-order;
+    # series items Map.of(2) → Rule 8 hash order [color, name])
+    options = {
+        "groupedBar": True,
+        "series": [
+            {"color": "#5470c6", "name": "预算"},   # Map.of(2) Jackson hash: [color, name]
+            {"color": "#91cc75", "name": "实际"},   # NOT Java source [name, color] order
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="预算 vs 实际对比",
+        series_field=None,
+        data=chart_data,
+        options=options,
+        xaxis_field="category",
+        yaxis_field="budget",
+    )
+
+
+async def _get_budget_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis budget branch
+    line 258-263.
+
+    Internal year/month derivation (Java line 259-260):
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+
+    F1 — 3 sub-services use 3 different date scopes (per spec §3.2):
+      - metrics:    [date(year, month, 1), date(year, month, last_day)]  # endDate's month only
+      - waterfall:  [date(year, 1, 1), date(year, 12, 31)]                # full calendar year
+      - comparison: [start_date, end_date]                                 # dispatcher range
+
+    Returns 5-key dict in **verified Jackson hash order** (recorded F999/F001 golden):
+        [comparison, endDate, waterfall, metrics, startDate]
+    """
+    year = end_date.year
+    month = end_date.month
+
+    metrics = await _get_budget_metrics(factory_id, year, month)
+    waterfall = await _get_budget_execution_waterfall(factory_id, year)
+    comparison = await _get_budget_vs_actual_chart(factory_id, start_date, end_date)
+
+    return {
+        # Verified Jackson hash order from F999 golden line 4-107 (2026-05-02 recording)
+        "comparison": comparison,
+        "endDate": end_date.isoformat(),
+        "waterfall": waterfall,
+        "metrics": metrics,
+        "startDate": start_date.isoformat(),
+    }
+
+
+# ============================================================
 # Section 5: Route handler
 # ============================================================
 
@@ -2111,6 +2463,9 @@ async def get_finance_analysis(
     Branches:
       analysisType empty       → composite (6-key Map via getComprehensiveAnalysis)
       analysisType=payable     → payable per-type (4-key shape, real impl Phase E)
+      analysisType=profit      → profit per-type (PR #21 + #22 sales fallback)
+      analysisType=cost        → cost per-type (PR #25 structure + trend)
+      analysisType=budget      → budget per-type (this PR, 5-key dispatcher)
       analysisType=other       → 501 envelope (un-ported, see spec §6 / §12)
     """
     range_ = DateRange.custom(startDate, endDate)
@@ -2129,6 +2484,10 @@ async def get_finance_analysis(
 
     if analysisType == "cost":
         result = await _get_cost_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    if analysisType == "budget":
+        result = await _get_budget_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
     return wrap_response(
