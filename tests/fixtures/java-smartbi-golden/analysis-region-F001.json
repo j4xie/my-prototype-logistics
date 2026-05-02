@@ -1,46 +1,33 @@
 {
-  "verb": "GET",
-  "path": "/api/mobile/F001/smart-bi/analysis/region",
-  "factory": "F001",
-  "response": {
-    "httpStatus": 200,
-    "success": true,
-    "message": "操作成功",
-    "data": {
-      "heatmap": {
-        "chartType": "MAP",
-        "title": "销售地理分布",
-        "seriesField": null,
-        "data": [],
-        "options": null,
-        "xaxisField": null,
-        "yaxisField": null
-      },
-      "targetCompletion": [],
-      "dateRange": {
-        "startDate": "2025-01-01",
-        "endDate": "2025-12-31",
-        "granularity": "YEAR",
-        "originalExpression": "2025-01-01 至 2025-12-31",
-        "relative": false,
-        "days": 365,
-        "valid": true
-      },
-      "opportunityScores": [],
-      "generatedAt": "2026-04-29T12:43:10.01569163",
-      "ranking": []
-    }
-  },
-  "_meta": {
-    "name": "analysis-region",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/region",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-12-31"
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "heatmap": {
+      "chartType": "MAP",
+      "title": "销售地理分布",
+      "seriesField": null,
+      "data": [],
+      "options": null,
+      "xaxisField": null,
+      "yaxisField": null
     },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:10.420Z",
-    "javaPort": 10011
-  }
+    "targetCompletion": [],
+    "dateRange": {
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31",
+      "granularity": "YEAR",
+      "originalExpression": "2024-01-01 至 2024-12-31",
+      "relative": false,
+      "days": 366,
+      "valid": true
+    },
+    "opportunityScores": [],
+    "generatedAt": "2026-05-02T05:34:20.152837061",
+    "ranking": []
+  },
+  "timestamp": "2026-05-02T05:34:20.15313079",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
 }
