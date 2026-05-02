@@ -118,15 +118,17 @@ Per Tier 2 sister spec lineage (region §1.3, department §1.3): **dead-code-ski
 | `customer` dimension | listed in DrillDownRequest docstring but NOT in switch (line 1035-1059) → falls to BusinessException default. Acceptable byte-parity behavior (will return error envelope). No Python implementation of customer drill-down logic. |
 | `customer` drill-down independent endpoint | If Wave 4+ wants this, separate spec. |
 | PG-level RLS migrations on `smart_bi_sales_data` / `smart_bi_department_data` / `smart_bi_usage_records` (T11/T12) | Separate Phase 3+ concern. Aligns with Apr 28 P0 RLS gap finding (sister tables fixed in `V20260502_03/_04`). Application-layer factory_id WHERE is the sole isolation. |
-| `handleDrillDownIntent` AI orchestration path (`SmartBIServiceImpl.java:1731-1741`) | Phase 2B-β scope, calls `processDrillDown` but is a SEPARATE entry point. This spec ports the HTTP `POST /drill-down` only. AI cite see §9.1. |
+| `handleDrillDownIntent` AI orchestration path (`SmartBIServiceImpl.java:1728-1742`) | Phase 2B-β scope, calls `processDrillDown` but is a SEPARATE entry point. This spec ports the HTTP `POST /drill-down` only. AI cite see §9.1. |
 | Locale-dependent string formatting (`String.format("%,.2f", ...)` etc) inherited from sister specs | Already-known caveat; Python `f"{val:,.2f}"` matches en_US (production JVM Locale). |
 | Sort/limit/includeChildren request fields (sortBy/sortDirection/limit/includeChildren) | Java `processDrillDown` does NOT use these fields (verify by grep — they're set as @Builder.Default but no `request.getSortBy()` call appears in dim processors). Python parses them but ignores in dispatch. Out-of-scope to honor. |
 
 ### 1.6 Side effects
 
 - **1 row INSERT** to `smart_bi_usage_records` per request (T7 — service line 1066).
-  - Args mirror Java exactly: `factoryId, queryText=null, actionType="DRILLDOWN", tokenCount=0, cacheHit=false, success=true`
-  - Other defaults: `costAmount=0`, `responseTimeMs=null`, `userId=null` (Python passes None per D7 — see §3.6 + §3.7. Java line 1066 explicitly passes null despite SecurityContext having userId; Python mirrors for byte parity at DB level.)
+  - Args mirror Java line 1066: `factoryId, queryText=null, actionType="DRILLDOWN", tokenCount=0, cacheHit=false`. `success=true` is set inside `recordUsage` body (line 1168).
+  - `userId=null`: Python passes None per D7 — see §3.6 + §3.7. Java line 1066 explicitly passes null despite SecurityContext having userId; Python mirrors for byte parity at DB level.
+  - **`cost_amount` DIVERGENCE** (R2 cycle 2 finding, organizer decision: document not port): Java `recordUsage` at line 1172-1173 calls `calculateCost(factoryId, tokenCount, cacheHit)` and `record.setCostAmount(cost)`. Result depends on `smart_bi_billing_config` row for the factory: returns `BigDecimal.ZERO` for `cacheHit=true` OR no config row OR `unlimitedMode=true`; otherwise returns `config.getPricePerQuery()`. **Python hardcodes `Decimal("0")`** for Phase 2A scope (API response parity). Phase 3+ analytics integrity concern — see §8.3 caveat #6 + §7 risk row.
+  - `responseTimeMs=null`, `intent_detected=null`, `error_message=null` — Java doesn't set, defaults to null.
   - Wrapped in same transaction as read dispatch (T8) — rollback on dispatch exception.
 - **No** writes to other tables.
 - **No** external API calls.
@@ -147,7 +149,7 @@ This spec ADDS the following Tier 3 patterns (potential future Tier 3 sister spe
 1. **D1 — 5 missing helpers owned by spec, NOT backfilled into sister files** (avoids reopening shipped specs)
 2. **D2 — `_drilldown_*` namespace prefix on owned helpers** (prevents future cross-import collisions)
 3. **D3+D4 — mixed read-write transaction wrapper** (`engine.begin()` async-via-`_to_thread`)
-4. **T10 hint/hintTarget loss at controller catch boundary** — service `BusinessException.withHint().withHintTarget()` info dropped by `ApiResponse.error(code, msg)` envelope flattening; Python need NOT emit hint/hintTarget. Spec §4 locks the visible body shape (5 fields, no hint/hintTarget).
+4. **T10 hint/hintTarget loss at controller catch boundary** — service `BusinessException.withHint().withHintTarget()` info dropped by `ApiResponse.error(code, msg)` envelope flattening; Python need NOT emit hint/hintTarget. Per R1 cycle 2 finding: Java `ApiResponse` declares 8 total fields (5 always-set + 3 optional UX fields actionHint/severity/hintTarget) but the actual analysis-* / alerts-* recorded goldens emit only 5. Sister test pattern (`test_datasource_contract.py`) strips actionHint/severity/hintTarget defensively. Drill-down §3.8 + §4.3 inherit this strip pattern. Python `wrap_error` (schema_compat.py:59-73) emits 5-field envelope.
 5. **T2 dead level>1 verbatim port** — port for byte parity even though frontend never sends.
 
 ---
@@ -161,7 +163,7 @@ backend/python/smartbi_compat/api/analysis_drilldown.py         (~1500-1800 LOC 
 tests/python/smartbi_compat/test_analysis_drilldown_contract.py (~500-800 LOC PR-A)
 tests/fixtures/java-smartbi-golden/drill-down-F999-region-L1.json
 tests/fixtures/java-smartbi-golden/drill-down-F999-region-L2.json
-tests/fixtures/java-smartbi-golden/drill-down-F999-region-L3-dead.json
+# (region L3 dead — UNRECORDABLE via HTTP; see §4.1 note. PR-B unit-tests H2 directly.)
 tests/fixtures/java-smartbi-golden/drill-down-F999-department-L1.json
 tests/fixtures/java-smartbi-golden/drill-down-F999-department-L2.json
 tests/fixtures/java-smartbi-golden/drill-down-F999-product.json
@@ -205,6 +207,11 @@ analysis_drilldown.py
 │   ├── from smartbi_compat.date_range import DateRange (Python equivalent class, sister-shared)
 │   ├── from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 │   └── from smartbi_compat.schema_compat import wrap_response, wrap_error
+│       # ^ both verified at backend/python/smartbi_compat/schema_compat.py:37-73
+│       # wrap_response: 5-field success envelope; wrap_error: 5-field error envelope.
+│       # schema_compat.wrap_error_with_hint (line 76-98) emits the 3 optional UX fields
+│       # (actionHint/severity/hintTarget) only when explicitly passed — drill-down does
+│       # NOT use these per T10 (controller catch flattens hint info).
 ├── 常量
 │   ├── _SUPPORTED_DIMENSIONS = frozenset({"region", "department", "product", "time", "salesperson"})
 │   │       # NOT includes "customer" — falls to BusinessException default per Java line 1057
@@ -285,7 +292,7 @@ wrap_response(result) → ApiResponse envelope (5 fields)
 
 # Error path (DrilldownBusinessException → handler)
 catch → wrap_error(code=400, message="不支持的下钻维度: <dim>")
-       → ApiResponse.error envelope (5 fields, no hint/hintTarget per T10)
+       → ApiResponse.error envelope (5 fields via schema_compat.wrap_error; tests strip 3 optional UX fields defensively per R1)
 ```
 
 **Optimization NOTE**: Python uses 1 transaction with single connection across read dispatch + write. Java uses `@Transactional` propagation REQUIRED with the JpaRepository auto-managing connection. Both achieve same atomicity (rollback on exception) but Python's single-connection model is more explicit. Output byte-shape unaffected.
@@ -353,6 +360,8 @@ Edge cases (test in PR-B):
 - parent_context="全国", filter_value="华东" → "全国 > 华东"
 - parent_context="", filter_value="华东" → "华东" (Java `isEmpty()` matches)
 - parent_context="全国 > 华东", filter_value="上海" → "全国 > 华东 > 上海" (multi-level)
+
+**R12 NOTE (cycle 2 nit)**: 5/6 cases above test code paths unreachable from production HTTP traffic — `parent_context` is always None from HTTP because the controller DTO doesn't pass it (see §3.10 R3 note + §1.5 line 121-122 docstring). Tests cover the unreachable cases for future-compat (e.g. `handleDrillDownIntent` AI orchestration — verify whether it sets parent_context; per `SmartBIServiceImpl.java:1728-1742` reading, it likely doesn't, so all 5 are also AI-path-unreachable). Keeping tests for parity with internal callers + defensive coverage.
 
 ### 3.3 `_default_date_range_this_month` (T5)
 
@@ -470,7 +479,10 @@ def _drilldown_get_city_ranking(
     T2 NOTE: dead in API reality (frontend never level>1). Ported for byte parity.
 
     SQL: aggregate by city where province=:province.
-    KEY-ORDER from RankingItem (same as H1): VERIFY from drill-down-F999-region-L3-dead.json golden.
+    KEY-ORDER from RankingItem (same as H1): inherited from drill-down-F999-region-L2.json
+    golden (since L3 golden is unrecordable per §4.1 R3 note — controller DTO omits `level`,
+    Spring silently ignores `"level":2` in JSON body, Java sees default level=1 → L2 path).
+    Tested via direct unit test in PR-B (test_drilldown_arithmetic.py::TestRegionDispatchBranching).
     """
     ...
 ```
@@ -604,6 +616,11 @@ def _process_region_drilldown(
       filter_value None/empty             → L1 ranking + nextLevel=province
       level None or level <= 1            → L2 province + nextLevel=city
       else (T2 dead)                      → L3 city + nextLevel=null
+
+    R3 NOTE: From HTTP traffic, `level` is ALWAYS 1 (controller DTO doesn't
+    expose it; Java service uses @Builder.Default 1). The `else` branch (L3)
+    is unreachable from HTTP — H2 helper exists for parity-by-inspection only,
+    tested via direct unit test in PR-B (no L3 golden, see §4.1).
     """
     filter_value = request.value
     level = request.level
@@ -740,7 +757,10 @@ def _process_time_drilldown(
     Period mapping: level=None→DAY (Java init default before switch),
                     level=1→MONTH, level=2→WEEK, level>=3→DAY (T2 dead default branch).
 
-    Note: when level=None, Java switch is skipped, period stays "DAY" from line 2041 init.
+    R3 NOTE: From HTTP traffic, `level` is ALWAYS 1 (controller DTO doesn't
+    expose it; Java service uses @Builder.Default 1). Only the `level=1`→MONTH
+    branch is reachable from HTTP. WEEK/DAY paths exist for parity-by-inspection
+    only, tested via direct unit test in PR-B (no time-L2/L3 golden, see §4.1).
     """
     level = request.level
     if level is None:
@@ -859,19 +879,26 @@ _RECORD_USAGE_SQL = text("""
 def _drilldown_record_usage(
     conn,                                # SQLAlchemy connection (inside outer tx)
     factory_id: str,
-    user_id: Optional[int] = None,       # from JWT payload userId; Java passes null at line 1066
+    user_id: Optional[int] = None,       # Java passes null at line 1066 (not JWT-derived; see D7)
     action_type: str = "DRILLDOWN",      # Java ActionType.DRILLDOWN.name()
     query_text: Optional[str] = None,    # Java passes null at line 1066
     token_count: int = 0,                # Java passes 0 at line 1066
-    cost_amount: Decimal = Decimal("0"),
+    cost_amount: Decimal = Decimal("0"), # R2 DIVERGENCE — see §1.6 / §7 / §8.3 caveat #6
     cache_hit: bool = False,             # Java passes false at line 1066
     response_time_ms: Optional[int] = None,
-    success: bool = True,                # Java recordUsage default
+    success: bool = True,                # Java recordUsage line 1168 default
 ) -> None:
     """Mirror SmartBIServiceImpl.recordUsage (called at service line 1066).
 
     Java call signature at line 1066: recordUsage(factoryId, null, "DRILLDOWN", 0, false).
-    Default args here match that call site exactly.
+    Default args here match that call site exactly EXCEPT cost_amount.
+
+    R2 DIVERGENCE (cycle 2 finding): Java `recordUsage` (line 1172-1173) computes
+    `cost_amount = calculateCost(factoryId, tokenCount, cacheHit)` (line 1954-1970)
+    which can be non-zero based on `smart_bi_billing_config`. Python hardcodes
+    `Decimal("0")` per organizer Phase 2A scope decision (API response parity, NOT
+    DB write parity). Phase 3+ cleanup options documented in §7 risk row + §8.3
+    caveat #6.
 
     NOT a top-level transaction — caller (_process_drilldown_tx) opens engine.begin().
     This helper just executes the INSERT inside that connection.
@@ -942,9 +969,9 @@ async def _process_drilldown_tx(
 ) -> dict:
     """Mirror SmartBIServiceImpl.processDrillDown @Transactional (line 1018-1069).
 
-    D4: REQUIRED propagation; SQLAlchemy `engine.begin()` defaults match Java
-    @Transactional defaults (REQUIRED + connection's default isolation, typically
-    READ_COMMITTED on PG).
+    D4: SQLAlchemy `engine.begin()` begins a new top-level transaction; commits
+    on context exit; rolls back on exception. Matches Java `@Transactional` default
+    behavior for top-level entry (REQUIRED → new tx; READ_COMMITTED isolation).
     Read dispatch + write recordUsage in one transaction.
     BusinessException raised BEFORE recordUsage call → tx rolled back, no usage row written.
 
@@ -1016,11 +1043,14 @@ async def _process_drilldown_tx(
     return await _to_thread(_exec)
 ```
 
-**SQLAlchemy sync vs asyncpg native — design decision**:
-- **Choice**: Sync SQLAlchemy + `_to_thread` shim
-- **Rationale**: Matches sister `analysis_region.py` / `analysis_sales.py` patterns (Phase 2A consistency). asyncpg native would add a parallel client + connection pool management overhead.
-- **Rejected alternative**: asyncpg native (`async with pool.acquire() as conn`).
-- **Rejected because**: Phase 2A standardized on sync SQLAlchemy + `_to_thread`. Diverging here adds maintenance surface area.
+**SQLAlchemy sync vs asyncpg native + tx pattern choice — design decision (R5 cycle 2)**:
+- **Choice**: Sync SQLAlchemy `engine.begin()` + `_to_thread` shim
+- **`_to_thread` rationale**: Matches sister `analysis_region.py:50` / `analysis_sales.py:50` shim patterns (Phase 2A consistency).
+- **`engine.begin()` rationale (NEW pattern for Phase 2A)**: Sister modules use `engine.connect()` (read-only context, NO commit) for read-only paths, and `get_db_context()` from `smartbi.database.connection` + explicit `db.commit()` for writes (e.g., `query_templates_write.py`). Drill-down is the FIRST module in `smartbi_compat/` to mix read+write atomically — `engine.begin()` provides the cleanest tx scope for this case (autocommit on context exit, rollback on exception). Could alternatively use `get_db_context() + commit()` pattern for sister consistency; chose `engine.begin()` for explicit tx scope.
+- **Future Tier 3 sister specs**: should adopt one of the two patterns consistently. If `get_db_context()` becomes the established Phase 2A write pattern via more sister adoption, drill-down impl can be retrofitted post-PR-A.
+- **Rejected alternative**: asyncpg native (`async with pool.acquire() as conn`). Rejected because Phase 2A standardized on sync SQLAlchemy + `_to_thread`; diverging here adds maintenance surface area.
+
+**Note on tx propagation/isolation**: `engine.begin()` begins a NEW top-level transaction (no parent join — there's no parent tx in our async-via-`_to_thread` flow). For drill-down's top-level entry case, this matches Java `@Transactional` REQUIRED-default behavior: at top entry, REQUIRED creates a new tx. Isolation defaults to PG `READ_COMMITTED` (asyncpg + SQLAlchemy default). Both match Java `@Transactional` defaults at this entry point.
 
 ### 3.8 `DrilldownBusinessException` + custom handler (T10)
 
@@ -1072,11 +1102,13 @@ public static <T> ApiResponse<T> error(Integer code, String message) {
 
 Note: HTTP status is **200** (controller returns `ResponseEntity.ok(...)` even on error — line 584). The 400 is in the body `code` field only. This is consistent with sister specs (project pattern: HTTP 200 + body success/code for business errors; HTTP 4xx/5xx for infrastructure errors).
 
-Python mirror:
+Python mirror — uses sister-shared `wrap_error` from `smartbi_compat.schema_compat` (R4 cycle 2):
 
 ```python
+from smartbi_compat.schema_compat import wrap_error  # 5-field error envelope (matches actual recorded goldens)
+
 class DrilldownBusinessException(Exception):
-    """Internal exception → caught at route handler → wrapped to ApiResponse.error envelope.
+    """Internal exception → caught at route handler → wrapped via schema_compat.wrap_error.
 
     Mirrors Java BusinessException(code, message) — but withHint/withHintTarget
     are NOT exposed to client per T10 (controller catch flattens to message-only).
@@ -1088,20 +1120,17 @@ class DrilldownBusinessException(Exception):
         super().__init__(message)
 
 
-def _wrap_drilldown_error(message: str, code: int = 400) -> dict:
-    """Mirror ApiResponse.error envelope — 5 fields, no hint/hintTarget.
-
-    Mirrors controller catch behavior: prepends "Drill-down failed: " to the
-    underlying exception message, matching Java line 584.
-    """
-    return {
-        "code": code,
-        "message": f"Drill-down failed: {message}",
-        "data": None,
-        "timestamp": _utc_now_iso(),    # sister-shared helper from analysis_finance.py
-        "success": False,
-    }
+# Caller pattern in route handler (no wrapper needed — schema_compat.wrap_error works directly):
+#     except DrilldownBusinessException as e:
+#         return wrap_error(f"Drill-down failed: {e.message}", code=e.code)
+#
+# `wrap_error` definition lives at backend/python/smartbi_compat/schema_compat.py:59-73
+# and emits {code, message, data: None, timestamp, success: False} — matches actual
+# Java goldens (5-field envelope; actionHint/severity/hintTarget either not emitted
+# or stripped by sister test pattern, see §4.3 test harness strip-extras logic).
 ```
+
+**R1 NOTE (cycle 2 finding, demoted to caveat)**: `ApiResponse.java:25-47` declares 8 fields total (5 always-set by `error()`/`success()` factories + 3 optional UX fields `actionHint, severity, hintTarget` added 2026-04-18). No global `@JsonInclude(NON_NULL)` is configured. **However**, actual recorded goldens (verified `analysis-region-F999.json`, `alerts-F999.json`) emit only the 5 fields — the 3 optional fields appear in some other endpoint goldens but not in our analysis-* / alerts-* goldens. Sister contract test pattern (`test_datasource_contract.py`) defensively strips actionHint/severity/hintTarget before comparison. Drill-down §4.3 test harness inherits this strip pattern for robustness. Do NOT add the 3 fields to Python `wrap_error` output — `wrap_error_with_hint` exists in `schema_compat.py:76-98` for the rare case they're needed.
 
 ### 3.9 Route handler
 
@@ -1125,10 +1154,11 @@ async def drill_down(
             factory_id=auth.factory_id,
             request=request,
         )
-        return wrap_response(result)        # sister-shared helper, ApiResponse success envelope
+        return wrap_response(result)        # schema_compat.wrap_response — 5-field success envelope
     except DrilldownBusinessException as e:
-        # T10: visible body matches ApiResponse.error (5 fields, no hint/hintTarget)
-        return _wrap_drilldown_error(message=e.message, code=e.code)
+        # T10: visible body matches ApiResponse.error 5-field envelope (no hint/hintTarget
+        # per controller catch flattening); see §3.8 R1 note
+        return wrap_error(f"Drill-down failed: {e.message}", code=e.code)
 ```
 
 **HTTP status decision**: returning 200 even for business errors matches Java controller behavior. If sister-spec convention (or Python wrap_response handler) requires 4xx for `success: false`, adjust during impl. **Verify**: how do sister Python endpoints (region/department/sales) handle BusinessException? Does FastAPI default exception handler return 500 for unexpected exceptions, breaking the Java parity? Spec §5 test plan must lock this.
@@ -1143,21 +1173,45 @@ from datetime import date
 class DrillDownRequestModel(BaseModel):
     """Mirror controller-level DrillDownRequestDTO (NOT service-level DrillDownRequest).
 
-    Field names match controller DTO (JSON body keys). For background, the Java
-    controller maps DTO `value`/`filters` → service `filterValue`/`additionalFilters`
-    at SmartBIAnalysisController.java:541-550 — but Python doesn't need an internal
-    rename. Helpers consume `request.value` and `request.filters` directly.
+    The Java controller DTO has only 7 fields (verified `SmartBIAnalysisController.java:787-798`):
+    `dimension, value, parentDimension, parentValue, startDate, endDate, filters`.
+
+    Notably ABSENT from the controller DTO: `level`, `parentContext`, `sortBy`,
+    `sortDirection`, `limit`, `includeChildren`. Although these fields exist on
+    the service-level `DrillDownRequest` (with `@Builder.Default level=1`), the
+    controller's mapping at line 541-550 does NOT set them — so Java service
+    ALWAYS sees `level=1` from HTTP traffic, regardless of what the JSON body
+    contains. Spring's default `fail-on-unknown-properties=false` silently ignores
+    extra JSON fields.
+
+    Practical implications for parity:
+    - Region L3 dead branch (Java line 1988-1992, requires `level > 1`) is
+      UNREACHABLE from HTTP. Per cycle 1 C1 fix pattern: tag as "dead branch
+      in API reality, port verbatim for byte parity, golden recording requires
+      direct service invocation (NOT HTTP)".
+    - Time WEEK/DAY periods (Java line 2042-2052, level=2/3) similarly unreachable
+      from HTTP — Java sees level=1 → MONTH always.
+    - Salesperson dispatch (Java line 2064-2076) is purely filter_value-based,
+      no level check — both branches reachable from HTTP.
+
+    Python Pydantic accepts all 13 field names below for forward-compat with
+    direct (non-HTTP) callers (e.g. `handleDrillDownIntent` AI orchestration may
+    set additional fields). Fields not in controller DTO are accepted but their
+    values from HTTP body are dead-pass-through (treated as if Java service used
+    @Builder.Default).
     """
+    # Fields ACTUALLY in controller DTO (7 fields, JSON body delivers these):
     dimension: str = Field(..., min_length=1, description="下钻维度")
     value: Optional[str] = None              # controller field name (Java DTO uses `value`)
-    parentContext: Optional[str] = None       # service-level field — sometimes set by callers
     parentDimension: Optional[str] = None
     parentValue: Optional[str] = None
     filters: dict = Field(default_factory=dict)
     startDate: Optional[date] = None
     endDate: Optional[date] = None
-    level: Optional[int] = None              # @Builder.Default 1 in service DTO; controller may pass None
-    # Out-of-scope fields ACCEPTED (for compat) but IGNORED by dispatch:
+    # Fields NOT in controller DTO — accepted for forward-compat with non-HTTP callers
+    # but dead-pass-through from HTTP traffic (Java service sees @Builder.Default values):
+    parentContext: Optional[str] = None       # service-level field; never set by HTTP path
+    level: Optional[int] = 1                  # @Builder.Default 1 in service DTO; default 1 here for parity
     sortBy: Optional[str] = None
     sortDirection: Optional[str] = None
     limit: Optional[int] = None
@@ -1198,10 +1252,16 @@ JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
     drill-down-F999-region-L2.json \
     --method POST --data-json '{"dimension":"region","value":"华东","level":1,"startDate":"2024-01-01","endDate":"2024-12-31"}'
 
-JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
-    '/api/mobile/{factoryId}/smart-bi/drill-down' \
-    drill-down-F999-region-L3-dead.json \
-    --method POST --data-json '{"dimension":"region","value":"上海","level":2,"startDate":"2024-01-01","endDate":"2024-12-31"}'
+# NOTE: drill-down-F999-region-L3-dead.json is INTENTIONALLY OMITTED.
+# Region L3 (city) dispatch (Java line 1988-1992) requires `level > 1`, but
+# the controller DTO has no `level` field — Spring silently ignores `"level":2`
+# in the JSON body, Java service sees @Builder.Default level=1, takes L2 path
+# (province) instead. Recording with level=2 produces an L2 golden, not L3.
+# H2 helper (`_drilldown_get_city_ranking`) is implemented for byte parity per
+# Java line 1988-1992 verbatim, tested via direct unit test (NOT golden-driven)
+# in PR-B test_drilldown_arithmetic.py. Same situation for time WEEK/DAY paths
+# (Java line 2042-2052, level=2/3) — only MONTH (level=1, default) is HTTP-reachable.
+# 8 goldens recorded total (not 9 as originally enumerated).
 
 # Department: L1 + L2
 JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
@@ -1307,6 +1367,14 @@ def _make_token(factory_id: str, user_id: int = 1) -> str:
 
 VOLATILE = frozenset({"timestamp", "generatedAt", "lastUpdated", "cacheExpireAt"})
 
+# R1 (cycle 2 demoted): ApiResponse.java has 8 fields total — 5 always-set by
+# error()/success() factories + 3 optional UX fields (actionHint, severity, hintTarget)
+# added 2026-04-18 with no @JsonInclude(NON_NULL). Actual recorded goldens for
+# analysis-* / alerts-* endpoints emit only 5 fields, but other endpoints' goldens
+# may include the 3 nulls. Sister test pattern (test_datasource_contract.py) strips
+# them defensively before comparison — drill-down inherits the pattern for robustness.
+ENVELOPE_EXTRAS = frozenset({"actionHint", "severity", "hintTarget"})
+
 
 def _strip_volatile(obj):
     if isinstance(obj, dict):
@@ -1314,6 +1382,16 @@ def _strip_volatile(obj):
     if isinstance(obj, list):
         return [_strip_volatile(item) for item in obj]
     return obj
+
+
+def _strip_envelope_extras(body: dict) -> dict:
+    """Drop optional UX fields (actionHint/severity/hintTarget) from envelope before
+    byte-shape compare. Sister pattern from test_datasource_contract.py.
+
+    These 3 fields exist in ApiResponse but are server-side enrichments not relevant
+    to drill-down byte parity (per T10 hint flatten + R1 cycle 2 finding).
+    """
+    return {k: v for k, v in body.items() if k not in ENVELOPE_EXTRAS}
 
 
 @pytest.fixture(scope="module")
@@ -1332,8 +1410,9 @@ def client(production_app):
     ("drill-down-F999-region-L1", {"dimension": "region", "startDate": "2024-01-01", "endDate": "2024-12-31"}),
     ("drill-down-F999-region-L2", {"dimension": "region", "value": "华东", "level": 1,
                                      "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-region-L3-dead", {"dimension": "region", "value": "上海", "level": 2,
-                                         "startDate": "2024-01-01", "endDate": "2024-12-31"}),
+    # ("drill-down-F999-region-L3-dead", ...) OMITTED per §4.1 R3 — controller DTO has
+    # no `level` field, JSON `"level":2` silently ignored, Java sees default level=1 → L2.
+    # H2 helper (`_drilldown_get_city_ranking`) tested via direct unit test in PR-B.
     ("drill-down-F999-department-L1", {"dimension": "department", "startDate": "2024-01-01",
                                          "endDate": "2024-12-31"}),
     ("drill-down-F999-department-L2", {"dimension": "department", "value": "销售部",
@@ -1378,7 +1457,8 @@ def test_drilldown_byte_shape_against_golden(client, monkeypatch, golden_name, r
 
 
 def test_drilldown_unknown_dim_error_envelope(client):
-    """T10 error envelope shape: 5 fields, no hint/hintTarget."""
+    """T10 error envelope shape: 5 always-set fields (actionHint/severity/hintTarget
+    stripped per R1 cycle 2 + sister pattern)."""
     resp = client.post(
         "/api/mobile/F999/smart-bi/drill-down",
         json={"dimension": "invalid", "startDate": "2024-01-01", "endDate": "2024-12-31"},
@@ -1386,19 +1466,20 @@ def test_drilldown_unknown_dim_error_envelope(client):
     )
     # HTTP 200 (Java controller returns ResponseEntity.ok even on error)
     assert resp.status_code == 200
-    body = resp.json()
+    body = _strip_envelope_extras(resp.json())   # R1 strip pattern
     assert body["success"] is False
     assert body["code"] == 400
     assert "不支持的下钻维度" in body["message"]
     assert body["data"] is None
-    # T10: NO hint/hintTarget keys
-    assert "hint" not in body
-    assert "hintTarget" not in body
+    # T10: hint/hintTarget were already stripped via _strip_envelope_extras above
+    # (Python doesn't emit them; Java may or may not depending on version, both stripped for compare)
 
     with io.open(GOLDEN_DIR / "drill-down-F999-error-unknown-dim.json", encoding="utf-8") as f:
         golden = json.load(f)
-        golden_body = _strip_volatile(golden.get("data", golden) if isinstance(golden, dict) else golden)
-    assert _strip_volatile(body) == golden_body
+        golden_body = _strip_envelope_extras(_strip_volatile(
+            golden.get("data", golden) if isinstance(golden, dict) else golden
+        ))
+    assert _strip_envelope_extras(_strip_volatile(body)) == golden_body
 ```
 
 ---
@@ -1544,7 +1625,14 @@ class TestRecordUsageSql:
 ```python
 @pytest.fixture
 def mock_drilldown_helpers(monkeypatch):
-    """Mock 5 sister + 5 owned helpers + recordUsage for unit + contract tests."""
+    """Mock 5 sister + 5 owned helpers + recordUsage for unit + contract tests.
+
+    R8 NOTE (cycle 2): These fakes return MINIMAL stub shapes for unit-level dispatch
+    tests. They do NOT match the full Lombok @Data declaration order from H1-H5
+    docstrings. Golden-driven contract tests (test_drilldown_byte_shape_against_golden)
+    use real shape from F999 goldens — those test the full key set. Use these stubs
+    only for branching/dispatch verification, NOT for shape assertions.
+    """
     from smartbi_compat.api import analysis_drilldown
 
     def fake_region_ranking(conn, fid, sd, ed): return [{"name": "华东", "value": 1000}]
@@ -1660,7 +1748,7 @@ In drill-down context, Decimal fields appear in:
 
 **DateRange dict (sister-shared) — Rule 9 7-field shape**:
 - 7 fields when serialized via Lombok @Data: `startDate, endDate, granularity, originalExpression, relative, days, valid` (last 2 are derived getters)
-- Drill-down does NOT emit DateRange in response (composite endpoints do; drill-down response has no top-level dateRange field)
+- Drill-down does NOT emit DateRange in response (composite endpoints do; drill-down response has no top-level dateRange field). H4 product distribution chart's nested `ChartConfig` may include date-range info embedded in axis labels or title strings — those are plain strings, NOT DateRange objects, so Rule 9 7-field shape is N/A for drill-down's serialized output. R11 cycle 2 nit clarification.
 
 ---
 
@@ -1727,6 +1815,12 @@ In drill-down context, Decimal fields appear in:
 - If `customer` dim is requested by frontend later: separate Wave 4+ spec.
 - If `handleDrillDownIntent` AI orchestration path needs Python port: separate Phase 2B-β spec.
 
+### 7.5 Phase 3+ deferred cleanups (organizer-acknowledged divergences)
+
+| Risk | Phase | Mitigation / Decision |
+|---|---|---|
+| **R2 cost_amount write divergence** | Phase 3+ cleanup | Java `recordUsage` (`SmartBIServiceImpl.java:1161-1176`) computes `cost_amount` via `calculateCost(factoryId, tokenCount, cacheHit)` (`SmartBIServiceImpl.java:1954-1970`), reading `smart_bi_billing_config.pricePerQuery` for non-unlimited factories. Python hardcodes `Decimal("0")`. Phase 2A scope = API response parity, NOT DB write parity. `cost_amount` is DB-write-only column (NOT in API response), byte-shape gate unaffected. Future Phase 3 analytics integrity concern when Python-written usage records aggregate cross-factory: Python rows show 0, Java rows show computed. Cleanup options: (a) Phase 3 chat ports `calculateCost` to Python (~1h impl, requires `_drilldown_calculate_cost(conn, factory_id, token_count, cache_hit)` helper + `smart_bi_billing_config` query), (b) Phase 3 ops backfill computed value via SQL job. Decision deferred to Phase 3 ops. |
+
 ---
 
 ## 8. Open risks + mitigations
@@ -1742,7 +1836,7 @@ In drill-down context, Decimal fields appear in:
 | T5 | `_default_date_range_this_month()` returns LAST day of current month (NOT today) | §3.3 |
 | T7 | `_drilldown_record_usage` SQL INSERT to `smart_bi_usage_records` (PLURAL) with Java-line-1066 default args | §3.6 |
 | T8 | `engine.begin()` mixed read+write tx via `_to_thread` shim, asyncpg defaults (REQUIRED + READ_COMMITTED) | §3.7 + §7 risks below |
-| T10 | Visible body shape 5 fields (no hint/hintTarget) — controller catch flattens. Python `_wrap_drilldown_error` produces ApiResponse.error envelope | §3.8 |
+| T10 | Visible body shape 5 fields via `wrap_error` (schema_compat.py:59-73) — controller catch flattens hint/hintTarget. R1 cycle 2: Java may emit 8 fields (5 + 3 optional UX); tests strip 3 extras per sister pattern. | §3.8 |
 
 ### 8.2 Verify-via-golden risks (impl chat MUST 录 golden 验证)
 
@@ -1766,6 +1860,12 @@ In drill-down context, Decimal fields appear in:
 
 5. **`smartBIService==null` controller fallback (line 555-579)** is dead code: Spring DI never null. Out of scope per §1.5.
 
+6. **`cost_amount` write divergence** (R2 cycle 2): Java computes via `calculateCost`; Python hardcodes `Decimal("0")`. `cost_amount` is DB-write-only (not in API response) — byte-shape gate unaffected. Phase 3+ cleanup deferred per §7.5. See §3.6 helper docstring + §1.6 side effects entry.
+
+7. **Pydantic 422 vs Java 200+sanitized NPE on missing/null `dimension`** (R6 cycle 2): Pydantic `dimension: str = Field(..., min_length=1)` returns HTTP 422 on missing/empty input. Java side: controller has no `@Valid`, service receives null → NullPointerException → controller catch (line 582-585) → `ApiResponse.error("Drill-down failed: " + ErrorSanitizer.sanitize(e))` → HTTP 200, body `{code: 400, message: "Drill-down failed: 操作失败，请稍后重试", success: false}`. Python's 422 is more correct; sister Python modules accept this divergence. Documented as accepted Phase 2A divergence — frontend already handles 422 from other Pydantic-validated endpoints.
+
+8. **Malformed JSON / wrong content-type** (R6b cycle 2): FastAPI returns 422/415 with FastAPI's default error envelope (`{detail: ...}`), NOT ApiResponse envelope. Spring would also return 4xx but with different message shape. Both reject malformed input — divergence is in error envelope shape, not behavior. Accepted Phase 2A divergence; downstream clients should handle non-ApiResponse 4xx for these edge cases.
+
 ### 8.4 Risk mitigation 总策略 (impl chat HARD prereq)
 
 1. **Region PR-A + Department impl PR + Sales 5/5 PRs ALL landed** before drill-down PR-A starts. Otherwise broken imports.
@@ -1779,8 +1879,8 @@ In drill-down context, Decimal fields appear in:
 1. **`_drilldown_record_usage` SQL: cost_amount BigDecimal serialization**: SQLAlchemy maps Decimal → numeric column natively, but verify `Decimal("0")` doesn't trigger asyncpg/SQLAlchemy precision issue with `DECIMAL(10,4)` column.
 2. **`SmartBiUsageRecord` entity has `@Where(deleted_at IS NULL)`** — INSERT does not set deleted_at (defaults to NULL), so SELECT * will see the row. Verify behavior.
 3. **HTTP status code on BusinessException**: Java returns 200 with body code=400 (line 584 `ResponseEntity.ok(...)`). FastAPI default would 4xx for HTTPException. Python custom handler MUST return 200 to match. Verify sister spec pattern.
-4. **Pydantic DrillDownRequestModel custom field aliasing**: controller-level field `value` vs internal `filter_value`. Pydantic v1 vs v2 behavior differs — confirm project's Pydantic version (likely v1 per Phase 2A baseline).
-5. **`time` dim level None vs missing from JSON body**: Pydantic default `level: Optional[int] = None` — if frontend omits, Pydantic emits None. Java `@Builder.Default level=1` on service DTO — but controller line 541-550 passes `request.getLevel()` directly without checking, so if controller DTO also has `@Builder.Default level=1`, Java sees 1 for missing. Verify controller DTO definition.
+4. **Pydantic DrillDownRequestModel** (RESOLVED cycle 2 R7): `backend/python/requirements.txt:27` confirms `pydantic>=2.5,<3` — project uses Pydantic v2.5+. Use v2 idioms (`Field(..., min_length=1)`, `model_dump()`, `model_validate()`). No need for v1 `parse_obj` / `Config` class. Field aliases via `Field(alias="...")` if mapping needed (drill-down doesn't need — see §3.10 cleanup).
+5. **`time` dim level None vs missing from JSON body**: RESOLVED (cycle 2 R3). Controller `DrillDownRequestDTO` (`SmartBIAnalysisController.java:787-798`) has NO `level` field. Spring `fail-on-unknown-properties=false` silently ignores `"level":N` in JSON body. Java service ALWAYS sees `level=1` (`@Builder.Default` on `DrillDownRequest:96-97`). Python Pydantic must also default to `1` (NOT `None`) to match Java parity — see §3.10 model definition.
 
 ---
 
@@ -1805,7 +1905,7 @@ In drill-down context, Decimal fields appear in:
 - `docs/superpowers/specs/2026-05-01-phase2a-query-templates-design.md` (PR #48) — RLS app-layer + write side-effect pattern. Drill-down's T7+T11+T12 directly inherits this. query-templates spec has 4 write endpoints (POST/PUT/DELETE × 2 — query templates + categories) — drill-down has 1 (recordUsage), but pattern is identical.
 
 **Phase 2B-β AI orchestration (lineage cite, NOT in scope)**:
-- `docs/superpowers/specs/2026-04-30-phase2b-beta-design.md` + `docs/superpowers/specs/2026-04-29-phase2b-ai-intent-layer-design.md` — `handleDrillDownIntent` (`SmartBIServiceImpl.java:1731-1741`) calls `processDrillDown` from AI intent path. Separate entry point with separate spec, but shares the underlying service code — if the Python port of `_process_drilldown_tx` is later wrapped by Phase 2B-β AI Python port, that's a future concern. (Tracking PR # not verified — defer to cycle 3 reviewer.)
+- `docs/superpowers/specs/2026-04-30-phase2b-beta-design.md` + `docs/superpowers/specs/2026-04-29-phase2b-ai-intent-layer-design.md` — `handleDrillDownIntent` (`SmartBIServiceImpl.java:1728-1742`) calls `processDrillDown` from AI intent path. Separate entry point with separate spec, but shares the underlying service code — if the Python port of `_process_drilldown_tx` is later wrapped by Phase 2B-β AI Python port, that's a future concern. (Tracking PR # not verified — defer to cycle 3 reviewer.)
 
 **Apr 28 P0 RLS gap finding (memory cite)**:
 - `feedback_p0_rls_gap_finding.md` — sister tables `smart_bi_pg_excel_uploads`, `smart_bi_analysis_results`, `smart_bi_llm_fallback_log` had application-layer-only tenant isolation (no PG RLS); fixed in `V20260502_03/_04`. Drill-down's T11+T12 finding mirrors this exactly; resolution (add PG RLS) is Phase 3+ separate concern.
