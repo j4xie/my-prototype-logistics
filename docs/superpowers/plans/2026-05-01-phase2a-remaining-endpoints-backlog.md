@@ -64,7 +64,7 @@
 | 25 | `GET /incentive-plan/{targetType}/{targetId}` | ✅ | #43 | Tier 1 metric query |
 | 26 | `GET /analysis/department` (composite) | ✅ | #52 (PR-A) + #57 (PR-B) | composite + 4 sub-services + 21 arithmetic tests |
 | 27 | `GET /analysis/inventory` (4 modes) | ✅ | #53 (PR-A0+PR-A) + #54 (PR-B) | 4 modes + DashboardResponse default mode |
-| 28 | `GET /analysis/region` (per-type, PR-A) | 🚧 PR-A ✅ | #56 | PR-A shipped; PR-B (default mode) + PR-C (depth) in flight |
+| 28 | `GET /analysis/region` (per-type + populated goldens + depth) | ✅ | #56 (PR-A) + #60 (PR-B populated goldens + depth) | region domain COMPLETE |
 
 **Spec 已 ship (impl in flight):**
 - `GET /analysis/procurement` per-type + default mode — spec PR #40 merged 2026-05-01; impl in flight (Chat 4 PR-A)
@@ -79,7 +79,7 @@
 | Chat | Task | Worktree / Branch | Status |
 |---|---|---|---|
 | Chat 1 | `/analysis/inventory` PR-C (arithmetic depth) | `.worktrees/phase2a-inventory-impl` (`phase2a/inventory-pr-b` branch carries WIP) | 🚧 in flight, post-#54 ship |
-| Chat 2 | `/analysis/region` PR-B (default mode DashboardResponse) + PR-C (depth) | `.worktrees/phase2a-region-impl` | 🚧 in flight, post-#56 PR-A ship |
+| Chat 2 | `/analysis/region` PR-B (populated goldens + arithmetic depth) | `.worktrees/phase2a-region-impl` | ✅ COMPLETE — #60 shipped 2026-05-02; chat free for next dispatch |
 | Chat 3 | `/drill-down` spec | `.worktrees/phase2a-spec-drill-down` | 🚧 spec audit cycle 2+, no PR yet |
 | Chat 4 | `/analysis/procurement` PR-A (per-type 3 modes + foundation) | `.worktrees/phase2a-procurement-impl` (locked) | 🚧 in flight, no PR yet (spec #40 merged) |
 | Chat 5 (this map's writer) | `/analysis/procurement` PR-B (standby) | `.worktrees/phase2a-procurement-pr-b` ready | ⏸️ standby until Chat 4 PR-A merges |
@@ -257,10 +257,10 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 |---|---|---|
 | ~~/analysis/department~~ | ✅ #52 + #57 | DONE |
 | ~~/analysis/inventory (4 modes)~~ | ✅ #53 + #54 (PR-C in flight) | DONE except depth tests |
-| /analysis/region | 🚧 PR-A ✅ #56, PR-B/C in flight | ~6-10h remaining |
+| ~~/analysis/region~~ | ✅ #56 (PR-A) + #60 (PR-B populated goldens + depth) | DONE |
 | /analysis/procurement | 🚧 PR-A in flight (Chat 4), PR-B standby (me), PR-C TBD | ~10-15h remaining |
 
-**Tier 2 残余**: ~16-25h across region PR-B/C + procurement PR-A/B/C.
+**Tier 2 残余**: ~10-15h across procurement PR-A/B/C only (region domain complete).
 
 ### Tier 3 (HIGH risk, 大工程)
 
@@ -296,7 +296,7 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 **Wave 3** (Tier 2, 平行) — 75% DONE
 - ✅ /analysis/department (#52 + #57)
 - ✅ /analysis/inventory (#53 + #54, PR-C in flight)
-- 🚧 /analysis/region (PR-A #56 ✅; Chat 2 PR-B/C in flight)
+- ✅ /analysis/region (#56 PR-A + #60 PR-B populated goldens + depth)
 - 🚧 /analysis/procurement (Chat 4 PR-A in flight; me PR-B standby; PR-C TBD)
 
 **Wave 4** (Tier 3, 串行) — IN FLIGHT
@@ -359,8 +359,8 @@ For DashboardResponse-emitting endpoints (default mode of inventory / region / p
 
 | 类别 | 数量 | 备注 |
 |---|---|---|
-| ✅ 已 ship 到 main | **~32 endpoints + sub-types** | 含 finance 5 sister × (PR-A + PR-B) + sub-endpoints + sales 5 + ops endpoints + Tier 2 (department/inventory) + region PR-A |
-| 🚧 in-flight (5 chats) | **~6 endpoints + depth tests** | procurement (PR-A/B/C) + region (PR-B/C) + inventory PR-C + drill-down spec |
+| ✅ 已 ship 到 main | **~33 endpoints + sub-types** | 含 finance 5 sister × (PR-A + PR-B) + sub-endpoints + sales 5 + ops endpoints + Tier 2 (department/inventory/region all complete) |
+| 🚧 in-flight (4 chats) | **~5 endpoints + depth tests** | procurement (PR-A/B/C) + inventory PR-C + drill-down spec |
 | ⏸️ deferred §2.4 | **5 endpoints** | quality + production (mock) + /preview + /upload + /apply (stub) |
 | ❌ true backlog | **2 endpoints** | /query (out-of-scope) + /drill-down (spec→impl gated) |
 | Dashboard subset | ~10 endpoints | Phase 2A+1 candidates |
@@ -381,7 +381,7 @@ Notable subset:
 
 | 类别 | 估时 | 状态 |
 |---|---|---|
-| Region PR-B + PR-C (Chat 2) | ~6-10h | in flight |
+| ~~Region PR-B (Chat 2)~~ | ✅ DONE | #60 shipped 2026-05-02 |
 | Procurement PR-A (Chat 4) | ~5-7h | in flight |
 | Procurement PR-B (me, gated on PR-A) | ~3-4h | standby |
 | Procurement PR-C (TBD) | ~3-5h | gated on PR-B |
@@ -389,7 +389,7 @@ Notable subset:
 | Drill-down spec (Chat 3) | ~3-4h | spec audit cycle 2+ |
 | Drill-down impl PR-A/B/C (gated on spec) | ~15-25h | not started |
 
-**Phase 2A 100% 完整收尾估时**: ~38-59h 剩余, 跨 5 个并行 chat. 实际墙钟 ~3-5 个工作日 (假设 Chat 4 procurement PR-A ship 后 Wave 3 顺利 cascade).
+**Phase 2A 100% 完整收尾估时**: ~32-49h 剩余, 跨 4 个并行 chat (Chat 2 region 已 ship #60, freed). 实际墙钟 ~3-5 个工作日 (假设 Chat 4 procurement PR-A ship 后 Wave 3 顺利 cascade).
 
 **T6 nginx cutover 触发条件** (per PR #59 §9.1):
 - Phase 2A 100% in-scope endpoints ship 到 main
@@ -407,7 +407,7 @@ Notable subset:
 ### 8.1 Active chat assignments (ongoing, do not interfere)
 
 - **Chat 1**: inventory PR-C (arithmetic depth tests post-#54 ship). Worktree `phase2a-inventory-impl`. Gated on Chat 1's own discretion.
-- **Chat 2**: region PR-B (default mode DashboardResponse, post-#56 ship) + PR-C (depth tests). Worktree `phase2a-region-impl`. Apply Rule 9 §9.2 16-field DashboardResponse + AIInsight 5-key from inventory PR-B template.
+- **Chat 2**: ✅ region PR-B shipped #60 (populated goldens + arithmetic depth). Worktree `phase2a-region-impl` available for cleanup or next dispatch.
 - **Chat 3**: drill-down spec audit cycle 2+. Worktree `phase2a-spec-drill-down`. Impl gated on spec PR ship.
 - **Chat 4**: procurement PR-A (per-type 3 modes + foundation). Worktree `phase2a-procurement-impl` (locked). 4-6h ship estimate from start of chat.
 - **Chat 5 (this map's writer)**: procurement PR-B standby. Worktree `phase2a-procurement-pr-b` ready. 10-task plan locked, golden-first workflow per Rule 9 §9.2.
