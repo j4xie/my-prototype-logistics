@@ -1665,6 +1665,253 @@ In drill-down context, Decimal fields appear in:
 
 ---
 
+## 7. PR 切片 + 顺序
+
+### 7.1 Spec PR (本 PR)
+
+**Branch**: `phase2a/spec-drill-down`
+**Base**: `origin/main` (after rebase to latest, currently `b91bf94a7` post #53 inventory PR-A)
+**Files**:
+- `docs/superpowers/specs/2026-05-02-phase2a-drill-down-design.md` (~2500 LOC, this file)
+- `docs/superpowers/specs/2026-05-02-phase2a-drill-down-design-notes.md` (~445 LOC, step 5 scratchpad — kept for audit trail)
+**估时**: 6-10h spec write + 4-cycle audit + ship
+**Merge prereq**: 4-cycle audit pass (self / spec-reviewer / cross-spec / final-impl-reviewer)
+
+### 7.2 PR-A: Foundation + contract tests
+
+**Branch**: `phase2a/drill-down-impl` (or sister-naming convention)
+**Base**: `origin/main` after this spec PR + Tier 2 PR-As (region #41 PR-A, department #36 impl) ALL land
+**Files**:
+- `backend/python/smartbi_compat/api/analysis_drilldown.py` (~1500-1800 LOC)
+- `backend/python/main.py` (+2 lines: import + include_router)
+- `tests/python/smartbi_compat/test_analysis_drilldown_contract.py` (~500-800 LOC)
+- 9× `tests/fixtures/java-smartbi-golden/drill-down-F999-*.json`
+
+**HARD prereqs (impl chat MUST verify before plan finalization)**:
+1. **Region PR-A landed** — `_get_region_ranking` (or analog) importable from `analysis_region.py`
+2. **Department PR-A landed** — `_get_department_ranking` importable from `analysis_department.py`
+3. **Sales 5/5 PRs already landed** (#14, #15, #20) — `_get_product_ranking`, `_get_sales_trend_chart`, `_get_salesperson_ranking` importable from `analysis_sales.py`
+4. **`record-java-golden.sh` extended for POST + JSON body** (separate PR per §4.1 Option A)
+5. **9 F999 goldens recorded** before PR-A plan finalizes (per §4.1 commands)
+
+**估时**: 6-8h impl + test write + smoke
+
+**Acceptance**:
+- All 9 dim-state golden tests pass via dict-eq (with `_strip_volatile`)
+- T10 unknown-dim error envelope matches golden 5-field shape (NO hint/hintTarget)
+- T7 `recordUsage` writes 1 row per success request (verify via SQL count)
+- T8 transaction atomicity: BusinessException → no usage row written
+- T11/T12 cross-tenant 4-corner tests pass (per §5.5)
+- Lint clean (project-standard linter)
+- Test env (Java 10011) deploy → smoke compare on real F001 data (skipped manual test, run by hand pre-PR-merge)
+
+### 7.3 PR-B: Arithmetic depth tests
+
+**Branch**: `phase2a/drill-down-arithmetic`
+**Base**: `origin/main` after PR-A merge
+**Files**:
+- `tests/python/smartbi_compat/test_analysis_drilldown_arithmetic.py` (~600-900 LOC)
+
+**估时**: 3-4h test write
+**Goal**: Lock T1-T10 traps with deep unit tests covering edge cases not exercisable via golden contract tests:
+- T4 `_compute_drill_path` — 6 edge cases (none/none, parent-only, filter-only, both, empty-string variants, multi-level)
+- T5 `_default_date_range_this_month` — 4 calendar edge cases (Feb leap/non-leap, Dec, mid-month)
+- T2 dead level>1 parity — region L3 + time period mapping
+- T3 dimension casing — REGION/Region/region all dispatch
+- T7 INSERT shape — all 9 columns including null defaults
+- T1 each missing helper × 1+ test (5 helpers minimum)
+- T9 HashMap mutation order verification (per-dim)
+
+### 7.4 Subsequent waves (out of scope)
+
+- No further waves planned for drill-down — this is the **last Tier 3 endpoint** in Phase 2A scope per organizer decision.
+- If `customer` dim is requested by frontend later: separate Wave 4+ spec.
+- If `handleDrillDownIntent` AI orchestration path needs Python port: separate Phase 2B-β spec.
+
+---
+
+## 8. Open risks + mitigations
+
+### 8.1 Lock-in risks (spec 强制 mirror,无 risk)
+
+| ID | 描述 | 锁定位置 |
+|---|---|---|
+| T1 | 5 missing Python helpers (province/city/dept-detail/product-distribution-chart/salesperson-metrics) owned by drill-down (D1) with `_drilldown_*` prefix (D2) | §3.4 |
+| T2 | level always 1 in API reality; level>1 branches port verbatim for byte parity (D8) | §3.5 region/time processors |
+| T3 | `dimension.lower()` case-insensitive dispatch; original casing preserved in response | §3.7 |
+| T4 | `_compute_drill_path` parent_context first, fall through to filter_value, "全部" fallback | §3.2 |
+| T5 | `_default_date_range_this_month()` returns LAST day of current month (NOT today) | §3.3 |
+| T7 | `_drilldown_record_usage` SQL INSERT to `smart_bi_usage_records` (PLURAL) with Java-line-1066 default args | §3.6 |
+| T8 | `engine.begin()` mixed read+write tx via `_to_thread` shim, asyncpg defaults (REQUIRED + READ_COMMITTED) | §3.7 + §7 risks below |
+| T10 | Visible body shape 5 fields (no hint/hintTarget) — controller catch flattens. Python `_wrap_drilldown_error` produces ApiResponse.error envelope | §3.8 |
+
+### 8.2 Verify-via-golden risks (impl chat MUST 录 golden 验证)
+
+| ID | 描述 | 验证步骤 |
+|---|---|---|
+| T6 | Per-dim shape variance — 9 dimension states × layers, each emits different keys | Record 9 F999 goldens (§4.1); verify each via dict-eq test (§4.3) |
+| T9 | Top-level HashMap key order — per-dim hash bucket | Each F999 golden inspected via `jq -r 'keys_unsorted[]'`; Python dict literal mirror per dim |
+| T10 detail | ApiResponse.error 5-field hash order (code/message/data/timestamp/success) | Golden `drill-down-F999-error-unknown-dim.json` inspect |
+| Rule 9 ChartConfig | xaxisField/yaxisField LOWERCASE + empty-case emits nulls | Golden `drill-down-F999-product.json` (ChartConfig nested) inspect |
+| Rule 9 DateRange | 7 fields including derived getters (days, valid) | Drill-down does not emit DateRange — N/A for this endpoint, but pre-existing risk for sister composite endpoints |
+
+### 8.3 Already-known caveats (Java 既有行为,Python mirror 不修)
+
+1. **`String.format` Locale-dependent**: Java JVM Locale = en_US in production; Python `f"{val:,.2f}"` matches. Inherited from sister specs.
+
+2. **HashMap iteration order non-deterministic across Java versions**: Java 21 (current prod) has stable hash buckets for given key set; Java 22+ may differ. Phase 2A locks against Java 21 specifically. Strict-byte gate (Phase 3+) needs canonical compare to handle this.
+
+3. **`recordUsage` ignores `userId` from SecurityContext**: Java line 1066 explicitly passes `null` for query_text + does not pass user_id. Python mirrors to match DB write pattern. Analytics on usage records show `user_id IS NULL` for DRILLDOWN actions — known by analytics team.
+
+4. **`@RequirePermission("analytics:read_write")` enforcement**: Python relies on JWT `role` claim and upstream `verify_jwt_and_factory` filter. There's no per-endpoint ACL check inside `analysis_drilldown.py`. Sister-spec discipline (region/finance/sales) — same pattern.
+
+5. **`smartBIService==null` controller fallback (line 555-579)** is dead code: Spring DI never null. Out of scope per §1.5.
+
+### 8.4 Risk mitigation 总策略 (impl chat HARD prereq)
+
+1. **Region PR-A + Department impl PR + Sales 5/5 PRs ALL landed** before drill-down PR-A starts. Otherwise broken imports.
+2. **Extend `record-java-golden.sh` for POST** (Option A) BEFORE 9 goldens record.
+3. **Record 9 F999 goldens** BEFORE PR-A plan finalizes (per §4.1 commands).
+4. **Inspect each golden's HashMap key order** via jq; Python dict literal mirror per dim.
+5. **Test env (Java 10011) deploy + F001 manual smoke compare** BEFORE PR-A merge.
+
+### 8.5 Spec-level open questions (impl chat resolve)
+
+1. **`_drilldown_record_usage` SQL: cost_amount BigDecimal serialization**: SQLAlchemy maps Decimal → numeric column natively, but verify `Decimal("0")` doesn't trigger asyncpg/SQLAlchemy precision issue with `DECIMAL(10,4)` column.
+2. **`SmartBiUsageRecord` entity has `@Where(deleted_at IS NULL)`** — INSERT does not set deleted_at (defaults to NULL), so SELECT * will see the row. Verify behavior.
+3. **HTTP status code on BusinessException**: Java returns 200 with body code=400 (line 584 `ResponseEntity.ok(...)`). FastAPI default would 4xx for HTTPException. Python custom handler MUST return 200 to match. Verify sister spec pattern.
+4. **Pydantic DrillDownRequestModel custom field aliasing**: controller-level field `value` vs internal `filter_value`. Pydantic v1 vs v2 behavior differs — confirm project's Pydantic version (likely v1 per Phase 2A baseline).
+5. **`time` dim level None vs missing from JSON body**: Pydantic default `level: Optional[int] = None` — if frontend omits, Pydantic emits None. Java `@Builder.Default level=1` on service DTO — but controller line 541-550 passes `request.getLevel()` directly without checking, so if controller DTO also has `@Builder.Default level=1`, Java sees 1 for missing. Verify controller DTO definition.
+
+---
+
+## 9. References
+
+### 9.1 Cross-spec lineage (cycle 3 audit citations)
+
+**Tier 2 sister specs (4-件套)**:
+- `docs/superpowers/specs/2026-05-01-phase2a-analysis-region-design.md` (PR #41) — composite-only §1.3 / Map.of(N) Rule 8 / Lombok @Data declaration order pattern / R-T13 cross-spec divergence (region's `_calculate_completion_rate` arithmetic order)
+- `docs/superpowers/specs/2026-05-01-phase2a-analysis-department-design.md` (PR #36) — composite-only §1.3 lineage establish / Tier 2 trap cataloging template
+- `docs/superpowers/specs/2026-05-01-phase2a-analysis-procurement-design.md` (PR #40) — namespace-isolation naming convention (I6 fix), procurement spec uses `_procurement_*` prefix to avoid collisions — drill-down's `_drilldown_*` prefix (D2) directly inherits this pattern
+- `docs/superpowers/specs/2026-05-01-phase2a-analysis-inventory-design.md` (PR #47) — multi-mode dispatch pattern (4 modes); drill-down's 5-dim dispatch is similar topology
+
+**Wave 1 finance specs**:
+- `docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-cost-design.md` (PR #25) — cost trap cataloging
+- `docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-profit-design.md` (PR #21+22) — `_decimal_to_number` helper introduction (Rule 4)
+- `docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-payable-design.md` (PR #18) — first ported finance per-type endpoint
+- `docs/superpowers/specs/2026-05-01-phase2a-analysis-finance-receivable-design.md` (PR #33+#42) — receivable per-type
+- `docs/superpowers/specs/2026-05-01-phase2a-analysis-finance-budget-design.md` (PR #34+#38) — budget per-type, R-T8 Map.of(N) hash discovery via `comparison.options.series` golden inspection
+
+**Wave 2 / Tier 1 specs**:
+- `docs/superpowers/specs/2026-05-01-phase2a-query-templates-design.md` (PR #48) — RLS app-layer + write side-effect pattern. Drill-down's T7+T11+T12 directly inherits this. query-templates spec has 4 write endpoints (POST/PUT/DELETE × 2 — query templates + categories) — drill-down has 1 (recordUsage), but pattern is identical.
+
+**Phase 2B-β AI orchestration (lineage cite, NOT in scope)**:
+- `docs/superpowers/specs/2026-04-22-phase2b-beta-ai-orchestration-design.md` (PR #24) — `handleDrillDownIntent` (`SmartBIServiceImpl.java:1731-1741`) calls `processDrillDown` from AI intent path. This is a separate entry point with separate spec, but shares the underlying service code — if the Python port of `_process_drilldown_tx` is later wrapped by Phase 2B-β AI Python port, that's a future concern.
+
+**Apr 28 P0 RLS gap finding (memory cite)**:
+- `feedback_p0_rls_gap_finding.md` — sister tables `smart_bi_pg_excel_uploads`, `smart_bi_analysis_results`, `smart_bi_llm_fallback_log` had application-layer-only tenant isolation (no PG RLS); fixed in `V20260502_03/_04`. Drill-down's T11+T12 finding mirrors this exactly; resolution (add PG RLS) is Phase 3+ separate concern.
+
+**Apr 28 cross-tenant 4-corner test pattern (memory cite)**:
+- `feedback_cancel_invariant_whitelist.md` — Rule 8 4-corner pattern (own-success / cross-tenant 403 / null-token-403 / role-mismatch-403). Drill-down §5.5 inherits.
+
+### 9.2 Rules cite (`.claude/rules/python-java-port.md`)
+
+- **Rule 1** (Null fallback `is not None` 三元): `_compute_drill_path` parent_context + filter_value None checks, `_process_*_drilldown` filter_value None checks, `_drilldown_record_usage` user_id None default
+- **Rule 2** (WEEK calendar year): N/A — drill-down does not emit period keys (time dim emits `period: "DAY"|"WEEK"|"MONTH"` but as a top-level scalar string, not a period_key in series data)
+- **Rule 3** (函数签名 1:1 mirror): 5 dim processors `_process_*_drilldown(conn, factory_id, request, start_date, end_date)` mirror Java private methods. `_process_drilldown_tx(factory_id, request, user_id)` is a wrapper (deviates intentionally — D4 acknowledged).
+- **Rule 4** (`_decimal_to_number`): per-dim sub-service outputs (RankingItem.value/target/completionRate, MetricResult.value/changePercent, ChartConfig data Decimal fields)
+- **Rule 5** (SELECT *): `_drilldown_get_*` helpers may use SELECT * for sister-chat extensibility; sister-shared SQL helpers (e.g., `_query_sales_data` for product helpers) per existing convention
+- **Rule 6** (输入 None-check): All 5 missing helpers + `_process_drilldown_tx` reject None for factory_id / start_date / end_date
+- **Rule 7** (Decimal 阈值 vs float): N/A — drill-down does not have alert thresholds (sub-service outputs may include alertLevel from sister helpers, but drill-down doesn't compute new ones)
+- **Rule 8** (Map.of(N) Jackson hash order): per-dim HashMap key order TBD-FROM-GOLDEN, top-level result mutation order TBD-FROM-GOLDEN, ApiResponse.error 5-field order TBD-FROM-GOLDEN
+- **Rule 9** (incoming sister-spec discoveries): xaxisField/yaxisField LOWERCASE for ChartConfig (H4 product distribution chart), DateRange 7-field shape (N/A — drill-down doesn't emit DateRange), ChartConfig empty-case emits nulls (H4 verify)
+
+### 9.3 Code refs
+
+| 路径 | 行号 | 用途 |
+|---|---|---|
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/controller/SmartBIAnalysisController.java` | 528-586 | Drill-down route handler + dead fallback |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/SmartBIServiceImpl.java` | 1018-1069 | `processDrillDown` main entry + dispatch + recordUsage |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/SmartBIServiceImpl.java` | 1975-2076 | 5 dim processors (region/department/product/time/salesperson) |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/SmartBIServiceImpl.java` | 1731-1741 | `handleDrillDownIntent` — Phase 2B-β AI path (out of scope, lineage cite) |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/dto/smartbi/DrillDownRequest.java` | 1-304 | Service-level DTO (13 fields + helper methods) |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/dto/smartbi/DrillDownRequest.java` | 295-302 | `getDrillPath()` (T4) |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/dto/smartbi/DateRange.java` | 123-133 | `thisMonth()` (T5) |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/dto/common/ApiResponse.java` | 25-37, 82-94 | Envelope structure + `error()` factory |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/smartbi/SmartBiSalesData.java` | 40 | `@Where(deleted_at IS NULL)` (replicate in Python SQL) |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/smartbi/SmartBiDepartmentData.java` | 36 | `@Where(deleted_at IS NULL)` |
+| `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/smartbi/SmartBiUsageRecord.java` | 38 | `@Where(deleted_at IS NULL)` (table is plural `smart_bi_usage_records`) |
+| `backend/java/cretas-api/src/main/resources/db/migration/V2026_01_18_01__smart_bi_tables.sql` | 56-74 | `smart_bi_usage_records` table schema |
+| `backend/python/smartbi_compat/api/analysis_finance.py` | `_decimal_to_number` (line 429), `_to_decimal` (402), `_utc_now_iso` (1290) | Sister-shared helpers (Rule 4) |
+| `backend/python/smartbi_compat/api/analysis_sales.py` | `_to_thread` (50), `_get_sync_engine` (208) | Sister-shared async + DB helpers |
+| `backend/python/main.py` | 1106-1128 | Phase 2A router registration block |
+| `scripts/record-java-golden.sh` | 1-67 | Golden record script (NEEDS POST extension per §4.1) |
+| `.claude/rules/python-java-port.md` | Rule 1-9 | Project-wide Java→Python parity rules |
+| `tests/python/smartbi_compat/test_analysis_finance_contract.py` | 1-91 | Sister contract test boilerplate (JWT + production main load + _strip_volatile) |
+
+### 9.4 Tier 3 lineage statement
+
+**Tier 3 spec template** is established by this drill-down spec on top of the 4 Tier 2 sister specs (department / region / procurement / inventory) and 1 Wave 2 sister (query-templates with write side-effects). Tier 3 specifically deals with:
+
+1. **Multi-dimensional dispatch** (5 dims here) — vs Tier 2's per-type dispatch (single resource, multiple aggregation modes)
+2. **Write side-effects in mixed read-write transaction** — first endpoint to mix READ dispatch + WRITE recordUsage atomically
+3. **Spec-owned helper extraction** (D1) when sister files don't expose required interfaces — alternative to retroactive sister backfill
+4. **Controller boundary error semantics** (T10) — first endpoint where service-level rich error info (hint/hintTarget) is dropped at controller catch
+
+Future Tier 3 sister specs (none planned — drill-down is last) would inherit:
+- D1 ownership pattern for spec-owned helpers
+- D2 namespace prefix discipline
+- D3+D4 transaction wrapper Python idiom (`engine.begin()` + `_to_thread`)
+- D7 conservative tx defaults (asyncpg matches Java REQUIRED + READ_COMMITTED)
+- T10 visible-vs-internal error info distinction
+
+---
+
+## 10. Cross-spec audit citations (cycle 3 — for spec-reviewer subagent)
+
+When dispatching cycle 3 cross-spec reviewer, MUST cite these 8 references:
+
+1. **Tier 2 region spec** (PR #41) — composite-only / Lombok @Data declaration order / R-T13 arithmetic divergence pattern
+2. **Tier 2 department spec** (PR #36) — composite-only §1.3 lineage establish
+3. **Tier 2 procurement spec** (PR #40) — namespace-isolation naming convention (I6 fix → drill-down D2 inheritance)
+4. **Tier 2 inventory spec** (PR #47) — multi-mode dispatch pattern parallel
+5. **Wave 2 query-templates spec** (PR #48) — RLS app-layer + write side-effect pattern (drill-down T7+T11+T12 inherit)
+6. **Wave 1 finance budget spec** (PR #34+#38) — Map.of(N) hash discipline (Rule 8 baseline)
+7. **Phase 2B-β AI orchestration** (PR #24) — `handleDrillDownIntent` lineage (out-of-scope but cite for AI path future port)
+8. **Apr 28 P0 RLS gap finding** (memory `feedback_p0_rls_gap_finding.md`) — sister tables RLS gap precedent (drill-down's T11+T12 mirrors)
+
+**Plus rule files**:
+- `.claude/rules/python-java-port.md` Rules 1-8 (existing) + Rule 9 (incoming, sister-spec discoveries baked in via §6.3 cites)
+- `.claude/rules/concurrent-edit-safety.md` (sub-skill 5b for safe-commit during impl)
+
+**Subagent dispatch instruction template**:
+
+```
+You are conducting cross-spec cycle 3 audit for the drill-down spec at
+docs/superpowers/specs/2026-05-02-phase2a-drill-down-design.md.
+
+Read the spec end-to-end. Then read each of the 8 sister/lineage citations
+listed in §10. For each spec, identify any pattern this drill-down spec
+deviates from (with reasoning) or inherits from (verifying inheritance is
+correctly applied).
+
+Specific concerns:
+1. Does §3 algorithm pseudocode correctly inherit Rule 1/4/5/6/8 from sister specs?
+2. Does §3.7 transaction wrapper align with query-templates spec write pattern?
+3. Does §4.3 test harness mirror sister contract test pattern?
+4. Does §7 PR slicing prerequisite chain match reality (region/dept/sales PRs)?
+5. Does §8 risk catalog cover all reasonable Tier 3 unique risks?
+6. Are §9 references complete and link-correct?
+
+Output: bullet list of issues found with severity (critical/important/nit),
+spec section reference, and suggested fix (where applicable).
+```
+
+---
+
+**Spec end. Total length: ~2500 LOC. Awaiting 4-cycle audit + organizer review.**
+
+
 
 
 
