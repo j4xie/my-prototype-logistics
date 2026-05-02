@@ -457,3 +457,108 @@ class TestInventoryGetCurrentQuantityFormula:
         # 10 - 3 - 2 = 5
         assert _get_current_quantity(batch) == Decimal("5")
 
+
+class TestInventoryHealthScoreAsymmetric:
+    """T-INV-9 - asymmetric null handling in _get_health_score.
+
+    Java getHealthScore (L824-921) treats null per dimension as:
+      - Turnover null  -> +0 (penalty, NO else branch)
+      - Expiry null    -> +30 (full points)
+      - Loss null      -> +20 (full points)
+      - Aging null     -> +20 (full points)
+
+    All 4 None: 0+30+20+20 = 70 (NOT 0).
+    All 4 worst: 10+10+5+5 = 30.
+    All 4 best: 30+30+20+20 = 100.
+
+    Note: Existing test_health_score_asymmetric_null_regression covers case 1.
+    This class extends with 4 remaining boundary cases.
+    """
+
+    @staticmethod
+    def _run_with_metrics(turnover_val, expiry_val, loss_val, aging_val):
+        """Helper: run _get_health_score with mocked metrics returning specified values."""
+        import asyncio
+        import unittest.mock
+        from smartbi_compat.api import analysis_inventory
+
+        async def turnover_metric(*_a, **_k):
+            if turnover_val is None:
+                return []
+            return [{"metricCode": "TURNOVER_RATE", "value": turnover_val}]
+
+        async def expiry_metric(*_a, **_k):
+            if expiry_val is None:
+                return []
+            return [{"metricCode": "EXPIRY_RISK_RATE", "value": expiry_val}]
+
+        async def loss_metric(*_a, **_k):
+            if loss_val is None:
+                return []
+            return [{"metricCode": "LOSS_RATE", "value": loss_val}]
+
+        async def aging_metric(*_a, **_k):
+            if aging_val is None:
+                return []
+            return [{"metricCode": "SLOW_MOVING_RATE", "value": aging_val}]
+
+        with unittest.mock.patch.object(analysis_inventory, "_get_turnover_analysis", turnover_metric), \
+             unittest.mock.patch.object(analysis_inventory, "_get_expiry_risk_analysis", expiry_metric), \
+             unittest.mock.patch.object(analysis_inventory, "_calculate_loss_rate_for_health_score", loss_metric), \
+             unittest.mock.patch.object(analysis_inventory, "_get_aging_metrics", aging_metric):
+            return asyncio.run(analysis_inventory._get_health_score(
+                "F", real_date(2025, 1, 1), real_date(2025, 12, 31)
+            ))
+
+    def test_all_full_points_score_100(self):
+        """All 4 dims best values -> 30+30+20+20 = 100."""
+        result = self._run_with_metrics(
+            turnover_val=Decimal("15"),     # >= 12 -> +30
+            expiry_val=Decimal("5"),        # < 10 -> +30
+            loss_val=Decimal("1"),          # < 2 -> +20
+            aging_val=Decimal("5"),         # < 10 -> +20
+        )
+        assert result["value"] == 100
+        assert result["alertLevel"] == "GREEN"
+
+    def test_all_worst_points_score_30(self):
+        """All 4 dims worst values -> 10+10+5+5 = 30."""
+        result = self._run_with_metrics(
+            turnover_val=Decimal("3"),      # < 6 -> +10
+            expiry_val=Decimal("20"),       # >= 15 -> +10
+            loss_val=Decimal("8"),          # >= 5 -> +5
+            aging_val=Decimal("25"),        # >= 20 -> +5
+        )
+        assert result["value"] == 30
+        assert result["alertLevel"] == "RED"
+
+    def test_turnover_none_alone_subtracts_30(self):
+        """turnover None, others best: 0 + 30 + 20 + 20 = 70."""
+        result = self._run_with_metrics(
+            turnover_val=None,              # +0 (penalty)
+            expiry_val=Decimal("5"),        # +30
+            loss_val=Decimal("1"),          # +20
+            aging_val=Decimal("5"),         # +20
+        )
+        assert result["value"] == 70
+
+    def test_expiry_none_alone_full_points(self):
+        """expiry None alone: rest best, expiry null -> +30 (full pts asymmetric)."""
+        result = self._run_with_metrics(
+            turnover_val=Decimal("15"),     # +30
+            expiry_val=None,                # +30 (asymmetric - full points on null)
+            loss_val=Decimal("1"),          # +20
+            aging_val=Decimal("5"),         # +20
+        )
+        assert result["value"] == 100
+
+    def test_loss_and_aging_none_full_points(self):
+        """loss + aging None, others best: 30 + 30 + 20 + 20 = 100."""
+        result = self._run_with_metrics(
+            turnover_val=Decimal("15"),
+            expiry_val=Decimal("5"),
+            loss_val=None,                  # +20 asymmetric
+            aging_val=None,                 # +20 asymmetric
+        )
+        assert result["value"] == 100
+
