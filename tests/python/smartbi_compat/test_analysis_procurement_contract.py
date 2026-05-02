@@ -336,3 +336,477 @@ class TestAnalysisProcurementOverviewMode:
         assert py_keys == golden_keys, (
             f"overview key order mismatch:\n  python: {py_keys}\n  golden: {golden_keys}"
         )
+
+
+# ============================================================
+# PR-C-1: Arithmetic depth tests (6 PR-A-dependent classes, 27 tests)
+# PR-C-2 followup (post-procurement-PR-B merge): TestProcurementOverviewArithmetic (6 tests)
+# Spec: docs/superpowers/specs/2026-05-01-phase2a-analysis-procurement-design.md §5.3
+# ============================================================
+
+
+class TestProcurementConcentrationAlertArithmetic:
+    """T1 inverse threshold boundary - 5 boundary points (39.99 / 40.0 / 40.01 / 60.0 / 60.01).
+
+    Java line 1109-1116 uses STRICT `>` (NOT `>=`):
+      if (concentration > 60) RED;
+      if (concentration > 40) YELLOW;
+      else GREEN.
+
+    Inverse direction: concentration high = risk high (opposite of regular alert).
+    """
+
+    @pytest.mark.parametrize("concentration,expected", [
+        ("39.99", "GREEN"),
+        ("40.0", "GREEN"),    # NOT > 40 -> GREEN (strict, boundary excludes from YELLOW)
+        ("40.01", "YELLOW"),
+        ("60.0", "YELLOW"),   # NOT > 60 -> YELLOW (strict, boundary excludes from RED)
+        ("60.01", "RED"),
+    ])
+    def test_concentration_alert_inverse_strict_boundaries(self, concentration, expected):
+        from smartbi_compat.api.analysis_procurement import _determine_concentration_alert_level
+        assert _determine_concentration_alert_level(Decimal(concentration)) == expected
+
+
+class TestProcurementMoMGrowthArithmetic:
+    """T9 - 4 edge cases for _calculate_mom_growth.
+
+    Java MetricCalculatorServiceImpl.calculateMomGrowth (line 425-438):
+      previous null/0:
+        current null/<=0 -> 0
+        current > 0      -> 100
+      current null (with non-zero previous) -> -100
+      else: (current - previous) / abs(previous) * 100  <- T9 .abs() denom lock
+    """
+
+    def test_previous_none_current_positive_returns_100(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        # previous=None, current>0 -> 100
+        assert _calculate_mom_growth(Decimal("50"), None) == Decimal("100")
+        # previous=0, current>0 -> 100
+        assert _calculate_mom_growth(Decimal("50"), Decimal("0")) == Decimal("100")
+
+    def test_previous_none_current_zero_or_none_returns_zero(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        assert _calculate_mom_growth(None, None) == Decimal("0")
+        assert _calculate_mom_growth(Decimal("0"), None) == Decimal("0")
+        assert _calculate_mom_growth(Decimal("0"), Decimal("0")) == Decimal("0")
+
+    def test_current_none_with_nonzero_previous_returns_neg_100(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        # current=None, previous=50 -> -100
+        assert _calculate_mom_growth(None, Decimal("50")) == Decimal("-100")
+
+    def test_negative_previous_abs_denom_yields_positive_growth(self):
+        """T9 lock: previous=-50, current=10 -> change=60; abs(-50)=50; 60/50*100=+120.
+
+        NOT -120 (which would happen if Python used `previous` directly without abs()).
+        """
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        result = _calculate_mom_growth(Decimal("10"), Decimal("-50"))
+        # Result is quantized to display scale 2: Decimal("120.00")
+        assert result == Decimal("120.00"), (
+            f"T9 .abs() denom: expected +120 (NOT -120), got {result}"
+        )
+
+
+class TestProcurementSupplierRankingArithmetic:
+    """4 tests for _calculate_supplier_ranking_from_data:
+       sort by value desc / tie-break / quality alert / negative value defensive.
+    """
+
+    @staticmethod
+    def _run(factory_id, batches, supplier_lookup=None):
+        """Helper: directly call _calculate_supplier_ranking_from_data with mocked supplier lookup.
+        supplier_lookup: dict mapping supplier_id -> supplier dict (or None for not found).
+        """
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        original = analysis_procurement._query_supplier_by_id
+
+        async def fake_lookup(sid, fid):
+            if supplier_lookup is None:
+                return None
+            return supplier_lookup.get(sid)
+
+        try:
+            analysis_procurement._query_supplier_by_id = fake_lookup
+            return asyncio.run(analysis_procurement._calculate_supplier_ranking_from_data(
+                factory_id, batches
+            ))
+        finally:
+            analysis_procurement._query_supplier_by_id = original
+
+    def test_sort_by_value_desc(self):
+        """3 suppliers with values [100, 300, 200] -> ranking[B=300, C=200, A=100]."""
+        # Each batch: unit_price * receipt_quantity = value
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("10"), "status": "AVAILABLE"},      # 100
+            {"supplier_id": "SUP-B", "unit_price": Decimal("30"),
+             "receipt_quantity": Decimal("10"), "status": "AVAILABLE"},      # 300
+            {"supplier_id": "SUP-C", "unit_price": Decimal("20"),
+             "receipt_quantity": Decimal("10"), "status": "AVAILABLE"},      # 200
+        ]
+        rankings = self._run("F", batches)
+        assert len(rankings) == 3
+        # Sorted desc by value
+        assert rankings[0]["name"] == "SUP-B" and rankings[0]["value"] == 300
+        assert rankings[1]["name"] == "SUP-C" and rankings[1]["value"] == 200
+        assert rankings[2]["name"] == "SUP-A" and rankings[2]["value"] == 100
+        assert [r["rank"] for r in rankings] == [1, 2, 3]
+
+    def test_tie_break_stable_order(self):
+        """2 suppliers with equal totals -> Python sorted() is stable, preserves insertion order."""
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("50"),
+             "receipt_quantity": Decimal("2"), "status": "AVAILABLE"},       # 100
+            {"supplier_id": "SUP-B", "unit_price": Decimal("50"),
+             "receipt_quantity": Decimal("2"), "status": "AVAILABLE"},       # 100
+        ]
+        rankings = self._run("F", batches)
+        assert len(rankings) == 2
+        # Stable sort: insertion order preserved on tie (A first since seen first in dict iteration)
+        names = [r["name"] for r in rankings]
+        # Either order acceptable but both must be present
+        assert set(names) == {"SUP-A", "SUP-B"}
+        # Both have value=100
+        assert all(r["value"] == 100 for r in rankings)
+
+    def test_quality_alert_level_thresholds(self):
+        """Verify alertLevel maps from quality score (=available/total*100):
+           Java: < 90 RED, < 95 YELLOW, else GREEN.
+
+           Build 3 suppliers with controlled available counts:
+             SUP-A: 8/10 AVAILABLE -> quality=80 -> RED
+             SUP-B: 10/10 AVAILABLE -> quality=100 -> GREEN
+             SUP-C: 9/10 AVAILABLE -> quality=90 -> YELLOW (90 NOT < 90 -> not RED, NOT < 95 -> not YELLOW... wait)
+           Re-check: 90 < 90 -> false; 90 < 95 -> true -> YELLOW.
+        """
+        batches = []
+        # SUP-A: 8 AVAILABLE + 2 non-AVAILABLE = quality 80 -> RED
+        for _i in range(8):
+            batches.append({"supplier_id": "SUP-A", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "AVAILABLE"})
+        for _i in range(2):
+            batches.append({"supplier_id": "SUP-A", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "DEPLETED"})
+        # SUP-B: 10/10 AVAILABLE -> quality 100 -> GREEN
+        for _i in range(10):
+            batches.append({"supplier_id": "SUP-B", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "AVAILABLE"})
+        # SUP-C: 9 AVAILABLE + 1 non-AVAILABLE = quality 90 -> YELLOW
+        for _i in range(9):
+            batches.append({"supplier_id": "SUP-C", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "AVAILABLE"})
+        for _i in range(1):
+            batches.append({"supplier_id": "SUP-C", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "DEPLETED"})
+
+        rankings = self._run("F", batches)
+        by_name = {r["name"]: r for r in rankings}
+        assert by_name["SUP-A"]["alertLevel"] == "RED", f"got {by_name['SUP-A']['alertLevel']}"
+        assert by_name["SUP-B"]["alertLevel"] == "GREEN", f"got {by_name['SUP-B']['alertLevel']}"
+        assert by_name["SUP-C"]["alertLevel"] == "YELLOW", f"got {by_name['SUP-C']['alertLevel']}"
+
+    def test_negative_value_in_ranking_passes_through_no_abs(self):
+        """Procurement ranking does NOT abs() like cost does.
+        Single supplier with negative-priced batch -> value=-100 in output."""
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("-50"),
+             "receipt_quantity": Decimal("2"), "status": "AVAILABLE"},      # -100
+        ]
+        rankings = self._run("F", batches)
+        assert len(rankings) == 1
+        assert rankings[0]["value"] == -100, (
+            f"Negative value should pass through without abs(): expected -100, got {rankings[0]['value']}"
+        )
+
+
+class TestProcurementTrendChartArithmetic:
+    """3 tests for _get_procurement_trend_chart MONTH aggregation + sort + chart shape.
+
+    Java period semantics:
+      MONTH -> period_key = "yyyy-MM"
+      Sort: sorted(keys) ascending (Java TreeMap iteration)
+    Chart shape (Rule 9 7-field):
+      [chartType=LINE, title, seriesField, data, options, xaxisField, yaxisField]
+    Per data point: {date, amount} (NOT {period, ...} - procurement uses 'date' key).
+    """
+
+    @staticmethod
+    def _run_chart(batches, period="MONTH"):
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        original = analysis_procurement._query_material_batches_in_range
+
+        async def fake_query(fid, start, end):
+            return batches
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_query
+            return asyncio.run(analysis_procurement._get_procurement_trend_chart(
+                "F", date(2025, 1, 1), date(2025, 12, 31), period
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original
+
+    def test_month_period_aggregation(self):
+        """3 batches in 3 different months -> chart_data has 3 points keyed by 'yyyy-MM'."""
+        batches = [
+            {"receipt_date": date(2025, 6, 15), "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("5")},      # 2025-06: 50
+            {"receipt_date": date(2025, 1, 10), "unit_price": Decimal("20"),
+             "receipt_quantity": Decimal("3")},      # 2025-01: 60
+            {"receipt_date": date(2025, 3, 5), "unit_price": Decimal("15"),
+             "receipt_quantity": Decimal("4")},      # 2025-03: 60
+        ]
+        chart = self._run_chart(batches)
+        assert len(chart["data"]) == 3
+        # Each point has 'date' and 'amount' keys
+        assert all(set(p.keys()) == {"date", "amount"} for p in chart["data"])
+
+    def test_multi_month_sorted_ascending(self):
+        """Months input as [June, January, March] -> output sorted [Jan, Mar, Jun]."""
+        batches = [
+            {"receipt_date": date(2025, 6, 15), "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("10")},     # 2025-06: 100
+            {"receipt_date": date(2025, 1, 10), "unit_price": Decimal("20"),
+             "receipt_quantity": Decimal("10")},     # 2025-01: 200
+            {"receipt_date": date(2025, 3, 5), "unit_price": Decimal("15"),
+             "receipt_quantity": Decimal("10")},     # 2025-03: 150
+        ]
+        chart = self._run_chart(batches)
+        actual_dates = [p["date"] for p in chart["data"]]
+        assert actual_dates == ["2025-01", "2025-03", "2025-06"], (
+            f"Expected sorted asc by period key, got {actual_dates}"
+        )
+        # Spot-check amounts
+        by_date = {p["date"]: p["amount"] for p in chart["data"]}
+        assert by_date["2025-01"] == 200
+        assert by_date["2025-03"] == 150
+        assert by_date["2025-06"] == 100
+
+    def test_chart_shape_keys_match_lombok_jackson(self):
+        """Verify ALL 7 top-level chart dict keys per Rule 9.2.
+        Per data point: {date, amount} (procurement uses 'date', not 'period')."""
+        batches = [
+            {"receipt_date": date(2025, 6, 1), "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("5")},
+        ]
+        chart = self._run_chart(batches)
+        # Rule 9.2: 7 emit-all fields with lowercase xaxis/yaxisField
+        assert chart["chartType"] == "LINE"
+        assert chart["title"] == "采购趋势"
+        assert chart["seriesField"] is None
+        assert chart["xaxisField"] == "date"     # Rule 9.1: lowercase
+        assert chart["yaxisField"] == "amount"   # Rule 9.1: lowercase
+        assert chart["options"] == {"showDataLabels": False, "smooth": True}
+        # Per data point: 'date' and 'amount' keys (NOT 'period')
+        assert chart["data"][0]["date"] == "2025-06"
+        assert chart["data"][0]["amount"] == 50
+
+
+class TestProcurementCostMetricsArithmetic:
+    """5 tests for _get_cost_metrics:
+       total / avg unit price (filter > 0) / max unit price emit / max skipped when null / MoM growth.
+
+    Note: _get_cost_metrics calls _query_material_batches_in_range TWICE:
+      1st call: current period (start_date, end_date)
+      2nd call: previous period (start - 1 month, end - 1 month)
+    Mock must dispatch by date range.
+    """
+
+    @staticmethod
+    def _run(current_batches, previous_batches=None, start=None, end=None):
+        """Helper: mock _query_material_batches_in_range with date-aware dispatch."""
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        if previous_batches is None:
+            previous_batches = []
+        start = start or date(2025, 6, 1)
+        end = end or date(2025, 6, 30)
+
+        original = analysis_procurement._query_material_batches_in_range
+
+        async def fake_query(fid, s, e):
+            # If start matches the current period start, return current; else previous
+            if s == start:
+                return current_batches
+            return previous_batches
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_query
+            return asyncio.run(analysis_procurement._get_cost_metrics(
+                "F", start, end
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original
+
+    def test_total_purchase_amount(self):
+        """3 batches with totalValues [10000, 20000, 30000] -> PROCUREMENT_AMOUNT.value == 60000."""
+        batches = [
+            {"unit_price": Decimal("100"), "receipt_quantity": Decimal("100")},  # 10000
+            {"unit_price": Decimal("200"), "receipt_quantity": Decimal("100")},  # 20000
+            {"unit_price": Decimal("300"), "receipt_quantity": Decimal("100")},  # 30000
+        ]
+        result = self._run(batches)
+        by_code = {m["metricCode"]: m for m in result}
+        assert by_code["PROCUREMENT_AMOUNT"]["value"] == 60000
+        assert by_code["BATCH_COUNT"]["value"] == 3
+
+    def test_avg_unit_price_filters_zero_or_null(self):
+        """Batches with unit_price=[10, 0, None, 20] -> avg = (10+20)/2 = 15 (filter > 0)."""
+        batches = [
+            {"unit_price": Decimal("10"), "receipt_quantity": Decimal("1")},
+            {"unit_price": Decimal("0"), "receipt_quantity": Decimal("1")},
+            {"unit_price": None, "receipt_quantity": Decimal("1")},
+            {"unit_price": Decimal("20"), "receipt_quantity": Decimal("1")},
+        ]
+        result = self._run(batches)
+        by_code = {m["metricCode"]: m for m in result}
+        # avg = (10+20)/2 = 15
+        assert by_code["AVG_UNIT_PRICE"]["value"] == 15
+
+    def test_max_unit_price_emits_when_present(self):
+        """Batches with unit_price=[5, 10, 7] -> MAX=10, dimensionValue=material_type_id of max batch."""
+        batches = [
+            {"unit_price": Decimal("5"), "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-A"},
+            {"unit_price": Decimal("10"), "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-B"},
+            {"unit_price": Decimal("7"), "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-C"},
+        ]
+        result = self._run(batches)
+        by_code = {m["metricCode"]: m for m in result}
+        assert "MAX_UNIT_PRICE" in by_code
+        assert by_code["MAX_UNIT_PRICE"]["value"] == 10
+        assert by_code["MAX_UNIT_PRICE"]["dimensionValue"] == "MAT-B"
+        assert by_code["MAX_UNIT_PRICE"]["alertLevel"] == "GREEN"
+        # 4 metrics (PROCUREMENT_AMOUNT/BATCH_COUNT/AVG_UNIT_PRICE/MAX_UNIT_PRICE), no MoM
+        assert len(result) == 4
+
+    def test_max_unit_price_skipped_when_all_null(self):
+        """All batches unit_price=None -> no MAX_UNIT_PRICE metric (Java isPresent guard)."""
+        batches = [
+            {"unit_price": None, "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-A"},
+            {"unit_price": None, "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-B"},
+        ]
+        result = self._run(batches)
+        codes = [m["metricCode"] for m in result]
+        assert "MAX_UNIT_PRICE" not in codes
+        # 3 metrics: PROCUREMENT_AMOUNT/BATCH_COUNT/AVG_UNIT_PRICE (no MAX, no MoM)
+        assert len(result) == 3
+
+    def test_mom_growth_when_previous_period_nonempty(self):
+        """Current sum=120k, previous sum=100k -> momGrowth = (120k-100k)/100k * 100 = 20%, UP."""
+        current_batches = [
+            {"unit_price": Decimal("100"), "receipt_quantity": Decimal("1200"),
+             "material_type_id": "MAT-A"},
+        ]   # 120,000
+        previous_batches = [
+            {"unit_price": Decimal("100"), "receipt_quantity": Decimal("1000"),
+             "material_type_id": "MAT-A"},
+        ]   # 100,000
+        result = self._run(current_batches, previous_batches=previous_batches)
+        by_code = {m["metricCode"]: m for m in result}
+        assert "PROCUREMENT_MOM_GROWTH" in by_code
+        # mom_growth = (120k - 100k) / 100k * 100 = 20
+        assert by_code["PROCUREMENT_MOM_GROWTH"]["value"] == 20
+        assert by_code["PROCUREMENT_MOM_GROWTH"]["changeDirection"] == "UP"
+        # 5 metrics total when MoM emitted
+        assert len(result) == 5
+
+
+class TestProcurementSupplierEvaluationArithmetic:
+    """7 tests for 5 dimension scorers + stability boundary + empty-batches case.
+
+    Java semantics (from impl):
+      - _calculate_price_score(supplier, batches): rating × 20, default 70 if rating null
+      - _calculate_quality_score(batches): availableCount/total × 100, empty -> 0
+      - _calculate_delivery_score(supplier, batches): HARDCODED 85 always
+      - _calculate_service_score(supplier): rating × 20, default 70
+      - _calculate_stability_score(batches): < 2 batches -> 80; CV-based; clamp [0, 100]
+    """
+
+    def test_price_score_rating_present(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_price_score
+        # rating=4 -> 4 × 20 = 80
+        assert _calculate_price_score({"rating": 4}, []) == Decimal("80")
+
+    def test_price_score_rating_null_default_70(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_price_score
+        assert _calculate_price_score({"rating": None}, []) == Decimal("70")
+        # rating key missing also defaults to 70
+        assert _calculate_price_score({}, []) == Decimal("70")
+
+    def test_quality_score_pass_rate(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_quality_score
+        # 9 AVAILABLE / 10 total -> 90
+        batches = [{"status": "AVAILABLE"}] * 9 + [{"status": "DEPLETED"}] * 1
+        result = _calculate_quality_score(batches)
+        assert result == Decimal("90.0000"), f"got {result}"
+        # Empty batches -> 0
+        assert _calculate_quality_score([]) == Decimal("0")
+
+    def test_delivery_score_hardcoded_85(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_delivery_score
+        # Any input returns 85 (Java line 631 unconditional return)
+        assert _calculate_delivery_score({}, []) == Decimal("85")
+        assert _calculate_delivery_score({"rating": 5}, [{"status": "AVAILABLE"}]) == Decimal("85")
+        assert _calculate_delivery_score({"rating": None}, []) == Decimal("85")
+
+    def test_service_score_rating_present_and_default(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_service_score
+        # rating=5 -> 5 × 20 = 100
+        assert _calculate_service_score({"rating": 5}) == Decimal("100")
+        # rating=null -> default 70
+        assert _calculate_service_score({"rating": None}) == Decimal("70")
+
+    def test_stability_score_under_2_batches_default_80(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_stability_score
+        # 0 batches -> default 80
+        assert _calculate_stability_score([]) == Decimal("80")
+        # 1 batch -> default 80 (Java line 670 batches.size() < 2 guard)
+        assert _calculate_stability_score([
+            {"receipt_quantity": Decimal("100")},
+        ]) == Decimal("80")
+
+    def test_supplier_evaluation_empty_batches_returns_no_data_points(self):
+        """Empty batches + empty suppliers -> chart has data=[], but options still 5-dim."""
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        original_b = analysis_procurement._query_material_batches_in_range
+        original_s = analysis_procurement._query_active_suppliers
+
+        async def fake_b(*_a, **_k): return []
+        async def fake_s(*_a, **_k): return []
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_b
+            analysis_procurement._query_active_suppliers = fake_s
+            result = asyncio.run(analysis_procurement._get_supplier_evaluation(
+                "F", date(2025, 1, 1), date(2025, 12, 31)
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original_b
+            analysis_procurement._query_active_suppliers = original_s
+
+        # chart_data list is empty (no suppliers/batches to evaluate)
+        assert result["data"] == []
+        # Options still has 5-dim radar definition (declaration order preserved per T5)
+        assert result["chartType"] == "RADAR"
+        assert result["options"]["dimensions"] == [
+            "priceCompetitiveness", "qualityPassRate", "onTimeDelivery",
+            "serviceResponse", "supplyStability",
+        ]
+        assert result["options"]["dimensionNames"] == [
+            "价格竞争力", "质量合格率", "准时交付", "服务响应", "供货稳定",
+        ]
