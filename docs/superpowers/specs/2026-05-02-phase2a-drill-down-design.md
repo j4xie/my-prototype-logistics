@@ -1173,4 +1173,498 @@ Spec discipline: Python accepts `parentContext` from JSON body for forward-compa
 
 ---
 
+## 4. F999 byte-shape gate
+
+### 4.1 Recording (HARD prereq before impl plan)
+
+**Blocker**: `record-java-golden.sh` is currently GET-only (`scripts/record-java-golden.sh:61` uses `curl -sS --fail -H ... URL`). Drill-down requires POST + JSON body. Two options:
+
+**Option A** (recommended — pre-spec separate small PR): Extend `record-java-golden.sh` to support POST + JSON body via new CLI flags `--method POST --data-json '<...>'`. Diff scope ~10 lines. PR before drill-down PR-A so the script works for ALL future POST endpoint records (also helps future Phase 2A WRITE endpoint specs).
+
+**Option B** (in-spec ad-hoc): Inline `curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data-binary '@<json-body>.json' "$URL" | jq` per-golden in this PR-A's record script. Less reusable but unblocks immediately.
+
+**Decision**: Option A. Script extension lands BEFORE drill-down PR-A.
+
+Recording commands (assuming Option A landed):
+
+```bash
+# JWT_SECRETs from /www/wwwroot/cretas/.env.test (test env, port 10011)
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-region-L1.json \
+    --method POST --data-json '{"dimension":"region","startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-region-L2.json \
+    --method POST --data-json '{"dimension":"region","value":"华东","level":1,"startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-region-L3-dead.json \
+    --method POST --data-json '{"dimension":"region","value":"上海","level":2,"startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+# Department: L1 + L2
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-department-L1.json \
+    --method POST --data-json '{"dimension":"department","startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-department-L2.json \
+    --method POST --data-json '{"dimension":"department","value":"销售部","startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+# Product (single layer)
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-product.json \
+    --method POST --data-json '{"dimension":"product","startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+# Time L1 (period=MONTH)
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-time-L1.json \
+    --method POST --data-json '{"dimension":"time","level":1,"startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+# Salesperson L1 (no filter)
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-salesperson-L1.json \
+    --method POST --data-json '{"dimension":"salesperson","startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+# T10 error path — unknown dimension
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    drill-down-F999-error-unknown-dim.json \
+    --method POST --data-json '{"dimension":"invalid","startDate":"2024-01-01","endDate":"2024-12-31"}'
+```
+
+**Recording must happen BEFORE PR-A plan finalizes** — goldens reveal:
+1. Top-level HashMap key order for each per-dim shape (Rule 8)
+2. RankingItem / MetricResult / DepartmentDetail / ChartConfig Lombok @Data declaration orders
+3. T10 error envelope exact 5-field key order (`code, message, data, timestamp, success` — verify hash order)
+4. T10 error body shape — confirms hint/hintTarget absence (line 582-585 catch flattening)
+5. `time` dim shape with `period` extra key (per-dim shape variance T6)
+6. `product` dim shape with `chart` extra key (per-dim shape variance T6, ChartConfig nested)
+7. ChartConfig `xaxisField`/`yaxisField` LOWERCASE serialization (Rule 9 sister-spec discovery)
+8. ChartConfig empty-case behavior (emit nulls vs skip-null per Rule 9)
+9. `timestamp` exact format (LocalDateTime → ISO with timezone? millis? nanos?)
+
+### 4.2 Gate semantics
+
+**Phase 2A 全域统一**: dict-equality compare (NOT strict-byte). Tolerates:
+- Numeric `0` vs `0.0` equivalence (Java BigDecimal output `0` or `0.00` per setScale)
+- Python int vs Java integer wrapping
+- `_decimal_to_number` helper covers most cases (Rule 4)
+
+**Strip before compare**:
+- `timestamp` (volatile per-request)
+- (No other volatile fields specific to drill-down. Generic `_strip_volatile` helper from sister spec covers `generatedAt`/`lastUpdated`/`cacheExpireAt` too — drill-down doesn't emit those but the helper is shared.)
+
+**Strict-byte gate (Phase 3+)**: Out of scope for this spec. Future strict-byte gate would require canonical comparison handling for Decimal scale, JSON whitespace, etc.
+
+### 4.3 Test harness (test_analysis_drilldown_contract.py PR-A)
+
+```python
+import io
+import json
+from pathlib import Path
+from datetime import datetime, timezone
+import pytest
+import importlib.util
+import os
+import sys
+import jwt
+
+# JWT_SECRET MUST be set BEFORE importing production code (sister contract test pattern)
+JWT_SECRET = "test-secret-for-phase2a-do-not-use-in-prod"
+os.environ["JWT_SECRET"] = JWT_SECRET
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+GOLDEN_DIR = REPO_ROOT / "tests" / "fixtures" / "java-smartbi-golden"
+
+
+def _load_production_main():
+    """Mirror sister test_analysis_finance_contract.py / test_analysis_region_contract.py pattern."""
+    main_path = REPO_ROOT / "backend" / "python" / "main.py"
+    sys.path.insert(0, str(REPO_ROOT / "backend" / "python"))
+    spec = importlib.util.spec_from_file_location("_production_main", main_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _make_token(factory_id: str, user_id: int = 1) -> str:
+    payload = {
+        "userId": user_id,
+        "username": "test_user",
+        "factoryId": factory_id,
+        "role": "factory_super_admin",
+        "exp": datetime.now(timezone.utc).timestamp() + 3600,
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+VOLATILE = frozenset({"timestamp", "generatedAt", "lastUpdated", "cacheExpireAt"})
+
+
+def _strip_volatile(obj):
+    if isinstance(obj, dict):
+        return {k: _strip_volatile(v) for k, v in obj.items() if k not in VOLATILE}
+    if isinstance(obj, list):
+        return [_strip_volatile(item) for item in obj]
+    return obj
+
+
+@pytest.fixture(scope="module")
+def production_app():
+    return _load_production_main().app
+
+
+@pytest.fixture
+def client(production_app):
+    from fastapi.testclient import TestClient
+    return TestClient(production_app)
+
+
+# 9 golden compare tests — example for region L1
+@pytest.mark.parametrize("golden_name,request_body", [
+    ("drill-down-F999-region-L1", {"dimension": "region", "startDate": "2024-01-01", "endDate": "2024-12-31"}),
+    ("drill-down-F999-region-L2", {"dimension": "region", "value": "华东", "level": 1,
+                                     "startDate": "2024-01-01", "endDate": "2024-12-31"}),
+    ("drill-down-F999-region-L3-dead", {"dimension": "region", "value": "上海", "level": 2,
+                                         "startDate": "2024-01-01", "endDate": "2024-12-31"}),
+    ("drill-down-F999-department-L1", {"dimension": "department", "startDate": "2024-01-01",
+                                         "endDate": "2024-12-31"}),
+    ("drill-down-F999-department-L2", {"dimension": "department", "value": "销售部",
+                                         "startDate": "2024-01-01", "endDate": "2024-12-31"}),
+    ("drill-down-F999-product", {"dimension": "product", "startDate": "2024-01-01",
+                                   "endDate": "2024-12-31"}),
+    ("drill-down-F999-time-L1", {"dimension": "time", "level": 1, "startDate": "2024-01-01",
+                                   "endDate": "2024-12-31"}),
+    ("drill-down-F999-salesperson-L1", {"dimension": "salesperson", "startDate": "2024-01-01",
+                                          "endDate": "2024-12-31"}),
+])
+def test_drilldown_byte_shape_against_golden(client, monkeypatch, golden_name, request_body):
+    """F999 dict-eq gate per dimension state.
+
+    Mocks all 5 sister + 5 owned helpers + recordUsage to return F999-shaped data.
+    """
+    from smartbi_compat.api import analysis_drilldown
+    # Mock all sister + owned helpers as needed per dim
+    # ... mock setup omitted for brevity; impl chat constructs based on F999 dataset
+
+    resp = client.post(
+        "/api/mobile/F999/smart-bi/drill-down",
+        json=request_body,
+        headers={"Authorization": f"Bearer {_make_token('F999')}"},
+    )
+    assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+    py_data = _strip_volatile(resp.json()["data"])
+
+    with io.open(GOLDEN_DIR / f"{golden_name}.json", encoding="utf-8") as f:
+        raw = json.load(f)
+        golden_data = _strip_volatile(raw.get("data", raw))
+
+    if py_data != golden_data:
+        import difflib
+        py_str = json.dumps(py_data, ensure_ascii=False, indent=2, sort_keys=True)
+        golden_str = json.dumps(golden_data, ensure_ascii=False, indent=2, sort_keys=True)
+        diff = "\n".join(difflib.unified_diff(
+            golden_str.splitlines(), py_str.splitlines(),
+            fromfile="golden", tofile="python", lineterm="", n=3,
+        ))
+        pytest.fail(f"{golden_name} byte-shape mismatch:\n{diff}")
+
+
+def test_drilldown_unknown_dim_error_envelope(client):
+    """T10 error envelope shape: 5 fields, no hint/hintTarget."""
+    resp = client.post(
+        "/api/mobile/F999/smart-bi/drill-down",
+        json={"dimension": "invalid", "startDate": "2024-01-01", "endDate": "2024-12-31"},
+        headers={"Authorization": f"Bearer {_make_token('F999')}"},
+    )
+    # HTTP 200 (Java controller returns ResponseEntity.ok even on error)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["success"] is False
+    assert body["code"] == 400
+    assert "不支持的下钻维度" in body["message"]
+    assert body["data"] is None
+    # T10: NO hint/hintTarget keys
+    assert "hint" not in body
+    assert "hintTarget" not in body
+
+    with io.open(GOLDEN_DIR / "drill-down-F999-error-unknown-dim.json", encoding="utf-8") as f:
+        golden = json.load(f)
+        golden_body = _strip_volatile(golden.get("data", golden) if isinstance(golden, dict) else golden)
+    assert _strip_volatile(body) == golden_body
+```
+
+---
+
+## 5. 测试策略
+
+### 5.1 PR-A: Foundation + contract (~500-800 LOC)
+
+`tests/python/smartbi_compat/test_analysis_drilldown_contract.py`:
+
+```python
+class TestRouteHandler:
+    def test_route_registered_post_only(self, production_app):
+        """Verify FastAPI router registers POST /api/mobile/{factory_id}/smart-bi/drill-down (NOT GET)."""
+
+    def test_jwt_required_returns_401_or_403_without_token(self, client):
+        """No bearer token → 401 or 403."""
+
+    def test_factory_mismatch_returns_403(self, client):
+        """JWT factoryId != path factoryId → 403."""
+
+    def test_get_method_returns_405(self, client):
+        """GET on POST-only route → 405 Method Not Allowed."""
+
+
+class TestF999GoldenPerDim:
+    """9 golden tests parameterized — each dim × layer state."""
+    # parametrize over 8 success cases + 1 error case (see §4.3 above)
+
+
+class TestDimensionDispatch:
+    """Test §3.7 main dispatch logic."""
+    def test_dimension_lower_case_dispatch(self, monkeypatch, client):
+        """T3: 'REGION' / 'Region' / 'region' → all dispatch to region processor."""
+
+    def test_dimension_with_unknown_value_raises_business_exception(self, client):
+        """T10: unknown dim → BusinessException → ApiResponse.error envelope."""
+
+    def test_customer_dim_raises_business_exception(self, client):
+        """T2-adjacent: 'customer' is in DTO docstring but NOT in switch → error."""
+
+
+class TestDateDefault:
+    """T5: default range when start/end null."""
+    def test_null_start_date_uses_this_month_default(self, monkeypatch, client):
+        """startDate null → defaults to first day of current month."""
+
+    def test_null_end_date_uses_this_month_default(self, monkeypatch, client):
+        """endDate null → defaults to LAST day of current month (NOT today)."""
+
+    def test_both_null_uses_this_month_default(self, monkeypatch, client):
+        """Both null → full this-month range."""
+
+
+class TestTransactionAtomicity:
+    """T7+T8: read + write atomicity."""
+    def test_record_usage_called_on_success(self, monkeypatch, client):
+        """Successful dispatch → 1 row INSERTed to smart_bi_usage_records with action_type='DRILLDOWN'."""
+
+    def test_record_usage_NOT_called_on_business_exception(self, monkeypatch, client):
+        """BusinessException raised before recordUsage → no row written (tx rollback)."""
+
+    def test_record_usage_args_match_java(self, monkeypatch, client):
+        """T7 args: factory_id, user_id=None, action_type='DRILLDOWN', query_text=None,
+        token_count=0, cost_amount=0, cache_hit=False, success=True."""
+```
+
+### 5.2 PR-B: Arithmetic depth tests (~600-900 LOC, separate PR after PR-A merge)
+
+`tests/python/smartbi_compat/test_analysis_drilldown_arithmetic.py`:
+
+```python
+class TestComputeDrillPath:
+    """T4 helper unit tests."""
+    def test_both_none_returns_全部(self):
+        assert _compute_drill_path(None, None) == "全部"
+
+    def test_parent_context_only(self):
+        assert _compute_drill_path("全国", None) == "全国"
+
+    def test_filter_value_only(self):
+        assert _compute_drill_path(None, "华东") == "华东"
+
+    def test_both_set_concatenates_with_arrow(self):
+        assert _compute_drill_path("全国", "华东") == "全国 > 华东"
+
+    def test_empty_string_treated_as_none(self):
+        assert _compute_drill_path("", "华东") == "华东"
+        assert _compute_drill_path("全国", "") == "全国"
+
+    def test_multi_level_nested(self):
+        assert _compute_drill_path("全国 > 华东", "上海") == "全国 > 华东 > 上海"
+
+
+class TestDefaultDateRangeThisMonth:
+    """T5 helper unit tests."""
+    def test_returns_first_and_last_of_current_month(self, freeze_time):
+        """Mock today=2026-05-02 → returns (2026-05-01, 2026-05-31)."""
+
+    def test_february_leap_year(self, freeze_time):
+        """today=2024-02-15 → (2024-02-01, 2024-02-29)."""
+
+    def test_february_non_leap_year(self, freeze_time):
+        """today=2025-02-15 → (2025-02-01, 2025-02-28)."""
+
+    def test_december(self, freeze_time):
+        """today=2025-12-15 → (2025-12-01, 2025-12-31)."""
+
+
+class TestPeriodMapping:
+    """T2 dead branch parity for time dim."""
+    def test_level_1_returns_month(self):
+        ...
+    def test_level_2_returns_week(self):
+        ...
+    def test_level_3_returns_day_default(self):
+        ...
+    def test_level_none_returns_day_initial(self):
+        """Java line 2041 init period='DAY', if level is None switch is skipped."""
+
+
+class TestRegionDispatchBranching:
+    """T1+T2 region dispatch."""
+    def test_no_filter_calls_get_region_ranking(self, monkeypatch):
+        """L1 path."""
+    def test_filter_with_level_1_calls_get_province_ranking(self, monkeypatch):
+        """L2 path — H1 helper."""
+    def test_filter_with_level_2_calls_get_city_ranking(self, monkeypatch):
+        """L3 dead path — H2 helper, T2 verbatim parity."""
+
+
+class TestRecordUsageSql:
+    """T7 INSERT helper."""
+    def test_insert_with_all_default_args(self, mock_conn):
+        """Verify _drilldown_record_usage called with Java-line-1066 default args."""
+
+    def test_factory_id_explicit_in_insert(self, mock_conn):
+        """T11/T12: factory_id MUST be in INSERT — no PG default."""
+```
+
+### 5.3 Mock pattern
+
+```python
+@pytest.fixture
+def mock_drilldown_helpers(monkeypatch):
+    """Mock 5 sister + 5 owned helpers + recordUsage for unit + contract tests."""
+    from smartbi_compat.api import analysis_drilldown
+
+    def fake_region_ranking(conn, fid, sd, ed): return [{"name": "华东", "value": 1000}]
+    def fake_province_ranking(conn, fid, region, sd, ed): return [{"name": "上海", "value": 600}]
+    def fake_city_ranking(conn, fid, province, sd, ed): return [{"name": "浦东", "value": 400}]
+    def fake_dept_ranking(conn, fid, sd, ed): return [{"name": "销售部", "value": 5000}]
+    def fake_dept_detail(conn, fid, dept, sd, ed): return {"name": dept, "members": []}
+    def fake_product_ranking(conn, fid, sd, ed): return [{"name": "饮料", "value": 2000}]
+    def fake_product_chart(conn, fid, sd, ed): return {"chartType": "PIE", "data": []}
+    def fake_sales_trend(conn, fid, sd, ed, period): return {"chartType": "LINE", "period": period}
+    def fake_salesperson_ranking(conn, fid, sd, ed): return [{"name": "张三", "value": 1500}]
+    def fake_salesperson_metrics(conn, fid, sp, sd, ed): return {"name": sp, "metric": 0}
+    def fake_record_usage(*args, **kwargs): pass
+
+    monkeypatch.setattr(analysis_drilldown, "_get_region_ranking", fake_region_ranking)
+    monkeypatch.setattr(analysis_drilldown, "_drilldown_get_province_ranking", fake_province_ranking)
+    monkeypatch.setattr(analysis_drilldown, "_drilldown_get_city_ranking", fake_city_ranking)
+    monkeypatch.setattr(analysis_drilldown, "_get_department_ranking", fake_dept_ranking)
+    monkeypatch.setattr(analysis_drilldown, "_drilldown_get_department_detail", fake_dept_detail)
+    monkeypatch.setattr(analysis_drilldown, "_get_product_ranking", fake_product_ranking)
+    monkeypatch.setattr(analysis_drilldown, "_drilldown_get_product_distribution_chart", fake_product_chart)
+    monkeypatch.setattr(analysis_drilldown, "_get_sales_trend_chart", fake_sales_trend)
+    monkeypatch.setattr(analysis_drilldown, "_get_salesperson_ranking", fake_salesperson_ranking)
+    monkeypatch.setattr(analysis_drilldown, "_drilldown_get_salesperson_metrics", fake_salesperson_metrics)
+    monkeypatch.setattr(analysis_drilldown, "_drilldown_record_usage", fake_record_usage)
+```
+
+### 5.4 Smoke compare (impl chat to execute)
+
+```bash
+# Step 1: re-record F999 region-L1 fresh
+JWT_SECRET="<test>" ./scripts/record-java-golden.sh F999 \
+    '/api/mobile/{factoryId}/smart-bi/drill-down' \
+    /tmp/drill-down-F999-region-L1-fresh.json \
+    --method POST --data-json '{"dimension":"region","startDate":"2024-01-01","endDate":"2024-12-31"}'
+
+# Step 2: diff with checked-in golden
+diff <(jq 'del(.timestamp) | del(.data.dateRange) | .' tests/fixtures/java-smartbi-golden/drill-down-F999-region-L1.json) \
+     <(jq 'del(.timestamp) | del(.data.dateRange) | .' /tmp/drill-down-F999-region-L1-fresh.json)
+# Expected: empty diff (only timestamp should change between runs)
+```
+
+### 5.5 Cross-tenant 4-corner tests (T11+T12 enforcement gate)
+
+T11/T12 RLS gap implies application-layer factory_id check is the SOLE tenant isolation. Test must prove:
+
+```python
+class TestCrossTenantIsolation:
+    def test_same_factory_jwt_path_match_succeeds(self, client, mock_drilldown_helpers):
+        """JWT factoryId='F999', path '/api/mobile/F999/...' → 200."""
+
+    def test_jwt_factory_mismatch_path_returns_403(self, client):
+        """JWT factoryId='F001', path '/api/mobile/F999/...' → 403 via verify_jwt_and_factory."""
+
+    def test_record_usage_writes_only_jwt_factory_id(self, monkeypatch, client):
+        """Even if request body could carry factory_id, recordUsage uses JWT-derived id."""
+
+    def test_query_includes_factory_id_in_where(self, monkeypatch):
+        """Verify all sub-service SQL includes factory_id = ? clause via SQL inspection."""
+```
+
+---
+
+## 6. Byte gate semantics
+
+### 6.1 dict-eq vs strict-byte (Phase 2A standard)
+
+Phase 2A 全域统一使用 dict-eq compare,跟所有 Tier 1/Tier 2 sister specs 同标准。
+
+**dict-eq 容忍**:
+- `0` (Python int) vs `0.0` (Java BigDecimal output) — Python `0 == 0.0` True
+- `1234.56` (Python float) vs `1234.56` (Java BigDecimal setScale(2)) — `_decimal_to_number` 保证 Python int-if-integral else float
+- 字符串字段 strict (e.g. message text must match exactly)
+
+**dict-eq 不容忍**:
+- key 缺失 / 多 key
+- 嵌套 dict 内 key 顺序差异 (实际上 dict-eq 不依赖 key 顺序,但 strict-byte gate Phase 3+ 会要求)
+
+**strip 字段**:
+- `timestamp` (volatile per-request — present in ApiResponse envelope)
+- (No other volatile fields specific to drill-down. But sister-shared `_strip_volatile` covers `generatedAt/lastUpdated/cacheExpireAt` too.)
+
+### 6.2 Decimal serialization (Rule 4)
+
+All BigDecimal fields through `_decimal_to_number` — sister-shared from `analysis_finance.py`:
+
+```python
+def _decimal_to_number(v: Decimal) -> Any:
+    if v == v.to_integral_value():
+        return int(v)
+    return float(v)
+```
+
+In drill-down context, Decimal fields appear in:
+- Per-dim ranking item `value`/`target`/`completionRate` fields (sister patterns)
+- `MetricResult` value/changePercent fields (H5 salesperson metrics)
+- ChartConfig data (H4 product distribution chart)
+
+### 6.3 Map.of(N) sites (Rule 8 + Rule 9)
+
+**HashMap sites (NOT Map.of)** — TBD-FROM-GOLDEN per Rule 8:
+1. Top-level dispatcher result — Java line 1024 `new HashMap<>()` + line 1061-1063 mutation. Per-dim shape varies; each F999 golden reveals its own hash order. Source insertion order: `data, [chart|period], nextLevel, drillPath, level, dimension`. Actual JSON output order = Java HashMap hash-bucket → derive from each golden.
+2. Per-dim processors each `new HashMap<>()` (line 1977 / 2003 / 2024 / 2039 / 2066) — per-dim hash order.
+3. ApiResponse envelope (line 87-93) — 5 fields `code, message, data, timestamp, success` set in this order in `error()` method, but ApiResponse may have Lombok @Data with declaration order: `code, message, data, timestamp, success` (matches setter order). Verify via golden — likely matches but Lombok @JsonPropertyOrder could override.
+
+**LinkedHashMap sites (insertion order, Python dict directly mirrors)**:
+1. Per-dim sub-service outputs (RankingItem / MetricResult / DepartmentDetail) — Lombok @Data declaration order. Python dict literal in declaration order matches.
+
+**ChartConfig (H4 product chart) — Rule 9 sister-spec quirks** (cite, no inline reasoning):
+- `xaxisField` / `yaxisField` LOWERCASE in JSON (NOT camelCase as field name suggests; Lombok-Jackson quirk discovered by sister chats)
+- Empty-case ChartConfig emits null values for unused fields (no `@JsonInclude(NON_NULL)`)
+- Both behaviors locked via Rule 8/9 in `.claude/rules/python-java-port.md`
+
+**DateRange dict (sister-shared) — Rule 9 7-field shape**:
+- 7 fields when serialized via Lombok @Data: `startDate, endDate, granularity, originalExpression, relative, days, valid` (last 2 are derived getters)
+- Drill-down does NOT emit DateRange in response (composite endpoints do; drill-down response has no top-level dateRange field)
+
+---
+
+
+
 
