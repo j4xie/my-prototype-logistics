@@ -148,7 +148,7 @@ This Tier 3 spec inherits the following Tier 2 patterns:
 This spec ADDS the following Tier 3 patterns (potential future Tier 3 sister specs may inherit):
 1. **D1 — 5 missing helpers owned by spec, NOT backfilled into sister files** (avoids reopening shipped specs)
 2. **D2 — `_drilldown_*` namespace prefix on owned helpers** (prevents future cross-import collisions)
-3. **D3+D4 — mixed read-write transaction wrapper** (`engine.begin()` async-via-`_to_thread`)
+3. **D3+D4 — mixed read-write transaction handling** — D3 = the cross-cutting decision (Java `@Transactional` mixed read+write atomicity must be replicated in Python); D4 = the specific implementation (Z1 cycle 4 redesign: async dispatch via sister helpers + separate sync `engine.begin()` tx for recordUsage write only, atomicity preserved via raise-before-write control flow). Often referenced jointly as "D3+D4".
 4. **D5 — T10 visible-vs-internal error info distinction** — service `BusinessException.withHint().withHintTarget()` info dropped by `ApiResponse.error(code, msg)` envelope flattening at controller catch (line 582-585); Python need NOT emit hint/hintTarget. Per R1 cycle 2 finding: Java `ApiResponse` declares 8 total fields (5 always-set + 3 optional UX fields actionHint/severity/hintTarget) but the actual analysis-* / alerts-* recorded goldens emit only 5. Sister test pattern (`test_datasource_contract.py`) strips actionHint/severity/hintTarget defensively. Drill-down §3.8 + §4.3 inherit this strip pattern. Python `wrap_error` (schema_compat.py:59-73) emits 5-field envelope.
 5. **D6 — T2 dead level>1 verbatim port** — port for byte parity even though frontend never sends. Per R3 cycle 2: controller DTO has no `level` field at all, Spring silently ignores `"level":N` in JSON, Java service uses `@Builder.Default level=1` always. L3 dead branch unreachable from HTTP — H2 helper tested via direct unit test in PR-B.
 6. **D7 — userId=null parity** — Java `recordUsage` line 1066 explicitly passes `null` for userId despite SecurityContext having it; Python mirrors for byte parity at DB level (see §3.6 helper signature + §1.6 side effects entry).
@@ -213,8 +213,8 @@ analysis_drilldown.py
 │   ├── #       `from smartbi_compat.date_range import DateRange`
 │   ├── from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 │   └── from smartbi_compat.schema_compat import wrap_response, wrap_error
-│       # ^ both verified at backend/python/smartbi_compat/schema_compat.py:37-73
-│       # wrap_response: 5-field success envelope; wrap_error: 5-field error envelope.
+│       # ^ wrap_response at schema_compat.py:37-56 (5-field success envelope)
+│       # ^ wrap_error    at schema_compat.py:59-73 (5-field error envelope)
 │       # schema_compat.wrap_error_with_hint (line 76-98) emits the 3 optional UX fields
 │       # (actionHint/severity/hintTarget) only when explicitly passed — drill-down does
 │       # NOT use these per T10 (controller catch flattens hint info).
@@ -237,19 +237,20 @@ analysis_drilldown.py
 ├── Helper functions
 │   ├── _compute_drill_path(parent_context, filter_value)            # T4 mirror DTO line 295-302
 │   ├── _default_date_range_this_month()                              # T5 mirror DateRange.thisMonth()
-│   ├── # 5 missing Python helpers (D1 + D2 prefix):
-│   ├── _drilldown_get_province_ranking(conn, factory_id, region, start, end)
-│   ├── _drilldown_get_city_ranking(conn, factory_id, province, start, end)  # T2 dead but ported
-│   ├── _drilldown_get_department_detail(conn, factory_id, dept, start, end)
-│   ├── _drilldown_get_product_distribution_chart(conn, factory_id, start, end)
-│   ├── _drilldown_get_salesperson_metrics(conn, factory_id, salesperson, start, end)
-│   └── _drilldown_record_usage(conn, factory_id, user_id, ...)      # T7 SQL INSERT
-├── Sub-service dispatchers (5)
-│   ├── _process_region_drilldown(conn, factory_id, request, start, end)
-│   ├── _process_department_drilldown(conn, factory_id, request, start, end)
-│   ├── _process_product_drilldown(conn, factory_id, request, start, end)
-│   ├── _process_time_drilldown(conn, factory_id, request, start, end)
-│   └── _process_salesperson_drilldown(conn, factory_id, request, start, end)
+│   ├── # 5 missing Python helpers (D1 + D2 prefix) — all `async def`, no conn arg (Z1 cycle 4):
+│   ├── _drilldown_get_province_ranking(factory_id, region, range_)         # H1
+│   ├── _drilldown_get_city_ranking(factory_id, province, range_)           # H2 D6 dead but ported
+│   ├── _drilldown_get_department_detail(factory_id, dept, start, end)      # H3
+│   ├── _drilldown_get_product_distribution_chart(factory_id, range_)      # H4
+│   ├── _drilldown_get_salesperson_metrics(factory_id, salesperson, range_) # H5
+│   ├── _drilldown_record_usage(conn, factory_id, ...)                     # T7 SQL INSERT (sync, called inside async wrapper)
+│   └── _drilldown_record_usage_async(factory_id, ...)                     # T7 async wrapper (engine.begin tx)
+├── Sub-service dispatchers (5) — all `async def`, no conn arg (Z1 cycle 4):
+│   ├── _process_region_drilldown(factory_id, request, range_)
+│   ├── _process_department_drilldown(factory_id, request, start_date, end_date)  # dept sister takes start/end
+│   ├── _process_product_drilldown(factory_id, request, range_)
+│   ├── _process_time_drilldown(factory_id, request, range_)
+│   └── _process_salesperson_drilldown(factory_id, request, range_)
 ├── Main dispatch (T8 transaction wrapper)
 │   └── _process_drilldown_tx(factory_id, request, user_id) -> dict
 ├── Error helpers (T10)
@@ -267,30 +268,29 @@ HTTP POST /api/mobile/{factory_id}/smart-bi/drill-down
   ├─ JSON body parsed by FastAPI/Pydantic into DrillDownRequestModel
   ├─ verify_jwt_and_factory → AuthContext(factory_id, user_id, role)
   ↓
-_process_drilldown_tx(factory_id, request, user_id)
+_process_drilldown_tx(factory_id, request)
   ├─ # T5: default date range
-  ├─ start_date = request.startDate or _default_date_range_this_month()[0]
-  ├─ end_date = request.endDate or _default_date_range_this_month()[1]
-  ├─ # T8: open transaction (read + write atomicity)
-  ├─ async with engine.begin() as conn:  # via _to_thread shim
-  │     ├─ # T3: case-insensitive dispatch
-  │     ├─ dim_lower = request.dimension.lower()
-  │     ├─ if dim_lower == "region":
-  │     │     ├─ result = _process_region_drilldown(conn, ..., start, end)
-  │     │     │     ├─ if filter_value is None/empty: → _get_region_ranking (sister-Python)
-  │     │     │     ├─ elif level == 1: → _drilldown_get_province_ranking (D1+D2)
-  │     │     │     └─ else (T2 dead): → _drilldown_get_city_ranking (D1+D2)
-  │     ├─ elif dim_lower == "department": → _process_department_drilldown
-  │     ├─ elif dim_lower == "product": → _process_product_drilldown
-  │     ├─ elif dim_lower == "time": → _process_time_drilldown
-  │     ├─ elif dim_lower == "salesperson": → _process_salesperson_drilldown
-  │     ├─ else (incl "customer"): raise DrilldownBusinessException(400, ...)
-  │     ├─ # T9: HashMap mutation order — drillPath, level, dimension
-  │     ├─ result["drillPath"] = _compute_drill_path(request.parentContext, request.value)
-  │     ├─ result["level"] = request.level                     # T2 passthrough
-  │     ├─ result["dimension"] = request.dimension             # T3 ORIGINAL casing
-  │     ├─ # T7: write side-effect
-  │     └─ _drilldown_record_usage(conn, factory_id, user_id, action_type="DRILLDOWN", ...)
+  ├─ start_date, end_date = request.startDate, request.endDate or _default_date_range_this_month()
+  ├─ range_ = DateRange.custom(start_date, end_date)
+  ├─ # READ phase (no tx — async sister helpers manage own connections)
+  ├─ # T3: case-insensitive dispatch
+  ├─ dim_lower = request.dimension.lower()
+  ├─ if dim_lower == "region":
+  │     ├─ result = await _process_region_drilldown(factory_id, request, range_)
+  │     │     ├─ if filter_value is None/empty: → await _get_region_analysis(...)["ranking"] (composite extract)
+  │     │     ├─ elif level == 1: → await _drilldown_get_province_ranking (H1)
+  │     │     └─ else (D6 dead): → await _drilldown_get_city_ranking (H2)
+  ├─ elif dim_lower == "department": → await _process_department_drilldown(factory_id, request, start, end)
+  ├─ elif dim_lower == "product": → await _process_product_drilldown(factory_id, request, range_)
+  ├─ elif dim_lower == "time": → await _process_time_drilldown(factory_id, request, range_)
+  ├─ elif dim_lower == "salesperson": → await _process_salesperson_drilldown(factory_id, request, range_)
+  ├─ else (incl "customer"): raise DrilldownBusinessException(400, ...)  # → no write happens
+  ├─ # T9: HashMap mutation order — drillPath, level, dimension
+  ├─ result["drillPath"] = _compute_drill_path(request.parentContext, request.value)
+  ├─ result["level"] = request.level                     # T2 passthrough
+  ├─ result["dimension"] = request.dimension             # T3 ORIGINAL casing
+  ├─ # WRITE phase (separate engine.begin tx via async wrapper)
+  └─ await _drilldown_record_usage_async(factory_id, action_type="DRILLDOWN")
   └─ return result
 
 # Response wrapping
@@ -423,31 +423,31 @@ These 5 helpers are owned by `analysis_drilldown.py` per organizer Q1 decision A
 2. Drill-down is the only caller — helpers same lifecycle as drill-down.
 3. `_drilldown_*` prefix prevents future cross-import collision (consistent with sister-spec convention: each analysis domain uses its own `_<domain>_*` prefix — region/department/sales/finance/procurement all follow this naming default).
 
+**Z2 cycle 4 — Java impl line refs + return types (verified)**:
+
+| Helper | Java impl location | Return type | Python signature (Z1 cycle 4) |
+|---|---|---|---|
+| H1 `getProvinceRanking` | `RegionAnalysisServiceImpl.java:97` | `List<RankingItem>` | `async def _drilldown_get_province_ranking(factory_id, region, range_) -> list[dict]` |
+| H2 `getCityRanking` | `RegionAnalysisServiceImpl.java:146` | `List<RankingItem>` | `async def _drilldown_get_city_ranking(factory_id, province, range_) -> list[dict]` (D6 dead branch) |
+| H3 `getDepartmentDetail` | `DepartmentAnalysisServiceImpl.java:113` | **`DashboardResponse`** (NOT DepartmentDetail — Z4 cycle 4 fix) | `async def _drilldown_get_department_detail(factory_id, dept, start_date, end_date) -> dict` |
+| H4 `getProductDistributionChart` | `SalesAnalysisServiceImpl.java:537` | `ChartConfig` | `async def _drilldown_get_product_distribution_chart(factory_id, range_) -> dict` |
+| H5 `getSalespersonMetrics` | `SalesAnalysisServiceImpl.java:404` | **`List<MetricResult>`** (NOT single — Z4 cycle 4 fix) | `async def _drilldown_get_salesperson_metrics(factory_id, salesperson, range_) -> list[dict]` |
+
+Impl chat MUST grep-verify these line numbers point to the documented method bodies (not overloads) before plan-write.
+
 #### H1 — `_drilldown_get_province_ranking`
 
-Java reference: `regionService.getProvinceRanking(factoryId, region, startDate, endDate)` (`RegionAnalysisService.java` interface; called from `SmartBIServiceImpl.java:1985-1986`).
+Java reference: `RegionAnalysisServiceImpl.java:97` (verified). Called from `SmartBIServiceImpl.java:1985-1986`.
 
-Find line in impl:
-
-```java
-// In RegionAnalysisServiceImpl.java (line numbers TBD via grep — locate during impl)
-public List<RankingItem> getProvinceRanking(String factoryId, String region,
-                                              LocalDate startDate, LocalDate endDate) { ... }
-```
-
-**Sub-spec**: impl chat MUST grep `RegionAnalysisServiceImpl.java` for `public.*getProvinceRanking` and port the SQL aggregation + `RankingItem` build logic verbatim.
-
-Python signature (D2 prefix, sync-conn-bound for T8 transaction):
+Python signature (D2 prefix, async, no conn — Z1 cycle 4):
 
 ```python
-def _drilldown_get_province_ranking(
-    conn,                    # SQLAlchemy connection (inside _process_drilldown_tx tx)
+async def _drilldown_get_province_ranking(
     factory_id: str,
     region: str,             # parent filter from DrillDownRequest.value
-    start_date: date,
-    end_date: date,
+    range_: DateRange,       # Z1 cycle 4 — drill-down's range_ DateRange wrapper
 ) -> list[dict]:
-    """Mirror RegionAnalysisServiceImpl.getProvinceRanking.
+    """Mirror RegionAnalysisServiceImpl.getProvinceRanking (line 97).
 
     SQL: aggregate by province where region=:region.
     Returns list of RankingItem dicts (Lombok @Data declaration order).
@@ -461,28 +461,27 @@ def _drilldown_get_province_ranking(
     # Ranking sort by total_amount DESC. completionRate via _calculate_completion_rate
     # (region-style arithmetic per region spec R-T13: (actual/target).quantize(4) * 100).
     # alertLevel via _determine_target_completion_alert (60/85 inline).
+    # Wrapped in `_to_thread(_exec)` for sync SQLAlchemy + Python 3.8 compat.
     ...
 ```
 
 Implementation details (SQL shape, ranking iteration, alert computation) are sub-spec'd in PR-A plan — golden recording + sister `analysis_region.py:_build_region_ranking` provides the template.
 
-#### H2 — `_drilldown_get_city_ranking` (T2 dead but ported)
+#### H2 — `_drilldown_get_city_ranking` (D6 dead but ported)
 
-Java reference: `regionService.getCityRanking(factoryId, province, startDate, endDate)` (called from `SmartBIServiceImpl.java:1990-1991`, behind `level > 1` branch).
+Java reference: `RegionAnalysisServiceImpl.java:146` (verified). Called from `SmartBIServiceImpl.java:1990-1991`, behind `level > 1` branch.
 
-Per T2 LOCK: `level` always 1 in API reality. This helper is **dead code in production** but ported for byte parity. Frontend never sends level=2 to drill-down — and even if it did, controller DTO has no `level` field (R3 cycle 2): Spring silently ignores `"level":2` in JSON, Java sees default level=1, takes L2 path. **No L3 dead golden recordable** — H2 tested via direct unit test in PR-B (test_drilldown_arithmetic.py).
+Per D6 LOCK: `level` always 1 in API reality. This helper is **dead code in production** but ported for byte parity. Frontend never sends level=2 to drill-down — and even if it did, controller DTO has no `level` field (R3 cycle 2): Spring silently ignores `"level":2` in JSON, Java sees default level=1, takes L2 path. **No L3 dead golden recordable** — H2 tested via direct unit test in PR-B (test_drilldown_arithmetic.py).
 
 ```python
-def _drilldown_get_city_ranking(
-    conn,
+async def _drilldown_get_city_ranking(
     factory_id: str,
     province: str,           # parent filter from DrillDownRequest.value (province name from region L2)
-    start_date: date,
-    end_date: date,
+    range_: DateRange,       # Z1 cycle 4 — async, no conn
 ) -> list[dict]:
-    """Mirror RegionAnalysisServiceImpl.getCityRanking.
+    """Mirror RegionAnalysisServiceImpl.getCityRanking (line 146).
 
-    T2 NOTE: dead in API reality (frontend never level>1). Ported for byte parity.
+    D6 NOTE: dead in API reality (frontend never level>1). Ported for byte parity.
 
     SQL: aggregate by city where province=:province.
     KEY-ORDER from RankingItem (same as H1): inherited from drill-down-F999-region-L2.json
@@ -495,48 +494,47 @@ def _drilldown_get_city_ranking(
 
 #### H3 — `_drilldown_get_department_detail`
 
-Java reference: `deptService.getDepartmentDetail(factoryId, deptName, startDate, endDate)` (called from `SmartBIServiceImpl.java:2011-2012`).
+Java reference: `DepartmentAnalysisServiceImpl.java:113` (verified). Called from `SmartBIServiceImpl.java:2011-2012`.
 
-Returns `DepartmentDetail` DTO (NOT a list — different shape from RankingItem).
+Returns **`DashboardResponse`** DTO (NOT `DepartmentDetail` — Z2/Z4 cycle 4 fix; verify Java method signature at line 113).
 
 ```python
-def _drilldown_get_department_detail(
-    conn,
+async def _drilldown_get_department_detail(
     factory_id: str,
     dept_name: str,          # from DrillDownRequest.value
     start_date: date,
-    end_date: date,
+    end_date: date,          # Z1 cycle 4 — dept sister takes (start, end), no range_
 ) -> dict:
-    """Mirror DepartmentAnalysisServiceImpl.getDepartmentDetail.
+    """Mirror DepartmentAnalysisServiceImpl.getDepartmentDetail (line 113).
 
-    Returns single DepartmentDetail dict, NOT list. Includes:
+    Returns single `DashboardResponse` dict (NOT DepartmentDetail per Z2/Z4 cycle 4 verification).
+    Includes:
     - Department aggregate metrics (total_amount, total_target, completion_rate, alert_level)
     - Salesperson breakdown list (per-person rankings within dept)
-    - Other DepartmentDetail Lombok @Data fields TBD via golden
+    - Other DashboardResponse Lombok @Data fields — TBD via golden inspection
 
-    KEY-ORDER from DepartmentDetail: VERIFY from drill-down-F999-department-L2.json golden.
+    KEY-ORDER from DashboardResponse: VERIFY from drill-down-F999-department-L2.json golden
+    via `jq -r '.data.data | keys_unsorted[]'`.
     """
     ...
 ```
 
 #### H4 — `_drilldown_get_product_distribution_chart`
 
-Java reference: `salesService.getProductDistributionChart(factoryId, startDate, endDate)` (called from `SmartBIServiceImpl.java:2028`).
+Java reference: `SalesAnalysisServiceImpl.java:537` (verified). Called from `SmartBIServiceImpl.java:2028`.
 
-Returns `ChartConfig` — same DTO as sister `_build_geographic_heatmap` in `analysis_region.py`. Per Rule 8 (and **upcoming Rule 9** sister-spec quirks identified by organizer):
+Returns `ChartConfig` — same Lombok @Data class as sister specs use for chart outputs (e.g., region's `_build_geographic_heatmap` ChartConfig with chartType=MAP). Product distribution chart uses chartType=PIE or BAR — verify via golden. Per Rule 8 + Rule 9 (landed via PR #55):
 - `chartType`/`title`/`data`/`options` Lombok @Data declaration order
 - **`xaxisField` / `yaxisField` LOWERCASE** (Lombok-Jackson quirk; sister-spec discovery — NOT camelCase as field name suggests)
 - **Empty case emits nulls for ChartConfig**, NOT skip (no `@JsonInclude(NON_NULL)` annotation; sister-spec discovery)
 - `options` Map.of(N) sites: KEY-ORDER-FROM-GOLDEN per Rule 8
 
 ```python
-def _drilldown_get_product_distribution_chart(
-    conn,
+async def _drilldown_get_product_distribution_chart(
     factory_id: str,
-    start_date: date,
-    end_date: date,
+    range_: DateRange,       # Z1 cycle 4 — async, no conn
 ) -> dict:
-    """Mirror SalesAnalysisServiceImpl.getProductDistributionChart.
+    """Mirror SalesAnalysisServiceImpl.getProductDistributionChart (line 537).
 
     Returns ChartConfig (chart_type=PIE or BAR — verify via golden).
     Output dict keys per Rule 8 + Rule 9 (lowercase xaxis/yaxis, empty-emits-nulls).
@@ -548,26 +546,28 @@ def _drilldown_get_product_distribution_chart(
 
 #### H5 — `_drilldown_get_salesperson_metrics`
 
-Java reference: `salesService.getSalespersonMetrics(factoryId, salesperson, startDate, endDate)` (called from `SmartBIServiceImpl.java:2071-2072`).
+Java reference: `SalesAnalysisServiceImpl.java:404` (verified). Called from `SmartBIServiceImpl.java:2071-2072`.
 
-Returns `MetricResult` — Lombok @Data class used in sister specs (e.g., `analysis_region.py` `_build_region_target_completion`).
+Returns **`List<MetricResult>`** (NOT a single MetricResult — Z2/Z4 cycle 4 fix; verified Java method signature is `public List<MetricResult> getSalespersonMetrics(...)` at line 404). Each MetricResult element has 10 Lombok @Data fields.
 
 ```python
-def _drilldown_get_salesperson_metrics(
-    conn,
+async def _drilldown_get_salesperson_metrics(
     factory_id: str,
     salesperson: str,        # from DrillDownRequest.value
-    start_date: date,
-    end_date: date,
-) -> dict:
-    """Mirror SalesAnalysisServiceImpl.getSalespersonMetrics.
+    range_: DateRange,       # Z1 cycle 4 — async, no conn
+) -> list[dict]:
+    """Mirror SalesAnalysisServiceImpl.getSalespersonMetrics (line 404).
 
-    Returns single MetricResult dict (10 fields per Lombok @Data):
+    Returns LIST of MetricResult dicts (NOT single — Z2/Z4 cycle 4 fix).
+    Each MetricResult has 10 Lombok @Data fields:
     metricCode, metricName, value, formattedValue, unit, changePercent,
     changeDirection, alertLevel, dimensionValue, description.
 
+    Python wraps the list in `{"data": [...]}` at the dim processor level —
+    actual API response is `{"data": [{...}, {...}, ...]}` for salesperson L2.
+
     metric_code likely "SALESPERSON_<name>" — verify via golden.
-    KEY-ORDER from drill-down-F999-salesperson-L1.json (when filter_value present).
+    KEY-ORDER per element from MetricResult Lombok @Data declaration order.
     """
     ...
 ```
@@ -610,11 +610,11 @@ private Map<String, Object> processRegionDrillDown(...) {
 }
 ```
 
-Python mirror (Rule 1 explicit None+empty checks; T9 HashMap insertion order via Python dict literal):
+Python mirror (Rule 1 explicit None+empty checks; T9 HashMap insertion order via Python dict literal; Z1 cycle 4 redesign — async, no conn):
 
 ```python
-def _process_region_drilldown(
-    conn, factory_id: str, request, start_date: date, end_date: date
+async def _process_region_drilldown(
+    factory_id: str, request, range_: DateRange
 ) -> dict:
     """Mirror processRegionDrillDown (service line 1975-1996).
 
@@ -627,27 +627,37 @@ def _process_region_drilldown(
     expose it; Java service uses @Builder.Default 1). The `else` branch (L3)
     is unreachable from HTTP — H2 helper exists for parity-by-inspection only,
     tested via direct unit test in PR-B (no L3 golden, see §4.1).
+
+    Z1 NOTE: L1 path uses sister `_get_region_analysis(factory_id, range_)`
+    composite + extracts `["ranking"]` because no standalone `_get_region_ranking`
+    helper exists in `analysis_region.py` on origin/main (verified). The composite
+    does extra work (heatmap + opportunityScores + previous-period query) that
+    drill-down ignores — acceptable for this audit-logged endpoint's traffic
+    pattern. If perf becomes a concern, add `_drilldown_get_region_ranking`
+    helper that wraps sync `_build_region_ranking(rows)` (analysis_region.py:478)
+    with row-fetch via `_query_region_full` — defer to Phase 3+.
     """
     filter_value = request.value
     level = request.level
     # KEY-ORDER from drill-down-F999-region-L*.json golden (Rule 8 — HashMap):
     # tentative source order [data, nextLevel] but VERIFY via golden.
     if filter_value is None or filter_value == "":
+        composite = await _get_region_analysis(factory_id, range_)
         return {
-            "data": _get_region_ranking(conn, factory_id, start_date, end_date),
+            "data": composite["ranking"],   # extract ranking from composite
             "nextLevel": "province",
         }
     if level is None or level <= 1:
         return {
-            "data": _drilldown_get_province_ranking(
-                conn, factory_id, filter_value, start_date, end_date
+            "data": await _drilldown_get_province_ranking(
+                factory_id, filter_value, range_
             ),
             "nextLevel": "city",
         }
-    # T2 dead branch — port for parity
+    # D6 dead branch — port for parity (unreachable from HTTP per R3)
     return {
-        "data": _drilldown_get_city_ranking(
-            conn, factory_id, filter_value, start_date, end_date
+        "data": await _drilldown_get_city_ranking(
+            factory_id, filter_value, range_
         ),
         "nextLevel": None,
     }
@@ -671,26 +681,29 @@ private Map<String, Object> processDepartmentDrillDown(...) {
 }
 ```
 
-Python mirror:
+Python mirror (Z1 cycle 4 redesign — async, no conn; sister `_get_department_ranking` takes `(factory_id, start, end)` per origin/main `analysis_department.py:373`):
 
 ```python
-def _process_department_drilldown(
-    conn, factory_id: str, request, start_date: date, end_date: date
+async def _process_department_drilldown(
+    factory_id: str, request, start_date: date, end_date: date
 ) -> dict:
     """Mirror processDepartmentDrillDown (service line 2001-2017).
 
     L1 (no filter)  → ranking + nextLevel=salesperson
     L2 (filter set) → detail + nextLevel=null
+
+    Note: department sister helper `_get_department_ranking` takes
+    `(factory_id, start_date, end_date)` directly — does NOT need range_ wrapping.
     """
     filter_value = request.value
     if filter_value is None or filter_value == "":
         return {
-            "data": _get_department_ranking(conn, factory_id, start_date, end_date),
+            "data": await _get_department_ranking(factory_id, start_date, end_date),
             "nextLevel": "salesperson",
         }
     return {
-        "data": _drilldown_get_department_detail(
-            conn, factory_id, filter_value, start_date, end_date
+        "data": await _drilldown_get_department_detail(
+            factory_id, filter_value, start_date, end_date
         ),
         "nextLevel": None,
     }
@@ -710,11 +723,11 @@ private Map<String, Object> processProductDrillDown(...) {
 }
 ```
 
-Python mirror — single layer, no branching:
+Python mirror — single layer, no branching (Z1 cycle 4 redesign — async, no conn; sister `_get_product_ranking` takes `range_` per `analysis_sales.py:1511`):
 
 ```python
-def _process_product_drilldown(
-    conn, factory_id: str, request, start_date: date, end_date: date
+async def _process_product_drilldown(
+    factory_id: str, request, range_: DateRange
 ) -> dict:
     """Mirror processProductDrillDown (service line 2022-2032). Single-layer.
 
@@ -722,10 +735,8 @@ def _process_product_drilldown(
     KEY-ORDER from drill-down-F999-product.json golden (HashMap source: data, chart, nextLevel).
     """
     return {
-        "data": _get_product_ranking(conn, factory_id, start_date, end_date),
-        "chart": _drilldown_get_product_distribution_chart(
-            conn, factory_id, start_date, end_date
-        ),
+        "data": await _get_product_ranking(factory_id, range_),
+        "chart": await _drilldown_get_product_distribution_chart(factory_id, range_),
         "nextLevel": None,
     }
 ```
@@ -751,11 +762,11 @@ private Map<String, Object> processTimeDrillDown(...) {
 }
 ```
 
-Python mirror (T2 lock: level always 1 in production, but switch ports for parity; D8 dead branch verbatim):
+Python mirror (T2 lock: level always 1 in production, but switch ports for parity; D6 dead branch verbatim — Z5 cycle 4 fix; Z1 cycle 4 redesign — async, no conn):
 
 ```python
-def _process_time_drilldown(
-    conn, factory_id: str, request, start_date: date, end_date: date
+async def _process_time_drilldown(
+    factory_id: str, request, range_: DateRange
 ) -> dict:
     """Mirror processTimeDrillDown (service line 2037-2059).
 
@@ -775,12 +786,10 @@ def _process_time_drilldown(
         period = "MONTH"
     elif level == 2:
         period = "WEEK"
-    else:  # T2 dead default
+    else:  # D6 dead default (T2 lock)
         period = "DAY"
     return {
-        "data": _get_sales_trend_chart(
-            conn, factory_id, start_date, end_date, period
-        ),
+        "data": await _get_sales_trend_chart(factory_id, range_, period),
         "period": period,
     }
 ```
@@ -806,8 +815,8 @@ private Map<String, Object> processSalespersonDrillDown(...) {
 Python mirror:
 
 ```python
-def _process_salesperson_drilldown(
-    conn, factory_id: str, request, start_date: date, end_date: date
+async def _process_salesperson_drilldown(
+    factory_id: str, request, range_: DateRange
 ) -> dict:
     """Mirror processSalespersonDrillDown (service line 2064-2076).
 
@@ -818,15 +827,19 @@ def _process_salesperson_drilldown(
     dim processors which check level for L2/L3 paths). Both branches (L1 ranking +
     L2 metrics) are reachable from frontend at any time. Both H5 (`_drilldown_get_salesperson_metrics`)
     and `_get_salesperson_ranking` (sister) are in production scope.
+
+    Z1 cycle 4 redesign: async, no conn; sister `_get_salesperson_ranking` takes
+    `range_` per `analysis_sales.py:1485`. Z2/Z4 cycle 4: H5 returns List[MetricResult]
+    (NOT single dict) — Java line 404 verified. Python wraps the list in `{"data": [...]}`.
     """
     filter_value = request.value
     if filter_value is None or filter_value == "":
         return {
-            "data": _get_salesperson_ranking(conn, factory_id, start_date, end_date),
+            "data": await _get_salesperson_ranking(factory_id, range_),
         }
     return {
-        "data": _drilldown_get_salesperson_metrics(
-            conn, factory_id, filter_value, start_date, end_date
+        "data": await _drilldown_get_salesperson_metrics(
+            factory_id, filter_value, range_
         ),
     }
 ```
@@ -966,7 +979,7 @@ public Map<String, Object> processDrillDown(String factoryId, DrillDownRequest r
 }
 ```
 
-Python wrapper — D3+D4 (mixed read-write transaction via SQLAlchemy `engine.begin()` + `_to_thread` shim):
+Python wrapper — Z1 cycle 4 REDESIGN: read-dispatch via async sister helpers (no shared tx), then separate sync tx for recordUsage write only. Java atomicity preserved via raise-before-write semantics:
 
 ```python
 async def _process_drilldown_tx(
@@ -975,88 +988,119 @@ async def _process_drilldown_tx(
 ) -> dict:
     """Mirror SmartBIServiceImpl.processDrillDown @Transactional (line 1018-1069).
 
-    D4: SQLAlchemy `engine.begin()` begins a new top-level transaction; commits
-    on context exit; rolls back on exception. Matches Java `@Transactional` default
-    behavior for top-level entry (REQUIRED → new tx; READ_COMMITTED isolation).
-    Read dispatch + write recordUsage in one transaction.
-    BusinessException raised BEFORE recordUsage call → tx rolled back, no usage row written.
+    Z1 cycle 4 redesign: sister helpers (_get_region_analysis, _get_department_ranking,
+    _get_product_ranking, _get_sales_trend_chart, _get_salesperson_ranking) are all
+    `async def` and manage their own DB connections internally via `await _to_thread(...)`.
+    They DO NOT take a `conn` parameter and CANNOT be called from sync context.
+    Therefore the original "single engine.begin() tx wrapping read+write" design (cycle
+    2 R5) is incompatible with sister-helper reality.
 
-    T8: engine.begin() context — autocommit on success, rollback on exception.
-        NOT engine.connect() — that's read-only mode.
+    New design: read-dispatch async (calls sister helpers natively), then separate
+    sync tx for the single write (recordUsage). Java's atomicity guarantee
+    (rollback recordUsage if dispatch raises) is preserved through Python's
+    raise-before-write control flow:
+      - dispatch raises (BusinessException / NPE / etc) → recordUsage line never reached → no row written
+      - dispatch succeeds → recordUsage opens own engine.begin() tx → commits → row written
+    The DB-level "atomic across read+write" is NOT preserved (read happens outside tx),
+    but the OBSERVABLE behavior matches Java at the recordUsage row-write level.
 
-    Python 3.8 compat: wrapped in _to_thread shim (sync SQLAlchemy → async via executor).
+    D5+D6: T10 BusinessException flattens at controller catch (5-field envelope).
+           T2 dead level>1 ports verbatim per parity.
+
+    Python 3.8 compat: read sister helpers async natively; write helper wrapped in
+    _to_thread shim (sync SQLAlchemy engine.begin() → async via executor).
+    """
+    # T5: default date range
+    start_date = request.startDate
+    end_date = request.endDate
+    if start_date is None or end_date is None:
+        start_date, end_date = _default_date_range_this_month()
+    range_ = DateRange.custom(start_date, end_date)   # for sister helpers expecting DateRange
+
+    # T3: case-insensitive dispatch
+    # Sister helpers are async — drill-down dim processors below are also async wrappers.
+    dim_lower = request.dimension.lower()
+    if dim_lower == "region":
+        result = await _process_region_drilldown(factory_id, request, range_)
+    elif dim_lower == "department":
+        result = await _process_department_drilldown(factory_id, request, start_date, end_date)
+    elif dim_lower == "product":
+        result = await _process_product_drilldown(factory_id, request, range_)
+    elif dim_lower == "time":
+        result = await _process_time_drilldown(factory_id, request, range_)
+    elif dim_lower == "salesperson":
+        result = await _process_salesperson_drilldown(factory_id, request, range_)
+    else:
+        # T10: BusinessException equivalent (caught by route handler → wrap_error envelope)
+        # Note: raised BEFORE write tx opens, so no usage row written. Matches Java
+        # @Transactional rollback semantics observably (no row in either case).
+        raise DrilldownBusinessException(
+            code=400,
+            message=f"不支持的下钻维度: {request.dimension}",
+        )
+
+    # T9: HashMap mutation order — drillPath, level, dimension
+    # Per Rule 8, the actual output key order MUST be derived from F999 goldens.
+    # Java line 1024 uses `new HashMap<>()` (hash-bucket order). Python dict literal
+    # insertion order shown here is SOURCE order; impl chat MUST inspect goldens and
+    # reorder per-dim result dict + these top-level keys to match Jackson hash output.
+    result["drillPath"] = _compute_drill_path(
+        request.parentContext, request.value
+    )
+    result["level"] = request.level                       # T2 passthrough
+    result["dimension"] = request.dimension               # T3: ORIGINAL casing
+
+    # T7: write side-effect — separate engine.begin() tx via async wrapper
+    # Java atomicity preserved by raise-before-write control flow (see docstring).
+    await _drilldown_record_usage_async(
+        factory_id=factory_id,
+        action_type="DRILLDOWN",
+    )
+
+    return result
+
+
+async def _drilldown_record_usage_async(
+    factory_id: str,
+    action_type: str = "DRILLDOWN",
+    user_id: Optional[int] = None,         # Java passes null at line 1066 (D7)
+    query_text: Optional[str] = None,
+    token_count: int = 0,
+    cost_amount: Decimal = Decimal("0"),   # D8 documented divergence — see §7.5
+    cache_hit: bool = False,
+    success: bool = True,
+) -> None:
+    """Async wrapper around sync `_drilldown_record_usage` (T7) using `engine.begin()`.
+
+    Opens a fresh write tx via SQLAlchemy `engine.begin()` (autocommit on success,
+    rollback on exception). Wrapped in `_to_thread` shim for Python 3.8 compat.
     """
     def _exec():
         engine = _get_sync_engine()
-        with engine.begin() as conn:    # D4: tx scope
-            # T5: default date range
-            start_date = request.startDate
-            end_date = request.endDate
-            if start_date is None or end_date is None:
-                start_date, end_date = _default_date_range_this_month()
-
-            # T3: case-insensitive dispatch
-            dim_lower = request.dimension.lower()
-            if dim_lower == "region":
-                result = _process_region_drilldown(conn, factory_id, request, start_date, end_date)
-            elif dim_lower == "department":
-                result = _process_department_drilldown(conn, factory_id, request, start_date, end_date)
-            elif dim_lower == "product":
-                result = _process_product_drilldown(conn, factory_id, request, start_date, end_date)
-            elif dim_lower == "time":
-                result = _process_time_drilldown(conn, factory_id, request, start_date, end_date)
-            elif dim_lower == "salesperson":
-                result = _process_salesperson_drilldown(conn, factory_id, request, start_date, end_date)
-            else:
-                # T10: BusinessException equivalent (caught by handler → ApiResponse.error)
-                raise DrilldownBusinessException(
-                    code=400,
-                    message=f"不支持的下钻维度: {request.dimension}",
-                )
-
-            # T9: HashMap mutation order — drillPath, level, dimension
-            # Python dict insertion order ≡ Java LinkedHashMap insertion order.
-            # But Java line 1024 used `new HashMap<>()` not LinkedHashMap → Java emits
-            # in HashMap hash-bucket order, NOT source order. Per Rule 8, the actual
-            # output key order MUST be derived from F999 goldens. The Python additions
-            # below APPEND to the per-dim result dict; their position in JSON output
-            # is determined by Jackson serializing Java HashMap's hash buckets.
-            #
-            # → Spec §4.2 mandates impl chat to inspect each F999 golden and reorder
-            #   per-dim result dict + these top-level keys to match.
-            result["drillPath"] = _compute_drill_path(
-                request.parentContext, request.value
-            )
-            result["level"] = request.level                       # T2 passthrough
-            result["dimension"] = request.dimension               # T3: ORIGINAL casing
-
-            # T7: write side-effect — INSIDE the same tx
+        with engine.begin() as conn:    # write tx scope
             _drilldown_record_usage(
                 conn=conn,
                 factory_id=factory_id,
-                user_id=None,            # Java passes null at line 1066 (D7)
-                action_type="DRILLDOWN",
-                query_text=None,
-                token_count=0,
-                cost_amount=Decimal("0"),
-                cache_hit=False,
-                success=True,
+                user_id=user_id,
+                action_type=action_type,
+                query_text=query_text,
+                token_count=token_count,
+                cost_amount=cost_amount,
+                cache_hit=cache_hit,
+                success=success,
             )
-        # tx auto-commits on context exit (or rollbacks on exception)
-
-        return result
-
-    return await _to_thread(_exec)
+    await _to_thread(_exec)
 ```
 
-**SQLAlchemy sync vs asyncpg native + tx pattern choice — design decision (R5 cycle 2)**:
-- **Choice**: Sync SQLAlchemy `engine.begin()` + `_to_thread` shim
+**SQLAlchemy sync + tx pattern choice — design decision (Z1 cycle 4 redesign supersedes R5 cycle 2)**:
+- **Choice**: Async dispatch (sister helpers natively async) + sync `engine.begin()` for recordUsage write only, both inside `_to_thread` for Python 3.8 compat.
 - **`_to_thread` rationale**: Matches sister `analysis_region.py:50` / `analysis_sales.py:50` shim patterns (Phase 2A consistency).
-- **`engine.begin()` rationale (NEW pattern for Phase 2A)**: Sister modules use `engine.connect()` (read-only context, NO commit) for read-only paths, and `get_db_context()` from `smartbi.database.connection` + explicit `db.commit()` for writes (e.g., `query_templates_write.py`). Drill-down is the FIRST module in `smartbi_compat/` to mix read+write atomically — `engine.begin()` provides the cleanest tx scope for this case (autocommit on context exit, rollback on exception). Could alternatively use `get_db_context() + commit()` pattern for sister consistency; chose `engine.begin()` for explicit tx scope.
-- **Future Tier 3 sister specs**: should adopt one of the two patterns consistently. If `get_db_context()` becomes the established Phase 2A write pattern via more sister adoption, drill-down impl can be retrofitted post-PR-A.
-- **Rejected alternative**: asyncpg native (`async with pool.acquire() as conn`). Rejected because Phase 2A standardized on sync SQLAlchemy + `_to_thread`; diverging here adds maintenance surface area.
+- **Why NOT a single shared `engine.begin()` tx wrapping read+write (Z1 cycle 4 finding)**: Sister helpers `_get_region_analysis`, `_get_department_ranking`, `_get_product_ranking`, etc. are all `async def` and manage their own DB connections internally via `await _to_thread(_query_*, ...)`. They DO NOT accept a `conn` parameter. The earlier (cycle 2 R5) design assumed a shared-conn pattern that's incompatible with sister-helper reality.
+- **Atomicity preservation**: Java `@Transactional` provides DB-level rollback if dispatch raises. Python preserves the OBSERVABLE behavior (no usage row on dispatch failure) through raise-before-write control flow: if dispatch raises, the recordUsage line is unreachable, no tx ever opens, no row ever written. Matches Java's effective behavior at the row-write level.
+- **Future Tier 3 sister specs (D3+D4 evolution)**: This 2-stage pattern (async read + sync write tx) IS the Phase 2A write convention going forward. If a future sister has multiple writes that must be atomic with each other, they can wrap in a single `engine.begin()` like `_drilldown_record_usage_async` does.
+- **Rejected alternative**: True async DB tx (requires async SQLAlchemy 1.4+ or asyncpg native). Rejected because Phase 2A standardized on sync SQLAlchemy + `_to_thread`; introducing async DB driver here is scope creep.
 
-**Note on tx propagation/isolation**: `engine.begin()` begins a NEW top-level transaction (no parent join — there's no parent tx in our async-via-`_to_thread` flow). For drill-down's top-level entry case, this matches Java `@Transactional` REQUIRED-default behavior: at top entry, REQUIRED creates a new tx. Isolation defaults to PG `READ_COMMITTED` (asyncpg + SQLAlchemy default). Both match Java `@Transactional` defaults at this entry point.
+**Note on tx propagation/isolation**: `engine.begin()` (called inside `_drilldown_record_usage_async._exec`) begins a NEW top-level transaction (no parent join). Java `@Transactional` REQUIRED at top entry also creates a new tx. Isolation defaults to PG `READ_COMMITTED` (SQLAlchemy default). Both match Java `@Transactional` defaults at this entry point. Reads outside tx have no isolation constraint (not problematic — drill-down doesn't need read-committed-with-write-consistency).
 
 ### 3.8 `DrilldownBusinessException` + custom handler (T10)
 
@@ -1156,6 +1200,9 @@ async def drill_down(
     Top-level HTTP status 200 even for BusinessException (matches Java).
     """
     try:
+        # Z1 cycle 4 redesign: _process_drilldown_tx is now top-level async (no _exec wrapper);
+        # dispatches via await to async sister + drill-down helpers; opens separate engine.begin
+        # tx for recordUsage write.
         result = await _process_drilldown_tx(
             factory_id=auth.factory_id,
             request=request,
@@ -1213,6 +1260,8 @@ class DrillDownRequestModel(BaseModel):
     parentValue: Optional[str] = None          # accepted but not read by drill-down dispatch
                                                 # (Java service holds them but processDrillDown
                                                 # / dim processors don't invoke getParentDimension/Value)
+                                                # Note: NOT used by T4 _compute_drill_path (which
+                                                # uses parentContext, a separate field) — Z7 cycle 4 clarification
     filters: dict = Field(default_factory=dict)
     startDate: Optional[date] = None
     endDate: Optional[date] = None
@@ -1245,6 +1294,47 @@ Spec discipline: Python accepts `parentContext` from JSON body for forward-compa
 **Option B** (in-spec ad-hoc): Inline `curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data-binary '@<json-body>.json' "$URL" | jq` per-golden in this PR-A's record script. Less reusable but unblocks immediately.
 
 **Decision**: Option A. Script extension lands BEFORE drill-down PR-A.
+
+**Z3 cycle 4 — Concrete script diff for Option A**:
+
+```bash
+# Existing scripts/record-java-golden.sh uses positional args:
+#   <factory_id> <endpoint_path> <output_filename> [--prod]
+#
+# Extension adds optional --method / --data-json flags AFTER positional args.
+# Existing GET-only callers continue to work (default --method GET).
+
+# In scripts/record-java-golden.sh, after line 22 ENV_FLAG="${4:-test}":
+- ENV_FLAG="${4:-test}"
++ # Parse optional flags after 3 required positional args
++ shift 3
++ METHOD="GET"
++ DATA_JSON=""
++ ENV_FLAG="test"
++ while [[ $# -gt 0 ]]; do
++     case "$1" in
++         --method)    METHOD="$2"; shift 2;;
++         --data-json) DATA_JSON="$2"; shift 2;;
++         --prod)      ENV_FLAG="--prod"; shift;;
++         *)           echo "Unknown flag: $1" >&2; exit 1;;
++     esac
++ done
+
+# In scripts/record-java-golden.sh, replace line 61 curl invocation:
+- curl -sS --fail -H "Authorization: Bearer $TOKEN" "$URL" \
++ if [[ "$METHOD" == "POST" ]]; then
++     curl -sS --fail -X POST \
++         -H "Authorization: Bearer $TOKEN" \
++         -H "Content-Type: application/json" \
++         --data "$DATA_JSON" "$URL" \
++ else
++     curl -sS --fail -H "Authorization: Bearer $TOKEN" "$URL" \
++ fi \
+    | python3 -c "import json, sys; print(json.dumps(json.load(sys.stdin), indent=2, ensure_ascii=False))" \
+    > "$OUT_PATH"
+```
+
+Total diff: ~15 lines added, 2 lines modified. Backward-compatible (default GET behavior preserved).
 
 Recording commands (assuming Option A landed):
 
@@ -1927,7 +2017,7 @@ In drill-down context, Decimal fields appear in:
 
 - **Rule 1** (Null fallback `is not None` 三元): `_compute_drill_path` parent_context + filter_value None checks, `_process_*_drilldown` filter_value None checks, `_drilldown_record_usage` user_id None default
 - **Rule 2** (WEEK calendar year): N/A — drill-down does not emit period keys (time dim emits `period: "DAY"|"WEEK"|"MONTH"` but as a top-level scalar string, not a period_key in series data)
-- **Rule 3** (函数签名 1:1 mirror): 5 dim processors `_process_*_drilldown(conn, factory_id, request, start_date, end_date)` mirror Java private methods. `_process_drilldown_tx(factory_id, request, user_id)` is a wrapper (deviates intentionally — D4 acknowledged).
+- **Rule 3** (函数签名 1:1 mirror): 5 dim processors are async `_process_*_drilldown(factory_id, request, range_or_start_end)` (Z1 cycle 4 — sister-helper-driven signatures, no conn arg). `_process_drilldown_tx(factory_id, request)` is a top-level async wrapper (deviates intentionally — D3+D4 redesigned per Z1 cycle 4 to use async dispatch + separate sync write tx).
 - **Rule 4** (`_decimal_to_number`): per-dim sub-service outputs (RankingItem.value/target/completionRate, MetricResult.value/changePercent, ChartConfig data Decimal fields)
 - **Rule 5** (SELECT *): `_drilldown_get_*` helpers may use SELECT * for sister-chat extensibility; sister-shared SQL helpers (e.g., `_query_sales_data` for product helpers) per existing convention
 - **Rule 6** (输入 None-check): All 5 missing helpers + `_process_drilldown_tx` reject None for factory_id / start_date / end_date
@@ -1979,9 +2069,65 @@ Future Tier 3 sister specs (none planned — drill-down is last) would inherit (
 
 ---
 
+### 9.5 Audit pattern lessons (from drill-down spec 4-cycle review)
+
+The drill-down spec underwent a full 4-cycle audit (self / spec-reviewer / cross-spec / final-impl-reviewer) catching **44 distinct findings** across cycles (cycle 1: 14, cycle 2: 12, cycle 3: 9, cycle 4: 9). Several recurring failure modes emerged that future Tier 3+ spec chats should watch for:
+
+#### 9.5.1 Incomplete-sweep failure mode (recurring across cycles 2-4)
+
+**Pattern**: A "fix all instances" decision (e.g., cycle 2 R1 8→5 envelope claim) gets applied to N-1 of N locations, leaving 1+ stale references. Caught at next cycle as a regression.
+
+**Instances**:
+- Cycle 2 R1 sweep missed §1.1 line 77 → cycle 3 X1
+- Cycle 2 R3 sweep missed 8 "9 → 8 goldens" locations → cycle 3 X3
+- Cycle 2 R5 sweep missed §9.4 lineage statement → cycle 3 X6
+- Cycle 2 R9 sweep missed §9.3 line 1935 stale `1731-1741` → cycle 3 X9
+- Cycle 3 X4 sweep missed §3.5 line 754 D8/D6 confusion → cycle 4 Z5
+- Cycle 3 X9 sweep missed §10 PR #24 caveat → cycle 4 Z9
+
+**Mitigation (cycle 4 introduced)**: **Post-edit grep verification protocol** — after applying a fix, run `grep -nE "<stale pattern>" <spec>` and confirm 0 matches before commit. Each finding should attach `verify-real` + `verify-fixed` grep commands. Caught X3 false-positive grep matches before assuming sweep done.
+
+#### 9.5.2 Fabricated cite failure mode (cycle 3 X2 + memory `feedback_phase2a_sister_spec_import_audit.md`)
+
+**Pattern**: Spec invents a precedent ("procurement spec PR #40 I6 fix") that doesn't exist in any sister spec. Cited 3 times to justify a sound decision but with fabricated evidence.
+
+**Mitigation**: For every cross-spec claim ("inherited from X"), open the sister spec and grep for the cited pattern. If the pattern doesn't exist, either find the real precedent or switch to honest "emerged organically" / "decision made here for the first time" wording.
+
+#### 9.5.3 Phantom interface failure mode (cycle 4 Z1 + Z2 + memory `feedback_phase2a_sister_spec_import_audit.md`)
+
+**Pattern**: Spec describes a Python helper interface (signature, return type) that doesn't match origin/main reality. PR #47 cycle 4 caught this for `_fetch_all` + `verify_factory_access`; drill-down cycle 4 caught it for sister helpers `_get_region_ranking` (doesn't exist), `_get_department_ranking` (async, no conn), H3/H5 return types (DashboardResponse not DepartmentDetail; List not single).
+
+**Mitigation**: For every Python sister helper cited, run `grep -n "^async def <helper>\|^def <helper>" backend/python/smartbi_compat/api/*.py` to verify (a) the helper exists, (b) async/sync, (c) signature shape. Spec author should attach output of these greps to spec source as audit-trail.
+
+#### 9.5.4 8-vs-5 envelope nuance (R1 demoted across cycles 2 + 3)
+
+**Pattern**: Java `ApiResponse` declares 8 fields (5 always-set + 3 optional UX). Cycle 2 R1 reviewer over-asserted "8 fields emit always". Cycle 3 verification via actual recorded goldens proved 5 fields for analysis-* / alerts-* endpoints. Sister test pattern (`test_datasource_contract.py`) defensively strips 3 extras.
+
+**Mitigation**: For any "Java emits N fields" claim, verify against actual recorded golden via `jq -r '.response | keys_unsorted[]'` BEFORE asserting in spec. Don't trust class-level field declaration counts as ground truth for runtime emission.
+
+#### 9.5.5 4-cycle finding count baseline
+
+For Tier 3 specs, expect **roughly 30-50 findings across 4 cycles**:
+- Cycle 1 (self-review): 10-15 findings (mostly own typos + decision inconsistencies)
+- Cycle 2 (spec-reviewer): 10-15 findings (factual errors, scope gaps)
+- Cycle 3 (cross-spec): 5-12 findings (citation accuracy, sister-pattern alignment)
+- Cycle 4 (final-impl-reviewer): 5-10 findings (impl-readiness gaps, sister-helper signatures)
+
+Findings rarely overlap. Stop signal: cycle N finds <5 issues and they're all nits → ship-ready. Cycle N finds 1+ structural issue → may need cycle N+1.
+
+#### 9.5.6 Tier 3 unique audit focus areas
+
+Beyond the inherited Tier 2 audit checks (Java line refs, byte-shape gate, Rule 1-9 compliance), Tier 3 specs should also verify:
+- Sister Python helper signatures (Z1 phantom interface class)
+- Multi-helper write coordination (T7+T8 — first-of-kind in Tier 3)
+- Controller catch behavior for new exception types (T10)
+- Per-dim output shape variance (T6)
+
+---
+
 ## 10. Cross-spec audit citations (cycle 3 — for spec-reviewer subagent)
 
-When dispatching cycle 3 cross-spec reviewer, MUST cite these 8 references:
+When dispatching cycle 3 cross-spec reviewer, MUST cite these 8 highest-leverage references (full list of 13 in §9.1):
 
 1. **Tier 2 region spec** (PR #41) — composite-only / Lombok @Data declaration order / R-T13 arithmetic divergence pattern
 2. **Tier 2 department spec** (PR #36) — composite-only §1.3 lineage establish
@@ -1989,7 +2135,7 @@ When dispatching cycle 3 cross-spec reviewer, MUST cite these 8 references:
 4. **Tier 2 inventory spec** (PR #47) — multi-mode dispatch pattern parallel
 5. **Wave 2 query-templates spec** (PR #48) — RLS app-layer + write side-effect pattern (drill-down T7+T11+T12 inherit)
 6. **Wave 1 finance budget spec** (PR #34+#38) — Map.of(N) hash discipline (Rule 8 baseline)
-7. **Phase 2B-β AI orchestration** (PR #24) — `handleDrillDownIntent` lineage (out-of-scope but cite for AI path future port)
+7. **Phase 2B-β AI orchestration** (PR # unverified per cycle 3 X9 — likely the `2026-04-30-phase2b-beta-design.md` spec) — `handleDrillDownIntent` lineage (`SmartBIServiceImpl.java:1728-1742`, out-of-scope but cite for AI path future port)
 8. **Apr 28 P0 RLS gap finding** (memory `feedback_p0_rls_gap_finding.md`) — sister tables RLS gap precedent (drill-down's T11+T12 mirrors)
 
 **Plus rule files**:
