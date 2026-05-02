@@ -265,3 +265,74 @@ class TestAnalysisProcurementCostMomMetricShape:
         # Sanity: changePercent IS set (5th param of ofWithTrend)
         assert mom["changePercent"] is not None, "changePercent should be set"
         assert mom["changeDirection"] in ("UP", "DOWN", "STABLE"), mom["changeDirection"]
+
+
+class TestAnalysisProcurementOverviewMode:
+    """F999 byte-shape gate for default mode (no analysisType param) — overview path.
+
+    PR-B (Chat 5) ships:
+      - 16-key DashboardResponse (Lombok @Data + no @JsonInclude → all emit)
+      - AIInsight 5-key [level, category, message, relatedEntity, actionSuggestion]
+      - Top-level data: [overview, endDate, startDate] (Jackson HashMap hash-iter)
+
+    Spec §3.11 listed a 6-key shape but Rule 9 §9.2 catch confirmed F999 golden has
+    16 keys, matching inventory PR-B (#54) precedent. Contract test asserts the full
+    16-field shape + key order on empty path.
+    """
+
+    def test_f999_default_overview_byte_shape(self, client, patched_empty):
+        """Empty F999: dict-eq compare against converted golden, with volatile keys stripped."""
+        _byte_compare_data(client, None,
+                           "analysis-procurement-F999-default.json", patched_empty)
+
+    def test_f999_default_empty_dashboard_shape(self, client, patched_empty):
+        """Empty path emits exact AIInsight placeholder + 16-key DashboardResponse.
+
+        AIInsight 5-key order locked: [level, category, message, relatedEntity, actionSuggestion].
+        Strings verified against spec §3.11 Round 4 audit C2 fix.
+        """
+        resp = _hit(client, None)
+        assert resp.status_code == 200
+        overview = resp.json()["data"]["overview"]
+
+        # 16-key shape (Rule 9 §9.2)
+        assert len(overview) == 16, f"expected 16 keys, got {len(overview)}: {list(overview.keys())}"
+
+        # Empty arrays + maps for unpopulated container fields
+        assert overview["kpiCards"] == []
+        assert overview["charts"] == {}
+        assert overview["rankings"] == {}
+
+        # fromCache primitive boolean (NOT None per Lombok @Data primitive default)
+        assert overview["fromCache"] is False
+
+        # Default-only fields are None (period/metricCards/chartList/alerts/recommendations/generatedAt/cacheExpireAt)
+        for k in ("period", "metricCards", "chartList", "alerts", "recommendations",
+                  "generatedAt", "cacheExpireAt"):
+            assert overview[k] is None, f"{k} expected None, got {overview[k]!r}"
+
+        # AIInsight placeholder shape (5-key, golden order)
+        assert len(overview["aiInsights"]) == 1
+        ai = overview["aiInsights"][0]
+        assert list(ai.keys()) == ["level", "category", "message", "relatedEntity", "actionSuggestion"], (
+            f"AIInsight key order wrong: {list(ai.keys())}"
+        )
+        assert ai["level"] == "YELLOW"
+        assert ai["category"] == "数据状态"
+        assert ai["message"] == "当前时间范围内暂无采购数据"
+        assert ai["relatedEntity"] is None
+        assert ai["actionSuggestion"] == "请调整时间范围或录入采购数据"
+
+        # Suggestions list shape
+        assert overview["suggestions"] == ["请先录入采购数据以开始分析"]
+
+    def test_f999_default_dashboard_field_order(self, client, patched_empty):
+        """16-key DashboardResponse field order locked to F999 golden (Lombok @Builder declaration order)."""
+        resp = _hit(client, None)
+        assert resp.status_code == 200
+        py_keys = list(resp.json()["data"]["overview"].keys())
+        with io.open(GOLDEN_DIR / "analysis-procurement-F999-default.json", encoding="utf-8") as f:
+            golden_keys = list(json.load(f)["data"]["overview"].keys())
+        assert py_keys == golden_keys, (
+            f"overview key order mismatch:\n  python: {py_keys}\n  golden: {golden_keys}"
+        )

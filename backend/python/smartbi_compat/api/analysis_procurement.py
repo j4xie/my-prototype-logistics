@@ -651,6 +651,410 @@ async def _get_procurement_trend_chart(
 
 
 # ---------------------------------------------------------------------------
+# PR-B: default mode (overview DashboardResponse)
+#
+# Spec: docs/superpowers/specs/2026-05-01-phase2a-analysis-procurement-design.md §3.11-3.13
+# Rule 9 §9.2 catch: spec §3.11 listed 6-key DashboardResponse shape, but F999 golden
+# (analysis-procurement-F999.json) shows 16 keys (Lombok @Data + no @JsonInclude
+# emits all). Inventory PR-B (#54) already shipped this 16-key pattern; mirror it.
+#
+# AIInsight 5-key order (golden-verified): [level, category, message, relatedEntity, actionSuggestion]
+# Top-level data key order (default mode, Jackson HashMap hash-iter): [overview, endDate, startDate]
+# ---------------------------------------------------------------------------
+
+
+def _build_empty_dashboard() -> dict:
+    """Mirror Java buildEmptyDashboard (line 1011-1025).
+
+    Returns the full 16-key DashboardResponse envelope (Lombok @Data emits all fields
+    regardless of population). Mirrors inventory PR-B (#54) `_build_empty_dashboard`
+    with procurement-specific strings per spec §3.11 Round 4 audit C2 fix.
+
+    F999 golden (`tests/fixtures/java-smartbi-golden/analysis-procurement-F999.json`)
+    confirms: kpiCards=[], charts={}, rankings={}, fromCache=False (boolean primitive),
+    aiInsights=[1 entry YELLOW数据状态], suggestions=["请先录入采购数据以开始分析"].
+    """
+    return {
+        "period":            None,
+        "startDate":         None,
+        "endDate":           None,
+        "kpiCards":          [],
+        "metricCards":       None,
+        "rankings":          {},
+        "charts":            {},
+        "chartList":         None,
+        "aiInsights":        [{
+            "level":            "YELLOW",
+            "category":         "数据状态",
+            "message":          "当前时间范围内暂无采购数据",
+            "relatedEntity":    None,
+            "actionSuggestion": "请调整时间范围或录入采购数据",
+        }],
+        "alerts":            None,
+        "recommendations":   None,
+        "suggestions":       ["请先录入采购数据以开始分析"],
+        "generatedAt":       None,
+        "lastUpdated":       _utc_now_iso(),
+        "fromCache":         False,
+        "cacheExpireAt":     None,
+    }
+
+
+def _build_supplier_pie_chart(batches: list[dict]) -> dict:
+    """Mirror Java buildSupplierPieChart. PIE chart of supplier total purchase values.
+
+    Empty batches → empty data array (still 7-field ChartConfig per Rule 9 §9.2).
+    """
+    supplier_totals: dict[str, Decimal] = {}
+    for b in batches:
+        sid = b.get("supplier_id")
+        if sid is None:
+            continue
+        up = b.get("unit_price")
+        rq = b.get("receipt_quantity")
+        tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
+        supplier_totals[sid] = supplier_totals.get(sid, Decimal("0")) + tv
+
+    sorted_entries = sorted(supplier_totals.items(), key=lambda kv: kv[1], reverse=True)
+    chart_data = [
+        {
+            "name":  sid,
+            "value": _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+        }
+        for sid, value in sorted_entries
+    ]
+
+    return {
+        "chartType":   "PIE",
+        "title":       "供应商占比",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     {"showPercentage": True, "showLegend": True},
+        "xaxisField":  "name",
+        "yaxisField":  "value",
+    }
+
+
+def _build_material_category_chart(batches: list[dict]) -> dict:
+    """Mirror Java buildMaterialCategoryChart. BAR chart of material category totals.
+
+    Empty batches → empty data array. material_type_id is the grouping key
+    (Java enum / Python string identifier; real category names looked up at
+    presentation layer or via separate query — out of scope for byte parity).
+    """
+    category_totals: dict[str, Decimal] = {}
+    for b in batches:
+        mtype = b.get("material_type_id")
+        if mtype is None:
+            continue
+        up = b.get("unit_price")
+        rq = b.get("receipt_quantity")
+        tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
+        category_totals[mtype] = category_totals.get(mtype, Decimal("0")) + tv
+
+    sorted_entries = sorted(category_totals.items(), key=lambda kv: kv[1], reverse=True)
+    chart_data = [
+        {
+            "category": mtype,
+            "value":    _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+        }
+        for mtype, value in sorted_entries
+    ]
+
+    return {
+        "chartType":   "BAR",
+        "title":       "物料类别采购分布",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     {"showDataLabels": True},
+        "xaxisField":  "category",
+        "yaxisField":  "value",
+    }
+
+
+async def _build_overview_kpi_cards(
+    batches: list[dict],
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+) -> list[dict]:
+    """Build 5 KPI cards for overview mode per spec §3.11.
+
+    KPIs (Java getProcurementOverview line 89-91 + buildKPICards helpers):
+      1. PURCHASE_TOTAL — total amount (alertLevel=GREEN)
+      2. BATCH_COUNT — batch count (alertLevel=GREEN)
+      3. AVG_UNIT_PRICE — average unit price (alertLevel=GREEN)
+      4. SUPPLIER_CONCENTRATION — concentration with T1 alert (RED >60, YELLOW >40)
+      5. MOM_GROWTH — month-over-month growth (conditional on previous-period non-empty)
+
+    Empty batches → empty list ([]) per F999 golden.
+
+    KPICard 13-field shape per Rule 9 §9.3 (Lombok @Data + no @JsonInclude). Sister
+    Phase 2A endpoints emit MetricResult-shape (11 fields) for KPIs; here we emit the
+    KPICard wrapper shape per inventory PR-B template (#54).
+    """
+    if not batches:
+        return []
+
+    kpi_cards: list[dict] = []
+
+    # KPI 1: Total amount
+    total_amount = _calculate_total_value(batches)
+    kpi_cards.append({
+        "metricCode":     "PURCHASE_TOTAL",
+        "metricName":     "采购总额",
+        "value":          _decimal_to_number(total_amount.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+        "formattedValue": _format_currency(total_amount),
+        "unit":           "元",
+        "changePercent":  None,
+        "changeDirection": None,
+        "alertLevel":     "GREEN",
+        "dimensionValue": None,
+    })
+
+    # KPI 2: Batch count
+    kpi_cards.append({
+        "metricCode":     "BATCH_COUNT",
+        "metricName":     "采购批次",
+        "value":          len(batches),
+        "formattedValue": str(len(batches)),
+        "unit":           "批",
+        "changePercent":  None,
+        "changeDirection": None,
+        "alertLevel":     "GREEN",
+        "dimensionValue": None,
+    })
+
+    # KPI 3: Average unit price
+    avg_price = _calculate_average_unit_price(batches)
+    kpi_cards.append({
+        "metricCode":     "AVG_UNIT_PRICE",
+        "metricName":     "平均单价",
+        "value":          _decimal_to_number(avg_price.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+        "formattedValue": _format_currency(avg_price),
+        "unit":           "元",
+        "changePercent":  None,
+        "changeDirection": None,
+        "alertLevel":     "GREEN",
+        "dimensionValue": None,
+    })
+
+    # KPI 4: Supplier concentration with T1 alert
+    concentration = _calculate_supplier_concentration(batches)
+    kpi_cards.append({
+        "metricCode":     "SUPPLIER_CONCENTRATION",
+        "metricName":     "供应商集中度",
+        "value":          _decimal_to_number(concentration.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+        "formattedValue": f"{float(concentration):.1f}%",
+        "unit":           "%",
+        "changePercent":  None,
+        "changeDirection": None,
+        "alertLevel":     _determine_concentration_alert_level(concentration),
+        "dimensionValue": None,
+    })
+
+    # KPI 5: MoM growth (conditional on previous period non-empty, Java line 317-326 pattern)
+    previous_start = _minus_months(start_date, 1)
+    previous_end = _minus_months(end_date, 1)
+    previous_batches = await _query_material_batches_in_range(factory_id, previous_start, previous_end)
+    if previous_batches:
+        previous_amount = _calculate_total_value(previous_batches)
+        mom_growth = _calculate_mom_growth(total_amount, previous_amount)
+        kpi_cards.append({
+            "metricCode":     "MOM_GROWTH",
+            "metricName":     "采购环比增长",
+            "value":          _decimal_to_number(mom_growth.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "formattedValue": f"{float(mom_growth):.2f}%",
+            "unit":           "%",
+            "changePercent":  _decimal_to_number(mom_growth),
+            "changeDirection": _determine_change_direction(mom_growth),
+            "alertLevel":     "GREEN",
+            "dimensionValue": None,
+        })
+
+    return kpi_cards
+
+
+async def _generate_ai_insights(
+    factory_id: str, batches: list[dict], kpi_cards: list[dict]
+) -> list[dict]:
+    """Mirror Java generateAiInsights (line 914-975). Rule-based, NO LLM.
+
+    Spec §3.12 Round 4 audit I4 fix: signature is `(factory_id, batches, kpi_cards)`
+    (not `(batches, kpi_cards)`) so we can resolve top supplier name via real query
+    (`_query_supplier_by_id`), matching Java `supplierRepository.findById(...).map(::getName).orElse(supplierId)`.
+
+    Two checks:
+      1. SUPPLIER_CONCENTRATION → RED (>60) / YELLOW (>40) supplier risk insight
+      2. Top supplier highlight (INFO level, names the largest supplier)
+
+    AIInsight 5-key order (golden-verified): [level, category, message, relatedEntity, actionSuggestion]
+    """
+    insights: list[dict] = []
+
+    # Check 1: supplier concentration alert
+    concentration_metric = next(
+        (m for m in kpi_cards if m.get("metricCode") == "SUPPLIER_CONCENTRATION"),
+        None,
+    )
+    if concentration_metric is not None and concentration_metric.get("value") is not None:
+        concentration = _to_decimal(concentration_metric["value"])
+        if concentration > _PROCUREMENT_CONCENTRATION_RED:
+            insights.append({
+                "level":            "RED",
+                "category":         "供应商风险",
+                "message":          f"供应商集中度高达 {float(concentration):.1f}%，存在供应链风险",
+                "relatedEntity":    None,
+                "actionSuggestion": "建议开发备选供应商，分散采购风险",
+            })
+        elif concentration > _PROCUREMENT_CONCENTRATION_YELLOW:
+            insights.append({
+                "level":            "YELLOW",
+                "category":         "供应商风险",
+                "message":          f"供应商集中度为 {float(concentration):.1f}%，需要关注",
+                "relatedEntity":    None,
+                "actionSuggestion": "建议评估备选供应商，降低依赖度",
+            })
+
+    # Check 2: top supplier highlight (T11 enforced supplier_by_id lookup)
+    supplier_values: dict[str, Decimal] = {}
+    for b in batches:
+        sid = b.get("supplier_id")
+        if sid is None:
+            continue
+        up = b.get("unit_price")
+        rq = b.get("receipt_quantity")
+        tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
+        supplier_values[sid] = supplier_values.get(sid, Decimal("0")) + tv
+
+    if supplier_values:
+        top_sid = max(supplier_values.keys(), key=lambda k: supplier_values[k])
+        top_value = supplier_values[top_sid]
+        supplier = await _query_supplier_by_id(top_sid, factory_id)
+        # Java line 720-721: .orElse(supplierId)
+        supplier_name = supplier["name"] if supplier else top_sid
+        insights.append({
+            "level":            "INFO",
+            "category":         "采购分布",
+            "message":          f"最大供应商 {supplier_name} 采购金额 {_format_currency(top_value)} 元",
+            "relatedEntity":    supplier_name,
+            "actionSuggestion": "建议与该供应商协商更优惠的采购条款",
+        })
+
+    return insights
+
+
+def _generate_suggestions(batches: list[dict], kpi_cards: list[dict]) -> list[str]:
+    """Mirror Java generateSuggestions (line 977-1005). Rule-based short text list.
+
+    Empty batches → empty list (overview path uses empty dashboard fallback in that case).
+    Non-empty batches → 1-3 contextual suggestions based on concentration + recent trend.
+    """
+    suggestions: list[str] = []
+
+    if not batches:
+        return suggestions
+
+    # Suggestion 1: concentration-driven
+    concentration_metric = next(
+        (m for m in kpi_cards if m.get("metricCode") == "SUPPLIER_CONCENTRATION"),
+        None,
+    )
+    if concentration_metric is not None and concentration_metric.get("value") is not None:
+        concentration = _to_decimal(concentration_metric["value"])
+        if concentration > _PROCUREMENT_CONCENTRATION_RED:
+            suggestions.append("供应商集中度过高，建议引入 2-3 家备选供应商以分散供应链风险")
+        elif concentration > _PROCUREMENT_CONCENTRATION_YELLOW:
+            suggestions.append("供应商集中度偏高，可考虑评估备选供应商以提升供应链韧性")
+
+    # Suggestion 2: MoM growth direction
+    mom_metric = next(
+        (m for m in kpi_cards if m.get("metricCode") == "MOM_GROWTH"),
+        None,
+    )
+    if mom_metric is not None:
+        direction = mom_metric.get("changeDirection")
+        if direction == "UP":
+            suggestions.append("采购环比增长，建议复盘需求驱动是否真实，避免库存积压")
+        elif direction == "DOWN":
+            suggestions.append("采购环比下降，关注是否存在供货中断或需求萎缩风险")
+
+    # Default suggestion if nothing flagged
+    if not suggestions:
+        suggestions.append("采购数据健康，建议持续监控供应商表现与价格波动")
+
+    return suggestions
+
+
+async def _get_procurement_overview(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java getProcurementOverview (line 76-122) — DashboardResponse 16-key.
+
+    Empty batches → _build_empty_dashboard (16-key empty envelope).
+
+    Non-empty path:
+      - kpiCards from _build_overview_kpi_cards (5 KPIs incl conditional MoM)
+      - charts LinkedHashMap by chart.title.replace(" ", "_") (Java line 93-101)
+      - rankings LinkedHashMap with key "supplier"
+      - aiInsights from _generate_ai_insights (rule-based)
+      - suggestions from _generate_suggestions (rule-based)
+      - lastUpdated volatile (stripped by _strip_volatile in tests)
+      - other 9 fields: period/startDate/endDate/metricCards/chartList/alerts/
+        recommendations/generatedAt/fromCache/cacheExpireAt — match golden defaults
+
+    16-field key order locked from F999 golden (analysis-procurement-F999.json),
+    matching inventory PR-B (#54) DashboardResponse @Builder field declaration order.
+    """
+    batches = await _query_material_batches_in_range(factory_id, start_date, end_date)
+
+    if not batches:
+        return _build_empty_dashboard()
+
+    # KPI cards
+    kpi_cards = await _build_overview_kpi_cards(batches, factory_id, start_date, end_date)
+
+    # Charts (3 builders): trend DAY (reuse PR-A helper), supplier pie, material category
+    trend_chart = await _get_procurement_trend_chart(factory_id, start_date, end_date, "DAY")
+    supplier_pie_chart = _build_supplier_pie_chart(batches)
+    material_category_chart = _build_material_category_chart(batches)
+    chart_list = [trend_chart, supplier_pie_chart, material_category_chart]
+    charts: dict[str, dict] = {}
+    for i, chart in enumerate(chart_list):
+        title = chart.get("title")
+        key = title.replace(" ", "_") if title else f"chart_{i}"
+        charts[key] = chart
+
+    # Rankings
+    supplier_rankings = await _calculate_supplier_ranking_from_data(factory_id, batches)
+    rankings = {"supplier": supplier_rankings}
+
+    # Rule-based generators
+    ai_insights = await _generate_ai_insights(factory_id, batches, kpi_cards)
+    suggestions = _generate_suggestions(batches, kpi_cards)
+
+    # 16-key DashboardResponse (matching inventory PR-B + F999 golden order)
+    return {
+        "period":            None,
+        "startDate":         start_date.isoformat(),
+        "endDate":           end_date.isoformat(),
+        "kpiCards":          kpi_cards,
+        "metricCards":       None,
+        "rankings":          rankings,
+        "charts":            charts,
+        "chartList":         None,
+        "aiInsights":        ai_insights,
+        "alerts":            None,
+        "recommendations":   None,
+        "suggestions":       suggestions,
+        "generatedAt":       None,
+        "lastUpdated":       _utc_now_iso(),
+        "fromCache":         False,
+        "cacheExpireAt":     None,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Task 12: Mode dispatcher + GET endpoint
 # ---------------------------------------------------------------------------
 
@@ -698,11 +1102,15 @@ async def _get_procurement_analysis(
             "startDate":  start_iso,
         }
 
-    # default mode (overview DashboardResponse) — out of PR-A scope, Chat 5 ships PR-B
-    raise NotImplementedError(
-        "procurement default (overview) mode is PR-B scope (Chat 5); "
-        "PR-A only handles analysisType=supplier/cost/trend"
-    )
+    # default mode (overview DashboardResponse) — PR-B scope
+    # Top-level data key order from F999 golden (analysis-procurement-F999.json):
+    # [overview, endDate, startDate]
+    overview = await _get_procurement_overview(factory_id, start_date, end_date)
+    return {
+        "overview":  overview,
+        "endDate":   end_iso,
+        "startDate": start_iso,
+    }
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/procurement")
