@@ -1,6 +1,6 @@
 # Java→Python Port 规范
 
-**最后更新**: 2026-05-01
+**最后更新**: 2026-05-02
 **适用范围**: Phase 2A SmartBI analysis endpoint port + 未来 Phase 2B+ 任何 Java→Python 字节级 parity port。
 
 ---
@@ -415,6 +415,149 @@ sub-endpoints PR #32（2026-05-01 ship）— Chat 3 在 impl 阶段录 F999/F001
 
 ---
 
+## ⛔ Rule 9: Lombok + Jackson 序列化 quirks — 字段名 / null emit / 派生 getter 全 mirror golden
+
+### 反 pattern（spec 凭 Java 源码假设字段名 / null 行为 / 字段数量）
+
+```java
+// Java DTO with Lombok @Data:
+@Data
+public class ChartConfig {
+    private String xAxisField;   // ← 源码 camelCase, getter 是 getXAxisField()
+    private String yAxisField;
+    private String seriesField;
+    private List<Map<String, Object>> data;
+    private Map<String, Object> options;
+    // 注意: 没有 @JsonInclude(NON_NULL) annotation
+}
+```
+
+```python
+# ❌ BAD: 凭 Java 源码假设
+def _create_empty_chart(chart_type, title):
+    return {
+        "chartType": chart_type,
+        "title": title,
+        "xAxisField": None,    # ← 假设 camelCase
+        "yAxisField": None,
+        # 假设其他 None 字段会被 Jackson 跳过, 只 emit 4 字段
+    }
+# Java Jackson 实际输出 (Lombok 派生 getter + 无 @JsonInclude):
+# {"chartType":"...", "title":"...", "xaxisField":null, "yaxisField":null, "seriesField":null, "data":[], "options":null}
+#                                     ^^^^^^^^^^^ lowercase!     ^^^^^^^^^^^ 全 emit nulls!
+```
+
+### 正 pattern
+
+```python
+# ✅ GOOD: golden truth, Lombok-Jackson 反直觉但稳定
+def _create_empty_chart(chart_type, title):
+    return {
+        "chartType":   chart_type,
+        "title":       title,
+        "xaxisField":  None,    # ← lowercase 'a' (Introspector.decapitalize quirk)
+        "yaxisField":  None,
+        "seriesField": None,    # ← 全 emit (无 @JsonInclude)
+        "data":        [],
+        "options":     None,
+    }
+```
+
+### 三个 sub-pattern（全部由 sister chat 独立确认）
+
+#### 9.1 Lombok getter naming + Jackson `Introspector.decapitalize`
+
+`java.beans.Introspector.decapitalize` 处理 **连续大写字母** 时的特殊规则：
+
+| Java 源码 field | Lombok 派生 getter | Jackson 序列化 key |
+|---|---|---|
+| `name` | `getName()` | `"name"` |
+| `xAxisField` | `getXAxisField()` | **`"xaxisField"`** ← 注意小写 'a' |
+| `yAxisField` | `getYAxisField()` | **`"yaxisField"`** ← 同样 |
+| `URLPath` | `getURLPath()` | **`"URLPath"`** ← 全大写不 decapitalize |
+| `aBField` | `getABField()` | `"aBField"` |
+
+规则: **首字母 + 连续大写时，第一个大写降为小写后**剩余字母**也降为小写**, 直到下一个小写字母。`xAxisField`: `xAxis` → `xaxis`, 后跟 `Field` 保留 → `xaxisField`.
+
+Python dict literal: 录 golden 取实际 key, 不要凭 camelCase 假设。
+
+#### 9.2 DTO 无 `@JsonInclude(NON_NULL)` → Jackson emit nulls 显式
+
+| DTO 状态 | Jackson 行为 | Python 必须 |
+|---|---|---|
+| 有 `@JsonInclude(JsonInclude.Include.NON_NULL)` | null 字段被跳过 | dict 不含 null 字段 |
+| **无 `@JsonInclude` (Phase 2A 大部分 DTO)** | **null 字段显式 emit `"field": null`** | **dict 全 emit None** |
+
+确认方式: `grep -n "@JsonInclude" backend/java/.../entity/{DTO}.java` — 0 hit 即默认行为 (emit nulls)。
+
+实际 case (sister chat 独立确认):
+- `ChartConfig` (department / region / inventory specs)
+- `DateRange` (department spec)
+- `MetricResult` (region spec)
+- `DashboardResponse` (inventory PR-B spec)
+- `AIInsight` (inventory PR-B spec)
+
+#### 9.3 Lombok `@Data` 派生 boolean / computed getter → Jackson 多 emit 字段
+
+Lombok `@Data` 自动生成 getter, 包括 `is*` boolean methods。Jackson 把这些当字段 emit:
+
+| Java field | 源码 getter | Lombok 派生 | Jackson emit |
+|---|---|---|---|
+| `int days` | `getDays()` | `getDays()` | `"days": <int>` |
+| `boolean valid` | `isValid()` | `isValid()` | `"valid": <bool>` |
+| `String name` | `getName()` | `getName()` | `"name": <str>` |
+| (no field, only `getDaysBetween()`) | manual method | (Lombok 不动) | `"daysBetween": <int>` (如果非 abstract) |
+
+实际 case (department spec): `DateRange` 源码看似 5 字段, golden truth 是 7 字段 (含 `days` 派生 + `valid` boolean)。
+
+确认方式: `grep -nE "public.*get[A-Z]|public.*is[A-Z]" backend/java/.../entity/{DTO}.java` — 列出全部 getter, golden 必含每一个对应字段。
+
+### 何时这个 rule 适用
+
+- 任何 Java port 涉及 Lombok `@Data` / `@Getter` / `@Builder` 注解的 DTO
+- 字段名含 **连续大写字母** (xAxisField, ySeriesField, xPosition 等)
+- DTO 无 `@JsonInclude(NON_NULL)` 时 (默认 Jackson 行为, Phase 2A 大部分 DTO)
+- 派生 getter (boolean is*, computed get*) 改变实际序列化字段数量
+
+### 实操 checklist (写 spec / impl 时)
+
+1. **录 golden 优先** — Rule 8 + Rule 9 联合: golden 是 byte truth, 源码假设是 brittle
+2. **grep `@JsonInclude`** in DTO file — 决定 null 行为
+3. **grep getter 列表** in DTO file — 决定字段数量
+4. **dict literal 按 golden** — 字段名 / 顺序 / null 完全镜像
+
+### Why（背景 + 修复历史）
+
+3 个独立 sister chat 在 Phase 2A Tier 2 impl 阶段全部踩同坑：
+
+- **inventory PR-A (Chat 1, PR #53, 2026-05-02)**: spec 假设 ChartConfig empty case 3 字段, 实际 7 字段; xaxisField/yaxisField lowercase 而非 camelCase
+- **department PR-A (Chat 4, PR #52, 2026-05-02)**: 同 4 处 spec drift, baked 进 commit `845329468` with `⚠️ Spec §X.Y was WRONG` annotations
+- **region PR-A (Chat 2, in flight)**: 独立确认 F1 (xaxisField lowercase) + F2 (ChartConfig empty 7-field) + F7 (MetricResult 11-field changeValue null)
+
+3 次独立确认即 graduate hard-rule 阈值。
+
+### 跟 Rule 4 / Rule 8 的关系
+
+- Rule 4 (Decimal serialization): value 形式
+- Rule 8 (Map.of key order): hash-based 不可预测 key 顺序
+- **Rule 9 (Lombok + Jackson)**: DTO 字段名 / null emit / 派生 getter
+
+三个合起来描述 byte-shape parity 输出层全部决定因素。
+
+### Audit 来源
+
+| 来源 | 发现 |
+|---|---|
+| inventory PR #47 spec audit cycle 4 | spec drift caught by impl-reviewer (Chat 4 audit on Chat 4-written spec) |
+| inventory PR #53 impl Task 10 | spec drift surfaced via golden-truth comparison (Chat 1) |
+| department PR #52 impl golden recording | 4 spec inaccuracies baked-fixed inline (Chat 4) |
+| region PR #56 impl Task 2 (in flight) | F1/F2/F7 independent confirmation (Chat 2) |
+| ChartConfig.java line 32 | 验证无 `@JsonInclude` annotation |
+| DateRange.java | 验证 7 字段含 days + valid Lombok 派生 |
+| MetricResult.java | 验证 11 字段含 changeValue null between changeDirection / alertLevel |
+
+---
+
 ## 工具 + 配置 reference
 
 ### `_decimal_to_number` helper
@@ -469,5 +612,6 @@ monkeypatch.setattr(
 | payable PR #18 retrospect | Rule 4（Decimal serialization 一致性） |
 | cost chat reviewer audit (2026-04-30) | Rule 1（`if x:` truthy-check 形式）/ Rule 5（legacy 例外）/ Rule 6（narrowed scope） |
 | sub-endpoints PR #32 impl (2026-05-01) | Rule 8（Map.of(N) Jackson hash order — 3 个不同 N 全踩坑） |
+| inventory PR #53 + department PR #52 + region in-flight (2026-05-02) | Rule 9（Lombok + Jackson 序列化 quirks — 3 个 sister chat 独立确认 3 个 sub-pattern） |
 
 后续 sister chats（receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
