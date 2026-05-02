@@ -1250,6 +1250,59 @@ async def _get_aging_mode(
     }
 
 
+# ============================================================
+# Section 5d: Default mode (PR-B)
+# Mirror Java InventoryHealthAnalysisServiceImpl.getInventoryHealth (L89-135).
+# DashboardResponse @Builder + Lombok @Data — 16 fields all emitted regardless
+# of population. Empty path → _build_empty_dashboard (Java L1222-1236).
+#
+# Outer envelope wrapper (Java controller L420-448): {overview, endDate, startDate}
+# (3 keys, Jackson HashMap order from F999 golden).
+#
+# T-INV-9 asymmetric null + T-INV-15 inline scoring locked in `_get_health_score`.
+# ============================================================
+
+
+def _build_empty_dashboard() -> dict:
+    """Mirror Java buildEmptyDashboard L1222-1236.
+
+    Returns the full 16-key DashboardResponse envelope (Lombok @Data emits all
+    fields regardless of population). Most fields are null/None defaults; only
+    aiInsights / suggestions / lastUpdated / kpiCards / charts / rankings /
+    fromCache are populated to match Java empty-state output.
+
+    AIInsight 5-key shape verified against F999 default golden:
+      {level, category, message, relatedEntity, actionSuggestion}
+
+    Note `fromCache: False` (boolean default, NOT None) — Lombok @Data primitive.
+    `lastUpdated` is ISO 8601 timestamp, volatile (stripped by `_strip_volatile`).
+    """
+    return {
+        "period":            None,
+        "startDate":         None,
+        "endDate":           None,
+        "kpiCards":          [],
+        "metricCards":       None,
+        "rankings":          {},
+        "charts":            {},
+        "chartList":         None,
+        "aiInsights":        [{
+            "level":            "YELLOW",
+            "category":         "数据状态",
+            "message":          "当前暂无库存数据",
+            "relatedEntity":    None,
+            "actionSuggestion": "请先录入原材料批次数据",
+        }],
+        "alerts":            None,
+        "recommendations":   None,
+        "suggestions":       ["请先录入库存数据以开始分析"],
+        "generatedAt":       None,
+        "lastUpdated":       _utc_now_iso(),
+        "fromCache":         False,
+        "cacheExpireAt":     None,
+    }
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
