@@ -1381,6 +1381,141 @@ async def _calculate_loss_rate_for_health_score(
     }]
 
 
+async def _get_health_score(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java getHealthScore (L824-921).
+
+    Returns single MetricResult (HEALTH_SCORE).
+
+    ⚠️⚠️ T-INV-9 — ASYMMETRIC NULL HANDLING (Java bug, port verbatim).
+
+    Algorithm (4 weighted dimensions, 30+30+20+20 = 100 max):
+
+    Dimension 1 — TURNOVER (max 30 pts), Java L830-844:
+      turnoverRate = getTurnoverAnalysis().filter(TURNOVER_RATE).findFirst().orElse(null)
+      if (turnoverRate != null && turnoverRate.value != null):
+        rate = turnoverRate.value
+        if (rate >= TURNOVER_YELLOW_THRESHOLD=12)  +30
+        elif (rate >= TURNOVER_RED_THRESHOLD=6)    +20
+        else                                        +10
+      // ⚠️ Java L835-844 has NO else branch — turnover null → 0 added (penalty)
+
+    Dimension 2 — EXPIRY (max 30 pts), Java L846-863:
+      if (expiryRisk != null && expiryRisk.value != null):
+        rate < EXPIRY_YELLOW(10)  +30 | rate < EXPIRY_RED(15) +20 | else +10
+      else: +30  // ⚠️ Java L862 — null → FULL POINTS
+
+    Dimension 3 — LOSS (max 20 pts), Java L865-882:
+      if (lossRate != null && lossRate.value != null):
+        rate < LOSS_YELLOW(2) +20 | rate < LOSS_RED(5) +12 | else +5
+      else: +20  // ⚠️ Java L881 — null → FULL POINTS
+
+    Dimension 4 — AGING (max 20 pts), Java L884-901:
+      if (slowMoving != null && slowMoving.value != null):
+        rate < 10 +20 | rate < 20 +12 | else +5
+      else: +20  // ⚠️ Java L899 — null → FULL POINTS
+
+    ⚠️⚠️ T-INV-9 spec decision: PORT VERBATIM.
+      All 4 metrics None: score = 0+30+20+20 = 70 (NOT 0).
+
+    ⚠️⚠️ T-INV-15 — DO NOT reuse named alert helpers inside this function!
+    The 4 named helpers use DIFFERENT comparison direction than inline scoring.
+    Implementation MUST inline the comparisons exactly as Java getHealthScore L835-901.
+    """
+    health_score = Decimal("0")
+
+    # Dimension 1 — TURNOVER (max 30 pts) — null → +0 (Java L835-844 NO else)
+    turnover_metrics = await _get_turnover_analysis(factory_id, start_date, end_date)
+    turnover_rate = next(
+        (m for m in turnover_metrics if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover_rate is not None and turnover_rate.get("value") is not None:
+        rate = _to_decimal(turnover_rate["value"])
+        if rate >= _TURNOVER_YELLOW:
+            health_score += Decimal("30")
+        elif rate >= _TURNOVER_RED:
+            health_score += Decimal("20")
+        else:
+            health_score += Decimal("10")
+    # else: +0 (T-INV-9 asymmetric — turnover null is penalty)
+
+    # Dimension 2 — EXPIRY (max 30 pts) — null → +30 (Java L862 FULL POINTS)
+    expiry_metrics = await _get_expiry_risk_analysis(factory_id)
+    expiry_risk = next(
+        (m for m in expiry_metrics if m.get("metricCode") == "EXPIRY_RISK_RATE"),
+        None,
+    )
+    if expiry_risk is not None and expiry_risk.get("value") is not None:
+        rate = _to_decimal(expiry_risk["value"])
+        if rate < _EXPIRY_RISK_YELLOW:
+            health_score += Decimal("30")
+        elif rate < _EXPIRY_RISK_RED:
+            health_score += Decimal("20")
+        else:
+            health_score += Decimal("10")
+    else:
+        health_score += Decimal("30")    # T-INV-9 asymmetric
+
+    # Dimension 3 — LOSS (max 20 pts) — null → +20 (Java L881 FULL POINTS)
+    loss_metrics = await _calculate_loss_rate_for_health_score(factory_id, start_date, end_date)
+    loss_rate = next(
+        (m for m in loss_metrics if m.get("metricCode") == "LOSS_RATE"),
+        None,
+    )
+    if loss_rate is not None and loss_rate.get("value") is not None:
+        rate = _to_decimal(loss_rate["value"])
+        if rate < _LOSS_RATE_YELLOW:
+            health_score += Decimal("20")
+        elif rate < _LOSS_RATE_RED:
+            health_score += Decimal("12")
+        else:
+            health_score += Decimal("5")
+    else:
+        health_score += Decimal("20")    # T-INV-9 asymmetric
+
+    # Dimension 4 — AGING (max 20 pts) — null → +20 (Java L899 FULL POINTS)
+    aging_metrics = await _get_aging_metrics(factory_id)
+    slow_moving = next(
+        (m for m in aging_metrics if m.get("metricCode") == "SLOW_MOVING_RATE"),
+        None,
+    )
+    if slow_moving is not None and slow_moving.get("value") is not None:
+        rate = _to_decimal(slow_moving["value"])
+        if rate < Decimal("10"):
+            health_score += Decimal("20")
+        elif rate < Decimal("20"):
+            health_score += Decimal("12")
+        else:
+            health_score += Decimal("5")
+    else:
+        health_score += Decimal("20")    # T-INV-9 asymmetric
+
+    # Overall alert (T-INV-1 inline site #4)
+    if health_score >= _HEALTH_SCORE_GREEN_MIN:
+        alert_level = "GREEN"
+    elif health_score >= _HEALTH_SCORE_YELLOW_MIN:
+        alert_level = "YELLOW"
+    else:
+        alert_level = "RED"
+
+    score_zero_scale = health_score.quantize(Decimal("1"), rounding=_QUANTIZE_HALF_UP)
+    return {
+        "metricCode":      "HEALTH_SCORE",
+        "metricName":      "库存健康评分",
+        "value":           _decimal_to_number(score_zero_scale),
+        "formattedValue":  f"{float(health_score):.0f} 分",
+        "unit":            "分",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      alert_level,
+        "description":     "满分100分",
+    }
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
