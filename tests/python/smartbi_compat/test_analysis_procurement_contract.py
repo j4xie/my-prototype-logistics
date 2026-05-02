@@ -607,3 +607,118 @@ class TestProcurementTrendChartArithmetic:
         # Per data point: 'date' and 'amount' keys (NOT 'period')
         assert chart["data"][0]["date"] == "2025-06"
         assert chart["data"][0]["amount"] == 50
+
+
+class TestProcurementCostMetricsArithmetic:
+    """5 tests for _get_cost_metrics:
+       total / avg unit price (filter > 0) / max unit price emit / max skipped when null / MoM growth.
+
+    Note: _get_cost_metrics calls _query_material_batches_in_range TWICE:
+      1st call: current period (start_date, end_date)
+      2nd call: previous period (start - 1 month, end - 1 month)
+    Mock must dispatch by date range.
+    """
+
+    @staticmethod
+    def _run(current_batches, previous_batches=None, start=None, end=None):
+        """Helper: mock _query_material_batches_in_range with date-aware dispatch."""
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        if previous_batches is None:
+            previous_batches = []
+        start = start or date(2025, 6, 1)
+        end = end or date(2025, 6, 30)
+
+        original = analysis_procurement._query_material_batches_in_range
+
+        async def fake_query(fid, s, e):
+            # If start matches the current period start, return current; else previous
+            if s == start:
+                return current_batches
+            return previous_batches
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_query
+            return asyncio.run(analysis_procurement._get_cost_metrics(
+                "F", start, end
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original
+
+    def test_total_purchase_amount(self):
+        """3 batches with totalValues [10000, 20000, 30000] -> PROCUREMENT_AMOUNT.value == 60000."""
+        batches = [
+            {"unit_price": Decimal("100"), "receipt_quantity": Decimal("100")},  # 10000
+            {"unit_price": Decimal("200"), "receipt_quantity": Decimal("100")},  # 20000
+            {"unit_price": Decimal("300"), "receipt_quantity": Decimal("100")},  # 30000
+        ]
+        result = self._run(batches)
+        by_code = {m["metricCode"]: m for m in result}
+        assert by_code["PROCUREMENT_AMOUNT"]["value"] == 60000
+        assert by_code["BATCH_COUNT"]["value"] == 3
+
+    def test_avg_unit_price_filters_zero_or_null(self):
+        """Batches with unit_price=[10, 0, None, 20] -> avg = (10+20)/2 = 15 (filter > 0)."""
+        batches = [
+            {"unit_price": Decimal("10"), "receipt_quantity": Decimal("1")},
+            {"unit_price": Decimal("0"), "receipt_quantity": Decimal("1")},
+            {"unit_price": None, "receipt_quantity": Decimal("1")},
+            {"unit_price": Decimal("20"), "receipt_quantity": Decimal("1")},
+        ]
+        result = self._run(batches)
+        by_code = {m["metricCode"]: m for m in result}
+        # avg = (10+20)/2 = 15
+        assert by_code["AVG_UNIT_PRICE"]["value"] == 15
+
+    def test_max_unit_price_emits_when_present(self):
+        """Batches with unit_price=[5, 10, 7] -> MAX=10, dimensionValue=material_type_id of max batch."""
+        batches = [
+            {"unit_price": Decimal("5"), "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-A"},
+            {"unit_price": Decimal("10"), "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-B"},
+            {"unit_price": Decimal("7"), "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-C"},
+        ]
+        result = self._run(batches)
+        by_code = {m["metricCode"]: m for m in result}
+        assert "MAX_UNIT_PRICE" in by_code
+        assert by_code["MAX_UNIT_PRICE"]["value"] == 10
+        assert by_code["MAX_UNIT_PRICE"]["dimensionValue"] == "MAT-B"
+        assert by_code["MAX_UNIT_PRICE"]["alertLevel"] == "GREEN"
+        # 4 metrics (PROCUREMENT_AMOUNT/BATCH_COUNT/AVG_UNIT_PRICE/MAX_UNIT_PRICE), no MoM
+        assert len(result) == 4
+
+    def test_max_unit_price_skipped_when_all_null(self):
+        """All batches unit_price=None -> no MAX_UNIT_PRICE metric (Java isPresent guard)."""
+        batches = [
+            {"unit_price": None, "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-A"},
+            {"unit_price": None, "receipt_quantity": Decimal("1"),
+             "material_type_id": "MAT-B"},
+        ]
+        result = self._run(batches)
+        codes = [m["metricCode"] for m in result]
+        assert "MAX_UNIT_PRICE" not in codes
+        # 3 metrics: PROCUREMENT_AMOUNT/BATCH_COUNT/AVG_UNIT_PRICE (no MAX, no MoM)
+        assert len(result) == 3
+
+    def test_mom_growth_when_previous_period_nonempty(self):
+        """Current sum=120k, previous sum=100k -> momGrowth = (120k-100k)/100k * 100 = 20%, UP."""
+        current_batches = [
+            {"unit_price": Decimal("100"), "receipt_quantity": Decimal("1200"),
+             "material_type_id": "MAT-A"},
+        ]   # 120,000
+        previous_batches = [
+            {"unit_price": Decimal("100"), "receipt_quantity": Decimal("1000"),
+             "material_type_id": "MAT-A"},
+        ]   # 100,000
+        result = self._run(current_batches, previous_batches=previous_batches)
+        by_code = {m["metricCode"]: m for m in result}
+        assert "PROCUREMENT_MOM_GROWTH" in by_code
+        # mom_growth = (120k - 100k) / 100k * 100 = 20
+        assert by_code["PROCUREMENT_MOM_GROWTH"]["value"] == 20
+        assert by_code["PROCUREMENT_MOM_GROWTH"]["changeDirection"] == "UP"
+        # 5 metrics total when MoM emitted
+        assert len(result) == 5
