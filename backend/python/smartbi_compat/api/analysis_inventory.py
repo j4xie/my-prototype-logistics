@@ -1516,6 +1516,80 @@ async def _get_health_score(
     }
 
 
+async def _calculate_kpi_cards(
+    batches: list[dict], factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java calculateKpiCards (L1005-1053).
+
+    Returns 5 KPI metrics:
+      [INVENTORY_VALUE, BATCH_COUNT, TURNOVER_RATE, EXPIRY_RISK_RATE, HEALTH_SCORE]
+
+    ⚠️ KPI 3 (TURNOVER_RATE) and KPI 4 (EXPIRY_RISK_RATE) are pulled from
+    sub-service results via filter+findFirst. If sub-service returned no metric
+    with that code, the KPI is **omitted** (Java line 1035 `if (turnover != null)`).
+    """
+    kpi_cards: list[dict] = []
+
+    # KPI 1: INVENTORY_VALUE (computed directly from batches in-memory, NOT via
+    # _query_inventory_value_total — Java line 1010-1018 uses
+    # calculateTotalInventoryValue helper)
+    total_value = _calculate_total_inventory_value(batches)
+    kpi_cards.append({
+        "metricCode":      "INVENTORY_VALUE",
+        "metricName":      "库存总值",
+        "value":           _decimal_to_number(
+            total_value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+        ),
+        "formattedValue":  _format_currency(total_value),
+        "unit":            "元",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      "GREEN",
+        "description":     None,
+    })
+
+    # KPI 2: BATCH_COUNT
+    kpi_cards.append({
+        "metricCode":      "BATCH_COUNT",
+        "metricName":      "库存批次",
+        "value":           len(batches),
+        "formattedValue":  f"{len(batches):,}",   # Java %,d format
+        "unit":            "批",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      "GREEN",
+        "description":     None,
+    })
+
+    # KPI 3: TURNOVER_RATE — pulled from getTurnoverAnalysis result
+    turnover_metrics = await _get_turnover_analysis(factory_id, start_date, end_date)
+    turnover = next(
+        (m for m in turnover_metrics if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover is not None:
+        kpi_cards.append(turnover)
+
+    # KPI 4: EXPIRY_RISK_RATE — pulled from getExpiryRiskAnalysis result
+    expiry_metrics = await _get_expiry_risk_analysis(factory_id)
+    expiry_risk = next(
+        (m for m in expiry_metrics if m.get("metricCode") == "EXPIRY_RISK_RATE"),
+        None,
+    )
+    if expiry_risk is not None:
+        kpi_cards.append(expiry_risk)
+
+    # KPI 5: HEALTH_SCORE — always added (Java L1049-1050)
+    health_score = await _get_health_score(factory_id, start_date, end_date)
+    kpi_cards.append(health_score)
+
+    return kpi_cards
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
