@@ -233,7 +233,7 @@ from smartbi_compat.api.analysis_finance import (
     _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
     _to_decimal,
     _utc_now_iso,
-    _fetch_all,
+    _fetch_all,             # canonical asyncpg pool wrapper (per Rule 9 + inventory PR #53 PR-A0)
     wrap_response,
 )
 
@@ -241,7 +241,10 @@ from smartbi_compat.api.analysis_finance import (
 # (mirror Java startDate.minusMonths(1) — calendar-month arithmetic respecting end-of-month)
 from dateutil.relativedelta import relativedelta
 
-from smartbi_compat.auth import verify_factory_access, AuthContext
+from smartbi_compat.auth import verify_jwt_and_factory, AuthContext   # ⚠️ Rule 9 retroactive —
+                                                                       # actual symbol is
+                                                                       # verify_jwt_and_factory,
+                                                                       # NOT verify_factory_access
 ```
 
 ### 3.3 SQL helpers（T3 + T11 fix + Rule 5 + Rule 6）
@@ -659,8 +662,8 @@ async def _get_supplier_evaluation(
     return {
         "chartType":   "RADAR",
         "title":       "供应商综合评估",
-        "xAxisField":  "supplierName",
-        "yAxisField":  None,         # NOT set in Java builder, Jackson emits null
+        "xaxisField":  "supplierName",   # ⚠️ Rule 9.1 — Jackson decapitalize (xAxis→xaxis)
+        "yaxisField":  None,             # NOT set in Java builder; Rule 9.2 emits null (no @JsonInclude)
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -972,8 +975,8 @@ async def _get_procurement_trend_chart(
     return {
         "chartType":   "LINE",
         "title":       "采购趋势",
-        "xAxisField":  "date",
-        "yAxisField":  "amount",
+        "xaxisField":  "date",       # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "amount",
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -1028,8 +1031,8 @@ async def _get_purchase_cost_analysis(
     return {
         "chartType":   "PIE",
         "title":       "采购成本分布",
-        "xAxisField":  "category",
-        "yAxisField":  "value",
+        "xaxisField":  "category",   # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "value",
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -1224,7 +1227,7 @@ async def get_procurement_analysis(
     startDate: date = Query(...),
     endDate: date = Query(...),
     analysisType: Optional[str] = Query(None),
-    auth: AuthContext = Depends(verify_factory_access),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
 ) -> dict:
     """Mirror Java SmartBIAnalysisController.getProcurementAnalysis (line 452-486).
 
@@ -1309,7 +1312,7 @@ async def _get_procurement_analysis(
     "ranking": [],
     "evaluation": {
       "chartType": "RADAR", "title": "供应商综合评估",
-      "xAxisField": "supplierName", "yAxisField": null, "seriesField": null,
+      "xaxisField": "supplierName", "yaxisField": null, "seriesField": null,
       "data": [],
       "options": {
         "showLegend": true, "maxValue": 100,
@@ -1330,7 +1333,7 @@ async def _get_procurement_analysis(
     "metrics": [],
     "costAnalysis": {
       "chartType": "PIE", "title": "采购成本分布",
-      "xAxisField": "category", "yAxisField": "value", "seriesField": null,
+      "xaxisField": "category", "yaxisField": "value", "seriesField": null,
       "data": [],
       "options": {"showPercentage": true, "showLegend": true}
     },
@@ -1347,7 +1350,7 @@ async def _get_procurement_analysis(
     "startDate": "2025-01-01", "endDate": "2025-12-31",
     "trendChart": {
       "chartType": "LINE", "title": "采购趋势",
-      "xAxisField": "period", "yAxisField": "amount", "seriesField": null,
+      "xaxisField": "period", "yaxisField": "amount", "seriesField": null,
       "data": [],
       "options": {"period": "MONTH"}
     }
