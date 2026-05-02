@@ -336,3 +336,61 @@ class TestAnalysisInventoryDefaultMode:
         expected_keys = {"level", "category", "message", "relatedEntity", "actionSuggestion"}
         assert set(insight.keys()) == expected_keys, f"AIInsight keys mismatch: {set(insight.keys())}"
         assert insight["relatedEntity"] is None
+
+
+# ============================================================
+# PR-C: Arithmetic depth tests (12 classes per spec §5.3)
+# ============================================================
+
+from decimal import Decimal
+
+
+class TestInventoryAlertHelpersArithmetic:
+    """4 named alert helpers x 4 boundary cases = 16 tests.
+
+    Critical: ExpiryRisk + LossRate use STRICT `>`, NOT `>=`. Boundary value
+    routes to YELLOW (not RED) at threshold; routes to GREEN (not YELLOW) at
+    lower threshold. Off-by-one on `>` vs `>=` is the exact bug class this
+    test catches.
+    """
+
+    @pytest.mark.parametrize("rate,expected", [
+        ("5.99", "RED"),
+        ("6.0", "YELLOW"),
+        ("11.99", "YELLOW"),
+        ("12.0", "GREEN"),
+    ])
+    def test_turnover_alert_boundaries(self, rate, expected):
+        from smartbi_compat.api.analysis_inventory import _determine_turnover_alert_level
+        assert _determine_turnover_alert_level(Decimal(rate)) == expected
+
+    @pytest.mark.parametrize("days,expected", [
+        ("60.01", "RED"),
+        ("60.0", "YELLOW"),
+        ("30.01", "YELLOW"),
+        ("30.0", "GREEN"),
+    ])
+    def test_inventory_days_alert_boundaries(self, days, expected):
+        from smartbi_compat.api.analysis_inventory import _determine_inventory_days_alert_level
+        assert _determine_inventory_days_alert_level(Decimal(days)) == expected
+
+    @pytest.mark.parametrize("rate,expected", [
+        ("15.01", "RED"),
+        ("15.0", "YELLOW"),    # strict > 15 for RED
+        ("10.01", "YELLOW"),
+        ("10.0", "GREEN"),     # strict > 10 for YELLOW
+    ])
+    def test_expiry_risk_alert_boundaries(self, rate, expected):
+        from smartbi_compat.api.analysis_inventory import _determine_expiry_risk_alert_level
+        assert _determine_expiry_risk_alert_level(Decimal(rate)) == expected
+
+    @pytest.mark.parametrize("rate,expected", [
+        ("5.01", "RED"),
+        ("5.0", "YELLOW"),     # strict > 5 for RED
+        ("2.01", "YELLOW"),
+        ("2.0", "GREEN"),      # strict > 2 for YELLOW
+    ])
+    def test_loss_rate_alert_boundaries(self, rate, expected):
+        from smartbi_compat.api.analysis_inventory import _determine_loss_rate_alert_level
+        assert _determine_loss_rate_alert_level(Decimal(rate)) == expected
+
