@@ -116,7 +116,6 @@ Per Tier 2 sister spec lineage (region §1.3, department §1.3): **dead-code-ski
 |---|---|
 | Controller `if smartBIService==null` fallback (line 555-579) | dead code (Tier 2 lineage §1.3) |
 | `customer` dimension | listed in DrillDownRequest docstring but NOT in switch (line 1035-1059) → falls to BusinessException default. Acceptable byte-parity behavior (will return error envelope). No Python implementation of customer drill-down logic. |
-| `salesperson` dim level>1 with filterValue (calls `getSalespersonMetrics`) | technically in switch (line 2068-2073) but falls into "T2 dead level>1" — frontend never sends. Python ports verbatim for parity (D8). |
 | `customer` drill-down independent endpoint | If Wave 4+ wants this, separate spec. |
 | PG-level RLS migrations on `smart_bi_sales_data` / `smart_bi_department_data` / `smart_bi_usage_records` (T11/T12) | Separate Phase 3+ concern. Aligns with Apr 28 P0 RLS gap finding (sister tables fixed in `V20260502_03/_04`). Application-layer factory_id WHERE is the sole isolation. |
 | `handleDrillDownIntent` AI orchestration path (`SmartBIServiceImpl.java:1731-1741`) | Phase 2B-β scope, calls `processDrillDown` but is a SEPARATE entry point. This spec ports the HTTP `POST /drill-down` only. AI cite see §9.1. |
@@ -127,7 +126,7 @@ Per Tier 2 sister spec lineage (region §1.3, department §1.3): **dead-code-ski
 
 - **1 row INSERT** to `smart_bi_usage_records` per request (T7 — service line 1066).
   - Args mirror Java exactly: `factoryId, queryText=null, actionType="DRILLDOWN", tokenCount=0, cacheHit=false, success=true`
-  - Other defaults: `costAmount=0`, `responseTimeMs=null`, `userId=null` (Python may have user_id from JWT — TBD §3.6)
+  - Other defaults: `costAmount=0`, `responseTimeMs=null`, `userId=null` (Python passes None per D7 — see §3.6 + §3.7. Java line 1066 explicitly passes null despite SecurityContext having userId; Python mirrors for byte parity at DB level.)
   - Wrapped in same transaction as read dispatch (T8) — rollback on dispatch exception.
 - **No** writes to other tables.
 - **No** external API calls.
@@ -788,6 +787,11 @@ def _process_salesperson_drilldown(
 
     Note: NO `nextLevel` key in this shape (per Java line 2064-2076 — only `data`).
     Per-dim shape variance T6: salesperson dim shape differs from region/department.
+
+    Dispatch is purely on filter_value presence — NO level check (unlike region/time
+    dim processors which check level for L2/L3 paths). Both branches (L1 ranking +
+    L2 metrics) are reachable from frontend at any time. Both H5 (`_drilldown_get_salesperson_metrics`)
+    and `_get_salesperson_ranking` (sister) are in production scope.
     """
     filter_value = request.value
     if filter_value is None or filter_value == "":
@@ -935,11 +939,12 @@ Python wrapper — D3+D4 (mixed read-write transaction via SQLAlchemy `engine.be
 async def _process_drilldown_tx(
     factory_id: str,
     request,                  # DrillDownRequestModel (Pydantic)
-    user_id: Optional[int],   # from JWT payload (passed but unused per Java behavior)
 ) -> dict:
     """Mirror SmartBIServiceImpl.processDrillDown @Transactional (line 1018-1069).
 
-    D4: REQUIRED propagation, READ_COMMITTED isolation (asyncpg defaults match Java).
+    D4: REQUIRED propagation; SQLAlchemy `engine.begin()` defaults match Java
+    @Transactional defaults (REQUIRED + connection's default isolation, typically
+    READ_COMMITTED on PG).
     Read dispatch + write recordUsage in one transaction.
     BusinessException raised BEFORE recordUsage call → tx rolled back, no usage row written.
 
@@ -1119,7 +1124,6 @@ async def drill_down(
         result = await _process_drilldown_tx(
             factory_id=auth.factory_id,
             request=request,
-            user_id=auth.user_id,
         )
         return wrap_response(result)        # sister-shared helper, ApiResponse success envelope
     except DrilldownBusinessException as e:
@@ -1139,17 +1143,13 @@ from datetime import date
 class DrillDownRequestModel(BaseModel):
     """Mirror controller-level DrillDownRequestDTO (NOT service-level DrillDownRequest).
 
-    Field name mapping (controller DTO → service DTO at SmartBIAnalysisController.java:541-550):
-      value         → filterValue
-      filters       → additionalFilters
-      Other fields pass through unchanged.
-
-    Python receives controller-level field names from JSON body, internally uses
-    same names for clarity. Service-level mapping happens implicitly inside
-    _process_*_drilldown helpers via .value / .filters property access.
+    Field names match controller DTO (JSON body keys). For background, the Java
+    controller maps DTO `value`/`filters` → service `filterValue`/`additionalFilters`
+    at SmartBIAnalysisController.java:541-550 — but Python doesn't need an internal
+    rename. Helpers consume `request.value` and `request.filters` directly.
     """
     dimension: str = Field(..., min_length=1, description="下钻维度")
-    value: Optional[str] = None              # controller field; equiv to filter_value
+    value: Optional[str] = None              # controller field name (Java DTO uses `value`)
     parentContext: Optional[str] = None       # service-level field — sometimes set by callers
     parentDimension: Optional[str] = None
     parentValue: Optional[str] = None
@@ -1162,7 +1162,6 @@ class DrillDownRequestModel(BaseModel):
     sortDirection: Optional[str] = None
     limit: Optional[int] = None
     includeChildren: Optional[bool] = None
-    parentValue2: Optional[str] = None       # potential future field
 ```
 
 **Note on `parentContext` vs `parentDimension`**: Controller DTO has `parentDimension` + `parentValue` but service-level `getDrillPath()` (T4) uses `parentContext`. **Field name mapping is asymmetric** — controller doesn't pass `parentContext` to service builder (line 541-550 only sets `.parentDimension(...).parentValue(...)`). So `parentContext` would always be `null` from HTTP requests.
@@ -1798,7 +1797,7 @@ In drill-down context, Decimal fields appear in:
 **Wave 1 finance specs**:
 - `docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-cost-design.md` (PR #25) — cost trap cataloging
 - `docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-profit-design.md` (PR #21+22) — `_decimal_to_number` helper introduction (Rule 4)
-- `docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-payable-design.md` (PR #18) — first ported finance per-type endpoint
+- PR #18 payable (impl-only, no separate spec doc) — first ported finance per-type endpoint; retrospect findings led to Rule 4 introduction
 - `docs/superpowers/specs/2026-05-01-phase2a-analysis-finance-receivable-design.md` (PR #33+#42) — receivable per-type
 - `docs/superpowers/specs/2026-05-01-phase2a-analysis-finance-budget-design.md` (PR #34+#38) — budget per-type, R-T8 Map.of(N) hash discovery via `comparison.options.series` golden inspection
 
@@ -1806,7 +1805,7 @@ In drill-down context, Decimal fields appear in:
 - `docs/superpowers/specs/2026-05-01-phase2a-query-templates-design.md` (PR #48) — RLS app-layer + write side-effect pattern. Drill-down's T7+T11+T12 directly inherits this. query-templates spec has 4 write endpoints (POST/PUT/DELETE × 2 — query templates + categories) — drill-down has 1 (recordUsage), but pattern is identical.
 
 **Phase 2B-β AI orchestration (lineage cite, NOT in scope)**:
-- `docs/superpowers/specs/2026-04-22-phase2b-beta-ai-orchestration-design.md` (PR #24) — `handleDrillDownIntent` (`SmartBIServiceImpl.java:1731-1741`) calls `processDrillDown` from AI intent path. This is a separate entry point with separate spec, but shares the underlying service code — if the Python port of `_process_drilldown_tx` is later wrapped by Phase 2B-β AI Python port, that's a future concern.
+- `docs/superpowers/specs/2026-04-30-phase2b-beta-design.md` + `docs/superpowers/specs/2026-04-29-phase2b-ai-intent-layer-design.md` — `handleDrillDownIntent` (`SmartBIServiceImpl.java:1731-1741`) calls `processDrillDown` from AI intent path. Separate entry point with separate spec, but shares the underlying service code — if the Python port of `_process_drilldown_tx` is later wrapped by Phase 2B-β AI Python port, that's a future concern. (Tracking PR # not verified — defer to cycle 3 reviewer.)
 
 **Apr 28 P0 RLS gap finding (memory cite)**:
 - `feedback_p0_rls_gap_finding.md` — sister tables `smart_bi_pg_excel_uploads`, `smart_bi_analysis_results`, `smart_bi_llm_fallback_log` had application-layer-only tenant isolation (no PG RLS); fixed in `V20260502_03/_04`. Drill-down's T11+T12 finding mirrors this exactly; resolution (add PG RLS) is Phase 3+ separate concern.
@@ -1824,7 +1823,7 @@ In drill-down context, Decimal fields appear in:
 - **Rule 6** (输入 None-check): All 5 missing helpers + `_process_drilldown_tx` reject None for factory_id / start_date / end_date
 - **Rule 7** (Decimal 阈值 vs float): N/A — drill-down does not have alert thresholds (sub-service outputs may include alertLevel from sister helpers, but drill-down doesn't compute new ones)
 - **Rule 8** (Map.of(N) Jackson hash order): per-dim HashMap key order TBD-FROM-GOLDEN, top-level result mutation order TBD-FROM-GOLDEN, ApiResponse.error 5-field order TBD-FROM-GOLDEN
-- **Rule 9** (incoming sister-spec discoveries): xaxisField/yaxisField LOWERCASE for ChartConfig (H4 product distribution chart), DateRange 7-field shape (N/A — drill-down doesn't emit DateRange), ChartConfig empty-case emits nulls (H4 verify)
+- **Rule 9** (landed via PR #55, commit `eb71ca244`): xaxisField/yaxisField LOWERCASE for ChartConfig (H4 product distribution chart), DateRange 7-field shape (N/A — drill-down doesn't emit DateRange), ChartConfig empty-case emits nulls (H4 verify)
 
 ### 9.3 Code refs
 
@@ -1881,7 +1880,7 @@ When dispatching cycle 3 cross-spec reviewer, MUST cite these 8 references:
 8. **Apr 28 P0 RLS gap finding** (memory `feedback_p0_rls_gap_finding.md`) — sister tables RLS gap precedent (drill-down's T11+T12 mirrors)
 
 **Plus rule files**:
-- `.claude/rules/python-java-port.md` Rules 1-8 (existing) + Rule 9 (incoming, sister-spec discoveries baked in via §6.3 cites)
+- `.claude/rules/python-java-port.md` Rules 1-9 (Rule 9 landed via PR #55, commit `eb71ca244` — sister-spec discoveries baked in via §6.3 cites)
 - `.claude/rules/concurrent-edit-safety.md` (sub-skill 5b for safe-commit during impl)
 
 **Subagent dispatch instruction template**:
