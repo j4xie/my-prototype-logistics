@@ -562,3 +562,97 @@ class TestInventoryHealthScoreAsymmetric:
         )
         assert result["value"] == 100
 
+
+class TestInventoryHealthScoreTierArithmetic:
+    """T-INV-15 - boundary tier arithmetic for 4 inline scoring branches in
+    _get_health_score. Catches off-by-one on `>=` vs `<` per dimension.
+
+    Strategy: lock 3 dims at full points, vary 4th at threshold boundaries.
+
+    TURNOVER uses `>=` (regular dir): rate=12.0 -> +30 (boundary inclusive).
+    EXPIRY/LOSS/AGING use `<` strict: rate=10.0 -> +20 (NOT +30, boundary excludes).
+    """
+
+    @staticmethod
+    def _run_with_metrics(turnover_val, expiry_val, loss_val, aging_val):
+        import asyncio
+        import unittest.mock
+        from smartbi_compat.api import analysis_inventory
+
+        async def turnover_metric(*_a, **_k):
+            if turnover_val is None: return []
+            return [{"metricCode": "TURNOVER_RATE", "value": turnover_val}]
+        async def expiry_metric(*_a, **_k):
+            if expiry_val is None: return []
+            return [{"metricCode": "EXPIRY_RISK_RATE", "value": expiry_val}]
+        async def loss_metric(*_a, **_k):
+            if loss_val is None: return []
+            return [{"metricCode": "LOSS_RATE", "value": loss_val}]
+        async def aging_metric(*_a, **_k):
+            if aging_val is None: return []
+            return [{"metricCode": "SLOW_MOVING_RATE", "value": aging_val}]
+
+        with unittest.mock.patch.object(analysis_inventory, "_get_turnover_analysis", turnover_metric), \
+             unittest.mock.patch.object(analysis_inventory, "_get_expiry_risk_analysis", expiry_metric), \
+             unittest.mock.patch.object(analysis_inventory, "_calculate_loss_rate_for_health_score", loss_metric), \
+             unittest.mock.patch.object(analysis_inventory, "_get_aging_metrics", aging_metric):
+            return asyncio.run(analysis_inventory._get_health_score(
+                "F", real_date(2025, 1, 1), real_date(2025, 12, 31)
+            ))
+
+    @pytest.mark.parametrize("turnover,expected_delta", [
+        ("11.99", 20),   # < 12 -> +20 (boundary excludes 11.99)
+        ("12.0", 30),    # >= 12 -> +30 (boundary inclusive)
+        ("5.99", 10),    # < 6 -> +10
+        ("6.0", 20),     # >= 6 -> +20 (boundary inclusive)
+        ("0.0", 10),
+        ("20.0", 30),
+    ])
+    def test_turnover_dim_tiers(self, turnover, expected_delta):
+        # Lock other 3 at full pts: expiry=5(+30), loss=1(+20), aging=5(+20) = 70 baseline
+        result = self._run_with_metrics(
+            Decimal(turnover), Decimal("5"), Decimal("1"), Decimal("5")
+        )
+        assert result["value"] == 70 + expected_delta
+
+    @pytest.mark.parametrize("expiry,expected_delta", [
+        ("9.99", 30),    # < 10 -> +30
+        ("10.0", 20),    # NOT < 10 -> +20 (boundary excludes from full pts)
+        ("14.99", 20),   # < 15 -> +20
+        ("15.0", 10),    # NOT < 15 -> +10 (boundary excludes from mid pts)
+        ("0.0", 30),
+        ("100.0", 10),
+    ])
+    def test_expiry_dim_tiers(self, expiry, expected_delta):
+        # Lock other 3 at full pts: turnover=15(+30), loss=1(+20), aging=5(+20) = 70 baseline
+        result = self._run_with_metrics(
+            Decimal("15"), Decimal(expiry), Decimal("1"), Decimal("5")
+        )
+        assert result["value"] == 70 + expected_delta
+
+    @pytest.mark.parametrize("loss,expected_delta", [
+        ("1.99", 20),    # < 2 -> +20
+        ("2.0", 12),     # NOT < 2 -> +12
+        ("4.99", 12),    # < 5 -> +12
+        ("5.0", 5),      # NOT < 5 -> +5
+    ])
+    def test_loss_dim_tiers(self, loss, expected_delta):
+        # Lock other 3: turnover=15(+30), expiry=5(+30), aging=5(+20) = 80 baseline
+        result = self._run_with_metrics(
+            Decimal("15"), Decimal("5"), Decimal(loss), Decimal("5")
+        )
+        assert result["value"] == 80 + expected_delta
+
+    @pytest.mark.parametrize("aging,expected_delta", [
+        ("9.99", 20),    # < 10 -> +20
+        ("10.0", 12),    # NOT < 10 -> +12
+        ("19.99", 12),   # < 20 -> +12
+        ("20.0", 5),     # NOT < 20 -> +5
+    ])
+    def test_aging_dim_tiers(self, aging, expected_delta):
+        # Lock other 3: turnover=15(+30), expiry=5(+30), loss=1(+20) = 80 baseline
+        result = self._run_with_metrics(
+            Decimal("15"), Decimal("5"), Decimal("1"), Decimal(aging)
+        )
+        assert result["value"] == 80 + expected_delta
+
