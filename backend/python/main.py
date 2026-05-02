@@ -1112,6 +1112,7 @@ try:
     from smartbi_compat.api import analysis_finance
     from smartbi_compat.api import analysis_department
     from smartbi_compat.api import analysis_inventory
+    from smartbi_compat.api import analysis_region
     app.include_router(smartbi_compat_analysis.router, tags=["SmartBI Compat: Analysis"])
     app.include_router(smartbi_compat_upload.router, tags=["SmartBI Compat: Upload"])
     app.include_router(smartbi_compat_dashboard.router, tags=["SmartBI Compat: Dashboard"])
@@ -1119,6 +1120,7 @@ try:
     app.include_router(analysis_finance.router, tags=["SmartBI Compat: Analysis Finance"])
     app.include_router(analysis_department.router, tags=["SmartBI Compat: Analysis Department"])
     app.include_router(analysis_inventory.router, tags=["SmartBI Compat: Analysis Inventory"])
+    app.include_router(analysis_region.router, tags=["SmartBI Compat: Analysis Region"])
     from smartbi_compat.api import datasource as smartbi_compat_datasource
     app.include_router(smartbi_compat_datasource.router, tags=["SmartBI Compat: Datasource"])
     from smartbi_compat.api import incentive_plan as smartbi_compat_incentive_plan
