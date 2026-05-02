@@ -1,0 +1,40 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "evaluation": {
+      "chartType": "RADAR",
+      "title": "供应商综合评估",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showLegend": true,
+        "maxValue": 100,
+        "dimensions": [
+          "priceCompetitiveness",
+          "qualityPassRate",
+          "onTimeDelivery",
+          "serviceResponse",
+          "supplyStability"
+        ],
+        "dimensionNames": [
+          "价格竞争力",
+          "质量合格率",
+          "准时交付",
+          "服务响应",
+          "供货稳定"
+        ]
+      },
+      "xaxisField": "supplierName",
+      "yaxisField": null
+    },
+    "endDate": "2025-12-31",
+    "ranking": [],
+    "startDate": "2025-01-01"
+  },
+  "timestamp": "2026-05-03T04:45:12.275496907",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

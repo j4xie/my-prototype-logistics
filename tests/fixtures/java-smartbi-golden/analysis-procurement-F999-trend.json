@@ -1,0 +1,25 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "endDate": "2025-12-31",
+    "trendChart": {
+      "chartType": "LINE",
+      "title": "采购趋势",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showDataLabels": false,
+        "smooth": true
+      },
+      "xaxisField": "date",
+      "yaxisField": "amount"
+    },
+    "startDate": "2025-01-01"
+  },
+  "timestamp": "2026-05-03T04:45:26.673055403",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
