@@ -1,0 +1,67 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "endDate": "2025-12-31",
+    "categoryRanking": [],
+    "metrics": [
+      {
+        "metricCode": "PROCUREMENT_AMOUNT",
+        "metricName": "采购总额",
+        "value": 0,
+        "formattedValue": null,
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": null
+      },
+      {
+        "metricCode": "BATCH_COUNT",
+        "metricName": "采购批次",
+        "value": 0,
+        "formattedValue": null,
+        "unit": "批",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": null
+      },
+      {
+        "metricCode": "AVG_UNIT_PRICE",
+        "metricName": "平均单价",
+        "value": 0,
+        "formattedValue": null,
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": null
+      }
+    ],
+    "startDate": "2025-01-01",
+    "costAnalysis": {
+      "chartType": "PIE",
+      "title": "采购成本分布",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showPercentage": true,
+        "showLegend": true
+      },
+      "xaxisField": "category",
+      "yaxisField": "value"
+    }
+  },
+  "timestamp": "2026-05-03T04:45:25.412674892",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
