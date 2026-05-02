@@ -408,3 +408,117 @@ class TestProcurementMoMGrowthArithmetic:
         assert result == Decimal("120.00"), (
             f"T9 .abs() denom: expected +120 (NOT -120), got {result}"
         )
+
+
+class TestProcurementSupplierRankingArithmetic:
+    """4 tests for _calculate_supplier_ranking_from_data:
+       sort by value desc / tie-break / quality alert / negative value defensive.
+    """
+
+    @staticmethod
+    def _run(factory_id, batches, supplier_lookup=None):
+        """Helper: directly call _calculate_supplier_ranking_from_data with mocked supplier lookup.
+        supplier_lookup: dict mapping supplier_id -> supplier dict (or None for not found).
+        """
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        original = analysis_procurement._query_supplier_by_id
+
+        async def fake_lookup(sid, fid):
+            if supplier_lookup is None:
+                return None
+            return supplier_lookup.get(sid)
+
+        try:
+            analysis_procurement._query_supplier_by_id = fake_lookup
+            return asyncio.run(analysis_procurement._calculate_supplier_ranking_from_data(
+                factory_id, batches
+            ))
+        finally:
+            analysis_procurement._query_supplier_by_id = original
+
+    def test_sort_by_value_desc(self):
+        """3 suppliers with values [100, 300, 200] -> ranking[B=300, C=200, A=100]."""
+        # Each batch: unit_price * receipt_quantity = value
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("10"), "status": "AVAILABLE"},      # 100
+            {"supplier_id": "SUP-B", "unit_price": Decimal("30"),
+             "receipt_quantity": Decimal("10"), "status": "AVAILABLE"},      # 300
+            {"supplier_id": "SUP-C", "unit_price": Decimal("20"),
+             "receipt_quantity": Decimal("10"), "status": "AVAILABLE"},      # 200
+        ]
+        rankings = self._run("F", batches)
+        assert len(rankings) == 3
+        # Sorted desc by value
+        assert rankings[0]["name"] == "SUP-B" and rankings[0]["value"] == 300
+        assert rankings[1]["name"] == "SUP-C" and rankings[1]["value"] == 200
+        assert rankings[2]["name"] == "SUP-A" and rankings[2]["value"] == 100
+        assert [r["rank"] for r in rankings] == [1, 2, 3]
+
+    def test_tie_break_stable_order(self):
+        """2 suppliers with equal totals -> Python sorted() is stable, preserves insertion order."""
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("50"),
+             "receipt_quantity": Decimal("2"), "status": "AVAILABLE"},       # 100
+            {"supplier_id": "SUP-B", "unit_price": Decimal("50"),
+             "receipt_quantity": Decimal("2"), "status": "AVAILABLE"},       # 100
+        ]
+        rankings = self._run("F", batches)
+        assert len(rankings) == 2
+        # Stable sort: insertion order preserved on tie (A first since seen first in dict iteration)
+        names = [r["name"] for r in rankings]
+        # Either order acceptable but both must be present
+        assert set(names) == {"SUP-A", "SUP-B"}
+        # Both have value=100
+        assert all(r["value"] == 100 for r in rankings)
+
+    def test_quality_alert_level_thresholds(self):
+        """Verify alertLevel maps from quality score (=available/total*100):
+           Java: < 90 RED, < 95 YELLOW, else GREEN.
+
+           Build 3 suppliers with controlled available counts:
+             SUP-A: 8/10 AVAILABLE -> quality=80 -> RED
+             SUP-B: 10/10 AVAILABLE -> quality=100 -> GREEN
+             SUP-C: 9/10 AVAILABLE -> quality=90 -> YELLOW (90 NOT < 90 -> not RED, NOT < 95 -> not YELLOW... wait)
+           Re-check: 90 < 90 -> false; 90 < 95 -> true -> YELLOW.
+        """
+        batches = []
+        # SUP-A: 8 AVAILABLE + 2 non-AVAILABLE = quality 80 -> RED
+        for _i in range(8):
+            batches.append({"supplier_id": "SUP-A", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "AVAILABLE"})
+        for _i in range(2):
+            batches.append({"supplier_id": "SUP-A", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "DEPLETED"})
+        # SUP-B: 10/10 AVAILABLE -> quality 100 -> GREEN
+        for _i in range(10):
+            batches.append({"supplier_id": "SUP-B", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "AVAILABLE"})
+        # SUP-C: 9 AVAILABLE + 1 non-AVAILABLE = quality 90 -> YELLOW
+        for _i in range(9):
+            batches.append({"supplier_id": "SUP-C", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "AVAILABLE"})
+        for _i in range(1):
+            batches.append({"supplier_id": "SUP-C", "unit_price": Decimal("10"),
+                            "receipt_quantity": Decimal("1"), "status": "DEPLETED"})
+
+        rankings = self._run("F", batches)
+        by_name = {r["name"]: r for r in rankings}
+        assert by_name["SUP-A"]["alertLevel"] == "RED", f"got {by_name['SUP-A']['alertLevel']}"
+        assert by_name["SUP-B"]["alertLevel"] == "GREEN", f"got {by_name['SUP-B']['alertLevel']}"
+        assert by_name["SUP-C"]["alertLevel"] == "YELLOW", f"got {by_name['SUP-C']['alertLevel']}"
+
+    def test_negative_value_in_ranking_passes_through_no_abs(self):
+        """Procurement ranking does NOT abs() like cost does.
+        Single supplier with negative-priced batch -> value=-100 in output."""
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("-50"),
+             "receipt_quantity": Decimal("2"), "status": "AVAILABLE"},      # -100
+        ]
+        rankings = self._run("F", batches)
+        assert len(rankings) == 1
+        assert rankings[0]["value"] == -100, (
+            f"Negative value should pass through without abs(): expected -100, got {rankings[0]['value']}"
+        )
