@@ -722,3 +722,91 @@ class TestProcurementCostMetricsArithmetic:
         assert by_code["PROCUREMENT_MOM_GROWTH"]["changeDirection"] == "UP"
         # 5 metrics total when MoM emitted
         assert len(result) == 5
+
+
+class TestProcurementSupplierEvaluationArithmetic:
+    """7 tests for 5 dimension scorers + stability boundary + empty-batches case.
+
+    Java semantics (from impl):
+      - _calculate_price_score(supplier, batches): rating × 20, default 70 if rating null
+      - _calculate_quality_score(batches): availableCount/total × 100, empty -> 0
+      - _calculate_delivery_score(supplier, batches): HARDCODED 85 always
+      - _calculate_service_score(supplier): rating × 20, default 70
+      - _calculate_stability_score(batches): < 2 batches -> 80; CV-based; clamp [0, 100]
+    """
+
+    def test_price_score_rating_present(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_price_score
+        # rating=4 -> 4 × 20 = 80
+        assert _calculate_price_score({"rating": 4}, []) == Decimal("80")
+
+    def test_price_score_rating_null_default_70(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_price_score
+        assert _calculate_price_score({"rating": None}, []) == Decimal("70")
+        # rating key missing also defaults to 70
+        assert _calculate_price_score({}, []) == Decimal("70")
+
+    def test_quality_score_pass_rate(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_quality_score
+        # 9 AVAILABLE / 10 total -> 90
+        batches = [{"status": "AVAILABLE"}] * 9 + [{"status": "DEPLETED"}] * 1
+        result = _calculate_quality_score(batches)
+        assert result == Decimal("90.0000"), f"got {result}"
+        # Empty batches -> 0
+        assert _calculate_quality_score([]) == Decimal("0")
+
+    def test_delivery_score_hardcoded_85(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_delivery_score
+        # Any input returns 85 (Java line 631 unconditional return)
+        assert _calculate_delivery_score({}, []) == Decimal("85")
+        assert _calculate_delivery_score({"rating": 5}, [{"status": "AVAILABLE"}]) == Decimal("85")
+        assert _calculate_delivery_score({"rating": None}, []) == Decimal("85")
+
+    def test_service_score_rating_present_and_default(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_service_score
+        # rating=5 -> 5 × 20 = 100
+        assert _calculate_service_score({"rating": 5}) == Decimal("100")
+        # rating=null -> default 70
+        assert _calculate_service_score({"rating": None}) == Decimal("70")
+
+    def test_stability_score_under_2_batches_default_80(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_stability_score
+        # 0 batches -> default 80
+        assert _calculate_stability_score([]) == Decimal("80")
+        # 1 batch -> default 80 (Java line 670 batches.size() < 2 guard)
+        assert _calculate_stability_score([
+            {"receipt_quantity": Decimal("100")},
+        ]) == Decimal("80")
+
+    def test_supplier_evaluation_empty_batches_returns_no_data_points(self):
+        """Empty batches + empty suppliers -> chart has data=[], but options still 5-dim."""
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        original_b = analysis_procurement._query_material_batches_in_range
+        original_s = analysis_procurement._query_active_suppliers
+
+        async def fake_b(*_a, **_k): return []
+        async def fake_s(*_a, **_k): return []
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_b
+            analysis_procurement._query_active_suppliers = fake_s
+            result = asyncio.run(analysis_procurement._get_supplier_evaluation(
+                "F", date(2025, 1, 1), date(2025, 12, 31)
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original_b
+            analysis_procurement._query_active_suppliers = original_s
+
+        # chart_data list is empty (no suppliers/batches to evaluate)
+        assert result["data"] == []
+        # Options still has 5-dim radar definition (declaration order preserved per T5)
+        assert result["chartType"] == "RADAR"
+        assert result["options"]["dimensions"] == [
+            "priceCompetitiveness", "qualityPassRate", "onTimeDelivery",
+            "serviceResponse", "supplyStability",
+        ]
+        assert result["options"]["dimensionNames"] == [
+            "价格竞争力", "质量合格率", "准时交付", "服务响应", "供货稳定",
+        ]
