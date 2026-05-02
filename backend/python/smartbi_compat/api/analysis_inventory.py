@@ -1773,6 +1773,95 @@ def _generate_suggestions(batches: list[dict], kpi_cards: list[dict]) -> list[st
     return suggestions
 
 
+async def _get_inventory_health(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java getInventoryHealth (L89-135).
+
+    Returns full 16-key DashboardResponse envelope (Lombok @Data emission semantics).
+    Empty batches → _build_empty_dashboard (also 16 keys).
+
+    ⚠️ T-INV-11 — recursive call chain (NOT optimized):
+      _get_inventory_health → _calculate_kpi_cards
+        → _get_turnover_analysis (3rd query of allBatches)
+        → _get_expiry_risk_analysis (3rd query of allBatches in expiry path)
+        → _get_health_score
+          → _get_turnover_analysis again
+          → _get_expiry_risk_analysis again
+          → _calculate_loss_rate_for_health_score
+          → _get_aging_metrics
+
+    ⚠️ T-INV-8 — default mode charts are exactly:
+      [getInventoryAgingChart, getExpiryRiskChart, buildMaterialCategoryValueChart]
+    No radar, no loss-anything.
+    """
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+
+    if not all_batches:
+        return _build_empty_dashboard()
+
+    # Java line 101: kpiCards
+    metric_results = await _calculate_kpi_cards(all_batches, factory_id, start_date, end_date)
+    kpi_cards = _convert_to_kpi_cards(metric_results)
+
+    # Java line 105-108: charts list (3 charts) + LinkedHashMap by title.replace(" ", "_")
+    chart_list = [
+        await _get_inventory_aging_chart(factory_id),
+        await _get_expiry_risk_chart(factory_id),
+        _build_material_category_value_chart(all_batches),
+    ]
+    charts: dict[str, dict] = {}
+    for chart in chart_list:
+        title = chart.get("title")
+        key = title.replace(" ", "_") if title else f"chart_{len(charts)}"
+        charts[key] = chart
+
+    # Java line 115-119: rankings LinkedHashMap with keys "expiring", "aging"
+    expiring_ranking = await _get_expiring_batches_ranking(factory_id, _DEFAULT_EXPIRY_WARNING_DAYS)
+    aging_ranking = await _get_long_aging_batches_ranking(factory_id, _AGING_NORMAL)
+    rankings = {
+        "expiring": expiring_ranking,
+        "aging":    aging_ranking,
+    }
+
+    # Java line 122-125: rule-based generators (NO LLM)
+    ai_insights = _generate_ai_insights(all_batches, metric_results, factory_id)
+    suggestions = _generate_suggestions(all_batches, metric_results)
+
+    # 16-key envelope (Lombok @Data) — populated path
+    return {
+        "period":            None,
+        "startDate":         None,         # inner overview's startDate is null (Java default)
+        "endDate":           None,
+        "kpiCards":          kpi_cards,
+        "metricCards":       None,
+        "rankings":          rankings,
+        "charts":            charts,
+        "chartList":         None,
+        "aiInsights":        ai_insights,
+        "alerts":            None,
+        "recommendations":   None,
+        "suggestions":       suggestions,
+        "generatedAt":       None,
+        "lastUpdated":       _utc_now_iso(),
+        "fromCache":         False,
+        "cacheExpireAt":     None,
+    }
+
+
+async def _get_default_mode(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Outer envelope wrapper for default mode.
+    F999 golden Jackson HashMap order: [overview, endDate, startDate]."""
+    overview = await _get_inventory_health(factory_id, start_date, end_date)
+    return {
+        "overview":  overview,
+        "endDate":   end_date.isoformat(),
+        "startDate": start_date.isoformat(),
+    }
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
@@ -1799,10 +1888,14 @@ async def get_inventory_analysis(
     if analysisType == "aging":
         result = await _get_aging_mode(auth.factory_id, startDate, endDate)
         return wrap_response(result)
-    # All 3 PR-A modes wired. Default mode (PR-B) and unknown types still 501.
+    if not analysisType:
+        # PR-B: default mode (getInventoryHealth + DashboardResponse wrapped)
+        result = await _get_default_mode(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+    # Unknown analysisType → 501
     return wrap_response(
         data=None,
         success=False,
         code=501,
-        message=f"analysisType={analysisType or '(default getInventoryHealth)'} 尚未 port 至 Python (PR-A 进行中)",
+        message=f"analysisType={analysisType} 尚未 port 至 Python",
     )
