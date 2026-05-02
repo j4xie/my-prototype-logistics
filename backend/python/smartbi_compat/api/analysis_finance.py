@@ -1412,6 +1412,33 @@ def _filter_to_latest_upload(rows: list[dict]) -> list[dict]:
     return [r for r in rows if r.get("upload_id") == target_id]
 
 
+async def _fetch_all(sql: str, *args) -> list[dict]:
+    """Canonical SQL fetch wrapper — runs `conn.fetch(sql, *args)` against the cretas
+    pool and converts asyncpg Records to dict.
+
+    Sister specs (procurement #40, department #36, inventory #47) reference this
+    helper. Lands here as PR-A0 prereq — the `smartbi_compat` shared util location
+    so all per-type modules import via:
+        from smartbi_compat.api.analysis_finance import _fetch_all
+
+    Pool acquisition mirrors `_query_finance_data` pattern (cretas_db pool from
+    `smartbi.config.get_cretas_pool` — RLS via SQL `factory_id` filter, no GUC needed).
+    """
+    pool = None
+    try:
+        from smartbi.config import get_cretas_pool  # type: ignore
+        pool = await get_cretas_pool()
+    except Exception as e:
+        logger.warning("[_fetch_all] pool acquisition failed: %s", e)
+        return []
+    if pool is None:
+        logger.warning("[_fetch_all] pool is None; returning empty rows")
+        return []
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, *args)
+    return [dict(r) for r in rows]
+
+
 async def _query_finance_data(
     factory_id: str, record_type: str, start_date: date, end_date: date
 ) -> list[dict]:
