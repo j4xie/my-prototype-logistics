@@ -522,3 +522,88 @@ class TestProcurementSupplierRankingArithmetic:
         assert rankings[0]["value"] == -100, (
             f"Negative value should pass through without abs(): expected -100, got {rankings[0]['value']}"
         )
+
+
+class TestProcurementTrendChartArithmetic:
+    """3 tests for _get_procurement_trend_chart MONTH aggregation + sort + chart shape.
+
+    Java period semantics:
+      MONTH -> period_key = "yyyy-MM"
+      Sort: sorted(keys) ascending (Java TreeMap iteration)
+    Chart shape (Rule 9 7-field):
+      [chartType=LINE, title, seriesField, data, options, xaxisField, yaxisField]
+    Per data point: {date, amount} (NOT {period, ...} - procurement uses 'date' key).
+    """
+
+    @staticmethod
+    def _run_chart(batches, period="MONTH"):
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        original = analysis_procurement._query_material_batches_in_range
+
+        async def fake_query(fid, start, end):
+            return batches
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_query
+            return asyncio.run(analysis_procurement._get_procurement_trend_chart(
+                "F", date(2025, 1, 1), date(2025, 12, 31), period
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original
+
+    def test_month_period_aggregation(self):
+        """3 batches in 3 different months -> chart_data has 3 points keyed by 'yyyy-MM'."""
+        batches = [
+            {"receipt_date": date(2025, 6, 15), "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("5")},      # 2025-06: 50
+            {"receipt_date": date(2025, 1, 10), "unit_price": Decimal("20"),
+             "receipt_quantity": Decimal("3")},      # 2025-01: 60
+            {"receipt_date": date(2025, 3, 5), "unit_price": Decimal("15"),
+             "receipt_quantity": Decimal("4")},      # 2025-03: 60
+        ]
+        chart = self._run_chart(batches)
+        assert len(chart["data"]) == 3
+        # Each point has 'date' and 'amount' keys
+        assert all(set(p.keys()) == {"date", "amount"} for p in chart["data"])
+
+    def test_multi_month_sorted_ascending(self):
+        """Months input as [June, January, March] -> output sorted [Jan, Mar, Jun]."""
+        batches = [
+            {"receipt_date": date(2025, 6, 15), "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("10")},     # 2025-06: 100
+            {"receipt_date": date(2025, 1, 10), "unit_price": Decimal("20"),
+             "receipt_quantity": Decimal("10")},     # 2025-01: 200
+            {"receipt_date": date(2025, 3, 5), "unit_price": Decimal("15"),
+             "receipt_quantity": Decimal("10")},     # 2025-03: 150
+        ]
+        chart = self._run_chart(batches)
+        actual_dates = [p["date"] for p in chart["data"]]
+        assert actual_dates == ["2025-01", "2025-03", "2025-06"], (
+            f"Expected sorted asc by period key, got {actual_dates}"
+        )
+        # Spot-check amounts
+        by_date = {p["date"]: p["amount"] for p in chart["data"]}
+        assert by_date["2025-01"] == 200
+        assert by_date["2025-03"] == 150
+        assert by_date["2025-06"] == 100
+
+    def test_chart_shape_keys_match_lombok_jackson(self):
+        """Verify ALL 7 top-level chart dict keys per Rule 9.2.
+        Per data point: {date, amount} (procurement uses 'date', not 'period')."""
+        batches = [
+            {"receipt_date": date(2025, 6, 1), "unit_price": Decimal("10"),
+             "receipt_quantity": Decimal("5")},
+        ]
+        chart = self._run_chart(batches)
+        # Rule 9.2: 7 emit-all fields with lowercase xaxis/yaxisField
+        assert chart["chartType"] == "LINE"
+        assert chart["title"] == "采购趋势"
+        assert chart["seriesField"] is None
+        assert chart["xaxisField"] == "date"     # Rule 9.1: lowercase
+        assert chart["yaxisField"] == "amount"   # Rule 9.1: lowercase
+        assert chart["options"] == {"showDataLabels": False, "smooth": True}
+        # Per data point: 'date' and 'amount' keys (NOT 'period')
+        assert chart["data"][0]["date"] == "2025-06"
+        assert chart["data"][0]["amount"] == 50
