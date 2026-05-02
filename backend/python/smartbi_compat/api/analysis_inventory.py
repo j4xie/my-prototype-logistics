@@ -1590,6 +1590,189 @@ async def _calculate_kpi_cards(
     return kpi_cards
 
 
+def _build_material_category_value_chart(batches: list[dict]) -> dict:
+    """Mirror Java buildMaterialCategoryValueChart (L1068-1102).
+
+    PIE chart of top-10 material categories by total value.
+    Algorithm:
+      L1069-1077 categoryValues = groupingBy(materialTypeId,
+                                              reducing(currentQty * unitPrice))
+      L1079-1088 chartData = entries.sorted(byValue desc).limit(10)
+                                      .map(entry → {category, value (DISPLAY_SCALE=2)})
+      L1090-1092 options: [showPercentage=true, showLegend=true]
+
+    xaxisField/yaxisField LOWERCASE (golden-verified, Lombok-Jackson demangling).
+    """
+    category_values: dict[str, Decimal] = {}
+    for b in batches:
+        mtid = b.get("material_type_id")
+        if mtid is None:
+            continue
+        cq = _get_current_quantity(b)
+        up = b.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        value = cq * up_dec
+        category_values[mtid] = category_values.get(mtid, Decimal("0")) + value
+
+    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+    chart_data = [
+        {
+            "category": mtid,
+            "value":    _decimal_to_number(
+                value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        }
+        for mtid, value in sorted_entries[:10]
+    ]
+
+    options = {
+        "showPercentage": True,
+        "showLegend":     True,
+    }
+
+    return {
+        "chartType":   "PIE",
+        "title":       "材料类别库存占比",
+        "xaxisField":  "category",
+        "yaxisField":  "value",
+        "seriesField": None,
+        "data":        chart_data,
+        "options":     options,
+    }
+
+
+def _generate_ai_insights(
+    batches: list[dict], kpi_cards: list[dict], factory_id: str
+) -> list[dict]:
+    """Mirror Java generateAiInsights (L1107-1177).
+
+    Rule-based, NO LLM. 3 conditional insights:
+    1. Expiry risk:
+       - rate > EXPIRY_RED_THRESHOLD (15) → RED insight
+       - rate > EXPIRY_YELLOW_THRESHOLD (10) → YELLOW insight
+       - else: no insight
+    2. Turnover:
+       - rate < TURNOVER_RED_THRESHOLD (6) → RED insight
+       - rate < TURNOVER_YELLOW_THRESHOLD (12) → YELLOW insight
+       - else: no insight
+    3. Health score:
+       - score >= 80 → GREEN insight (good)
+       - else: no insight (Java only emits "good" message)
+
+    AIInsight JSON shape (5-key, golden-verified):
+      [level, category, message, relatedEntity, actionSuggestion]
+    """
+    insights: list[dict] = []
+
+    # Insight 1: Expiry risk
+    expiry_risk = next(
+        (m for m in kpi_cards if m.get("metricCode") == "EXPIRY_RISK_RATE"),
+        None,
+    )
+    if expiry_risk is not None and expiry_risk.get("value") is not None:
+        rate = _to_decimal(expiry_risk["value"])
+        if rate > _EXPIRY_RISK_RED:
+            insights.append({
+                "level":            "RED",
+                "category":         "临期风险",
+                "message":          f"临期风险率高达 {float(rate):.1f}%，需要立即处理",
+                "relatedEntity":    None,
+                "actionSuggestion": "建议优先消耗临期库存，考虑促销或转让处理",
+            })
+        elif rate > _EXPIRY_RISK_YELLOW:
+            insights.append({
+                "level":            "YELLOW",
+                "category":         "临期风险",
+                "message":          f"临期风险率为 {float(rate):.1f}%，需要关注",
+                "relatedEntity":    None,
+                "actionSuggestion": "建议制定临期库存消化计划",
+            })
+
+    # Insight 2: Turnover
+    turnover = next(
+        (m for m in kpi_cards if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover is not None and turnover.get("value") is not None:
+        rate = _to_decimal(turnover["value"])
+        if rate < _TURNOVER_RED:
+            insights.append({
+                "level":            "RED",
+                "category":         "周转效率",
+                "message":          f"库存周转率仅 {float(rate):.1f} 次/年，库存积压严重",
+                "relatedEntity":    None,
+                "actionSuggestion": "建议减少采购量，加快库存消化，优化安全库存设置",
+            })
+        elif rate < _TURNOVER_YELLOW:
+            insights.append({
+                "level":            "YELLOW",
+                "category":         "周转效率",
+                "message":          f"库存周转率 {float(rate):.1f} 次/年，有优化空间",
+                "relatedEntity":    None,
+                "actionSuggestion": "建议优化采购批次和频率，提高周转效率",
+            })
+
+    # Insight 3: Health score (only emits when score >= 80, NOT for low scores)
+    health_score = next(
+        (m for m in kpi_cards if m.get("metricCode") == "HEALTH_SCORE"),
+        None,
+    )
+    if health_score is not None and health_score.get("value") is not None:
+        score = _to_decimal(health_score["value"])
+        if score >= Decimal("80"):
+            insights.append({
+                "level":            "GREEN",
+                "category":         "整体健康",
+                "message":          f"库存健康评分 {float(score):.0f} 分，状况良好",
+                "relatedEntity":    None,
+                "actionSuggestion": "继续保持当前库存管理策略",
+            })
+
+    return insights
+
+
+def _generate_suggestions(batches: list[dict], kpi_cards: list[dict]) -> list[str]:
+    """Mirror Java generateSuggestions (L1182-1217).
+
+    Rule-based, returns list[str]. 3 conditional suggestions:
+    1. expiringCount > 0 (batches expiring within 30 days)
+    2. longAgingCount > 0 (batches with ageDays > 90)
+    3. turnover < TURNOVER_YELLOW_THRESHOLD (12)
+    """
+    suggestions: list[str] = []
+    today = date.today()
+
+    # Suggestion 1
+    warning_date = today + _days(_DEFAULT_EXPIRY_WARNING_DAYS)
+    expiring_count = sum(
+        1 for b in batches
+        if b.get("expire_date") is not None and b["expire_date"] <= warning_date
+    )
+    if expiring_count > 0:
+        suggestions.append(f"有 {expiring_count} 批库存将在30天内过期，建议优先安排使用")
+
+    # Suggestion 2
+    long_aging_count = sum(
+        1 for b in batches
+        if b.get("receipt_date") is not None
+        and (today - b["receipt_date"]).days > _AGING_WARNING
+    )
+    if long_aging_count > 0:
+        suggestions.append(f"有 {long_aging_count} 批库存库龄超过90天，建议检查使用计划或考虑处理")
+
+    # Suggestion 3
+    turnover = next(
+        (m for m in kpi_cards if m.get("metricCode") == "TURNOVER_RATE"),
+        None,
+    )
+    if turnover is not None and turnover.get("value") is not None:
+        rate = _to_decimal(turnover["value"])
+        if rate < _TURNOVER_YELLOW:
+            suggestions.append("库存周转率偏低，建议优化安全库存设置，减少不必要的采购")
+
+    return suggestions
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
