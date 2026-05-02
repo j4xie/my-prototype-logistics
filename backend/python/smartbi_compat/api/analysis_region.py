@@ -33,9 +33,9 @@ Lombok @Data orders (Java field declaration order, deterministic):
 LinkedHashMap insertion (RegionAnalysisServiceImpl.java:353-359):
   - heatmap.data[0] (6): province, value, heatValue, orderCount, customerCount, colorLevel
 
-DEFERRED (require populated goldens, captured at PR-B):
-  - heatmap.options Map.of(4) (Java source: mapType, showLabel, roam, visualMap)
-  - heatmap.options.visualMap Map.of(3) (Java source: min, max, calculable)
+Map.of(N) orders captured from PR-B populated F999/F001 goldens (2026 date range):
+  - heatmap.options Map.of(4): roam, visualMap, mapType, showLabel
+  - heatmap.options.visualMap Map.of(3): min, calculable, max
 """
 from __future__ import annotations
 
@@ -606,20 +606,21 @@ def _build_geographic_heatmap(rows: list) -> dict:
             "colorLevel": _determine_color_level(heat_value),
         })
 
-    # Map.of(4) options — DEFERRED Map.of order (PR-B re-record).
-    # Best-guess: plan-source order mapType, showLabel, roam, visualMap.
+    # Map.of(4) options — Rule 8 hash order from F999/F001-populated goldens (PR-B):
+    # actual order: roam, visualMap, mapType, showLabel
     options = {
-        "mapType": "china",
-        "showLabel": True,
         "roam": True,
         "visualMap": {
-            # Map.of(3) visualMap — DEFERRED. Best-guess: min, max, calculable.
+            # Map.of(3) visualMap — Rule 8 hash order from goldens (PR-B):
+            # actual order: min, calculable, max
             "min": 0,
+            "calculable": True,
             "max": _decimal_to_number(
                 max_amount.quantize(Decimal("0.01"), ROUND_HALF_UP)
             ),
-            "calculable": True,
         },
+        "mapType": "china",
+        "showLabel": True,
     }
 
     # Populated case: same 7-field order as empty (F2 + F1 bake-ins).
