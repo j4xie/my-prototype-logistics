@@ -1303,6 +1303,84 @@ def _build_empty_dashboard() -> dict:
     }
 
 
+async def _calculate_loss_rate_for_health_score(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror subset of Java getLossAnalysis (L484-545) — ONLY LOSS_RATE metric.
+
+    Public getLossAnalysis is NOT controller-dispatched (see §1.3 out-of-scope),
+    but getHealthScore (Java L866-869) calls it for LOSS_RATE dimension input.
+
+    This helper computes JUST the LOSS_RATE metric for health score consumption.
+    Returns list[dict] (mirrors public getLossAnalysis return type) but with
+    only the LOSS_RATE entry — health score's filter+findFirst pattern works
+    transparently with this single-element list.
+
+    Algorithm (Java L484-528, just the LOSS_RATE pieces):
+      L490 allBatches = findByFactoryIdAndStatus(factoryId, AVAILABLE)
+      L491 totalInventoryValue = calculateTotalInventoryValue(allBatches)
+      L494-518 per batch, fetch adjustments in time range, accumulate by type:
+        - "loss" type → lossAmount += abs(adjQty) * unitPrice
+        - "damage" type → damageAmount += abs(adjQty) * unitPrice
+        - "correction" AND adjQty < 0 → correctionAmount += abs(adjQty) * unitPrice
+      L520 totalLoss = lossAmount + damageAmount + correctionAmount
+      L526-528 lossRate = (totalInventoryValue > 0)
+                          ? totalLoss / totalInventoryValue * 100 : 0
+                          ⚠️ T-INV-2 div guard
+
+    Returns: [{metricCode: "LOSS_RATE", value: lossRate, alertLevel: ...}]
+    """
+    all_batches = await _query_material_batches_by_status(factory_id, "AVAILABLE")
+    total_inventory_value = _calculate_total_inventory_value(all_batches)
+
+    loss_amount = Decimal("0")
+    damage_amount = Decimal("0")
+    correction_amount = Decimal("0")
+
+    for batch in all_batches:
+        adjustments = await _query_batch_adjustments_in_range(
+            batch["id"], start_date, end_date
+        )
+        up = batch.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+
+        for adj in adjustments:
+            adj_qty = _to_decimal(adj["adjustment_quantity"])
+            adj_value = abs(adj_qty) * up_dec
+            adj_type = adj.get("adjustment_type")
+
+            if adj_type == "loss":
+                loss_amount += adj_value
+            elif adj_type == "damage":
+                damage_amount += adj_value
+            elif adj_type == "correction" and adj_qty < Decimal("0"):
+                correction_amount += adj_value
+
+    total_loss = loss_amount + damage_amount + correction_amount
+
+    if total_inventory_value > Decimal("0"):
+        loss_rate = (total_loss / total_inventory_value).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        ) * Decimal("100")
+    else:
+        loss_rate = Decimal("0")
+
+    rate_display = loss_rate.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    return [{
+        "metricCode":      "LOSS_RATE",
+        "metricName":      "损耗率",
+        "value":           _decimal_to_number(rate_display),
+        "formattedValue":  f"{float(loss_rate):.2f}%",
+        "unit":            "%",
+        "dimensionValue":  None,
+        "changeValue":     None,
+        "changePercent":   None,
+        "changeDirection": None,
+        "alertLevel":      _determine_loss_rate_alert_level(loss_rate),
+        "description":     None,
+    }]
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/inventory")
 async def get_inventory_analysis(
     factory_id: str,
