@@ -336,3 +336,75 @@ class TestAnalysisProcurementOverviewMode:
         assert py_keys == golden_keys, (
             f"overview key order mismatch:\n  python: {py_keys}\n  golden: {golden_keys}"
         )
+
+
+# ============================================================
+# PR-C-1: Arithmetic depth tests (6 PR-A-dependent classes, 27 tests)
+# PR-C-2 followup (post-procurement-PR-B merge): TestProcurementOverviewArithmetic (6 tests)
+# Spec: docs/superpowers/specs/2026-05-01-phase2a-analysis-procurement-design.md §5.3
+# ============================================================
+
+
+class TestProcurementConcentrationAlertArithmetic:
+    """T1 inverse threshold boundary - 5 boundary points (39.99 / 40.0 / 40.01 / 60.0 / 60.01).
+
+    Java line 1109-1116 uses STRICT `>` (NOT `>=`):
+      if (concentration > 60) RED;
+      if (concentration > 40) YELLOW;
+      else GREEN.
+
+    Inverse direction: concentration high = risk high (opposite of regular alert).
+    """
+
+    @pytest.mark.parametrize("concentration,expected", [
+        ("39.99", "GREEN"),
+        ("40.0", "GREEN"),    # NOT > 40 -> GREEN (strict, boundary excludes from YELLOW)
+        ("40.01", "YELLOW"),
+        ("60.0", "YELLOW"),   # NOT > 60 -> YELLOW (strict, boundary excludes from RED)
+        ("60.01", "RED"),
+    ])
+    def test_concentration_alert_inverse_strict_boundaries(self, concentration, expected):
+        from smartbi_compat.api.analysis_procurement import _determine_concentration_alert_level
+        assert _determine_concentration_alert_level(Decimal(concentration)) == expected
+
+
+class TestProcurementMoMGrowthArithmetic:
+    """T9 - 4 edge cases for _calculate_mom_growth.
+
+    Java MetricCalculatorServiceImpl.calculateMomGrowth (line 425-438):
+      previous null/0:
+        current null/<=0 -> 0
+        current > 0      -> 100
+      current null (with non-zero previous) -> -100
+      else: (current - previous) / abs(previous) * 100  <- T9 .abs() denom lock
+    """
+
+    def test_previous_none_current_positive_returns_100(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        # previous=None, current>0 -> 100
+        assert _calculate_mom_growth(Decimal("50"), None) == Decimal("100")
+        # previous=0, current>0 -> 100
+        assert _calculate_mom_growth(Decimal("50"), Decimal("0")) == Decimal("100")
+
+    def test_previous_none_current_zero_or_none_returns_zero(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        assert _calculate_mom_growth(None, None) == Decimal("0")
+        assert _calculate_mom_growth(Decimal("0"), None) == Decimal("0")
+        assert _calculate_mom_growth(Decimal("0"), Decimal("0")) == Decimal("0")
+
+    def test_current_none_with_nonzero_previous_returns_neg_100(self):
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        # current=None, previous=50 -> -100
+        assert _calculate_mom_growth(None, Decimal("50")) == Decimal("-100")
+
+    def test_negative_previous_abs_denom_yields_positive_growth(self):
+        """T9 lock: previous=-50, current=10 -> change=60; abs(-50)=50; 60/50*100=+120.
+
+        NOT -120 (which would happen if Python used `previous` directly without abs()).
+        """
+        from smartbi_compat.api.analysis_procurement import _calculate_mom_growth
+        result = _calculate_mom_growth(Decimal("10"), Decimal("-50"))
+        # Result is quantized to display scale 2: Decimal("120.00")
+        assert result == Decimal("120.00"), (
+            f"T9 .abs() denom: expected +120 (NOT -120), got {result}"
+        )
