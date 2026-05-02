@@ -176,11 +176,14 @@ from smartbi_compat.api.analysis_finance import (
     _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
     _to_decimal,             # safe Decimal coercion
     _utc_now_iso,            # ISO timestamp for generatedAt (volatile, stripped)
-    _fetch_all,              # asyncpg pool wrapper
+    _fetch_all,              # asyncpg pool wrapper (per Rule 9 + inventory PR #53 PR-A0 canonical helper)
     wrap_response,           # {success, data, message, code, timestamp} envelope
 )
 
-from smartbi_compat.auth import verify_factory_access, AuthContext
+from smartbi_compat.auth import verify_jwt_and_factory, AuthContext   # ⚠️ Rule 9 retroactive —
+                                                                       # actual symbol is
+                                                                       # verify_jwt_and_factory,
+                                                                       # NOT verify_factory_access
 ```
 
 ### 3.3 SQL helpers（含 C2 + I4 + I6 + Rule 5 + Rule 6 fix）
@@ -596,9 +599,9 @@ async def _get_department_efficiency_matrix(
     if golden-flip detected across Java backend restarts, document as accepted
     divergence in §8.
 
-    ChartConfig final shape (Java line 274-282):
+    ChartConfig final shape (Java line 274-282; JSON keys per Rule 9.1 decapitalize):
       {chartType: "SCATTER", title: "部门效率矩阵",
-       xAxisField: "perCapitaSales", yAxisField: "perCapitaCost",
+       xaxisField: "perCapitaSales", yaxisField: "perCapitaCost",
        seriesField: "department", data: [...], options: {...}}
     """
     rows = await _query_department_full(factory_id, start_date, end_date)
@@ -683,8 +686,8 @@ async def _get_department_efficiency_matrix(
     return {
         "chartType":   "SCATTER",
         "title":       "部门效率矩阵",
-        "xAxisField":  "perCapitaSales",
-        "yAxisField":  "perCapitaCost",
+        "xaxisField":  "perCapitaSales",   # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "perCapitaCost",
         "seriesField": "department",
         "data":        chart_data,
         "options":     options,
@@ -777,8 +780,8 @@ async def _get_department_trend_comparison(
     return {
         "chartType":   "LINE",
         "title":       "部门销售趋势对比",
-        "xAxisField":  "period",
-        "yAxisField":  "amount",
+        "xaxisField":  "period",     # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "amount",
         "seriesField": "department",
         "data":        chart_data,
         "options":     options,
@@ -792,24 +795,27 @@ def _create_empty_chart(chart_type: str, title: str) -> dict:
     """Mirror Java DepartmentAnalysisServiceImpl create{Scatter,Pie,Line,Area}EmptyChart
     factories (line 801-823).
 
-    ⚠️ I5 fix — Java ChartConfig DTO has NO @JsonInclude annotation (verified
-    ChartConfig.java:32) → Spring Boot Jackson default emits ALL fields including
-    null. Empty chart JSON shape:
+    ⚠️ I5 fix (now Rule 9.2 graduated) — Java ChartConfig DTO has NO @JsonInclude
+    annotation (verified ChartConfig.java:32) → Spring Boot Jackson default emits
+    ALL fields including null. Empty chart JSON shape:
       {"chartType": "SCATTER", "title": "部门效率矩阵",
-       "xAxisField": null, "yAxisField": null, "seriesField": null,
+       "xaxisField": null, "yaxisField": null, "seriesField": null,
        "data": [], "options": null}
+
+    ⚠️ Rule 9.1 — Jackson `Introspector.decapitalize` lowercases consecutive caps:
+    Java source field `xAxisField` → JSON key `xaxisField` (lowercase 'a').
 
     Python emits None for unset fields (FastAPI default JSON serializes None → null).
 
-    ChartConfig field order (Java DTO line 37-67):
-      [chartType, title, xAxisField, yAxisField, seriesField, data, options]
+    ChartConfig field order (Java DTO line 37-67), JSON keys per Rule 9.1:
+      [chartType, title, xaxisField, yaxisField, seriesField, data, options]
     Lombok @Data @Builder preserves declaration order in serialization.
     """
     return {
         "chartType":   chart_type,
         "title":       title,
-        "xAxisField":  None,
-        "yAxisField":  None,
+        "xaxisField":  None,         # ⚠️ Rule 9.1 — Jackson decapitalize (xAxis→xaxis)
+        "yaxisField":  None,
         "seriesField": None,
         "data":        [],
         "options":     None,
@@ -918,7 +924,7 @@ async def get_department_analysis(
     startDate: date = Query(...),
     endDate: date = Query(...),
     department: Optional[str] = Query(None),    # accepted but IGNORED — mirror Java prod
-    auth: AuthContext = Depends(verify_factory_access),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
 ) -> dict:
     """Mirror Java SmartBIAnalysisController.getDepartmentAnalysis (line 142-177).
 
@@ -956,8 +962,8 @@ async def get_department_analysis(
     "efficiencyMatrix": {
       "chartType": "SCATTER",
       "title": "部门效率矩阵",
-      "xAxisField": null,
-      "yAxisField": null,
+      "xaxisField": null,
+      "yaxisField": null,
       "seriesField": null,
       "data": [],
       "options": null
@@ -965,8 +971,8 @@ async def get_department_analysis(
     "trendComparison": {
       "chartType": "LINE",
       "title": "部门销售趋势对比",
-      "xAxisField": null,
-      "yAxisField": null,
+      "xaxisField": null,
+      "yaxisField": null,
       "seriesField": null,
       "data": [],
       "options": null

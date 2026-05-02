@@ -836,7 +836,7 @@ async def get_inventory_analysis(
     startDate: date = Query(..., description="Start date"),
     endDate: date = Query(..., description="End date"),
     analysisType: Optional[str] = Query(None, description="turnover/expiry/aging or null=overview"),
-    auth: AuthContext = Depends(verify_factory_access),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
 ) -> dict:
     """Mirror Java SmartBIAnalysisController.getInventoryAnalysis (L411-448).
 
@@ -1040,8 +1040,8 @@ async def _get_turnover_trend_chart(
     return {
         "chartType":   "LINE",
         "title":       "消耗趋势",
-        "xAxisField":  "month",
-        "yAxisField":  "consumption",
+        "xaxisField":  "month",        # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "consumption",
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -1400,8 +1400,8 @@ async def _get_expiry_risk_chart(factory_id: str) -> dict:
     return {
         "chartType":   "PIE",
         "title":       "临期风险分布",
-        "xAxisField":  "status",
-        "yAxisField":  "value",
+        "xaxisField":  "status",       # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "value",
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -1577,8 +1577,8 @@ async def _get_inventory_aging_chart(factory_id: str) -> dict:
     return {
         "chartType":   "BAR",
         "title":       "库龄分布",
-        "xAxisField":  "aging",
-        "yAxisField":  "value",
+        "xaxisField":  "aging",        # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "value",
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -1860,8 +1860,8 @@ def _build_material_category_value_chart(batches: list[dict]) -> dict:
     return {
         "chartType":   "PIE",
         "title":       "材料类别库存占比",
-        "xAxisField":  "category",
-        "yAxisField":  "value",
+        "xaxisField":  "category",     # ⚠️ Rule 9.1 — Jackson decapitalize
+        "yaxisField":  "value",
         "seriesField": None,
         "data":        chart_data,
         "options":     options,
@@ -2716,6 +2716,6 @@ infrastructure standardizes a "frozen time" decorator, refactor.
 
 **Python sister modules** (import targets):
 - `backend/python/smartbi_compat/api/analysis_finance.py` — Tier 1 baseline (`_strip_volatile`, `VOLATILE_KEYS`, `_decimal_to_number`, `_to_decimal`, `_utc_now_iso`, `_fetch_all`, `wrap_response`)
-- `backend/python/smartbi_compat/auth.py` — `verify_factory_access`, `AuthContext`
+- `backend/python/smartbi_compat/auth.py` — `verify_jwt_and_factory`, `AuthContext` (NOT `verify_factory_access`)
 
 **Audit history**: see frontmatter top.

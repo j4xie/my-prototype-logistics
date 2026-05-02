@@ -888,9 +888,12 @@ Python:
 def _build_geographic_heatmap(rows: list[dict]) -> dict:
     """Mirror getGeographicHeatmapData (impl line 318-381).
 
-    Empty rows → ChartConfig with chartType=MAP, title, data=[], NO other
-    fields. Lombok @Data Jackson skips null fields — Python must omit
-    options/xAxisField/yAxisField keys to match.
+    ⚠️ Rule 9.2 (graduated post-spec): ChartConfig DTO has NO @JsonInclude
+    annotation → Jackson emits ALL fields including null. Empty case emits 7
+    fields with null xaxisField/yaxisField/seriesField/options, NOT 3 fields.
+
+    ⚠️ Rule 9.1: Java source `xAxisField` → JSON key `xaxisField` (Jackson
+    Introspector.decapitalize on consecutive caps).
 
     Non-empty rows → full ChartConfig with options Map.of(4) + nested
     visualMap Map.of(3). Per Rule 8, both Map.of orders are
@@ -898,12 +901,18 @@ def _build_geographic_heatmap(rows: list[dict]) -> dict:
     literal in impl plan.
     """
     if not rows:
-        # Empty case: ChartConfig with only 3 fields set (chartType, title, data)
-        # KEY-ORDER-TBD-VIA-GOLDEN — Lombok @Data declaration order assumed
+        # Empty case: ChartConfig 7-field shape per Rule 9.2 (emit all nulls).
+        # Field order: [chartType, title, xaxisField, yaxisField, seriesField,
+        #               data, options] — Lombok @Data declaration order, JSON
+        # keys per Rule 9.1.
         return {
-            "chartType": "MAP",
-            "title": "销售地理分布",
-            "data": [],
+            "chartType":   "MAP",
+            "title":       "销售地理分布",
+            "xaxisField":  None,
+            "yaxisField":  None,
+            "seriesField": None,
+            "data":        [],
+            "options":     None,
         }
     province_aggs = _aggregate_by_province(rows)
     # Java orElse(BigDecimal.ONE) — empty stream falls to 1, but we know
@@ -956,15 +965,18 @@ def _build_geographic_heatmap(rows: list[dict]) -> dict:
         },
     }
 
-    # ChartConfig top-level Lombok @Data declaration order — TBD-via-golden
-    # if differs from: chartType, title, xAxisField, yAxisField, data, options
+    # ⚠️ Rule 9.2 — ChartConfig has 7 fields (no @JsonInclude); add seriesField=None.
+    # ⚠️ Rule 9.1 — JSON keys are xaxisField/yaxisField (Jackson decapitalize).
+    # Lombok @Data declaration order: chartType, title, xaxisField, yaxisField,
+    # seriesField, data, options — TBD-via-golden if Jackson reorders.
     return {
-        "chartType": "MAP",
-        "title": "销售地理分布",
-        "xAxisField": "province",
-        "yAxisField": "value",
-        "data": map_data,
-        "options": options,
+        "chartType":   "MAP",
+        "title":       "销售地理分布",
+        "xaxisField":  "province",
+        "yaxisField":  "value",
+        "seriesField": None,           # Rule 9.2 — emit even if Java didn't set
+        "data":        map_data,
+        "options":     options,
     }
 ```
 
@@ -1737,7 +1749,7 @@ def _decimal_to_number(v: Decimal) -> Any:
 
 2. **`generatedAt` 时区格式**: Java `LocalDateTime.now()` 无时区信息,Jackson 输出取决于配置。Sister specs 用 `+08:00` 后缀但需 golden 验证 region 端是否一致。如不一致,改用 `LocalDateTime` 无时区格式。
 
-3. **ChartConfig empty case shape**: 空数据时 Java 返 `ChartConfig{chartType, title, data}` 仅 3 字段。Lombok @Data + Jackson skip-null 是否真的 skip 掉 `xAxisField/yAxisField/options`?需 golden 反推。Spec 假设 skip,但 impl chat 必须 record 验证。
+3. **ChartConfig empty case shape**: ✅ **RESOLVED** by Rule 9.2 (graduated post-spec, PR #55) — ChartConfig.java has NO `@JsonInclude(NON_NULL)`, so Jackson emits ALL 7 fields including null. Empty case is `{chartType, title, xaxisField=null, yaxisField=null, seriesField=null, data=[], options=null}` (Rule 9.1 lowercase casing). Spec §3 dict literals updated retroactively. Impl chat still records F999 golden as final byte-truth verification, but no longer "TBD".
 
 ### 8.5 Risk mitigation 总策略 (impl chat HARD prereq)
 
