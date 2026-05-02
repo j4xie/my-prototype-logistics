@@ -3,7 +3,8 @@
 > 给后续 chat 提供 Phase 2A SmartBI Java→Python port 的**剩余工作清单**, 避免重新探索.
 >
 > **写作日期**: 2026-05-01
-> **当前 main HEAD**: `8031f2644` (PR #30 C1 fix merged 后)
+> **最后更新**: 2026-05-02 (after PR #59, 30+ Phase 2A PRs shipped 2026-05-01 → 2026-05-02)
+> **当前 main HEAD**: `a3b166909` (PR #59 T6 nginx cutover spec merged)
 > **Phase 2A 范围锁定** (`project_apr30_tool_skill_stays_java.md`): 仅 SmartBI analysis/ops endpoints byte-shape Python port. 不含 337 tools / 16 Skill / AIIntentService — 全留 Java.
 >
 > **Phase 2A 范围 update (2026-05-01)**: `/datasource/{id}/preview` 因 Java 端是 stub (`SmartBiSchemaServiceImpl.previewSchemaChanges` line 96-105 永远返 `noChanges` envelope, 不读 input, 不调 LLM; 此前 LLM-coupled 描述基于 `SchemaChangePreview` DTO 字段名假设错误) 移到 §2.4 deferred (跟 PR #37 quality/production 同模式). 见 §2.4 "/preview" 子节.
@@ -32,60 +33,87 @@
 
 ## 2. SmartBIAnalysisController endpoints inventory (26 endpoints)
 
-### 2.1 ✅ 已 ship 到 main (Phase 2A 已完成 ~14 endpoints, ~28%)
+### 2.1 ✅ 已 ship 到 main (Phase 2A 已完成 ~32 endpoints + sub-types, ~80% in-scope)
 
 | # | Java endpoint | Python ported | PR | 备注 |
 |---|---|---|---|---|
 | 1 | `GET /analysis/finance` (composite) | ✅ | #13 | `analysisType=null` → composite |
-| 2 | `GET /analysis/finance?analysisType=payable` | ✅ | #18 | per-type |
+| 2 | `GET /analysis/finance?analysisType=payable` | ✅ | #18 (PR-A) + #51 (PR-B) | per-type + arithmetic depth tests |
 | 3 | `GET /analysis/finance?analysisType=profit` | ✅ | #21 + #22 | per-type + sales fallback |
-| 4 | `GET /analysis/finance?analysisType=cost` | ✅ | #25 + #28 | per-type + arithmetic depth tests |
-| 5 | `GET /analysis/sales` (foundation) | ✅ | #14 | foundation only |
-| 6 | `GET /analysis/sales?analysisType=gold` | ✅ | #14 | gold layer |
-| 7 | `GET /analysis/sales?analysisType=overview` | ✅ | #15 | overview |
-| 8 | `GET /analysis/sales?analysisType=rankings` | ✅ | #20 | top-10 ranking |
-| 9 | `GET /analysis/sales?analysisType=trend` | ✅ | #20 | DAY bucketing only |
-| 10 | `GET /alerts` | ✅ | #14 | 4 alert types (sales/finance/dept/aggregator) |
-| 11 | `GET /recommendations` | ✅ | (batch) | |
-| 12 | `GET /query-templates` | ✅ | (batch) | GET only (CRUD 其他未 port) |
-| 13 | `GET /datasource/list` | ✅ | (batch) | |
-| 14 | `GET /data-date-range` (Dashboard) | ✅ | (batch) | dashboard.py |
+| 4 | `GET /analysis/finance?analysisType=cost` | ✅ | #25 (PR-A) + #28 (PR-B) | per-type + arithmetic depth tests |
+| 5 | `GET /analysis/finance?analysisType=receivable` | ✅ | #42 (PR-A) + #46 (PR-B) | per-type + arithmetic depth tests |
+| 6 | `GET /analysis/finance?analysisType=budget` | ✅ | #38 (PR-A) + #44 (PR-B) | per-type + arithmetic depth tests |
+| 7 | `GET /analysis/finance/budget-achievement` | ✅ | #32 | sub-endpoint |
+| 8 | `GET /analysis/finance/yoy-mom?periodType=MONTH/QUARTER` | ✅ | #32 | sub-endpoint, 4 sub-impl |
+| 9 | `GET /analysis/finance/category-comparison?year=&compareYear=` | ✅ | #32 | sub-endpoint |
+| 10 | `GET /analysis/sales` (foundation) | ✅ | #14 | foundation only |
+| 11 | `GET /analysis/sales?analysisType=gold` | ✅ | #14 | gold layer |
+| 12 | `GET /analysis/sales?analysisType=overview` | ✅ | #15 | overview |
+| 13 | `GET /analysis/sales?analysisType=rankings` | ✅ | #20 | top-10 ranking |
+| 14 | `GET /analysis/sales?analysisType=trend` | ✅ | #20 | DAY bucketing only |
+| 15 | `GET /alerts` | ✅ | #14 | 4 alert types (sales/finance/dept/aggregator) |
+| 16 | `GET /recommendations` | ✅ | (batch) | |
+| 17 | `GET /query-templates` (GET) | ✅ | (batch) | |
+| 18 | `POST /query-templates` (CREATE) | ✅ | #48 | RLS-aware, T6 hijack defense |
+| 19 | `PUT /query-templates/{id}` (UPDATE) | ✅ | #48 | |
+| 20 | `DELETE /query-templates/{id}` (DELETE) | ✅ | #48 | soft-delete |
+| 21 | `GET /datasource/list` | ✅ | (batch) | |
+| 22 | `GET /datasource/{id}/fields` | ✅ | #39 | Wave 2 Tier 1 |
+| 23 | `GET /datasource/{id}/history` | ✅ | #39 | Wave 2 Tier 1 |
+| 24 | `GET /data-date-range` (Dashboard) | ✅ | (batch) | dashboard.py |
+| 25 | `GET /incentive-plan/{targetType}/{targetId}` | ✅ | #43 | Tier 1 metric query |
+| 26 | `GET /analysis/department` (composite) | ✅ | #52 (PR-A) + #57 (PR-B) | composite + 4 sub-services + 21 arithmetic tests |
+| 27 | `GET /analysis/inventory` (4 modes) | ✅ | #53 (PR-A0+PR-A) + #54 (PR-B) | 4 modes + DashboardResponse default mode |
+| 28 | `GET /analysis/region` (per-type, PR-A) | 🚧 PR-A ✅ | #56 | PR-A shipped; PR-B (default mode) + PR-C (depth) in flight |
 
-### 2.2 🚧 Sister chat in-flight (`phase2a/finance-sub-endpoints` 本地 worktree, 未 push)
+**Spec 已 ship (impl in flight):**
+- `GET /analysis/procurement` per-type + default mode — spec PR #40 merged 2026-05-01; impl in flight (Chat 4 PR-A)
+- `GET /analysis/inventory` per-type spec PR #47 merged → impl shipped #53/#54
 
-| # | Java endpoint | 状态 |
-|---|---|---|
-| 15 | `GET /analysis/finance/budget-achievement` | ✅ impl + tests + goldens (本地 dc4033229+) |
-| 16 | `GET /analysis/finance/yoy-mom?periodType=MONTH/QUARTER` | 🚧 yoy-mom 4 sub-impl 已写, 待 route + goldens |
-| 17 | `GET /analysis/finance/category-comparison?year=&compareYear=` | ❌ 未开始 |
+**Rules graduated:**
+- Rule 8 (`Map.of(N)` Jackson hash order) — PR #35 merged 2026-05-01
+- Rule 9 (Lombok + Jackson serialization quirks) — PR #55 merged 2026-05-02
 
-> **不要碰**: sister chat 在 `.worktrees/phase2a-finance-sub-endpoints` 本地 worktree 工作, 完成后会 push + 开 PR.
+### 2.2 🚧 Sister chat in-flight (5 active chats as of 2026-05-02)
 
-### 2.3 ❌ 未开始的 backlog (~9-12 endpoints, 实际 sub-type 展开 ~35+)
+| Chat | Task | Worktree / Branch | Status |
+|---|---|---|---|
+| Chat 1 | `/analysis/inventory` PR-C (arithmetic depth) | `.worktrees/phase2a-inventory-impl` (`phase2a/inventory-pr-b` branch carries WIP) | 🚧 in flight, post-#54 ship |
+| Chat 2 | `/analysis/region` PR-B (default mode DashboardResponse) + PR-C (depth) | `.worktrees/phase2a-region-impl` | 🚧 in flight, post-#56 PR-A ship |
+| Chat 3 | `/drill-down` spec | `.worktrees/phase2a-spec-drill-down` | 🚧 spec audit cycle 2+, no PR yet |
+| Chat 4 | `/analysis/procurement` PR-A (per-type 3 modes + foundation) | `.worktrees/phase2a-procurement-impl` (locked) | 🚧 in flight, no PR yet (spec #40 merged) |
+| Chat 5 (this map's writer) | `/analysis/procurement` PR-B (standby) | `.worktrees/phase2a-procurement-pr-b` ready | ⏸️ standby until Chat 4 PR-A merges |
 
-| # | Java endpoint | sub-types | 预计 endpoint 数 | 风险 |
+> **不要碰其他 chat 的 worktree**. 如果 Chat 4 PR-A 比预期晚, organizer 会 redistribute work.
+
+### 2.3 ❌ 未开始的 backlog (剩余真实未启动)
+
+剩余 truly-未启动 端点 (排除 in-flight + deferred):
+
+| # | Java endpoint | sub-types | 风险 | 状态 |
 |---|---|---|---|---|
-| 18 | `GET /analysis/finance?analysisType=receivable` | `metrics + agingChart` | 1 (per-type) | LOW (cost/profit 模式可复用) |
-| 19 | `GET /analysis/finance?analysisType=budget` | `metrics + comparisonChart` | 1 (per-type) | LOW |
-| 20 | `GET /analysis/department` | composite | 1 | ✅ shipped (PR #36, 2026-05-01) |
-| 21 | `GET /analysis/region` | composite + 多 type? | 1-3 | MED (按地区聚合) |
-| ~~22~~ | ~~`GET /analysis/production`~~ | ⏸️ **deferred** | — | mock-only Java (见 §2.4) |
-| ~~23~~ | ~~`GET /analysis/quality`~~ | ⏸️ **deferred** | — | mock-only Java (见 §2.4) |
-| 24 | `GET /analysis/inventory` | composite + 多 type? | 1-5 | HIGH (库存动态查询) |
-| 25 | `GET /analysis/procurement` | composite + 多 type? | 1-3 | MED (采购统计) |
-| 26 | `POST /query` | NL→SQL 通用查询 | 1 | **VERY HIGH** (依赖 LLM + Tool-Skill, 可能 out-of-scope) |
-| 27 | `POST /drill-down` | 钻取分析 | 1 | HIGH (依赖 hierarchy + 多表 join) |
-| 28 | `GET /incentive-plan/{targetType}/{targetId}` | | 1 | MED |
-| ~~29~~ | ~~`POST /datasource/upload`~~ (multipart) | ⏸️ **deferred** | — | Java stub-only (见 §2.4) |
-| ~~30~~ | ~~`GET /datasource/{id}/preview`~~ | ⏸️ **deferred** | — | Java stub-only (见 §2.4) |
-| ~~31~~ | ~~`POST /datasource/apply`~~ | ⏸️ **deferred** | — | Java bookkeeping-stub (见 §2.4) |
-| 32 | `GET /datasource/{id}/fields` | | 1 | LOW |
-| 33 | `GET /datasource/{id}/history` | | 1 | LOW |
-| 34 | `POST /query-templates` | 创建模板 | 1 | LOW (CRUD 标准) |
-| 35 | `PUT /query-templates/{id}` | 更新模板 | 1 | LOW |
-| 36 | `DELETE /query-templates/{id}` | 删除模板 | 1 | LOW |
+| 29 | `POST /query` | NL→SQL 通用查询 | **VERY HIGH** | 建议 out of scope (依赖 LLM + Tool-Skill, 跟 Phase 2B AI 系统耦合) |
+| 30 | `POST /drill-down` | 钻取分析 | HIGH | spec in flight (Chat 3); impl gated on spec |
 
-### 2.4 ⚠️ Deferred — Java mock-only services (不在 Phase 2A scope)
+**Strikethrough 历史 (已 ship 或 deferred)**:
+- ~~`/analysis/finance` 5 sub-types~~ → all ✅ in §2.1
+- ~~`/analysis/department`~~ → ✅ #52 + #57
+- ~~`/analysis/inventory`~~ → ✅ #53 + #54
+- ~~`/analysis/region` PR-A~~ → ✅ #56 (PR-B/C in flight)
+- ~~`/analysis/procurement`~~ → spec ✅ #40, impl in flight
+- ~~`/analysis/quality`~~ → ⏸️ deferred §2.4
+- ~~`/analysis/production`~~ → ⏸️ deferred §2.4
+- ~~`POST /datasource/upload`~~ → ⏸️ deferred §2.4
+- ~~`GET /datasource/{id}/preview`~~ → ⏸️ deferred §2.4
+- ~~`POST /datasource/apply`~~ → ⏸️ deferred §2.4
+- ~~`/datasource/{id}/fields`~~ → ✅ #39
+- ~~`/datasource/{id}/history`~~ → ✅ #39
+- ~~`POST /query-templates`~~ → ✅ #48
+- ~~`PUT /query-templates/{id}`~~ → ✅ #48
+- ~~`DELETE /query-templates/{id}`~~ → ✅ #48
+- ~~`/incentive-plan/{targetType}/{targetId}`~~ → ✅ #43
+
+### 2.4 ⚠️ Deferred — Java mock-only / stub-only services (不在 Phase 2A scope)
 
 | # | Java endpoint | 状态 | 阻塞原因 |
 |---|---|---|---|
@@ -142,7 +170,6 @@
 - Java 永远返 `noChanges(datasource.name, datasource.schemaVersion)` 或 `autoApplicable(emptyReport, [])` — 都是 deterministic envelope, *理论*可 byte-port
 - 但 byte-port 一个永远固定的 stub 没有 byte-shape parity 价值 — Phase 2A goal 是 port real impl, port 一个 hard-coded `noChanges` / 永远空 `suggestedMappings` 的输出不验证任何业务逻辑等价
 - 真实 Java impl 落地后 (临时存储 + Excel 解析 + LLM mapping) 必须重写 spec — 现在 port 只是无谓 churn (跟 mock-port 同一论)
-- PR #39 commit message 已写 "/preview deferred", `phase2a/datasource-upload` chat (2026-05-02) brainstorm round 1 surface "/upload 8 个决策全 skip" — 这次把两个 stub 端点决策正式落到 backlog map + 给出技术依据
 - /upload 跟 /preview 是同一 service class (`SmartBiSchemaServiceImpl`) 同一组 TODO, 解 stub 时大概率同一波 Java commit 一起实现 — defer + 真实 impl 一起 port 比 stub-port + 重写 ROI 高
 
 #### 为什么 bookkeeping-stub 不 byte-port (针对 /apply)
@@ -155,9 +182,9 @@
 #### 何时重新派 chat
 
 - **quality / production**: Java backend 实现 real entity + Repository 后, 派新 chat 走完整 spec (brainstorm → 4-cycle audit → impl) 流程, 估时 8-12h per endpoint (跟其他 Tier 2 同档)
-- **/preview**: Java backend 实现真实 schema 临时存储读取 + LLM mapping 调用后, 派新 spec chat. 估时 8-12h (取决 LLM 真实 vs deterministic schema diff 比例)
-- **/upload**: Java backend 实现 Excel 解析 + Schema 比较 + LLM 字段推断 (3 个 TODO 全填) 后, 派新 spec chat (估时 8-12h, 含 Excel 解析 multipart byte-port + LLM 集成). /upload 跟 /preview 是同一 service class 同一组 TODO, 大概率一波 Java commit 同时实现 — 建议两个端点合并到一个 spec chat 一起 port (估时 12-16h 总).
-- **/apply**: Java backend 实现真实 `applySchemaChanges` (含 DDL execution + mapping validation + field definition updates) 后, 派新 spec chat. 估时 8-12h (含 transaction boundary + DDL safety port + rollback semantics). /apply 跟 /preview + /upload 是同一 service class — 推荐三个端点合并到一波 spec/impl 一起做 (总估时 16-22h, 含跨端点 transaction + DDL 共享逻辑).
+- **/preview**: Java backend 实现真实 schema 临时存储读取 + LLM mapping 调用后, 派新 spec chat. 估时 8-12h
+- **/upload**: Java backend 实现 Excel 解析 + Schema 比较 + LLM 字段推断 (3 个 TODO 全填) 后, 派新 spec chat. /upload 跟 /preview 是同一 service class — 推荐两个端点合并到一个 spec chat 一起 port (估时 12-16h 总).
+- **/apply**: Java backend 实现真实 `applySchemaChanges` (含 DDL execution + mapping validation + field definition updates) 后, 派新 spec chat. /preview + /upload + /apply 是同一 service class — 推荐三个端点合并到一波 spec/impl 一起做 (总估时 16-22h, 含跨端点 transaction + DDL 共享逻辑).
 
 **发现 chat**:
 - `phase2a/spec-quality` (Chat 4, 2026-05-01) — quality + production deferral, brainstorm Round 1 grep Java 源码时 surface mock pattern
@@ -207,89 +234,82 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 | 45 | `POST /generate-adaptive-charts` | ❌ | 适应性图表 |
 | 46 | `POST /generate-chart` | ❌ | 单图表 |
 
-总计: **~30 endpoints 未 port** (含 sub-type 展开是 ~38-50 byte-shape gates).
+总计 Dashboard: ~10 endpoints 未 port (按需评估, Phase 2A+1 候选).
 
 ---
 
-## 3. 优先级 + 工作量
+## 3. 优先级 + 工作量 (post-2026-05-02 update)
 
-### Tier 1 (LOW risk, 高 ROI, sister chat 模板可复用) — 推荐先做
+### Tier 1 (LOW risk, 高 ROI) — ✅ DONE
 
-| 端点 | 估时 | 模板 |
+所有 Tier 1 端点全 ship 或 deferred:
+- ~~/finance per-type (5 sister)~~ ✅
+- ~~/datasource/{id}/fields/history~~ ✅ #39 (preview deferred §2.4)
+- ~~/query-templates POST/PUT/DELETE~~ ✅ #48
+- ~~/incentive-plan~~ ✅ #43
+- ~~datasource list / data-date-range / recommendations~~ ✅ batch
+
+**Tier 1 残余**: 0.
+
+### Tier 2 (MED risk) — 75% DONE
+
+| 端点 | 状态 | 估时 |
 |---|---|---|
-| /finance?type=receivable | 4-6h | cost/profit pattern 直接复用 |
-| /finance?type=budget | 4-6h | 同上 |
-| /datasource/{id}/fields/history | 1-2h each | 简单 query, 标准 byte-shape (preview deferred §2.4) |
-| /query-templates POST/PUT/DELETE | 2-3h each | CRUD, 标准 |
-| /incentive-plan | 3-4h | metric 查询 |
+| ~~/analysis/department~~ | ✅ #52 + #57 | DONE |
+| ~~/analysis/inventory (4 modes)~~ | ✅ #53 + #54 (PR-C in flight) | DONE except depth tests |
+| /analysis/region | 🚧 PR-A ✅ #56, PR-B/C in flight | ~6-10h remaining |
+| /analysis/procurement | 🚧 PR-A in flight (Chat 4), PR-B standby (me), PR-C TBD | ~10-15h remaining |
 
-**Tier 1 总计**: ~25-35h, 可分 4-6 个 chat 平行做.
-
-### Tier 2 (MED risk, 新 Java service 域, 需 spec audit)
-
-| 端点 | 估时 | 风险 |
-|---|---|---|
-| ~~/analysis/department~~ | ~~8-12h~~ | ✅ shipped (PR #36) |
-| /analysis/region | 6-10h | 按地区聚合, schema 待验 |
-| /analysis/procurement | 8-12h | 采购统计 |
-| ~~/datasource/apply~~ | ~~4-6h~~ | ⏸️ 移到 §2.4 deferred (Java bookkeeping-stub) |
-
-**Tier 2 总计**: ~14-22h (department 已交付, quality 移到 §2.4 deferred, /datasource/apply 移到 §2.4 deferred).
+**Tier 2 残余**: ~16-25h across region PR-B/C + procurement PR-A/B/C.
 
 ### Tier 3 (HIGH risk, 大工程)
 
-| 端点 | 估时 | 风险 |
+| 端点 | 状态 | 估时 |
 |---|---|---|
-| /analysis/inventory | 12-20h | 库存动态查询 + RLS |
-| /drill-down | 15-25h | hierarchy + 跨表钻取, 现有 Java 复杂度高 |
+| /analysis/inventory | ✅ shipped (Tier 2 reclassified post-impl) | DONE |
+| /drill-down | 🚧 spec in flight (Chat 3 cycle 2+); impl gated | spec ~3-4h to ship + impl ~15-25h |
 
-**Tier 3 总计**: ~27-45h (production 移到 §2.4 deferred — Java 全 mock).
+**Tier 3 残余**: ~18-29h for drill-down spec + impl.
 
-### Tier 4 (VERY HIGH risk, 可能 out-of-scope)
+### Tier 4 (VERY HIGH risk, out-of-scope)
 
-| 端点 | 估时 | 决定 |
-|---|---|---|
-| /query (NL→SQL) | 30+h | **建议 out of scope**, 留 Java (依赖 Tool-Skill + LLM 链路, 跟 Phase 2B AI 系统耦合) |
-| /dashboard/executive/insights/custom/stream (SSE) | 20+h | SSE Python (FastAPI sse_starlette) 模式较新, 视需求评估 |
+| 端点 | 决定 |
+|---|---|
+| /query (NL→SQL) | **out of scope**, 留 Java (Phase 2B AI 系统耦合) |
+| /dashboard/executive/insights/custom/stream (SSE) | 视需求评估, Phase 2A+1 candidate |
 
 ### Dashboard 子集
 
-| 端点 | 估时 |
-|---|---|
-| /dashboard, /dashboard/executive (无 stream) | 20-30h 总计 (静态 + LLM insight) |
-| /generate-adaptive-charts, /generate-chart | 8-12h 总计 (chart_builder 已存在 Python 端) |
-
-**Dashboard 总计**: ~30-45h.
+按需评估, 多数为 Phase 2A+1 候选 (T6 nginx cutover spec PR #59 §2.2 列为 out-of-scope 留 Java).
 
 ---
 
-## 4. 推荐 sequence
+## 4. 推荐 sequence (post-2026-05-02 status)
 
-**Wave 1** (sister chat finance-sub-endpoints push 完后, 立即可启动):
-- receivable + budget per-type (各一个 chat, 共 2 chat)
-- 总计 ~10-12h, 让 finance 子域 5/5 全完成
+**Wave 1** (finance 子域 5/5) — ✅ DONE
+- payable / profit / cost / receivable / budget 全程 PR-A + PR-B 全 ship
 
-**Wave 2** (Tier 1 收尾, 平行):
-- /datasource/* + /query-templates CRUD (4-6 endpoint)
-- 一个 chat 包圆, ~10-15h
-- ROI 高 (CRUD 标准)
+**Wave 2** (Tier 1 收尾) — ✅ DONE
+- /datasource/{fields,history} (#39) + /query-templates CRUD (#48) + /incentive-plan (#43) + sub-endpoints (#32)
+- 5 个 deferral PRs (#37 quality+production, #45 preview, #49 upload, #50 apply)
 
-**Wave 3** (Tier 2, 平行):
-- ✅ /analysis/department (Chat 4, PR #36 shipped 2026-05-01)
-- 🚧 /analysis/region (sister Chat 5 in flight)
-- /analysis/procurement
-- ⏸️ ~~/analysis/quality~~ — 移到 §2.4 deferred (Java mock-only)
-- 3 (was 4) 独立 chat, 各 spec → plan → impl, ~8-12h each
+**Wave 3** (Tier 2, 平行) — 75% DONE
+- ✅ /analysis/department (#52 + #57)
+- ✅ /analysis/inventory (#53 + #54, PR-C in flight)
+- 🚧 /analysis/region (PR-A #56 ✅; Chat 2 PR-B/C in flight)
+- 🚧 /analysis/procurement (Chat 4 PR-A in flight; me PR-B standby; PR-C TBD)
 
-**Wave 4** (Tier 3, 串行):
-- /analysis/inventory (单独长 chat)
-- /drill-down (单独长 chat)
-- ⏸️ ~~/analysis/production~~ — 移到 §2.4 deferred (Java mock-only)
+**Wave 4** (Tier 3, 串行) — IN FLIGHT
+- 🚧 /drill-down (Chat 3 spec audit cycle 2+); impl gated on spec ship
 
-**最后**:
-- Dashboard endpoints (按需评估, 部分可能不需要 port — Java→Python 收益不明显)
-- /query NL→SQL: **建议 out of scope**
-- /query-templates CRUD 中的 PUT/DELETE: 评估业务需求, CRUD 收益低
+**T6 nginx cutover** — ✅ spec shipped #59
+- 4-stage rollout (T6.1 dryrun → T6.2 canary → T6.3 50% → T6.4 100%) + 7d soak
+- Execution gated on Phase 2A 100% in-scope completion (~5-10 working days)
+
+**Out of scope / Phase 2A+1**:
+- /query NL→SQL: **out of scope**
+- Dashboard endpoints (按需评估)
+- /query-templates CRUD 中的 PUT/DELETE: 业务收益评估
 
 ---
 
@@ -304,11 +324,16 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 - §6 Risks + 边界 (NULL handling, NaN, date boundary)
 - §7 4 轮 audit (self-review / spec reviewer / cross-spec / final impl reviewer)
 
+For DashboardResponse-emitting endpoints (default mode of inventory / region / procurement):
+- 必读 Rule 9 §9.2 (DTO 无 `@JsonInclude(NON_NULL)` → 全 emit nulls — 16 fields)
+- 必读 Rule 9 §9.1 (Lombok getter naming — `xAxisField` → `xaxisField` lowercase 'a')
+- 模板: inventory PR-B (#54) `_build_empty_dashboard` 16-key shape + AIInsight 5-key
+
 ---
 
 ## 6. 已知 patterns + rules
 
-(参考 `.claude/rules/python-java-port.md` 8 rules — Rule 8 入 main 2026-05-01 PR #35)
+(参考 `.claude/rules/python-java-port.md` 9 rules — Rule 9 入 main 2026-05-02 PR #55)
 
 - **Rule 1**: Null fallback 用 `is not None` 三元 (不 `or`)
 - **Rule 2**: WEEK period key 用 calendar year `d.year` (不 `isocalendar()[0]`)
@@ -318,45 +343,109 @@ grep -nE "@Autowired|@RequiredArgsConstructor|TODO.*实现|TODO.*从.*获取|ret
 - **Rule 6**: 输入边界 None-check (新 helper 强制)
 - **Rule 7**: 浮点阈值用 `Decimal` 比较
 - **Rule 8**: `Map.of(N)` Jackson hash order — 录 golden 反推, 跨 JVM SALT32L flip 风险
+- **Rule 9**: Lombok + Jackson 序列化 quirks (字段名 / null emit / 派生 getter 全 mirror golden) — `@Data` no-`@JsonInclude` → 全字段 emit; `xAxisField` → `xaxisField` lowercase
 
-特别注意 (本 chat 项目):
+特别注意 (跨 chat 通用):
 - Python 3.8 compat: `_to_thread` shim (不要 `asyncio.to_thread`)
-- Concurrent edit safety: `git commit -m "..." -- <paths>` (rule 5b)
+- Concurrent edit safety: `git commit -m "..." -- <paths>` (concurrent-edit rule 5b, `safe-commit.sh`)
 - Decimal serialization: FastAPI 默认 Decimal→str, 用 `_decimal_to_number` helper
+- Golden-first workflow: spec 凭源码假设字段顺序经常错 (Rule 9 §9.3) — 永远先录 F999 golden, dict literal 严格 mirror
 
 ---
 
-## 7. Phase 2A 整体进度估算
+## 7. Phase 2A 整体进度估算 (2026-05-02)
 
-- ✅ 已 ship: 15 endpoints (~30%, 含 PR #36 department spec)
-- 🚧 in-flight: receivable + budget impl (Wave 1) + region spec (Wave 3) + datasource fields/history (Wave 2)
-- ⏸️ deferred (§2.4): 5 endpoints (quality + production Java mock-only; /preview + /upload + /apply Java stub-only)
-- ❌ backlog: ~23 endpoints (Tier 1+2+3+4 + Dashboard, 估 ~106-150h 工作量, 减去 quality+production+preview+upload+apply 的 36-56h)
+### 7.1 数字总览
 
-**Phase 2A 完整收尾估时**: 4-6 个有效 chat × 8-15h/chat = ~40-90h. 若并行 3-4 个 chat 同时进行, 实际墙钟 1-2 周.
+| 类别 | 数量 | 备注 |
+|---|---|---|
+| ✅ 已 ship 到 main | **~32 endpoints + sub-types** | 含 finance 5 sister × (PR-A + PR-B) + sub-endpoints + sales 5 + ops endpoints + Tier 2 (department/inventory) + region PR-A |
+| 🚧 in-flight (5 chats) | **~6 endpoints + depth tests** | procurement (PR-A/B/C) + region (PR-B/C) + inventory PR-C + drill-down spec |
+| ⏸️ deferred §2.4 | **5 endpoints** | quality + production (mock) + /preview + /upload + /apply (stub) |
+| ❌ true backlog | **2 endpoints** | /query (out-of-scope) + /drill-down (spec→impl gated) |
+| Dashboard subset | ~10 endpoints | Phase 2A+1 candidates |
 
-**Phase 2A 100% 完成后**: 才能考虑翻 nginx cutover (T6 of original Phase 2A spec) 把 `/api/mobile/{factoryId}/smart-bi/analysis/*` 路由从 Java 切到 Python.
+### 7.2 PR ship velocity
+
+**2026-05-01 + 2026-05-02 cumulative**: 30+ Phase 2A PRs merged (impl + specs + deferrals + rules + cosmetic patches).
+
+Notable subset:
+- 12 impl PRs (finance 5 sister × PR-A+PR-B + sub-endpoints + sales + alerts + datasource fields/history + query-templates CRUD + incentive-plan + department + inventory + region PR-A)
+- 5 spec-only PRs (#33 receivable spec, #34 budget, #36 department, #40 procurement, #41 region, #47 inventory)
+- 5 deferral PRs (#37 quality+production, #45 preview, #49 upload, #50 apply)
+- 3 rules PRs (#30 calendar-year fix, #35 Rule 8, #55 Rule 9)
+- 2 cosmetic / refactoring PRs (#58 sister Rule 9 cosmetic patches, #31 backlog map original)
+- 1 ops spec (#59 T6 nginx cutover)
+
+### 7.3 剩余工作量估算
+
+| 类别 | 估时 | 状态 |
+|---|---|---|
+| Region PR-B + PR-C (Chat 2) | ~6-10h | in flight |
+| Procurement PR-A (Chat 4) | ~5-7h | in flight |
+| Procurement PR-B (me, gated on PR-A) | ~3-4h | standby |
+| Procurement PR-C (TBD) | ~3-5h | gated on PR-B |
+| Inventory PR-C (Chat 1) | ~3-4h | in flight |
+| Drill-down spec (Chat 3) | ~3-4h | spec audit cycle 2+ |
+| Drill-down impl PR-A/B/C (gated on spec) | ~15-25h | not started |
+
+**Phase 2A 100% 完整收尾估时**: ~38-59h 剩余, 跨 5 个并行 chat. 实际墙钟 ~3-5 个工作日 (假设 Chat 4 procurement PR-A ship 后 Wave 3 顺利 cascade).
+
+**T6 nginx cutover 触发条件** (per PR #59 §9.1):
+- Phase 2A 100% in-scope endpoints ship 到 main
+- Each endpoint contract test ✅ via `_strip_volatile` byte-shape gate
+- Each endpoint F001 manual smoke logged
+- Rule 8 + Rule 9 audited per endpoint
+- Java baseline 1-week stable + Python baseline 48h stable
+
+执行: 4-stage rollout per #59 §6 (T6.1 dryrun → T6.2 10% canary → T6.3 50% → T6.4 100% + 7d soak).
 
 ---
 
-## 8. 给下一个 chat 的 marching order
+## 8. 给下一个 chat 的 marching order (post-2026-05-02 status)
+
+### 8.1 Active chat assignments (ongoing, do not interfere)
+
+- **Chat 1**: inventory PR-C (arithmetic depth tests post-#54 ship). Worktree `phase2a-inventory-impl`. Gated on Chat 1's own discretion.
+- **Chat 2**: region PR-B (default mode DashboardResponse, post-#56 ship) + PR-C (depth tests). Worktree `phase2a-region-impl`. Apply Rule 9 §9.2 16-field DashboardResponse + AIInsight 5-key from inventory PR-B template.
+- **Chat 3**: drill-down spec audit cycle 2+. Worktree `phase2a-spec-drill-down`. Impl gated on spec PR ship.
+- **Chat 4**: procurement PR-A (per-type 3 modes + foundation). Worktree `phase2a-procurement-impl` (locked). 4-6h ship estimate from start of chat.
+- **Chat 5 (this map's writer)**: procurement PR-B standby. Worktree `phase2a-procurement-pr-b` ready. 10-task plan locked, golden-first workflow per Rule 9 §9.2.
+
+### 8.2 Next chat dispatch (post-Wave 3 cascade)
+
+After current 5 chats complete their work, remaining dispatch:
 
 ```
-我要推 Phase 2A 的 receivable per-type (Wave 1).
+派 chat for: drill-down impl (PR-A + PR-B + PR-C)
 
-1. cd 到主 worktree, 创建 worktree:
-   git worktree add .worktrees/phase2a-finance-receivable
-2. 模板:
-   - spec: docs/superpowers/specs/2026-04-30-phase2a-analysis-finance-cost-design.md
-   - plan: docs/superpowers/plans/2026-04-30-phase2a-analysis-finance-cost-pr-a.md
-   只把 cost 替换成 receivable, Java service 改成 financeAnalysisService.getReceivableMetrics()
-   + getReceivableAgingChart()
-3. brainstorm 2-3 轮找出 receivable-specific 边界 (aging buckets 30/60/90/120 天)
-4. spec 4 轮 audit (self / reviewer / cross-spec / final)
-5. plan 14-task 分解
-6. 实施 + push + 开 PR
+1. cd 到主 worktree
+2. git pull origin main --rebase  (含 drill-down spec PR + Wave 3 全 ship)
+3. git worktree add .worktrees/phase2a-drilldown-impl -b phase2a/drilldown-impl origin/main
+4. cd .worktrees/phase2a-drilldown-impl
+5. 读 drill-down spec (post-Chat-3 ship)
+6. brainstorm 1-2 round 找 hierarchy + 多表 join 边界
+7. spec 4-cycle audit 已 done in spec PR
+8. plan ~14 tasks
+9. impl PR-A (foundation + base path) → push → PR
+10. impl PR-B (default mode if applicable) → PR
+11. impl PR-C (arithmetic depth) → PR
 
-参考已 ship 的 cost (PR #25 + #28) 模板, 80% 工作量复用.
-
-不要碰: phase2a/finance-sub-endpoints worktree (sister chat 在做 budget-achievement / yoy-mom / category-comparison)
+参考已 ship Tier 2 模板 (department / inventory). 估时 15-25h.
 ```
+
+### 8.3 Phase 2A 100% 收尾后的 next phase
+
+- T6 nginx cutover execution per PR #59 plan (4 stages, 24h soak per stage, 7d post-soak)
+- Phase 2A+1 candidate work: Dashboard endpoints (按需评估), /query NL→SQL (Phase 2B coupling)
+- Java backend decommission (T6.4 + 30 days) — deletion of obsolete SmartBI service classes; tracked separately
+
+### 8.4 Deferred re-spec triggers (Phase 2A+1 candidates)
+
+When Java backend implements real entity / impl for these, dispatch new spec chat:
+- quality + production (real entity + Repository)
+- /preview (临时 schema 存储 + LLM mapping)
+- /upload (Excel parse + Schema diff + LLM)
+- /apply (DDL + mapping validation + field updates)
+
+详见 §2.4 各阻塞解除条件子节.
