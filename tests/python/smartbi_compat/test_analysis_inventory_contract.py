@@ -228,25 +228,111 @@ class TestAnalysisInventoryAging:
             pytest.fail(f"F999 aging byte-shape mismatch:\n{diff}")
 
 
-class TestAnalysisInventoryDefault:
-    """Default mode (no analysisType) returns 501 envelope — PR-B will replace with real impl."""
+class TestAnalysisInventoryDefaultMode:
+    """PR-B contract tests for default mode (analysisType=null → DashboardResponse).
+    Per spec §5.2."""
 
-    def test_f999_default_returns_501(self, client):
-        """Verify dispatcher 501 path for default (no analysisType) request.
+    def test_f999_default_byte_shape(self, client, monkeypatch):
+        """Empty F999 (no batches in test DB) → buildEmptyDashboard branch.
+        Full byte-shape compare against analysis-inventory-F999.json golden.
+        Verifies 3-key outer envelope + 16-key DashboardResponse + 5-key AIInsight."""
+        from smartbi_compat.api import analysis_inventory
 
-        PR-A contract: default getInventoryHealth not yet ported → 501 envelope.
-        PR-B will replace with real DashboardResponse impl.
-        """
+        FROZEN = GOLDEN_RECORD_DATE
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls):
+                return FROZEN
+
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        async def empty_fetch(*_args):
+            return []
+
+        monkeypatch.setattr(analysis_inventory, "_fetch_all", empty_fetch)
+
         resp = client.get(
             "/api/mobile/F999/smart-bi/analysis/inventory"
-            "?startDate=2025-01-01&endDate=2025-01-31",
+            "?startDate=2025-01-01&endDate=2025-12-31",
             headers={"Authorization": f"Bearer {_make_token('F999')}"},
         )
         assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
-        body = resp.json()
-        assert body["success"] is False, (
-            f"expected success=false for default mode, got: {body.get('success')}"
+
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with open(GOLDEN_DIR / "analysis-inventory-F999.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["response"]["data"])
+
+        if py_data != golden_data:
+            py_str = json.dumps(py_data, ensure_ascii=False, indent=2, sort_keys=True)
+            golden_str = json.dumps(golden_data, ensure_ascii=False, indent=2, sort_keys=True)
+            diff = "\n".join(difflib.unified_diff(
+                golden_str.splitlines(), py_str.splitlines(),
+                fromfile="golden", tofile="python", lineterm="", n=5,
+            ))
+            pytest.fail(f"F999 default byte-shape mismatch:\n{diff}")
+
+    def test_health_score_asymmetric_null_regression(self):
+        """T-INV-9 — When all 4 input metrics are None:
+          turnover null → +0 (penalty, Java L835-844 has NO else)
+          expiry null → +30 (full pts, Java L862)
+          loss null → +20 (full pts, Java L881)
+          aging null → +20 (full pts, Java L899)
+          Total = 70 (NOT 0).
+
+        Direct call to _get_health_score with mocked sub-services."""
+        import asyncio
+        import unittest.mock
+        from smartbi_compat.api import analysis_inventory
+
+        async def empty_metrics(*_args, **_kw):
+            return []
+
+        with unittest.mock.patch.object(analysis_inventory, "_get_turnover_analysis", empty_metrics), \
+             unittest.mock.patch.object(analysis_inventory, "_get_expiry_risk_analysis", empty_metrics), \
+             unittest.mock.patch.object(analysis_inventory, "_calculate_loss_rate_for_health_score", empty_metrics), \
+             unittest.mock.patch.object(analysis_inventory, "_get_aging_metrics", empty_metrics):
+            result = asyncio.run(analysis_inventory._get_health_score(
+                "F999", GOLDEN_RECORD_DATE, GOLDEN_RECORD_DATE
+            ))
+
+        assert result["metricCode"] == "HEALTH_SCORE"
+        assert result["value"] == 70, f"T-INV-9 asymmetric: expected 70 (=0+30+20+20), got {result['value']}"
+        assert result["alertLevel"] == "YELLOW"
+        assert result["formattedValue"] == "70 分"
+
+    def test_empty_dashboard_aiinsight_5_keys(self, client, monkeypatch):
+        """Verify AIInsight has 5 keys (level/category/message/relatedEntity/actionSuggestion).
+        relatedEntity always None per Lombok @Data emission. Also verifies 16-key dashboard."""
+        from smartbi_compat.api import analysis_inventory
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls):
+                return GOLDEN_RECORD_DATE
+
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        async def empty_fetch(*_args):
+            return []
+
+        monkeypatch.setattr(analysis_inventory, "_fetch_all", empty_fetch)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/inventory"
+            "?startDate=2025-01-01&endDate=2025-12-31",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
         )
-        assert body["code"] == 501, (
-            f"expected code=501 for default mode, got: {body.get('code')}"
-        )
+        assert resp.status_code == 200
+
+        overview = resp.json()["data"]["overview"]
+        assert len(overview) == 16, f"DashboardResponse should have 16 keys, got {len(overview)}"
+
+        ai_insights = overview["aiInsights"]
+        assert len(ai_insights) == 1
+
+        insight = ai_insights[0]
+        expected_keys = {"level", "category", "message", "relatedEntity", "actionSuggestion"}
+        assert set(insight.keys()) == expected_keys, f"AIInsight keys mismatch: {set(insight.keys())}"
+        assert insight["relatedEntity"] is None
