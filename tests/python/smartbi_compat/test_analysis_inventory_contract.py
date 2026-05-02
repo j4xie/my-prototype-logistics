@@ -656,3 +656,197 @@ class TestInventoryHealthScoreTierArithmetic:
         )
         assert result["value"] == 80 + expected_delta
 
+
+class TestInventoryLongAgingFilterBoundary:
+    """T-INV-14 - long-aging filter must be `>=` inclusive at 60-day boundary."""
+
+    @pytest.mark.parametrize("age_days,should_include", [
+        (59, False),    # < 60 -> EXCLUDED
+        (60, True),     # == 60 -> INCLUDED (verifies `>=` not `>`)
+        (61, True),     # > 60 -> INCLUDED
+    ])
+    def test_long_aging_filter_at_60_day_boundary(self, age_days, should_include, monkeypatch):
+        import asyncio
+        from datetime import timedelta
+        from smartbi_compat.api import analysis_inventory
+
+        FROZEN_TODAY = real_date(2026, 5, 2)
+        receipt_date = FROZEN_TODAY - timedelta(days=age_days)
+
+        async def fake_batches(*_a, **_k):
+            return [{
+                "id": 1, "batch_number": "B1",
+                "receipt_date": receipt_date,
+                "unit_price": Decimal("10"),
+                "receipt_quantity": Decimal("5"),
+                "used_quantity": Decimal("0"),
+                "reserved_quantity": Decimal("0"),
+                "material_type_id": "MAT-001",
+                "material_type_name": "原料A",
+            }]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return FROZEN_TODAY
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        ranking = asyncio.run(analysis_inventory._get_long_aging_batches_ranking("F", 60))
+        if should_include:
+            assert len(ranking) == 1, f"age_days={age_days} should be included (>=60)"
+        else:
+            assert len(ranking) == 0, f"age_days={age_days} should be excluded (<60)"
+
+
+class TestInventoryAgingBucketBoundaries:
+    """4 boundaries x 2 sides = 8 tests for aging bucket assignment.
+
+    Buckets: '0-30天', '31-60天', '61-90天', '90天以上'.
+    Logic: age <= 30 -> 0-30; <= 60 -> 31-60; <= 90 -> 61-90; else 90以上.
+    """
+
+    @pytest.mark.parametrize("age_days,expected_bucket", [
+        (30, "0-30天"),       # boundary: 30 -> first bucket
+        (31, "31-60天"),      # boundary: 31 -> second
+        (60, "31-60天"),      # boundary: 60 -> second
+        (61, "61-90天"),      # boundary: 61 -> third
+        (90, "61-90天"),      # boundary: 90 -> third
+        (91, "90天以上"),     # boundary: 91 -> fourth
+        (200, "90天以上"),    # well past 90
+        (None, "90天以上"),   # null receipt_date (T-INV-3)
+    ])
+    def test_aging_bucket_assignment(self, age_days, expected_bucket, monkeypatch):
+        import asyncio
+        from datetime import timedelta
+        from smartbi_compat.api import analysis_inventory
+
+        FROZEN_TODAY = real_date(2026, 5, 2)
+        if age_days is None:
+            receipt_date = None
+        else:
+            receipt_date = FROZEN_TODAY - timedelta(days=age_days)
+
+        async def fake_batches(*_a, **_k):
+            return [{
+                "id": 1, "receipt_date": receipt_date,
+                "unit_price": Decimal("100"),
+                "receipt_quantity": Decimal("10"),
+                "used_quantity": Decimal("0"),
+                "reserved_quantity": Decimal("0"),
+            }]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return FROZEN_TODAY
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        chart = asyncio.run(analysis_inventory._get_inventory_aging_chart("F"))
+        bucket_with_value = next(
+            (d for d in chart["data"] if d["value"] > 0), None
+        )
+        assert bucket_with_value is not None, f"No bucket got the batch (age={age_days})"
+        assert bucket_with_value["aging"] == expected_bucket, (
+            f"age_days={age_days}: expected {expected_bucket}, got {bucket_with_value['aging']}"
+        )
+
+
+class TestInventoryExpiringRankingInlineAlert:
+    """Inline 7/15-day ternary alertLevel in _get_expiring_batches_ranking.
+
+    Java semantics (impl line 875-880):
+      days <= 7  -> RED
+      days <= 15 -> YELLOW
+      else        -> GREEN
+    """
+
+    @pytest.mark.parametrize("days_until_expiry,expected_alert", [
+        (3, "RED"),       # well below 7
+        (7, "RED"),       # boundary: <= 7
+        (15, "YELLOW"),   # boundary: <= 15
+        (20, "GREEN"),    # > 15
+    ])
+    def test_expiring_alert_thresholds(self, days_until_expiry, expected_alert, monkeypatch):
+        import asyncio
+        from datetime import timedelta
+        from smartbi_compat.api import analysis_inventory
+
+        FROZEN_TODAY = real_date(2026, 5, 2)
+        expire_date = FROZEN_TODAY + timedelta(days=days_until_expiry)
+
+        async def fake_expiring(*_a, **_k):
+            return [{
+                "id": 1, "batch_number": "B1",
+                "expire_date": expire_date,
+                "unit_price": Decimal("10"),
+                "receipt_quantity": Decimal("5"),
+                "used_quantity": Decimal("0"),
+                "reserved_quantity": Decimal("0"),
+                "material_type_id": "MAT-001",
+                "material_type_name": "原料A",
+            }]
+
+        monkeypatch.setattr(analysis_inventory, "_query_expiring_batches", fake_expiring)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return FROZEN_TODAY
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        ranking = asyncio.run(analysis_inventory._get_expiring_batches_ranking("F"))
+        assert len(ranking) >= 1
+        assert ranking[0].get("alertLevel") == expected_alert, (
+            f"days={days_until_expiry}: expected {expected_alert}, got {ranking[0].get('alertLevel')}"
+        )
+
+
+class TestInventoryLongAgingRankingInlineAlert:
+    """Inline 90/120-day ternary alertLevel in _get_long_aging_batches_ranking.
+
+    Java semantics (impl line 1209-1214) - STRICT `>`:
+      ageDays > 120 -> RED
+      ageDays > 90  -> YELLOW
+      else (<=90)   -> GREEN
+    """
+
+    @pytest.mark.parametrize("age_days,expected_alert", [
+        (90, "GREEN"),     # boundary: NOT > 90 -> GREEN
+        (91, "YELLOW"),    # > 90 -> YELLOW
+        (120, "YELLOW"),   # boundary: NOT > 120 -> YELLOW
+        (121, "RED"),      # > 120 -> RED
+    ])
+    def test_long_aging_alert_thresholds(self, age_days, expected_alert, monkeypatch):
+        import asyncio
+        from datetime import timedelta
+        from smartbi_compat.api import analysis_inventory
+
+        FROZEN_TODAY = real_date(2026, 5, 2)
+        receipt_date = FROZEN_TODAY - timedelta(days=age_days)
+
+        async def fake_batches(*_a, **_k):
+            return [{
+                "id": 1, "batch_number": "B1",
+                "receipt_date": receipt_date,
+                "unit_price": Decimal("10"),
+                "receipt_quantity": Decimal("5"),
+                "used_quantity": Decimal("0"),
+                "reserved_quantity": Decimal("0"),
+                "material_type_id": "MAT-001",
+                "material_type_name": "原料A",
+            }]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return FROZEN_TODAY
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        ranking = asyncio.run(analysis_inventory._get_long_aging_batches_ranking("F", 60))
+        assert len(ranking) == 1
+        assert ranking[0].get("alertLevel") == expected_alert, (
+            f"age_days={age_days}: expected {expected_alert}, got {ranking[0].get('alertLevel')}"
+        )
+
