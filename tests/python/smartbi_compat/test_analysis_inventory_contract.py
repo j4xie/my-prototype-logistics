@@ -963,3 +963,180 @@ class TestInventoryLinkedHashMapOrder:
         actual_categories = [d["category"] for d in chart["data"]]
         assert actual_categories == ["MAT-B", "MAT-C", "MAT-A"]
 
+
+class TestInventoryDivByZeroGuards:
+    """5 div-by-zero guard sites x 3 cases = 15 tests.
+
+    Sites covered:
+      1. _get_turnover_analysis line 560 (Decimal(days_between)) — guarded by `days+1 >= 1`
+      2. _get_expiry_risk_analysis line 766-767 (/ total_value) — guard `if total_value > 0`
+      3. _get_aging_metrics line 1039-1040 (/ total_value) — guard `if total_value > 0`
+      4. _get_inventory_aging_chart line 1078-1079 (/ len(age_days_list)) — implicit
+      5. _calculate_loss_rate_for_health_score line 1361-1362 — guard `if total_inventory_value > 0`
+    """
+
+    # Site 1: _get_turnover_analysis — days_between always >= 1 (no real zero), 3 cases sanity
+    @pytest.mark.parametrize("start,end", [
+        ((2025, 6, 1), (2025, 6, 1)),    # 1-day period
+        ((2025, 6, 1), (2025, 6, 2)),    # 2-day period
+        ((2025, 6, 1), (2025, 6, 30)),   # 30-day period
+    ])
+    def test_turnover_analysis_no_div_zero_for_short_periods(self, start, end, monkeypatch):
+        import asyncio
+        from datetime import date as _d
+        from smartbi_compat.api import analysis_inventory
+
+        async def fake_consumptions(*_a, **_k):
+            return [{"total_cost": Decimal("100")}]
+        async def fake_inventory_value(*_a, **_k):
+            return Decimal("1000")
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_consumptions_in_range", fake_consumptions)
+        monkeypatch.setattr(analysis_inventory, "_query_inventory_value_total", fake_inventory_value)
+
+        result = asyncio.run(analysis_inventory._get_turnover_analysis(
+            "F", _d(*start), _d(*end)
+        ))
+        assert any(m.get("metricCode") == "TURNOVER_RATE" for m in result)
+
+    # Site 2: _get_expiry_risk_analysis — / total_value guarded
+    @pytest.mark.parametrize("scenario,expect_zero", [
+        ("zero_total", True),       # no batches → total_value=0 → rate=0
+        ("tiny_total", False),      # tiny non-zero → computes
+        ("normal_total", False),    # normal → computes
+    ])
+    def test_expiry_risk_div_guard(self, scenario, expect_zero, monkeypatch):
+        import asyncio
+        from smartbi_compat.api import analysis_inventory
+
+        if scenario == "zero_total":
+            async def fake_batches(*_a, **_k): return []
+        elif scenario == "tiny_total":
+            async def fake_batches(*_a, **_k):
+                return [{"unit_price": Decimal("0.01"), "receipt_quantity": Decimal("1"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")}]
+        else:
+            async def fake_batches(*_a, **_k):
+                return [{"unit_price": Decimal("100"), "receipt_quantity": Decimal("10"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")}]
+
+        async def fake_expiring(*_a, **_k): return []
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+        monkeypatch.setattr(analysis_inventory, "_query_expiring_batches", fake_expiring)
+        monkeypatch.setattr(analysis_inventory, "_query_expired_batches", fake_expiring)
+
+        result = asyncio.run(analysis_inventory._get_expiry_risk_analysis("F"))
+        rate_metric = next((m for m in result if m.get("metricCode") == "EXPIRY_RISK_RATE"), None)
+        assert rate_metric is not None
+        if expect_zero:
+            assert rate_metric["value"] == 0
+
+    # Site 3: _get_aging_metrics — / total_value guarded
+    @pytest.mark.parametrize("scenario,expect_zero", [
+        ("zero_total", True),
+        ("tiny_total", False),
+        ("normal_total", False),
+    ])
+    def test_aging_metrics_div_guard(self, scenario, expect_zero, monkeypatch):
+        import asyncio
+        from smartbi_compat.api import analysis_inventory
+
+        if scenario == "zero_total":
+            async def fake_batches(*_a, **_k): return []
+        elif scenario == "tiny_total":
+            async def fake_batches(*_a, **_k):
+                return [{"unit_price": Decimal("0.01"), "receipt_quantity": Decimal("1"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0"),
+                         "receipt_date": real_date(2025, 1, 1)}]
+        else:
+            async def fake_batches(*_a, **_k):
+                return [{"unit_price": Decimal("100"), "receipt_quantity": Decimal("10"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0"),
+                         "receipt_date": real_date(2025, 1, 1)}]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return real_date(2026, 5, 2)
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        result = asyncio.run(analysis_inventory._get_aging_metrics("F"))
+        slow = next((m for m in result if m.get("metricCode") == "SLOW_MOVING_RATE"), None)
+        assert slow is not None
+        if expect_zero:
+            assert slow["value"] == 0
+
+    # Site 4: _get_inventory_aging_chart — chart returns successfully for varied batch counts
+    @pytest.mark.parametrize("scenario", ["empty_batches", "one_batch", "many_batches"])
+    def test_aging_chart_no_exception_for_any_batch_count(self, scenario, monkeypatch):
+        import asyncio
+        from smartbi_compat.api import analysis_inventory
+
+        if scenario == "empty_batches":
+            async def fake_batches(*_a, **_k): return []
+        elif scenario == "one_batch":
+            async def fake_batches(*_a, **_k):
+                return [{"unit_price": Decimal("10"), "receipt_quantity": Decimal("1"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0"),
+                         "receipt_date": real_date(2025, 6, 1), "id": 1}]
+        else:
+            async def fake_batches(*_a, **_k):
+                return [
+                    {"unit_price": Decimal("10"), "receipt_quantity": Decimal("1"),
+                     "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0"),
+                     "receipt_date": real_date(2025, 6, 1), "id": 1},
+                    {"unit_price": Decimal("10"), "receipt_quantity": Decimal("1"),
+                     "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0"),
+                     "receipt_date": real_date(2025, 7, 1), "id": 2},
+                ]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return real_date(2026, 5, 2)
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        chart = asyncio.run(analysis_inventory._get_inventory_aging_chart("F"))
+        assert chart["chartType"] == "BAR"
+        assert len(chart["data"]) == 4    # 4 buckets always emitted
+
+    # Site 5: _calculate_loss_rate_for_health_score — / total_inventory_value guarded
+    @pytest.mark.parametrize("scenario,expect_zero", [
+        ("zero_inventory", True),
+        ("tiny_inventory", False),
+        ("normal_inventory", False),
+    ])
+    def test_loss_rate_div_guard(self, scenario, expect_zero, monkeypatch):
+        import asyncio
+        from smartbi_compat.api import analysis_inventory
+
+        if scenario == "zero_inventory":
+            async def fake_batches(*_a, **_k): return []
+        elif scenario == "tiny_inventory":
+            async def fake_batches(*_a, **_k):
+                return [{"id": 1, "unit_price": Decimal("0.01"),
+                         "receipt_quantity": Decimal("1"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")}]
+        else:
+            async def fake_batches(*_a, **_k):
+                return [{"id": 1, "unit_price": Decimal("100"),
+                         "receipt_quantity": Decimal("10"),
+                         "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")}]
+
+        async def fake_adjustments(*_a, **_k): return []
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+        monkeypatch.setattr(analysis_inventory, "_query_batch_adjustments_in_range", fake_adjustments)
+
+        result = asyncio.run(analysis_inventory._calculate_loss_rate_for_health_score(
+            "F", real_date(2025, 1, 1), real_date(2025, 12, 31)
+        ))
+        rate = next((m for m in result if m.get("metricCode") == "LOSS_RATE"), None)
+        assert rate is not None
+        if expect_zero:
+            assert rate["value"] == 0
+
+
