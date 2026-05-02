@@ -850,3 +850,116 @@ class TestInventoryLongAgingRankingInlineAlert:
             f"age_days={age_days}: expected {expected_alert}, got {ranking[0].get('alertLevel')}"
         )
 
+
+class TestInventoryLinkedHashMapOrder:
+    """T-INV-5 - explicit positional list assertion. Catches dict reorder
+    regressions that naive `==` comparison would silently pass.
+
+    Coverage:
+      - _get_expiry_risk_chart: 5-bucket order (positional list comp on data['status'])
+      - _get_inventory_aging_chart: 4-bucket order (positional list comp on data['aging'])
+      - _build_material_category_value_chart: top-N sorted desc by value
+    """
+
+    def test_expiry_risk_chart_5_bucket_order(self, monkeypatch):
+        """Java pre-populates 5 buckets in this LinkedHashMap order."""
+        import asyncio
+        from datetime import timedelta
+        from smartbi_compat.api import analysis_inventory
+
+        FROZEN_TODAY = real_date(2026, 5, 2)
+
+        async def fake_batches(*_a, **_k):
+            return [
+                # Expires in 3 days -> 紧急（<7天）
+                {"id": 1, "expire_date": FROZEN_TODAY + timedelta(days=3),
+                 "unit_price": Decimal("10"), "receipt_quantity": Decimal("5"),
+                 "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+                # Expires in 10 days -> 预警（7-15天）
+                {"id": 2, "expire_date": FROZEN_TODAY + timedelta(days=10),
+                 "unit_price": Decimal("10"), "receipt_quantity": Decimal("5"),
+                 "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+                # Expires in 18 days -> 关注（15-30天）
+                {"id": 3, "expire_date": FROZEN_TODAY + timedelta(days=18),
+                 "unit_price": Decimal("10"), "receipt_quantity": Decimal("5"),
+                 "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+                # No expire -> 无保质期
+                {"id": 4, "expire_date": None,
+                 "unit_price": Decimal("10"), "receipt_quantity": Decimal("5"),
+                 "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+            ]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return FROZEN_TODAY
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        chart = asyncio.run(analysis_inventory._get_expiry_risk_chart("F"))
+        # Explicit positional order assertion (NOT `==` on full dict)
+        actual_order = [d["status"] for d in chart["data"]]
+        assert actual_order == [
+            "正常（>30天）", "关注（15-30天）", "预警（7-15天）",
+            "紧急（<7天）", "无保质期",
+        ], f"Expected fixed 5-bucket order, got {actual_order}"
+        # Defensive: all 5 emitted even when some buckets empty
+        assert len(chart["data"]) == 5
+
+    def test_inventory_aging_chart_4_bucket_order(self, monkeypatch):
+        """Java pre-populates 4 buckets in this LinkedHashMap order."""
+        import asyncio
+        from datetime import timedelta
+        from smartbi_compat.api import analysis_inventory
+
+        FROZEN_TODAY = real_date(2026, 5, 2)
+
+        async def fake_batches(*_a, **_k):
+            return [
+                {"id": 1, "receipt_date": FROZEN_TODAY - timedelta(days=7),
+                 "unit_price": Decimal("10"), "receipt_quantity": Decimal("5"),
+                 "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+                {"id": 2, "receipt_date": FROZEN_TODAY - timedelta(days=48),
+                 "unit_price": Decimal("10"), "receipt_quantity": Decimal("5"),
+                 "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+            ]
+
+        monkeypatch.setattr(analysis_inventory, "_query_material_batches_by_status", fake_batches)
+
+        class FrozenDate(real_date):
+            @classmethod
+            def today(cls): return FROZEN_TODAY
+        monkeypatch.setattr(analysis_inventory, "date", FrozenDate)
+
+        chart = asyncio.run(analysis_inventory._get_inventory_aging_chart("F"))
+        actual_order = [d["aging"] for d in chart["data"]]
+        assert actual_order == [
+            "0-30天", "31-60天", "61-90天", "90天以上",
+        ], f"Expected 4-bucket order, got {actual_order}"
+        assert len(chart["data"]) == 4
+
+    def test_material_category_chart_sorted_desc_by_value(self):
+        """Material category chart: sort by total value descending."""
+        from smartbi_compat.api import analysis_inventory
+
+        batches = [
+            {"id": 1, "material_type_id": "MAT-A",
+             "unit_price": Decimal("10"), "receipt_quantity": Decimal("1"),
+             "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+            {"id": 2, "material_type_id": "MAT-B",
+             "unit_price": Decimal("100"), "receipt_quantity": Decimal("1"),
+             "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+            {"id": 3, "material_type_id": "MAT-C",
+             "unit_price": Decimal("50"), "receipt_quantity": Decimal("1"),
+             "used_quantity": Decimal("0"), "reserved_quantity": Decimal("0")},
+        ]
+        chart = analysis_inventory._build_material_category_value_chart(batches)
+        # Verify sorted desc: B (100) > C (50) > A (10)
+        actual_values = [d["value"] for d in chart["data"]]
+        assert actual_values == sorted(actual_values, reverse=True), (
+            f"Material category data not sorted desc: {actual_values}"
+        )
+        # Verify category names follow same order
+        actual_categories = [d["category"] for d in chart["data"]]
+        assert actual_categories == ["MAT-B", "MAT-C", "MAT-A"]
+
