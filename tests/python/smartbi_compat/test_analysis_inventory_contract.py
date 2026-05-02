@@ -394,3 +394,66 @@ class TestInventoryAlertHelpersArithmetic:
         from smartbi_compat.api.analysis_inventory import _determine_loss_rate_alert_level
         assert _determine_loss_rate_alert_level(Decimal(rate)) == expected
 
+
+class TestInventoryLossTrendChartMock:
+    """T-INV-8 negative test: _get_loss_trend_chart NOT exported.
+
+    Per spec section 2 line 110-112: getLossTrendChart is one of 4 internal methods
+    intentionally NOT ported because controller never dispatches to it.
+    Defensive: catch future commits that mistakenly add it."""
+
+    def test_loss_trend_chart_not_exported(self):
+        """If this fails, someone added _get_loss_trend_chart - review against
+        spec section 2 line 110-112 and getInventoryHealth charts list (only 3 charts:
+        aging/expiry/material).
+        """
+        from smartbi_compat.api import analysis_inventory
+
+        assert not hasattr(analysis_inventory, "_get_loss_trend_chart"), (
+            "_get_loss_trend_chart MUST NOT be exported per T-INV-8 spec decision. "
+            "If intentionally adding, update spec section 2 line 110-112 and remove this test."
+        )
+
+
+class TestInventoryGetCurrentQuantityFormula:
+    """T-INV-13 - _get_current_quantity null-safe arithmetic."""
+
+    def test_receipt_quantity_null_returns_zero(self):
+        from smartbi_compat.api.analysis_inventory import _get_current_quantity
+        batch = {
+            "receipt_quantity": None,
+            "used_quantity": Decimal("5"),
+            "reserved_quantity": Decimal("2"),
+        }
+        assert _get_current_quantity(batch) == Decimal("0")
+
+    def test_used_quantity_null_treated_as_zero(self):
+        from smartbi_compat.api.analysis_inventory import _get_current_quantity
+        batch = {
+            "receipt_quantity": Decimal("10"),
+            "used_quantity": None,
+            "reserved_quantity": Decimal("2"),
+        }
+        # 10 - 0 - 2 = 8
+        assert _get_current_quantity(batch) == Decimal("8")
+
+    def test_reserved_quantity_null_treated_as_zero(self):
+        from smartbi_compat.api.analysis_inventory import _get_current_quantity
+        batch = {
+            "receipt_quantity": Decimal("10"),
+            "used_quantity": Decimal("3"),
+            "reserved_quantity": None,
+        }
+        # 10 - 3 - 0 = 7
+        assert _get_current_quantity(batch) == Decimal("7")
+
+    def test_all_non_null_subtracts(self):
+        from smartbi_compat.api.analysis_inventory import _get_current_quantity
+        batch = {
+            "receipt_quantity": Decimal("10"),
+            "used_quantity": Decimal("3"),
+            "reserved_quantity": Decimal("2"),
+        }
+        # 10 - 3 - 2 = 5
+        assert _get_current_quantity(batch) == Decimal("5")
+
