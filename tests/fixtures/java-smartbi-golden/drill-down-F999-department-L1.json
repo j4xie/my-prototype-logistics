@@ -1,0 +1,16 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "drillPath": "全部",
+    "data": [],
+    "level": 1,
+    "nextLevel": "salesperson",
+    "dimension": "department"
+  },
+  "timestamp": "2026-05-04T03:54:42.044557661",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

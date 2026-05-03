@@ -1,0 +1,27 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "period": "MONTH",
+    "drillPath": "全部",
+    "data": {
+      "chartType": "LINE",
+      "title": "销售趋势",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showDataLabels": false,
+        "smooth": true
+      },
+      "xaxisField": "date",
+      "yaxisField": "amount"
+    },
+    "level": 1,
+    "dimension": "time"
+  },
+  "timestamp": "2026-05-04T03:54:45.64964547",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

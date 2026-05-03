@@ -1,0 +1,16 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "drillPath": "华东",
+    "data": [],
+    "level": 1,
+    "nextLevel": "city",
+    "dimension": "region"
+  },
+  "timestamp": "2026-05-04T03:55:27.483181039",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
