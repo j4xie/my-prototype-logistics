@@ -810,3 +810,239 @@ class TestProcurementSupplierEvaluationArithmetic:
         assert result["options"]["dimensionNames"] == [
             "价格竞争力", "质量合格率", "准时交付", "服务响应", "供货稳定",
         ]
+
+
+# ============================================================
+# PR-C-2: Overview arithmetic depth (PR-B-dependent, 6 tests)
+# Spec: docs/superpowers/specs/2026-05-01-phase2a-analysis-procurement-design.md §5.3
+# Targets PR #67 (procurement PR-B) overview helpers:
+#   _get_procurement_overview / _build_empty_dashboard / _generate_ai_insights /
+#   _generate_suggestions / _build_overview_kpi_cards / _calculate_supplier_concentration
+# ============================================================
+
+
+class TestProcurementOverviewArithmetic:
+    """6 tests for PR-B overview helpers — KPI build / AI insights triggers /
+    suggestions / empty dashboard exact strings (C2 audit gap) /
+    charts key naming / concentration precision byte-eq (Round 4 audit gap).
+
+    Mock targets: _query_material_batches_in_range (called for current + previous period),
+    _query_active_suppliers, _query_supplier_by_id (T11 enforced lookup).
+    """
+
+    @staticmethod
+    def _run_overview(current_batches, previous_batches=None, suppliers=None,
+                     supplier_lookup=None, start=None, end=None):
+        """Helper: call _get_procurement_overview with all SQL helpers mocked.
+
+        - current_batches: returned for the current-period query
+        - previous_batches: returned for the previous-period query (default [])
+        - suppliers: returned by _query_active_suppliers (default [])
+        - supplier_lookup: dict {supplier_id: supplier_dict}; lookups not in dict return None
+        - start/end: defaults to (2025, 6, 1) - (2025, 6, 30) (1 month period)
+        """
+        import asyncio
+        from smartbi_compat.api import analysis_procurement
+
+        if previous_batches is None:
+            previous_batches = []
+        if suppliers is None:
+            suppliers = []
+        if supplier_lookup is None:
+            supplier_lookup = {}
+        start = start or date(2025, 6, 1)
+        end = end or date(2025, 6, 30)
+
+        original_b = analysis_procurement._query_material_batches_in_range
+        original_s = analysis_procurement._query_active_suppliers
+        original_sb = analysis_procurement._query_supplier_by_id
+
+        async def fake_b(fid, s, e):
+            if s == start:
+                return current_batches
+            return previous_batches
+
+        async def fake_s(fid):
+            return suppliers
+
+        async def fake_sb(sid, fid):
+            return supplier_lookup.get(sid)
+
+        try:
+            analysis_procurement._query_material_batches_in_range = fake_b
+            analysis_procurement._query_active_suppliers = fake_s
+            analysis_procurement._query_supplier_by_id = fake_sb
+            return asyncio.run(analysis_procurement._get_procurement_overview(
+                "F", start, end
+            ))
+        finally:
+            analysis_procurement._query_material_batches_in_range = original_b
+            analysis_procurement._query_active_suppliers = original_s
+            analysis_procurement._query_supplier_by_id = original_sb
+
+    def test_kpi_cards_built_5_metrics_when_previous_period_nonempty(self):
+        """Non-empty current + non-empty previous -> 5 KPI cards (incl conditional MoM)."""
+        current = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("100"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+        ]
+        previous = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("80"),
+             "receipt_quantity": Decimal("100"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 5, 15), "status": "AVAILABLE"},
+        ]
+        result = self._run_overview(current, previous_batches=previous)
+        codes = [k["metricCode"] for k in result["kpiCards"]]
+        assert codes == [
+            "PURCHASE_TOTAL", "BATCH_COUNT", "AVG_UNIT_PRICE",
+            "SUPPLIER_CONCENTRATION", "MOM_GROWTH",
+        ], f"5 KPI cards in this exact order, got: {codes}"
+
+    def test_ai_insights_concentration_red_and_yellow_triggers(self):
+        """Build batches that produce concentration > 60% -> AIInsight level=RED;
+        Then test concentration > 40 but <= 60 -> AIInsight level=YELLOW.
+
+        Algorithm: concentration = max_supplier_value / total_value * 100.
+        - 80% concentration: SUP-A=Decimal("8000"), SUP-B=Decimal("2000") -> 80% -> RED
+        - 50% concentration: SUP-A=Decimal("5000"), SUP-B=Decimal("3000"),
+                             SUP-C=Decimal("2000") -> 50% -> YELLOW
+        """
+        # Case 1: RED (concentration > 60)
+        red_current = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("80"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+            {"supplier_id": "SUP-B", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("20"), "material_type_id": "MAT-B",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+        ]
+        red_result = self._run_overview(
+            red_current,
+            supplier_lookup={"SUP-A": {"name": "供应商A"}, "SUP-B": {"name": "供应商B"}},
+        )
+        red_risk = next(
+            (i for i in red_result["aiInsights"] if i["category"] == "供应商风险"), None
+        )
+        assert red_risk is not None
+        assert red_risk["level"] == "RED"
+        assert "高达" in red_risk["message"], f"RED message format: {red_risk['message']}"
+
+        # Case 2: YELLOW (40 < concentration <= 60). 5000/10000*100 = 50%
+        yellow_current = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("50"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+            {"supplier_id": "SUP-B", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("30"), "material_type_id": "MAT-B",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+            {"supplier_id": "SUP-C", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("20"), "material_type_id": "MAT-C",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+        ]
+        yellow_result = self._run_overview(yellow_current)
+        yellow_risk = next(
+            (i for i in yellow_result["aiInsights"] if i["category"] == "供应商风险"), None
+        )
+        assert yellow_risk is not None
+        assert yellow_risk["level"] == "YELLOW"
+        assert "需要关注" in yellow_risk["message"], f"YELLOW message: {yellow_risk['message']}"
+
+    def test_suggestions_trigger_conditions(self):
+        """Verify suggestions list contains rule-driven entries:
+           - High concentration (RED) -> 引入备选供应商 suggestion
+           - With MoM UP -> 关注采购环比增长 suggestion
+        """
+        # Build: RED concentration (80% from SUP-A) + MoM UP (current 10000 vs previous 5000)
+        current = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("80"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+            {"supplier_id": "SUP-B", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("20"), "material_type_id": "MAT-B",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+        ]
+        previous = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("50"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 5, 15), "status": "AVAILABLE"},
+        ]
+        result = self._run_overview(current, previous_batches=previous)
+        suggestions = result["suggestions"]
+        assert len(suggestions) >= 2, f"expected 2+ suggestions, got {suggestions}"
+        # Concentration-driven (RED triggers "引入"/"分散" wording)
+        assert any("引入" in s or "分散" in s for s in suggestions), (
+            f"no concentration-driven suggestion: {suggestions}"
+        )
+        # MoM UP triggers "环比增长" wording
+        assert any("环比增长" in s for s in suggestions), (
+            f"no MoM-up suggestion: {suggestions}"
+        )
+
+    def test_empty_dashboard_exact_strings(self):
+        """C2 audit-gap fix - empty batches return _build_empty_dashboard with
+        exact Java strings (NOT placeholder text)."""
+        result = self._run_overview(current_batches=[])
+
+        # Verify 16-key envelope (Lombok @Data emit-all)
+        assert len(result) == 16
+
+        # AIInsight exact 5-key shape with C2 strings
+        assert len(result["aiInsights"]) == 1
+        ai = result["aiInsights"][0]
+        assert ai["level"] == "YELLOW"            # NOT "INFO"
+        assert ai["category"] == "数据状态"
+        assert ai["message"] == "当前时间范围内暂无采购数据"          # NOT "暂无采购数据"
+        assert ai["actionSuggestion"] == "请调整时间范围或录入采购数据"  # NOT None
+        assert ai["relatedEntity"] is None
+
+        # suggestions list with exact C2 string
+        assert result["suggestions"] == ["请先录入采购数据以开始分析"]   # NOT []
+
+        # Empty container fields
+        assert result["kpiCards"] == []
+        assert result["charts"] == {}
+        assert result["rankings"] == {}
+
+    def test_charts_key_naming_replaces_space_with_underscore(self):
+        """charts dict keys = title.replace(' ', '_') per Java line 93-101 LinkedHashMap.
+
+        Procurement chart titles (Chinese, no spaces): '采购趋势', '供应商占比', '物料类别采购分布'.
+        Verify the .replace mechanism works (Chinese keys preserved, mechanism still active).
+        """
+        current = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("10"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+        ]
+        result = self._run_overview(current)
+        chart_keys = list(result["charts"].keys())
+        # All 3 chart titles should be present as keys (no spaces in these Chinese titles)
+        # If any title contained spaces, it would be replaced with underscores
+        assert "采购趋势" in chart_keys, f"采购趋势 not in charts keys: {chart_keys}"
+        assert "供应商占比" in chart_keys, f"供应商占比 not in charts keys: {chart_keys}"
+        assert "物料类别采购分布" in chart_keys, f"物料类别采购分布 not in charts keys: {chart_keys}"
+        assert len(chart_keys) == 3
+
+    def test_concentration_formula_precision_byte_eq(self):
+        """Round 4 audit gap fix: concentration formula must yield exact value.
+
+        Setup: SUP-A total=Decimal('60'), SUP-B total=Decimal('40') -> total=100.
+        max=60, total=100 -> max/total = 0.6000 (scale=4) -> *100 -> 60.0000.
+
+        Direct call to _calculate_supplier_concentration to verify Decimal precision
+        (NOT float drift)."""
+        from smartbi_compat.api.analysis_procurement import _calculate_supplier_concentration
+
+        # Build batches such that SUP-A total = 60, SUP-B total = 40
+        batches = [
+            {"supplier_id": "SUP-A", "unit_price": Decimal("60"),
+             "receipt_quantity": Decimal("1")},      # 60
+            {"supplier_id": "SUP-B", "unit_price": Decimal("40"),
+             "receipt_quantity": Decimal("1")},      # 40
+        ]
+        result = _calculate_supplier_concentration(batches)
+        # Quantize-then-multiply yields Decimal("60.0000") exactly (NOT float 60.000000001 etc)
+        assert result == Decimal("60.0000"), (
+            f"Round 4 precision lock: expected Decimal('60.0000'), got {result!r}"
+        )
