@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -87,6 +88,50 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     @Value("${ai.use-python-matcher:false}")
     private boolean usePythonMatcher;
+
+    /**
+     * Phase 2B canary rollout (#73 §1.4 / #29 §3.1): comma-separated factoryId
+     * whitelist controlling which factories actually dispatch to the Python matcher
+     * when {@link #usePythonMatcher} is true.
+     *
+     * <p>Empty (default) = all factories dispatch when the flag is on, preserving
+     * the existing boolean-flag semantics for backward compatibility. Setting
+     * {@code ai.python-matcher-factories=F999} stages a single-factory canary
+     * (stage 2). Setting it to {@code F999,F001,F123} stages a multi-factory
+     * canary (stage 3). After full rollout the property is cleared again so the
+     * flag governs all factories.
+     *
+     * <p>Whitespace around comma-separated entries is trimmed defensively, so
+     * {@code F999, F001} works the same as {@code F999,F001}.
+     */
+    @Value("${ai.python-matcher-factories:}")
+    private String pythonMatcherFactories;
+
+    /**
+     * Phase 2B canary helper: decide whether the given factory should dispatch
+     * to the Python matcher. Returns {@code false} when the master
+     * {@link #usePythonMatcher} flag is off. When the flag is on:
+     * <ul>
+     *   <li>Empty whitelist ({@link #pythonMatcherFactories}) → {@code true} for
+     *       every factory (backward-compatible with the original boolean flag).</li>
+     *   <li>Non-empty whitelist → {@code true} only when {@code factoryId}
+     *       (case-sensitive) appears in the comma-separated list.</li>
+     * </ul>
+     */
+    private boolean shouldUsePythonMatcher(String factoryId) {
+        if (!usePythonMatcher) {
+            return false;
+        }
+        if (pythonMatcherFactories == null || pythonMatcherFactories.isEmpty()) {
+            return true;
+        }
+        if (factoryId == null) {
+            return false;
+        }
+        return Arrays.stream(pythonMatcherFactories.split(","))
+                .map(String::trim)
+                .anyMatch(factoryId::equals);
+    }
 
     /**
      * Phase 2B-α (T24): Micrometer counter for stage-hit observability.
@@ -220,9 +265,10 @@ public class AIIntentServiceImpl implements AIIntentService {
      * Canonical recognition entry point.
      *
      * <p><b>Phase 2B-α (T20) integration:</b> when
-     * {@link #usePythonMatcher} is true AND both
-     * {@link #pythonClient} and {@link #intentResultCache} beans are available,
-     * the flow is:
+     * {@link #shouldUsePythonMatcher(String)} returns true (master flag on AND
+     * factory passes the canary whitelist — see {@link #pythonMatcherFactories})
+     * AND both {@link #pythonClient} and {@link #intentResultCache} beans are
+     * available, the flow is:
      * <ol>
      *   <li>Resolve {@code businessType} via {@link IntentConfigManagementService#resolveBusinessDomain(String)}</li>
      *   <li>Look up {@link IntentResultCache} by (query, factoryId, role, businessType) —
@@ -242,7 +288,10 @@ public class AIIntentServiceImpl implements AIIntentService {
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN,
                                                             Long userId, String userRole, String sessionId) {
         // ===== Phase 2B-α: optional Python matcher branch =====
-        if (usePythonMatcher && pythonClient != null && intentResultCache != null
+        // shouldUsePythonMatcher(factoryId) honours both the master flag and
+        // the Phase 2B canary whitelist (#73 §1.4) so stage 2/3 can dispatch
+        // to Python only for whitelisted factoryIds.
+        if (shouldUsePythonMatcher(factoryId) && pythonClient != null && intentResultCache != null
                 && userInput != null && factoryId != null) {
             String role = userRole != null ? userRole : "";
             String businessType;
