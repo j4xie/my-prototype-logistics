@@ -1,6 +1,6 @@
 package com.cretas.aims.service.smartbi.impl;
 
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.ai.dto.ChatCompletionRequest;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.ai.dto.ChatMessage;
@@ -104,10 +104,10 @@ public class SmartBIServiceImpl implements SmartBIService {
     private ConversationMemoryService conversationMemoryService;
 
     /**
-     * DashScope 客户端 - 用于 LLM 洞察生成
+     * LLM 客户端 - 用于 LLM 洞察生成
      */
     @Autowired(required = false)
-    private DashScopeClient dashScopeClient;
+    private PythonLLMClient pythonLLMClient;
 
     /**
      * 预测服务 - 用于 FORECAST 意图处理
@@ -1289,8 +1289,8 @@ public class SmartBIServiceImpl implements SmartBIService {
             insights.addAll(recommendationInsights);
         }
 
-        // 2. LLM 生成洞察（复用 DashScopeClient）
-        if (llmInsightEnabled && dashScopeClient != null && checkQuota(factoryId)) {
+        // 2. LLM 生成洞察（复用 PythonLLMClient）
+        if (llmInsightEnabled && pythonLLMClient != null && checkQuota(factoryId)) {
             try {
                 List<AIInsight> llmInsights = generateLLMInsights(factoryId, dashboard);
                 if (llmInsights != null && !llmInsights.isEmpty()) {
@@ -1313,14 +1313,14 @@ public class SmartBIServiceImpl implements SmartBIService {
     /**
      * 使用 LLM 生成 AI 洞察
      *
-     * 调用 DashScopeClient 分析仪表盘数据，生成 3-5 条关键洞察。
+     * 调用 PythonLLMClient 分析仪表盘数据，生成 3-5 条关键洞察。
      *
      * @param factoryId 工厂ID
      * @param dashboard 仪表盘数据
      * @return LLM 生成的洞察列表
      */
     private List<AIInsight> generateLLMInsights(String factoryId, DashboardResponse dashboard) {
-        if (dashScopeClient == null) {
+        if (pythonLLMClient == null) {
             return Collections.emptyList();
         }
 
@@ -1350,7 +1350,7 @@ public class SmartBIServiceImpl implements SmartBIService {
                     .enableThinking(false)
                     .build();
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            ChatCompletionResponse response = pythonLLMClient.chatCompletion(request);
 
             if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
                 String content = response.getChoices().get(0).getMessage().getContent();
@@ -1745,11 +1745,11 @@ public class SmartBIServiceImpl implements SmartBIService {
      * BUG #5 FIX (Apr 15 2026): generate analytical responseText via LLM instead of static template.
      * Returns null on any failure so caller falls back to {@link #generateResponseText}.
      *
-     * Performance: ~3-8s LLM round-trip (qwen3.5-plus). Timeout protection inside DashScopeClient.
+     * Performance: ~3-8s LLM round-trip (qwen3.5-plus). Timeout protection inside PythonLLMClient.
      * Quota guard: shares the same daily quota check as insights pipeline.
      */
     private String generateLLMResponseText(String factoryId, String userQuery, IntentResult intentResult, Object data) {
-        if (!llmInsightEnabled || dashScopeClient == null) return null;
+        if (!llmInsightEnabled || pythonLLMClient == null) return null;
         if (data == null) return null;
         if (!checkQuota(factoryId)) return null;
 
@@ -1788,7 +1788,7 @@ public class SmartBIServiceImpl implements SmartBIService {
                     .enableThinking(false)
                     .build();
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            ChatCompletionResponse response = pythonLLMClient.chatCompletion(request);
             if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
                 String content = response.getChoices().get(0).getMessage().getContent();
                 if (content != null && !content.isBlank() && content.length() > 30) {

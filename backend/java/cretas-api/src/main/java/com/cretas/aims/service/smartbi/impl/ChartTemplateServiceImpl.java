@@ -1,6 +1,6 @@
 package com.cretas.aims.service.smartbi.impl;
 
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.dto.smartbi.DataFeatureResult;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
@@ -46,7 +46,7 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
 
     private final SmartBiChartTemplateRepository templateRepository;
     private final ObjectMapper objectMapper;
-    private final DashScopeClient dashScopeClient;
+    private final PythonLLMClient pythonLLMClient;
     private final AnalysisPromptGenerator analysisPromptGenerator;
 
     /**
@@ -498,9 +498,9 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
             return chartConfig;
         }
 
-        // 4. 检查 DashScopeClient 是否可用
-        if (dashScopeClient == null || !dashScopeClient.isAvailable()) {
-            log.warn("DashScopeClient 不可用，跳过 AI 分析");
+        // 4. 检查 PythonLLMClient 是否可用
+        if (pythonLLMClient == null || !pythonLLMClient.isAvailable()) {
+            log.warn("PythonLLMClient 不可用，跳过 AI 分析");
             chartConfig.put("aiAnalysis", "AI 分析服务未配置");
             return chartConfig;
         }
@@ -541,7 +541,7 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
                     data != null ? data.size() : 0);
 
             // 调用 LLM 生成分析
-            String analysis = dashScopeClient.chat(
+            String analysis = pythonLLMClient.chat(
                     generatedPrompt.getSystemPrompt(),
                     userPrompt
             );

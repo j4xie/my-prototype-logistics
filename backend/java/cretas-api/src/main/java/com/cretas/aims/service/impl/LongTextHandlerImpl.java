@@ -1,6 +1,6 @@
 package com.cretas.aims.service.impl;
 
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.ai.dto.ChatCompletionRequest;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.config.DashScopeConfig;
@@ -38,7 +38,7 @@ public class LongTextHandlerImpl implements LongTextHandler {
 
     private final LongTextConfig config;
     private final DashScopeConfig dashScopeConfig;
-    private final DashScopeClient dashScopeClient;
+    private final PythonLLMClient pythonLLMClient;
 
     /**
      * 摘要结果缓存
@@ -130,10 +130,10 @@ public class LongTextHandlerImpl implements LongTextHandler {
     public LongTextHandlerImpl(
             LongTextConfig config,
             DashScopeConfig dashScopeConfig,
-            @Autowired(required = false) DashScopeClient dashScopeClient) {
+            @Autowired(required = false) PythonLLMClient pythonLLMClient) {
         this.config = config;
         this.dashScopeConfig = dashScopeConfig;
-        this.dashScopeClient = dashScopeClient;
+        this.pythonLLMClient = pythonLLMClient;
     }
 
     @PostConstruct
@@ -207,7 +207,7 @@ public class LongTextHandlerImpl implements LongTextHandler {
         }
 
         // 检查 DashScope 客户端是否可用
-        if (dashScopeClient == null || !dashScopeClient.isAvailable()) {
+        if (pythonLLMClient == null || !pythonLLMClient.isAvailable()) {
             log.warn("DashScope client not available, returning truncated input");
             return truncateText(input, config.getSummaryMaxLength());
         }
@@ -226,7 +226,7 @@ public class LongTextHandlerImpl implements LongTextHandler {
             request.setMaxTokens(200);  // 摘要不需要太多 token
             request.setTemperature(0.3);  // 低温度确保稳定输出
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            ChatCompletionResponse response = pythonLLMClient.chatCompletion(request);
 
             if (response.hasError()) {
                 log.error("LLM summary failed: {}", response.getErrorMessage());

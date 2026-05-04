@@ -1,6 +1,6 @@
 package com.cretas.aims.service;
 
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.AIResponseDTO;
@@ -73,7 +73,7 @@ public class AIAnalysisService {
     private QualityInspectionRepository qualityInspectionRepository;
 
     @Autowired
-    private DashScopeClient dashScopeClient;
+    private PythonLLMClient pythonLLMClient;
 
     @Autowired
     private DashScopeConfig dashScopeConfig;
@@ -202,10 +202,10 @@ public class AIAnalysisService {
         ChatCompletionResponse response;
         if (useThinking && dashScopeConfig.isThinkingEnabled()) {
             log.info("[DashScope Direct] 使用思考模式分析: budget={}", budget);
-            response = dashScopeClient.chatWithThinking(systemPrompt, userMessage, budget);
+            response = pythonLLMClient.chatWithThinking(systemPrompt, userMessage, budget);
         } else {
             log.info("[DashScope Direct] 使用普通模式分析");
-            String content = dashScopeClient.chat(systemPrompt, userMessage);
+            String content = pythonLLMClient.chat(systemPrompt, userMessage);
             response = new ChatCompletionResponse();
             ChatCompletionResponse.Message message = new ChatCompletionResponse.Message();
             message.setRole("assistant");
