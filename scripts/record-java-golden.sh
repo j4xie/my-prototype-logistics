@@ -23,7 +23,21 @@ USAGE="Usage: JWT_SECRET=<secret> $0 <factory_id> <endpoint_path> <output_filena
 FACTORY_ID="${1:?$USAGE}"
 ENDPOINT="${2:?$USAGE}"
 OUTPUT="${3:?$USAGE}"
-ENV_FLAG="${4:-test}"
+
+# Parse optional flags after 3 required positional args.
+# Backward compat: --prod still accepted as 4th positional or as flag.
+shift 3
+METHOD="GET"
+DATA_JSON=""
+ENV_FLAG="test"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --method)    METHOD="$2"; shift 2;;
+        --data-json) DATA_JSON="$2"; shift 2;;
+        --prod)      ENV_FLAG="--prod"; shift;;
+        *)           echo "Unknown flag: $1" >&2; exit 1;;
+    esac
+done
 
 : "${JWT_SECRET:?JWT_SECRET env var required (from /www/wwwroot/cretas/.env.test on server)}"
 
@@ -55,12 +69,21 @@ mkdir -p "$GOLDEN_DIR"
 URL="$BASE_URL${ENDPOINT//\{factoryId\}/$FACTORY_ID}"
 OUT_PATH="$GOLDEN_DIR/$OUTPUT"
 
-echo "Recording: $URL → $OUT_PATH"
+echo "Recording: $METHOD $URL → $OUT_PATH"
 
 # Pretty-print to file (preserve non-ASCII, sorted on top-level by Python — matches Jackson-style write)
-curl -sS --fail -H "Authorization: Bearer $TOKEN" "$URL" \
-    | python3 -c "import json, sys; print(json.dumps(json.load(sys.stdin), indent=2, ensure_ascii=False))" \
-    > "$OUT_PATH"
+if [[ "$METHOD" == "POST" ]]; then
+    curl -sS --fail -X POST \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        --data "$DATA_JSON" "$URL" \
+        | python3 -c "import json, sys; print(json.dumps(json.load(sys.stdin), indent=2, ensure_ascii=False))" \
+        > "$OUT_PATH"
+else
+    curl -sS --fail -H "Authorization: Bearer $TOKEN" "$URL" \
+        | python3 -c "import json, sys; print(json.dumps(json.load(sys.stdin), indent=2, ensure_ascii=False))" \
+        > "$OUT_PATH"
+fi
 
 echo "OK. Top of file:"
 head -20 "$OUT_PATH"

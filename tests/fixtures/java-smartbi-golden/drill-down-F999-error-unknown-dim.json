@@ -1,0 +1,10 @@
+{
+  "code": 400,
+  "message": "Drill-down failed: 不支持的下钻维度: invalid",
+  "data": null,
+  "timestamp": "2026-05-04T03:54:48.292371429",
+  "success": false,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

@@ -1,0 +1,96 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "drillPath": "销售部",
+    "data": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [
+        {
+          "key": "SALES_AMOUNT",
+          "title": "销售额",
+          "value": "0.00",
+          "rawValue": 0.0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "TARGET_COMPLETION",
+          "title": "目标完成率",
+          "value": "0.00",
+          "rawValue": 0.0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "red",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "SALES_PER_CAPITA",
+          "title": "人均产出",
+          "value": "0.00",
+          "rawValue": 0.0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "COST_PER_CAPITA",
+          "title": "人均成本",
+          "value": "0.00",
+          "rawValue": 0.0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
+      "metricCards": null,
+      "rankings": {
+        "salesperson": []
+      },
+      "charts": {},
+      "chartList": null,
+      "aiInsights": null,
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": null,
+      "generatedAt": null,
+      "lastUpdated": "2026-05-04T03:55:28.3668567",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "level": 1,
+    "nextLevel": null,
+    "dimension": "department"
+  },
+  "timestamp": "2026-05-04T03:55:28.368559683",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
