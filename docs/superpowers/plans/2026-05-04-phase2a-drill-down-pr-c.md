@@ -1,391 +1,49 @@
-"""Byte-shape contract gate for /drill-down (PR-A).
+# Phase 2A `/drill-down` PR-C Implementation Plan
 
-Java reference:
-  - Controller: SmartBIAnalysisController.drillDown line 531-586
-  - Service: SmartBIServiceImpl.processDrillDown line 1018-1069
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` to implement this plan task-by-task.
 
-Mirrors sister test_analysis_finance_contract.py / test_analysis_procurement_contract.py
-pattern.
-"""
-from __future__ import annotations
+**Goal:** Add ~40 arithmetic depth tests across 8 test classes appended to `tests/python/smartbi_compat/test_analysis_drilldown_contract.py`. Cover inner formulas, edge cases, branching paths that PR-A contract tests don't fully exercise. **HARD RULE: 0 bytes change to `analysis_drilldown.py`** — tests-only.
 
-import importlib.util
-import io
-import json
-import os
-import sys
-from datetime import date, datetime, timezone
-from pathlib import Path
+**Spec:** `docs/superpowers/specs/2026-05-02-phase2a-drill-down-design.md` §5.2 (PR-B/PR-C arithmetic depth section)
 
-import jwt
-import pytest
+**Sister precedents:**
+- `tests/python/smartbi_compat/test_analysis_procurement_contract.py` PR-C-1+PR-C-2 (33 arithmetic tests across 7 classes, lines 386-1048)
+- `tests/python/smartbi_compat/test_analysis_inventory_contract.py` PR-C (16 arithmetic classes)
+- Mock pattern: `original = module._helper; module._helper = fake; try: ... finally: module._helper = original` (try/finally restoration)
 
+**Tech Stack:** Python 3.8 / pytest / unittest.mock
 
-JWT_SECRET = "test-secret-for-phase2a-do-not-use-in-prod"
-os.environ["JWT_SECRET"] = JWT_SECRET
+**Test surface (drill-down impl helpers):**
 
+| Helper | Test class |
+|---|---|
+| `_compute_drill_path` (T4) | TestDrillDownDispatchArithmetic |
+| `_default_date_range_this_month` (T5) | TestDrillDownDispatchArithmetic |
+| `_build_drilldown_ranking` + `_determine_target_completion_alert` | TestDrillDownProvinceCityRankingArithmetic |
+| `_build_department_detail_response` + `_build_kpi_card` | TestDrillDownDeptDetailArithmetic |
+| `_build_product_distribution_chart` | TestDrillDownProductChartArithmetic |
+| `_build_salesperson_metrics` | TestDrillDownSalespersonMetricsArithmetic |
+| `_drilldown_record_usage` | TestDrillDownRecordUsageWriteArithmetic |
+| Error path | TestDrillDownErrorEnvelope |
+| Time MONTH regression (final-review C1) | TestDrillDownTimeMonthRegression |
+| 5 `_process_*_drilldown` branching | TestDrillDownDispatchArithmetic |
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-GOLDEN_DIR = REPO_ROOT / "tests" / "fixtures" / "java-smartbi-golden"
+**File structure:**
 
+```
+EDIT tests/python/smartbi_compat/test_analysis_drilldown_contract.py  (~600 lines appended)
+NO CHANGES to backend/python/smartbi_compat/api/analysis_drilldown.py  (HARD RULE)
+```
 
-def _load_production_main():
-    """Mirror sister test pattern."""
-    main_path = REPO_ROOT / "backend" / "python" / "main.py"
-    sys.path.insert(0, str(REPO_ROOT / "backend" / "python"))
-    spec = importlib.util.spec_from_file_location("_production_main", main_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+---
 
+## Task 1: TestDrillDownDispatchArithmetic + TestDrillDownProvinceCityRankingArithmetic
 
-def _make_token(factory_id: str, user_id: int = 1) -> str:
-    payload = {
-        "userId": user_id, "username": "test_user", "factoryId": factory_id,
-        "role": "factory_super_admin",
-        "exp": datetime.now(timezone.utc).timestamp() + 3600,
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+**Files:** Modify `tests/python/smartbi_compat/test_analysis_drilldown_contract.py` (append).
 
+- [ ] **Step 1: Append two test classes**
 
-# Volatile keys (timestamps) stripped before byte-shape compare.
-VOLATILE = frozenset({"timestamp", "generatedAt", "lastUpdated", "cacheExpireAt"})
-
-# ApiResponse 8-field envelope: 5 always-set + 3 optional UX (actionHint/severity/hintTarget).
-# F999 goldens emit all 8; sister test pattern strips the 3 optional defensively
-# (also future-proofing for endpoints where Java may not emit them).
-ENVELOPE_EXTRAS = frozenset({"actionHint", "severity", "hintTarget"})
-
-
-def _strip_volatile(obj):
-    if isinstance(obj, dict):
-        return {k: _strip_volatile(v) for k, v in obj.items() if k not in VOLATILE}
-    if isinstance(obj, list):
-        return [_strip_volatile(item) for item in obj]
-    return obj
-
-
-def _strip_envelope_extras(body):
-    if not isinstance(body, dict):
-        return body
-    return {k: v for k, v in body.items() if k not in ENVELOPE_EXTRAS}
-
-
-@pytest.fixture(scope="module")
-def production_app():
-    return _load_production_main().app
-
-
-@pytest.fixture
-def client(production_app):
-    from fastapi.testclient import TestClient
-    return TestClient(production_app)
-
-
-@pytest.fixture
-def patched_helpers(monkeypatch):
-    """Patch all sister + owned helpers + recordUsage to return F999 stub shapes.
-
-    F999 has empty data, so most return [] / empty chart / empty list.
-    Charts are returned with full 7-field shape per Rule 9 carry-over.
-    """
-    from smartbi_compat.api import analysis_drilldown as adr
-
-    async def _empty_region(*a, **k):
-        return {"ranking": []}
-
-    async def _empty_dept_ranking(*a, **k):
-        return []
-
-    async def _empty_product(*a, **k):
-        return []
-
-    async def _empty_trend(factory_id, range_, period):
-        # Mirror sister analysis_sales._get_sales_trend_chart empty shape — must match
-        # F999 time-L1 golden's data.data ChartConfig 7-field shape.
-        return {
-            "chartType": "LINE",
-            "title": "销售趋势",
-            "seriesField": None,
-            "data": [],
-            "options": {"showDataLabels": False, "smooth": True},
-            "xaxisField": "date",
-            "yaxisField": "amount",
-        }
-
-    async def _empty_salesperson(*a, **k):
-        return []
-
-    async def _empty_province(*a, **k):
-        return []
-
-    async def _empty_city(*a, **k):
-        return []
-
-    async def _empty_dept_detail(*a, **k):
-        # Use real builder for empty case (matches dept-L2 golden 16-field shape)
-        return adr._build_department_detail_response(None)
-
-    async def _empty_product_chart(*a, **k):
-        return adr._build_product_distribution_chart([])
-
-    async def _empty_salesperson_metrics(*a, **k):
-        return []
-
-    async def _noop_record(**kwargs):
-        pass
-
-    monkeypatch.setattr(adr, "_get_region_analysis", _empty_region)
-    monkeypatch.setattr(adr, "_get_department_ranking", _empty_dept_ranking)
-    monkeypatch.setattr(adr, "_get_product_ranking", _empty_product)
-    monkeypatch.setattr(adr, "_get_sales_trend_chart", _empty_trend)
-    monkeypatch.setattr(adr, "_get_salesperson_ranking", _empty_salesperson)
-    monkeypatch.setattr(adr, "_drilldown_get_province_ranking", _empty_province)
-    monkeypatch.setattr(adr, "_drilldown_get_city_ranking", _empty_city)
-    monkeypatch.setattr(adr, "_drilldown_get_department_detail", _empty_dept_detail)
-    monkeypatch.setattr(adr, "_drilldown_get_product_distribution_chart", _empty_product_chart)
-    monkeypatch.setattr(adr, "_drilldown_get_salesperson_metrics", _empty_salesperson_metrics)
-    monkeypatch.setattr(adr, "_drilldown_record_usage_async", _noop_record)
-
-
-def _post(client, body, factory_id="F999"):
-    return client.post(
-        f"/api/mobile/{factory_id}/smart-bi/drill-down",
-        json=body,
-        headers={"Authorization": f"Bearer {_make_token(factory_id)}"},
-    )
-
-
-# 7 success goldens + 1 error golden = 8 total.
-GOLDEN_CASES = [
-    ("drill-down-F999-region-L1",
-     {"dimension": "region", "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-region-L2",
-     {"dimension": "region", "value": "华东", "level": 1,
-      "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-department-L1",
-     {"dimension": "department", "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-department-L2",
-     {"dimension": "department", "value": "销售部",
-      "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-product",
-     {"dimension": "product", "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-time-L1",
-     {"dimension": "time", "level": 1,
-      "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-    ("drill-down-F999-salesperson-L1",
-     {"dimension": "salesperson", "startDate": "2024-01-01", "endDate": "2024-12-31"}),
-]
-
-
-@pytest.mark.parametrize("golden_name,request_body", GOLDEN_CASES)
-def test_drilldown_byte_shape(client, patched_helpers, golden_name, request_body):
-    """Per-dim byte-shape gate. Strips volatile timestamps before compare."""
-    resp = _post(client, request_body)
-    assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
-    py_data = _strip_volatile(resp.json()["data"])
-
-    with io.open(GOLDEN_DIR / f"{golden_name}.json", encoding="utf-8") as f:
-        raw = json.load(f)
-    golden_data = _strip_volatile(raw["data"])
-
-    if py_data != golden_data:
-        diffs = {}
-        for k in set(py_data.keys() if isinstance(py_data, dict) else []) | set(
-            golden_data.keys() if isinstance(golden_data, dict) else []
-        ):
-            if py_data.get(k) != golden_data.get(k):
-                diffs[k] = {"python": py_data.get(k), "golden": golden_data.get(k)}
-        pytest.fail(
-            f"{golden_name} BYTE SHAPE MISMATCH on {list(diffs.keys())}\n"
-            f"{json.dumps(diffs, indent=2, ensure_ascii=False, default=str)[:2500]}"
-        )
-
-
-def test_drilldown_unknown_dim_error(client, patched_helpers):
-    """T10: error envelope. Java emits 8-field envelope; defensive strip of 3 UX extras."""
-    resp = _post(client, {
-        "dimension": "invalid",
-        "startDate": "2024-01-01", "endDate": "2024-12-31",
-    })
-    assert resp.status_code == 200
-    body = resp.json()
-    body_stripped = _strip_envelope_extras(_strip_volatile(body))
-    assert body_stripped["success"] is False
-    assert body_stripped["code"] == 400
-    assert "不支持的下钻维度" in body_stripped["message"]
-    assert body_stripped["data"] is None
-
-    with io.open(GOLDEN_DIR / "drill-down-F999-error-unknown-dim.json", encoding="utf-8") as f:
-        golden = json.load(f)
-    golden_stripped = _strip_envelope_extras(_strip_volatile(golden))
-    assert body_stripped == golden_stripped, (
-        f"error envelope mismatch:\n  py={body_stripped}\n  golden={golden_stripped}"
-    )
-
-
-class TestDispatchBranching:
-    """T3 case-insensitive dispatch + T5 default range + customer dim."""
-
-    def test_uppercase_dimension_dispatched(self, client, patched_helpers):
-        """T3: 'REGION' → region processor; original casing in `dimension` field."""
-        resp = _post(client, {
-            "dimension": "REGION",
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200
-        assert resp.json()["data"]["dimension"] == "REGION"
-
-    def test_customer_dim_returns_business_exception(self, client, patched_helpers):
-        """customer dim → BusinessException (out of switch per Java)."""
-        resp = _post(client, {
-            "dimension": "customer",
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["success"] is False
-        assert "不支持" in body["message"]
-
-    def test_default_date_range_used_when_dates_missing(self, client, patched_helpers):
-        """T5: missing startDate/endDate → defaults to thisMonth."""
-        resp = _post(client, {"dimension": "region"})
-        assert resp.status_code == 200, resp.text[:300]
-
-
-class TestRecordUsageAtomicity:
-    """T7+T8: success → 1 recordUsage call; BusinessException → 0 calls."""
-
-    def test_record_usage_called_on_success(self, client, monkeypatch):
-        from smartbi_compat.api import analysis_drilldown as adr
-        called = []
-
-        async def _spy(**kw):
-            called.append(kw)
-
-        async def _empty(*a, **k):
-            return {"ranking": []}
-
-        monkeypatch.setattr(adr, "_get_region_analysis", _empty)
-        monkeypatch.setattr(adr, "_drilldown_record_usage_async", _spy)
-
-        resp = _post(client, {
-            "dimension": "region",
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200, resp.text[:200]
-        assert len(called) == 1, f"expected 1 recordUsage call, got {len(called)}"
-        assert called[0]["factory_id"] == "F999"
-        assert called[0]["action_type"] == "DRILLDOWN"
-
-    def test_record_usage_NOT_called_on_business_exception(self, client, monkeypatch):
-        """T8 atomicity: BusinessException raised before write tx → no record."""
-        from smartbi_compat.api import analysis_drilldown as adr
-        called = []
-
-        async def _spy(**kw):
-            called.append(kw)
-
-        monkeypatch.setattr(adr, "_drilldown_record_usage_async", _spy)
-
-        resp = _post(client, {
-            "dimension": "invalid",
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200
-        assert resp.json()["success"] is False
-        assert called == [], f"expected 0 recordUsage calls, got {len(called)}"
-
-
-class TestEdgeCases:
-    """Regression tests for issues caught in final review."""
-
-    def test_time_dim_not_implemented_returns_501_envelope_not_500(
-        self, client, monkeypatch
-    ):
-        """C1 regression: sister `_get_sales_trend_chart` is DAY-only and raises
-        NotImplementedError for MONTH/WEEK. Production HTTP traffic sends time dim
-        with default level=1 → period="MONTH". Without the catch in
-        `_process_time_drilldown`, this would propagate as HTTP 500 (Java emits
-        HTTP 200 + success=false via controller catch-all)."""
-        from smartbi_compat.api import analysis_drilldown as adr
-
-        async def _real_unsupported(factory_id, range_, period):
-            raise NotImplementedError(
-                f"trend chart period='{period}' not supported"
-            )
-
-        async def _noop_record(**kw):
-            pass
-
-        monkeypatch.setattr(adr, "_get_sales_trend_chart", _real_unsupported)
-        monkeypatch.setattr(adr, "_drilldown_record_usage_async", _noop_record)
-
-        resp = _post(client, {
-            "dimension": "time", "level": 1,
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        # HTTP 200 even on error (Java parity)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["success"] is False
-        assert body["code"] == 501
-        assert "时间维度" in body["message"]
-
-    def test_generic_exception_returns_envelope_not_500(self, client, monkeypatch):
-        """I1 regression: any other exception in dispatch path must be wrapped
-        as HTTP 200 + success=false envelope (Java `catch (Exception e)` parity)."""
-        from smartbi_compat.api import analysis_drilldown as adr
-
-        async def _boom(*a, **k):
-            raise RuntimeError("DB connection lost")
-
-        monkeypatch.setattr(adr, "_get_region_analysis", _boom)
-
-        resp = _post(client, {
-            "dimension": "region",
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["success"] is False
-        assert body["code"] == 500
-        assert "Drill-down failed" in body["message"]
-
-    def test_client_provided_level_ignored_at_handler_entry(self, client, patched_helpers):
-        """I3 regression: Java DTO has no `level` field → service always sees
-        level=1. Python must mirror by overriding at handler entry."""
-        # Client sends level=5 (would hit D6 dead branch if propagated)
-        resp = _post(client, {
-            "dimension": "region", "value": "华东", "level": 5,
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["success"] is True
-        # If level=5 had propagated, response would have nextLevel=null (D6 dead).
-        # With handler override level=1 → L2 path → nextLevel="city".
-        assert body["data"]["level"] == 1
-        assert body["data"]["nextLevel"] == "city"
-
-    def test_client_provided_parent_context_ignored_at_handler_entry(
-        self, client, patched_helpers
-    ):
-        """I4 regression: Java DTO doesn't propagate parentContext → service sees
-        null → drillPath = filterValue or '全部'. Python must override too."""
-        resp = _post(client, {
-            "dimension": "region", "value": "华东",
-            "parentContext": "全国",  # client tries to inject
-            "startDate": "2024-01-01", "endDate": "2024-12-31",
-        })
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["success"] is True
-        # If parentContext propagated: drillPath would be "全国 > 华东".
-        # With override: drillPath = filterValue = "华东".
-        assert body["data"]["drillPath"] == "华东"
-
-
+```python
 class TestDrillDownDispatchArithmetic:
     """T3 case-insensitive + T4 drill_path + T5 default range + 5 dim branching."""
 
@@ -702,8 +360,32 @@ class TestDrillDownProvinceCityRankingArithmetic:
         assert _determine_target_completion_alert(Decimal("85")) == "GREEN"
         assert _determine_target_completion_alert(Decimal("100")) == "GREEN"
         assert _determine_target_completion_alert(Decimal("200")) == "GREEN"  # over-achievement
+```
 
+- [ ] **Step 2: Run only the new classes**
 
+```bash
+JWT_SECRET=t python -m pytest tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownDispatchArithmetic tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownProvinceCityRankingArithmetic -v --tb=short -W ignore 2>&1 | tail -25
+```
+
+Expected: ~21 tests PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git status --short
+git commit -m "WIP: drilldown PR-C dispatch + province/city ranking arithmetic" -- tests/python/smartbi_compat/test_analysis_drilldown_contract.py
+```
+
+---
+
+## Task 2: TestDrillDownDeptDetailArithmetic + TestDrillDownProductChartArithmetic
+
+**Files:** Modify `tests/python/smartbi_compat/test_analysis_drilldown_contract.py` (append after Task 1).
+
+- [ ] **Step 1: Append test classes**
+
+```python
 class TestDrillDownDeptDetailArithmetic:
     """H3 _build_department_detail_response (16-field DashboardResponse) +
     _build_kpi_card (13-field) arithmetic."""
@@ -849,8 +531,32 @@ class TestDrillDownProductChartArithmetic:
         chart = _build_product_distribution_chart(rows)
         assert chart["data"][0]["amount"] == 0
         assert chart["data"][1]["amount"] == 50
+```
 
+- [ ] **Step 2: Run new classes**
 
+```bash
+JWT_SECRET=t python -m pytest tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownDeptDetailArithmetic tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownProductChartArithmetic -v --tb=short -W ignore 2>&1 | tail -20
+```
+
+Expected: ~11 tests PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git status --short
+git commit -m "WIP: drilldown PR-C dept detail + product chart arithmetic" -- tests/python/smartbi_compat/test_analysis_drilldown_contract.py
+```
+
+---
+
+## Task 3: TestDrillDownSalespersonMetricsArithmetic + TestDrillDownRecordUsageWriteArithmetic
+
+**Files:** Modify `tests/python/smartbi_compat/test_analysis_drilldown_contract.py` (append).
+
+- [ ] **Step 1: Append test classes**
+
+```python
 class TestDrillDownSalespersonMetricsArithmetic:
     """H5 _build_salesperson_metrics (List[MetricResult] 11-field) arithmetic."""
 
@@ -954,8 +660,32 @@ class TestDrillDownRecordUsageWriteArithmetic:
         assert "INSERT INTO" in sql_str
         assert "SMART_BI_USAGE_RECORDS" in sql_str  # plural
         assert "FACTORY_ID" in sql_str  # in the column list
+```
 
+- [ ] **Step 2: Run new classes**
 
+```bash
+JWT_SECRET=t python -m pytest tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownSalespersonMetricsArithmetic tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownRecordUsageWriteArithmetic -v --tb=short -W ignore 2>&1 | tail -15
+```
+
+Expected: ~8 tests PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git status --short
+git commit -m "WIP: drilldown PR-C salesperson metrics + record_usage SQL arithmetic" -- tests/python/smartbi_compat/test_analysis_drilldown_contract.py
+```
+
+---
+
+## Task 4: TestDrillDownErrorEnvelope + TestDrillDownTimeMonthRegression
+
+**Files:** Modify `tests/python/smartbi_compat/test_analysis_drilldown_contract.py` (append).
+
+- [ ] **Step 1: Append test classes**
+
+```python
 class TestDrillDownErrorEnvelope:
     """T10 BusinessException → 5-field ApiResponse error envelope (after _strip_envelope_extras).
     Java emits 8-field; sister-pattern strips 3 optional UX fields defensively."""
@@ -1057,3 +787,135 @@ class TestDrillDownTimeMonthRegression:
         })
         body = resp.json()
         assert "MONTH" in body["message"]
+```
+
+- [ ] **Step 2: Run new classes**
+
+```bash
+JWT_SECRET=t python -m pytest tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownErrorEnvelope tests/python/smartbi_compat/test_analysis_drilldown_contract.py::TestDrillDownTimeMonthRegression -v --tb=short -W ignore 2>&1 | tail -15
+```
+
+Expected: ~6 tests PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git status --short
+git commit -m "WIP: drilldown PR-C error envelope + time MONTH regression" -- tests/python/smartbi_compat/test_analysis_drilldown_contract.py
+```
+
+---
+
+## Task 5: Full pytest + verify HARD RULE + push
+
+- [ ] **Step 1: Verify HARD RULE — 0 changes to analysis_drilldown.py**
+
+```bash
+git diff origin/main..HEAD --stat backend/python/smartbi_compat/api/analysis_drilldown.py
+# Expected: empty output (no changes)
+```
+
+If any diff appears, fail and revert — PR-C is tests-only.
+
+- [ ] **Step 2: Run all drill-down tests**
+
+```bash
+JWT_SECRET=t python -m pytest tests/python/smartbi_compat/test_analysis_drilldown_contract.py -v --tb=short -W ignore 2>&1 | tail -30
+```
+
+Expected: 17 PR-A tests + ~46 new arithmetic tests = ~63 PASS.
+
+- [ ] **Step 3: Run full smartbi_compat baseline**
+
+```bash
+JWT_SECRET=t python -m pytest tests/python/smartbi_compat/ -q --tb=no -W ignore 2>&1 | tail -10
+```
+
+Expected: previous baseline + ~46 new = no regressions.
+
+- [ ] **Step 4: Squash WIP commits + push**
+
+```bash
+git fetch origin
+git log origin/main..HEAD --oneline
+# Soft reset to base, single commit
+git reset --soft $(git rev-parse HEAD~$(git log origin/main..HEAD --oneline | wc -l))
+# Wait — better to use the actual base SHA
+git reset --soft origin/main
+git status --short
+git commit -m "Phase 2A: /drill-down arithmetic depth tests (PR-C, ~46 tests, 8 classes)"
+git rebase origin/main  # may need re-rebase if sister chats moved main
+git push -u origin phase2a/drill-down-pr-c
+```
+
+If main.py / analysis_drilldown.py end up staged from any sister chat reset, restore:
+```bash
+git restore --staged --source=origin/main backend/python/main.py backend/python/smartbi_compat/api/analysis_drilldown.py
+```
+
+- [ ] **Step 5: Open PR**
+
+```bash
+gh pr create --base main --head phase2a/drill-down-pr-c \
+  --title "Phase 2A: /drill-down arithmetic depth tests (PR-C, ~46 tests)" \
+  --body "$(cat <<'EOF'
+## Summary
+
+Phase 2A drill-down PR-C — arithmetic depth tests for the drill-down endpoint port (PR-A landed as #72).
+
+**HARD RULE: tests-only.** Zero changes to `analysis_drilldown.py` impl.
+
+## Test classes (8 classes, ~46 tests)
+
+1. `TestDrillDownDispatchArithmetic` — T3 case-insensitive + T4 `_compute_drill_path` 6 edge cases + T5 default range + T2 dead level>1 (region L3, time period mapping) + region/salesperson branching (~17 tests)
+2. `TestDrillDownProvinceCityRankingArithmetic` — H1+H2 `_build_drilldown_ranking` + alert thresholds 60/85 (~7 tests)
+3. `TestDrillDownDeptDetailArithmetic` — H3 16-field DashboardResponse + KpiCard 13-field + status mapping (red/yellow/green) + divide-by-zero member_count (~7 tests)
+4. `TestDrillDownProductChartArithmetic` — H4 ChartConfig 7-field empty/populated + lowercase xaxisField (Rule 9.1) (~4 tests)
+5. `TestDrillDownSalespersonMetricsArithmetic` — H5 List[MetricResult] 11-field × 4 metrics + dimensionValue (~4 tests)
+6. `TestDrillDownRecordUsageWriteArithmetic` — T7 SQL bind shape (sync mock conn) + Java line 1066 default args + table name (plural) (~4 tests)
+7. `TestDrillDownErrorEnvelope` — T10 5-field stripped envelope + message format + 400 code (~3 tests)
+8. `TestDrillDownTimeMonthRegression` — C1 final-review CRITICAL bug regression: time MONTH/WEEK/DAY → 501 + atomicity preserved (~3 tests)
+
+## Test plan
+
+- [x] All 8 new classes PASS
+- [x] PR-A 17 tests still PASS
+- [x] smartbi_compat baseline no regressions
+- [x] HARD RULE verified: `git diff` shows 0 bytes change to `analysis_drilldown.py`
+
+## Out of scope
+
+- PR-B (additional contract / cross-tenant tests) — separate chat
+- WEEK/MONTH bucketing extension to sister `_get_sales_trend_chart` — separate PR
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+- [ ] **Step 6: Verify mergeable + ping user**
+
+```bash
+gh pr view --json url,state,mergeable -q '.url, .state, .mergeable'
+```
+
+Then ping user with PR URL.
+
+---
+
+## Self-review checklist
+
+- [x] All 8 test classes target distinct helpers/behaviors (no duplicate coverage with PR-A)
+- [x] HARD RULE protected: tests-only, all edits to test file only
+- [x] Mock pattern uses try/finally restoration (sister precedent)
+- [x] Final-review C1 regression covered by TestDrillDownTimeMonthRegression
+- [x] Rule 9.1 (lowercase xaxisField), Rule 9.2 (16-field empty case), Rule 9.3 (11-field MetricResult) all verified by separate tests
+- [x] Squash before push (Task 5 step 4)
+
+## Parallel work
+
+### Subagent: ✅ each task is independent
+Tasks 1-4 are independent test class additions. Could dispatch in parallel via subagents but file is single → must serialize commits to avoid file collisions. Sequential dispatch with append-only edits is safest.
+
+### Multi-Chat: ✅ no collision
+Only edits the test file (PR-A complete file in main). No risk to sister chats.
