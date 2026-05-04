@@ -3,11 +3,14 @@ package com.cretas.aims.client;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.PythonIntentMatchRequest;
 import com.cretas.aims.dto.intent.PythonIntentMatchResponse;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,5 +121,83 @@ class PythonAiMatcherClientTest {
                 .role("r").businessType("FACTORY").build();
 
         assertThrows(RuntimeException.class, () -> client.match(req));
+    }
+
+    /**
+     * Phase 2B (issue #29 §6): success/fallback counters increment on each
+     * call path, and the derived {@code python.ai.matcher.fallback.rate}
+     * gauge equals {@code fallback / (success + fallback + error)}.
+     */
+    @Test
+    void metricsEmitSuccessFallbackAndGauge() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        ReflectionTestUtils.setField(client, "meterRegistry", registry);
+        client.initMetrics();
+
+        PythonIntentMatchResponse fake = new PythonIntentMatchResponse();
+        fake.setSuccess(true);
+        fake.setData(IntentMatchResult.empty("test"));
+
+        when(restTemplate.exchange(anyString(), any(HttpMethod.class),
+                any(HttpEntity.class), eq(PythonIntentMatchResponse.class)))
+                .thenReturn(ResponseEntity.ok(fake));
+
+        PythonIntentMatchRequest req = PythonIntentMatchRequest.builder()
+                .query("test").factoryId("F001").userId("22").username("admin")
+                .role("factory_super_admin").businessType("FACTORY").build();
+
+        // 3 successes via match(), 1 fallback via matchFallback() → fallback_rate = 0.25
+        client.match(req);
+        client.match(req);
+        client.match(req);
+        client.matchFallback(req, new RuntimeException("python down"));
+
+        assertEquals(3.0, registry.counter(PythonAiMatcherClient.METRIC_CALLS,
+                PythonAiMatcherClient.TAG_RESULT, PythonAiMatcherClient.RESULT_SUCCESS).count());
+        assertEquals(1.0, registry.counter(PythonAiMatcherClient.METRIC_CALLS,
+                PythonAiMatcherClient.TAG_RESULT, PythonAiMatcherClient.RESULT_FALLBACK).count());
+        assertEquals(0.0, registry.counter(PythonAiMatcherClient.METRIC_CALLS,
+                PythonAiMatcherClient.TAG_RESULT, PythonAiMatcherClient.RESULT_ERROR).count());
+
+        Gauge fallbackRate = registry.find(PythonAiMatcherClient.METRIC_FALLBACK_RATE).gauge();
+        assertNotNull(fallbackRate);
+        assertEquals(0.25, fallbackRate.value(), 1e-9);
+    }
+
+    /**
+     * Phase 2B: gauge returns 0.0 (not NaN) before any call so the metric
+     * series is safe to scrape from boot.
+     */
+    @Test
+    void metricsFallbackRateZeroWhenNoCalls() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        ReflectionTestUtils.setField(client, "meterRegistry", registry);
+        client.initMetrics();
+
+        Gauge fallbackRate = registry.find(PythonAiMatcherClient.METRIC_FALLBACK_RATE).gauge();
+        assertNotNull(fallbackRate);
+        assertEquals(0.0, fallbackRate.value(), 1e-9);
+    }
+
+    /**
+     * Phase 2B: without a MeterRegistry the matcher remains fully functional —
+     * existing behavior is preserved for any unit test path that doesn't
+     * exercise metrics.
+     */
+    @Test
+    void matchAndFallbackWorkWithoutRegistry() {
+        PythonIntentMatchResponse fake = new PythonIntentMatchResponse();
+        fake.setSuccess(true);
+        fake.setData(IntentMatchResult.empty("test"));
+        when(restTemplate.exchange(anyString(), any(HttpMethod.class),
+                any(HttpEntity.class), eq(PythonIntentMatchResponse.class)))
+                .thenReturn(ResponseEntity.ok(fake));
+
+        PythonIntentMatchRequest req = PythonIntentMatchRequest.builder()
+                .query("test").factoryId("F001").userId("22").username("admin")
+                .role("factory_super_admin").businessType("FACTORY").build();
+
+        assertNotNull(client.match(req));
+        assertNotNull(client.matchFallback(req, new RuntimeException("x")));
     }
 }

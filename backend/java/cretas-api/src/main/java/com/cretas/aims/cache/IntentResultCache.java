@@ -3,7 +3,11 @@ package com.cretas.aims.cache;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +43,23 @@ import java.time.Duration;
 @Component
 public class IntentResultCache {
 
+    /** Counter name (Micrometer dot form → Prometheus {@code intent_cache_hits_total}). */
+    static final String METRIC_HITS = "intent.cache.hits";
+    /** Counter name (Micrometer dot form → Prometheus {@code intent_cache_misses_total}). */
+    static final String METRIC_MISSES = "intent.cache.misses";
+    /** Gauge name (Prometheus {@code intent_cache_hit_rate}). */
+    static final String METRIC_HIT_RATE = "intent.cache.hit.rate";
+
     private final Cache<String, IntentMatchResult> cache;
+
+    /**
+     * Phase 2B (issue #29 §6 action item): optional MeterRegistry for hit-rate
+     * observability. {@code required=false} so unit tests constructing this
+     * cache directly (without a Spring context) keep working — increments
+     * become no-ops when the registry is absent.
+     */
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
 
     public IntentResultCache(
             @Value("${ai.cache.max-size:1000}") int maxSize,
@@ -52,8 +72,47 @@ public class IntentResultCache {
         log.info("IntentResultCache initialized: maxSize={}, ttl={}s", maxSize, ttlSeconds);
     }
 
+    /**
+     * Phase 2B: pre-register counters and a derived hit-rate gauge so the
+     * series appear at {@code /actuator/prometheus} even before the first
+     * lookup. Defensive try/catch keeps a misbehaving registry from blocking
+     * cache use.
+     */
+    @PostConstruct
+    void initMetrics() {
+        if (meterRegistry == null) {
+            return;
+        }
+        try {
+            meterRegistry.counter(METRIC_HITS);
+            meterRegistry.counter(METRIC_MISSES);
+            Gauge.builder(METRIC_HIT_RATE, meterRegistry, reg -> {
+                        double hits = reg.counter(METRIC_HITS).count();
+                        double misses = reg.counter(METRIC_MISSES).count();
+                        double total = hits + misses;
+                        return total > 0.0 ? hits / total : 0.0;
+                    })
+                    .description("IntentResultCache hit rate: hits / (hits + misses)")
+                    .register(meterRegistry);
+        } catch (Exception e) {
+            log.debug("IntentResultCache metric init failed: {}", e.getMessage());
+        }
+    }
+
     public IntentMatchResult get(String query, String factoryId, String role, String businessType) {
-        return cache.getIfPresent(makeKey(query, factoryId, role, businessType));
+        IntentMatchResult result = cache.getIfPresent(makeKey(query, factoryId, role, businessType));
+        if (meterRegistry != null) {
+            try {
+                if (result != null) {
+                    meterRegistry.counter(METRIC_HITS).increment();
+                } else {
+                    meterRegistry.counter(METRIC_MISSES).increment();
+                }
+            } catch (Exception e) {
+                log.debug("IntentResultCache metric increment failed: {}", e.getMessage());
+            }
+        }
+        return result;
     }
 
     public void put(String query, String factoryId, String role, String businessType,

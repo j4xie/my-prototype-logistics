@@ -4,6 +4,9 @@ import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.PythonIntentMatchRequest;
 import com.cretas.aims.dto.intent.PythonIntentMatchResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -38,9 +41,31 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class PythonAiMatcherClient {
 
+    /** Counter name (Micrometer dot form → Prometheus {@code python_ai_matcher_calls_total}). */
+    static final String METRIC_CALLS = "python.ai.matcher.calls";
+    /** Tag key for {@link #METRIC_CALLS}. */
+    static final String TAG_RESULT = "result";
+    /** Tag value: {@link #match} returned without throwing. */
+    static final String RESULT_SUCCESS = "success";
+    /** Tag value: {@link #matchFallback} invoked (Resilience4j safety net). */
+    static final String RESULT_FALLBACK = "fallback";
+    /** Tag value: reserved for future granularity; currently never incremented. */
+    static final String RESULT_ERROR = "error";
+    /** Gauge name (Prometheus {@code python_ai_matcher_fallback_rate}). */
+    static final String METRIC_FALLBACK_RATE = "python.ai.matcher.fallback.rate";
+
     private final RestTemplate restTemplate;
     private final String baseUrl;
     private final String internalSecret;
+
+    /**
+     * Phase 2B (issue #29 §6 action item): optional MeterRegistry for
+     * fallback-rate observability. {@code required=false} so unit tests
+     * constructing this client directly (without a Spring context) keep
+     * working — increments become no-ops when the registry is absent.
+     */
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
 
     @Autowired
     public PythonAiMatcherClient(
@@ -50,6 +75,46 @@ public class PythonAiMatcherClient {
         this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
         this.internalSecret = internalSecret;
+    }
+
+    /**
+     * Phase 2B: pre-register call counters (with all three result tag values
+     * so the series exist at {@code /actuator/prometheus} from boot) and a
+     * derived fallback-rate gauge. Defensive try/catch keeps a misbehaving
+     * registry from blocking the matcher.
+     */
+    @PostConstruct
+    void initMetrics() {
+        if (meterRegistry == null) {
+            return;
+        }
+        try {
+            meterRegistry.counter(METRIC_CALLS, TAG_RESULT, RESULT_SUCCESS);
+            meterRegistry.counter(METRIC_CALLS, TAG_RESULT, RESULT_FALLBACK);
+            meterRegistry.counter(METRIC_CALLS, TAG_RESULT, RESULT_ERROR);
+            Gauge.builder(METRIC_FALLBACK_RATE, meterRegistry, reg -> {
+                        double success = reg.counter(METRIC_CALLS, TAG_RESULT, RESULT_SUCCESS).count();
+                        double fallback = reg.counter(METRIC_CALLS, TAG_RESULT, RESULT_FALLBACK).count();
+                        double error = reg.counter(METRIC_CALLS, TAG_RESULT, RESULT_ERROR).count();
+                        double total = success + fallback + error;
+                        return total > 0.0 ? fallback / total : 0.0;
+                    })
+                    .description("PythonAiMatcherClient fallback rate: fallback / (success + fallback + error)")
+                    .register(meterRegistry);
+        } catch (Exception e) {
+            log.debug("PythonAiMatcherClient metric init failed: {}", e.getMessage());
+        }
+    }
+
+    private void recordCall(String result) {
+        if (meterRegistry == null || result == null) {
+            return;
+        }
+        try {
+            meterRegistry.counter(METRIC_CALLS, TAG_RESULT, result).increment();
+        } catch (Exception e) {
+            log.debug("PythonAiMatcherClient metric increment ({}) failed: {}", result, e.getMessage());
+        }
     }
 
     /**
@@ -94,6 +159,7 @@ public class PythonAiMatcherClient {
         if (body.getData() == null) {
             throw new RuntimeException("Python returned success but null data");
         }
+        recordCall(RESULT_SUCCESS);
         return body.getData();
     }
 
@@ -105,6 +171,7 @@ public class PythonAiMatcherClient {
     public IntentMatchResult matchFallback(PythonIntentMatchRequest request, Throwable t) {
         log.warn("Python AI matcher fallback triggered: {} (query={})",
                 t.getMessage(), truncate(request.getQuery(), 80));
+        recordCall(RESULT_FALLBACK);
         return IntentMatchResult.empty(request.getQuery());
     }
 
