@@ -1,6 +1,6 @@
 package com.cretas.aims.test.ai.integration;
 
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
 import com.cretas.aims.dto.ai.*;
 import com.cretas.aims.service.*;
@@ -64,7 +64,7 @@ class AnalysisFlowIntegrationTest {
     private KnowledgeFeedbackService knowledgeFeedbackService;
 
     @MockBean
-    private DashScopeClient dashScopeClient;
+    private PythonLLMClient pythonLLMClient;
 
     // ==========================================
     // 1. 完整分析流程 - 简单查询
@@ -159,8 +159,8 @@ class AnalysisFlowIntegrationTest {
 
         @BeforeEach
         void setupMocks() {
-            // Mock DashScopeClient 返回分析结果
-            when(dashScopeClient.chat(anyString(), anyString()))
+            // Mock PythonLLMClient 返回分析结果
+            when(pythonLLMClient.chat(anyString(), anyString()))
                     .thenReturn("根据分析，本月产品质量整体呈上升趋势，良品率达到 97.5%。建议继续加强质检环节的监控。");
         }
 
@@ -523,7 +523,7 @@ class AnalysisFlowIntegrationTest {
 
         @BeforeEach
         void setupMocks() {
-            when(dashScopeClient.chat(anyString(), anyString()))
+            when(pythonLLMClient.chat(anyString(), anyString()))
                     .thenReturn("测试分析结果：当前状态良好。");
         }
 

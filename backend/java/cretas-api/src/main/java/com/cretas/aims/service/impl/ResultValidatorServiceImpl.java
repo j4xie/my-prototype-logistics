@@ -1,6 +1,6 @@
 package com.cretas.aims.service.impl;
 
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.config.TimeNormalizationRules;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
@@ -31,7 +31,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ResultValidatorServiceImpl implements ResultValidatorService {
 
-    private final DashScopeClient dashScopeClient;
+    private final PythonLLMClient pythonLLMClient;
     private final ObjectMapper objectMapper;
 
     @Value("${cretas.ai.validation.enabled:true}")
@@ -157,7 +157,7 @@ public class ResultValidatorServiceImpl implements ResultValidatorService {
 
         try {
             String prompt = buildSemanticValidationPrompt(response, originalQuery, intentDescription);
-            String llmResponse = dashScopeClient.chatLowTemp(prompt, "验证以下执行结果是否正确回答了用户问题");
+            String llmResponse = pythonLLMClient.chatLowTemp(prompt, "验证以下执行结果是否正确回答了用户问题");
 
             return parseSemanticValidationResponse(llmResponse);
         } catch (Exception e) {

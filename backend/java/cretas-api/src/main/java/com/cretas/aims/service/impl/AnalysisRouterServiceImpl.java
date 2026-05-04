@@ -8,7 +8,7 @@ import com.cretas.aims.dto.ai.AnalysisResult;
 import com.cretas.aims.dto.ai.AnalysisTopic;
 import com.cretas.aims.service.AnalysisRouterService;
 import com.cretas.aims.service.ToolRouterService;
-import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import java.util.*;
 public class AnalysisRouterServiceImpl implements AnalysisRouterService {
 
     private final ToolRouterService toolRouterService;
-    private final DashScopeClient dashScopeClient;
+    private final PythonLLMClient pythonLLMClient;
     private final IndustryKnowledgeConfig industryKnowledgeConfig;
     private final IntentKnowledgeBase knowledgeBase;
 
@@ -149,14 +149,14 @@ public class AnalysisRouterServiceImpl implements AnalysisRouterService {
             String analysisText;
             if (Boolean.TRUE.equals(context.getEnableThinking())) {
                 int budget = context.getThinkingBudget() != null ? context.getThinkingBudget() : 30;
-                var response = dashScopeClient.chatWithThinking(
+                var response = pythonLLMClient.chatWithThinking(
                         buildSystemPrompt(context.getTopic()),
                         analysisPrompt,
                         budget
                 );
                 analysisText = response.getContent();
             } else {
-                analysisText = dashScopeClient.chat(
+                analysisText = pythonLLMClient.chat(
                         buildSystemPrompt(context.getTopic()),
                         analysisPrompt
                 );
