@@ -224,6 +224,50 @@ class AIIntentServiceImplPythonIntegrationTest {
         verifyNoInteractions(pythonClient);
     }
 
+    /**
+     * Phase 2B canary whitelist (#73 §1.4): when {@code ai.python-matcher-factories}
+     * lists specific factoryIds, only those factories dispatch to Python; other
+     * factories must skip the Python branch entirely (no cache lookup, no
+     * pythonClient.match) and fall through to the legacy pipeline.
+     */
+    @Test
+    void canaryWhitelist_excludedFactory_skipsPythonBranch() throws Exception {
+        setField(service, "pythonMatcherFactories", "F999");
+
+        IntentMatchResult legacy = buildRealMatch("LEGACY_INTENT", "q");
+        when(pipelineService.recognizeIntentWithConfidence(
+                anyString(), anyString(), anyInt(), any(), anyString(), any()))
+                .thenReturn(legacy);
+
+        IntentMatchResult result = service.recognizeIntentWithConfidence(
+                "q", "F001", 3, 22L, "admin", null);
+
+        assertSame(legacy, result, "non-whitelisted factory must surface legacy result");
+        verifyNoInteractions(pythonClient);
+        verifyNoInteractions(cache);
+    }
+
+    /**
+     * Phase 2B canary whitelist (#73 §1.4): a factoryId that appears in the
+     * whitelist (with surrounding whitespace, to verify the trim() defense)
+     * must still flow through the normal cache → Python → legacy pipeline.
+     */
+    @Test
+    void canaryWhitelist_includedFactory_dispatchesToPython() throws Exception {
+        setField(service, "pythonMatcherFactories", " F001 , F999 ");
+        when(cache.get(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
+        IntentMatchResult py = buildRealMatch("PY_INTENT", "q");
+        when(pythonClient.match(any(PythonIntentMatchRequest.class))).thenReturn(py);
+
+        IntentMatchResult result = service.recognizeIntentWithConfidence(
+                "q", "F001", 3, 22L, "admin", null);
+
+        assertSame(py, result, "whitelisted factory must dispatch to Python");
+        verify(pipelineService, never())
+                .recognizeIntentWithConfidence(anyString(), anyString(), anyInt(),
+                        any(), anyString(), any());
+    }
+
     @Test
     void resolveBusinessDomainException_doesNotPreventPythonCall() {
         when(configService.resolveBusinessDomain(anyString()))
