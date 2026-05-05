@@ -54,11 +54,12 @@ def _query_date_range(factory_id: str) -> Optional[Tuple[date, date]]:
 
     Isolated as a module-level function so contract tests can monkey-patch
     it without standing up a Postgres instance. Production calls go through
-    smartbi.database.connection.get_db_context() against the SmartBI DB.
+    smartbi.database.connection.get_cretas_db_context() against cretas_prod_db
+    (smart_bi_sales_data lives there per spec §1.3, not in smartbi_prod_db).
     """
     # Lazy import: keeps smartbi_compat tests independent of smartbi.database
     # initialisation when POSTGRES_ENABLED is unset (e.g. CI / unit tests).
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning(
@@ -72,7 +73,8 @@ def _query_date_range(factory_id: str) -> Optional[Tuple[date, date]]:
         "SELECT MIN(order_date) AS min_d, MAX(order_date) AS max_d "
         "FROM smart_bi_sales_data WHERE factory_id = :fid"
     )
-    with get_db_context() as db:
+    # Reads cretas_prod_db (smart_bi_sales_data per spec §1.3)
+    with get_cretas_db_context() as db:
         row = db.execute(sql, {"fid": factory_id}).first()
     if row is None or row.min_d is None or row.max_d is None:
         return None
