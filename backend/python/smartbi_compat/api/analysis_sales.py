@@ -209,22 +209,27 @@ def _get_sync_engine():
     """Module-level seam wrapping the SQLAlchemy engine acquisition.
 
     Indirection lets tests monkey-patch at this module's namespace.
-    Production: returns the module-level `engine` from
-    smartbi.database.connection — the same SQLAlchemy engine the existing
-    _query_sales_data helper in smartbi_compat.api.analysis transitively
-    uses (via get_db_context). Per Phase A.3 verification (2026-04-30),
-    smart_bi_sales_data lives in `cretas_db`; the `engine`'s target DB is
-    determined by the `postgres_db` setting (env-driven, defaults to
-    `smartbi_db` in dev but is set to `cretas_db` in deployments where
-    smart_bi_sales_data resides).
+
+    Production: returns ``cretas_engine`` from ``smartbi.database.connection``
+    bound to ``FOOD_KB_POSTGRES_DB`` (cretas_prod_db in prod, cretas_db in
+    test). The default ``engine`` is bound to ``smartbi_prod_db`` via
+    ``POSTGRES_DB``, but ``smart_bi_sales_data`` lives in cretas_prod_db
+    (per spec docs/superpowers/specs/2026-05-05-phase2a-db-pool-wiring-fix.md
+    §1.3 empirical canonical-DB mapping — 345 rows in cretas_prod_db, NOT
+    present in smartbi_prod_db). Routing through ``cretas_engine`` is what
+    keeps this endpoint from throwing ``UndefinedTableError`` in prod.
+
+    Cascade: this helper is also imported by ``analysis_region.py`` (1 site)
+    and ``analysis_drilldown.py`` (5 dispatch sites) — same fix applies
+    transitively without touching those files.
     """
-    from smartbi.database.connection import engine
-    if engine is None:
+    from smartbi.database.connection import cretas_engine
+    if cretas_engine is None:
         raise RuntimeError(
-            "PostgreSQL engine not available — postgres_enabled is False "
-            "or connection setup failed at module import time."
+            "cretas_engine not configured — FOOD_KB_POSTGRES_PASSWORD env "
+            "missing or connection setup failed at module import time."
         )
-    return engine
+    return cretas_engine
 
 
 _KPI_SUMMARY_SQL = text("""
