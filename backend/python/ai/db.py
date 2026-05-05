@@ -85,7 +85,10 @@ async def load_snapshot(pool) -> IntentSnapshot:
     snap = IntentSnapshot(
         rows=rows,
         loaded_at_unix=time.time(),
-        max_config_version=max((r["config_version"] for r in rows), default=0),
+        max_config_version=max(
+            (r["config_version"] for r in rows if r["config_version"] is not None),
+            default=0,
+        ),
     )
 
     async with _snapshot_lock:

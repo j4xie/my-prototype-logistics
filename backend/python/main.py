@@ -583,12 +583,13 @@ async def lifespan(app: FastAPI):
             from ai.rag.retrieval import RAGRetriever
             from ai.rag.evaluator import RAGEvaluator
 
-            # Reuse SmartBI pg_pool if available (asyncpg). SemanticMatcher tolerates
-            # None pool — falls through to next stage. Stash on app.state for
-            # /intent/cache/invalidate handler.
+            # AI matcher reads ai_intent_configs which lives in cretas_db (not smartbi_db).
+            # Use get_cretas_pool (food_kb_db_url → cretas_prod_db) instead of get_pg_pool
+            # (smartbi_prod_db). SemanticMatcher tolerates None pool — falls through to
+            # next stage. Stash on app.state for /intent/cache/invalidate handler.
             ai_pg_pool = None
             try:
-                from smartbi.config import get_pg_pool as _get_ai_pg_pool
+                from smartbi.config import get_cretas_pool as _get_ai_pg_pool
                 ai_pg_pool = await _get_ai_pg_pool()
                 app.state.pg_pool = ai_pg_pool
             except Exception as ex:

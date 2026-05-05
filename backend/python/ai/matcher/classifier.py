@@ -16,7 +16,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Tuple
+from functools import partial
+from typing import Any, Callable, List, Tuple
+
+
+async def _to_thread(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Python 3.8-compatible shim for asyncio.to_thread (added in 3.9).
+
+    Server venv38 = Python 3.8.17; asyncio.to_thread raises AttributeError there.
+    Per memory feedback_python_version_compat_deployment.md.
+    """
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, partial(fn, *args, **kwargs))
 
 from ai.dto import CandidateIntentDto, MatchMethod
 
@@ -62,7 +73,7 @@ class ClassifierMatcher:
     ) -> List[CandidateIntentDto]:
         """Run classifier in thread (sync fn) and convert results."""
         try:
-            predictions = await asyncio.to_thread(_predict, query)
+            predictions = await _to_thread(_predict, query)
         except Exception:
             logger.exception("Stage 6 CLASSIFIER failed")
             return []
