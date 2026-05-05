@@ -447,13 +447,20 @@ def _build_salesperson_metrics(salesperson: str, row) -> list:
     ]
 
 
+# updated_at: Java JPA @LastModifiedDate auto-fills via Hibernate; Python
+# must set explicitly because cretas_db.smart_bi_usage_records has updated_at
+# NOT NULL without DEFAULT (verified 2026-05-05). Surfaced by PR-B cascade
+# routing audit INSERT to cretas_engine — schema constraint exposed Python
+# vs Java code-path divergence. See spec §2.3.
 _RECORD_USAGE_SQL = text("""
     INSERT INTO smart_bi_usage_records (
         factory_id, user_id, action_type, query_text, token_count,
-        cost_amount, cache_hit, response_time_ms, success, created_at
+        cost_amount, cache_hit, response_time_ms, success,
+        created_at, updated_at
     ) VALUES (
         :factory_id, :user_id, :action_type, :query_text, :token_count,
-        :cost_amount, :cache_hit, :response_time_ms, :success, NOW()
+        :cost_amount, :cache_hit, :response_time_ms, :success,
+        NOW(), NOW()
     )
 """)
 
