@@ -107,17 +107,40 @@ async def get_embedding(text: str) -> Optional[List[float]]:
     return None
 
 
-async def get_embedding_cached(text: str) -> Optional[List[float]]:
-    """Request-scoped cached version of get_embedding.
+# BGE-base-zh-v1.5 recommends prepending this prefix to QUERY-side text
+# (not corpus-side) for retrieval tasks. Improves discrimination on short
+# Chinese queries. See https://huggingface.co/BAAI/bge-base-zh-v1.5#usage
+# Phase 2B Stage 5 SEMANTIC matcher applies this prefix; backfill (corpus
+# side) does NOT — symmetric prefixes would zero out the asymmetric benefit.
+BGE_QUERY_PREFIX = "为这个句子生成表示以用于检索相关文章："
 
-    Useful when multiple stages need embedding for same text within one request.
-    Cache scope is per asyncio context (set via FastAPI middleware in api.py).
-    Failures (None return) are NOT cached so retry can succeed.
+
+async def get_query_embedding(text: str) -> Optional[List[float]]:
+    """Embed query text with BGE recommended prefix for retrieval kNN.
+
+    Use this for Stage 5 SEMANTIC + SemanticRouter (β stage 0). Backfill /
+    corpus-side callers should use raw `get_embedding(text)` without prefix.
+    """
+    return await get_embedding(BGE_QUERY_PREFIX + text)
+
+
+async def get_embedding_cached(text: str) -> Optional[List[float]]:
+    """Request-scoped cached version of get_query_embedding (with BGE prefix).
+
+    Useful when multiple stages need embedding for same query within one
+    request — Stage 5 SEMANTIC and SemanticRouter both need it. Cache scope
+    is per asyncio context (set via FastAPI middleware in api.py). Failures
+    (None return) are NOT cached so retry can succeed.
+
+    Phase 2B BGE migration: now applies BGE_QUERY_PREFIX. Cache key still
+    uses the raw query text, so cached vec is the prefixed-then-embedded
+    result. Corpus-side callers MUST use `get_embedding(...)` directly to
+    skip the prefix.
     """
     cache = _request_embedding_cache.get()
     if text in cache:
         return cache[text]
-    vec = await get_embedding(text)
+    vec = await get_query_embedding(text)
     if vec is not None:
         cache[text] = vec
     return vec
