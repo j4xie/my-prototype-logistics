@@ -1,0 +1,43 @@
+# Phase 2A T6 cutover — in-scope endpoint list (Java→Python at T6.4)
+#
+# Used by:
+#   - scripts/baseline-java-metrics.sh (1-week Java baseline collection, pre-T6)
+#   - scripts/t6-dryrun-compare.sh (T6.1 24h dual-call dict_eq comparison)
+#
+# Format: one endpoint path per line. {factoryId} placeholder is filled at runtime.
+# Date params use 2026 full year so all data is in scope (server clock 2026).
+#
+# Comment lines (starting with #) and blank lines are ignored.
+# Source-of-truth: docs/superpowers/specs/2026-05-02-phase2a-t6-nginx-cutover-design.md §2.1
+
+# === Composite analysis endpoints ===
+/api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/sales?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/department?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/region?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/inventory?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/procurement?startDate=2026-01-01&endDate=2026-12-31
+
+# === Per-type analysis (finance) ===
+/api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31&analysisType=payable
+/api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31&analysisType=profit
+/api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31&analysisType=cost
+/api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31&analysisType=receivable
+/api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31&analysisType=budget
+
+# === Sub-endpoints (finance) ===
+/api/mobile/{factoryId}/smart-bi/analysis/finance/budget-achievement?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/finance/yoy-mom?startDate=2026-01-01&endDate=2026-12-31
+/api/mobile/{factoryId}/smart-bi/analysis/finance/category-comparison?startDate=2026-01-01&endDate=2026-12-31
+
+# === Alerts / recommendations / data-date-range ===
+/api/mobile/{factoryId}/smart-bi/alerts
+/api/mobile/{factoryId}/smart-bi/recommendations
+/api/mobile/{factoryId}/smart-bi/data-date-range
+
+# === Query templates + datasource (GET only — POST/PUT/DELETE separate) ===
+/api/mobile/{factoryId}/smart-bi/query-templates
+/api/mobile/{factoryId}/smart-bi/datasource/list
+
+# Note: drill-down stays Java per runbook §1.2 — NOT in this list.
+# Note: quality / production / datasource preview-upload-apply stay Java (PR #37, #45) — NOT in this list.
