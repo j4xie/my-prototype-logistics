@@ -277,13 +277,18 @@ def _generate_motivational_message(plan: dict) -> None:
 # ============================================================
 
 
-async def _get_smartbi_pool():
-    """Lazy import to avoid module-load cycle. Mirrors profit/cost pattern."""
+async def _get_cretas_pool():
+    """Lazy import to avoid module-load cycle. Mirrors profit/cost pattern.
+
+    Uses cretas pool because incentive_plan queries smart_bi_sales_data /
+    smart_bi_department_data which live in cretas_prod_db (not smartbi_prod_db).
+    See spec 2026-05-05-phase2a-db-pool-wiring-fix §2.2.4.
+    """
     try:
-        from smartbi.config import get_pg_pool  # type: ignore
-        return await get_pg_pool()
+        from smartbi.config import get_cretas_pool  # type: ignore
+        return await get_cretas_pool()
     except Exception as e:
-        logger.warning("[incentive-plan] smartbi pool acquisition failed: %s", e)
+        logger.warning("[incentive-plan] cretas pool acquisition failed: %s", e)
         return None
 
 
@@ -300,7 +305,7 @@ async def _query_salesperson_sales(
         raise ValueError(
             f"_query_salesperson_sales: start/end required (got {range_})"
         )
-    pool = await _get_smartbi_pool()
+    pool = await _get_cretas_pool()
     if pool is None:
         return []
     async with pool.acquire() as conn:
@@ -332,7 +337,7 @@ async def _query_department_data(
         raise ValueError(
             f"_query_department_data: start/end required (got {range_})"
         )
-    pool = await _get_smartbi_pool()
+    pool = await _get_cretas_pool()
     if pool is None:
         return []
     async with pool.acquire() as conn:
@@ -356,7 +361,7 @@ async def _query_all_sales_rows(factory_id: str, range_: DateRange) -> list[dict
     """All sales rows for default-fallback path. Java line 704-705."""
     if range_.start_date is None or range_.end_date is None:
         raise ValueError(f"_query_all_sales_rows: start/end required (got {range_})")
-    pool = await _get_smartbi_pool()
+    pool = await _get_cretas_pool()
     if pool is None:
         return []
     async with pool.acquire() as conn:
@@ -380,7 +385,7 @@ async def _query_all_department_rows(factory_id: str, range_: DateRange) -> list
         raise ValueError(
             f"_query_all_department_rows: start/end required (got {range_})"
         )
-    pool = await _get_smartbi_pool()
+    pool = await _get_cretas_pool()
     if pool is None:
         return []
     async with pool.acquire() as conn:
