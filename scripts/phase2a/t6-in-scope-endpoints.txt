@@ -26,9 +26,13 @@
 /api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-12-31&analysisType=budget
 
 # === Sub-endpoints (finance) ===
-/api/mobile/{factoryId}/smart-bi/analysis/finance/budget-achievement?startDate=2026-01-01&endDate=2026-12-31
-/api/mobile/{factoryId}/smart-bi/analysis/finance/yoy-mom?startDate=2026-01-01&endDate=2026-12-31
-/api/mobile/{factoryId}/smart-bi/analysis/finance/category-comparison?startDate=2026-01-01&endDate=2026-12-31
+# Required query params per Pydantic schemas (PR-F fix — caught by smoke gate):
+#   budget-achievement: year
+#   yoy-mom: periodType, startPeriod
+#   category-comparison: year, compareYear
+/api/mobile/{factoryId}/smart-bi/analysis/finance/budget-achievement?startDate=2026-01-01&endDate=2026-12-31&year=2026
+/api/mobile/{factoryId}/smart-bi/analysis/finance/yoy-mom?startDate=2026-01-01&endDate=2026-12-31&periodType=MONTH&startPeriod=2026-01
+/api/mobile/{factoryId}/smart-bi/analysis/finance/category-comparison?startDate=2026-01-01&endDate=2026-12-31&year=2026&compareYear=2025
 
 # === Alerts / recommendations / data-date-range ===
 /api/mobile/{factoryId}/smart-bi/alerts

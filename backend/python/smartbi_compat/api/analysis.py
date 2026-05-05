@@ -202,11 +202,13 @@ def _query_datasources(factory_id: str) -> List[dict]:
 
     Isolated as a module-level function so contract tests can monkey-patch
     it without standing up a Postgres instance. Production calls go through
-    smartbi.database.connection.get_db_context() against the SmartBI DB.
+    smartbi.database.connection.get_cretas_db_context() against cretas_prod_db
+    (smart_bi_datasource lives there per spec
+    2026-05-05-phase2a-db-pool-wiring-fix §1.3).
     """
     # Lazy import: keeps smartbi_compat tests independent of smartbi.database
     # initialisation when POSTGRES_ENABLED is unset (e.g. CI / unit tests).
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning(
@@ -224,7 +226,8 @@ def _query_datasources(factory_id: str) -> List[dict]:
         "FROM smart_bi_datasource "
         "WHERE factory_id = :fid AND is_active = TRUE AND deleted_at IS NULL"
     )
-    with get_db_context() as db:
+    # Reads cretas_prod_db (smart_bi_datasource per spec §1.3)
+    with get_cretas_db_context() as db:
         rows = db.execute(sql, {"fid": factory_id}).all()
     return [_datasource_row_to_dict(r) for r in rows]
 
@@ -315,7 +318,7 @@ def _query_finance_data(factory_id: str, range_) -> list:
     Returns rows with columns needed by the finance generator: customer_name,
     receivable_amount, aging_days, budget_amount, actual_amount.
     """
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning(
@@ -331,7 +334,8 @@ def _query_finance_data(factory_id: str, range_) -> list:
         "FROM smart_bi_finance_data "
         "WHERE factory_id = :fid AND record_date BETWEEN :start AND :end"
     )
-    with get_db_context() as db:
+    # Reads cretas_prod_db (smart_bi_finance_data per spec §1.3)
+    with get_cretas_db_context() as db:
         return db.execute(
             sql,
             {"fid": factory_id, "start": range_.start_date, "end": range_.end_date},
