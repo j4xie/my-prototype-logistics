@@ -64,13 +64,19 @@ async def _query_material_batches_in_range(
             f"_query_material_batches_in_range: start_date / end_date required "
             f"(got start_date={start_date!r}, end_date={end_date!r})"
         )
+    # NOTE: Java entity field is `receiptDate` but DB column is `inbound_date`
+    # (per @Column(name = "inbound_date") in MaterialBatch.java). Spec called
+    # this column `receipt_date` based on Java field name; DB doesn't have
+    # that column. Surfaced by SMOKE_REAL_DB=1 smoke gate (PR-E) post-fix
+    # for db wiring, returning UndefinedColumnError on `receipt_date`.
+    # Read via SELECT * keeps row dict accessible by either alias name.
     sql = """
-        SELECT *
+        SELECT *, inbound_date AS receipt_date
         FROM material_batches
         WHERE factory_id = $1
           AND status = 'AVAILABLE'
           AND deleted_at IS NULL
-          AND receipt_date BETWEEN $2 AND $3
+          AND inbound_date BETWEEN $2 AND $3
         ORDER BY id
     """
     return await _fetch_all(sql, factory_id, start_date, end_date)
