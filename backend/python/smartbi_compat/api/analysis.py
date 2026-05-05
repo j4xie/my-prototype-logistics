@@ -286,7 +286,7 @@ def _query_sales_data(factory_id: str, range_) -> list:
     Mirrors Java SmartBiSalesDataRepository.findByFactoryIdAndOrderDateBetween.
     Module-level seam so contract tests can monkey-patch without standing up PG.
     """
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning(
@@ -301,7 +301,8 @@ def _query_sales_data(factory_id: str, range_) -> list:
         "FROM smart_bi_sales_data "
         "WHERE factory_id = :fid AND order_date BETWEEN :start AND :end"
     )
-    with get_db_context() as db:
+    # Reads cretas_prod_db (smart_bi_sales_data per spec §1.3)
+    with get_cretas_db_context() as db:
         return db.execute(
             sql,
             {"fid": factory_id, "start": range_.start_date, "end": range_.end_date},
@@ -339,7 +340,7 @@ def _query_finance_data(factory_id: str, range_) -> list:
 
 def _query_department_data(factory_id: str, range_) -> list:
     """Mirror SmartBiDepartmentDataRepository.findByFactoryIdAndRecordDateBetween."""
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning(
@@ -353,7 +354,8 @@ def _query_department_data(factory_id: str, range_) -> list:
         "FROM smart_bi_department_data "
         "WHERE factory_id = :fid AND record_date BETWEEN :start AND :end"
     )
-    with get_db_context() as db:
+    # Reads cretas_prod_db (smart_bi_department_data per spec §1.3)
+    with get_cretas_db_context() as db:
         return db.execute(
             sql,
             {"fid": factory_id, "start": range_.start_date, "end": range_.end_date},
