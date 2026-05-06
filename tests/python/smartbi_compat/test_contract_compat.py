@@ -169,21 +169,32 @@ _ISO_LOCAL_DATETIME_RE = re.compile(
 def assert_envelope(
     body: Any, *, expected_code: int = 200, expected_success: bool = True
 ) -> None:
-    """Assert the response is a Java-compatible ApiResponse envelope (5 keys).
+    """Assert the response is a Java-compatible ApiResponse envelope (8 keys).
 
     The envelope mirrors com.cretas.aims.dto.common.ApiResponse declared
-    field order: code, message, data, timestamp, success. Phase 2A's
-    ``wrap_response`` MUST emit all five so RN/web-admin clients see a
-    byte-shape-equivalent response after T6 nginx cutover.
+    field order: code, message, data, timestamp, success, actionHint,
+    severity, hintTarget. Phase 2A's ``wrap_response`` MUST emit all 8 so
+    RN/web-admin clients see a byte-shape-equivalent response after T6
+    nginx cutover.
+
+    The 3 trailing hint fields (actionHint/severity/hintTarget) are always
+    present because Java's ApiResponse DTO has no @JsonInclude(NON_NULL)
+    annotation — Jackson emits all Lombok @Data getter fields including
+    nulls (.claude/rules/python-java-port.md Rule 9). On success path all
+    3 are null; on error path callers may set them via wrap_error_with_hint.
 
     The current golden recorder (scripts/phase2a/record-java-golden.mjs)
     drops ``code`` and ``timestamp`` when persisting goldens, so this
     helper hardcodes the success-case ``code`` (200) rather than reading
     it from the golden. When the recorder is upgraded to capture all
-    five envelope keys, callers can pass ``expected_code=g["response"]["code"]``.
+    envelope keys, callers can pass ``expected_code=g["response"]["code"]``.
     """
     assert isinstance(body, dict), f"body not a dict: {type(body).__name__}"
-    missing = {"code", "message", "data", "timestamp", "success"} - set(body.keys())
+    expected_keys = {
+        "code", "message", "data", "timestamp", "success",
+        "actionHint", "severity", "hintTarget",
+    }
+    missing = expected_keys - set(body.keys())
     assert not missing, f"envelope missing keys: {missing}"
     assert body["code"] == expected_code, (
         f"envelope.code: {body['code']!r} (expected {expected_code})"
@@ -199,6 +210,12 @@ def assert_envelope(
     assert body["success"] is expected_success, (
         f"envelope.success: {body['success']!r} (expected {expected_success})"
     )
+    # On success path, all 3 hint fields are null (matching Java ApiResponse.success)
+    if expected_success:
+        for hint_key in ("actionHint", "severity", "hintTarget"):
+            assert body[hint_key] is None, (
+                f"envelope.{hint_key}: {body[hint_key]!r} (expected None on success)"
+            )
 
 
 def assert_schema_match(actual: Any, expected: Any, *, path: str = "$") -> None:

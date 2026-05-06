@@ -116,13 +116,16 @@ get_jwt() {
     if [[ -z "$JWT_CACHE" || "$elapsed" -gt 3000 ]]; then
         JWT_CACHE=$(JWT_SECRET="$JWT_SECRET" FACTORY_ID="$FACTORY" python3 - <<'PY'
 import jwt, os, time
-print(jwt.encode({
+token = jwt.encode({
     "userId": 1,
     "username": "t6_dryrun",
     "factoryId": os.environ["FACTORY_ID"],
     "role": "factory_super_admin",
     "exp": int(time.time()) + 3600,
-}, os.environ["JWT_SECRET"], algorithm="HS256"))
+}, os.environ["JWT_SECRET"], algorithm="HS256")
+if isinstance(token, bytes):
+    token = token.decode("utf-8")
+print(token)
 PY
 )
         JWT_CACHED_AT=$now

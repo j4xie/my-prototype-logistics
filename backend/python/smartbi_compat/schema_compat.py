@@ -1,17 +1,24 @@
 """Helpers to keep Python alias responses byte-shape-equivalent to Java
 SmartBI controller responses (com.cretas.aims.dto.common.ApiResponse).
 
-Java envelope (5 keys, declaration order via Jackson):
+Java envelope (8 keys, declaration order via Jackson — verified against
+prod /api/mobile/F001/smart-bi/data-date-range 2026-05-06):
     {"code": 200, "message": str, "data": <body>,
-     "timestamp": "<LocalDateTime ISO>", "success": bool}
+     "timestamp": "<LocalDateTime ISO>", "success": bool,
+     "actionHint": null, "severity": null, "hintTarget": null}
+
+The last 3 (actionHint/severity/hintTarget) are emitted as null on success
+because ApiResponse.java DTO has no @JsonInclude(NON_NULL) annotation —
+Jackson emits all Lombok @Data getter fields including nulls (per
+.claude/rules/python-java-port.md Rule 9). Python must emit them too or
+T6 dryrun dict_eq fails on every endpoint.
 
 Python emits the same keys in the same order. The ``timestamp`` field
 is a fresh ISO 8601 LocalDateTime per response — it CANNOT byte-equal
 a recorded golden, so contract tests assert structure only (see
 tests/python/smartbi_compat/test_contract_compat.py::assert_envelope).
 
-Java's optional UX fields (actionHint/severity/hintTarget) are emitted
-on demand by ``wrap_error_with_hint`` to mirror
+``wrap_error_with_hint`` lets callers supply non-null UX hints to mirror
 ``ApiResponse.errorWithHint``. Most call sites should let HTTPException
 flow through and never call ``wrap_error`` directly — this module
 exists for the rare Java endpoints that return 200/success=false
@@ -53,6 +60,9 @@ def wrap_response(
         "data": data,
         "timestamp": _now_iso(),
         "success": success,
+        "actionHint": None,
+        "severity": None,
+        "hintTarget": None,
     }
 
 
@@ -70,6 +80,9 @@ def wrap_error(message: str, *, code: int = 400) -> dict:
         "data": None,
         "timestamp": _now_iso(),
         "success": False,
+        "actionHint": None,
+        "severity": None,
+        "hintTarget": None,
     }
 
 
@@ -85,8 +98,10 @@ def wrap_error_with_hint(
 
     Frontend interceptor renders ``actionHint`` as a notification button,
     ``severity=BLOCKING`` as a modal (otherwise toast), and ``hintTarget``
-    as a UI pulse target. Only set the optional fields you actually need;
-    omitted ones are left out of the JSON for byte-equivalence with Java.
+    as a UI pulse target. Caller-supplied non-null hints override the
+    null defaults from ``wrap_error``. The 3 hint fields are always
+    present in the JSON (matching Java Lombok @Data + no @JsonInclude
+    behavior) — None values map to JSON null.
     """
     out = wrap_error(message, code=code)
     if action_hint is not None:
