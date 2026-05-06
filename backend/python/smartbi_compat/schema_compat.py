@@ -30,15 +30,67 @@ from datetime import datetime
 from typing import Any, Optional
 
 
+def _java_isoformat(dt) -> Optional[str]:
+    """Mirror Java Jackson ``LocalDateTime`` / ``LocalDate`` ISO-8601 output.
+
+    Java Jackson's ``LocalDateTimeSerializer`` (jsr310 module) drops trailing
+    zero digits from the fractional-second field, including dropping the
+    decimal point entirely when the fractional value is exactly zero.
+    Python's ``datetime.isoformat()`` always emits exactly 6 microsecond
+    digits when nonzero (or omits the field when exactly zero), so the
+    partial-trailing-zero case diverges:
+
+      ``LocalDateTime.of(2026,4,16,15,48,8, 150710000)``
+        Java   → ``"2026-04-16T15:48:08.15071"``  (last microsecond '0' dropped)
+        Python → ``"2026-04-16T15:48:08.150710"`` (zero-padded)
+        Helper → ``"2026-04-16T15:48:08.15071"``  ✓
+
+      ``LocalDateTime.of(2026,4,16,15,48,8, 123000000)``
+        Java   → ``"2026-04-16T15:48:08.123"``
+        Python → ``"2026-04-16T15:48:08.123000"``
+        Helper → ``"2026-04-16T15:48:08.123"``  ✓
+
+      ``LocalDateTime.of(2026,4,16,15,48,8, 0)``  (whole second)
+        Java   → ``"2026-04-16T15:48:08"``  (no dot)
+        Python → ``"2026-04-16T15:48:08"``  (also no dot — datetime drops .0)
+        Helper → ``"2026-04-16T15:48:08"``  ✓
+
+    For ``LocalDate`` input (e.g. ``date(2026, 4, 16)``), ``isoformat()``
+    returns ``"2026-04-16"`` with no dot — the helper passes it through
+    unchanged. Safe as a drop-in replacement at any ``.isoformat()`` site.
+
+    See plan §G in
+    ``docs/superpowers/plans/2026-05-06-phase2a-tier2-value-divergence-investigation.md``
+    and ``.claude/rules/python-java-port.md`` Rule 11 for context.
+    """
+    if dt is None:
+        return None
+    s = dt.isoformat()
+    # No fractional second (LocalDate, or whole-second LocalDateTime) → unchanged
+    if "." not in s:
+        return s
+    head, frac = s.rsplit(".", 1)
+    # Defensive: if a timezone offset slipped past the fractional part
+    # (e.g. "+08:00"), the tail won't be all digits — pass through to
+    # avoid silently mangling the string.
+    if not frac.isdigit():
+        return s
+    frac = frac.rstrip("0")
+    if not frac:
+        # All zeros: Java drops the dot + frac entirely
+        return head
+    return f"{head}.{frac}"
+
+
 def _now_iso() -> str:
     """ISO 8601 LocalDateTime — naive datetime, no timezone, matching
     Java's ``LocalDateTime.now()`` Jackson serialisation.
 
-    Python's microsecond precision is shorter than Java's nanosecond
-    precision; this is the documented compromise (see schema_compat
-    module docstring). Tests assert ISO 8601 shape, not exact length.
+    Uses ``_java_isoformat`` so trailing-zero microseconds are stripped to
+    match Java byte-for-byte (see Rule 11). Tests assert ISO 8601 shape,
+    not exact length.
     """
-    return datetime.now().isoformat()
+    return _java_isoformat(datetime.now())
 
 
 def wrap_response(

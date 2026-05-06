@@ -21,7 +21,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.schema_compat import _java_isoformat, wrap_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -170,9 +170,9 @@ def _field_def_to_json(row: dict) -> dict:
         "displayOrder": row.get("display_order"),
         "isVisible": row["is_visible"],
         "formatPattern": row.get("format_pattern"),
-        "createdAt": row["created_at"].isoformat() if row.get("created_at") else None,
-        "updatedAt": row["updated_at"].isoformat() if row.get("updated_at") else None,
-        "deletedAt": row["deleted_at"].isoformat() if row.get("deleted_at") else None,
+        "createdAt": _java_isoformat(row.get("created_at")),
+        "updatedAt": _java_isoformat(row.get("updated_at")),
+        "deletedAt": _java_isoformat(row.get("deleted_at")),
     }
 
 
@@ -196,9 +196,9 @@ def _history_to_json(row: dict) -> dict:
         "isReversible": row["is_reversible"],
         "isApplied": row["is_applied"],
         "errorMessage": row.get("error_message"),
-        "createdAt": row["created_at"].isoformat() if row.get("created_at") else None,
-        "updatedAt": row["updated_at"].isoformat() if row.get("updated_at") else None,
-        "deletedAt": row["deleted_at"].isoformat() if row.get("deleted_at") else None,
+        "createdAt": _java_isoformat(row.get("created_at")),
+        "updatedAt": _java_isoformat(row.get("updated_at")),
+        "deletedAt": _java_isoformat(row.get("deleted_at")),
     }
 
 

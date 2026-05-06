@@ -37,6 +37,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 
 from smartbi_compat.api.analysis import _query_sales_data, wrap_response
+from smartbi_compat.schema_compat import _java_isoformat
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 
@@ -1127,9 +1128,11 @@ def _strip_volatile(obj: Any) -> Any:
 def _utc_now_iso() -> str:
     """Generate ISO timestamp for generatedAt / lastUpdated fields.
 
-    Stripped by `_strip_volatile` before byte compare.
+    Stripped by `_strip_volatile` before byte compare. Uses `_java_isoformat`
+    to match Java Jackson `LocalDateTime` shape (Rule 11) — keeps the
+    serializer consistent with the rest of the alias surface.
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+    return _java_isoformat(datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 # ============================================================

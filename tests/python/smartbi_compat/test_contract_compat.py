@@ -478,9 +478,11 @@ def test_row_to_dict_jackson_key_order_and_active_row():
     assert result["description"] == "Verify #258 fix"
     assert result["queryTemplate"] == "市场调研 TOP 客户"
     assert result["parameters"] == "[]"
-    # Timestamp formatting: datetime.isoformat() with microseconds.
-    assert result["createdAt"] == "2026-04-17T11:00:03.731450"
-    assert result["updatedAt"] == "2026-04-17T11:00:03.731450"
+    # Timestamp formatting via _java_isoformat: trailing-zero microseconds
+    # dropped to mirror Java Jackson LocalDateTime (Rule 11). Input microsec
+    # value 731450 has trailing zero — Java emits "...73145" not "...731450".
+    assert result["createdAt"] == "2026-04-17T11:00:03.73145"
+    assert result["updatedAt"] == "2026-04-17T11:00:03.73145"
     # Null-timestamp passthrough (None stays None, not stringified).
     assert result["deletedAt"] is None
     # Soft-delete derivation: deleted_at IS NULL -> deleted == False.
@@ -772,3 +774,76 @@ def test_datasource_row_to_dict_soft_deleted_row():
         "fieldDefinitions",
         "deleted",
     ]
+
+
+# ---------------------------------------------------------------------------
+# _java_isoformat unit tests (Rule 11 — Jackson LocalDateTime trim trailing 0)
+# ---------------------------------------------------------------------------
+#
+# Java Jackson LocalDateTimeSerializer (jsr310 module) emits ISO-8601 but
+# DROPS trailing zero digits from the microsecond field — Python's
+# datetime.isoformat() instead pads to exactly 6 digits when nonzero.
+# This divergence is invisible in goldens whose timestamps don't end in
+# zero, but surfaces in test env where some inserted rows have
+# microsecond values like 150710 → Java emits ".15071" (5 digits),
+# Python emits ".150710" (6 digits). Rule 11 → shared `_java_isoformat`
+# helper closes the gap; spec in plans/2026-05-06-phase2a-tier2-value-
+# divergence-investigation.md §G.
+
+
+@pytest.mark.parametrize("microsec,expected_suffix", [
+    # No fractional part — Python datetime.isoformat() omits it; Java does too.
+    (0,      ""),
+    # Trailing zero in the last microsecond digit — Java drops it.
+    (150710, ".15071"),
+    # Three trailing zeros — Java drops all of them.
+    (123000, ".123"),
+    # Fully-significant microseconds — no trim.
+    (123456, ".123456"),
+    # Leading-zero microseconds — Python pads to 6 digits, Java preserves
+    # leading zero(s) but trims trailing. Microsec=12300 → Python str
+    # ".012300" → trim trailing zeros → ".0123".
+    (12300,  ".0123"),
+    # Single nonzero digit — ".000001" → no trailing 0 to trim.
+    (1,      ".000001"),
+])
+def test_java_isoformat_microsecond_truncation(microsec, expected_suffix):
+    """Mirror Java Jackson LocalDateTime: trailing-zero microseconds dropped."""
+    from smartbi_compat.schema_compat import _java_isoformat
+    dt = datetime(2026, 4, 16, 15, 48, 8, microsec)
+    assert _java_isoformat(dt) == f"2026-04-16T15:48:08{expected_suffix}"
+
+
+def test_java_isoformat_none_passthrough():
+    """None input → None output (mirror `dt.isoformat() if dt else None` shape)."""
+    from smartbi_compat.schema_compat import _java_isoformat
+    assert _java_isoformat(None) is None
+
+
+def test_java_isoformat_localdate_unchanged():
+    """LocalDate input has no fractional part — passthrough unchanged.
+
+    Java Jackson LocalDateSerializer also emits "yyyy-MM-dd" so this is
+    byte-correct. The helper is safe as a drop-in replacement at any
+    `.isoformat()` callsite, including LocalDate-typed sites.
+    """
+    from smartbi_compat.schema_compat import _java_isoformat
+    assert _java_isoformat(date(2026, 4, 16)) == "2026-04-16"
+
+
+def test_java_isoformat_does_not_mangle_timezone_suffix():
+    """Defensive: if a TZ-aware datetime sneaks in, the helper should not
+    silently corrupt the offset segment (e.g. '+00:00') by treating the
+    last digits as trailing zeros to strip.
+
+    Real production code uses naive (LocalDateTime-equivalent) datetimes
+    everywhere in smartbi_compat (verified Apr 2026), so this is a safety
+    net. Helper checks `frac.isdigit()` to detect the TZ-suffix shape and
+    bails to the unchanged isoformat string.
+    """
+    from smartbi_compat.schema_compat import _java_isoformat
+    dt = datetime(2026, 4, 16, 15, 48, 8, 150710, tzinfo=timezone.utc)
+    # tz-aware isoformat() → '2026-04-16T15:48:08.150710+00:00'.
+    # Fractional segment '150710+00:00' isn't all digits → bail unchanged.
+    out = _java_isoformat(dt)
+    assert out == "2026-04-16T15:48:08.150710+00:00"

@@ -35,7 +35,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.schema_compat import _java_isoformat, wrap_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1290,9 +1290,13 @@ def _strip_volatile(obj: Any) -> Any:
 def _utc_now_iso() -> str:
     """Generate ISO timestamp for generatedAt / lastUpdated fields.
 
-    Stripped by `_strip_volatile` before byte compare.
+    Stripped by `_strip_volatile` before byte compare. Uses `_java_isoformat`
+    so the format matches Java Jackson `LocalDateTime` (Rule 11) — even though
+    the value is volatile, the SHAPE must match (test env data exposes the
+    trailing-zero microsecond divergence and could surface in non-volatile
+    fields downstream).
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+    return _java_isoformat(datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 # ============================================================

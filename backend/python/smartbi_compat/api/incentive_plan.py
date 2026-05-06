@@ -31,7 +31,7 @@ from fastapi import APIRouter, Depends
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.schema_compat import _java_isoformat, wrap_response
 from smartbi_compat.api.analysis_finance import _decimal_to_number
 
 logger = logging.getLogger(__name__)
@@ -156,7 +156,7 @@ def _new_incentive_plan_dict(
         "motivationalMessage": motivational_message,
         "estimatedReward": None,
         "potentialReward": None,
-        "createdAt": datetime.now().isoformat(),
+        "createdAt": _java_isoformat(datetime.now()),
     }
     if current_performance is not None and target_goal is not None:
         # IncentivePlan.calculateGapAmount (DTO line 151-157)
