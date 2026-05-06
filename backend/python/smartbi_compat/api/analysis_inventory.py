@@ -128,11 +128,18 @@ async def _query_material_batches_by_status(
 
     Rule 5: SELECT * future-proof for schema additions.
     Rule 6: input boundary None-check.
+
+    NOTE (PR-N-3 fix): Java entity field is ``receiptDate`` but the actual DB
+    column is ``inbound_date`` (per ``@Column(name = "inbound_date")`` on
+    MaterialBatch.java). Without the alias, ``batch.get("receipt_date")``
+    returns None for every row, sending the entire inventory into the
+    "90天以上" aging bucket (and emptying the long-aging ranking / suggestions).
+    Mirrors the same fix shipped by PR-H (#86) for procurement.
     """
     if factory_id is None:
         raise ValueError("_query_material_batches_by_status: factory_id required")
     sql = """
-        SELECT *
+        SELECT *, inbound_date AS receipt_date
         FROM material_batches
         WHERE factory_id = $1
           AND status = $2
