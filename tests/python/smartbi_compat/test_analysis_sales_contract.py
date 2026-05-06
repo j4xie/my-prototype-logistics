@@ -1152,6 +1152,83 @@ class TestOverview:
         assert m._strip_volatile(result) == m._strip_volatile(expected)
 
     @pytest.mark.asyncio
+    async def test_gold_returns_none_skips_legacy_emits_empty_dashboard(self, monkeypatch):
+        """PR-N-2 PATH B: when Gold returns None (Silver empty), Python must
+        emit _build_empty_dashboard and SKIP legacy SQL — mirrors Java
+        SalesAnalysisServiceImpl line 105-107 (Phase B4 cutover, Bug #417).
+
+        Pre-fix Python fell to legacy on Gold-None, diverging from Java's
+        empty dashboard. This test guards that contract.
+        """
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        async def fake_pool():
+            return object()  # opaque pool sentinel; mocked seams won't use it
+
+        async def gold_returns_none(*a, **k):
+            return None
+
+        legacy_calls = {"count": 0}
+
+        async def legacy_should_not_run(*a, **k):
+            legacy_calls["count"] += 1
+            raise AssertionError(
+                "_query_sales_aggregates must NOT be called when Gold returns None — "
+                "Java skips legacy on Gold-empty per buildEmptyDashboard contract"
+            )
+
+        import smartbi.config as smartbi_config
+        monkeypatch.setattr(smartbi_config, "get_pg_pool", fake_pool, raising=False)
+        monkeypatch.setattr(m, "_build_from_gold_with_charts", gold_returns_none)
+        monkeypatch.setattr(m, "_query_sales_aggregates", legacy_should_not_run)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._get_sales_overview("F001", range_)
+
+        expected = m._build_empty_dashboard()
+        assert m._strip_volatile(result) == m._strip_volatile(expected)
+        assert legacy_calls["count"] == 0, "legacy aggregates must not be queried"
+
+    @pytest.mark.asyncio
+    async def test_gold_raises_exception_falls_to_legacy(self, monkeypatch):
+        """PR-N-2 PATH B regression guard: when Gold raises an exception,
+        Python falls back to legacy — preserves existing behavior + mirrors
+        Java SalesAnalysisServiceImpl line 108-111. Distinct from Gold-None
+        path which now emits empty dashboard.
+
+        Verifies dispatch only — mocks _build_legacy_sales_overview at the
+        boundary rather than chaining through full legacy SQL helpers.
+        """
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        async def fake_pool():
+            return object()
+
+        async def gold_raises(*a, **k):
+            raise RuntimeError("simulated Gold failure (transient DB error)")
+
+        legacy_calls = {"count": 0, "factory_id": None}
+
+        async def fake_legacy(factory_id, range_):
+            legacy_calls["count"] += 1
+            legacy_calls["factory_id"] = factory_id
+            return {"_legacy_sentinel": True}
+
+        import smartbi.config as smartbi_config
+        monkeypatch.setattr(smartbi_config, "get_pg_pool", fake_pool, raising=False)
+        monkeypatch.setattr(m, "_build_from_gold_with_charts", gold_raises)
+        monkeypatch.setattr(m, "_build_legacy_sales_overview", fake_legacy)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._get_sales_overview("F999", range_)
+
+        assert legacy_calls["count"] == 1, "legacy must run exactly once on Gold exception"
+        assert legacy_calls["factory_id"] == "F999"
+        assert result == {"_legacy_sentinel": True}, "result must come from legacy, not empty dashboard"
+
+    @pytest.mark.asyncio
     async def test_F001_still_uses_gold_path_after_overview_impl(self, monkeypatch):
         """Regression guard: overview spec must NOT cause F001 to fall back to legacy.
 

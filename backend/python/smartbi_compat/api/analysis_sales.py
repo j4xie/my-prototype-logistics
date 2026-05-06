@@ -1378,7 +1378,10 @@ async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> di
     """Real legacy impl — mirrors Java SalesAnalysisServiceImpl.getSalesOverview
     line 114-175.
 
-    Triggered by _get_sales_overview when Gold path returns None or fails.
+    Triggered by _get_sales_overview only when Gold path raises an exception
+    (mirrors Java line 108-111). When Gold returns None (Silver empty),
+    _get_sales_overview emits _build_empty_dashboard directly without calling
+    this legacy path — same as Java line 105-107.
     Order of operations:
       1. Aggregate query (_query_sales_aggregates) — 6-tuple
       2. Empty checks → _build_empty_dashboard (Java line 120-122 + 131-134)
@@ -1465,14 +1468,19 @@ async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> di
 
 
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
-    """Gold-first dispatch (gold spec). Falls back to legacy if Gold returns None.
+    """Gold-first dispatch mirroring Java SalesAnalysisServiceImpl.getSalesOverview.
 
-    Java reference: SmartBIServiceImpl.getComprehensiveAnalysis line 568-616
-    delegates overview to SalesAnalysisServiceImpl.getSalesOverview which itself
-    calls GoldDashboardBuilder.buildFromGoldWithCharts FIRST, then legacy SQL.
+    Java reference: SalesAnalysisServiceImpl line 80-112 (called by
+    SmartBIServiceImpl.getComprehensiveAnalysis line 568-616). Java behavior:
+      - Gold returns non-null → return goldResponse (line 96-99)
+      - Gold returns null (Silver empty) → buildEmptyDashboard (line 105-107),
+        SKIP legacy. Authoritative under Gold-primary flag — avoids slow
+        ~50s legacy scan on empty ranges (Bug #417, Phase B4 cutover 2026-04-22)
+      - Gold raises exception → fall through to legacy (line 108-111)
 
-    Pool acquisition: lazy import of get_pg_pool to avoid circular import at
-    module-load time. Pool failure -> warning + legacy fallback.
+    Pool acquisition is a Python-side concern (Java wires GoldDashboardBuilder
+    via Spring). Pool failure → legacy fallback (defensive — fault doesn't
+    indicate empty data, may still find data in legacy).
     """
     pool = None
     try:
@@ -1489,12 +1497,19 @@ async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
         gold_dashboard = await _build_from_gold_with_charts(factory_id, range_, pool=pool)
         if gold_dashboard is not None:
             return gold_dashboard
+        # Gold returned None → Silver empty for this factory/range. Mirror
+        # Java line 105-107: skip legacy and return empty dashboard.
+        logger.info(
+            "[gold-primary] sales factory=%s gold empty — skipping legacy",
+            factory_id,
+        )
+        return _build_empty_dashboard()
     except Exception as e:
         logger.warning(
             "[gold-builder] Gold fetch failed factory=%s: %s; falling back to legacy",
             factory_id, e,
         )
-    return await _build_legacy_sales_overview(factory_id, range_)
+        return await _build_legacy_sales_overview(factory_id, range_)
 
 
 async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
