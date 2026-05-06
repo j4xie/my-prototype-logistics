@@ -18,6 +18,7 @@ from sqlalchemy import text
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.api.analysis import _row_to_dict as _query_template_row_to_dict
+from smartbi_compat.schema_compat import _java_isoformat
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -28,8 +29,13 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 def _now_iso_nano() -> str:
-    """ISO-format current time. Volatile — stripped by test helper."""
-    return datetime.now().isoformat()
+    """ISO-format current time. Volatile — stripped by test helper.
+
+    Uses ``_java_isoformat`` so the format mirrors Java Jackson
+    ``LocalDateTime`` (Rule 11) — keeps the envelope timestamp consistent
+    with non-volatile timestamps elsewhere.
+    """
+    return _java_isoformat(datetime.now())
 
 
 def _envelope_success(data: Any, message: str = "操作成功") -> dict:

@@ -45,7 +45,7 @@ from smartbi_compat.alert_thresholds import ALERT_SEVERITY, load_thresholds
 from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.schema_compat import _java_isoformat, wrap_response
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -66,14 +66,14 @@ def _row_to_dict(row: Any) -> dict:
         createdAt, updatedAt, deletedAt, id, factoryId, name, category,
         description, queryTemplate, parameters, deleted
 
-    Timestamps render as ``datetime.isoformat()`` to match Java's Jackson
-    LocalDateTime default (no timezone, microseconds — see schema_compat
-    module docstring on the Java/Python precision compromise).
+    Timestamps render via ``_java_isoformat`` to match Java Jackson
+    ``LocalDateTime`` (no timezone, trailing-zero microseconds dropped per
+    Rule 11).
     """
     return {
-        "createdAt": row.created_at.isoformat() if row.created_at else None,
-        "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
-        "deletedAt": row.deleted_at.isoformat() if row.deleted_at else None,
+        "createdAt": _java_isoformat(row.created_at),
+        "updatedAt": _java_isoformat(row.updated_at),
+        "deletedAt": _java_isoformat(row.deleted_at),
         "id": row.id,
         "factoryId": row.factory_id,
         "name": row.name,
@@ -162,22 +162,20 @@ def _datasource_row_to_dict(row: Any) -> dict:
     (does NOT query the smart_bi_field_definition table) to match Java
     byte-shape exactly.
 
-    Timestamps render as ``datetime.isoformat()`` to match Java's Jackson
-    LocalDateTime default (no timezone, microseconds — see schema_compat
-    module docstring on the Java/Python precision compromise).
+    Timestamps render via ``_java_isoformat`` to match Java Jackson
+    ``LocalDateTime`` (no timezone, trailing-zero microseconds dropped per
+    Rule 11).
     """
     return {
-        "createdAt": row.created_at.isoformat() if row.created_at else None,
-        "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
-        "deletedAt": row.deleted_at.isoformat() if row.deleted_at else None,
+        "createdAt": _java_isoformat(row.created_at),
+        "updatedAt": _java_isoformat(row.updated_at),
+        "deletedAt": _java_isoformat(row.deleted_at),
         "id": row.id,
         "name": row.name,
         "sourceType": row.source_type,
         "factoryId": row.factory_id,
         "schemaVersion": row.schema_version,
-        "lastSchemaChange": (
-            row.last_schema_change.isoformat() if row.last_schema_change else None
-        ),
+        "lastSchemaChange": _java_isoformat(row.last_schema_change),
         "description": row.description,
         "connectionConfig": row.connection_config,
         "isActive": row.is_active,
@@ -407,7 +405,7 @@ def _new_alert_dict(
         "suggestion": suggestion,
         "relatedEntityId": related_entity_id,
         "relatedEntityName": related_entity_name,
-        "createdAt": datetime.now().isoformat(),
+        "createdAt": _java_isoformat(datetime.now()),
         "levelName": level,
         "urgent": level in ("RED", "CRITICAL"),
     }
@@ -732,7 +730,7 @@ def _new_recommendation_dict(
         "relatedData": related_data if related_data is not None else {},
         "targetId": target_id,
         "targetName": target_name,
-        "createdAt": datetime.now().isoformat(),
+        "createdAt": _java_isoformat(datetime.now()),
         "typeName": _RECOMMENDATION_TYPE_DISPLAY.get(rec_type, ""),
         "highPriority": priority <= 2,
     }
