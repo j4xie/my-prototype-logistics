@@ -10,7 +10,7 @@ from __future__ import annotations
 import calendar
 import logging
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends
@@ -28,6 +28,7 @@ from smartbi_compat.api.analysis_sales import (
 )
 from smartbi_compat.api.analysis_region import _get_region_analysis
 from smartbi_compat.api.analysis_department import _get_department_ranking
+from smartbi_compat._java_compat import _format_decimal_half_up
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import wrap_response, wrap_error
@@ -294,11 +295,14 @@ def _build_department_detail_response(row) -> dict:
 
 def _build_kpi_card(key: str, title: str, value: Decimal, unit: str, status: str) -> dict:
     """KpiCard 13-field shape (Lombok @Data declaration order)."""
-    quantized = value.quantize(Decimal("0.01"))
+    # Rule 12 fix 2026-05-07: Decimal.quantize default = ROUND_HALF_EVEN (banker's),
+    # but Java BigDecimal.setScale + String.format use HALF_UP. _format_decimal_half_up
+    # mirrors Java %.2f exactly (HALF_UP rounding, no float precision loss).
+    quantized = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return {
         "key": key,
         "title": title,
-        "value": f"{float(quantized):.2f}",
+        "value": _format_decimal_half_up(value, 2),
         "rawValue": float(quantized),
         "unit": unit,
         "change": None,

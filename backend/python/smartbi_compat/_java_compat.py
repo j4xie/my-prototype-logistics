@@ -18,6 +18,12 @@ Helpers
     ``computeIfAbsent`` PREPEND-within-bucket semantic (PR-N-1 finding,
     2026-05-06).
 
+- ``_format_decimal_half_up(d, places=1)``
+    Mirror Java ``String.format("%.Nf", d)`` HALF_UP rounding. Python
+    f-string ``:.Nf`` uses banker's rounding (round half to even); Java
+    uses HALF_UP. Rule 12 candidate (PR-N-1 closer fixed procurement
+    supplier concentration 46.55 → "46.6" mirror, 2026-05-06).
+
 History
 -------
 - 2026-05-06: PR-N-1 (chat 1, commit 85cae2d22) introduced both helpers
@@ -28,11 +34,17 @@ History
 - 2026-05-06: this module extracts both helpers to a single shared location
   per task #22, enabling future smartbi_compat endpoints to reuse without
   cross-module import.
+- 2026-05-07: ``_format_decimal_half_up`` added to defensively cover 14
+  Rule 12 latent sites across analysis_inventory / analysis_drilldown /
+  analysis_sales that emit ``f"{float(d):.Nf}"`` (banker's). F001 prod
+  data didn't trigger; other factory data with .x5 boundary values would.
 
-Reference: ``.claude/rules/python-java-port.md`` (Rule 8 / Rule 11 family —
-Jackson + collection serialization quirks).
+Reference: ``.claude/rules/python-java-port.md`` (Rule 8 / Rule 11 / Rule 12
+family — Jackson + collection + display formatting quirks).
 """
 from __future__ import annotations
+
+from decimal import Decimal, ROUND_HALF_UP
 
 
 def _java_hashmap_bucket(s: str, capacity: int = 16) -> int:
@@ -88,3 +100,44 @@ def _sort_entries_java_iter_then_value_desc(items, capacity: int = 16) -> list:
         )
     ]
     return sorted(by_java_iter, key=lambda kv: kv[1], reverse=True)
+
+
+def _format_decimal_half_up(d, places: int = 1) -> str:
+    """Mirror Java ``String.format("%.Nf", d)`` HALF_UP rounding.
+
+    Python f-string ``f"{float(d):.Nf}"`` uses banker's rounding (round half
+    to even, IEEE 754 default). Java ``String.format("%.Nf", d)`` uses
+    HALF_UP. So 46.55 with 1 decimal becomes:
+
+      Python f-string: "46.5"  (banker's — .5 rounds to even digit 6 → 4 → ...wait)
+      Java %.1f:       "46.6"
+
+    Actually Python f-string for 46.55 specifically depends on the float
+    representation: 46.55 stored as 46.549999999... gives "46.5" via f-string.
+    The Java HALF_UP semantic gives "46.6". This divergence broke procurement
+    supplier concentration on F001 prod (PR-N-1 closer fix, 2026-05-06).
+
+    Use this helper at any display formatting site that mirrors Java
+    ``String.format("%.Nf", ...)``. Examples:
+
+        _format_decimal_half_up(Decimal("46.55"), 1)  → "46.6"
+        _format_decimal_half_up(Decimal("0.5"), 0)    → "1"
+        _format_decimal_half_up(Decimal("46.555"), 2) → "46.56"
+        _format_decimal_half_up(Decimal("46.000"), 1) → "46.0"  (preserves trailing zero,
+                                                                  matches Java %.1f)
+
+    Caller responsibility: pass a ``Decimal`` (preferred) or any value
+    convertible via ``Decimal(str(value))``. If you have a float, prefer
+    converting via ``Decimal(str(float_value))`` upstream to avoid float
+    precision artifacts entering the helper.
+
+    See Rule 12 in ``.claude/rules/python-java-port.md`` (graduate after
+    2nd sister chat hit, currently candidate).
+    """
+    if not isinstance(d, Decimal):
+        d = Decimal(str(d))
+    if places == 0:
+        quant = Decimal("1")
+    else:
+        quant = Decimal("0." + "0" * (places - 1) + "1")
+    return str(d.quantize(quant, rounding=ROUND_HALF_UP))

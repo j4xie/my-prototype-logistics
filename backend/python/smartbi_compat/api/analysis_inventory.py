@@ -38,7 +38,10 @@ from smartbi_compat.schema_compat import wrap_response
 from smartbi_compat.auth import verify_jwt_and_factory, AuthContext
 # Java HashMap iter-order helper for value-tied entries on Collectors.groupingBy
 # outputs. See backend/python/smartbi_compat/_java_compat.py for full doc.
-from smartbi_compat._java_compat import _sort_entries_java_iter_then_value_desc
+from smartbi_compat._java_compat import (
+    _format_decimal_half_up,
+    _sort_entries_java_iter_then_value_desc,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -595,7 +598,7 @@ async def _get_turnover_analysis(
         "metricCode":      "TURNOVER_RATE",
         "metricName":      "库存周转率",
         "value":           _decimal_to_number(turnover_display),
-        "formattedValue":  f"{float(turnover_rate):.1f} 次/年",  # Java %.1f doubleValue
+        "formattedValue":  f"{_format_decimal_half_up(turnover_rate, 1)} 次/年",  # Java %.1f doubleValue
         "unit":            "次/年",
         "changePercent":   None,
         "changeDirection": None,
@@ -617,7 +620,7 @@ async def _get_turnover_analysis(
         "metricCode":      "INVENTORY_DAYS",
         "metricName":      "库存天数",
         "value":           _decimal_to_number(inv_days_zero_scale),
-        "formattedValue":  f"{float(inventory_days):.0f} 天",
+        "formattedValue":  f"{_format_decimal_half_up(inventory_days, 0)} 天",
         "unit":            "天",
         "changePercent":   None,
         "changeDirection": None,
@@ -798,7 +801,7 @@ async def _get_expiry_risk_analysis(factory_id: str) -> list[dict]:
         "metricCode":      "EXPIRY_RISK_RATE",
         "metricName":      "临期风险率",
         "value":           _decimal_to_number(risk_display),
-        "formattedValue":  f"{float(expiry_risk_rate):.1f}%",
+        "formattedValue":  f"{_format_decimal_half_up(expiry_risk_rate, 1)}%",
         "unit":            "%",
         "changePercent":   None,
         "changeDirection": None,
@@ -1073,7 +1076,7 @@ async def _get_aging_metrics(factory_id: str) -> list[dict]:
         "metricCode":      "SLOW_MOVING_RATE",
         "metricName":      "呆滞库存率",
         "value":           _decimal_to_number(rate_display),
-        "formattedValue":  f"{float(slow_moving_rate):.1f}%",
+        "formattedValue":  f"{_format_decimal_half_up(slow_moving_rate, 1)}%",
         "unit":            "%",
         "changePercent":   None,
         "changeDirection": None,
@@ -1387,7 +1390,7 @@ async def _calculate_loss_rate_for_health_score(
         "metricCode":      "LOSS_RATE",
         "metricName":      "损耗率",
         "value":           _decimal_to_number(rate_display),
-        "formattedValue":  f"{float(loss_rate):.2f}%",
+        "formattedValue":  f"{_format_decimal_half_up(loss_rate, 2)}%",
         "unit":            "%",
         "dimensionValue":  None,
         "changeValue":     None,
@@ -1522,7 +1525,7 @@ async def _get_health_score(
         "metricCode":      "HEALTH_SCORE",
         "metricName":      "库存健康评分",
         "value":           _decimal_to_number(score_zero_scale),
-        "formattedValue":  f"{float(health_score):.0f} 分",
+        "formattedValue":  f"{_format_decimal_half_up(health_score, 0)} 分",
         "unit":            "分",
         "dimensionValue":  None,
         "changeValue":     None,
@@ -1698,7 +1701,7 @@ def _generate_ai_insights(
             insights.append({
                 "level":            "RED",
                 "category":         "临期风险",
-                "message":          f"临期风险率高达 {float(rate):.1f}%，需要立即处理",
+                "message":          f"临期风险率高达 {_format_decimal_half_up(rate, 1)}%，需要立即处理",
                 "relatedEntity":    None,
                 "actionSuggestion": "建议优先消耗临期库存，考虑促销或转让处理",
             })
@@ -1706,7 +1709,7 @@ def _generate_ai_insights(
             insights.append({
                 "level":            "YELLOW",
                 "category":         "临期风险",
-                "message":          f"临期风险率为 {float(rate):.1f}%，需要关注",
+                "message":          f"临期风险率为 {_format_decimal_half_up(rate, 1)}%，需要关注",
                 "relatedEntity":    None,
                 "actionSuggestion": "建议制定临期库存消化计划",
             })
@@ -1722,7 +1725,7 @@ def _generate_ai_insights(
             insights.append({
                 "level":            "RED",
                 "category":         "周转效率",
-                "message":          f"库存周转率仅 {float(rate):.1f} 次/年，库存积压严重",
+                "message":          f"库存周转率仅 {_format_decimal_half_up(rate, 1)} 次/年，库存积压严重",
                 "relatedEntity":    None,
                 "actionSuggestion": "建议减少采购量，加快库存消化，优化安全库存设置",
             })
@@ -1730,7 +1733,7 @@ def _generate_ai_insights(
             insights.append({
                 "level":            "YELLOW",
                 "category":         "周转效率",
-                "message":          f"库存周转率 {float(rate):.1f} 次/年，有优化空间",
+                "message":          f"库存周转率 {_format_decimal_half_up(rate, 1)} 次/年，有优化空间",
                 "relatedEntity":    None,
                 "actionSuggestion": "建议优化采购批次和频率，提高周转效率",
             })
@@ -1746,7 +1749,7 @@ def _generate_ai_insights(
             insights.append({
                 "level":            "GREEN",
                 "category":         "整体健康",
-                "message":          f"库存健康评分 {float(score):.0f} 分，状况良好",
+                "message":          f"库存健康评分 {_format_decimal_half_up(score, 0)} 分，状况良好",
                 "relatedEntity":    None,
                 "actionSuggestion": "继续保持当前库存管理策略",
             })
