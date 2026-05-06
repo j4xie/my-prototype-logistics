@@ -918,10 +918,15 @@ async def _build_overview_metric_results(
     # Metric 4: 供应商集中度 (Java line 499-510) — has description
     concentration = _calculate_supplier_concentration(batches)
     concentration_alert = _determine_concentration_alert_level(concentration)
+    # Use Decimal.quantize HALF_UP for display formatting — Python f-string
+    # ":.1f" uses banker's rounding (46.55 → 46.5) but Java String.format
+    # "%.1f" uses HALF_UP (46.55 → 46.6). Rule 12 candidate per
+    # .claude/rules/python-java-port.md (graduation pending).
+    concentration_display = concentration.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
     metric_results.append(_metric_result_of(
         "SUPPLIER_CONCENTRATION", "供应商集中度",
         concentration.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP), "%",
-        formatted_value=f"{float(concentration):.1f}%",
+        formatted_value=f"{concentration_display}%",
         alert_level=concentration_alert,
         description="最大供应商占比",
     ))
@@ -1027,11 +1032,14 @@ async def _generate_ai_insights(
     )
     if concentration_metric is not None and concentration_metric.get("value") is not None:
         concentration = _to_decimal(concentration_metric["value"])
+        # Decimal.quantize HALF_UP mirrors Java String.format("%.1f", ...) — see
+        # _calculate_supplier_concentration KPI site above for Rule 12 rationale.
+        concentration_display = concentration.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
         if concentration > _PROCUREMENT_CONCENTRATION_RED:
             insights.append({
                 "level":            "RED",
                 "category":         "供应商风险",
-                "message":          f"供应商集中度高达 {float(concentration):.1f}%，存在供应链风险",
+                "message":          f"供应商集中度高达 {concentration_display}%，存在供应链风险",
                 "relatedEntity":    None,
                 "actionSuggestion": "建议开发备选供应商，分散采购风险",
             })
@@ -1039,7 +1047,7 @@ async def _generate_ai_insights(
             insights.append({
                 "level":            "YELLOW",
                 "category":         "供应商风险",
-                "message":          f"供应商集中度为 {float(concentration):.1f}%，需要关注",
+                "message":          f"供应商集中度为 {concentration_display}%，需要关注",
                 "relatedEntity":    None,
                 "actionSuggestion": "建议评估备选供应商，降低依赖度",
             })
