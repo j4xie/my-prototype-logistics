@@ -42,6 +42,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
 from smartbi_compat.alert_thresholds import ALERT_SEVERITY, load_thresholds
+from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import wrap_response
@@ -389,6 +390,8 @@ def _new_alert_dict(
     AlertLevel.needsAction() returns true when severity >= RED.severity (so
     RED + CRITICAL both urgent, GREEN + YELLOW are not).
     """
+    # Rule 4: BigDecimal value/threshold must serialize as JSON number, not string.
+    # FastAPI default emits Decimal as str → byte-shape divergence with Java Jackson.
     return {
         "id": str(uuid.uuid4()),
         "level": level,
@@ -396,8 +399,8 @@ def _new_alert_dict(
         "title": title,
         "message": message,
         "metric": metric,
-        "value": value,
-        "threshold": threshold,
+        "value": _decimal_to_number(value),
+        "threshold": _decimal_to_number(threshold),
         "gapPercent": None,
         "suggestion": suggestion,
         "relatedEntityId": related_entity_id,
