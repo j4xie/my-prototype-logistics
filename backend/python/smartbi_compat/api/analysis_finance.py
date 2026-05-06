@@ -563,11 +563,14 @@ def _safe_growth_rate(current: Decimal, base: Decimal) -> Decimal:
     """Mirror Java growth rate formula at FinanceAnalysisServiceImpl.calculateMonthYoYMoM
     line 1839-1850 etc. Returns scale=4 Decimal.
 
-    (current - base) / base * 100 with ROUND_HALF_UP, or Decimal("0") when base <= 0.
+    Rule 10 (Java BigDecimal divide-then-multiply): divide quantize at scale 4
+    BEFORE multiply, NOT (n/d*K).quantize(scale 4). 2026-05-07 proactive fix
+    of latent site listed by chat 4 in PR-M-2 audit.
     """
     if base > Decimal("0"):
-        return ((current - base) / base * Decimal("100")).quantize(
-            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        return (
+            ((current - base) / base).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
         )
     return Decimal("0")
 
@@ -607,9 +610,13 @@ def _calculate_metric_from_sales(sales_rows: list[dict], metric: str) -> Decimal
         return total_revenue - total_cost
     if metric_lower == "gross_margin":
         if total_revenue > Decimal("0"):
+            # Rule 10: divide quantize FIRST then multiply (mirrors Java
+            # BigDecimal.divide(scale=4, HALF_UP).multiply(100)).
             return (
-                (total_revenue - total_cost) / total_revenue * Decimal("100")
-            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                ((total_revenue - total_cost) / total_revenue).quantize(
+                    Decimal("0.0001"), rounding=ROUND_HALF_UP
+                ) * Decimal("100")
+            )
         return Decimal("0")
     # default
     return total_revenue
@@ -1049,9 +1056,12 @@ async def _get_budget_achievement_chart(
         budget = monthly_data[month][0]
         actual = monthly_data[month][1]
         if budget > Decimal("0"):
+            # Rule 10: divide quantize FIRST then multiply (mirrors Java
+            # BigDecimal.divide(scale=4, HALF_UP).multiply(100)).
             achievement_rate = (
-                actual / budget * Decimal("100")
-            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                (actual / budget).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                * Decimal("100")
+            )
         else:
             achievement_rate = Decimal("0")
         # Note: alert uses scale=4 value (precision matters at boundary)
@@ -1845,9 +1855,11 @@ def _build_profit_chart_from_finance_data(
         cost = cost_by_period.get(pk, Decimal("0"))
         gross_profit = revenue - cost
         if revenue > Decimal("0"):
+            # Rule 10: divide quantize FIRST then multiply.
             gross_margin_raw = (
-                gross_profit / revenue * Decimal("100")
-            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                (gross_profit / revenue).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                * Decimal("100")
+            )
         else:
             gross_margin_raw = Decimal("0")
         gross_margin = (
@@ -1909,9 +1921,11 @@ def _aggregate_profit_by_period_sales(
         gross = slot["profit"]
         net = (gross * Decimal("0.70")).quantize(Decimal("0.01"), ROUND_HALF_UP)
         if slot["revenue"] > Decimal("0"):
+            # Rule 10: divide quantize FIRST then multiply.
             gm = (
-                gross / slot["revenue"] * Decimal("100")
-            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                (gross / slot["revenue"]).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                * Decimal("100")
+            )
         else:
             gm = Decimal("0")
         out.append({
