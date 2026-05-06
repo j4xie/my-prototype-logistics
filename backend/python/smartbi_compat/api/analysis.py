@@ -94,11 +94,13 @@ def _query_templates(factory_id: str) -> List[dict]:
 
     Isolated as a module-level function so contract tests can monkey-patch
     it without standing up a Postgres instance. Production calls go through
-    smartbi.database.connection.get_db_context() against the SmartBI DB.
+    smartbi.database.connection.get_cretas_db_context() against the Cretas DB
+    (Java repo SmartBiQueryTemplateRepository binds to default datasource =
+    cretas_db; see PR-A through PR-H May 5 for the same fix family).
     """
     # Lazy import: keeps smartbi_compat tests independent of smartbi.database
     # initialisation when POSTGRES_ENABLED is unset (e.g. CI / unit tests).
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning(
@@ -115,7 +117,7 @@ def _query_templates(factory_id: str) -> List[dict]:
         "WHERE factory_id = :fid AND deleted_at IS NULL "
         "ORDER BY created_at DESC"
     )
-    with get_db_context() as db:
+    with get_cretas_db_context() as db:
         rows = db.execute(sql, {"fid": factory_id}).all()
     return [_row_to_dict(r) for r in rows]
 
