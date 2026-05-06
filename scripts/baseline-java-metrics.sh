@@ -154,15 +154,18 @@ PY
 # curl skip-on-fail: log to stderr but don't exit. Records "0,99,0" status to
 # preserve sampling cadence (downstream aggregator can detect 0 status).
 sample_endpoint() {
-    local endpoint="$1" token="$2" ts result
+    local endpoint="$1" token="$2" ts result resolved
     ts=$(date -Iseconds)
+    # T6.1 fix 2026-05-07: substitute {factoryId} placeholder with actual
+    # FACTORY env var (script took 47 lines × ~7h returning 403 before fix).
+    resolved="${endpoint//\{factoryId\}/$FACTORY}"
     # %{http_code},%{time_total},%{size_download} via curl -w
     result=$(curl -sS --max-time 30 \
                   -o /dev/null \
                   -w "%{http_code},%{time_total},%{size_download}" \
                   -H "Authorization: Bearer $token" \
-                  "${JAVA_BASE}${endpoint}" 2>/dev/null || echo "0,99,0")
-    echo "$ts,$endpoint,$result" >> "$OUTPUT_FILE"
+                  "${JAVA_BASE}${resolved}" 2>/dev/null || echo "0,99,0")
+    echo "$ts,$resolved,$result" >> "$OUTPUT_FILE"
 }
 
 # ============================================================
