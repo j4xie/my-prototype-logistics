@@ -95,6 +95,18 @@ rsync -az --timeout=120 \
     --exclude='python-prod.log' --exclude='python-test.log' \
     $LOCAL_DIR/ $SERVER:$REMOTE_DIR/
 
+# 3b. 同步 ops scripts 到 /www/wwwroot/cretas/scripts/ (task #23 — 2026-05-07).
+# Earlier: deploy script only synced backend/python/, leaving t6-dryrun-compare.sh
+# and baseline-java-metrics.sh stale on server until manual scp. Now any change
+# to scripts/t6-* or scripts/baseline-* gets synced as part of the standard deploy.
+log "INFO" "[3b/5] 同步 ops scripts (T6 dryrun + Java baseline)..."
+rsync -az --timeout=60 \
+    "$PROJECT_ROOT/scripts/t6-dryrun-compare.sh" \
+    "$PROJECT_ROOT/scripts/baseline-java-metrics.sh" \
+    "$PROJECT_ROOT/scripts/phase2a/t6-in-scope-endpoints.txt" \
+    "$SERVER:/www/wwwroot/cretas/scripts/" 2>&1 | tail -5
+ssh "$SERVER" "chmod +x /www/wwwroot/cretas/scripts/t6-dryrun-compare.sh /www/wwwroot/cretas/scripts/baseline-java-metrics.sh"
+
 # 4. 在服务器上安装依赖
 log "INFO" "[4/5] 安装依赖..."
 ssh $SERVER << ENDSSH
