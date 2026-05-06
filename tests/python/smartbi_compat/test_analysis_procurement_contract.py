@@ -881,7 +881,13 @@ class TestProcurementOverviewArithmetic:
             analysis_procurement._query_supplier_by_id = original_sb
 
     def test_kpi_cards_built_5_metrics_when_previous_period_nonempty(self):
-        """Non-empty current + non-empty previous -> 5 KPI cards (incl conditional MoM)."""
+        """Non-empty current + non-empty previous -> 5 KPI cards (incl conditional MoM).
+
+        kpiCards is KPICard shape (key/title/...) per Java line 91 convertToKPICards;
+        codes match Java calculateKpiCards (line 462-535) constants:
+          PROCUREMENT_AMOUNT / BATCH_COUNT / AVG_BATCH_AMOUNT / SUPPLIER_CONCENTRATION /
+          PROCUREMENT_MOM_GROWTH (conditional)
+        """
         current = [
             {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
              "receipt_quantity": Decimal("100"), "material_type_id": "MAT-A",
@@ -893,11 +899,18 @@ class TestProcurementOverviewArithmetic:
              "receipt_date": date(2025, 5, 15), "status": "AVAILABLE"},
         ]
         result = self._run_overview(current, previous_batches=previous)
-        codes = [k["metricCode"] for k in result["kpiCards"]]
-        assert codes == [
-            "PURCHASE_TOTAL", "BATCH_COUNT", "AVG_UNIT_PRICE",
-            "SUPPLIER_CONCENTRATION", "MOM_GROWTH",
-        ], f"5 KPI cards in this exact order, got: {codes}"
+        # KPICard 13-field shape: identifier is "key", not "metricCode"
+        keys = [k["key"] for k in result["kpiCards"]]
+        assert keys == [
+            "PROCUREMENT_AMOUNT", "BATCH_COUNT", "AVG_BATCH_AMOUNT",
+            "SUPPLIER_CONCENTRATION", "PROCUREMENT_MOM_GROWTH",
+        ], f"5 KPI cards in this exact order, got: {keys}"
+        # Each card has the full 13-field KPICard shape
+        for card in result["kpiCards"]:
+            assert set(card.keys()) == {
+                "key", "title", "value", "rawValue", "unit", "change", "changeRate",
+                "trend", "status", "compareText", "description", "targetValue", "completionRate",
+            }, f"KPICard 13-field shape mismatch: {sorted(card.keys())}"
 
     def test_ai_insights_concentration_red_and_yellow_triggers(self):
         """Build batches that produce concentration > 60% -> AIInsight level=RED;
@@ -949,35 +962,50 @@ class TestProcurementOverviewArithmetic:
         assert "需要关注" in yellow_risk["message"], f"YELLOW message: {yellow_risk['message']}"
 
     def test_suggestions_trigger_conditions(self):
-        """Verify suggestions list contains rule-driven entries:
-           - High concentration (RED) -> 引入备选供应商 suggestion
-           - With MoM UP -> 关注采购环比增长 suggestion
+        """Verify Java generateSuggestions (line 980-1005) triggers:
+           1. supplierCount < 3 -> "当前活跃供应商数量较少..."
+           2. highPriceCount > 0 (unit_price > avg * 1.5) -> "有 N 批次..."
         """
-        # Build: RED concentration (80% from SUP-A) + MoM UP (current 10000 vs previous 5000)
+        # 2 suppliers (< 3 → suggestion 1) + one batch with unit price > 1.5x average
+        # avg_unit_price filter is positive only (Java line 553-554), so:
+        #   prices = [100, 100, 200] → avg = 400/3 ≈ 133.33 → threshold = 200.0
+        #   Need unit_price strictly > 200 to trigger suggestion 2.
         current = [
             {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
-             "receipt_quantity": Decimal("80"), "material_type_id": "MAT-A",
+             "receipt_quantity": Decimal("10"), "material_type_id": "MAT-A",
              "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
             {"supplier_id": "SUP-B", "unit_price": Decimal("100"),
-             "receipt_quantity": Decimal("20"), "material_type_id": "MAT-B",
+             "receipt_quantity": Decimal("10"), "material_type_id": "MAT-B",
              "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"},
+            {"supplier_id": "SUP-A", "unit_price": Decimal("250"),
+             "receipt_quantity": Decimal("5"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 20), "status": "AVAILABLE"},
         ]
-        previous = [
-            {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
-             "receipt_quantity": Decimal("50"), "material_type_id": "MAT-A",
-             "receipt_date": date(2025, 5, 15), "status": "AVAILABLE"},
-        ]
-        result = self._run_overview(current, previous_batches=previous)
+        result = self._run_overview(current)
         suggestions = result["suggestions"]
-        assert len(suggestions) >= 2, f"expected 2+ suggestions, got {suggestions}"
-        # Concentration-driven (RED triggers "引入"/"分散" wording)
-        assert any("引入" in s or "分散" in s for s in suggestions), (
-            f"no concentration-driven suggestion: {suggestions}"
+        assert len(suggestions) == 2, f"expected exactly 2 suggestions, got {suggestions}"
+        assert "活跃供应商数量较少" in suggestions[0], (
+            f"first suggestion should be supplier-count-driven: {suggestions[0]}"
         )
-        # MoM UP triggers "环比增长" wording
-        assert any("环比增长" in s for s in suggestions), (
-            f"no MoM-up suggestion: {suggestions}"
+        assert "批次采购单价高于平均价格" in suggestions[1], (
+            f"second suggestion should be high-price-driven: {suggestions[1]}"
         )
+
+    def test_suggestions_empty_when_three_plus_suppliers_and_no_high_price(self):
+        """3+ distinct suppliers AND no batch unit_price > avg*1.5 → empty list.
+
+        Java line 980-1005: both branches gated by their own conditions; nothing
+        else added by default (NOT a default 'healthy' suggestion).
+        """
+        current = [
+            {"supplier_id": f"SUP-{i}", "unit_price": Decimal("100"),
+             "receipt_quantity": Decimal("10"), "material_type_id": "MAT-A",
+             "receipt_date": date(2025, 6, 15), "status": "AVAILABLE"}
+            for i in range(4)  # 4 distinct suppliers
+        ]
+        result = self._run_overview(current)
+        # All unit prices = 100 → avg = 100 → threshold = 150 → no high-price triggers
+        assert result["suggestions"] == [], f"expected empty, got {result['suggestions']}"
 
     def test_empty_dashboard_exact_strings(self):
         """C2 audit-gap fix - empty batches return _build_empty_dashboard with
@@ -1007,8 +1035,11 @@ class TestProcurementOverviewArithmetic:
     def test_charts_key_naming_replaces_space_with_underscore(self):
         """charts dict keys = title.replace(' ', '_') per Java line 93-101 LinkedHashMap.
 
-        Procurement chart titles (Chinese, no spaces): '采购趋势', '供应商占比', '物料类别采购分布'.
-        Verify the .replace mechanism works (Chinese keys preserved, mechanism still active).
+        Java chart titles (matched to F001 golden):
+          1. '采购趋势'         (buildProcurementTrendChartFromData line 776)
+          2. '供应商采购占比'   (buildSupplierPieChart line 866)
+          3. '材料类别采购金额' (buildMaterialCategoryChart line 903)
+        All Chinese, no spaces, so .replace is a no-op but mechanism stays active.
         """
         current = [
             {"supplier_id": "SUP-A", "unit_price": Decimal("100"),
@@ -1017,12 +1048,9 @@ class TestProcurementOverviewArithmetic:
         ]
         result = self._run_overview(current)
         chart_keys = list(result["charts"].keys())
-        # All 3 chart titles should be present as keys (no spaces in these Chinese titles)
-        # If any title contained spaces, it would be replaced with underscores
-        assert "采购趋势" in chart_keys, f"采购趋势 not in charts keys: {chart_keys}"
-        assert "供应商占比" in chart_keys, f"供应商占比 not in charts keys: {chart_keys}"
-        assert "物料类别采购分布" in chart_keys, f"物料类别采购分布 not in charts keys: {chart_keys}"
-        assert len(chart_keys) == 3
+        assert chart_keys == ["采购趋势", "供应商采购占比", "材料类别采购金额"], (
+            f"expected exact 3 chart titles in put-order, got: {chart_keys}"
+        )
 
     def test_concentration_formula_precision_byte_eq(self):
         """Round 4 audit gap fix: concentration formula must yield exact value.
