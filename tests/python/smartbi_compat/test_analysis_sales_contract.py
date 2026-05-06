@@ -502,15 +502,23 @@ class TestOverview:
         assert _format_growth_pct(Decimal("-0.0")) == "-0.0%"
 
     def test_calculate_completion_rate(self):
-        """Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171."""
+        """Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171.
+
+        Java semantic (Rule 10): actual.divide(target, SCALE=4, HALF_UP).multiply(100).
+        For 1/3, Java rounds the FRACTION at 4 dp first: 0.3333, then *100 = 33.3300.
+        The previous expectation 33.3333 was the buggy Python (n/d*100).quantize(scale=4)
+        result, which kept the full division precision through the multiply before
+        rounding — that diverges from Java BigDecimal output.
+        """
         from smartbi_compat.api.analysis_sales import _calculate_completion_rate
         from decimal import Decimal
         result = _calculate_completion_rate(Decimal("50000"), Decimal("100000"))
         assert result == Decimal("50.0000")
         assert _calculate_completion_rate(Decimal("100"), Decimal("0")) == Decimal("0")
         assert _calculate_completion_rate(Decimal("100"), None) == Decimal("0")
+        # 1/3: Java BigDecimal divide(scale=4, HALF_UP) → 0.3333 → *100 = 33.3300
         result = _calculate_completion_rate(Decimal("1"), Decimal("3"))
-        assert result == Decimal("33.3333")
+        assert result == Decimal("33.3300")
 
     def test_calculate_mom_growth(self):
         """Java MetricCalculatorServiceImpl.calculateMomGrowth line 425-438."""

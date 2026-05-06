@@ -254,22 +254,34 @@ def _sum_field(rows: Iterable, attr: str) -> Decimal:
 def _calculate_rate(numerator: Decimal, denominator: Decimal) -> Decimal:
     """Return (numerator / denominator) * 100, scale 4, HALF_UP rounding.
 
-    Returns Decimal("0") when denominator is zero (matches Java behavior:
-    BigDecimal.divide on zero would throw, but the Java helper guards against it).
+    Mirrors Java RecommendationServiceImpl.calculateRate (line 968-973):
+        actual.divide(target, SCALE=4, ROUND_HALF_UP).multiply(BigDecimal("100"))
+
+    Java rounds the FRACTION at scale=4 BEFORE multiplying by 100. Python's
+    naive `(num / den * 100).quantize(scale=4)` rounds the percentage instead,
+    diverging when the fraction has more than 4 decimal digits of significance.
+    See Rule 10 in .claude/rules/python-java-port.md.
+
+    Returns Decimal("0") when denominator is zero.
     """
     if denominator == 0:
         return Decimal("0")
-    return (numerator / denominator * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+    return (numerator / denominator).quantize(_SCALE_4, rounding=ROUND_HALF_UP) * Decimal("100")
 
 
 def _calculate_growth_rate(current: Decimal, previous: Decimal) -> Decimal:
     """Return ((current - previous) / previous) * 100, scale 4, HALF_UP rounding.
 
+    Mirrors Java RecommendationServiceImpl.calculateGrowthRate (line 978-985):
+        current.subtract(previous).divide(previous, SCALE=4, ROUND_HALF_UP).multiply(BigDecimal("100"))
+
+    See _calculate_rate above for the divide-then-multiply rationale (Rule 10).
+
     Returns Decimal("0") when previous is zero.
     """
     if previous == 0:
         return Decimal("0")
-    return ((current - previous) / previous * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+    return ((current - previous) / previous).quantize(_SCALE_4, rounding=ROUND_HALF_UP) * Decimal("100")
 
 
 def _prev_month_start(current_start):

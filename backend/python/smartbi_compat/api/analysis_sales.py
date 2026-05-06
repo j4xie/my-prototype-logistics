@@ -135,13 +135,14 @@ def _calculate_completion_rate(actual: Decimal, target: Optional[Decimal]) -> De
     """Mirror Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171.
 
     target null OR 0 → returns Decimal("0") (NOT scaled — matches Java BigDecimal.ZERO).
-    Otherwise: (actual / target * 100).quantize(SCALE=4, HALF_UP).
+    Otherwise: actual.divide(target, SCALE=4, HALF_UP).multiply(100) — Rule 10
+    (round fraction first, then multiply) to match Java BigDecimal semantic.
     """
     if target is None or target == Decimal("0"):
         return Decimal("0")
-    return (actual / target * Decimal("100")).quantize(
+    return (actual / target).quantize(
         Decimal("0.0001"), rounding=ROUND_HALF_UP,
-    )
+    ) * Decimal("100")
 
 
 def _calculate_mom_growth(current: Optional[Decimal], previous: Optional[Decimal]) -> Decimal:
@@ -150,8 +151,9 @@ def _calculate_mom_growth(current: Optional[Decimal], previous: Optional[Decimal
     Edge cases:
       - previous null OR 0: return Decimal(100) if current > 0 else Decimal(0)
       - current null:       return Decimal(-100)
-      - normal:             (current - previous) / abs(previous) * 100,
-                            quantized to DISPLAY_SCALE=2, HALF_UP
+      - normal:             (current - previous).divide(abs(previous), SCALE=4, HALF_UP)
+                            .multiply(100).setScale(DISPLAY_SCALE=2, HALF_UP)
+                            (Rule 10 — round fraction first then multiply)
     """
     if previous is None or previous == Decimal("0"):
         if current is not None and current > Decimal("0"):
@@ -159,9 +161,11 @@ def _calculate_mom_growth(current: Optional[Decimal], previous: Optional[Decimal
         return Decimal("0")
     if current is None:
         return Decimal("-100")
-    return ((current - previous) / abs(previous) * Decimal("100")).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP,
-    )
+    return (
+        ((current - previous) / abs(previous)).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP,
+        ) * Decimal("100")
+    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def _new_metric_result_dict(
@@ -878,10 +882,11 @@ def _generate_ai_insights_from_metrics(
         ),
     ))
     if total_sales > Decimal("0"):
-        # Java line 342-343: SCALE=4 division then format with %.1f
-        profit_rate = (total_profit * Decimal("100") / total_sales).quantize(
+        # Java line 342-343: SCALE=4 division then *100, format with %.1f.
+        # Rule 10: round the fraction first, then multiply (mirror BigDecimal).
+        profit_rate = (total_profit / total_sales).quantize(
             Decimal("0.0001"), rounding=ROUND_HALF_UP,
-        )
+        ) * Decimal("100")
         insights.append(_new_ai_insight_dict(
             level="INFO",
             category="利润率分析",
@@ -1063,13 +1068,15 @@ def _build_ranking(
             completion_rate = _calculate_completion_rate(value, target)
             alert_level = _determine_completion_alert_level(completion_rate)
         elif with_percentage:
-            # product/customer: percentage of total, alertLevel hard-coded GREEN
+            # product/customer: percentage of total, alertLevel hard-coded GREEN.
+            # Rule 10: divide first (scale=4 HALF_UP), then multiply by 100 to
+            # mirror Java BigDecimal.divide(scale, rounding).multiply(100).
             if total is None or total == Decimal("0"):
                 completion_rate = Decimal("0")
             else:
-                completion_rate = (value / total * Decimal("100")).quantize(
+                completion_rate = (value / total).quantize(
                     Decimal("0.0001"), rounding=ROUND_HALF_UP,
-                )
+                ) * Decimal("100")
             alert_level = "GREEN"  # Java line 528 / 588 hard-codes GREEN
         else:
             completion_rate = Decimal("0")

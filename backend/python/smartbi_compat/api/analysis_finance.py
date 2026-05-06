@@ -870,24 +870,27 @@ async def _get_category_comparison_chart(
         current_amount = current_category_amount.get(category, Decimal("0"))
         compare_amount = compare_category_amount.get(category, Decimal("0"))
 
+        # Rule 10: Java BigDecimal.divide(scale=4, HALF_UP).multiply(100) —
+        # round the FRACTION first, then multiply. (n/d*100).quantize(scale=4)
+        # diverges when fraction has > 4 dec digits of significance.
         if current_total > Decimal("0"):
-            current_ratio = (current_amount / current_total * Decimal("100")).quantize(
+            current_ratio = (current_amount / current_total).quantize(
                 Decimal("0.0001"), rounding=ROUND_HALF_UP
-            )
+            ) * Decimal("100")
         else:
             current_ratio = Decimal("0")
         if compare_total > Decimal("0"):
-            compare_ratio = (compare_amount / compare_total * Decimal("100")).quantize(
+            compare_ratio = (compare_amount / compare_total).quantize(
                 Decimal("0.0001"), rounding=ROUND_HALF_UP
-            )
+            ) * Decimal("100")
         else:
             compare_ratio = Decimal("0")
 
-        # Java line 1304-1308: yoyGrowthRate with new-category fallback
+        # Java line 1304-1308: yoyGrowthRate with new-category fallback (Rule 10)
         if compare_amount > Decimal("0"):
             yoy_growth_rate = (
-                (current_amount - compare_amount) / compare_amount * Decimal("100")
-            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                (current_amount - compare_amount) / compare_amount
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) * Decimal("100")
         elif current_amount > Decimal("0"):
             yoy_growth_rate = Decimal("100")
         else:
@@ -910,10 +913,11 @@ async def _get_category_comparison_chart(
     # Java line 1327-1331: sort by currentAmount DESC
     chart_data.sort(key=lambda x: x["currentAmount"], reverse=True)
 
+    # Rule 10: divide(scale=4) then multiply, mirroring Java BigDecimal semantic.
     if compare_total > Decimal("0"):
         total_yoy_growth_rate = (
-            (current_total - compare_total) / compare_total * Decimal("100")
-        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            (current_total - compare_total) / compare_total
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) * Decimal("100")
     else:
         total_yoy_growth_rate = Decimal("0")
 

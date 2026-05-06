@@ -25,12 +25,35 @@ def test_calculate_rate_normal():
     # 50/200 * 100 = 25.0000 (scale 4)
     assert _calculate_rate(Decimal("50"), Decimal("200")) == Decimal("25.0000")
 
+def test_calculate_rate_mirrors_java_divide_then_multiply():
+    """Rule 10 — Java BigDecimal.divide(scale=4, HALF_UP).multiply(100) ≠
+    Python (n/d*100).quantize(scale=4).
+
+    Input 149.07 / 1000 exposes the divergence:
+      - n/d = 0.14907 (5 dec digits, last is '7')
+      - Java:  divide(scale=4, HALF_UP) on 0.14907 → 0.1491
+               multiply(100) → 14.9100
+      - Python old: 0.14907 * 100 = 14.907 → quantize(0.0001) → 14.9070
+      - Python new (this test asserts): 0.1491 * 100 = 14.9100 (matches Java)
+    """
+    assert _calculate_rate(Decimal("149.07"), Decimal("1000")) == Decimal("14.9100")
+
 def test_calculate_growth_rate_zero_previous_returns_zero():
     assert _calculate_growth_rate(Decimal("100"), Decimal("0")) == Decimal("0")
 
 def test_calculate_growth_rate_decline():
     # (80 - 100) / 100 * 100 = -20.0000
     assert _calculate_growth_rate(Decimal("80"), Decimal("100")) == Decimal("-20.0000")
+
+def test_calculate_growth_rate_mirrors_java_divide_then_multiply():
+    """Rule 10 — same divergence as _calculate_rate, applied to growth-rate path.
+
+    Input current=1149.07, previous=1000 → diff=149.07, diff/prev=0.14907.
+      - Java:   divide(scale=4, HALF_UP) → 0.1491 → *100 = 14.9100
+      - Python old: 0.14907*100=14.907 → quantize(0.0001) → 14.9070
+      - Python new: 14.9100 (matches Java)
+    """
+    assert _calculate_growth_rate(Decimal("1149.07"), Decimal("1000")) == Decimal("14.9100")
 
 
 def test_query_sales_data_returns_empty_when_postgres_disabled(monkeypatch):
