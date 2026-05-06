@@ -760,7 +760,7 @@ async def _build_kpi_cards_from_aggregates(
     cards.append(_new_metric_result_dict(
         metric_code=_METRIC_SALES_AMOUNT,
         metric_name="总销售额",
-        value=total_sales.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        value=_decimal_to_number(total_sales.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         formatted_value=_format_currency(total_sales),
         unit="元",
         alert_level="GREEN",
@@ -770,7 +770,7 @@ async def _build_kpi_cards_from_aggregates(
     cards.append(_new_metric_result_dict(
         metric_code=_METRIC_ORDER_COUNT,
         metric_name="订单数",
-        value=Decimal(order_count),
+        value=_decimal_to_number(Decimal(order_count)),
         formatted_value=f"{order_count:,d}",
         unit="单",
         alert_level="GREEN",
@@ -786,7 +786,7 @@ async def _build_kpi_cards_from_aggregates(
     cards.append(_new_metric_result_dict(
         metric_code=_METRIC_AVG_ORDER_VALUE,
         metric_name="客单价",
-        value=avg_order.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        value=_decimal_to_number(avg_order.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         formatted_value=_format_currency(avg_order),
         unit="元",
         alert_level="GREEN",
@@ -797,7 +797,7 @@ async def _build_kpi_cards_from_aggregates(
     cards.append(_new_metric_result_dict(
         metric_code=_METRIC_TARGET_COMPLETION,
         metric_name="目标完成率",
-        value=completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        value=_decimal_to_number(completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         formatted_value=_format_completion_pct(completion_rate),
         unit="%",
         alert_level=_determine_completion_alert_level(completion_rate),
@@ -811,10 +811,10 @@ async def _build_kpi_cards_from_aggregates(
         cards.append(_new_metric_result_dict(
             metric_code=_METRIC_MOM_GROWTH,
             metric_name="环比增长",
-            value=mom_growth.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            value=_decimal_to_number(mom_growth.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
             formatted_value=_format_growth_pct(mom_growth),
             unit="%",
-            change_percent=mom_growth,
+            change_percent=_decimal_to_number(mom_growth),
             change_direction=_determine_change_direction(mom_growth),
             alert_level=_determine_growth_alert_level(mom_growth),
         ))
@@ -928,7 +928,7 @@ async def _build_legacy_rankings_dict(
         items.append(_new_ranking_item_dict(
             rank=i,
             name=str(name),
-            value=_to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            value=_decimal_to_number(_to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         ))
     return {"salesperson": items}
 
@@ -951,8 +951,8 @@ async def _build_legacy_trend_chart(
     data = [
         {
             "date": d.isoformat() if hasattr(d, "isoformat") else str(d),
-            "amount": _to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
-            "quantity": _to_decimal(quantity).quantize(Decimal("1"), rounding=ROUND_HALF_UP),
+            "amount": _decimal_to_number(_to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "quantity": _decimal_to_number(_to_decimal(quantity).quantize(Decimal("1"), rounding=ROUND_HALF_UP)),
         }
         for d, amount, quantity in rows
     ]
@@ -982,7 +982,7 @@ async def _build_legacy_category_chart(
     data = [
         {
             "category": str(category) if category is not None else "未分类",
-            "amount": _to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "amount": _decimal_to_number(_to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         }
         for category, amount in rows
     ]
@@ -1077,10 +1077,10 @@ def _build_ranking(
         rankings.append(_new_ranking_item_dict(
             rank=rank,
             name=name,
-            value=value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
-            target=(target.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            value=_decimal_to_number(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            target=(_decimal_to_number(target.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
                     if target is not None else None),
-            completion_rate=completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            completion_rate=_decimal_to_number(completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
             alert_level=alert_level,
         ))
 
@@ -1637,7 +1637,7 @@ async def _get_sales_trend_chart(
     data_points = [
         {
             "date": key,
-            "amount": amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "amount": _decimal_to_number(amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         }
         for key, amount in period_sales.items()
     ]
