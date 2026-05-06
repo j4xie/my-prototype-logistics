@@ -153,10 +153,33 @@ VOLATILE_KEY_PATTERNS = [
     re.compile(r"Iso$"),
 ]
 
+# Synthesized-record context: alerts/recommendations endpoints generate fresh
+# UUID `id` + `createdAt` per call (Java + Python both, by design — not stored).
+# Strip these two fields ONLY when the dict shape matches alerts (level+category)
+# or recommendations (actionItems+priority). Avoids stripping legitimate stable
+# IDs in datasource/list, query-templates, etc.
+def _is_synthesized_record(d):
+    if not isinstance(d, dict):
+        return False
+    if "level" in d and "category" in d and "metric" in d:
+        return True  # alerts shape
+    if "actionItems" in d and "priority" in d:
+        return True  # recommendations shape
+    return False
+
+_SYNTHESIZED_VOLATILE_KEYS = {"id", "createdAt"}
+
 def strip_volatile(obj):
     if isinstance(obj, dict):
-        return {k: strip_volatile(v) for k, v in obj.items()
-                if not any(p.search(k) for p in VOLATILE_KEY_PATTERNS)}
+        synth = _is_synthesized_record(obj)
+        out = {}
+        for k, v in obj.items():
+            if any(p.search(k) for p in VOLATILE_KEY_PATTERNS):
+                continue
+            if synth and k in _SYNTHESIZED_VOLATILE_KEYS:
+                continue
+            out[k] = strip_volatile(v)
+        return out
     if isinstance(obj, list):
         return [strip_volatile(v) for v in obj]
     return obj
