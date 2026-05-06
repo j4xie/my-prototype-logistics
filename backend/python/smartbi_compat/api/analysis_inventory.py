@@ -36,6 +36,11 @@ from smartbi_compat.api.analysis_finance import (
 )
 from smartbi_compat.schema_compat import wrap_response
 from smartbi_compat.auth import verify_jwt_and_factory, AuthContext
+# Reuse PR-N-1 helper (procurement) to mirror Java HashMap iter order on
+# Collectors.groupingBy outputs. Cross-module import documents that this
+# is shared logic — refactor task #22 will move both helpers to a shared
+# _java_compat module. See .claude/rules/python-java-port.md Rule 12 (TBD).
+from smartbi_compat.api.analysis_procurement import _sort_entries_java_iter_then_value_desc
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1628,7 +1633,13 @@ def _build_material_category_value_chart(batches: list[dict]) -> dict:
         value = cq * up_dec
         category_values[mtid] = category_values.get(mtid, Decimal("0")) + value
 
-    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+    # Mirror Java Collectors.groupingBy + entrySet().sorted(byValue.reversed())
+    # iter order for value-tied entries — Python's stable sort preserves dict
+    # insertion order on ties, but Java HashMap iter is bucket-asc + reverse-
+    # within-bucket due to computeIfAbsent prepending. PR-N-1 (procurement)
+    # introduced this helper; shared here to fix 材料类别库存占比 sort-tie on
+    # F001 prod (chart data[6-10] swap of RMT_xxx categories per task #21).
+    sorted_entries = _sort_entries_java_iter_then_value_desc(category_values.items())
     chart_data = [
         {
             "category": mtid,
