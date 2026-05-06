@@ -68,6 +68,7 @@ from sqlalchemy import text
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
+from smartbi_compat._java_compat import _java_hashmap_bucket
 from smartbi_compat.schema_compat import wrap_response
 
 logger = logging.getLogger(__name__)
@@ -523,6 +524,14 @@ def _build_region_target_completion(rows: list) -> list:
     Key order (Task 3 source-derived, 11 fields including changeValue=null per F7):
     metricCode, metricName, value, formattedValue, unit, changePercent,
     changeDirection, changeValue, alertLevel, dimensionValue, description.
+
+    T6.1 edge case fix (2026-05-07): Java's sort by changePercent desc uses
+    Java HashMap.entrySet() iter order as tie-break (Collectors.groupingBy
+    builds the aggregation HashMap; ties resolve via bucket-asc + reverse-
+    within-bucket per Rule 12 candidate). Python's stable sort uses dict
+    insertion order which differs. Apply _java_hashmap_bucket pre-sort
+    so tied changePercent rows (e.g. 上海 90.91% vs 江苏 90.91% on Q1) keep
+    Java's order.
     """
     if not rows:
         return []
@@ -549,8 +558,16 @@ def _build_region_target_completion(rows: list) -> list:
             "dimensionValue": region,
             "description": f"目标: {_format_amount(agg.total_target)}",
         })
-    results.sort(key=lambda r: r["changePercent"], reverse=True)
-    return results
+    # Step 1: Java HashMap iter order — bucket asc + reverse-within-bucket
+    indexed = list(enumerate(results))
+    java_iter = [
+        r for _, r in sorted(
+            indexed,
+            key=lambda x: (_java_hashmap_bucket(x[1]["dimensionValue"]), -x[0]),
+        )
+    ]
+    # Step 2: stable sort by changePercent desc preserves Java HashMap iter on ties
+    return sorted(java_iter, key=lambda r: r["changePercent"], reverse=True)
 
 
 # ============================================================
