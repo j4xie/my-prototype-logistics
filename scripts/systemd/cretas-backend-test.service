@@ -18,9 +18,11 @@ Environment=SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=500MB
 Environment=SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=500MB
 
 ExecStart=/usr/bin/java \
-  -Xms256m -Xmx768m \
+  -Xms512m -Xmx1500m \
   -XX:MaxMetaspaceSize=256m \
   -XX:+UseG1GC \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/www/wwwroot/cretas/logs/cretas-test-heap-dump.hprof \
   -jar aims-0.0.1-SNAPSHOT.jar \
   --spring.profiles.active=pg-prod,test \
   --spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect \
@@ -49,8 +51,11 @@ Restart=on-failure
 RestartSec=15
 
 # Spring Boot start budget
+# TimeoutStopSec bumped 30→90s 2026-05-06: under heap pressure shutdown hooks
+# blocked >30s causing systemd SIGKILL cycle (May 6 incident, journalctl 10:08:34
+# code=killed status=9). Bumped heap to 1.5g + give shutdown more headroom.
 TimeoutStartSec=180
-TimeoutStopSec=30
+TimeoutStopSec=90
 
 [Install]
 WantedBy=multi-user.target
