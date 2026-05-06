@@ -46,8 +46,14 @@ ExecStart=/usr/bin/java \
 StandardOutput=append:/www/wwwroot/cretas/cretas-test.log
 StandardError=append:/www/wwwroot/cretas/cretas-test.log
 
-# Restart policy: wait 15s, max 3 retries in 120s (matches prod cretas-backend.service)
-Restart=on-failure
+# Restart policy: 2026-05-07 changed on-failure → always.
+# Investigation found Java test env staying DOWN after SIGTERM (code=exited
+# status=143). Java test gets SIGTERM during sister chat parallel testing
+# (deploy script restarts / manual stop / etc) which counts as "successful"
+# exit (SuccessExitStatus=143) so Restart=on-failure didn't fire.
+# Restart=always restarts on ANY exit including clean SIGTERM, ensuring
+# Java test env always available for sister chat smoke tests.
+Restart=always
 RestartSec=15
 
 # Spring Boot start budget
