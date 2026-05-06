@@ -677,6 +677,88 @@ Rule 8 (Map.of key order) + Rule 9 (Lombok null emit) + Rule 11 (LocalDateTime m
 
 ---
 
+## ⛔ Rule 12: Java `String.format("%.Nf", d)` HALF_UP vs Python f-string `:.Nf` 银行家舍入
+
+### 反 pattern (Python f-string banker's rounding)
+
+```python
+# ❌ BAD: Python f-string :.Nf uses banker's rounding (round half to even, IEEE 754)
+formatted_value = f"{float(concentration):.1f}%"
+# concentration = Decimal("46.55")  → "46.5" (banker)
+# Java String.format("%.1f", concentration) → "46.6" (HALF_UP)
+```
+
+具体踩坑值（PR-N-1 closer fix 2026-05-06 抓到）:
+- procurement supplier concentration: Java "46.6%" vs Python "46.5%"
+  - 内部 concentration value = `Decimal("46.5500")` (scale 4 from Rule 10 fix)
+  - `float(46.55)` 在 IEEE 754 下 = 46.549999... → f-string `:.1f` 取 "46.5"
+  - Java 用 BigDecimal.toPlainString + manual format / String.format HALF_UP → "46.6"
+
+### 正 pattern (Decimal.quantize HALF_UP)
+
+```python
+# ✅ GOOD: Decimal.quantize(scale, ROUND_HALF_UP) gives Java-equivalent result
+from decimal import Decimal, ROUND_HALF_UP
+formatted_value = f"{concentration.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)}%"
+# concentration = Decimal("46.55") → quantize(0.1, HALF_UP) → Decimal("46.6") → "46.6"
+
+# OR use shared helper (preferred for new code):
+from smartbi_compat._java_compat import _format_decimal_half_up
+formatted_value = f"{_format_decimal_half_up(concentration, 1)}%"
+# Helper bakes Decimal conversion + HALF_UP at scale `places`.
+```
+
+### 何时这个 rule 适用
+
+**任何**显示格式化 Java 端用 `String.format("%.Nf", d)` / `BigDecimal.setScale(N, HALF_UP).toPlainString()` 等的 site，Python 这边都不能用：
+- `f"{float(d):.Nf}"` (banker's)
+- `f"{d:.Nf}"` directly on Decimal — 也是 banker's via `__format__`
+- `"%.Nf" % d` (banker's via printf-style)
+- `format(d, '.Nf')` (same)
+
+**例外 pre-quantize HALF_UP at exact target scale**:
+
+```python
+# This pattern is SAFE — pre-quantize to HALF_UP at scale N matches f-string output
+quantized = value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)  # already HALF_UP'd
+return f"{float(quantized):.1f}%"  # f-string just renders, no re-rounding (boundary already resolved)
+```
+
+The pre-quantize step makes the value land exactly at the f-string scale boundary, avoiding the banker's-rounding zone. `analysis_sales.py:_format_completion_pct` follows this pattern, safe.
+
+### 注意 Decimal.quantize 默认舍入模式 = ROUND_HALF_EVEN
+
+```python
+# ❌ BAD — Decimal.quantize default rounding is ROUND_HALF_EVEN (banker's)
+quantized = value.quantize(Decimal("0.01"))  # NO rounding param → banker's
+
+# ✅ GOOD — explicit ROUND_HALF_UP for Java parity
+quantized = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+```
+
+This was the Rule 12 latent gap in `analysis_drilldown.py:_build_kpi_card` (fix in commit `69b46f4d5` 2026-05-07).
+
+### Audit 来源
+
+- 1st hit: PR-N-1 closer (organizer commit `0982195cf` 2026-05-06) — procurement
+  supplier concentration 46.55 → "46.6" Java vs "46.5" Python at f-string display
+- 2nd hit: 12 defensive proactive fixes commit `69b46f4d5` 2026-05-07 — across
+  analysis_inventory.py (11 sites: turnover_rate / inventory_days / expiry_risk /
+  slow_moving / loss_rate / health_score + 5 insight messages) +
+  analysis_drilldown.py (1 site: _build_kpi_card)
+- Helper added: `_format_decimal_half_up(d, places)` in
+  `backend/python/smartbi_compat/_java_compat.py`
+
+### 跟 Rule 4 / Rule 10 的关系
+
+Rule 4 (Decimal serialization int vs float vs str): JSON 数值层面，控制 emit 是 number 还是 string。
+Rule 10 (Java BigDecimal divide-then-multiply 中间步 round): 算术层面，控制中间精度。
+Rule 12 (Java String.format HALF_UP vs Python banker's): 显示格式化层面，控制 final string 的舍入。
+
+三个独立 layer 都要 mirror Java semantic 才能 byte-shape parity。Rule 10 修中间精度后还可能因 Rule 12 在最后一步显示时 diverge。
+
+---
+
 ## 工具 + 配置 reference
 
 ### `_decimal_to_number` helper
@@ -734,5 +816,6 @@ monkeypatch.setattr(
 | inventory PR #53 + department PR #52 + region in-flight (2026-05-02) | Rule 9（Lombok + Jackson 序列化 quirks — 3 个 sister chat 独立确认 3 个 sub-pattern） |
 | T6.1 dryrun pre-flight + PR-M-2 (2026-05-06) | Rule 10（BigDecimal divide-then-multiply 中间步 round — 4 sister chat 各踩一次：alerts/category-comparison/procurement/sales） |
 | Sister D PR-M doc + PR-M-7 (2026-05-06) | Rule 11（Java Jackson LocalDateTime trailing-zero microsecond — datasource/list F001 7 timestamps 踩；latent prod risk on ~50 endpoints） |
+| Procurement display closer (commit 0982195cf 2026-05-06) + 12 defensive fixes (commit 69b46f4d5 2026-05-07) | Rule 12（Java String.format HALF_UP vs Python f-string banker's — 1 active hit + 12 latent sites swept） |
 
 后续 sister chats（receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
