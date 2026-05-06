@@ -79,25 +79,31 @@ AGING_90_YELLOW_THRESHOLD = 10.0
 
 
 def _infer_granularity(start: date, end: date) -> str:
-    """Infer Java DateRangeUtils granularity from start/end dates.
+    """Mirror Java DateRange.inferGranularity(LocalDate, LocalDate).
 
-    Mirrors Java DateRange.granularity field semantics observed in F999 golden:
-      YEAR   — full calendar year (Jan 1 → Dec 31, same year)
-      MONTH  — first day of month → last day of same month
-      CUSTOM — anything else
+    Day-count based, NOT pattern based (verified 2026-05-07 against Java
+    prod F001 across 7 ranges):
+      <= 1   -> DAY      (single day, e.g. 2026-06-15 → 2026-06-15)
+      <= 7   -> WEEK     (e.g. 2026-01-01 → 2026-01-07, 7 days)
+      <= 31  -> MONTH    (e.g. full month Dec, 31 days)
+      <= 93  -> QUARTER  (Q1=90 days → fits, half-quarter also fits)
+      else   -> YEAR     (half year 181 days, full year 365 days BOTH return YEAR)
+
+    The OLD pattern-based logic (YEAR if Jan 1 → Dec 31 / MONTH if first→last
+    day of same month / CUSTOM else) was wrong — Java emits DAY for single
+    day, WEEK for 7-day range, QUARTER for 90-day range; never CUSTOM. Fixed
+    via T6.1 edge-case sweep (2026-05-07).
     """
-    if (start.month == 1 and start.day == 1
-            and end.month == 12 and end.day == 31
-            and start.year == end.year):
-        return "YEAR"
-    # First day of a month to last day of the same month
-    last_day = calendar.monthrange(start.year, start.month)[1]
-    if (start.day == 1
-            and end.year == start.year
-            and end.month == start.month
-            and end.day == last_day):
+    days = (end - start).days + 1
+    if days <= 1:
+        return "DAY"
+    if days <= 7:
+        return "WEEK"
+    if days <= 31:
         return "MONTH"
-    return "CUSTOM"
+    if days <= 93:
+        return "QUARTER"
+    return "YEAR"
 
 
 def _new_date_range_dict(range_: DateRange) -> dict:

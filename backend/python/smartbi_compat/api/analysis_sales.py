@@ -429,26 +429,21 @@ async def _query_category_distribution_aggregate(
 
 
 def _infer_granularity(start: date, end: date) -> str:
-    """Infer Java DateRangeUtils granularity from start/end dates.
+    """Mirror Java DateRange.inferGranularity(LocalDate, LocalDate).
 
-    Mirrors Java DateRange.granularity field semantics observed in F999 golden:
-      YEAR   — full calendar year (Jan 1 → Dec 31, same year)
-      MONTH  — first day of month → last day of same month
-      CUSTOM — anything else
+    Day-count based (matches dashboard.py + analysis_finance.py impl).
+    See analysis_finance.py:_infer_granularity for full doc + audit history.
     """
-    if (start.month == 1 and start.day == 1
-            and end.month == 12 and end.day == 31
-            and start.year == end.year):
-        return "YEAR"
-    # First day of a month to last day of the same month
-    import calendar
-    last_day = calendar.monthrange(start.year, start.month)[1]
-    if (start.day == 1
-            and end.year == start.year
-            and end.month == start.month
-            and end.day == last_day):
+    days = (end - start).days + 1
+    if days <= 1:
+        return "DAY"
+    if days <= 7:
+        return "WEEK"
+    if days <= 31:
         return "MONTH"
-    return "CUSTOM"
+    if days <= 93:
+        return "QUARTER"
+    return "YEAR"
 
 
 def _new_date_range_dict(range_: DateRange) -> dict:
