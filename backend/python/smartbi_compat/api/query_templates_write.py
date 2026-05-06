@@ -71,7 +71,7 @@ def _create_template(factory_id: str, body: dict) -> Optional[dict]:
     Mirrors Java SmartBIAnalysisController.java:965-973.
     Returns None if postgres is disabled.
     """
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         logger.warning("query-templates write: postgres not enabled (factory_id=%s)", factory_id)
@@ -84,7 +84,7 @@ def _create_template(factory_id: str, body: dict) -> Optional[dict]:
     query_template = body.get("queryTemplate")
     parameters = body.get("parameters")
 
-    with get_db_context() as db:
+    with get_cretas_db_context() as db:
         if body_id is not None:
             sql = text(
                 "INSERT INTO smart_bi_query_templates "
@@ -142,12 +142,12 @@ def _update_template(factory_id: str, template_id: int, body: dict) -> Optional[
 
     Mirrors Java SmartBIAnalysisController.java:976-994.
     """
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         return None
 
-    with get_db_context() as db:
+    with get_cretas_db_context() as db:
         existing_check = text(
             "SELECT id FROM smart_bi_query_templates "
             "WHERE id = :id AND factory_id = :fid AND deleted_at IS NULL"
@@ -188,12 +188,12 @@ def _delete_template(factory_id: str, template_id: int) -> bool:
 
     Mirrors Java SmartBIAnalysisController.java:997-1009.
     """
-    from smartbi.database.connection import get_db_context, is_postgres_enabled
+    from smartbi.database.connection import get_cretas_db_context, is_postgres_enabled
 
     if not is_postgres_enabled():
         return False
 
-    with get_db_context() as db:
+    with get_cretas_db_context() as db:
         existing_check = text(
             "SELECT id FROM smart_bi_query_templates "
             "WHERE id = :id AND factory_id = :fid AND deleted_at IS NULL"
