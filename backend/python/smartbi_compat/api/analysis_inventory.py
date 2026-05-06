@@ -408,17 +408,24 @@ def _convert_to_kpi_cards(metric_results: list[dict]) -> list[dict]:
         else:
             display_value = "-"
 
+        # Rule 9: KpiCard Lombok @Data + no @JsonInclude → emit all 13 fields
+        # incl null. Jackson key order from F001 golden:
+        # [key, title, value, rawValue, unit, change, changeRate, trend, status,
+        #  compareText, description, targetValue, completionRate]
         cards.append({
-            "key":         metric.get("metricCode"),
-            "title":       metric.get("metricName"),
-            "rawValue":    raw_value,
-            "value":       display_value,
-            "unit":        metric.get("unit"),
-            "changeRate":  metric.get("changePercent"),
-            "change":      metric.get("changeValue"),
-            "trend":       trend,
-            "status":      status,
-            "description": metric.get("description"),
+            "key":            metric.get("metricCode"),
+            "title":          metric.get("metricName"),
+            "value":          display_value,
+            "rawValue":       raw_value,
+            "unit":           metric.get("unit"),
+            "change":         metric.get("changeValue"),
+            "changeRate":     metric.get("changePercent"),
+            "trend":          trend,
+            "status":         status,
+            "compareText":    None,
+            "description":    metric.get("description"),
+            "targetValue":    None,
+            "completionRate": None,
         })
     return cards
 

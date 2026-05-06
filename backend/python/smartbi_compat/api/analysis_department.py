@@ -434,14 +434,23 @@ async def _get_department_completion_rates(
     for dept, agg in aggregated.items():
         cr = _calculate_completion_rate(agg["salesAmount"], agg["salesTarget"])
         cr_display = cr.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+        # Rule 9: MetricResult Lombok @Data + no @JsonInclude → emit all 11 fields
+        # incl null. Jackson key order from F001 golden:
+        # [metricCode, metricName, value, formattedValue, unit,
+        #  changePercent, changeDirection, changeValue, alertLevel,
+        #  dimensionValue, description]
         results.append({
-            "metricCode":     "TARGET_COMPLETION",
-            "metricName":     "目标完成率",
-            "value":          _decimal_to_number(cr_display),
-            "formattedValue": f"{cr_display:,.2f}%",    # 千分位 + 2 位小数 + %
-            "unit":           "%",
-            "dimensionValue": dept,
-            "alertLevel":     _determine_target_completion_alert(cr),
+            "metricCode":      "TARGET_COMPLETION",
+            "metricName":      "目标完成率",
+            "value":           _decimal_to_number(cr_display),
+            "formattedValue":  f"{cr_display:,.2f}%",   # 千分位 + 2 位小数 + %
+            "unit":            "%",
+            "changePercent":   None,
+            "changeDirection": None,
+            "changeValue":     None,
+            "alertLevel":      _determine_target_completion_alert(cr),
+            "dimensionValue":  dept,
+            "description":     None,
         })
 
     # Java line 198: results.sort(by value desc)
