@@ -35,7 +35,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
-from smartbi_compat.schema_compat import _java_isoformat, wrap_response
+from smartbi_compat.schema_compat import _java_isoformat, wrap_error, wrap_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -2996,11 +2996,51 @@ async def get_yoy_mom(
     metric: str = Query("revenue"),
     auth: AuthContext = Depends(verify_jwt_and_factory),
 ) -> dict:
-    """Java reference: SmartBIAnalysisController.getYoYMoMComparisonChart line 294-312."""
-    result = await _get_yoy_mom_chart(
-        auth.factory_id, periodType, startPeriod, endPeriod, metric
-    )
-    return wrap_response(result)
+    """Java reference: SmartBIAnalysisController.getYoYMoMComparisonChart line 294-312.
+
+    Java catches DateTimeParseException + IllegalArgumentException at the
+    controller level and wraps in `ApiResponse.error(400, "Get YoY/MoM failed: " + e.getMessage())`
+    — HTTP 200 + success:false envelope. Python must mirror or T6.1 dryrun
+    catches HTTP 500 (Java-vs-Python status mismatch).
+
+    Edge cases caught 2026-05-07 (T6.1 strict edge sweep):
+      - periodType=YEAR + startPeriod=2025 → Java emits 200 with
+        message="Get YoY/MoM failed: Text '2025' could not be parsed at index 4"
+      - periodType=DAY + startPeriod=2026-12-29 → Java emits 200 with
+        message="Get YoY/MoM failed: Text '2026-12-29' could not be parsed, unparsed text found at index 7"
+      - Any unsupported periodType + startPeriod that doesn't parse as YYYY-MM
+        falls into _calculate_month_yoy_mom which raises ValueError on .split("-").
+
+    Mirror by formatting Java's DateTimeParseException-style message based on
+    startPeriod length (heuristic — Java's actual exception comes from
+    DateTimeFormatter.ofPattern("yyyy-MM") attempt).
+    """
+    try:
+        result = await _get_yoy_mom_chart(
+            auth.factory_id, periodType, startPeriod, endPeriod, metric
+        )
+        return wrap_response(result)
+    except (ValueError, HTTPException) as e:
+        # HTTPException (e.g. 400 from missing endPeriod) — re-raise so FastAPI
+        # uses its built-in handling. ValueError → mirror Java parse error.
+        if isinstance(e, HTTPException):
+            raise
+        # Heuristic mirror of java.time.format.DateTimeParseException for
+        # DateTimeFormatter.ofPattern("yyyy-MM"):
+        #   YEAR-only "2025" (len 4): "could not be parsed at index 4"
+        #   DAY      "2026-12-29" (len 10): "could not be parsed, unparsed text found at index 7"
+        #   other:   "could not be parsed at index <len>"
+        sp = startPeriod
+        if len(sp) == 4 and sp.isdigit():
+            detail = f"Text '{sp}' could not be parsed at index 4"
+        elif len(sp) == 10 and sp.count("-") == 2:
+            detail = f"Text '{sp}' could not be parsed, unparsed text found at index 7"
+        else:
+            detail = f"Text '{sp}' could not be parsed at index {len(sp)}"
+        return wrap_error(
+            message=f"Get YoY/MoM failed: {detail}",
+            code=400,
+        )
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/category-comparison")
