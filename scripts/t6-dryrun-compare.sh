@@ -142,96 +142,114 @@ compare_responses() {
     JAVA_BODY="$java_body" PY_BODY="$python_body" \
     JAVA_META="$java_meta" PY_META="$python_meta" \
     EP="$endpoint" python3 <<'PY'
+# Wrap whole body in try/except so transient failures (e.g. malformed
+# meta JSON during Python service restart) don't propagate non-zero exit
+# under the script's `set -euo pipefail`. Always emit a valid NDJSON line
+# — outer loop tally still works, deploys don't kill ongoing dryrun.
+# (Task #27 fix 2026-05-07.)
 import json, os, sys, datetime, re
 
-VOLATILE_KEY_PATTERNS = [
-    re.compile(r"timestamp", re.I),
-    re.compile(r"^generatedAt$", re.I),
-    re.compile(r"^traceId$", re.I),
-    re.compile(r"^requestId$", re.I),
-    re.compile(r"^lastUpdated$", re.I),
-    re.compile(r"Iso$"),
-]
+try:
+    VOLATILE_KEY_PATTERNS = [
+        re.compile(r"timestamp", re.I),
+        re.compile(r"^generatedAt$", re.I),
+        re.compile(r"^traceId$", re.I),
+        re.compile(r"^requestId$", re.I),
+        re.compile(r"^lastUpdated$", re.I),
+        re.compile(r"Iso$"),
+    ]
 
-# Synthesized-record context: alerts/recommendations endpoints generate fresh
-# UUID `id` + `createdAt` per call (Java + Python both, by design — not stored).
-# Strip these two fields ONLY when the dict shape matches alerts (level+category)
-# or recommendations (actionItems+priority). Avoids stripping legitimate stable
-# IDs in datasource/list, query-templates, etc.
-def _is_synthesized_record(d):
-    if not isinstance(d, dict):
+    # Synthesized-record context: alerts/recommendations endpoints generate fresh
+    # UUID `id` + `createdAt` per call (Java + Python both, by design — not stored).
+    # Strip these two fields ONLY when the dict shape matches alerts (level+category)
+    # or recommendations (actionItems+priority). Avoids stripping legitimate stable
+    # IDs in datasource/list, query-templates, etc.
+    def _is_synthesized_record(d):
+        if not isinstance(d, dict):
+            return False
+        if "level" in d and "category" in d and "metric" in d:
+            return True  # alerts shape
+        if "actionItems" in d and "priority" in d:
+            return True  # recommendations shape
         return False
-    if "level" in d and "category" in d and "metric" in d:
-        return True  # alerts shape
-    if "actionItems" in d and "priority" in d:
-        return True  # recommendations shape
-    return False
 
-_SYNTHESIZED_VOLATILE_KEYS = {"id", "createdAt"}
+    _SYNTHESIZED_VOLATILE_KEYS = {"id", "createdAt"}
 
-def strip_volatile(obj):
-    if isinstance(obj, dict):
-        synth = _is_synthesized_record(obj)
-        out = {}
-        for k, v in obj.items():
-            if any(p.search(k) for p in VOLATILE_KEY_PATTERNS):
-                continue
-            if synth and k in _SYNTHESIZED_VOLATILE_KEYS:
-                continue
-            out[k] = strip_volatile(v)
-        return out
-    if isinstance(obj, list):
-        return [strip_volatile(v) for v in obj]
-    return obj
+    def strip_volatile(obj):
+        if isinstance(obj, dict):
+            synth = _is_synthesized_record(obj)
+            out = {}
+            for k, v in obj.items():
+                if any(p.search(k) for p in VOLATILE_KEY_PATTERNS):
+                    continue
+                if synth and k in _SYNTHESIZED_VOLATILE_KEYS:
+                    continue
+                out[k] = strip_volatile(v)
+            return out
+        if isinstance(obj, list):
+            return [strip_volatile(v) for v in obj]
+        return obj
 
-def safe_load(s):
-    try:
-        return json.loads(s)
-    except Exception:
-        return None
+    def safe_load(s):
+        try:
+            return json.loads(s)
+        except Exception:
+            return None
 
-j_body = safe_load(os.environ.get("JAVA_BODY", "")) if os.environ.get("JAVA_BODY") else None
-p_body = safe_load(os.environ.get("PY_BODY", "")) if os.environ.get("PY_BODY") else None
+    j_body = safe_load(os.environ.get("JAVA_BODY", "")) if os.environ.get("JAVA_BODY") else None
+    p_body = safe_load(os.environ.get("PY_BODY", "")) if os.environ.get("PY_BODY") else None
 
-j_meta = json.loads(os.environ["JAVA_META"])
-p_meta = json.loads(os.environ["PY_META"])
+    j_meta = safe_load(os.environ.get("JAVA_META", "")) or {"http": 0, "lat_s": 0, "size": 0}
+    p_meta = safe_load(os.environ.get("PY_META", "")) or {"http": 0, "lat_s": 0, "size": 0}
 
-j_status = j_meta["http"]
-p_status = p_meta["http"]
+    j_status = j_meta.get("http", 0)
+    p_status = p_meta.get("http", 0)
 
-if not (200 <= j_status < 300) and not (200 <= p_status < 300):
-    verdict = "both_err"
-    diff = None
-elif not (200 <= j_status < 300):
-    verdict = "java_err"
-    diff = None
-elif not (200 <= p_status < 300):
-    verdict = "python_err"
-    diff = None
-else:
-    j_clean = strip_volatile(j_body) if j_body else None
-    p_clean = strip_volatile(p_body) if p_body else None
-    if j_clean == p_clean:
-        verdict = "match"
+    if not (200 <= j_status < 300) and not (200 <= p_status < 300):
+        verdict = "both_err"
+        diff = None
+    elif not (200 <= j_status < 300):
+        verdict = "java_err"
+        diff = None
+    elif not (200 <= p_status < 300):
+        verdict = "python_err"
         diff = None
     else:
-        verdict = "diverge"
-        # Top-level key diff for compactness; full diff in /tmp/.t6dryrun_<hash>
-        j_keys = set(j_clean.get("data", {}).keys()) if isinstance(j_clean, dict) and isinstance(j_clean.get("data"), dict) else set()
-        p_keys = set(p_clean.get("data", {}).keys()) if isinstance(p_clean, dict) and isinstance(p_clean.get("data"), dict) else set()
-        diff = {
-            "j_only_keys": sorted(j_keys - p_keys),
-            "p_only_keys": sorted(p_keys - j_keys),
-        }
+        j_clean = strip_volatile(j_body) if j_body else None
+        p_clean = strip_volatile(p_body) if p_body else None
+        if j_clean == p_clean:
+            verdict = "match"
+            diff = None
+        else:
+            verdict = "diverge"
+            # Top-level key diff for compactness; full diff in /tmp/.t6dryrun_<hash>
+            j_keys = set(j_clean.get("data", {}).keys()) if isinstance(j_clean, dict) and isinstance(j_clean.get("data"), dict) else set()
+            p_keys = set(p_clean.get("data", {}).keys()) if isinstance(p_clean, dict) and isinstance(p_clean.get("data"), dict) else set()
+            diff = {
+                "j_only_keys": sorted(j_keys - p_keys),
+                "p_only_keys": sorted(p_keys - j_keys),
+            }
 
-print(json.dumps({
-    "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    "endpoint": os.environ["EP"],
-    "java": j_meta,
-    "python": p_meta,
-    "verdict": verdict,
-    "diff": diff,
-}, ensure_ascii=False))
+    print(json.dumps({
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "endpoint": os.environ["EP"],
+        "java": j_meta,
+        "python": p_meta,
+        "verdict": verdict,
+        "diff": diff,
+    }, ensure_ascii=False))
+
+except Exception as exc:
+    # Last-resort fallback so script never exits non-zero. Outer tally
+    # treats this as ERRORS bucket (not match/diverge).
+    print(json.dumps({
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "endpoint": os.environ.get("EP", ""),
+        "java": {},
+        "python": {},
+        "verdict": "compare_err",
+        "diff": {"exc": type(exc).__name__, "msg": str(exc)[:200]},
+    }, ensure_ascii=False))
 PY
 }
 
@@ -286,10 +304,11 @@ while [[ "$(date +%s)" -lt "$END" ]]; do
         LINE=$(compare_responses "$endpoint" "$JBODY_CONTENT" "$PBODY_CONTENT" "$JMETA" "$PMETA")
         echo "$LINE" >> "$OUTPUT_FILE"
 
-        # Tally
+        # Tally — handle compare_err (task #27 fix) as ERRORS, never exit-on-error
         case "$LINE" in
             *'"verdict":"match"'*)        MATCHES=$((MATCHES + 1)) ;;
             *'"verdict":"diverge"'*)      DIVERGES=$((DIVERGES + 1)) ;;
+            *'"verdict":"compare_err"'*)  ERRORS=$((ERRORS + 1)) ;;
             *)                             ERRORS=$((ERRORS + 1)) ;;
         esac
     done < "$ENDPOINTS_FILE"
