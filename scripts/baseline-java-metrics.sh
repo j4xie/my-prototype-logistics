@@ -128,13 +128,19 @@ get_jwt() {
     if [[ -z "$JWT_CACHE" || "$elapsed" -gt 3000 ]]; then
         JWT_CACHE=$(JWT_SECRET="$JWT_SECRET" FACTORY_ID="$FACTORY" python3 - <<'PY'
 import jwt, os, time
-print(jwt.encode({
+token = jwt.encode({
     "userId": 1,
     "username": "baseline_collector",
     "factoryId": os.environ["FACTORY_ID"],
     "role": "factory_super_admin",
     "exp": int(time.time()) + 3600,
-}, os.environ["JWT_SECRET"], algorithm="HS256"))
+}, os.environ["JWT_SECRET"], algorithm="HS256")
+# PyJWT 1.x returns bytes from encode(); decode to str so curl Authorization
+# header gets "eyJ..." not "b'eyJ...'" (server venv38 has pyjwt 1.6.1).
+# Same fix as scripts/t6-dryrun-compare.sh after T6.1 pre-flight bug.
+if isinstance(token, bytes):
+    token = token.decode("utf-8")
+print(token)
 PY
 )
         JWT_CACHED_AT=$now
