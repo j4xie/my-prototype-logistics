@@ -1670,11 +1670,16 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
         net_profit = None
 
     # Java line 409-416 — gross profit + margin clamp
+    # Rule 10: Java BigDecimal.divide(scale=4, HALF_UP).multiply(K) — divide
+    # quantize FIRST then multiply, NOT (n/d*K).quantize. Edge case caught
+    # T6.1 sweep 2026-05-07 on profitMetrics[4]=ROI single-month-Dec
+    # (342.28 Java vs 342.29 Python).
     gross_profit = total_revenue - total_cost
     if total_revenue > Decimal("0"):
         gross_margin_raw = (
-            gross_profit / total_revenue * Decimal("100")
-        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            (gross_profit / total_revenue).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
+        )
     else:
         gross_margin_raw = Decimal("0")
     gross_margin = (
@@ -1686,8 +1691,9 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
     # Java line 446-453 — net margin (only when net_profit available + revenue > 0)
     if net_profit is not None and total_revenue > Decimal("0"):
         net_margin_raw = (
-            net_profit / total_revenue * Decimal("100")
-        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            (net_profit / total_revenue).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
+        )
     else:
         net_margin_raw = None
     net_margin = (
@@ -1699,11 +1705,12 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
         else net_margin_raw
     )
 
-    # Java line 481-483 — ROI = grossProfit / totalCost * 100
+    # Java line 481-483 — ROI = grossProfit.divide(totalCost, 4, HALF_UP).multiply(100)
     if total_cost > Decimal("0"):
         roi = (
-            gross_profit / total_cost * Decimal("100")
-        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            (gross_profit / total_cost).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
+        )
     else:
         roi = Decimal("0")
 
