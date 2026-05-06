@@ -36,11 +36,9 @@ from smartbi_compat.api.analysis_finance import (
 )
 from smartbi_compat.schema_compat import wrap_response
 from smartbi_compat.auth import verify_jwt_and_factory, AuthContext
-# Reuse PR-N-1 helper (procurement) to mirror Java HashMap iter order on
-# Collectors.groupingBy outputs. Cross-module import documents that this
-# is shared logic — refactor task #22 will move both helpers to a shared
-# _java_compat module. See .claude/rules/python-java-port.md Rule 12 (TBD).
-from smartbi_compat.api.analysis_procurement import _sort_entries_java_iter_then_value_desc
+# Java HashMap iter-order helper for value-tied entries on Collectors.groupingBy
+# outputs. See backend/python/smartbi_compat/_java_compat.py for full doc.
+from smartbi_compat._java_compat import _sort_entries_java_iter_then_value_desc
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

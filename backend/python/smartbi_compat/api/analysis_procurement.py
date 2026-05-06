@@ -29,6 +29,13 @@ from smartbi_compat.api.analysis_finance import (
 )
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.schema_compat import wrap_response
+# Java HashMap iter-order helpers (extracted to shared module per task #22 —
+# previously defined inline here, now reusable across all smartbi_compat
+# endpoints via single source of truth).
+from smartbi_compat._java_compat import (
+    _java_hashmap_bucket,
+    _sort_entries_java_iter_then_value_desc,
+)
 
 # T1: 3 inline threshold pairs (alert_thresholds.json has NO procurement section, verified)
 _PROCUREMENT_ON_TIME_RED          = Decimal("70")
@@ -43,61 +50,6 @@ _PROCUREMENT_CONCENTRATION_YELLOW = Decimal("40")
 _SCALE             = Decimal("0.0001")
 _DISPLAY_SCALE     = Decimal("0.01")
 _QUANTIZE_HALF_UP  = ROUND_HALF_UP
-
-
-def _java_hashmap_bucket(s: str, capacity: int = 16) -> int:
-    """Mirror Java HashMap bucket index for a String key.
-
-    Used to predict Java HashMap.entrySet() iteration order, which is
-    bucket-asc + linked-list-order-within-bucket. Needed for tie-breaking
-    in stable sorts where Python dict insertion order otherwise diverges
-    from Java HashMap iter (e.g. Collectors.groupingBy outputs).
-
-    Algorithm: Java String.hashCode() (h = 31*h + c, all chars), then
-    HashMap spread (h ^ (h >>> 16)) & (cap-1). Default cap=16, resizes
-    to 32 when size > 12 (loadFactor 0.75) — so for small dicts (<13
-    keys) cap=16 is correct.
-    """
-    h = 0
-    for c in str(s):
-        h = (31 * h + ord(c)) & 0xFFFFFFFF
-    spread = h ^ (h >> 16)
-    return spread & (capacity - 1)
-
-
-def _sort_entries_java_iter_then_value_desc(items, capacity: int = 16) -> list:
-    """Mirror Java `entrySet().stream().sorted(comparingByValue().reversed())`
-    on a HashMap built by `Collectors.groupingBy(classifier, downstream)`.
-
-    PR-N-1 finding (2026-05-06): Collectors.groupingBy uses
-    `HashMap.computeIfAbsent`, whose internal node-creation path PREPENDS the
-    new node to the bucket head (`tab[i] = newNode(hash, key, v, first)` in
-    OpenJDK HashMap.computeIfAbsent — `first` becomes the new node's `next`).
-    This is OPPOSITE of `HashMap.put`, which appends to the linked-list tail.
-
-    Therefore within-bucket iter order is the REVERSE of insertion order:
-    last-inserted entry is at the bucket head and emitted first by the
-    `entrySet()` iterator.
-
-    Caller responsibility: dict insertion order must match Java's stream
-    encounter order (typically PostgreSQL heap order ≈ chronological order).
-    `_query_material_batches_in_range` orders by `created_at` to give Python
-    the same encounter sequence Hibernate's no-ORDER-BY query produces.
-
-    Implementation:
-      1. Sort by (bucket_asc, position_desc) → bucket-asc + reverse-within-bucket
-      2. Stable sort by value desc preserves the Java HashMap iter order for
-         value-tied entries.
-    """
-    items_list = list(items)
-    indexed = list(enumerate(items_list))
-    by_java_iter = [
-        kv for _, kv in sorted(
-            indexed,
-            key=lambda x: (_java_hashmap_bucket(x[1][0], capacity), -x[0]),
-        )
-    ]
-    return sorted(by_java_iter, key=lambda kv: kv[1], reverse=True)
 
 
 router = APIRouter()

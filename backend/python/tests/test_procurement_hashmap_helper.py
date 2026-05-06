@@ -17,7 +17,7 @@ now `ORDER BY created_at, id` accordingly.
 """
 from decimal import Decimal
 
-from smartbi_compat.api.analysis_procurement import (
+from smartbi_compat._java_compat import (
     _java_hashmap_bucket,
     _sort_entries_java_iter_then_value_desc,
 )
