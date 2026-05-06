@@ -558,6 +558,125 @@ Lombok `@Data` 自动生成 getter, 包括 `is*` boolean methods。Jackson 把�
 
 ---
 
+## ⛔ Rule 10: BigDecimal `divide(scale,rounding).multiply(K)` ≠ Python `(n/d*K).quantize(scale)`
+
+### 反 pattern (compounded rounding error)
+
+```python
+# ❌ BAD: 一次性算完再 quantize, 跟 Java 中间步 round 不一致
+def calculate_completion_rate(actual: Decimal, target: Decimal) -> Decimal:
+    return (actual / target * 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+# 1/3 * 100 = 33.333333..., quantize(scale=2) → 33.33
+# Java actual: BigDecimal.ONE.divide(THREE, 4, HALF_UP).multiply(100) = 0.3333 * 100 = 33.3300
+#                                                                       ↑ 4-digit quantize first
+```
+
+具体踩坑值（real PR-M-2 audit 2026-05-06 抓到 4 个 endpoint）：
+- alerts: 14.91 (Java) vs 14.9074 (Python wrong)
+- category-comparison: 15.28 vs 15.29
+- procurement: 46.6% vs 46.5%
+- sales: 15.28 vs 15.29
+
+### 正 pattern (mirror Java intermediate-round-then-multiply)
+
+```python
+# ✅ GOOD: divide 阶段先 quantize 到 4 位 (Java 第一参数 scale=4), 再 multiply, 再 final quantize
+def calculate_completion_rate(actual: Decimal, target: Decimal) -> Decimal:
+    if target == 0:
+        return Decimal("0")
+    intermediate = (actual / target).quantize(Decimal("0.0001"), ROUND_HALF_UP)  # 4-digit
+    result = intermediate * Decimal("100")
+    return result.quantize(Decimal("0.01"), ROUND_HALF_UP)  # final scale 2
+# 1/3 = 0.3333 (quantize 4) * 100 = 33.3300 (quantize 2 no-op since exact) ✓
+```
+
+### 何时这个 rule 适用
+
+任何 Java port 涉及：
+1. `BigDecimal.divide(divisor, scale, RoundingMode)` 接 `.multiply(K)` 接最终 quantize
+2. 百分比 / 比率 / 增长率计算 (completion rate, MoM growth, YoY ratio, profit margin, supplier concentration)
+3. **Python 端写 `(n / d * K).quantize(scale_2)` 的任何 site** (Decimal arithmetic 默认 28 位 precision，溢出末位)
+
+### Audit 来源
+
+- PR-M-2 2026-05-06 (chat 4 ship, commit `d61e1b46b` PR #94)
+- 4 个 sister chat 各自踩一次 (alerts / category-comparison / procurement / sales) → graduate hard-rule 阈值满足
+- Latent sites still pending audit per chat 4 finding: `analysis_finance.py:1666, 1679, 1695, 1832, 1896, 2095, 2163, 2195, 2636, 2651, 2830` + `_safe_growth_rate` + `_calculate_metric_from_sales` (F001 数据下不爆，其他 factory 可能踩)
+
+### 跟 Rule 4 的关系
+
+Rule 4 管 BigDecimal **序列化** (Decimal → number 不是 string)。Rule 10 管 BigDecimal **算术** (divide-multiply 中间步 round)。两个不同位置，都必须 mirror Java。
+
+---
+
+## ⛔ Rule 11: Java Jackson `LocalDateTime` drops trailing-zero microseconds
+
+### 反 pattern
+
+```python
+# ❌ BAD: Python datetime.isoformat() pads microsecond to 6 digits
+import datetime
+dt = datetime.datetime(2026, 5, 6, 10, 30, 0, 150710)
+print(dt.isoformat())
+# Python: '2026-05-06T10:30:00.150710'
+# Java :  '2026-05-06T10:30:00.15071'   ← 末位 0 被 Jackson trim 掉
+# byte-shape diff!
+```
+
+具体踩坑 case (PR-M-7 audit 2026-05-06):
+- query-templates: `data[0].createdAt` 在 cretas_db 数据 happens-to 整 6 位时 match by luck, 但其他 factory 数据 .xxxx0 会爆
+- datasource/list F001: 7 个 timestamp 字段全踩 (test env 数据 scale=5 居多)
+- Latent prod risk affecting **~50 endpoints** emitting any `LocalDateTime`
+
+### 正 pattern
+
+```python
+# ✅ GOOD: 用 _java_isoformat 共用 helper (定义 in backend/python/smartbi_compat/schema_compat.py)
+from smartbi_compat.schema_compat import _java_isoformat
+
+dt = datetime.datetime(2026, 5, 6, 10, 30, 0, 150710)
+print(_java_isoformat(dt))
+# '2026-05-06T10:30:00.15071'  ← rstrip("0") on fraction part, drop dot if frac empty
+```
+
+### Helper impl reference
+
+```python
+def _java_isoformat(dt) -> Optional[str]:
+    """Mirror Jackson LocalDateTime/LocalDate ISO-8601 output."""
+    if dt is None:
+        return None
+    s = dt.isoformat()
+    if "." not in s:
+        return s   # LocalDate or whole-second LocalDateTime
+    head, frac = s.rsplit(".", 1)
+    if not frac.isdigit():
+        return s   # defensive: timezone offset
+    frac = frac.rstrip("0")
+    if not frac:
+        return head   # all zeros → Java drops dot entirely
+    return f"{head}.{frac}"
+```
+
+### 何时这个 rule 适用
+
+任何 Python 端 `.isoformat()` call on datetime (LocalDateTime mirror)：
+- Audit `grep -rn "datetime.now\(\).isoformat\(\)\|\.isoformat\(\)" backend/python/smartbi_compat/`
+- Replace ALL with `_java_isoformat(dt)`
+- 例外：log timestamps / console output / non-Java-mirrored 用途 — 留 default isoformat
+
+### Audit 来源
+
+- PR-M-7 2026-05-06 (chat 3 ship, commit `e2a527326` PR #93)
+- Sister D investigation (PR-M doc commit `5c7c35222`) Cat G 首次 identified
+- 8 files updated in PR-M-7 across smartbi_compat (analysis.py / analysis_finance.py / analysis_sales.py / datasource.py / incentive_plan.py / query_templates_write.py / schema_compat.py + tests)
+
+### 跟 Rule 8 / Rule 9 的关系
+
+Rule 8 (Map.of key order) + Rule 9 (Lombok null emit) + Rule 11 (LocalDateTime microsecond) — 三个互补的 Jackson 序列化 quirk。任何 byte-shape parity port 必须三个全 mirror。
+
+---
+
 ## 工具 + 配置 reference
 
 ### `_decimal_to_number` helper
@@ -613,5 +732,7 @@ monkeypatch.setattr(
 | cost chat reviewer audit (2026-04-30) | Rule 1（`if x:` truthy-check 形式）/ Rule 5（legacy 例外）/ Rule 6（narrowed scope） |
 | sub-endpoints PR #32 impl (2026-05-01) | Rule 8（Map.of(N) Jackson hash order — 3 个不同 N 全踩坑） |
 | inventory PR #53 + department PR #52 + region in-flight (2026-05-02) | Rule 9（Lombok + Jackson 序列化 quirks — 3 个 sister chat 独立确认 3 个 sub-pattern） |
+| T6.1 dryrun pre-flight + PR-M-2 (2026-05-06) | Rule 10（BigDecimal divide-then-multiply 中间步 round — 4 sister chat 各踩一次：alerts/category-comparison/procurement/sales） |
+| Sister D PR-M doc + PR-M-7 (2026-05-06) | Rule 11（Java Jackson LocalDateTime trailing-zero microsecond — datasource/list F001 7 timestamps 踩；latent prod risk on ~50 endpoints） |
 
 后续 sister chats（receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
