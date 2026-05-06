@@ -45,6 +45,42 @@ _DISPLAY_SCALE     = Decimal("0.01")
 _QUANTIZE_HALF_UP  = ROUND_HALF_UP
 
 
+def _java_hashmap_bucket(s: str, capacity: int = 16) -> int:
+    """Mirror Java HashMap bucket index for a String key.
+
+    Used to predict Java HashMap.entrySet() iteration order, which is
+    bucket-asc + insertion-within-bucket. Needed for tie-breaking in
+    stable sorts where Python dict insertion order otherwise diverges
+    from Java HashMap iter (e.g. Collectors.groupingBy outputs).
+
+    Algorithm: Java String.hashCode() (h = 31*h + c, all chars), then
+    HashMap spread (h ^ (h >>> 16)) & (cap-1). Default cap=16, resizes
+    to 32 when size > 12 (loadFactor 0.75) — so for small dicts (<13
+    keys) cap=16 is correct.
+    """
+    h = 0
+    for c in str(s):
+        h = (31 * h + ord(c)) & 0xFFFFFFFF
+    spread = h ^ (h >> 16)
+    return spread & (capacity - 1)
+
+
+def _sort_entries_java_iter_then_value_desc(items, capacity: int = 16) -> list:
+    """Mirror Java `entrySet().stream().sorted(comparingByValue().reversed())`.
+
+    Java stream stable-sort starts from HashMap.entrySet() iter order — bucket
+    asc + insertion-within-bucket. Tied values therefore retain bucket-then-
+    insertion order. Python's `sorted` is also stable but the input order is
+    dict insertion order (== batch processing order). For tied values these
+    orders disagree, producing VALUE diffs in byte-shape parity tests.
+
+    Implementation: pre-sort by Java bucket index (stable preserves insertion
+    order within bucket), then stable sort by value desc.
+    """
+    by_java_iter = sorted(items, key=lambda kv: _java_hashmap_bucket(kv[0], capacity))
+    return sorted(by_java_iter, key=lambda kv: kv[1], reverse=True)
+
+
 router = APIRouter()
 
 
@@ -397,7 +433,9 @@ async def _calculate_supplier_ranking_from_data(
         return []
 
     total_value = sum(supplier_values.values(), Decimal("0"))
-    sorted_entries = sorted(supplier_values.items(), key=lambda kv: kv[1], reverse=True)
+    # Mirror Java stream sorted(comparingByValue.reversed()) on HashMap.entrySet()
+    # — tie ordering follows Java HashMap bucket iter, NOT Python dict insertion.
+    sorted_entries = _sort_entries_java_iter_then_value_desc(supplier_values.items())
 
     rankings = []
     for rank, (sid, value) in enumerate(sorted_entries, start=1):
@@ -490,23 +528,34 @@ async def _get_cost_metrics(
     return metrics
 
 
-def _metric_result_of(metric_code: str, metric_name: str, value: Decimal, unit: str) -> dict:
+def _metric_result_of(
+    metric_code: str,
+    metric_name: str,
+    value: Decimal,
+    unit: str,
+    *,
+    formatted_value: Optional[str] = None,
+    alert_level: str = "GREEN",
+    description: Optional[str] = None,
+) -> dict:
     """Mirror Java MetricResult.of(code, name, value, unit) — basic factory.
-    Always sets alertLevel='GREEN' (per Java line 471-475 explicit GREEN for KPI cards).
-    Rule 9 §9.3 11-field shape, golden-verified key order.
+
+    Default alertLevel='GREEN' matches MetricResult.of (line 127-135). Optional kwargs
+    cover the @Builder paths for KPI cards (line 467-510) that set formattedValue /
+    description / alertLevel directly. Rule 9 §9.3 11-field shape, golden-verified order.
     """
     return {
         "metricCode":      metric_code,
         "metricName":      metric_name,
         "value":           _decimal_to_number(value if isinstance(value, Decimal) else Decimal(value)),
-        "formattedValue":  None,
+        "formattedValue":  formatted_value,
         "unit":            unit,
         "changePercent":   None,
         "changeDirection": None,
         "changeValue":     None,
-        "alertLevel":      "GREEN",
+        "alertLevel":      alert_level,
         "dimensionValue":  None,
-        "description":     None,
+        "description":     description,
     }
 
 
@@ -530,7 +579,8 @@ async def _get_purchase_cost_analysis(
         tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
         category_values[mtid] = category_values.get(mtid, Decimal("0")) + tv
 
-    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+    # Java HashMap iter then stable sort by value desc — see _sort_entries_*.
+    sorted_entries = _sort_entries_java_iter_then_value_desc(category_values.items())
     chart_data = [
         {
             "category": mtid,
@@ -574,7 +624,8 @@ async def _get_material_category_ranking(
         return []
 
     total_value = sum(category_values.values(), Decimal("0"))
-    sorted_entries = sorted(category_values.items(), key=lambda kv: kv[1], reverse=True)
+    # Java HashMap iter then stable sort by value desc — see _sort_entries_*.
+    sorted_entries = _sort_entries_java_iter_then_value_desc(category_values.items())
 
     rankings = []
     for rank, (mtid, value) in enumerate(sorted_entries, start=1):
@@ -706,8 +757,14 @@ def _build_empty_dashboard() -> dict:
     }
 
 
-def _build_supplier_pie_chart(batches: list[dict]) -> dict:
-    """Mirror Java buildSupplierPieChart. PIE chart of supplier total purchase values.
+async def _build_supplier_pie_chart(factory_id: str, batches: list[dict]) -> dict:
+    """Mirror Java buildSupplierPieChart (line 837-872). PIE chart of supplier purchase totals.
+
+    Java line 850-851: each row resolves supplier name via supplierRepository.findById,
+    falling back to supplierId when not found. Title/data field names per F001 golden:
+      - title="供应商采购占比"
+      - data row keys [supplier, amount] (NOT [name, value])
+      - xaxisField="supplier" yaxisField="amount"
 
     Empty batches → empty data array (still 7-field ChartConfig per Rule 9 §9.2).
     """
@@ -721,32 +778,36 @@ def _build_supplier_pie_chart(batches: list[dict]) -> dict:
         tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
         supplier_totals[sid] = supplier_totals.get(sid, Decimal("0")) + tv
 
-    sorted_entries = sorted(supplier_totals.items(), key=lambda kv: kv[1], reverse=True)
-    chart_data = [
-        {
-            "name":  sid,
-            "value": _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-        }
-        for sid, value in sorted_entries
-    ]
+    # Java HashMap iter then stable sort by value desc — see _sort_entries_*.
+    sorted_entries = _sort_entries_java_iter_then_value_desc(supplier_totals.items())
+    chart_data = []
+    for sid, value in sorted_entries:
+        supplier = await _query_supplier_by_id(sid, factory_id)
+        # Java line 851: .map(Supplier::getName).orElse(entry.getKey())
+        supplier_name = supplier["name"] if supplier else sid
+        chart_data.append({
+            "supplier": supplier_name,
+            "amount":   _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+        })
 
     return {
         "chartType":   "PIE",
-        "title":       "供应商占比",
+        "title":       "供应商采购占比",
         "seriesField": None,
         "data":        chart_data,
         "options":     {"showPercentage": True, "showLegend": True},
-        "xaxisField":  "name",
-        "yaxisField":  "value",
+        "xaxisField":  "supplier",
+        "yaxisField":  "amount",
     }
 
 
 def _build_material_category_chart(batches: list[dict]) -> dict:
-    """Mirror Java buildMaterialCategoryChart. BAR chart of material category totals.
+    """Mirror Java buildMaterialCategoryChart (line 877-909). BAR chart of category totals.
 
-    Empty batches → empty data array. material_type_id is the grouping key
-    (Java enum / Python string identifier; real category names looked up at
-    presentation layer or via separate query — out of scope for byte parity).
+    Java line 889 limits to top 10. Title/data field names per F001 golden:
+      - title="材料类别采购金额"
+      - data row keys [category, amount] (NOT [category, value])
+      - yaxisField="amount" (NOT "value")
     """
     category_totals: dict[str, Decimal] = {}
     for b in batches:
@@ -758,141 +819,180 @@ def _build_material_category_chart(batches: list[dict]) -> dict:
         tv = (_to_decimal(up) * _to_decimal(rq)) if (up is not None and rq is not None) else Decimal("0")
         category_totals[mtype] = category_totals.get(mtype, Decimal("0")) + tv
 
-    sorted_entries = sorted(category_totals.items(), key=lambda kv: kv[1], reverse=True)
+    # Java HashMap iter then stable sort by value desc, then top 10 — see _sort_entries_*.
+    sorted_entries = _sort_entries_java_iter_then_value_desc(category_totals.items())[:10]
     chart_data = [
         {
             "category": mtype,
-            "value":    _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "amount":   _decimal_to_number(value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
         }
         for mtype, value in sorted_entries
     ]
 
     return {
         "chartType":   "BAR",
-        "title":       "物料类别采购分布",
+        "title":       "材料类别采购金额",
         "seriesField": None,
         "data":        chart_data,
         "options":     {"showDataLabels": True},
         "xaxisField":  "category",
-        "yaxisField":  "value",
+        "yaxisField":  "amount",
     }
 
 
-async def _build_overview_kpi_cards(
+async def _build_overview_metric_results(
     batches: list[dict],
     factory_id: str,
     start_date: date,
     end_date: date,
 ) -> list[dict]:
-    """Build 5 KPI cards for overview mode per spec §3.11.
+    """Mirror Java calculateKpiCards (line 462-535). Returns MetricResult dicts that
+    are subsequently fed to _metric_to_kpicard for default-mode kpiCards conversion,
+    AND consumed in MetricResult shape by _generate_ai_insights / _generate_suggestions.
 
-    KPIs (Java getProcurementOverview line 89-91 + buildKPICards helpers):
-      1. PURCHASE_TOTAL — total amount (alertLevel=GREEN)
-      2. BATCH_COUNT — batch count (alertLevel=GREEN)
-      3. AVG_UNIT_PRICE — average unit price (alertLevel=GREEN)
-      4. SUPPLIER_CONCENTRATION — concentration with T1 alert (RED >60, YELLOW >40)
-      5. MOM_GROWTH — month-over-month growth (conditional on previous-period non-empty)
+    Java metric set (4-or-5 metrics):
+      1. PROCUREMENT_AMOUNT — 采购总额 (元, GREEN, formattedValue=formatCurrency)
+      2. BATCH_COUNT       — 采购批次 (批, GREEN, formattedValue="%,d" % count)
+      3. AVG_BATCH_AMOUNT  — 平均批次金额 (元, GREEN, total/count NOT avg unit price)
+      4. SUPPLIER_CONCENTRATION — 供应商集中度 (%, T1 alert, description="最大供应商占比")
+      5. PROCUREMENT_MOM_GROWTH — 环比增长 (%, conditional, GREEN, formattedValue="%+.1f%%")
 
-    Empty batches → empty list ([]) per F999 golden.
-
-    KPICard 13-field shape per Rule 9 §9.3 (Lombok @Data + no @JsonInclude). Sister
-    Phase 2A endpoints emit MetricResult-shape (11 fields) for KPIs; here we emit the
-    KPICard wrapper shape per inventory PR-B template (#54).
+    NOTE: Java getCostMetrics (cost mode, line 282-329) emits a DIFFERENT 3rd metric
+    (AVG_UNIT_PRICE = "平均单价" = avg of positive unit prices) — that path is the
+    cost endpoint's _get_cost_metrics, NOT this one. Default mode uses AVG_BATCH_AMOUNT.
     """
     if not batches:
         return []
 
-    kpi_cards: list[dict] = []
+    metric_results: list[dict] = []
 
-    # KPI 1: Total amount
+    # Metric 1: 采购总额 (Java line 467-475)
     total_amount = _calculate_total_value(batches)
-    kpi_cards.append({
-        "metricCode":     "PURCHASE_TOTAL",
-        "metricName":     "采购总额",
-        "value":          _decimal_to_number(total_amount.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-        "formattedValue": _format_currency(total_amount),
-        "unit":           "元",
-        "changePercent":  None,
-        "changeDirection": None,
-        "alertLevel":     "GREEN",
-        "dimensionValue": None,
-    })
+    metric_results.append(_metric_result_of(
+        "PROCUREMENT_AMOUNT", "采购总额",
+        total_amount.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP), "元",
+        formatted_value=_format_currency(total_amount),
+    ))
 
-    # KPI 2: Batch count
-    kpi_cards.append({
-        "metricCode":     "BATCH_COUNT",
-        "metricName":     "采购批次",
-        "value":          len(batches),
-        "formattedValue": str(len(batches)),
-        "unit":           "批",
-        "changePercent":  None,
-        "changeDirection": None,
-        "alertLevel":     "GREEN",
-        "dimensionValue": None,
-    })
+    # Metric 2: 采购批次 (Java line 477-485)
+    batch_count = len(batches)
+    metric_results.append(_metric_result_of(
+        "BATCH_COUNT", "采购批次",
+        Decimal(batch_count), "批",
+        formatted_value=f"{batch_count:,d}",
+    ))
 
-    # KPI 3: Average unit price
-    avg_price = _calculate_average_unit_price(batches)
-    kpi_cards.append({
-        "metricCode":     "AVG_UNIT_PRICE",
-        "metricName":     "平均单价",
-        "value":          _decimal_to_number(avg_price.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-        "formattedValue": _format_currency(avg_price),
-        "unit":           "元",
-        "changePercent":  None,
-        "changeDirection": None,
-        "alertLevel":     "GREEN",
-        "dimensionValue": None,
-    })
+    # Metric 3: 平均批次金额 (Java line 487-497) — total/count, NOT avg unit price
+    avg_batch_amount = (
+        (total_amount / Decimal(batch_count)).quantize(_SCALE, rounding=_QUANTIZE_HALF_UP)
+        if batch_count > 0 else Decimal("0")
+    )
+    metric_results.append(_metric_result_of(
+        "AVG_BATCH_AMOUNT", "平均批次金额",
+        avg_batch_amount.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP), "元",
+        formatted_value=_format_currency(avg_batch_amount),
+    ))
 
-    # KPI 4: Supplier concentration with T1 alert
+    # Metric 4: 供应商集中度 (Java line 499-510) — has description
     concentration = _calculate_supplier_concentration(batches)
-    kpi_cards.append({
-        "metricCode":     "SUPPLIER_CONCENTRATION",
-        "metricName":     "供应商集中度",
-        "value":          _decimal_to_number(concentration.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-        "formattedValue": f"{float(concentration):.1f}%",
-        "unit":           "%",
-        "changePercent":  None,
-        "changeDirection": None,
-        "alertLevel":     _determine_concentration_alert_level(concentration),
-        "dimensionValue": None,
-    })
+    concentration_alert = _determine_concentration_alert_level(concentration)
+    metric_results.append(_metric_result_of(
+        "SUPPLIER_CONCENTRATION", "供应商集中度",
+        concentration.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP), "%",
+        formatted_value=f"{float(concentration):.1f}%",
+        alert_level=concentration_alert,
+        description="最大供应商占比",
+    ))
 
-    # KPI 5: MoM growth (conditional on previous period non-empty, Java line 317-326 pattern)
+    # Metric 5: 环比增长 (Java line 512-532) — conditional on previous period non-empty
     previous_start = _minus_months(start_date, 1)
     previous_end = _minus_months(end_date, 1)
     previous_batches = await _query_material_batches_in_range(factory_id, previous_start, previous_end)
     if previous_batches:
         previous_amount = _calculate_total_value(previous_batches)
         mom_growth = _calculate_mom_growth(total_amount, previous_amount)
-        kpi_cards.append({
-            "metricCode":     "MOM_GROWTH",
-            "metricName":     "采购环比增长",
-            "value":          _decimal_to_number(mom_growth.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-            "formattedValue": f"{float(mom_growth):.2f}%",
-            "unit":           "%",
-            "changePercent":  _decimal_to_number(mom_growth),
-            "changeDirection": _determine_change_direction(mom_growth),
-            "alertLevel":     "GREEN",
-            "dimensionValue": None,
+        direction = _determine_change_direction(mom_growth)
+        metric_results.append({
+            "metricCode":      "PROCUREMENT_MOM_GROWTH",
+            "metricName":      "环比增长",
+            "value":           _decimal_to_number(
+                mom_growth.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
+            "formattedValue":  f"{float(mom_growth):+.1f}%",
+            "unit":            "%",
+            "changePercent":   _decimal_to_number(mom_growth),
+            "changeDirection": direction,
+            "changeValue":     None,    # MetricResult.ofWithTrend Lombok default null
+            "alertLevel":      "GREEN", # ofWithTrend always GREEN
+            "dimensionValue":  None,
+            "description":     None,
         })
 
-    return kpi_cards
+    return metric_results
+
+
+def _metric_to_kpicard(metric: dict) -> dict:
+    """Mirror Java convertToKPICards (line 1030-1076) — MetricResult → KPICard.
+
+    KPICard Lombok @Builder declaration order (13 fields):
+      [key, title, value, rawValue, unit, change, changeRate, trend, status,
+       compareText, description, targetValue, completionRate]
+
+    Mappings (Java line 1061-1073):
+      key            ← metric.metricCode
+      title          ← metric.metricName
+      value          ← formattedValue if set, else value.toString(), else "-"
+      rawValue       ← metric.value
+      unit           ← metric.unit
+      change         ← metric.changeValue
+      changeRate     ← metric.changePercent
+      trend          ← UP→up, DOWN→down, else flat
+      status         ← RED→red, YELLOW→yellow, else green
+      description    ← metric.description
+      compareText / targetValue / completionRate → null (not set by convertToKPICards)
+    """
+    alert = metric.get("alertLevel")
+    status = "red" if alert == "RED" else "yellow" if alert == "YELLOW" else "green"
+
+    direction = metric.get("changeDirection")
+    trend = "up" if direction == "UP" else "down" if direction == "DOWN" else "flat"
+
+    formatted = metric.get("formattedValue")
+    raw = metric.get("value")
+    if formatted is not None:
+        value_str = formatted
+    elif raw is not None:
+        value_str = str(raw)
+    else:
+        value_str = "-"
+
+    return {
+        "key":            metric.get("metricCode"),
+        "title":          metric.get("metricName"),
+        "value":          value_str,
+        "rawValue":       raw,
+        "unit":           metric.get("unit"),
+        "change":         metric.get("changeValue"),
+        "changeRate":     metric.get("changePercent"),
+        "trend":          trend,
+        "status":         status,
+        "compareText":    None,
+        "description":    metric.get("description"),
+        "targetValue":    None,
+        "completionRate": None,
+    }
 
 
 async def _generate_ai_insights(
-    factory_id: str, batches: list[dict], kpi_cards: list[dict]
+    factory_id: str, batches: list[dict], metric_results: list[dict]
 ) -> list[dict]:
     """Mirror Java generateAiInsights (line 914-975). Rule-based, NO LLM.
-
-    Spec §3.12 Round 4 audit I4 fix: signature is `(factory_id, batches, kpi_cards)`
-    (not `(batches, kpi_cards)`) so we can resolve top supplier name via real query
-    (`_query_supplier_by_id`), matching Java `supplierRepository.findById(...).map(::getName).orElse(supplierId)`.
 
     Two checks:
       1. SUPPLIER_CONCENTRATION → RED (>60) / YELLOW (>40) supplier risk insight
       2. Top supplier highlight (INFO level, names the largest supplier)
+
+    Java line 961: `supplierOpt.map(Supplier::getName).orElse("未知供应商")` —
+    falls back to literal "未知供应商" string, NOT the supplier ID.
 
     AIInsight 5-key order (golden-verified): [level, category, message, relatedEntity, actionSuggestion]
     """
@@ -900,7 +1000,7 @@ async def _generate_ai_insights(
 
     # Check 1: supplier concentration alert
     concentration_metric = next(
-        (m for m in kpi_cards if m.get("metricCode") == "SUPPLIER_CONCENTRATION"),
+        (m for m in metric_results if m.get("metricCode") == "SUPPLIER_CONCENTRATION"),
         None,
     )
     if concentration_metric is not None and concentration_metric.get("value") is not None:
@@ -937,8 +1037,8 @@ async def _generate_ai_insights(
         top_sid = max(supplier_values.keys(), key=lambda k: supplier_values[k])
         top_value = supplier_values[top_sid]
         supplier = await _query_supplier_by_id(top_sid, factory_id)
-        # Java line 720-721: .orElse(supplierId)
-        supplier_name = supplier["name"] if supplier else top_sid
+        # Java line 961: .orElse("未知供应商")  -- literal string, NOT the supplier id
+        supplier_name = supplier["name"] if supplier else "未知供应商"
         insights.append({
             "level":            "INFO",
             "category":         "采购分布",
@@ -950,44 +1050,39 @@ async def _generate_ai_insights(
     return insights
 
 
-def _generate_suggestions(batches: list[dict], kpi_cards: list[dict]) -> list[str]:
-    """Mirror Java generateSuggestions (line 977-1005). Rule-based short text list.
+def _generate_suggestions(batches: list[dict], metric_results: list[dict]) -> list[str]:
+    """Mirror Java generateSuggestions (line 980-1005). Rule-based short text list.
 
-    Empty batches → empty list (overview path uses empty dashboard fallback in that case).
-    Non-empty batches → 1-3 contextual suggestions based on concentration + recent trend.
+    Java logic (NOT concentration/MoM-driven):
+      1. supplierCount < 3 → "当前活跃供应商数量较少，建议开发更多供应商以降低供应链风险"
+      2. highPriceCount > 0 (unit_price > avg_unit_price * 1.5) → "有 N 批次..."
+
+    Empty batches → empty list. Non-empty: zero, one, or two suggestions returned.
+
+    Note `metric_results` is reserved for parity with Java signature (it accepts the
+    KPI cards but doesn't read them; logic is purely batch-driven).
     """
     suggestions: list[str] = []
 
     if not batches:
         return suggestions
 
-    # Suggestion 1: concentration-driven
-    concentration_metric = next(
-        (m for m in kpi_cards if m.get("metricCode") == "SUPPLIER_CONCENTRATION"),
-        None,
-    )
-    if concentration_metric is not None and concentration_metric.get("value") is not None:
-        concentration = _to_decimal(concentration_metric["value"])
-        if concentration > _PROCUREMENT_CONCENTRATION_RED:
-            suggestions.append("供应商集中度过高，建议引入 2-3 家备选供应商以分散供应链风险")
-        elif concentration > _PROCUREMENT_CONCENTRATION_YELLOW:
-            suggestions.append("供应商集中度偏高，可考虑评估备选供应商以提升供应链韧性")
+    # Suggestion 1: distinct active supplier count < 3
+    supplier_count = len({b.get("supplier_id") for b in batches if b.get("supplier_id") is not None})
+    if supplier_count < 3:
+        suggestions.append("当前活跃供应商数量较少，建议开发更多供应商以降低供应链风险")
 
-    # Suggestion 2: MoM growth direction
-    mom_metric = next(
-        (m for m in kpi_cards if m.get("metricCode") == "MOM_GROWTH"),
-        None,
+    # Suggestion 2: batches with unit_price > avg * 1.5
+    avg_price = _calculate_average_unit_price(batches)
+    threshold = avg_price * Decimal("1.5")
+    high_price_count = sum(
+        1 for b in batches
+        if b.get("unit_price") is not None and _to_decimal(b["unit_price"]) > threshold
     )
-    if mom_metric is not None:
-        direction = mom_metric.get("changeDirection")
-        if direction == "UP":
-            suggestions.append("采购环比增长，建议复盘需求驱动是否真实，避免库存积压")
-        elif direction == "DOWN":
-            suggestions.append("采购环比下降，关注是否存在供货中断或需求萎缩风险")
-
-    # Default suggestion if nothing flagged
-    if not suggestions:
-        suggestions.append("采购数据健康，建议持续监控供应商表现与价格波动")
+    if high_price_count > 0:
+        suggestions.append(
+            f"有 {high_price_count} 批次采购单价高于平均价格50%以上，建议核查采购价格"
+        )
 
     return suggestions
 
@@ -1017,12 +1112,16 @@ async def _get_procurement_overview(
     if not batches:
         return _build_empty_dashboard()
 
-    # KPI cards
-    kpi_cards = await _build_overview_kpi_cards(batches, factory_id, start_date, end_date)
+    # Compute metric_results (MetricResult shape) THEN convert to KPICard shape.
+    # Java line 90-91 splits this exact way: metricResults feeds AI/suggestions and
+    # kpiCards (KPICard 13-field shape) is the public field on DashboardResponse.
+    metric_results = await _build_overview_metric_results(batches, factory_id, start_date, end_date)
+    kpi_cards = [_metric_to_kpicard(m) for m in metric_results]
 
-    # Charts (3 builders): trend DAY (reuse PR-A helper), supplier pie, material category
+    # Charts (3 builders): trend DAY (reuse PR-A helper), supplier pie (async lookup),
+    # material category. Java line 94-101 LinkedHashMap put-order: trend, supplier, category.
     trend_chart = await _get_procurement_trend_chart(factory_id, start_date, end_date, "DAY")
-    supplier_pie_chart = _build_supplier_pie_chart(batches)
+    supplier_pie_chart = await _build_supplier_pie_chart(factory_id, batches)
     material_category_chart = _build_material_category_chart(batches)
     chart_list = [trend_chart, supplier_pie_chart, material_category_chart]
     charts: dict[str, dict] = {}
@@ -1035,15 +1134,17 @@ async def _get_procurement_overview(
     supplier_rankings = await _calculate_supplier_ranking_from_data(factory_id, batches)
     rankings = {"supplier": supplier_rankings}
 
-    # Rule-based generators
-    ai_insights = await _generate_ai_insights(factory_id, batches, kpi_cards)
-    suggestions = _generate_suggestions(batches, kpi_cards)
+    # Rule-based generators (consume MetricResult shape, not KPICard shape)
+    ai_insights = await _generate_ai_insights(factory_id, batches, metric_results)
+    suggestions = _generate_suggestions(batches, metric_results)
 
-    # 16-key DashboardResponse (matching inventory PR-B + F999 golden order)
+    # 16-key DashboardResponse — Java line 114-122 builder() does NOT set
+    # startDate / endDate (they remain Lombok @Builder default = null).
+    # F001 golden confirms both null in populated path, mirroring empty path.
     return {
         "period":            None,
-        "startDate":         start_date.isoformat(),
-        "endDate":           end_date.isoformat(),
+        "startDate":         None,
+        "endDate":           None,
         "kpiCards":          kpi_cards,
         "metricCards":       None,
         "rankings":          rankings,
