@@ -1417,6 +1417,19 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         return batchNumber;
     }
 
+    @Override
+    @Transactional
+    public void recalculateMovingAvgPrice(String materialTypeId, java.math.BigDecimal receiptQty,
+                                          java.math.BigDecimal receiptPrice, String newBatchId) {
+        com.cretas.aims.entity.RawMaterialType materialType =
+                materialTypeRepository.findById(materialTypeId).orElse(null);
+        if (materialType == null) {
+            log.warn("recalculateMovingAvgPrice: materialType {} not found, skip", materialTypeId);
+            return;
+        }
+        updateMovingAvgPrice(materialType, receiptQty, receiptPrice, newBatchId);
+    }
+
     /**
      * 入库时更新物料类型的移动平均价
      * 公式: 新均价 = (现有总量 × 现均价 + 入库数量 × 入库价) / (现有总量 + 入库数量)
@@ -1436,13 +1449,17 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             java.math.BigDecimal existingQty;
 
             if (currentAvg != null && currentAvg.compareTo(java.math.BigDecimal.ZERO) > 0) {
-                // 有现有均价 — 用 totalWeight 反推现有量，或查库存总量
+                // 有现有均价 — 用当前在库量 (receiptQty - usedQty - reservedQty) 加权。
+                // 注意: 早期实现用 getTotalWeight() = weightPerUnit × receiptQuantity, 但 weightPerUnit
+                // 是可选字段, 大部分批次未填, 退化成 0 → 加权公式失效成"最新单价覆盖"。
+                // getCurrentQuantity 是 @Transient 计算属性, 直接反映当前在库存货量, 跟会计标准
+                // 移动加权平均成本 (Moving Weighted Average Cost) 公式语义一致。
                 List<MaterialBatch> allBatches = materialBatchRepository
                         .findByFactoryIdAndMaterialTypeId(
                                 materialType.getFactoryId(), materialType.getId());
                 existingQty = allBatches.stream()
                         .filter(b -> !b.getId().equals(newBatchId))
-                        .map(b -> b.getTotalWeight() != null ? b.getTotalWeight() : java.math.BigDecimal.ZERO)
+                        .map(b -> b.getCurrentQuantity() != null ? b.getCurrentQuantity() : java.math.BigDecimal.ZERO)
                         .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
             } else {
                 // 首批入库 — 均价直接等于本批单价

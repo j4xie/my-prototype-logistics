@@ -24,6 +24,7 @@ import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.event.MaterialReceivedEvent;
+import com.cretas.aims.service.MaterialBatchService;
 import com.cretas.aims.service.inventory.PurchaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final BomItemRepository bomItemRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final MaterialBatchService materialBatchService;
 
     /** Rule 2 hydration: lookup SO orderNumber for PO.salesOrderNumber @Transient. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -87,7 +89,8 @@ public class PurchaseServiceImpl implements PurchaseService {
                                MaterialBatchRepository materialBatchRepository,
                                BomItemRepository bomItemRepository,
                                com.cretas.aims.service.finance.ArApService arApService,
-                               ApplicationEventPublisher applicationEventPublisher) {
+                               ApplicationEventPublisher applicationEventPublisher,
+                               MaterialBatchService materialBatchService) {
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
         this.receiveRecordRepository = receiveRecordRepository;
@@ -97,6 +100,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         this.bomItemRepository = bomItemRepository;
         this.arApService = arApService;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.materialBatchService = materialBatchService;
     }
 
     // ==================== 采购订单 ====================
@@ -526,9 +530,18 @@ public class PurchaseServiceImpl implements PurchaseService {
         }
 
         // 确认入库：为每个行项目创建 MaterialBatch
+        // 注意: createMaterialBatchFromReceiveItem 直接 new MaterialBatch + repo.save,
+        // 绕开了 MaterialBatchService.createMaterialBatch 路径上的 updateMovingAvgPrice。
+        // 必须在此显式调用 recalculateMovingAvgPrice, 否则 raw_material_types.moving_avg_price
+        // 永远不会被采购入库流程更新, 三价对比的"移动均价"列将永远为 -。
         for (PurchaseReceiveItem item : record.getItems()) {
             MaterialBatch batch = createMaterialBatchFromReceiveItem(factoryId, record, item, userId);
             item.setMaterialBatchId(batch.getId());
+            materialBatchService.recalculateMovingAvgPrice(
+                    item.getMaterialTypeId(),
+                    item.getReceivedQuantity(),
+                    item.getUnitPrice(),
+                    batch.getId());
         }
 
         // 更新入库单状态

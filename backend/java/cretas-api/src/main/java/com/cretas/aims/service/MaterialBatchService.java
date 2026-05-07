@@ -198,4 +198,20 @@ public interface MaterialBatchService {
      * @since 2025-11-20
      */
     MaterialBatchDTO undoFrozen(String factoryId, String batchId, UndoFrozenRequest request);
+
+    /**
+     * 重算并更新某原料类型的移动平均价
+     *
+     * 公式: newAvg = (existingQty × currentAvg + receiptQty × receiptPrice) / (existingQty + receiptQty)
+     *
+     * 入库链路若不走 createMaterialBatch (例如 PurchaseService.confirmReceive 直接 new MaterialBatch),
+     * 必须显式调用本方法, 否则三价对比的"移动均价"列将永远为 null。
+     *
+     * @param materialTypeId 原料类型ID
+     * @param receiptQty 本次入库数量
+     * @param receiptPrice 本次入库单价
+     * @param newBatchId 本次新建的批次ID, 用于在汇总现有量时把自己排除
+     */
+    void recalculateMovingAvgPrice(String materialTypeId, BigDecimal receiptQty,
+                                   BigDecimal receiptPrice, String newBatchId);
 }
