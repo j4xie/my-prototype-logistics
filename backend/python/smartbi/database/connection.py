@@ -27,8 +27,15 @@ if settings.postgres_enabled:
         engine = create_engine(
             settings.postgres_url,
             poolclass=QueuePool,
-            pool_size=settings.postgres_pool_size,
-            max_overflow=settings.postgres_max_overflow,
+            # Multi-worker safe pool sizing — see PR-1 spike
+            # (docs/qa-audits/2026-05-07-uvicorn-workers-spike.md §5).
+            # PG max_connections=100 reserves 3 for superuser → ~97 usable.
+            # Budget: 4 workers × (2+3) sync × 2 engines = 40 + asyncpg ~20 +
+            # Java JDBC ~30 = ~90, fits cap. Hardcoded so tuning here does not
+            # require re-deriving postgres_pool_size, which is also used as
+            # asyncpg max_size in smartbi/config.py:201.
+            pool_size=2,
+            max_overflow=3,
             pool_pre_ping=True,  # Test connections before use
             pool_recycle=3600,
             pool_timeout=10,
@@ -64,8 +71,9 @@ if settings.food_kb_postgres_password:
         cretas_engine = create_engine(
             settings.food_kb_db_url,
             poolclass=QueuePool,
-            pool_size=settings.postgres_pool_size,
-            max_overflow=settings.postgres_max_overflow,
+            # Same multi-worker rationale as the smartbi engine above.
+            pool_size=2,
+            max_overflow=3,
             pool_pre_ping=True,
             pool_recycle=3600,
             pool_timeout=10,
