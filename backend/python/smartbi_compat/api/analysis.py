@@ -41,6 +41,7 @@ from typing import Any, Iterable, List, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
+from smartbi_compat._java_compat import _format_decimal_half_up
 from smartbi_compat.alert_thresholds import ALERT_SEVERITY, load_thresholds
 from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
@@ -441,7 +442,7 @@ def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
             level="RED",
             category="sales",
             title="销售目标严重滞后",
-            message=f"当前完成率仅为 {completion_rate:.1f}%，远低于预期",
+            message=f"当前完成率仅为 {_format_decimal_half_up(completion_rate, 1)}%，远低于预期",  # Rule 12
             metric="目标完成率",
             value=completion_rate,
             threshold=th.completion_red,
@@ -452,7 +453,7 @@ def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
             level="YELLOW",
             category="sales",
             title="销售目标需加速",
-            message=f"当前完成率为 {completion_rate:.1f}%，需要加快进度",
+            message=f"当前完成率为 {_format_decimal_half_up(completion_rate, 1)}%，需要加快进度",  # Rule 12
             metric="目标完成率",
             value=completion_rate,
             threshold=th.completion_yellow,
@@ -472,7 +473,7 @@ def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="RED",
                 category="sales",
                 title="销售额大幅下降",
-                message=f"销售额环比下降 {abs(growth_rate):.1f}%，需紧急关注",
+                message=f"销售额环比下降 {_format_decimal_half_up(abs(growth_rate), 1)}%，需紧急关注",  # Rule 12
                 metric="环比增长率",
                 value=growth_rate,
                 threshold=th.growth_red,
@@ -483,7 +484,7 @@ def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="YELLOW",
                 category="sales",
                 title="销售额有所下降",
-                message=f"销售额环比下降 {abs(growth_rate):.1f}%，需关注趋势",
+                message=f"销售额环比下降 {_format_decimal_half_up(abs(growth_rate), 1)}%，需关注趋势",  # Rule 12
                 metric="环比增长率",
                 value=growth_rate,
                 threshold=th.growth_yellow,
@@ -514,7 +515,7 @@ def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="RED",
                 category="sales",
                 title=f"销售员 {name} 业绩预警",
-                message=f"{name} 目标完成率仅为 {rate:.1f}%",
+                message=f"{name} 目标完成率仅为 {_format_decimal_half_up(rate, 1)}%",  # Rule 12
                 metric="个人完成率",
                 value=rate,
                 threshold=th.completion_red,
@@ -551,7 +552,7 @@ def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="RED",
                 category="finance",
                 title="应收账款严重逾期",
-                message=f"客户 {d.customer_name} 应收款 {receivable:.2f} 元已逾期 {aging} 天",
+                message=f"客户 {d.customer_name} 应收款 {_format_decimal_half_up(receivable, 2)} 元已逾期 {aging} 天",  # Rule 12
                 metric="账龄天数",
                 value=Decimal(aging),
                 threshold=Decimal(th.aging_red),
@@ -562,7 +563,7 @@ def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="YELLOW",
                 category="finance",
                 title="应收账款即将逾期",
-                message=f"客户 {d.customer_name} 应收款 {receivable:.2f} 元账龄已达 {aging} 天",
+                message=f"客户 {d.customer_name} 应收款 {_format_decimal_half_up(receivable, 2)} 元账龄已达 {aging} 天",  # Rule 12
                 metric="账龄天数",
                 value=Decimal(aging),
                 threshold=Decimal(th.aging_yellow),
@@ -579,7 +580,7 @@ def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="RED",
                 category="finance",
                 title="成本严重超支",
-                message=f"实际支出超预算 {variance:.1f}%，需严格控制",
+                message=f"实际支出超预算 {_format_decimal_half_up(variance, 1)}%，需严格控制",  # Rule 12
                 metric="预算偏差率",
                 value=variance,
                 threshold=th.cost_variance_red,
@@ -590,7 +591,7 @@ def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
                 level="YELLOW",
                 category="finance",
                 title="成本有所超支",
-                message=f"实际支出超预算 {variance:.1f}%，需关注",
+                message=f"实际支出超预算 {_format_decimal_half_up(variance, 1)}%，需关注",  # Rule 12
                 metric="预算偏差率",
                 value=variance,
                 threshold=th.cost_variance_yellow,
@@ -604,7 +605,7 @@ def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
             level="RED",
             category="finance",
             title="应收账款总额过高",
-            message=f"应收账款总额达 {total_receivable:.2f} 元，资金压力大",
+            message=f"应收账款总额达 {_format_decimal_half_up(total_receivable, 2)} 元，资金压力大",  # Rule 12
             metric="应收总额",
             value=total_receivable,
             threshold=th.amount_red,
@@ -615,7 +616,7 @@ def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
             level="YELLOW",
             category="finance",
             title="应收账款总额较高",
-            message=f"应收账款总额达 {total_receivable:.2f} 元，需关注回款",
+            message=f"应收账款总额达 {_format_decimal_half_up(total_receivable, 2)} 元，需关注回款",  # Rule 12
             metric="应收总额",
             value=total_receivable,
             threshold=th.amount_yellow,
@@ -660,7 +661,7 @@ def _generate_department_alerts(factory_id: str, range_: DateRange) -> list[dict
                 level="RED",
                 category="department",
                 title=f"{dept_name} 人均产出过低",
-                message=f"{dept_name} 人均销售额仅为 {per_capita:.2f} 元，严重低于标准",
+                message=f"{dept_name} 人均销售额仅为 {_format_decimal_half_up(per_capita, 2)} 元，严重低于标准",  # Rule 12
                 metric="人均产出",
                 value=per_capita,
                 threshold=th.per_capita_red,
@@ -671,7 +672,7 @@ def _generate_department_alerts(factory_id: str, range_: DateRange) -> list[dict
                 level="YELLOW",
                 category="department",
                 title=f"{dept_name} 人均产出偏低",
-                message=f"{dept_name} 人均销售额为 {per_capita:.2f} 元，低于期望",
+                message=f"{dept_name} 人均销售额为 {_format_decimal_half_up(per_capita, 2)} 元，低于期望",  # Rule 12
                 metric="人均产出",
                 value=per_capita,
                 threshold=th.per_capita_yellow,
@@ -773,7 +774,7 @@ def _generate_sales_recommendations(factory_id: str, range_: DateRange) -> list[
             recommendations.append(_new_recommendation_dict(
                 rec_type="PRODUCT_FOCUS",
                 title="优化产品结构",
-                description=f"单一产品占比达 {concentration:.1f}%，建议分散风险",
+                description=f"单一产品占比达 {_format_decimal_half_up(concentration, 1)}%，建议分散风险",  # Rule 12
                 priority=2,
                 impact="降低对单一产品的依赖，提高业务稳定性",
                 action_items=[
@@ -838,7 +839,7 @@ def _generate_cost_recommendations(factory_id: str, range_: DateRange) -> list[d
             recommendations.append(_new_recommendation_dict(
                 rec_type="COST_REDUCTION",
                 title="优化原材料成本",
-                description=f"原材料成本占比达 {material_ratio:.1f}%，建议优化采购",
+                description=f"原材料成本占比达 {_format_decimal_half_up(material_ratio, 1)}%，建议优化采购",  # Rule 12
                 priority=2,
                 impact="降低原材料成本，提高利润率",
                 action_items=[
@@ -877,7 +878,7 @@ def _generate_customer_recommendations(factory_id: str, range_: DateRange) -> li
             recommendations.append(_new_recommendation_dict(
                 rec_type="CUSTOMER_RETENTION",
                 title="加强核心客户维护",
-                description=f"Top 3 客户贡献 {top_ratio:.1f}% 销售额，需重点维护",
+                description=f"Top 3 客户贡献 {_format_decimal_half_up(top_ratio, 1)}% 销售额，需重点维护",  # Rule 12
                 priority=1,
                 impact="稳定核心客户，降低客户流失风险",
                 action_items=[
