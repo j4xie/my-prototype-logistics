@@ -224,6 +224,64 @@ async def lifespan(app: FastAPI):
     logger.info(f"Debug mode: {get_settings().debug}")
     logger.info(f"LLM Model: {get_settings().llm_model}")
 
+    # ──────────────────────────────────────────────────────────────────
+    # Leader election (PR-2 of multi-worker enablement; see PR-1 spike
+    # docs/qa-audits/2026-05-07-uvicorn-workers-spike.md §5).
+    #
+    # Multi-worker uvicorn (--workers N) spawns N independent Python
+    # processes, each running this lifespan. Without a leader gate, the
+    # 5 background tasks below run N times in parallel, causing:
+    #   - restaurant_etl: 4× concurrent INSERT/UPSERT → deadlock risk
+    #   - narrative/chat-session/llm cache pruners: 4× wasteful DELETE
+    #   - template embedding warmer: 4× idempotent but wasteful
+    #
+    # Strategy: the first worker to acquire an exclusive flock on a
+    # per-env lock file becomes leader; followers skip the gated tasks.
+    # If the leader exits, OS releases the fd → next worker spawned by
+    # uvicorn master grabs the lock at startup. systemd Restart=always
+    # handles the respawn loop. Single-worker deployments (--workers 1
+    # default) work unchanged: only one worker, it always wins.
+    #
+    # Per-env naming (prod / test) avoids collision when both 8083
+    # (prod) and 8084 (test) run on the same box. POSTGRES_DB derives
+    # the env name — same logic the rest of the service uses.
+    # ──────────────────────────────────────────────────────────────────
+    # `os` is imported at module scope (L22), but this function reassigns
+    # `import os` later (L260, L283) — Python's scoping rule then treats
+    # `os` as local to lifespan(), making it Unbound here. Re-import to
+    # bind the local before first use.
+    import os as _os
+    import fcntl
+    import pathlib
+    _leader_env_name = "prod" if _os.getenv("POSTGRES_DB") == "smartbi_prod_db" else "test"
+    _leader_lock_path = pathlib.Path(f"/tmp/cretas-python-leader-{_leader_env_name}.lock")
+    # _leader_fd is intentionally never closed — held for worker lifetime
+    # so the kernel keeps the flock. On process exit OS releases it.
+    _leader_fd = None
+    try:
+        _leader_fd = _os.open(_leader_lock_path, _os.O_CREAT | _os.O_RDWR, 0o644)
+        fcntl.flock(_leader_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _is_leader = True
+        # Best-effort PID stamp for ops debugging; ignore failures.
+        try:
+            pid_bytes = f"{_os.getpid()}\n".encode()
+            _os.lseek(_leader_fd, 0, _os.SEEK_SET)
+            _os.write(_leader_fd, pid_bytes)
+            _os.ftruncate(_leader_fd, len(pid_bytes))
+        except OSError:
+            pass
+        logger.info(
+            f"[leader] PID={_os.getpid()} env={_leader_env_name} "
+            f"acquired lock {_leader_lock_path}"
+        )
+    except (BlockingIOError, OSError) as _lock_ex:
+        _is_leader = False
+        logger.info(
+            f"[follower] PID={_os.getpid()} env={_leader_env_name} "
+            f"another worker holds leader lock — gated background tasks skipped "
+            f"({type(_lock_ex).__name__})"
+        )
+
     # Check PostgreSQL connection if enabled
     if get_settings().postgres_enabled:
         try:
@@ -333,12 +391,18 @@ async def lifespan(app: FastAPI):
             except Exception:
                 pass
             if existing == 0 or (expected > 0 and existing < expected):
-                logger.info(
-                    f"[startup] template embedding index {existing}/{expected} — "
-                    f"populating in background"
-                )
-                import asyncio as _asyncio
-                _asyncio.create_task(populate_all(_emb_pool))
+                if _is_leader:
+                    logger.info(
+                        f"[startup] template embedding index {existing}/{expected} — "
+                        f"populating in background (leader)"
+                    )
+                    import asyncio as _asyncio
+                    _asyncio.create_task(populate_all(_emb_pool))
+                else:
+                    logger.info(
+                        f"[follower] template embedding warmer skipped "
+                        f"({existing}/{expected}; leader will populate)"
+                    )
             else:
                 logger.info(f"[startup] template embedding index has {existing} rows, skipping populate")
     except Exception as e:
@@ -368,8 +432,11 @@ async def lifespan(app: FastAPI):
                     # 1 hour between prunes — cache TTL is 24h, so max stale window is ~1h.
                     await _asyncio.sleep(3600)
 
-            _narrative_pruner_task = _asyncio.create_task(_prune_narrative_cache_forever())
-            logger.info("[startup] narrative_cache hourly pruner armed")
+            if _is_leader:
+                _narrative_pruner_task = _asyncio.create_task(_prune_narrative_cache_forever())
+                logger.info("[leader] narrative_cache hourly pruner armed")
+            else:
+                logger.info("[follower] narrative_cache pruner skipped (leader handles)")
         except Exception as e:
             logger.warning(f"[startup] narrative_cache pruner init failed: {e}")
 
@@ -490,8 +557,12 @@ async def lifespan(app: FastAPI):
                     # 1 hour between runs — ETL is idempotent so overlap risk is low.
                     await _asyncio.sleep(3600)
 
-            _restaurant_etl_task = _asyncio.create_task(_run_restaurant_ops_etl_forever())
-            logger.info("[startup] restaurant-ops hourly ETL armed")
+            if _is_leader:
+                _restaurant_etl_task = _asyncio.create_task(_run_restaurant_ops_etl_forever())
+                logger.info("[leader] restaurant-ops hourly ETL armed")
+            else:
+                # restaurant_etl is the deadlock-risk task per PR-1 §背景 — must be leader-only
+                logger.info("[follower] restaurant-ops ETL skipped (leader handles; avoids 4× INSERT deadlock)")
         except Exception as e:
             logger.warning(f"[startup] restaurant-ops ETL init failed: {e}")
 
@@ -524,8 +595,11 @@ async def lifespan(app: FastAPI):
                     logger.warning(f"[chat-session] prune failed: {ex}")
                 await _asyncio.sleep(1800)  # 30 min cadence
 
-        _chat_session_pruner_task = _asyncio.create_task(_prune_chat_sessions_forever())
-        logger.info("[startup] chat-session 30-min pruner armed")
+        if _is_leader:
+            _chat_session_pruner_task = _asyncio.create_task(_prune_chat_sessions_forever())
+            logger.info("[leader] chat-session 30-min pruner armed")
+        else:
+            logger.info("[follower] chat-session pruner skipped (leader handles)")
     except Exception as e:
         logger.warning(f"[startup] chat-session pruner init failed: {e}")
 
@@ -558,8 +632,11 @@ async def lifespan(app: FastAPI):
                     logger.warning(f"[llm-cache] prune failed: {ex}")
                 await _asyncio.sleep(3600)  # 1h cadence
 
-        _llm_cache_pruner_task = _asyncio.create_task(_prune_llm_cache_forever())
-        logger.info("[startup] llm-answer-cache hourly pruner armed")
+        if _is_leader:
+            _llm_cache_pruner_task = _asyncio.create_task(_prune_llm_cache_forever())
+            logger.info("[leader] llm-answer-cache hourly pruner armed")
+        else:
+            logger.info("[follower] llm-answer-cache pruner skipped (leader handles)")
     except Exception as e:
         logger.warning(f"[startup] llm-cache pruner init failed: {e}")
 
