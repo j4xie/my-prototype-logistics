@@ -144,6 +144,13 @@ export default function PurchaseOrderListScreen() {
           ListEmptyComponent={<Text style={styles.empty}>暂无采购单</Text>}
         />
       )}
+
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        onPress={() => navigation.navigate('PurchaseOrderCreate')}
+        label="新建采购单"
+      />
     </View>
   );
 }
@@ -165,4 +172,10 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
   actionBtn: { flex: 1 },
   empty: { textAlign: 'center', marginTop: 60, color: '#999' },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
 });
