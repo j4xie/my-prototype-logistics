@@ -239,3 +239,6 @@ tests/e2e-comprehensive/results/depth-aiq-2026-04-26/screenshots-upload/
 
 # ML model training samples + datasets at repo root (binary, too large for git)
 /models/
+
+# Python service runtime logs (rotating)
+backend/python/python-service.log*
