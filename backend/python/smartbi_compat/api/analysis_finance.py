@@ -1576,24 +1576,198 @@ async def _query_finance_sales_fallback(
 
 
 # ============================================================
-# Section 3: Sub-service stubs (composite path)
-# Phase C.1 fills these with A.2-verified empty-state shapes.
+# Section 3: Composite path — finance overview real port
+# Replaces former empty stub per PR #124 investigation Pattern B.
+# Mirrors Java FinanceAnalysisServiceImpl.getFinanceOverview legacy
+# fallback (line 149-189). Spec: docs/superpowers/specs/
+# 2026-05-07-phase2a-finance-overview-real-port-spec.md
 # ============================================================
 
 
-async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
-    """F999 empty-state — Java FinanceAnalysisServiceImpl.getFinanceOverview Gold-primary
-    path returns CLEAN empty DashboardResponse when buildFromFinanceSummary returns null
-    (no revenue + no bills). A.5 golden verified shape.
+def _convert_metrics_to_kpi_cards(metrics: list[dict]) -> list[dict]:
+    """Mirror Java FinanceAnalysisServiceImpl.convertToKPICards (line 1372-1418).
 
-    Differs from sister sales which emitted YELLOW insight + 1 suggestion. Finance does NOT.
-    Golden shows: kpiCards=[], metricCards=null, rankings={}, charts={}, chartList=null,
-    aiInsights=[], alerts=null, recommendations=null, suggestions=[], generatedAt=null,
-    lastUpdated=volatile, fromCache=false, cacheExpireAt=null.
+    Maps each MetricResult dict → KPICard dict. Status / trend derived from
+    alertLevel / changeDirection enums. value falls back to formattedValue
+    → str(value) → "-".
     """
+    cards: list[dict] = []
+    for m in metrics:
+        alert_level = m.get("alertLevel")
+        if alert_level == "RED":
+            status = "red"
+        elif alert_level == "YELLOW":
+            status = "yellow"
+        else:
+            status = "green"
+
+        change_direction = m.get("changeDirection")
+        if change_direction == "UP":
+            trend = "up"
+        elif change_direction == "DOWN":
+            trend = "down"
+        else:
+            trend = "flat"
+
+        formatted = m.get("formattedValue")
+        raw = m.get("value")
+        if formatted is not None:
+            value_field = formatted
+        elif raw is not None:
+            value_field = str(raw)
+        else:
+            value_field = "-"
+
+        cards.append(_new_kpi_card_dict(
+            key=m.get("metricCode"),
+            title=m.get("metricName"),
+            raw_value=raw,
+            value=value_field,
+            unit=m.get("unit"),
+            change=m.get("changeValue"),
+            change_rate=m.get("changePercent"),
+            trend=trend,
+            status=status,
+            description=m.get("description"),
+        ))
+    return cards
+
+
+def _generate_finance_insights(
+    metrics: list[dict], rankings: list[dict]
+) -> list[dict]:
+    """Mirror Java FinanceAnalysisServiceImpl.generateFinanceInsights (line 1659-1711).
+
+    Three conditional emit branches:
+      1. GROSS_MARGIN metric is RED → RED "毛利率偏低" insight
+      2. AGING_90_RATIO metric is RED → RED "应收账款风险预警" insight
+      3. rankings non-empty AND >=1 RED ranking → YELLOW "高风险客户" insight
+
+    Chinese messages verbatim from Java source.
+    """
+    insights: list[dict] = []
+
+    gross_margin = next(
+        (m for m in metrics if m.get("metricCode") == "GROSS_MARGIN"), None
+    )
+    if gross_margin is not None and gross_margin.get("alertLevel") == "RED":
+        insights.append(_new_ai_insight_dict(
+            level="RED",
+            category="毛利率偏低",
+            message="当前毛利率为 " + str(gross_margin.get("formattedValue"))
+                    + "，低于行业标准15%，建议审视成本结构和定价策略。",
+            related_entity="GROSS_MARGIN",
+            action_suggestion="审视产品定价策略，优化采购成本",
+        ))
+
+    aging_90 = next(
+        (m for m in metrics if m.get("metricCode") == "AGING_90_RATIO"), None
+    )
+    if aging_90 is not None and aging_90.get("alertLevel") == "RED":
+        insights.append(_new_ai_insight_dict(
+            level="RED",
+            category="应收账款风险预警",
+            message="90天以上账龄应收占比达 " + str(aging_90.get("formattedValue"))
+                    + "，超过20%警戒线，需立即加强催收。",
+            related_entity="AGING_90_RATIO",
+            action_suggestion="启动专项催收，必要时考虑法律手段",
+        ))
+
+    if rankings:
+        red_count = sum(1 for r in rankings if r.get("alertLevel") == "RED")
+        if red_count > 0:
+            insights.append(_new_ai_insight_dict(
+                level="YELLOW",
+                category="高风险客户",
+                message="发现 " + str(red_count)
+                        + " 个客户账龄超过90天，建议优先跟进催收。",
+                related_entity="OVERDUE_CUSTOMERS",
+                action_suggestion="优先跟进催收逾期客户",
+            ))
+
+    return insights
+
+
+def _generate_finance_suggestions(
+    metrics: list[dict], rankings: list[dict]
+) -> list[str]:
+    """Mirror Java FinanceAnalysisServiceImpl.generateFinanceSuggestions (line 2085-2114).
+
+    Per-metric switch on RED alertLevel; emits fixed Chinese strings.
+    Empty result → fallback healthy-message.
+    """
+    suggestions: list[str] = []
+    for m in metrics:
+        if m.get("alertLevel") != "RED":
+            continue
+        code = m.get("metricCode")
+        if code == "GROSS_MARGIN":
+            suggestions.append("建议审视产品定价策略，优化采购成本以提升毛利率")
+        elif code == "AGING_90_RATIO":
+            suggestions.append("建议对90天以上逾期客户启动专项催收，必要时考虑法律手段")
+        elif code == "COLLECTION_RATE":
+            suggestions.append("建议加强应收账款管理，缩短回款周期")
+        elif code == "BUDGET_EXECUTION":
+            suggestions.append("预算超支严重，建议立即审核支出合理性并控制后续开支")
+
+    if not suggestions:
+        suggestions.append("财务指标整体健康，建议继续保持良好的成本控制和收款管理")
+
+    return suggestions
+
+
+async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getFinanceOverview legacy path
+    (line 149-189). Replaces former empty stub per PR #124 investigation
+    (Pattern B: Java legacy fallback that Python's port omitted).
+
+    Steps mirror Java line numbers:
+      150-153  profit + receivable metrics → KPI cards
+      156-163  3 charts → LinkedHashMap keyed by title (replace " " with "_")
+      166-168  overdue customer ranking → rankings["overdue_customers"]
+      171-174  AI insights + suggestions
+      180      fireGoldShadowRead — fire-and-forget log-only, Python skips
+               (Python IS the Gold producer; no HTTP self-call to mirror)
+      182-189  build DashboardResponse
+
+    Note: this port intentionally always emits the legacy shape regardless
+    of factory data state. Java's Gold-primary path (State A) and empty
+    branch (State B) are out of scope per spec §3.5 / §3.7.
+    """
+    profit_metrics = await _get_profit_metrics(factory_id, range_)
+    receivable_metrics = await _get_receivable_metrics(factory_id, range_.end_date)
+    metric_results = profit_metrics + receivable_metrics
+    kpi_cards = _convert_metrics_to_kpi_cards(metric_results)
+
+    chart_list = [
+        await _get_profit_trend_chart(
+            factory_id, range_.start_date, range_.end_date, "MONTH"
+        ),
+        await _get_cost_structure_chart(
+            factory_id, range_.start_date, range_.end_date
+        ),
+        await _get_receivable_aging_chart(factory_id, range_.end_date),
+    ]
+    charts = {
+        (chart.get("title") or "").replace(" ", "_"): chart
+        for chart in chart_list
+    }
+
+    overdue_rankings = await _get_overdue_customer_ranking(
+        factory_id, range_.end_date
+    )
+    rankings = {"overdue_customers": overdue_rankings}
+
+    ai_insights = _generate_finance_insights(metric_results, overdue_rankings)
+    suggestions = _generate_finance_suggestions(metric_results, overdue_rankings)
+
     return _new_dashboard_response_dict(
+        kpi_cards=kpi_cards,
+        charts=charts,
+        rankings=rankings,
+        ai_insights=ai_insights,
+        suggestions=suggestions,
         last_updated=_utc_now_iso(),
-        suggestions=[],
     )
 
 
