@@ -99,7 +99,14 @@ class Settings(BaseSettings):
     postgres_db: str = "smartbi_db"
     postgres_user: str = "smartbi_user"
     postgres_password: str = ""
-    postgres_pool_size: int = 40
+    # Multi-worker safe asyncpg pool sizing per audit 2026-05-07.
+    # See docs/qa-audits/2026-05-07-uvicorn-workers-spike-rerun.md (PR #105)
+    # and the follow-up audit on full PG-budget accounting (food_kb pools +
+    # SQLAlchemy + JDBC). N=2 budget: 2 workers × 15 asyncpg smartbi +
+    # 2 × 6 asyncpg cretas + 2 × 5 SQLAlchemy×2 engines + JDBC ~30 + food_kb
+    # ~5 + transient ~5 ≈ 97 — fits 100 max_connections cap.
+    # Used as `max_size` in `get_pg_pool()` below.
+    postgres_pool_size: int = 15
     postgres_max_overflow: int = 10
 
     # ==========================================
@@ -250,7 +257,10 @@ async def get_cretas_pool():
         _cretas_pool = await _asyncpg.create_pool(
             url,
             min_size=2,
-            max_size=8,
+            # Multi-worker safe per audit 2026-05-07; see
+            # docs/qa-audits/2026-05-07-uvicorn-workers-spike-rerun.md (PR #105)
+            # and follow-up audit. Mirrors smartbi pool tuning above.
+            max_size=6,
             command_timeout=30,
         )
 
