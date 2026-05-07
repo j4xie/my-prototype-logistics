@@ -1,0 +1,198 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "heatmap": {
+      "chartType": "MAP",
+      "title": "销售地理分布",
+      "seriesField": null,
+      "data": [
+        {
+          "province": "未分类",
+          "value": 30118193.7,
+          "heatValue": 1.0,
+          "orderCount": 119,
+          "customerCount": 105,
+          "colorLevel": "HIGH"
+        }
+      ],
+      "options": {
+        "visualMap": {
+          "min": 0,
+          "calculable": true,
+          "max": 30118193.7
+        },
+        "mapType": "china",
+        "showLabel": true,
+        "roam": true
+      },
+      "xaxisField": "province",
+      "yaxisField": "value"
+    },
+    "targetCompletion": [
+      {
+        "metricCode": "REGION_TARGET_上海分部",
+        "metricName": "上海分部 目标完成",
+        "value": 6539943.3,
+        "formattedValue": "6,539,943.30",
+        "unit": "元",
+        "changePercent": 90.91,
+        "changeDirection": "DOWN",
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": "上海分部",
+        "description": "目标: 7,193,937.63"
+      },
+      {
+        "metricCode": "REGION_TARGET_江苏分部",
+        "metricName": "江苏分部 目标完成",
+        "value": 7212982.6,
+        "formattedValue": "7,212,982.60",
+        "unit": "元",
+        "changePercent": 90.91,
+        "changeDirection": "DOWN",
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": "江苏分部",
+        "description": "目标: 7,934,280.86"
+      },
+      {
+        "metricCode": "REGION_TARGET_浙江分部",
+        "metricName": "浙江分部 目标完成",
+        "value": 9266090.8,
+        "formattedValue": "9,266,090.80",
+        "unit": "元",
+        "changePercent": 90.33,
+        "changeDirection": "DOWN",
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": "浙江分部",
+        "description": "目标: 10,258,606.38"
+      },
+      {
+        "metricCode": "REGION_TARGET_赣皖区域",
+        "metricName": "赣皖区域 目标完成",
+        "value": 7099177.0,
+        "formattedValue": "7,099,177.00",
+        "unit": "元",
+        "changePercent": 83.15,
+        "changeDirection": "DOWN",
+        "changeValue": null,
+        "alertLevel": "YELLOW",
+        "dimensionValue": "赣皖区域",
+        "description": "目标: 8,537,965.04"
+      }
+    ],
+    "dateRange": {
+      "startDate": "2026-01-01",
+      "endDate": "2026-05-07",
+      "granularity": "YEAR",
+      "originalExpression": "2026-01-01 至 2026-05-07",
+      "relative": false,
+      "days": 127,
+      "valid": true
+    },
+    "opportunityScores": [
+      {
+        "region": "浙江分部",
+        "totalScore": 98.08,
+        "growthScore": 100.0,
+        "baseScore": 92.31,
+        "marginScore": 100.0,
+        "penetrationScore": 100.0,
+        "recommendation": "浙江分部是高潜力区域，优势在于增长率，建议重点提升销售基数。",
+        "opportunityLevel": "HIGH",
+        "currentSales": 9266090.8,
+        "previousSales": 0.0,
+        "growthRate": 100.0,
+        "grossMargin": 33.0,
+        "customerCount": 30
+      },
+      {
+        "region": "江苏分部",
+        "totalScore": 92.96,
+        "growthScore": 100.0,
+        "baseScore": 71.85,
+        "marginScore": 100.0,
+        "penetrationScore": 100.0,
+        "recommendation": "江苏分部是高潜力区域，优势在于增长率，建议重点提升销售基数。",
+        "opportunityLevel": "HIGH",
+        "currentSales": 7212982.6,
+        "previousSales": 0.0,
+        "growthRate": 100.0,
+        "grossMargin": 33.0,
+        "customerCount": 31
+      },
+      {
+        "region": "赣皖区域",
+        "totalScore": 92.68,
+        "growthScore": 100.0,
+        "baseScore": 70.71,
+        "marginScore": 100.0,
+        "penetrationScore": 100.0,
+        "recommendation": "赣皖区域是高潜力区域，优势在于增长率，建议重点提升销售基数。",
+        "opportunityLevel": "HIGH",
+        "currentSales": 7099177.0,
+        "previousSales": 0.0,
+        "growthRate": 100.0,
+        "grossMargin": 33.0,
+        "customerCount": 32
+      },
+      {
+        "region": "上海分部",
+        "totalScore": 91.28,
+        "growthScore": 100.0,
+        "baseScore": 65.13,
+        "marginScore": 100.0,
+        "penetrationScore": 100.0,
+        "recommendation": "上海分部是高潜力区域，优势在于增长率，建议重点提升销售基数。",
+        "opportunityLevel": "HIGH",
+        "currentSales": 6539943.3,
+        "previousSales": 0.0,
+        "growthRate": 100.0,
+        "grossMargin": 33.0,
+        "customerCount": 23
+      }
+    ],
+    "generatedAt": "2026-05-07T12:22:53.497889128",
+    "ranking": [
+      {
+        "rank": 1,
+        "name": "浙江分部",
+        "value": 9266090.8,
+        "target": 10258606.38,
+        "completionRate": 90.33,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 2,
+        "name": "江苏分部",
+        "value": 7212982.6,
+        "target": 7934280.86,
+        "completionRate": 90.91,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 3,
+        "name": "赣皖区域",
+        "value": 7099177.0,
+        "target": 8537965.04,
+        "completionRate": 83.15,
+        "alertLevel": "YELLOW"
+      },
+      {
+        "rank": 4,
+        "name": "上海分部",
+        "value": 6539943.3,
+        "target": 7193937.63,
+        "completionRate": 90.91,
+        "alertLevel": "GREEN"
+      }
+    ]
+  },
+  "timestamp": "2026-05-07T12:22:53.49792705",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
