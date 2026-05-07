@@ -1,0 +1,33 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "heatmap": {
+      "chartType": "MAP",
+      "title": "销售地理分布",
+      "seriesField": null,
+      "data": [],
+      "options": null,
+      "xaxisField": null,
+      "yaxisField": null
+    },
+    "targetCompletion": [],
+    "dateRange": {
+      "startDate": "2024-04-01",
+      "endDate": "2024-06-30",
+      "granularity": "QUARTER",
+      "originalExpression": "2024-04-01 至 2024-06-30",
+      "relative": false,
+      "days": 91,
+      "valid": true
+    },
+    "opportunityScores": [],
+    "generatedAt": "2026-05-07T12:20:42.536572932",
+    "ranking": []
+  },
+  "timestamp": "2026-05-07T12:20:42.536607453",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

@@ -68,7 +68,6 @@ from sqlalchemy import text
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
-from smartbi_compat._java_compat import _java_hashmap_bucket
 from smartbi_compat.schema_compat import wrap_response
 
 logger = logging.getLogger(__name__)
@@ -525,13 +524,21 @@ def _build_region_target_completion(rows: list) -> list:
     metricCode, metricName, value, formattedValue, unit, changePercent,
     changeDirection, changeValue, alertLevel, dimensionValue, description.
 
-    T6.1 edge case fix (2026-05-07): Java's sort by changePercent desc uses
-    Java HashMap.entrySet() iter order as tie-break (Collectors.groupingBy
-    builds the aggregation HashMap; ties resolve via bucket-asc + reverse-
-    within-bucket per Rule 12 candidate). Python's stable sort uses dict
-    insertion order which differs. Apply _java_hashmap_bucket pre-sort
-    so tied changePercent rows (e.g. 上海 90.91% vs 江苏 90.91% on Q1) keep
-    Java's order.
+    Tie-break (task #25 fix 2026-05-07): Java aggregateByRegion (impl line 656)
+    uses `new LinkedHashMap<>()` explicitly — NOT HashMap, NOT Collectors.groupingBy.
+    Insertion order = order each region first appears in salesData iteration =
+    SQL row order. Java line 307-311 sorts results by changePercent desc using
+    List.sort which is stable (Java 8+ Timsort), so tied changePercent rows
+    retain LinkedHashMap insertion order.
+
+    Python parity: SQL has `ORDER BY id ASC` (matches JPA default fetch order),
+    Python dict 3.7+ preserves insertion order ≡ Java LinkedHashMap, and
+    Python `sorted(..., reverse=True)` is stable (Timsort) → tied rows retain
+    insertion order. No explicit tie-break helper needed.
+
+    Prior fix attempt (`_java_hashmap_bucket` pre-sort) was wrong direction —
+    based on incorrect "HashMap" assumption from retrospective doc. Verified
+    against Java source 2026-05-07 (line 656 `new LinkedHashMap<>()`).
     """
     if not rows:
         return []
@@ -558,16 +565,9 @@ def _build_region_target_completion(rows: list) -> list:
             "dimensionValue": region,
             "description": f"目标: {_format_amount(agg.total_target)}",
         })
-    # Step 1: Java HashMap iter order — bucket asc + reverse-within-bucket
-    indexed = list(enumerate(results))
-    java_iter = [
-        r for _, r in sorted(
-            indexed,
-            key=lambda x: (_java_hashmap_bucket(x[1]["dimensionValue"]), -x[0]),
-        )
-    ]
-    # Step 2: stable sort by changePercent desc preserves Java HashMap iter on ties
-    return sorted(java_iter, key=lambda r: r["changePercent"], reverse=True)
+    # Stable sort by changePercent desc — tied rows retain dict insertion order
+    # (= Java LinkedHashMap iteration = SQL row appearance order).
+    return sorted(results, key=lambda r: r["changePercent"], reverse=True)
 
 
 # ============================================================
