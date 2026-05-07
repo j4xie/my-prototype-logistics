@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory.impl;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateTransferRequest;
 import com.cretas.aims.entity.MaterialBatch;
+import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import com.cretas.aims.entity.enums.TransferItemType;
 import com.cretas.aims.entity.enums.TransferStatus;
@@ -11,7 +12,9 @@ import com.cretas.aims.entity.inventory.*;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.MaterialBatchRepository;
+import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.inventory.*;
+import com.cretas.aims.service.MaterialBatchService;
 import com.cretas.aims.service.inventory.TransferService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,8 @@ public class TransferServiceImpl implements TransferService {
     private final MaterialBatchRepository materialBatchRepository;
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final MaterialBatchService materialBatchService;
+    private final RawMaterialTypeRepository rawMaterialTypeRepository;
 
     /** Round 11 T4 — Canvas Integration Template hook 1: DB-driven validation. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -58,12 +63,16 @@ public class TransferServiceImpl implements TransferService {
                                InternalTransferItemRepository transferItemRepository,
                                MaterialBatchRepository materialBatchRepository,
                                FinishedGoodsBatchRepository finishedGoodsBatchRepository,
-                               ApplicationEventPublisher applicationEventPublisher) {
+                               ApplicationEventPublisher applicationEventPublisher,
+                               MaterialBatchService materialBatchService,
+                               RawMaterialTypeRepository rawMaterialTypeRepository) {
         this.transferRepository = transferRepository;
         this.transferItemRepository = transferItemRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.finishedGoodsBatchRepository = finishedGoodsBatchRepository;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.materialBatchService = materialBatchService;
+        this.rawMaterialTypeRepository = rawMaterialTypeRepository;
     }
 
     @Override
@@ -417,6 +426,35 @@ public class TransferServiceImpl implements TransferService {
             batch.setCreatedBy(userId);
             materialBatchRepository.save(batch);
             item.setTargetBatchId(batch.getId());
+
+            // 调入跟 PR #113 (PurchaseServiceImpl.confirmReceive) 同根因: 直接 new
+            // MaterialBatch + repo.save 绕开 MaterialBatchService.createMaterialBatch
+            // 路径上的 updateMovingAvgPrice。但 transfer 多了跨工厂语义复杂性 ——
+            // raw_material_types 是 factory-scoped, 跨工厂调入时 source factory 的
+            // raw_material_type 不属 target factory, 直接 recalc 会污染 source 的均价。
+            //
+            // Option B (本 PR scope): 仅同工厂场景安全 recalc; 跨工厂场景 warn-log 跳过,
+            // 留 follow-up ticket 决定 schema (lookup-or-create / 全局共享 / 业务流程改造)。
+            RawMaterialType materialType = rawMaterialTypeRepository
+                    .findById(item.getMaterialTypeId()).orElse(null);
+            if (materialType == null) {
+                log.warn("transferIn moving_avg skipped: material_type {} not found, transferId={}",
+                        item.getMaterialTypeId(), item.getTransferId());
+            } else if (!materialType.getFactoryId().equals(targetFactoryId)) {
+                log.warn(
+                        "transferIn moving_avg skipped: source factory {} != target factory {} " +
+                        "(schema follow-up: cross-factory raw_material_type linkage). " +
+                        "transferId={}, materialTypeId={}",
+                        materialType.getFactoryId(), targetFactoryId,
+                        item.getTransferId(), item.getMaterialTypeId());
+            } else {
+                // 同工厂调入 (e.g. 仓 A→仓 B): 同根因 fix 适用, recalc 安全
+                materialBatchService.recalculateMovingAvgPrice(
+                        item.getMaterialTypeId(),
+                        qty,
+                        item.getUnitPrice(),
+                        batch.getId());
+            }
         } else {
             // 调入方创建成品批次
             FinishedGoodsBatch batch = new FinishedGoodsBatch();
