@@ -389,6 +389,7 @@ export type FAManagementStackParamList = {
   NfcTagManagement: undefined;
   // 进销存管理
   PurchaseOrderList: undefined;
+  PurchaseOrderCreate: undefined;
   PurchaseOrderDetail: { orderId: string };
   SalesOrderList: undefined;
   SalesOrderDetail: { orderId: string };
