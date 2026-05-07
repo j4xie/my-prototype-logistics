@@ -14,6 +14,7 @@ import HomeScreen from "../screens/main/HomeScreen";
 
 // 采购相关页面 - 复用 factory-admin 已有页面
 import PurchaseOrderListScreen from "../screens/factory-admin/inventory/PurchaseOrderListScreen";
+import PurchaseOrderCreateScreen from "../screens/factory-admin/inventory/PurchaseOrderCreateScreen";
 import PurchaseOrderDetailScreen from "../screens/factory-admin/inventory/PurchaseOrderDetailScreen";
 import ReturnOrderListScreen from "../screens/factory-admin/inventory/ReturnOrderListScreen";
 import ReturnOrderDetailScreen from "../screens/factory-admin/inventory/ReturnOrderDetailScreen";
@@ -39,6 +40,7 @@ function PurchaseStackNavigator() {
   return (
     <PurchaseStack.Navigator screenOptions={{ headerShown: false }}>
       <PurchaseStack.Screen name="PurchaseOrderList" component={PurchaseOrderListScreen} />
+      <PurchaseStack.Screen name="PurchaseOrderCreate" component={PurchaseOrderCreateScreen} />
       <PurchaseStack.Screen name="PurchaseOrderDetail" component={PurchaseOrderDetailScreen} />
       <PurchaseStack.Screen name="ReturnOrderList" component={ReturnOrderListScreen} />
       <PurchaseStack.Screen name="ReturnOrderDetail" component={ReturnOrderDetailScreen} />

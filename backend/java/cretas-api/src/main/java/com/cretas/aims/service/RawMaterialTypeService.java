@@ -92,4 +92,11 @@ public interface RawMaterialTypeService {
      * 统计原材料类型数量
      */
     long countMaterialTypes(String factoryId, Boolean isActive);
+
+    /**
+     * 按名称+类别建议单位.
+     * 取相似历史原料(同 category, name 含 keyword)中最近创建的一条返回其 unit;
+     * 无匹配时返回 null, 由前端保留默认值.
+     */
+    String suggestUnit(String factoryId, String name, String category);
 }

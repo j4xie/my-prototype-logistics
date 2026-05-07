@@ -228,6 +228,20 @@ public class RawMaterialTypeController {
     }
 
     /**
+     * 智能默认单位: 按 name + category 查找最近相似原料的 unit.
+     * 返回 null 时前端保留默认值 (kg).
+     */
+    @GetMapping("/suggest-unit")
+    @Operation(summary = "智能默认单位", description = "根据名称和类别返回最近相似原料的单位,用于新建原料时预填单位")
+    public ApiResponse<String> suggestUnit(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "原料名称片段", example = "三文鱼") String name,
+            @RequestParam(required = false) @Parameter(description = "类别(可选)", example = "main") String category) {
+        String unit = materialTypeService.suggestUnit(factoryId, name, category);
+        return ApiResponse.success(unit);
+    }
+
+    /**
      * 检查原材料编码是否存在
      */
     @GetMapping("/check-code")

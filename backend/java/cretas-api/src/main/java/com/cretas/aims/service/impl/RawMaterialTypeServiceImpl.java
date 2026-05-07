@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -105,7 +106,6 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         materialType.setName(dto.getName());
         materialType.setCategory(dto.getCategory());
         materialType.setUnit(dto.getUnit());
-        materialType.setUnitPrice(dto.getUnitPrice());
         materialType.setStorageType(dto.getStorageType());
         materialType.setShelfLifeDays(dto.getShelfLifeDays());
         materialType.setMinStock(dto.getMinStock());
@@ -150,7 +150,6 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         if (dto.getName() != null) materialType.setName(dto.getName());
         if (dto.getCategory() != null) materialType.setCategory(dto.getCategory());
         if (dto.getUnit() != null) materialType.setUnit(dto.getUnit());
-        if (dto.getUnitPrice() != null) materialType.setUnitPrice(dto.getUnitPrice());
         if (dto.getStorageType() != null) materialType.setStorageType(dto.getStorageType());
         if (dto.getShelfLifeDays() != null) materialType.setShelfLifeDays(dto.getShelfLifeDays());
         if (dto.getMinStock() != null) materialType.setMinStock(dto.getMinStock());
@@ -400,7 +399,6 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 .name(materialType.getName())
                 .category(materialType.getCategory())
                 .unit(materialType.getUnit())
-                .unitPrice(materialType.getUnitPrice())
                 .storageType(materialType.getStorageType())
                 .shelfLifeDays(materialType.getShelfLifeDays())
                 .minStock(materialType.getMinStock())
@@ -532,6 +530,33 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         } else {
             return materialTypeRepository.countByFactoryId(factoryId);
         }
+    }
+
+    @Override
+    public String suggestUnit(String factoryId, String name, String category) {
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        String keyword = name.trim();
+        String categoryFilter = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
+        // 全限定 Spring PageRequest 避免跟 com.cretas.aims.dto.common.PageRequest 二义
+        Pageable top1 = org.springframework.data.domain.PageRequest.of(0, 1);
+
+        List<RawMaterialType> matches = materialTypeRepository.findSimilarByNameAndCategory(
+                factoryId, keyword, categoryFilter, top1);
+        if (!matches.isEmpty()) {
+            return matches.get(0).getUnit();
+        }
+
+        // 退化: 全名没匹配时取首字符再试一次 (e.g. 输入"三文鱼柳"时找"三文鱼")
+        if (keyword.length() >= 2) {
+            matches = materialTypeRepository.findSimilarByNameAndCategory(
+                    factoryId, keyword.substring(0, Math.min(2, keyword.length())), categoryFilter, top1);
+            if (!matches.isEmpty()) {
+                return matches.get(0).getUnit();
+            }
+        }
+        return null;
     }
 
     /**
