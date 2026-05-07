@@ -93,9 +93,12 @@ public interface RawMaterialTypeRepository extends JpaRepository<RawMaterialType
     /**
      * 按 name 模糊匹配 + 可选 category 筛选, 返回最近创建的若干条.
      * 用于"新建原料类型"页智能默认单位: 输入名称+类别后, 取相似历史原料的 unit.
+     *
+     * PG 兼容: :category 为 null 时, 需 CAST(:category AS string) 让 PG 推断参数类型,
+     * 否则 "could not determine data type of parameter $2" (PG 无法对纯 null 参数推类型).
      */
     @Query("SELECT r FROM RawMaterialType r WHERE r.factoryId = :factoryId AND r.isActive = true " +
-           "AND (:category IS NULL OR r.category = :category) " +
+           "AND (CAST(:category AS string) IS NULL OR r.category = :category) " +
            "AND LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' " +
            "ORDER BY r.createdAt DESC")
     List<RawMaterialType> findSimilarByNameAndCategory(@Param("factoryId") String factoryId,
