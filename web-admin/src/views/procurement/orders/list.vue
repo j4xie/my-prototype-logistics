@@ -446,32 +446,35 @@ function handleAiFill(params: Record<string, unknown>) {
         <CanvasDynamicFields v-model="form.customFields" module-code="purchase_order" />
         <el-divider>{{ label('rawMaterial') }}明细</el-divider>
         <div class="item-row item-header">
-          <span style="width: 200px">原料名称</span>
-          <span style="width: 120px">规格</span>
-          <span style="width: 100px">数量</span>
-          <span style="width: 80px">单位</span>
-          <span style="width: 100px">单价</span>
-          <span style="width: 80px">箱数</span>
-          <span style="width: 40px">操作</span>
+          <!-- May 7 2026 用户反馈: 数量/单价/箱数 input-number 控件 -/+ 占两端,
+               value 字段被挤压看不到数字. fullscreen dialog 1200px+ 有充足空间,
+               把所有列加宽确保 3 位以上数字 + 小数点 + -/+ 控件都能完整显示. -->
+          <span style="width: 220px">原料名称</span>
+          <span style="width: 140px">规格</span>
+          <span style="width: 140px">数量</span>
+          <span style="width: 130px">单位</span>
+          <span style="width: 160px">单价</span>
+          <span style="width: 140px">箱数</span>
+          <span style="width: 70px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
           <el-select
             v-model="item.materialTypeId"
             placeholder="选择原料"
             filterable
-            style="width: 200px"
+            style="width: 220px"
             @change="onItemMaterialChange(item)"
           >
             <el-option v-for="m in materials" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
-          <el-input v-model="item.specification" placeholder="规格" style="width: 120px" />
-          <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 100px" />
+          <el-input v-model="item.specification" placeholder="规格" style="width: 140px" />
+          <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 140px" />
           <!-- 单位下拉: 选定原料后显示该原料的 1/2/3 级单位; 未选时退化空选项 -->
           <el-select
             v-model="item.unit"
             placeholder="单位"
             :disabled="!item.materialTypeId"
-            style="width: 100px"
+            style="width: 130px"
             filterable
             allow-create
             default-first-option
@@ -483,9 +486,9 @@ function handleAiFill(params: Record<string, unknown>) {
               :value="opt.value"
             />
           </el-select>
-          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 100px" />
-          <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 80px" />
-          <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
+          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 160px" />
+          <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 140px" />
+          <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1" style="width: 70px">删除</el-button>
         </div>
         <el-button style="width: 100%; margin-top: 8px" @click="addItem">+ 添加行</el-button>
       </el-form>
