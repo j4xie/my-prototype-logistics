@@ -1417,6 +1417,19 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         return batchNumber;
     }
 
+    @Override
+    @Transactional
+    public void recalculateMovingAvgPrice(String materialTypeId, java.math.BigDecimal receiptQty,
+                                          java.math.BigDecimal receiptPrice, String newBatchId) {
+        com.cretas.aims.entity.RawMaterialType materialType =
+                materialTypeRepository.findById(materialTypeId).orElse(null);
+        if (materialType == null) {
+            log.warn("recalculateMovingAvgPrice: materialType {} not found, skip", materialTypeId);
+            return;
+        }
+        updateMovingAvgPrice(materialType, receiptQty, receiptPrice, newBatchId);
+    }
+
     /**
      * 入库时更新物料类型的移动平均价
      * 公式: 新均价 = (现有总量 × 现均价 + 入库数量 × 入库价) / (现有总量 + 入库数量)
