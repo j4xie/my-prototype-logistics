@@ -107,6 +107,36 @@ rsync -az --timeout=60 \
     "$SERVER:/www/wwwroot/cretas/scripts/" 2>&1 | tail -5
 ssh "$SERVER" "chmod +x /www/wwwroot/cretas/scripts/t6-dryrun-compare.sh /www/wwwroot/cretas/scripts/baseline-java-metrics.sh"
 
+# 3.5. Apply pending smartbi migrations (per spec 2026-05-07-smartbi-migration-runner-spec.md).
+# Trigger: task #30 — 8 个 data fabric C 系列 migrations 当初部署漏跑 prod, T6.2 4h 才发现.
+# Runner consumes smartbi_migrations tracker (PR-A #98) to skip already-applied
+# files. On failure: abort BEFORE Python restart so old code stays on old
+# schema rather than crash on missing tables.
+#
+# SKIP_MIGRATIONS=1 escape hatch: bypasses the whole step (use only when the
+# runner itself is broken — e.g., bug in apply-smartbi-migrations.sh).
+log "INFO" "[3.5/5] 应用 smartbi migrations (env=$DEPLOY_ENV)..."
+if [[ "${SKIP_MIGRATIONS:-0}" == "1" ]]; then
+    log "WARN" "[3.5/5] SKIP_MIGRATIONS=1 — 跳过 migrations apply (escape hatch)"
+else
+    # Sync runner + supporting scripts (not covered by Step 3 or 3b).
+    rsync -az --timeout=60 \
+        "$PROJECT_ROOT/scripts/migrations/apply-smartbi-migrations.sh" \
+        "$PROJECT_ROOT/scripts/migrations/backfill-applied.sh" \
+        "$PROJECT_ROOT/scripts/migrations/test-runner.sh" \
+        "$SERVER:/www/wwwroot/cretas/code/scripts/migrations/" 2>&1 | tail -5
+    ssh "$SERVER" "chmod +x \
+        /www/wwwroot/cretas/code/scripts/migrations/apply-smartbi-migrations.sh \
+        /www/wwwroot/cretas/code/scripts/migrations/backfill-applied.sh \
+        /www/wwwroot/cretas/code/scripts/migrations/test-runner.sh"
+
+    if ! ssh "$SERVER" "bash /www/wwwroot/cretas/code/scripts/migrations/apply-smartbi-migrations.sh --env $DEPLOY_ENV"; then
+        log "ERROR" "[3.5/5] migration FAILED — Python service NOT restarted, ABORTING deploy"
+        log "ERROR" "       Investigate, then either fix + re-deploy, or set SKIP_MIGRATIONS=1 to bypass"
+        exit 1
+    fi
+fi
+
 # 4. 在服务器上安装依赖
 log "INFO" "[4/5] 安装依赖..."
 ssh $SERVER << ENDSSH
