@@ -201,6 +201,69 @@ def _decimal_to_number(v: Decimal) -> Any:
 - Java Jackson default `BigDecimal → number`（保留 scale 但精度依赖 Java 端 setScale）
 - `_decimal_to_number` 在 dict-eq gate 下 OK；strict-byte gate 下还需 canonical compare（Phase 2A backlog）
 
+### Phase 2A dict-eq gate — official standard (2026-05-07, confirmed by PR #122 + raw-body fetch)
+
+**Phase 2A 锁定 dict-eq gate, NOT strict-byte.** 以下 byte-shape divergence 是 expected behavior, 不需要 fix:
+
+#### Pattern A: integer-valued Decimal int-collapse (H1 confirmed)
+
+`_decimal_to_number(Decimal("100.00"))` returns `int(100)` because `Decimal("100.00") == Decimal("100.00").to_integral_value()` is True. Java `BigDecimal("100.00")` Jackson serialize → `100.00` (scale-preserved). Per-occurrence delta: **+3 chars** Java-bigger.
+
+```diff
+# Java prod 10020 vs Python prod 8083, F001 budget endpoint, 2026-05-07 reproduction:
+< "actual": 2103829.00,        # Java BigDecimal scale-preserved
+---
+> "actual": 2103829,            # Python int(v) collapse
+< "value": 0.00                 # Java BigDecimal.ZERO setScale(2)
+---
+> "value": 0                    # Python int(0)
+```
+
+#### Pattern A2: scale-4 Decimal trailing-zero collapse to float
+
+`_decimal_to_number(Decimal("99.9900"))` returns `float(99.99)`. Java `BigDecimal("99.9900")` → `99.9900`. Per-occurrence delta: **+2 to +4 chars** depending on how many trailing zeros.
+
+```diff
+< "executionRate": 99.9900,     # Java scale-4 preserved
+---
+> "executionRate": 99.99,       # Python float trailing-zero loss
+< "executionRate": 100.0000,    # Java scale-4 preserved
+---
+> "executionRate": 100,         # Python int collapse (also Pattern A)
+```
+
+#### Why dict-eq, not strict-byte?
+
+dict-eq gate compares semantic numeric equality (`Decimal("100") == Decimal("100.00")` after parse → match). strict-byte compares string length (6 chars vs 3 chars → diverge).
+
+Phase 2A scope: Java→Python port 50 SmartBI analysis endpoints. Decimal/Date/Map.of 等语言习惯差异让 strict-byte 不可达 (会 require 重写 Java side 或包 wrapper at Python). dict-eq 容忍 numeric `0` ≡ `0.0` ≡ `0.00`, frontend 解析后 dict equality 一致, business 行为完全一致。
+
+**T6.1 dryrun 99.945% match rate is the official Phase 2A parity standard。** T6.3+ cutover GO criteria use dict-eq match rate, not strict-byte.
+
+#### Acceptance criteria
+
+| Scenario | Phase 2A action | Phase 3+ consideration |
+|---|---|---|
+| Pattern A/A2 byte delta in dict-eq match | **Accept** — expected, not a bug | Re-evaluate when strict-byte gate adopted |
+| User-facing field semantically wrong | Fix (per existing Rule 4 正 pattern) | Same |
+| Pattern B (Java legacy fallback structural divergence) | NOT dict-eq scope — fix per chat 2 PR investigation Option 1 | Same |
+| Microsecond / String.format / Map.of order divergence | Fix (Rules 11 / 12 / 8) — those ARE byte-strict scoped | Same |
+
+#### When to upgrade to strict-byte (Phase 3+)
+
+- 客户面 frontend 直接 hash 比对 raw JSON 字符串
+- 第三方 integration contract 要求 byte-identical
+- API contract 写明 strict serialization (e.g. `application/vnd.api+json` strict mode)
+
+Phase 2A 没这些约束, dict-eq sufficient。
+
+#### Confirmed by
+
+- PR #122 chat 1 audit (M=0 in budget path) → H1 hypothesis
+- 2026-05-07 raw-body reproduction at server 47: Java prod 10020 vs Python prod 8083 for F001 budget endpoint shows 36 trailing-zero Decimal occurrences accounting for ~106B delta, 0 Rule 11/12/structural divergence
+- Evidence doc: `docs/qa-audits/2026-05-07-h1-confirm-raw-body-evidence.md`
+- Cross-reference: chat 2 PR #119 T6.1 dryrun 11/1144 budget diverges all explained; chat 2 finance composite +4531B is **separate** (Pattern B, not dict-eq scope)
+
 ---
 
 ## ⛔ Rule 5: 共享 SQL helpers 用 `SELECT *`，不裸列字段
@@ -817,5 +880,6 @@ monkeypatch.setattr(
 | T6.1 dryrun pre-flight + PR-M-2 (2026-05-06) | Rule 10（BigDecimal divide-then-multiply 中间步 round — 4 sister chat 各踩一次：alerts/category-comparison/procurement/sales） |
 | Sister D PR-M doc + PR-M-7 (2026-05-06) | Rule 11（Java Jackson LocalDateTime trailing-zero microsecond — datasource/list F001 7 timestamps 踩；latent prod risk on ~50 endpoints） |
 | Procurement display closer (commit 0982195cf 2026-05-06) + 12 defensive fixes (commit 69b46f4d5 2026-05-07) | Rule 12（Java String.format HALF_UP vs Python f-string banker's — 1 active hit + 12 latent sites swept） |
+| PR #122 chat 1 audit + raw-body reproduction (2026-05-07) | Rule 4 Phase 2A dict-eq gate official entry — chat 2 PR #119 11 budget +107B diverges 全部 explained by Pattern A/A2 integer-Decimal int-collapse + scale-4 trailing-zero loss; T6.1 dryrun 99.945% match rate 是 Phase 2A parity 标准 |
 
 后续 sister chats（receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
