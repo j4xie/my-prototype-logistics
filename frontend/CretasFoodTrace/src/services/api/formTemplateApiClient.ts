@@ -29,9 +29,7 @@ export type EntityType =
   | 'PRODUCTION_PLAN'
   | 'SCALE_DEVICE'      // IoT电子秤设备
   | 'SCALE_PROTOCOL'    // 电子秤协议文档
-  | 'ISAPI_DEVICE'      // ISAPI摄像头设备
-  | 'RAW_MATERIAL_TYPE' // 原料类型 (新建/编辑表单) — 2026-05-07
-  | 'PURCHASE_ORDER';   // 采购订单 (新建表单) — 2026-05-07
+  | 'ISAPI_DEVICE';     // ISAPI摄像头设备
 
 /**
  * 模板来源

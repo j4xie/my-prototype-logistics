@@ -35,8 +35,7 @@ public class RawMaterialTypeDTO {
 
     @NotBlank(message = "单位不能为空")
     private String unit;
-    // unitPrice 不再 expose: 价格按采购批次浮动, 走 movingAvgPrice / 采购单价.
-    // entity 字段保留以兼容历史数据.
+    private BigDecimal unitPrice;
     private String storageType; // fresh, frozen, dry
 
     @JsonProperty("shelfLifeDays")

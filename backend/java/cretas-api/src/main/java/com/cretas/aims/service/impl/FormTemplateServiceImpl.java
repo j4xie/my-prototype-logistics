@@ -43,9 +43,7 @@ public class FormTemplateServiceImpl implements FormTemplateService {
             "PROCESSING_BATCH",     // 生产批次表单
             "SHIPMENT",             // 出货表单
             "EQUIPMENT",            // 设备表单
-            "DISPOSAL_RECORD",      // 报废处理表单
-            "RAW_MATERIAL_TYPE",    // 原料类型表单 (新建/编辑) — 2026-05-07 加, Canvas 可改
-            "PURCHASE_ORDER"        // 采购订单表单 — 2026-05-07 加, Canvas 可改
+            "DISPOSAL_RECORD"       // 报废处理表单
     );
 
     private final FormTemplateRepository formTemplateRepository;

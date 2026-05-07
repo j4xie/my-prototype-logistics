@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
   Text,
@@ -21,15 +21,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { materialTypeApiClient, MaterialType, CreateMaterialTypeRequest } from '../../services/api/materialTypeApiClient';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
-import { dictionaryApiClient, DictionaryItem, UnitItem } from '../../services/api/dictionaryApiClient';
-import { materialPackagingApiClient, MaterialPackagingHierarchy } from '../../services/api/materialPackagingApiClient';
-import {
-  DynamicForm,
-  DynamicFormRef,
-  FormSchema,
-  schemaService,
-  rawMaterialTypeSchema,
-} from '../../formily';
 import { useAuthStore } from '../../store/authStore';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
@@ -54,17 +45,11 @@ export default function MaterialTypeManagementScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<MaterialType | null>(null);
 
-  // Menu visibility states (仅包装层级仍用 Menu, 主表单字段已迁到 DynamicForm)
-  const [level2UnitMenuVisible, setLevel2UnitMenuVisible] = useState(false);
-  const [level3UnitMenuVisible, setLevel3UnitMenuVisible] = useState(false);
-
-  // 包装层级状态 (一级 = formData.unit, 二三级在此; 空字符串表示未填)
-  const [packaging, setPackaging] = useState<{
-    level1PerLevel2: string;
-    level2Unit: string;
-    level2PerLevel3: string;
-    level3Unit: string;
-  }>({ level1PerLevel2: '', level2Unit: '', level2PerLevel3: '', level3Unit: '' });
+  // Menu visibility states
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [unitMenuVisible, setUnitMenuVisible] = useState(false);
+  const [storageMenuVisible, setStorageMenuVisible] = useState(false);
+  const [specMenuVisible, setSpecMenuVisible] = useState(false);
 
   // 规格配置状态
   const [specConfig, setSpecConfig] = useState<SpecConfig>(DEFAULT_SPEC_CONFIG);
@@ -83,24 +68,10 @@ export default function MaterialTypeManagementScreen() {
     });
   }, [user]);
 
-  // 字典选项 (从后端加载, 可被 Canvas 字典管理页修改)
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
-  const [unitOptions, setUnitOptions] = useState<string[]>([]);
-  const [storageTypeOptions, setStorageTypeOptions] = useState<string[]>([]);
-  const [dictsLoaded, setDictsLoaded] = useState(false);
-
-  // DynamicForm 状态 — Canvas 可改字段顺序/隐藏/新增自定义字段
-  const formRef = useRef<DynamicFormRef>(null);
-  const [dynamicSchema, setDynamicSchema] = useState<FormSchema>(rawMaterialTypeSchema);
-  const [schemaReady, setSchemaReady] = useState(false);
-
-  // 编辑模式下若历史值不在字典中, 临时合入下拉, 避免值丢失
-  const mergeHistoricValue = (options: string[], current?: string): string[] => {
-    if (current && current.trim() !== '' && !options.includes(current)) {
-      return [current, ...options];
-    }
-    return options;
-  };
+  // 常用选项
+  const categoryOptions = ['海鲜', '肉类', '蔬菜', '水果', '粉类', '米面', '油类', '调料', '其他'];
+  const unitOptions = ['kg', '斤', '克', '个', '箱', '袋', '瓶', '罐'];
+  const storageTypeOptions = ['新鲜', '冻货', '干货', '常温'];
 
   // 表单状态
   const [formData, setFormData] = useState<Partial<CreateMaterialTypeRequest>>({
@@ -116,66 +87,7 @@ export default function MaterialTypeManagementScreen() {
   useEffect(() => {
     loadMaterialTypes();
     loadSpecConfig();
-    loadDictionaries();
   }, []);
-
-  const loadDictionaries = async () => {
-    try {
-      // 1. 拉字典 + Canvas 自定义 schema
-      const [categories, units, storageTypes, mergedSchemaResult] = await Promise.all([
-        dictionaryApiClient.getEnums('MATERIAL_CATEGORY', factoryId),
-        dictionaryApiClient.getUnits(undefined, factoryId),
-        dictionaryApiClient.getEnums('MATERIAL_STORAGE_TYPE', factoryId),
-        schemaService.getMergedSchema('RAW_MATERIAL_TYPE', rawMaterialTypeSchema, factoryId),
-      ]);
-
-      const categoryLabels = categories.map((c: DictionaryItem) => c.enumLabel);
-      // 单位用 unitSymbol 存储 (跟历史数据保持一致)
-      const unitLabels = units.map((u: UnitItem) => u.unitSymbol || u.unitCode);
-      const storageLabels = storageTypes.map((s: DictionaryItem) => s.enumLabel);
-
-      setCategoryOptions(categoryLabels);
-      setUnitOptions(unitLabels);
-      setStorageTypeOptions(storageLabels);
-
-      // 2. 把字典枚举注入 schema (DynamicForm 的 Select 读 enum)
-      const schemaWithEnums = injectEnumsIntoSchema(mergedSchemaResult.schema, {
-        category: categoryLabels.map((l) => ({ label: l, value: l })),
-        unit: unitLabels.map((l) => ({ label: l, value: l })),
-        storageType: storageLabels.map((l) => ({ label: l, value: l })),
-      });
-      setDynamicSchema(schemaWithEnums);
-      setSchemaReady(true);
-      setDictsLoaded(true);
-
-      materialTypeLogger.info('字典 + Canvas schema 加载成功', {
-        categories: categoryLabels.length,
-        units: unitLabels.length,
-        storageTypes: storageLabels.length,
-        canvasCustom: mergedSchemaResult.isCustomized,
-        customFieldNames: mergedSchemaResult.customFieldNames,
-      });
-    } catch (error) {
-      materialTypeLogger.warn('字典/Schema 加载失败, 退回默认 schema', error);
-      setDynamicSchema(rawMaterialTypeSchema);
-      setSchemaReady(true);
-      setDictsLoaded(true);
-    }
-  };
-
-  // 把 enum 注入到 schema 指定字段 (浅克隆, 不破坏原 schema)
-  const injectEnumsIntoSchema = (
-    base: FormSchema,
-    enums: Record<string, Array<{ label: string; value: string }>>,
-  ): FormSchema => {
-    const properties = { ...base.properties };
-    for (const [field, options] of Object.entries(enums)) {
-      if (properties[field]) {
-        properties[field] = { ...properties[field], type: properties[field].type || 'string', enum: options };
-      }
-    }
-    return { ...base, properties };
-  };
 
   const loadSpecConfig = async () => {
     try {
@@ -248,73 +160,18 @@ export default function MaterialTypeManagementScreen() {
     setFormData({
       code: '', // 自动生成，不需要用户输入
       name: '',
-      category: '', // 用户从字典下拉选择
+      category: categoryOptions[0], // 默认选择第一个类别
       unit: 'kg',
       shelfLifeDays: 7, // 默认保质期7天
-      storageType: storageTypeOptions[0] || '新鲜',
+      storageType: '新鲜',
       notes: '',
     });
     setCustomSpecMode(false);
     setCustomSpecValue('');
-    setPackaging({ level1PerLevel2: '', level2Unit: '', level2PerLevel3: '', level3Unit: '' });
     setModalVisible(true);
   };
 
-  // 智能默认单位: 新建模式下, name 或 category 变化时查询相似原料的单位
-  // 用 ref 避免 dictionary 加载完成前误触发, 加 400ms debounce
-  useEffect(() => {
-    if (!modalVisible || editingItem) return;
-    const name = formData.name?.trim();
-    if (!name || name.length < 2) return;
-
-    const handle = setTimeout(async () => {
-      const suggested = await dictionaryApiClient.suggestUnit(name, formData.category, factoryId);
-      if (suggested) {
-        setFormData((prev) => ({ ...prev, unit: suggested }));
-        // 同步到 DynamicForm
-        formRef.current?.setFieldValue('unit', suggested);
-        materialTypeLogger.debug('智能填充单位', { name, category: formData.category, unit: suggested });
-      }
-    }, 400);
-    return () => clearTimeout(handle);
-  }, [formData.name, formData.category, modalVisible, editingItem, factoryId]);
-
-  // Modal 打开时同步 formData 到 DynamicForm (覆盖 useMemo 锁定的 initialValues)
-  useEffect(() => {
-    if (modalVisible && schemaReady) {
-      // 微任务延迟, 确保 DynamicForm 已挂载
-      const t = setTimeout(() => {
-        formRef.current?.setValues(formData);
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [modalVisible, schemaReady]);
-
-  // 编辑老数据时, 若历史值不在字典 enum 中 (例旧 category="海鲜"), 注入避免丢失
-  useEffect(() => {
-    if (modalVisible && editingItem && schemaReady) {
-      setDynamicSchema((prev) => {
-        const properties = { ...prev.properties };
-        const ensureEnum = (field: string, value?: string) => {
-          if (!value || !value.trim()) return;
-          const current = properties[field]?.enum as Array<{ label: string; value: string }> | undefined;
-          if (!current) return;
-          if (!current.find((o) => o.value === value)) {
-            properties[field] = {
-              ...properties[field],
-              enum: [{ label: value, value }, ...current],
-            };
-          }
-        };
-        ensureEnum('category', editingItem.category);
-        ensureEnum('unit', editingItem.unit);
-        ensureEnum('storageType', editingItem.storageType);
-        return { ...prev, properties };
-      });
-    }
-  }, [modalVisible, editingItem, schemaReady]);
-
-  const handleEdit = async (item: MaterialType) => {
+  const handleEdit = (item: MaterialType) => {
     setEditingItem(item);
     setFormData({
       code: item.code,
@@ -327,21 +184,6 @@ export default function MaterialTypeManagementScreen() {
     });
     setCustomSpecMode(false);
     setCustomSpecValue('');
-    // 加载现有包装层级 (无配置返回 null)
-    setPackaging({ level1PerLevel2: '', level2Unit: '', level2PerLevel3: '', level3Unit: '' });
-    try {
-      const existing = await materialPackagingApiClient.getByMaterial(item.id, factoryId);
-      if (existing) {
-        setPackaging({
-          level1PerLevel2: existing.level1PerLevel2 != null ? String(existing.level1PerLevel2) : '',
-          level2Unit: existing.level2Unit || '',
-          level2PerLevel3: existing.level2PerLevel3 != null ? String(existing.level2PerLevel3) : '',
-          level3Unit: existing.level3Unit || '',
-        });
-      }
-    } catch (err) {
-      materialTypeLogger.warn('加载包装层级失败 (将以空值打开)', err);
-    }
     setModalVisible(true);
   };
 
@@ -352,65 +194,26 @@ export default function MaterialTypeManagementScreen() {
       return;
     }
 
-    // 包装层级前端校验 (后端有 DB CHECK + service 校验, 前端给即时反馈)
-    const hasL2Unit = packaging.level2Unit.trim() !== '';
-    const hasL2Qty = packaging.level1PerLevel2.trim() !== '' && Number(packaging.level1PerLevel2) > 0;
-    const hasL3Unit = packaging.level3Unit.trim() !== '';
-    const hasL3Qty = packaging.level2PerLevel3.trim() !== '' && Number(packaging.level2PerLevel3) > 0;
-    if (hasL2Unit !== hasL2Qty) {
-      Alert.alert('提示', '二级单位和换算数量必须同时填写或同时清空');
-      return;
-    }
-    if (hasL3Unit !== hasL3Qty) {
-      Alert.alert('提示', '三级单位和换算数量必须同时填写或同时清空');
-      return;
-    }
-    if (hasL3Unit && !hasL2Unit) {
-      Alert.alert('提示', '必须先配置二级单位才能配置三级');
-      return;
-    }
-
     try {
-      let materialId: string;
       if (editingItem) {
+        // 更新 - 保留原有编码
         await materialTypeApiClient.updateMaterialType(
           editingItem.id,
           formData as Partial<CreateMaterialTypeRequest>,
           factoryId
         );
-        materialId = editingItem.id;
+        Alert.alert('成功', '原材料类型更新成功');
         materialTypeLogger.info('原材料类型更新成功', { id: editingItem.id });
       } else {
         // 创建 - 移除code字段，让后端自动生成
         const { code, ...dataWithoutCode } = formData;
-        const created = await materialTypeApiClient.createMaterialType(
+        await materialTypeApiClient.createMaterialType(
           dataWithoutCode as CreateMaterialTypeRequest,
           factoryId
         );
-        materialId = created.id;
-        materialTypeLogger.info('原材料类型创建成功', { id: materialId, name: formData.name });
+        Alert.alert('成功', '原材料类型创建成功');
+        materialTypeLogger.info('原材料类型创建成功', { name: formData.name });
       }
-
-      // 包装层级 upsert: 任一二级或三级配齐就保存; 否则不动 (编辑模式保留旧值)
-      if (hasL2Unit || hasL3Unit) {
-        await materialPackagingApiClient.upsert(materialId, {
-          level1Unit: formData.unit!,
-          level1PerLevel2: hasL2Unit ? Number(packaging.level1PerLevel2) : null,
-          level2Unit: hasL2Unit ? packaging.level2Unit.trim() : null,
-          level2PerLevel3: hasL3Unit ? Number(packaging.level2PerLevel3) : null,
-          level3Unit: hasL3Unit ? packaging.level3Unit.trim() : null,
-        }, factoryId);
-        materialTypeLogger.info('包装层级保存成功', { materialId });
-      } else if (editingItem) {
-        // 编辑模式下用户清空了所有二三级 → 删除现有配置 (新建模式不需要 delete)
-        try {
-          await materialPackagingApiClient.delete(materialId, factoryId);
-        } catch {
-          // 没有现有配置时 delete 也会成功, 忽略错误
-        }
-      }
-
-      Alert.alert('成功', editingItem ? '原材料类型更新成功' : '原材料类型创建成功');
       setModalVisible(false);
       loadMaterialTypes();
     } catch (error) {
@@ -674,132 +477,120 @@ export default function MaterialTypeManagementScreen() {
             )}
 
 
-            {/* 主表单字段 (Schema 驱动, Canvas 可改) */}
-            {schemaReady ? (
-              <DynamicForm
-                ref={formRef}
-                schema={dynamicSchema}
-                initialValues={formData}
-                showSubmitButton={false}
-                scrollable={false}
-                onValuesChange={(vals) => setFormData((prev) => ({ ...prev, ...vals }))}
-              />
-            ) : (
-              <View style={{ padding: 16, alignItems: 'center' }}>
-                <ActivityIndicator />
-                <Text style={{ marginTop: 8, color: '#666' }}>加载表单 schema 中...</Text>
-              </View>
-            )}
-
-            {/* 包装层级 (一级 = 单位字段, 二/三级可选) */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>包装层级（可选）</Text>
-              <Text style={styles.sectionHint}>
-                例: 三文鱼 一级 kg, 10 kg / 箱 (二级), 12 箱 / 柜 (三级)
-              </Text>
-            </View>
-
             <TextInput
-              label={`一级单位 (基础)`}
-              value={formData.unit || ''}
+              label="原料名称 *"
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
               mode="outlined"
               style={styles.input}
-              disabled
-              right={<TextInput.Icon icon="lock" />}
+              placeholder="例如: 三文鱼"
             />
 
-            <View style={styles.packagingRow}>
-              <TextInput
-                label="一级数量 / 二级"
-                value={packaging.level1PerLevel2}
-                onChangeText={(text) => setPackaging({ ...packaging, level1PerLevel2: text })}
-                mode="outlined"
-                style={[styles.input, styles.packagingQty]}
-                keyboardType="numeric"
-                placeholder="10"
-              />
-              <Menu
-                visible={level2UnitMenuVisible}
-                onDismiss={() => setLevel2UnitMenuVisible(false)}
-                anchor={
-                  <TextInput
-                    label="二级单位"
-                    value={packaging.level2Unit}
-                    mode="outlined"
-                    style={[styles.input, styles.packagingUnit]}
-                    editable={false}
-                    placeholder="箱"
-                    right={
-                      packaging.level2Unit ? (
-                        <TextInput.Icon icon="close" onPress={() => setPackaging({ ...packaging, level2Unit: '', level1PerLevel2: '' })} />
-                      ) : (
-                        <TextInput.Icon icon="menu-down" onPress={() => setLevel2UnitMenuVisible(true)} />
-                      )
-                    }
-                    onPressIn={() => setLevel2UnitMenuVisible(true)}
-                  />
-                }
-              >
-                {mergeHistoricValue(unitOptions, packaging.level2Unit).map((u) => (
-                  <Menu.Item
-                    key={u}
-                    onPress={() => {
-                      setPackaging({ ...packaging, level2Unit: u });
-                      setLevel2UnitMenuVisible(false);
-                    }}
-                    title={u}
-                  />
-                ))}
-              </Menu>
-            </View>
+            {/* 类别下拉选择 */}
+            <Menu
+              visible={categoryMenuVisible}
+              onDismiss={() => setCategoryMenuVisible(false)}
+              anchor={
+                <TextInput
+                  label="类别 *"
+                  value={formData.category}
+                  mode="outlined"
+                  style={styles.input}
+                  editable={false}
+                  right={<TextInput.Icon icon="menu-down" onPress={() => setCategoryMenuVisible(true)} />}
+                  onPressIn={() => setCategoryMenuVisible(true)}
+                />
+              }
+            >
+              {categoryOptions.map((cat) => (
+                <Menu.Item
+                  key={cat}
+                  onPress={() => {
+                    setFormData({ ...formData, category: cat });
+                    setCategoryMenuVisible(false);
+                  }}
+                  title={cat}
+                />
+              ))}
+            </Menu>
 
-            <View style={styles.packagingRow}>
-              <TextInput
-                label="二级数量 / 三级"
-                value={packaging.level2PerLevel3}
-                onChangeText={(text) => setPackaging({ ...packaging, level2PerLevel3: text })}
-                mode="outlined"
-                style={[styles.input, styles.packagingQty]}
-                keyboardType="numeric"
-                placeholder="12"
-                disabled={!packaging.level2Unit}
-              />
-              <Menu
-                visible={level3UnitMenuVisible}
-                onDismiss={() => setLevel3UnitMenuVisible(false)}
-                anchor={
-                  <TextInput
-                    label="三级单位"
-                    value={packaging.level3Unit}
-                    mode="outlined"
-                    style={[styles.input, styles.packagingUnit]}
-                    editable={false}
-                    disabled={!packaging.level2Unit}
-                    placeholder="柜"
-                    right={
-                      packaging.level3Unit ? (
-                        <TextInput.Icon icon="close" onPress={() => setPackaging({ ...packaging, level3Unit: '', level2PerLevel3: '' })} />
-                      ) : (
-                        <TextInput.Icon icon="menu-down" onPress={() => packaging.level2Unit && setLevel3UnitMenuVisible(true)} />
-                      )
-                    }
-                    onPressIn={() => packaging.level2Unit && setLevel3UnitMenuVisible(true)}
-                  />
-                }
-              >
-                {mergeHistoricValue(unitOptions, packaging.level3Unit).map((u) => (
-                  <Menu.Item
-                    key={u}
-                    onPress={() => {
-                      setPackaging({ ...packaging, level3Unit: u });
-                      setLevel3UnitMenuVisible(false);
-                    }}
-                    title={u}
-                  />
-                ))}
-              </Menu>
-            </View>
 
+            {/* 单位下拉选择 */}
+            <Menu
+              visible={unitMenuVisible}
+              onDismiss={() => setUnitMenuVisible(false)}
+              anchor={
+                <TextInput
+                  label="单位 *"
+                  value={formData.unit}
+                  mode="outlined"
+                  style={styles.input}
+                  editable={false}
+                  right={<TextInput.Icon icon="menu-down" onPress={() => setUnitMenuVisible(true)} />}
+                  onPressIn={() => setUnitMenuVisible(true)}
+                />
+              }
+            >
+              {unitOptions.map((unit) => (
+                <Menu.Item
+                  key={unit}
+                  onPress={() => {
+                    setFormData({ ...formData, unit });
+                    setUnitMenuVisible(false);
+                  }}
+                  title={unit}
+                />
+              ))}
+            </Menu>
+
+            <TextInput
+              label="保质期（天）"
+              value={formData.shelfLifeDays?.toString() || ''}
+              onChangeText={(text) => setFormData({ ...formData, shelfLifeDays: parseInt(text) || 0 })}
+              mode="outlined"
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="例如: 7"
+            />
+
+            {/* 储存类型下拉选择 */}
+            <Menu
+              visible={storageMenuVisible}
+              onDismiss={() => setStorageMenuVisible(false)}
+              anchor={
+                <TextInput
+                  label="储存类型 *"
+                  value={formData.storageType}
+                  mode="outlined"
+                  style={styles.input}
+                  editable={false}
+                  right={<TextInput.Icon icon="menu-down" onPress={() => setStorageMenuVisible(true)} />}
+                  onPressIn={() => setStorageMenuVisible(true)}
+                />
+              }
+            >
+              {storageTypeOptions.map((type) => (
+                <Menu.Item
+                  key={type}
+                  onPress={() => {
+                    setFormData({ ...formData, storageType: type });
+                    setStorageMenuVisible(false);
+                  }}
+                  title={type}
+                />
+              ))}
+            </Menu>
+
+            <TextInput
+              label="备注"
+              value={formData.notes}
+              onChangeText={(text) => setFormData({ ...formData, notes: text })}
+              mode="outlined"
+              style={styles.input}
+              multiline
+              numberOfLines={3}
+              placeholder="原料详细描述（可选）"
+            />
           </ScrollView>
 
           {/* 底部按钮 */}
@@ -1017,32 +808,5 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
-  },
-  sectionHeader: {
-    marginTop: 8,
-    marginBottom: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  sectionHint: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  packagingRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  packagingQty: {
-    flex: 1.2,
-  },
-  packagingUnit: {
-    flex: 1,
   },
 });

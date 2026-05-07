@@ -89,17 +89,4 @@ public interface RawMaterialTypeRepository extends JpaRepository<RawMaterialType
     @Query("SELECT r FROM RawMaterialType r WHERE r.factoryId = :factoryId " +
            "AND r.minStock IS NOT NULL AND r.minStock > 0")
     List<RawMaterialType> findMaterialTypesWithStockWarning(@Param("factoryId") String factoryId);
-
-    /**
-     * 按 name 模糊匹配 + 可选 category 筛选, 返回最近创建的若干条.
-     * 用于"新建原料类型"页智能默认单位: 输入名称+类别后, 取相似历史原料的 unit.
-     */
-    @Query("SELECT r FROM RawMaterialType r WHERE r.factoryId = :factoryId AND r.isActive = true " +
-           "AND (:category IS NULL OR r.category = :category) " +
-           "AND LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' " +
-           "ORDER BY r.createdAt DESC")
-    List<RawMaterialType> findSimilarByNameAndCategory(@Param("factoryId") String factoryId,
-                                                       @Param("keyword") String keyword,
-                                                       @Param("category") String category,
-                                                       Pageable pageable);
 }

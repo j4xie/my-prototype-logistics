@@ -81,7 +81,6 @@ import ProcessTaskApprovalScreen from "../../screens/processing/ProcessTaskAppro
 
 // 进销存管理
 import PurchaseOrderListScreen from "../../screens/factory-admin/inventory/PurchaseOrderListScreen";
-import PurchaseOrderCreateScreen from "../../screens/factory-admin/inventory/PurchaseOrderCreateScreen";
 import PurchaseOrderDetailScreen from "../../screens/factory-admin/inventory/PurchaseOrderDetailScreen";
 import SalesOrderListScreen from "../../screens/factory-admin/inventory/SalesOrderListScreen";
 import SalesOrderDetailScreen from "../../screens/factory-admin/inventory/SalesOrderDetailScreen";
@@ -446,11 +445,6 @@ export function FAManagementStackNavigator() {
         name="PurchaseOrderList"
         component={PurchaseOrderListScreen}
         options={{ title: "采购订单" }}
-      />
-      <Stack.Screen
-        name="PurchaseOrderCreate"
-        component={PurchaseOrderCreateScreen}
-        options={{ title: "新建采购订单" }}
       />
       <Stack.Screen
         name="PurchaseOrderDetail"
