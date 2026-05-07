@@ -35,7 +35,9 @@ set -euo pipefail
 DURATION="${DURATION:-24h}"
 INTERVAL_SEC="${INTERVAL_SEC:-60}"
 ENDPOINTS_FILE="${ENDPOINTS_FILE:-/tmp/t6-in-scope-endpoints.txt}"
-JAVA_BASE="${JAVA_BASE:-http://localhost:10010}"
+# JAVA_BASE empty default → auto-detect Blue-Green active port (10010 blue / 10020 green).
+# User can override via JAVA_BASE env var or --java-base CLI arg (skips detect).
+JAVA_BASE="${JAVA_BASE:-}"
 PYTHON_BASE="${PYTHON_BASE:-http://localhost:8083}"
 OUTPUT_FILE=""
 FACTORY="${FACTORY:-}"
@@ -53,7 +55,7 @@ Options:
   --duration <Nd|Nh|Ns>     Default: 24h
   --interval <seconds>      Default: 60
   --endpoints <file>        Default: /tmp/t6-in-scope-endpoints.txt
-  --java-base <url>         Default: http://localhost:10010
+  --java-base <url>         Default: auto-detect active Blue-Green port (10010 / 10020)
   --python-base <url>       Default: http://localhost:8083
   --output <path>           Default: /var/log/cretas-t6-dryrun-YYYYMMDD.ndjson
   --help                    Show help
@@ -93,6 +95,35 @@ parse_duration() {
     esac
 }
 DURATION_SEC=$(parse_duration "$DURATION")
+
+# Blue-Green active port detection. Java backend can be on 10010 (blue) or 10020 (green)
+# depending on which side `deploy-backend.sh --env prod` last activated. Hardcoded :10010
+# caused dryrun crash 2026-05-07 22:23:18 CST during PR #113 prod deploy flip (chat 2 PR
+# #124 finding) — wrapper got non-JSON when blue stopped. Health-check both ports + pick
+# first 200; user-explicit JAVA_BASE (env or --java-base) skips detection.
+detect_java_port() {
+    local port code
+    for port in 10010 10020; do
+        # `|| true` swallows curl exit 7 (conn refused) under set -euo. Curl writes "000"
+        # to stdout via -w on connection failure, "200" on healthy response.
+        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+                    "http://localhost:$port/api/mobile/health" 2>/dev/null) || true
+        if [[ "$code" == "200" ]]; then
+            echo "$port"
+            return 0
+        fi
+    done
+    echo "ERROR: Java backend not reachable on :10010 or :10020 (Blue-Green flip in progress? both stopped?)" >&2
+    return 1
+}
+
+if [[ -z "$JAVA_BASE" ]]; then
+    JAVA_PORT=$(detect_java_port) || exit 1
+    JAVA_BASE="http://localhost:$JAVA_PORT"
+    echo "[t6-dryrun] auto-detected Java port: $JAVA_BASE" >&2
+else
+    echo "[t6-dryrun] using explicit Java base: $JAVA_BASE" >&2
+fi
 
 # Lock
 if [[ -f "$LOCK_FILE" ]]; then
