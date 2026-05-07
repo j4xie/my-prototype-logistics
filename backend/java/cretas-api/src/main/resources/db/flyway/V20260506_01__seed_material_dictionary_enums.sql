@@ -9,18 +9,20 @@
 --
 -- Idempotent: ON CONFLICT DO NOTHING 防重跑.
 
-INSERT INTO system_enums (id, factory_id, enum_group, enum_code, enum_label, enum_description, sort_order, is_active, is_system)
+-- system_enums.created_at / updated_at 是 NOT NULL 无 DEFAULT (BaseEntity @CreatedDate
+-- 由 Hibernate AuditingEntityListener 填, Flyway 走 raw SQL 不经过它), 必须显式 NOW().
+INSERT INTO system_enums (id, factory_id, enum_group, enum_code, enum_label, enum_description, sort_order, is_active, is_system, created_at, updated_at)
 VALUES
-    ('enum-mc-001', '*', 'MATERIAL_CATEGORY', 'main',       '主材',   '主要食材原料',     1, true, true),
-    ('enum-mc-002', '*', 'MATERIAL_CATEGORY', 'auxiliary',  '辅材',   '辅助食材原料',     2, true, true),
-    ('enum-mc-003', '*', 'MATERIAL_CATEGORY', 'seasoning',  '调味料', '调味用原料',       3, true, true),
-    ('enum-mc-004', '*', 'MATERIAL_CATEGORY', 'packaging',  '包材',   '包装材料(箱/袋等)', 4, true, true)
+    ('enum-mc-001', '*', 'MATERIAL_CATEGORY', 'main',       '主材',   '主要食材原料',     1, true, true, NOW(), NOW()),
+    ('enum-mc-002', '*', 'MATERIAL_CATEGORY', 'auxiliary',  '辅材',   '辅助食材原料',     2, true, true, NOW(), NOW()),
+    ('enum-mc-003', '*', 'MATERIAL_CATEGORY', 'seasoning',  '调味料', '调味用原料',       3, true, true, NOW(), NOW()),
+    ('enum-mc-004', '*', 'MATERIAL_CATEGORY', 'packaging',  '包材',   '包装材料(箱/袋等)', 4, true, true, NOW(), NOW())
 ON CONFLICT (factory_id, enum_group, enum_code) DO NOTHING;
 
-INSERT INTO system_enums (id, factory_id, enum_group, enum_code, enum_label, enum_description, sort_order, is_active, is_system)
+INSERT INTO system_enums (id, factory_id, enum_group, enum_code, enum_label, enum_description, sort_order, is_active, is_system, created_at, updated_at)
 VALUES
-    ('enum-mst-001', '*', 'MATERIAL_STORAGE_TYPE', 'fresh',  '新鲜', '常温新鲜原料',  1, true, true),
-    ('enum-mst-002', '*', 'MATERIAL_STORAGE_TYPE', 'frozen', '冻货', '冷冻储存',       2, true, true),
-    ('enum-mst-003', '*', 'MATERIAL_STORAGE_TYPE', 'dry',    '干货', '干燥储存',       3, true, true),
-    ('enum-mst-004', '*', 'MATERIAL_STORAGE_TYPE', 'normal', '常温', '常温储存',       4, true, true)
+    ('enum-mst-001', '*', 'MATERIAL_STORAGE_TYPE', 'fresh',  '新鲜', '常温新鲜原料',  1, true, true, NOW(), NOW()),
+    ('enum-mst-002', '*', 'MATERIAL_STORAGE_TYPE', 'frozen', '冻货', '冷冻储存',       2, true, true, NOW(), NOW()),
+    ('enum-mst-003', '*', 'MATERIAL_STORAGE_TYPE', 'dry',    '干货', '干燥储存',       3, true, true, NOW(), NOW()),
+    ('enum-mst-004', '*', 'MATERIAL_STORAGE_TYPE', 'normal', '常温', '常温储存',       4, true, true, NOW(), NOW())
 ON CONFLICT (factory_id, enum_group, enum_code) DO NOTHING;

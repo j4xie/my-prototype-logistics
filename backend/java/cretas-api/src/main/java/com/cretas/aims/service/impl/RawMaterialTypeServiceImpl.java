@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.cache.annotation.CacheEvict;
@@ -540,7 +539,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         }
         String keyword = name.trim();
         String categoryFilter = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
-        Pageable top1 = PageRequest.of(0, 1);
+        // 全限定 Spring PageRequest 避免跟 com.cretas.aims.dto.common.PageRequest 二义
+        Pageable top1 = org.springframework.data.domain.PageRequest.of(0, 1);
 
         List<RawMaterialType> matches = materialTypeRepository.findSimilarByNameAndCategory(
                 factoryId, keyword, categoryFilter, top1);
