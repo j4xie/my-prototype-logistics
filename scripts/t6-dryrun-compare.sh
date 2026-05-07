@@ -196,14 +196,27 @@ try:
         except Exception:
             return None
 
-    j_body = safe_load(os.environ.get("JAVA_BODY", "")) if os.environ.get("JAVA_BODY") else None
-    p_body = safe_load(os.environ.get("PY_BODY", "")) if os.environ.get("PY_BODY") else None
+    j_body_raw = os.environ.get("JAVA_BODY", "")
+    p_body_raw = os.environ.get("PY_BODY", "")
+    j_body = safe_load(j_body_raw) if j_body_raw else None
+    p_body = safe_load(p_body_raw) if p_body_raw else None
 
     j_meta = safe_load(os.environ.get("JAVA_META", "")) or {"http": 0, "lat_s": 0, "size": 0}
     p_meta = safe_load(os.environ.get("PY_META", "")) or {"http": 0, "lat_s": 0, "size": 0}
 
     j_status = j_meta.get("http", 0)
     p_status = p_meta.get("http", 0)
+
+    # Parse-fail detection — body returned (non-empty) but safe_load couldn't
+    # decode it. Common causes: HTML error page (e.g. nginx 502 returned with
+    # http=200 due to upstream proxy quirk), truncated stream, partial response,
+    # or backend returning text/plain instead of application/json. Without this
+    # check, two None bodies would compare equal and falsely register as match.
+    # (chat 2 PR #119 finding 2026-05-07: pre-task-#27 dryrun crashed iter ~1060
+    # at unprotected json.loads — task #27 wrapped it in safe_load, but None==None
+    # match-bug was the residual gap this fix addresses.)
+    j_parse_failed = bool(j_body_raw) and j_body is None
+    p_parse_failed = bool(p_body_raw) and p_body is None
 
     if not (200 <= j_status < 300) and not (200 <= p_status < 300):
         verdict = "both_err"
@@ -214,6 +227,17 @@ try:
     elif not (200 <= p_status < 300):
         verdict = "python_err"
         diff = None
+    elif j_parse_failed or p_parse_failed:
+        # http=200 但 body 非 valid JSON — record as compare_err so aggregator
+        # buckets it correctly (NOT match, NOT diverge).
+        verdict = "compare_err"
+        diff = {
+            "reason": "json_parse_fail",
+            "java_parsed": not j_parse_failed,
+            "python_parsed": not p_parse_failed,
+            "j_head": j_body_raw[:80] if j_parse_failed else None,
+            "p_head": p_body_raw[:80] if p_parse_failed else None,
+        }
     else:
         j_clean = strip_volatile(j_body) if j_body else None
         p_clean = strip_volatile(p_body) if p_body else None
