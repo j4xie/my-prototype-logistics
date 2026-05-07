@@ -171,7 +171,13 @@ def _build_drilldown_ranking(rows) -> list:
         total_amount = _to_decimal(row[1] if row[1] is not None else 0)
         total_target = _to_decimal(row[2] if row[2] is not None else 0)
         if total_target > Decimal("0"):
-            completion_rate = (total_amount / total_target * Decimal("100")).quantize(Decimal("0.01"))
+            # Rule 10: divide quantize 4 first, then multiply, mirrors Java
+            # BigDecimal.divide(scale=4, HALF_UP).multiply(100). Final scale-2
+            # quantize uses explicit ROUND_HALF_UP to match Java setScale(2, HALF_UP).
+            completion_rate = (
+                (total_amount / total_target).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                * Decimal("100")
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         else:
             completion_rate = Decimal("0")
         rankings.append({
@@ -252,7 +258,13 @@ def _build_department_detail_response(row) -> dict:
         total_cost = _to_decimal(row[3] if row[3] is not None else 0)
 
     if total_target > Decimal("0"):
-        completion_rate = (total_amount / total_target * Decimal("100")).quantize(Decimal("0.01"))
+        # Rule 10: divide quantize 4 first, then multiply, mirrors Java
+        # BigDecimal.divide(scale=4, HALF_UP).multiply(100). Final scale-2
+        # quantize uses explicit ROUND_HALF_UP to match Java setScale(2, HALF_UP).
+        completion_rate = (
+            (total_amount / total_target).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     else:
         completion_rate = Decimal("0")
     if member_count > 0:
