@@ -42,6 +42,51 @@ const suppliers = ref<Record<string, unknown>[]>([]);
 const materials = ref<Record<string, unknown>[]>([]);
 const salesOrders = ref<Record<string, unknown>[]>([]);
 
+// 包装层级缓存: materialTypeId → { level1Unit, level2Unit, level3Unit }
+// 选原料后调 /material-packaging/by-material/{id} 拉取, 用于单位下拉
+const packagingCache = ref<Record<string, { level1Unit?: string; level2Unit?: string | null; level3Unit?: string | null }>>({});
+
+async function ensurePackagingLoaded(materialId: string) {
+  if (!materialId || packagingCache.value[materialId]) return;
+  try {
+    const res = await get<{ level1Unit?: string; level2Unit?: string | null; level3Unit?: string | null } | null>(
+      `/${factoryId.value}/material-packaging/by-material/${materialId}`,
+    );
+    packagingCache.value[materialId] = res.data || {};
+  } catch {
+    packagingCache.value[materialId] = {};
+  }
+}
+
+function getUnitOptionsForItem(item: Record<string, unknown>): { value: string; label: string }[] {
+  const matId = String(item.materialTypeId || '');
+  const set = new Set<string>();
+  // 优先该原料的 1/2/3 级单位
+  const pkg = packagingCache.value[matId];
+  if (pkg) {
+    if (pkg.level1Unit) set.add(pkg.level1Unit);
+    if (pkg.level2Unit) set.add(pkg.level2Unit);
+    if (pkg.level3Unit) set.add(pkg.level3Unit);
+  }
+  // 兜底: 该原料的默认 unit (如果有 packaging 已经在内)
+  const mat = materials.value.find((m) => m.id === matId);
+  if (mat && mat.unit) set.add(String(mat.unit));
+  // 当前已选的 unit (历史值兼容)
+  const cur = String(item.unit || '');
+  if (cur && !set.has(cur)) set.add(cur);
+  return Array.from(set).map((u) => ({ value: u, label: u }));
+}
+
+function onItemMaterialChange(item: Record<string, unknown>) {
+  const matId = String(item.materialTypeId || '');
+  if (!matId) return;
+  ensurePackagingLoaded(matId).then(() => {
+    // 选原料后默认带入该原料的一级单位 (除非用户已经填了)
+    const mat = materials.value.find((m) => m.id === matId);
+    if (mat && mat.unit && !item.unit) item.unit = String(mat.unit);
+  });
+}
+
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
   SUBMITTED: { text: '已提交', type: 'warning' },
@@ -366,9 +411,9 @@ function handleAiFill(params: Record<string, unknown>) {
       </div>
     </el-card>
 
-    <!-- Apr 20 Bug BR-06 fix: 原材料明细 7 列 (200+120+100+80+100+80+40=720 + 6×8gap=48 + body padding 40 ≈ 808px),
-         在 720px dialog 里被截断. 扩到 880px 留余量 -->
-    <el-dialog v-model="dialogVisible" :title="`新建${label('purchaseOrder')}`" width="880px" destroy-on-close>
+    <!-- May 7 2026 用户反馈: "新建采购订单需要把页面放大,要不然很多明细的话是很小的".
+         改全屏 dialog (full-screen modal),明细行有充足空间. -->
+    <el-dialog v-model="dialogVisible" :title="`新建${label('purchaseOrder')}`" fullscreen destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item :label="label('supplier')">
           <el-select v-model="form.supplierId" placeholder="请选择" filterable style="width: 100%">
@@ -410,12 +455,34 @@ function handleAiFill(params: Record<string, unknown>) {
           <span style="width: 40px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
-          <el-select v-model="item.materialTypeId" placeholder="选择原料" filterable style="width: 200px">
+          <el-select
+            v-model="item.materialTypeId"
+            placeholder="选择原料"
+            filterable
+            style="width: 200px"
+            @change="onItemMaterialChange(item)"
+          >
             <el-option v-for="m in materials" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
           <el-input v-model="item.specification" placeholder="规格" style="width: 120px" />
           <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 100px" />
-          <el-input v-model="item.unit" style="width: 80px" />
+          <!-- 单位下拉: 选定原料后显示该原料的 1/2/3 级单位; 未选时退化空选项 -->
+          <el-select
+            v-model="item.unit"
+            placeholder="单位"
+            :disabled="!item.materialTypeId"
+            style="width: 100px"
+            filterable
+            allow-create
+            default-first-option
+          >
+            <el-option
+              v-for="opt in getUnitOptionsForItem(item)"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 100px" />
           <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 80px" />
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
