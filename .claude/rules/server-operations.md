@@ -222,6 +222,44 @@ deploy-backend.sh v4.2 已加**防御性 health check**: 部 prod 完顺便 ping
 
 ---
 
+## ⛔ Smartbi 数据库 schema 变更 (HARD RULE)
+
+**触发**: task #30 (2026-05-06) — 8 个 data fabric C 系列 migrations 当初部署漏跑 prod, T6.2 canary 4h 才发现 9 errors。
+**Spec**: `docs/superpowers/specs/2026-05-07-smartbi-migration-runner-spec.md`
+
+**所有** smartbi 数据库 (smartbi_db / smartbi_prod_db) schema 变更**必须**:
+
+1. 写 `backend/python/smartbi/database/migrations/V<YYYYMMDD>_<NN>__<description>.sql`
+2. 部署通过 `./scripts/deploy/deploy-smartbi-python.sh --env <env>` 自动 apply
+   - Step 3.5 调用 `apply-smartbi-migrations.sh --env $env` runner
+   - Runner 失败 → deploy ABORT,Python NOT restarted (旧 schema + 旧 code 继续跑)
+
+**禁止** 手动 `ssh + psql -f` 直接跑 schema DDL,**除非**紧急 hotfix。完后**必须立即**:
+1. 把 SQL 落 V*.sql 文件 commit 进 repo
+2. 手动 INSERT 进 `smartbi_migrations` tracker (per spec §3.8 escape hatch):
+   ```sql
+   INSERT INTO smartbi_migrations (filename, version, checksum, applied_by)
+   VALUES ('V20260507_99__hotfix.sql', 'V20260507_99',
+           '<sha256 of file>', 'manual-emergency')
+   ON CONFLICT (filename) DO NOTHING;
+   ```
+3. 否则下次 deploy 跑 runner 会 try re-apply → DDL 已存在报错。
+
+**escape hatch**: 紧急绕过 runner (e.g. runner 自身有 bug):
+```bash
+SKIP_MIGRATIONS=1 ./scripts/deploy/deploy-smartbi-python.sh --env prod
+```
+WARN level 日志 + 跳过 Step 3.5。完后立即修 runner 重新部署。
+
+如果 schema 在 prod / test 之间出现 drift:
+1. `comm -23 <(test schema dump) <(prod schema dump)` 找差异
+2. 单一 transaction (`BEGIN; ALL; COMMIT;`) apply 缺失 migrations 到落后的 env
+3. Backfill tracker 表 (per `scripts/migrations/backfill-applied.sh`)
+
+**Tracker schema 关键点** (per spec §3.2): PRIMARY KEY = `filename` (not version),因为 历史上 `V20260427_01` 有两个不同文件。filename PK 防 future dupe 静默跳过。
+
+---
+
 ## 注意事项
 
 1. **不要直接删除** `/www/wwwroot` 下的目录，先确认内容
