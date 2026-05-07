@@ -2121,9 +2121,11 @@ async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
     chart_data: list[dict] = []
     for bucket in AGING_BUCKETS_ORDER:  # Java line 600 fixed order
         amount = aging_buckets.get(bucket, Decimal("0"))
-        # Java line 605 — zero-guard
+        # Java line 605 — zero-guard. Rule 10: divide quantize 4 first, then
+        # multiply, so intermediate scale matches Java BigDecimal.divide(scale=4).
         percentage = (
-            amount / total_ar * Decimal("100")
+            (amount / total_ar).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
             if total_ar > Decimal("0")
             else Decimal("0")
         )
@@ -2189,9 +2191,12 @@ async def _get_receivable_metrics(
     ))
 
     # ===== Metric 2: COLLECTION_RATE (Java line 658-670) =====
-    # Java line 659 — zero-guard (totalReceivable > 0)
+    # Java line 659 — zero-guard (totalReceivable > 0).
+    # Rule 10: divide quantize 4 first, then multiply, mirrors Java
+    # BigDecimal.divide(scale=4, HALF_UP).multiply(100).
     collection_rate = (
-        total_collection / total_receivable * Decimal("100")
+        (total_collection / total_receivable).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        * Decimal("100")
         if total_receivable > Decimal("0")
         else Decimal("0")
     )
@@ -2222,8 +2227,11 @@ async def _get_receivable_metrics(
         (over60, "AGING_60_RATIO", "60天以上账龄占比", "账龄超过60天的应收款占比", _aging_60_alert),
         (over90, "AGING_90_RATIO", "90天以上账龄占比", "账龄超过90天的高风险应收款占比", _aging_90_alert),
     ]:
+        # Rule 10: divide quantize 4 first, then multiply, mirrors Java
+        # BigDecimal.divide(scale=4, HALF_UP).multiply(100).
         ratio = (
-            ratio_value / total_for_ratio * Decimal("100")
+            (ratio_value / total_for_ratio).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
             if total_for_ratio > Decimal("0")
             else Decimal("0")
         )
