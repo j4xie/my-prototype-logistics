@@ -19,7 +19,7 @@ This MO was originally drafted assuming `SMARTBI_GOLD_READ_PRIMARY_ENABLED=false
 | 3 | §6 HARD RULE: "flag must be `false` or unset" | Flag=true intentional since Apr 23 Phase B Dashboard Gold UI port (memory `project_apr23_dashboard_gold_uiport.md`) — Bug #417 perf fix dependency | §6 HARD RULE rewrite below |
 | 4 | "PR #135 to be deployed" | PR #135 (`2e90a2016`) **ALREADY DEPLOYED** via N=2 cutover 2026-05-07 11:36 CST, Python prod log confirms Pattern B 3-state firing | Step 2/3 deploy → re-verification framing |
 | 5 | Step 1 worker grep `uvicorn.*:8083` returns 1 only | N=2 workers spawn via `multiprocessing.spawn`, parent grep ≠ worker count (per chat 4 rehearsal `df5ded859` GAP-3) | Step 1 grep replaced |
-| 6 | nginx config: `_upstream_cretas.conf` | Actual filename `_upstream_cretas.conf` (per chat 4 rehearsal GAP-2) | §1+§2 filename replaced |
+| 6 | nginx config: `cretas-java-upstream.conf` | Actual filename `_upstream_cretas.conf` (per chat 4 rehearsal GAP-2) | §1+§2 filename replaced |
 
 **Net effect**: This MO is now a **smoke re-verification + 24h soak monitoring runbook**, NOT a fresh deploy. Step 2 (Java BG) and Step 3 (Python deploy) are downgraded — Java is optional hygiene cycle, Python deploy is no-op since current code = `2e90a2016`.
 
@@ -129,9 +129,10 @@ echo '=== Python prod 8083 multi-worker baseline (expect 1 leader + 1 follower f
 ss -tlnp | grep ':8083' || true
 # Per chat 4 rehearsal df5ded859 GAP-3: parent grep returns 1 (only uvicorn root matches),
 # workers spawn via multiprocessing.spawn so use --ppid for accurate N=2 verify
+# (N=2 worker count via direct child count, 不依赖 comm name — ONNX renames workers to pt_main_thread)
 PYTHON_MAINPID=\$(systemctl show cretas-python --property=MainPID --value)
 echo \"  parent uvicorn PID: \$PYTHON_MAINPID\"
-echo \"  spawn_main worker count: \$(ps --ppid \$PYTHON_MAINPID 2>/dev/null | grep -c spawn_main || echo 0)\"  # expect 2
+echo \"  worker count: \$(ps --no-headers --ppid \$PYTHON_MAINPID 2>/dev/null | wc -l || echo 0)\"  # expect 2
 echo
 
 echo '=== Active Java BG color check (which port nginx upstream points to) ==='
@@ -162,7 +163,7 @@ ssh root@139.196.165.140 \"grep -oE 'F001\\|FOOD_3101|TEST_0000_001' /www/server
 
 **STOP and ping organizer if**:
 - smartbi_migrations row count != 35 on either env
-- `cretas-python.MainPID` is 0 OR `spawn_main worker count != 2` (PR-3 N=2 leader gate broken — pre-existing)
+- `cretas-python.MainPID` is 0 OR `worker count != 2` (PR-3 N=2 leader gate broken — pre-existing)
 - T6.3 regex no longer present in nginx vhost (someone moved it back during the night)
 - Python prod 8083 returns non-200 (T6.3 24h soak might already be tainted)
 - `SMARTBI_GOLD_READ_PRIMARY_ENABLED != true` on prod (someone flipped flag back unilaterally — pre-MO discrepancy, do NOT toggle, ping organizer to investigate)
