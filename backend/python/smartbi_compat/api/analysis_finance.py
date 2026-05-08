@@ -561,11 +561,24 @@ def _get_metric_display_name(metric: Optional[str]) -> str:
 
 def _safe_growth_rate(current: Decimal, base: Decimal) -> Decimal:
     """Mirror Java growth rate formula at FinanceAnalysisServiceImpl.calculateMonthYoYMoM
-    line 1839-1850 etc. Returns scale=4 Decimal.
+    line 1839-1850 etc. Returns **scale-4** Decimal (matches Java BigDecimal.divide(scale=4)).
 
     Rule 10 (Java BigDecimal divide-then-multiply): divide quantize at scale 4
     BEFORE multiply, NOT (n/d*K).quantize(scale 4). 2026-05-07 proactive fix
     of latent site listed by chat 4 in PR-M-2 audit.
+
+    ⚠️ CALLER RESPONSIBILITY (per Rule 4 expanded — Pattern A2 audit, PR #132):
+    Do NOT pass result directly to ``_decimal_to_number`` for emission — that
+    triggers Pattern A2 trailing-zero loss (e.g. ``99.9900`` → float ``99.99``).
+    All current callers (lines 728/729/764/765) defensively re-quantize:
+
+        rate = _safe_growth_rate(num, denom)
+        emitted = _decimal_to_number(rate.quantize(Decimal("0.01"), ROUND_HALF_UP))
+        #                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ MANDATORY
+
+    Phase 2A dict-eq gate accepts trailing-zero loss (numeric equality), but
+    Phase 3+ strict-byte gate would require defensive scale-2 re-quantize at
+    emission to match Java DTO ``setScale(DISPLAY_SCALE=2, HALF_UP)``.
     """
     if base > Decimal("0"):
         return (
