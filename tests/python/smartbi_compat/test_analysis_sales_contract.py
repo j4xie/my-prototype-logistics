@@ -216,13 +216,19 @@ class TestGold:
     """Gold-path adapter contract tests."""
 
     def _patch_gold_path(self, monkeypatch, finance, trend, products):
-        """Patch the 3 query seams + bypass pool acquisition.
+        """Patch the 3 query seams + bypass pool acquisition + enable flag.
 
         Strategy: patch smartbi.config.get_pg_pool to return a sentinel pool
         object (None is fine since adapters don't actually use pool when seams
         are also patched). Then patch the 3 seams to return fixture data.
+
+        Also sets SMARTBI_GOLD_READ_PRIMARY_ENABLED=true so the dispatcher
+        actually enters the Gold branch (PR #146 K-1 fix flag-gates Gold;
+        default false sends to legacy directly).
         """
         from smartbi_compat.api import analysis_sales as mod
+        # PR #146 K-1: Gold path is flag-gated; tests must explicitly enable.
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
         async def fake_pool():
             return None
         async def fake_fin(pool, fid, dr, *, top_n_stores=10):
@@ -301,6 +307,8 @@ class TestGold:
 
     def test_gold_chart_failure_tolerated(self, monkeypatch, client, f001_token):
         from smartbi_compat.api import analysis_sales as mod
+        # PR #146 K-1: enable flag-gated Gold path
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
         async def fake_fin(pool, fid, dr, *, top_n_stores=10):
             return F001_GOLD_FINANCE
         async def failing_trend(pool, fid, dr):
@@ -333,7 +341,11 @@ class TestGold:
         Mock returns the EXACT shape Java's Gold queries return for F001's 2025
         window (~20.6M total revenue / 140541 bills / 8 stores / 365 trend days /
         8 categories). Mocked because tests must be hermetic.
+
+        PR #146 K-1: must set flag=true to enter Gold path.
         """
+        # PR #146 K-1: enable flag-gated Gold path
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
         # Build mock from golden's actual values to ensure byte parity
         with open(GOLDEN_DIR / "analysis-sales-F001.json", encoding="utf-8") as f:
             golden = json.load(f)
@@ -1159,9 +1171,15 @@ class TestOverview:
 
         Pre-fix Python fell to legacy on Gold-None, diverging from Java's
         empty dashboard. This test guards that contract.
+
+        PR #146 K-1: must set flag=true to enter Gold path (default false
+        sends straight to legacy and bypasses this contract entirely).
         """
         from smartbi_compat.api import analysis_sales as m
         from datetime import date
+
+        # PR #146 K-1: enable flag-gated Gold path
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
 
         async def fake_pool():
             return object()  # opaque pool sentinel; mocked seams won't use it
@@ -1199,14 +1217,25 @@ class TestOverview:
 
         Verifies dispatch only — mocks _build_legacy_sales_overview at the
         boundary rather than chaining through full legacy SQL helpers.
+
+        PR #146 K-1: must set flag=true; otherwise dispatcher skips Gold
+        entirely and gold_raises mock is never called (test would pass by
+        coincidence on the flag-false legacy path, masking the actual
+        Gold-exception fallback contract).
         """
         from smartbi_compat.api import analysis_sales as m
         from datetime import date
 
+        # PR #146 K-1: enable flag-gated Gold path
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
+
         async def fake_pool():
             return object()
 
+        gold_call_count = {"count": 0}
+
         async def gold_raises(*a, **k):
+            gold_call_count["count"] += 1
             raise RuntimeError("simulated Gold failure (transient DB error)")
 
         legacy_calls = {"count": 0, "factory_id": None}
@@ -1224,17 +1253,27 @@ class TestOverview:
         range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
         result = await m._get_sales_overview("F999", range_)
 
+        assert gold_call_count["count"] == 1, "Gold path must be entered when flag=true"
         assert legacy_calls["count"] == 1, "legacy must run exactly once on Gold exception"
         assert legacy_calls["factory_id"] == "F999"
         assert result == {"_legacy_sentinel": True}, "result must come from legacy, not empty dashboard"
 
     @pytest.mark.asyncio
     async def test_F001_still_uses_gold_path_after_overview_impl(self, monkeypatch):
-        """Regression guard: overview spec must NOT cause F001 to fall back to legacy.
+        """Regression guard: when flag=true, F001 should NOT fall back to legacy.
 
-        Strategy: spy on legacy aggregates query — if it's called for F001, fail."""
+        Strategy: spy on legacy aggregates query — if it's called for F001 with
+        Gold flag enabled, soft-warn (Gold pool likely broken in test fixtures).
+
+        PR #146 K-1: must set flag=true; with flag=false (prod default) F001
+        ALWAYS goes to legacy by design and the warning would fire constantly
+        without signal.
+        """
         from smartbi_compat.api import analysis_sales as m
         from datetime import date
+
+        # PR #146 K-1: enable flag-gated Gold path (otherwise legacy always runs)
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
 
         legacy_called = {"count": 0}
 

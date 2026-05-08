@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
@@ -1463,48 +1464,57 @@ async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> di
 
 
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
-    """Gold-first dispatch mirroring Java SalesAnalysisServiceImpl.getSalesOverview.
+    """Flag-gated 3-state dispatch mirroring Java SalesAnalysisServiceImpl.getSalesOverview.
 
     Java reference: SalesAnalysisServiceImpl line 80-112 (called by
-    SmartBIServiceImpl.getComprehensiveAnalysis line 568-616). Java behavior:
-      - Gold returns non-null → return goldResponse (line 96-99)
-      - Gold returns null (Silver empty) → buildEmptyDashboard (line 105-107),
-        SKIP legacy. Authoritative under Gold-primary flag — avoids slow
-        ~50s legacy scan on empty ranges (Bug #417, Phase B4 cutover 2026-04-22)
-      - Gold raises exception → fall through to legacy (line 108-111)
+    SmartBIServiceImpl.getComprehensiveAnalysis line 568-616). Mirrors the
+    same 3-state branching baked into _get_finance_overview by PR #131/#135:
 
-    Pool acquisition is a Python-side concern (Java wires GoldDashboardBuilder
-    via Spring). Pool failure → legacy fallback (defensive — fault doesn't
-    indicate empty data, may still find data in legacy).
+      - Flag false (default) → STRAIGHT to legacy (Java line 87 `if` skipped).
+      - Flag true + Gold non-null → return Gold response (Java line 96-99).
+      - Flag true + Gold null (revenue=0 AND bills=0 in Silver) →
+        _build_empty_dashboard, SKIP legacy. Mirrors Java line 105-107.
+        Authoritative under Gold-primary flag — avoids slow ~50s legacy scan
+        on empty ranges (Bug #417, Phase B4 cutover 2026-04-22).
+      - Flag true + Gold raises (incl. pool acquisition failure) → fall
+        through to legacy. Mirrors Java line 108-111 catch (Exception e).
+
+    Why the flag matters: when Java prod has flag=false (the current default),
+    Java emits ~5-7 KB legacy populated DashboardResponse. If Python ignored
+    the flag and always tried Gold, byte-shape parity would diverge for
+    factories with populated Gold POS data (e.g. F001 — see memory
+    project_2026_05_07_t6_1_dryrun_in_flight.md). Flag gating restores parity.
+
+    Audit reference: PR #146 K-1 finding (Pattern B sister-endpoint scan).
     """
-    pool = None
-    try:
-        from smartbi.config import get_pg_pool  # type: ignore
-        pool = await get_pg_pool()
-    except Exception as e:
-        logger.warning(
-            "[gold-builder] pool acquisition failed factory=%s: %s; using legacy",
-            factory_id, e,
-        )
-        return await _build_legacy_sales_overview(factory_id, range_)
+    flag_raw = os.environ.get("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "false")
+    gold_primary_enabled = flag_raw.strip().lower() == "true"
 
-    try:
-        gold_dashboard = await _build_from_gold_with_charts(factory_id, range_, pool=pool)
-        if gold_dashboard is not None:
-            return gold_dashboard
-        # Gold returned None → Silver empty for this factory/range. Mirror
-        # Java line 105-107: skip legacy and return empty dashboard.
-        logger.info(
-            "[gold-primary] sales factory=%s gold empty — skipping legacy",
-            factory_id,
-        )
-        return _build_empty_dashboard()
-    except Exception as e:
-        logger.warning(
-            "[gold-builder] Gold fetch failed factory=%s: %s; falling back to legacy",
-            factory_id, e,
-        )
-        return await _build_legacy_sales_overview(factory_id, range_)
+    if gold_primary_enabled:
+        try:
+            from smartbi.config import get_pg_pool  # type: ignore
+            pool = await get_pg_pool()
+            gold_dashboard = await _build_from_gold_with_charts(factory_id, range_, pool=pool)
+            if gold_dashboard is not None:
+                logger.info(
+                    "[gold-primary] sales factory=%s served from Gold",
+                    factory_id,
+                )
+                return gold_dashboard
+            # Gold returned None → Silver empty for this factory/range.
+            # Mirror Java line 105-107: skip legacy and return empty.
+            logger.info(
+                "[gold-primary] sales factory=%s Gold empty — skipping legacy",
+                factory_id,
+            )
+            return _build_empty_dashboard()
+        except Exception as e:
+            logger.warning(
+                "[gold-primary] sales factory=%s failed, falling back to legacy: %s",
+                factory_id, e,
+            )
+
+    return await _build_legacy_sales_overview(factory_id, range_)
 
 
 async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
