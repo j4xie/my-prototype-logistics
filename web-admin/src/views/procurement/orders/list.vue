@@ -121,10 +121,20 @@ function recalcBoxQuantity(item: Record<string, unknown>) {
   const matId = String(item.materialTypeId || '');
   const qty = Number(item.quantity || 0);
   const pkg = packagingCache.value[matId];
-  if (!pkg || !pkg.level1PerLevel2 || Number(pkg.level1PerLevel2) <= 0 || qty <= 0) return;
-  // 箱数 = 数量 / level1PerLevel2 (一级单位 kg 转二级单位 箱)
-  const box = qty / Number(pkg.level1PerLevel2);
-  item.boxQuantity = Math.round(box * 100) / 100;
+  if (!pkg || qty <= 0) return;
+
+  // I-1 reviewer fix: 用户选 1/2/3 级单位决定如何算箱数, 不再硬编码假设一级单位.
+  // 旧逻辑: 任何 unit 都按 qty / level1PerLevel2 算 → 用户选"箱"时 5 箱被算成 0.5 箱.
+  const unit = String(item.unit || '');
+  if (!unit || unit === pkg.level1Unit) {
+    // 一级单位 (如 kg) → 按转换系数算箱: box = qty / level1PerLevel2
+    if (!pkg.level1PerLevel2 || Number(pkg.level1PerLevel2) <= 0) return;
+    item.boxQuantity = Math.round((qty / Number(pkg.level1PerLevel2)) * 100) / 100;
+  } else if (unit === pkg.level2Unit) {
+    // 二级单位 (如 箱) → 数量本身就是箱数, 直接赋值
+    item.boxQuantity = qty;
+  }
+  // 其他单位 (level3 柜 / 用户自定义 allow-create 单位) → 不自动算, 保留用户手动填值
 }
 
 const statusMap: Record<string, { text: string; type: string }> = {
@@ -510,6 +520,7 @@ function handleAiFill(params: Record<string, unknown>) {
           <el-input v-model="item.specification" placeholder="规格" style="width: 140px" @change="recalcBoxQuantity(item)" />
           <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 140px" @change="recalcBoxQuantity(item)" />
           <!-- 单位下拉: 选定原料后显示该原料的 1/2/3 级单位; 未选时退化空选项 -->
+          <!-- M-2 reviewer fix: @change 触发箱数重算, 用户切单位时同步更新 boxQuantity -->
           <el-select
             v-model="item.unit"
             placeholder="单位"
@@ -518,6 +529,7 @@ function handleAiFill(params: Record<string, unknown>) {
             filterable
             allow-create
             default-first-option
+            @change="recalcBoxQuantity(item)"
           >
             <el-option
               v-for="opt in getUnitOptionsForItem(item)"
