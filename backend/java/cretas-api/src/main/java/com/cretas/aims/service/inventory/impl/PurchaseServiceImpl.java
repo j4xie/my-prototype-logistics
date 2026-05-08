@@ -47,6 +47,24 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     private static final Logger log = LoggerFactory.getLogger(PurchaseServiceImpl.class);
 
+    /**
+     * 抄收上限率（默认 30%，per audio May 7 客户通话 "餐饮/物业行业正常抄收应该是30%以内"）。
+     *
+     * 实际累计收货量上限 = 下单量 × (1 + overReceiveRate)。超过则 confirmReceive 抛
+     * BusinessException 409 + 事务回滚，要求采购另下新订单。
+     *
+     * 旧逻辑漏洞：updateOrderReceiveStatus 仅累加 + 设状态，无上限校验 → 分批入库
+     * 第二次/N 次可无限超收。客户在 audio 中提及的 30% 上限即此修复。
+     *
+     * 双轨说明：纯 backend service-level 校验，LEGACY 和 CANVAS (DynamicModulePage)
+     * 都走同一 createReceiveRecord → confirmReceive 路径，不分模式。
+     *
+     * Ops 调整：在 application.properties 设 cretas.purchase.over-receive-rate=0.50
+     * 等可临时放宽，无需 rebuild。
+     */
+    @org.springframework.beans.factory.annotation.Value("${cretas.purchase.over-receive-rate:0.30}")
+    private BigDecimal overReceiveRate;
+
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final PurchaseReceiveRecordRepository receiveRecordRepository;
@@ -817,6 +835,27 @@ public class PurchaseServiceImpl implements PurchaseService {
             for (PurchaseOrderItem orderItem : orderItems) {
                 if (orderItem.getMaterialTypeId().equals(receiveItem.getMaterialTypeId())) {
                     BigDecimal newReceived = orderItem.getReceivedQuantity().add(receiveItem.getReceivedQuantity());
+
+                    // May 9 fix (audio P1-7): 抄收上限校验.
+                    // 旧逻辑无上限 → 分批入库时累计可任意超出下单量.
+                    // 客户原话: "正常抄收应该是30%以内, 如果有特殊情况, 那采购另外再下个单子".
+                    if (orderItem.getQuantity() != null) {
+                        BigDecimal maxAllowed = orderItem.getQuantity()
+                                .multiply(BigDecimal.ONE.add(overReceiveRate));
+                        if (newReceived.compareTo(maxAllowed) > 0) {
+                            throw new BusinessException(409, String.format(
+                                    "超出可入库上限: 物料「%s」已收 %s, 本次 %s, 累计 %s, 下单 %s, 最大可收 %s (含 %s%% 抄收)",
+                                    receiveItem.getMaterialName(),
+                                    orderItem.getReceivedQuantity().stripTrailingZeros().toPlainString(),
+                                    receiveItem.getReceivedQuantity().stripTrailingZeros().toPlainString(),
+                                    newReceived.stripTrailingZeros().toPlainString(),
+                                    orderItem.getQuantity().stripTrailingZeros().toPlainString(),
+                                    maxAllowed.stripTrailingZeros().toPlainString(),
+                                    overReceiveRate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString()))
+                                    .withHint("如需更多入库, 请采购另下新订单或联系采购员调整下单量");
+                        }
+                    }
+
                     orderItem.setReceivedQuantity(newReceived);
                 }
             }

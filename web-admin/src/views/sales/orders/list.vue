@@ -303,10 +303,30 @@ function onProductSelect(item: Record<string, unknown>, productId: string) {
     if (p.unitPrice != null && (item.unitPrice == null || item.unitPrice === 0)) {
       item.unitPrice = Number(p.unitPrice);
     }
-    if (p.boxConversionCoefficient && item.quantity) calcBox(item);
+    // P1-3: spec 自动填后立即调 calcBox, 抄码品会清空 boxQuantity (内部判断)
+    if (item.quantity) calcBox(item);
   }
 }
+
+/**
+ * P1-3 (audio May 7 客户通话): 抄码品识别.
+ * 抄码 = 餐饮/食品行业称重商品 (每箱重量不一致, 不能按箱计).
+ * 双轨说明: LEGACY 实现; CANVAS 等 Phase B C-6 框架落地, 见
+ * docs/superpowers/specs/2026-05-09-canvas-c6-reactive-default-framework.md
+ */
+/**
+ * R2 fix #3: 精确匹配 trim() === '抄码', 不用 includes (避免误报).
+ * 与 procurement/orders/list.vue isAbacaItem 同模式 (M-1 follow-up 抽 composable).
+ */
+function isAbacaItem(item: Record<string, unknown>): boolean {
+  return String(item.specification || '').trim() === '抄码';
+}
+
 function calcBox(item: Record<string, unknown>) {
+  if (isAbacaItem(item)) {
+    item.boxQuantity = null;  // 抄码品: 不算箱数
+    return;
+  }
   const p = products.value.find((x: Record<string, unknown>) => x.id === item.productTypeId);
   if (p?.boxConversionCoefficient && Number(p.boxConversionCoefficient) > 0 && Number(item.quantity) > 0) {
     item.boxQuantity = Math.round((Number(item.quantity) / Number(p.boxConversionCoefficient)) * 100) / 100;
@@ -857,11 +877,13 @@ async function submitQuickPayment() {
           <el-select v-model="item.productTypeId" placeholder="选择产品" filterable style="width: 200px" @change="(v: string) => onProductSelect(item, v)">
             <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
           </el-select>
-          <el-input v-model="item.specification" placeholder="规格" style="width: 120px" />
+          <el-input v-model="item.specification" placeholder="规格" style="width: 120px" @change="calcBox(item)" />
           <el-input-number v-model="item.quantity" :min="1" style="width: 100px" @change="() => calcBox(item)" />
           <el-input v-model="item.unit" style="width: 80px" />
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
-          <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
+          <!-- P1-3 R2 fix: el-tag 替换 inline-styled div, 跟随 Element Plus 主题 -->
+          <el-tag v-if="isAbacaItem(item)" type="warning" effect="light" size="default" style="width: 80px; text-align: center;">抄码品</el-tag>
+          <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
           <el-select v-model="item.taxRate" placeholder="税率" style="width: 90px" size="default">
             <el-option :value="0" label="0% 免税" />
             <el-option :value="3" label="3% 小规模" />

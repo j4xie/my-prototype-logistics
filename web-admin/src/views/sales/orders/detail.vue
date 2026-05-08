@@ -251,12 +251,19 @@ const financeReviewProfit = computed(() => {
   return total - Number(cost);
 });
 
+// P2-3 R2 fix: 字段隐藏期间, 始终设 null 避免无意中持久化历史值.
+// 旧逻辑预填上次拒批的 estimatedCost → 此 PR 隐藏 input 后用户看不到也清不了 →
+// 重审通过时静默把旧值再次提交 → 违反"禁止降级处理/假数据"原则.
+// 重启用此字段时改回 `order.value?.estimatedCost ? Number(...) : null`.
+const ESTIMATED_COST_ENABLED = false;
+
 function openFinanceReview(action: 'approve' | 'reject') {
   const isApprove = action === 'approve';
   financeReviewForm.value = {
     notes: '',
-    // Pre-populate with existing estimatedCost if already set (e.g. previously rejected then resubmitted)
-    estimatedCost: order.value?.estimatedCost ? Number(order.value.estimatedCost) : null,
+    estimatedCost: ESTIMATED_COST_ENABLED && order.value?.estimatedCost
+      ? Number(order.value.estimatedCost)
+      : null,
     isApprove,
   };
   financeReviewVisible.value = true;
@@ -273,7 +280,9 @@ async function submitFinanceReview() {
   try {
     const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
     const body: Record<string, unknown> = { notes: notes || '' };
-    if (isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
+    // P2-3 R2 fix: 双重防御 — 即使 form 状态被脏化 (e.g. 直接 devtools 改),
+    // ESTIMATED_COST_ENABLED=false 时也不发送, 防止静默降级.
+    if (ESTIMATED_COST_ENABLED && isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
     const res = await post(url, body);
     if (res.success) {
       ElMessage.success(`${labelText}成功`);
@@ -1319,7 +1328,19 @@ async function handleCreatePayment() {
         <el-form-item label="订单总额">
           <span style="font-weight:600;color:#67C23A">{{ formatAmount(Number(order?.totalAmount || 0)) }}</span>
         </el-form-item>
-        <el-form-item v-if="financeReviewForm.isApprove" label="预估成本 (元)">
+        <!--
+          P2-3 (audio May 7 客户通话): 客户要求暂时隐藏 "预估成本" 字段.
+          原话: "这个建议暂时先去掉, 容易产生那个冲突的, 财务那边肯定会比较跳的".
+          客户后期 (V2) 计划自动从 BOM 推导, 届时再启用此字段.
+
+          双轨说明:
+          - LEGACY (本文件): v-if="false" 暂时隐藏
+          - CANVAS DynamicModulePage: estimatedCost 字段未在 sales_order
+            field_schema (V20260409_02) 中暴露, 已经不显示, 无需 schema migration
+
+          重新启用方式: 改 v-if="false" 为 v-if="financeReviewForm.isApprove"
+        -->
+        <el-form-item v-if="false" label="预估成本 (元)">
           <el-input-number
             v-model="financeReviewForm.estimatedCost"
             :min="0" :precision="2"
@@ -1331,6 +1352,7 @@ async function handleCreatePayment() {
             提示: V1.5 手动录入,V2 将自动从 BOM 推导
           </div>
         </el-form-item>
+        <!-- 预估利润依赖 estimatedCost, estimatedCost 未填则 financeReviewProfit=null, 此 form-item 自动隐藏 (无需独立改动) -->
         <el-form-item v-if="financeReviewForm.isApprove && financeReviewProfit !== null" label="预估利润">
           <span :style="{ fontWeight: 600, color: financeReviewProfit >= 0 ? '#67C23A' : '#F56C6C' }">
             {{ formatAmount(financeReviewProfit) }}
