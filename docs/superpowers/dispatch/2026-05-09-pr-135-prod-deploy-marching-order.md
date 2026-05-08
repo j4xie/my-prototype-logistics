@@ -1,10 +1,27 @@
-# ⚡ PR #135 prod deploy — Pattern B 3-state branching
+# ⚡ PR #135 prod **smoke re-verification** — Pattern B 3-state branching (post-deploy)
 
 **From**: organizer chat (T6.4 prerequisite gate)
 **Date**: 2026-05-09 (target execution window: ~13:01 CST May 9 after T6.3 24h soak GO + T6.1 22h BG dryrun GO)
 **Block resolved by**: T6.3 24h soak GO (~12:05 CST May 9) + T6.1 22h BG dryrun GO (~13:01 CST May 9)
 **Block this resolves**: T6.4 cutover earliest start (~14:00 CST May 10 Strategy B Day 1)
-**Deliverable**: 1 PR (deploy artifact log + 24h soak summary) + ping organizer with 24h GO/NO-GO data
+**Deliverable**: 1 PR (smoke re-verification log + 24h soak summary) + ping organizer with 24h GO/NO-GO data
+
+---
+
+## ⚠️ Amendment History (post-PR #157 investigation)
+
+This MO was originally drafted assuming `SMARTBI_GOLD_READ_PRIMARY_ENABLED=false` on prod and PR #135 not yet deployed. Both assumptions are **WRONG** per PR [#157](https://github.com/j4xie/my-prototype-logistics/pull/157) (`45a71487b`) flag-flip investigation:
+
+| # | Original assumption | Reality (per PR #157) | Amendment |
+|---|---|---|---|
+| 1 | F001 smoke = State C 10-card legacy | F001 = **State A 4-card Gold** (Gold POS data populated since Apr 23) | §5 F001 smoke updated below |
+| 2 | F999 + 14 customers smoke not specified | F999 = **State B empty stub**; 14 customers = State B (Gold empty per K-1 audit PR #147 — Java legacy reads same `smart_bi_sales_data` table = 0 rows for all 14 → empty parity) | §5 F999/14 customers smoke added below |
+| 3 | §6 HARD RULE: "flag must be `false` or unset" | Flag=true intentional since Apr 23 Phase B Dashboard Gold UI port (memory `project_apr23_dashboard_gold_uiport.md`) — Bug #417 perf fix dependency | §6 HARD RULE rewrite below |
+| 4 | "PR #135 to be deployed" | PR #135 (`2e90a2016`) **ALREADY DEPLOYED** via N=2 cutover 2026-05-07 11:36 CST, Python prod log confirms Pattern B 3-state firing | Step 2/3 deploy → re-verification framing |
+| 5 | Step 1 worker grep `uvicorn.*:8083` returns 1 only | N=2 workers spawn via `multiprocessing.spawn`, parent grep ≠ worker count (per chat 4 rehearsal `df5ded859` GAP-3) | Step 1 grep replaced |
+| 6 | nginx config: `_upstream_cretas.conf` | Actual filename `_upstream_cretas.conf` (per chat 4 rehearsal GAP-2) | §1+§2 filename replaced |
+
+**Net effect**: This MO is now a **smoke re-verification + 24h soak monitoring runbook**, NOT a fresh deploy. Step 2 (Java BG) and Step 3 (Python deploy) are downgraded — Java is optional hygiene cycle, Python deploy is no-op since current code = `2e90a2016`.
 
 ---
 
@@ -20,7 +37,13 @@ PR [#135](https://github.com/j4xie/my-prototype-logistics/pull/135) (`2e90a2016`
 
 PR [#138](https://github.com/j4xie/my-prototype-logistics/pull/138) (`6310f00278`) verified States B and C against test env 8084 (State A deferred — needs Gold mock, follow-up). Code review against `FinanceAnalysisServiceImpl.java:111-189` clean per Phase 2A Rules 4 / 8 / 9 / 11 / 12.
 
-**Default behavior unchanged after deploy**: `SMARTBI_GOLD_READ_PRIMARY_ENABLED` defaults to `"false"` on prod (per `.env.prod`). Customers continue hitting State C (legacy aggregation) until the flag is explicitly flipped — which is **NOT** part of T6.4 cutover scope. T6.4 is nginx-routing only; PR #135 is the *code* prerequisite that lands the new flag-gated paths so future Phase B (Gold-primary) can flip without another code deploy.
+**Current prod state** (per PR #157 investigation `45a71487b`):
+- `SMARTBI_GOLD_READ_PRIMARY_ENABLED=true` on prod since 2026-04-23 Phase B Dashboard Gold UI port (memory `project_apr23_dashboard_gold_uiport.md`, commits `b1cf06fd8` + `315887092`). Intentional — Bug #417 perf fix (legacy 53s → Gold 228ms) depends on flag=true.
+- PR #135 (`2e90a2016`) deployed via N=2 cutover 2026-05-07 11:36 CST. Python prod log confirms Pattern B 3-state firing (`[gold-primary] finance factory=F999 Gold empty — skipping legacy`).
+- F001 customer-visible behavior: **State A** (Gold-derived 4 KPIs + top_stores rankings). T6.2 canary routes F001 traffic to Python prod 8083 since 2026-05-07 04:01 CST.
+- 14 T6.4 customers (currently on Java 10010): **State B** equivalent — Java's `smart_bi_sales_data` legacy table has 0 rows for all 14 (per K-1 audit PR #147), so Java legacy = empty == Gold empty → byte-shape parity by data state.
+
+**This MO does NOT change flag state**. T6.4 is nginx-routing only.
 
 Per memory `project_2026_05_07_uvicorn_n2_path_x_lite.md`, prod Python (`cretas-python.service`) currently runs N=2 workers (PIDs paired leader+follower). PR #135 deploys to this multi-worker service via the existing `deploy-smartbi-python.sh` flow — both workers cycle in-place, ~30s ONNX warmup per worker.
 
@@ -33,7 +56,7 @@ Per memory `reference_blue_green_java_deploy.md`, prod Java deploy uses **Blue-G
 1. **DO NOT execute this MO before**:
    - T6.3 24h soak GO confirmed (Python error <0.5%, p99 <2000ms, 0 Java fallback for 61 test factories) — ~12:05 May 9 CST
    - T6.1 22h BG dryrun GO confirmed (chat 4 final report + parity ≥99.94%) — ~13:01 May 9 CST
-2. **DO NOT change `SMARTBI_GOLD_READ_PRIMARY_ENABLED` on prod** — it stays `false`. Smoke State A/B happen on **test env 8084 only** (or local Python with override). Prod env var is a hard rule per §6 below.
+2. **DO NOT change `SMARTBI_GOLD_READ_PRIMARY_ENABLED` on prod** — it stays `true` (intentional Apr 23 Phase B state per PR #157 + memory `project_apr23_dashboard_gold_uiport.md`). HARD RULE per §6: track current prod state during deploy, do NOT toggle. Flipping back to `false` would revert Bug #417 perf fix (legacy 53s scan).
 3. **DO NOT use `bak.t6_3_pre.20260508_032339` as a rollback target for nginx config** — per PR [#142](https://github.com/j4xie/my-prototype-logistics/pull/142), that file contains pre-T6.3 state (T6.2 F001-only regex). T6.4 cutover Step 0 will create a fresh `bak.t6_4_pre.<ts>`; nginx-side is **out of scope for this MO** (PR #135 is code deploy only, no nginx edits).
 4. **DO NOT skip the smartbi_migrations tracker check in Step 1** — task #30 incident pattern. PR #135 itself adds zero migrations, but a stale tracker would cause the deploy hook to fail late in Step 3.
 5. **DO NOT push during draft** — this MO is doc-only. Local commit + ping organizer.
@@ -104,11 +127,15 @@ echo
 
 echo '=== Python prod 8083 multi-worker baseline (expect 1 leader + 1 follower from PR-3 #109) ==='
 ss -tlnp | grep ':8083' || true
-ps aux | grep -E 'uvicorn.*:8083' | grep -v grep | wc -l
+# Per chat 4 rehearsal df5ded859 GAP-3: parent grep returns 1 (only uvicorn root matches),
+# workers spawn via multiprocessing.spawn so use --ppid for accurate N=2 verify
+PYTHON_MAINPID=\$(systemctl show cretas-python --property=MainPID --value)
+echo \"  parent uvicorn PID: \$PYTHON_MAINPID\"
+echo \"  spawn_main worker count: \$(ps --ppid \$PYTHON_MAINPID 2>/dev/null | grep -c spawn_main || echo 0)\"  # expect 2
 echo
 
 echo '=== Active Java BG color check (which port nginx upstream points to) ==='
-ssh -o StrictHostKeyChecking=no root@139.196.165.140 \"grep -oP 'server 47\\\\.100\\\\.235\\\\.168:\\\\K[0-9]+' /www/server/panel/vhost/nginx/cretas-java-upstream.conf | head -1\"
+ssh -o StrictHostKeyChecking=no root@139.196.165.140 \"grep -oP 'server 47\\\\.100\\\\.235\\\\.168:\\\\K[0-9]+' /www/server/panel/vhost/nginx/_upstream_cretas.conf | head -1\"
 echo
 
 echo '=== Health snapshot (all 4 ports) ==='
@@ -135,15 +162,18 @@ ssh root@139.196.165.140 \"grep -oE 'F001\\|FOOD_3101|TEST_0000_001' /www/server
 
 **STOP and ping organizer if**:
 - smartbi_migrations row count != 35 on either env
-- `cretas-python.MainPID` doesn't match a running `uvicorn ... :8083` process (worker drift indicates pre-existing N=2 leader-gate bug)
+- `cretas-python.MainPID` is 0 OR `spawn_main worker count != 2` (PR-3 N=2 leader gate broken — pre-existing)
 - T6.3 regex no longer present in nginx vhost (someone moved it back during the night)
 - Python prod 8083 returns non-200 (T6.3 24h soak might already be tainted)
+- `SMARTBI_GOLD_READ_PRIMARY_ENABLED != true` on prod (someone flipped flag back unilaterally — pre-MO discrepancy, do NOT toggle, ping organizer to investigate)
 
 ---
 
-## Step 2 — Blue-Green Java deploy
+## Step 2 — Blue-Green Java deploy (OPTIONAL hygiene cycle, per PR #157 amendment)
 
-PR #135 has zero Java changes, but a clean BG cycle is good hygiene and verifies the BG path before T6.4 (which depends on Java being deployable mid-cutover for any emergency hotfix). Memory `feedback_deploy_pipeline.md` "test long-term stale" — `--env prod` defaults to prod-only; deploy-backend.sh v4.2's defensive ping will warn if test 10011 is already stale.
+⚠️ **Amendment**: PR #135 was deployed via N=2 cutover 2026-05-07. This MO is now smoke re-verification. Java BG cycle is **optional** — only run if you want pre-T6.4 BG path verification (T6.4 depends on Java being deployable mid-cutover for any emergency hotfix). Memory `feedback_deploy_pipeline.md` "test long-term stale" — `--env prod` defaults to prod-only; deploy-backend.sh v4.2's defensive ping will warn if test 10011 is already stale.
+
+**Skip Step 2 if**: BG dryrun task `bccuc6z3e` already verified BG path within last 24h (T6.1 22h dryrun completion confirms BG flip works end-to-end). In that case, jump to Step 4 health check + Step 5 smoke.
 
 ```bash
 # From worktree root
@@ -180,7 +210,7 @@ echo
 echo '=== old port should NOT be listening (5s grace already passed) ==='
 echo
 echo '=== prod Java health via direct port ==='
-ACTIVE_PORT=\$(ssh root@139.196.165.140 \"grep -oP 'server 47\\\\.100\\\\.235\\\\.168:\\\\K[0-9]+' /www/server/panel/vhost/nginx/cretas-java-upstream.conf | head -1\")
+ACTIVE_PORT=\$(ssh root@139.196.165.140 \"grep -oP 'server 47\\\\.100\\\\.235\\\\.168:\\\\K[0-9]+' /www/server/panel/vhost/nginx/_upstream_cretas.conf | head -1\")
 curl -s -o /dev/null -w '%{http_code}' \"http://localhost:\$ACTIVE_PORT/api/mobile/health\"
 echo
 "
@@ -188,9 +218,15 @@ echo
 
 ---
 
-## Step 3 — Python deploy (smartbi_compat with PR #135 impl)
+## Step 3 — Python deploy (NO-OP per PR #157 amendment — already deployed May 7)
 
-PR #135's only file change is `backend/python/smartbi_compat/api/analysis_finance.py`. The deploy script syncs `backend/python/` to the server, runs the migration runner (Step 3.5 — should be no-op since PR #135 adds no migrations), then `systemctl restart cretas-python` which cycles both N=2 workers (~30s ONNX warmup × 2 sequential).
+⚠️ **Amendment**: Per PR #157 investigation, PR #135 (`2e90a2016`) is **already on prod disk** (verified via `cd /www/wwwroot/cretas/code && git log --oneline -1`). Python prod uptime since 2026-05-07 11:36 CST = N=2 cutover deploy that brought PR #135 with it. Pattern B 3-state branching IS firing — log evidence: `[gold-primary] finance factory=F999 Gold empty — skipping legacy`.
+
+**Skip Step 3 default — re-deploy is no-op**. Only run `deploy-smartbi-python.sh --env prod` if:
+1. You suspect rsync drift (Python prod log shows pre-PR-#135 behavior despite commit being on disk), OR
+2. You want fresh systemd cycle for N=2 worker re-verification
+
+If running anyway: PR #135's only file change is `backend/python/smartbi_compat/api/analysis_finance.py`. The deploy script syncs `backend/python/` to the server, runs the migration runner (Step 3.5 — should be no-op since PR #135 adds no migrations), then `systemctl restart cretas-python` which cycles both N=2 workers (~30s ONNX warmup × 2 sequential).
 
 ```bash
 ./scripts/deploy/deploy-smartbi-python.sh --env prod
@@ -260,39 +296,13 @@ Expected: 1 of {10010, 10020} returns 200 (the active one); the other returns 20
 
 ---
 
-## Step 5 — Pattern B 3-state prod smoke
+## Step 5 — Pattern B 3-state prod smoke (re-verification under flag=true)
 
-The new code paths in PR #135 only fire when `SMARTBI_GOLD_READ_PRIMARY_ENABLED=true`. Prod env var stays `false` (per §6), so on prod **only State C is exercised by real traffic**. State A/B verification happens against **test env 8084** with the flag flipped.
+⚠️ **Amendment per PR #157**: Prod has flag=true since Apr 23 + PR #135 deployed since May 7 N=2 cutover. **All 3 states are exercised by real traffic** — F001 hits State A (Gold-derived), F999 hits State B (Gold empty stub), exception path hits State C legacy fallback. This is **the primary verification step** of this MO, replacing the original "fresh-deploy smoke".
 
-This matches the pattern from PR #138 (chat 1 already did the same verify on test env, but that was *before* the deploy lands prod-side; we re-verify post-deploy to catch any drift in the rsync or systemd-restart path).
+State A/B verify on **prod 8083 directly** (T6.2 routes F001 through Python prod since May 7). Test env 8084 verify still optional sanity.
 
-### State C — default flag=false × F999 (legacy aggregation)
-
-```bash
-ssh root@47.100.235.168 "
-set -a; source /www/wwwroot/cretas/.env.prod; set +a
-TOKEN=\$(FACTORY_ID=F999 python3 -c '
-import jwt, os, time
-print(jwt.encode({
-    \"userId\": 1, \"username\": \"pr135_prod_smoke\",
-    \"factoryId\": os.environ[\"FACTORY_ID\"], \"role\": \"factory_super_admin\",
-    \"exp\": int(time.time()) + 3600,
-}, os.environ[\"JWT_SECRET\"], algorithm=\"HS256\")
-' | tr -d '\n')
-
-# Note: hits Python prod 8083 directly (loopback) — bypasses 139 nginx routing.
-# F999 has no Gold POS data, so legacy path returns 10 zero-KPIs + 3 chart skeletons.
-curl -s -H \"Authorization: Bearer \$TOKEN\" \
-  'http://localhost:8083/api/mobile/F999/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-12-31' \
-  | python3 -c 'import json,sys; r=json.load(sys.stdin); ov=r[\"data\"][\"overview\"]; print(f\"kpiCards=\\\"{len(ov[\\\"kpiCards\\\"])}\\\" charts=\\\"{len(ov[\\\"charts\\\"])}\\\" insights=\\\"{len(ov[\\\"aiInsights\\\"])}\\\" suggestions=\\\"{len(ov[\\\"suggestions\\\"])}\\\"\")'
-"
-```
-
-**Expected**: `kpiCards=10 charts=3 insights=1 suggestions=2` (matches PR #138 §State C verify).
-
-### State C — default flag=false × F001 (legacy aggregation, real Gold-POS factory)
-
-F001 has Gold POS data populated (per memory `reference_smartbi_gold_layer_architecture.md` + memory `project_2026_05_07_t6_1_dryrun_in_flight.md`). With flag=false the legacy path runs regardless — Gold data is *not* consulted in State C.
+### State A — F001 (Gold POS populated, real customer traffic via T6.2)
 
 ```bash
 ssh root@47.100.235.168 "
@@ -306,17 +316,77 @@ print(jwt.encode({
 }, os.environ[\"JWT_SECRET\"], algorithm=\"HS256\")
 ' | tr -d '\n')
 
+# Note: hits Python prod 8083 directly (loopback) — bypasses 139 nginx routing.
+# F001 has Gold POS data per task #20 reversal + Apr 23 Phase B deployment.
+# With flag=true (Apr 23 baseline), Gold-primary path returns 4-card State A shape.
 curl -s -H \"Authorization: Bearer \$TOKEN\" \
   'http://localhost:8083/api/mobile/F001/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-12-31' \
-  | python3 -c 'import json,sys; r=json.load(sys.stdin); ov=r[\"data\"][\"overview\"]; print(f\"kpiCards=\\\"{len(ov[\\\"kpiCards\\\"])}\\\" charts=\\\"{len(ov[\\\"charts\\\"])}\\\"\")'
+  | python3 -c 'import json,sys; r=json.load(sys.stdin); ov=r[\"data\"][\"overview\"]; cards=ov[\"kpiCards\"]; rk=ov.get(\"rankings\",{}); print(f\"State A: kpiCards={len(cards)} keys={[c[\\\"key\\\"] for c in cards]} top_stores={len(rk.get(\\\"top_stores\\\",[]))}\")'
 "
 ```
 
-**Expected**: `kpiCards=10 charts=3` (legacy path, same as F999). If F001 returns the 4-card Gold shape (`total_revenue`/`bill_count`/`avg_bill_value`/`store_count`) the flag is incorrectly enabled — **STOP, ping organizer immediately**.
+**Expected (State A)**: `kpiCards=4 keys=['total_revenue', 'bill_count', 'avg_bill_value', 'store_count'] top_stores≤10`. Charts/aiInsights/suggestions empty per `GoldDashboardBuilder.java:31-35` ("Gold doesn't emit those yet").
 
-### State A + State B — test env 8084 only (do NOT flip prod flag)
+⚠️ **STOP, ping organizer if** F001 returns 10-card legacy shape — this would mean either (a) Python rsync drift corrupted PR #135 impl, or (b) flag was unilaterally flipped to false on prod (verify §6 first).
 
-PR #138 already did this against test 8084 with `2e90a2016` and got State C ✓ + State B ✓. Re-running on test env post-prod-deploy is **optional sanity** — only do it if you suspect rsync drift or you want fresh evidence in the deploy log:
+### State B — F999 (no Gold POS data, empty stub via Gold-empty)
+
+```bash
+ssh root@47.100.235.168 "
+set -a; source /www/wwwroot/cretas/.env.prod; set +a
+TOKEN=\$(FACTORY_ID=F999 python3 -c '
+import jwt, os, time
+print(jwt.encode({
+    \"userId\": 1, \"username\": \"pr135_prod_smoke\",
+    \"factoryId\": os.environ[\"FACTORY_ID\"], \"role\": \"factory_super_admin\",
+    \"exp\": int(time.time()) + 3600,
+}, os.environ[\"JWT_SECRET\"], algorithm=\"HS256\")
+' | tr -d '\n')
+
+curl -s -H \"Authorization: Bearer \$TOKEN\" \
+  'http://localhost:8083/api/mobile/F999/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-12-31' \
+  | python3 -c 'import json,sys; r=json.load(sys.stdin); ov=r[\"data\"][\"overview\"]; print(f\"State B: kpiCards={len(ov[\\\"kpiCards\\\"])} charts={len(ov[\\\"charts\\\"])}\")'
+"
+```
+
+**Expected (State B)**: `kpiCards=0 charts=0` (empty stub, Java line 135-142 mirror, `_build_empty_dashboard_response`). Confirmed by `journalctl -u cretas-python | grep "factory=F999 Gold empty — skipping legacy"`.
+
+### State B equivalent — 14 T6.4 customers (currently on Java 10010, will move to Python in T6.4)
+
+Per K-1 audit PR #147 (`a687814bd`), all 14 T6.4 customers have **0 rows** in `smart_bi_sales_data` (Java legacy table). Python's `_build_empty_dashboard_response` and Java's empty legacy fallback both return identical empty shape — **byte-shape parity by data state**, not by code.
+
+```bash
+# Sample 3 of 14 to confirm Java side empty (currently nginx routes them to Java 10010):
+ssh root@47.100.235.168 "
+set -a; source /www/wwwroot/cretas/.env.prod; set +a
+for FID in F002 R001 RES_GML_001; do
+  TOKEN=\$(FACTORY_ID=\$FID python3 -c '
+import jwt, os, time, sys
+print(jwt.encode({
+    \"userId\": 1, \"username\": \"pr135_prod_smoke\",
+    \"factoryId\": sys.argv[1], \"role\": \"factory_super_admin\",
+    \"exp\": int(time.time()) + 3600,
+}, os.environ[\"JWT_SECRET\"], algorithm=\"HS256\")
+' \$FID | tr -d '\n')
+  echo \"--- \$FID (Java 10010) ---\"
+  curl -s -H \"Authorization: Bearer \$TOKEN\" \
+    \"http://localhost:10010/api/mobile/\$FID/smart-bi/analysis/finance?startDate=2025-01-01&endDate=2025-12-31\" \
+    | python3 -c 'import json,sys; r=json.load(sys.stdin); ov=r[\"data\"][\"overview\"]; print(f\"  Java empty: kpiCards={len(ov[\\\"kpiCards\\\"])} charts={len(ov[\\\"charts\\\"])}\")'
+done
+"
+```
+
+**Expected (14-customer State B equivalent)**: each returns `kpiCards=0 charts=0` (Java legacy empty). Post-T6.4 cutover, Python will emit identical shape via Pattern B State B (Gold empty → empty stub). Parity verified.
+
+### State C — exception fallback (legacy 10-card shape)
+
+State C only fires on Gold pool exception OR `SMARTBI_GOLD_READ_PRIMARY_ENABLED=false` (default code-level fallback). Neither is exercised by current prod traffic — verified via Python prod log absence of `[gold-primary] failed, falling back to legacy` messages in last 24h.
+
+State C remains code-tested via `tests/python/smartbi_compat/test_pattern_b_3state.py` (PR #137 16 tests + 5 goldens). Prod runtime State C verification = "log scan shows zero exception fallbacks in 24h soak" per Step 7.
+
+### State A + State B — test env 8084 (optional sanity, NO prod flag flip)
+
+PR #138 already verified State B+C against test 8084 with `2e90a2016`. Re-running on test env post-PR #157 is **optional sanity** — only do it if Step 5 prod smoke shows unexpected results or you want fresh evidence in the verification log. Test env can have flag toggled freely (separate `.env.test`); prod stays untouched per §6 HARD RULE:
 
 ```bash
 # Optional — test env smoke (prod env stays untouched)
@@ -372,26 +442,35 @@ sleep 35
 
 ## Step 6 — `SMARTBI_GOLD_READ_PRIMARY_ENABLED` env var verify
 
-⛔ **HARD RULE: prod env var stays `false`. Do not flip during this MO or T6.4.**
+⛔ **HARD RULE (post-PR #157 amendment): track current prod state during deploy — do NOT toggle flag.**
 
-This MO lands the *code* that handles flag=true paths. The actual flag flip on prod is a **separate Phase B work** (per memory `project_2026_05_07_t6_1_dryrun_in_flight.md` task #20 SMARTBI_GOLD_READ_PRIMARY_ENABLED) gated by Gold producer dataflow validation across more factories than just F001. Forcing the flag here would expose all customers to State A/B with no rollback plan if Gold quality drifts.
+Current prod state: `SMARTBI_GOLD_READ_PRIMARY_ENABLED=true` since 2026-04-23 Phase B Dashboard Gold UI port (intentional, documented in memory `project_apr23_dashboard_gold_uiport.md`). Bug #417 perf fix (legacy 53s scan → Gold 228ms) depends on flag=true. PR #135 deploys the code that respects this flag for Python's analysis path (Java side has been Gold-primary since Apr 23).
+
+**Do NOT flip flag back to false** — that would revert the Apr 23 Phase B work + Bug #417 fix. Any future flag-toggle requires separate marching order with explicit business trigger (per PR #157 §5).
 
 ```bash
 ssh root@47.100.235.168 "
-echo '=== prod .env.prod flag (must be false or unset) ==='
-grep -E '^SMARTBI_GOLD_READ_PRIMARY_ENABLED' /www/wwwroot/cretas/.env.prod || echo '(unset, defaults to false in code)'
+echo '=== prod .env.prod flag (must be true per Apr 23 Phase B baseline) ==='
+grep -E '^SMARTBI_GOLD_READ_PRIMARY_ENABLED' /www/wwwroot/cretas/.env.prod
 echo
-echo '=== Running prod Python process env (must show false) ==='
+echo '=== Running prod Python process env (must show true — inherited from .env.prod via systemd EnvironmentFile) ==='
 PID=\$(systemctl show cretas-python --property=MainPID --value)
 if [ \"\$PID\" -gt 0 ]; then
-  tr '\\0' '\\n' < /proc/\$PID/environ | grep SMARTBI_GOLD_READ_PRIMARY_ENABLED || echo '(unset in process env)'
+  tr '\\0' '\\n' < /proc/\$PID/environ | grep SMARTBI_GOLD_READ_PRIMARY_ENABLED
 fi
+echo
+echo '=== Sister flags (Phase B baseline — should all match Apr 23 state) ==='
+grep -E '^(SMARTBI_GOLD_SHADOW_READ_ENABLED|SMARTBI_ENABLE_SILVER_DUAL_WRITE|ALIYUN_OSS_ENABLED)' /www/wwwroot/cretas/.env.prod
 "
 ```
 
-**Expected**: either `SMARTBI_GOLD_READ_PRIMARY_ENABLED=false` or unset (code defaults to `"false"` per `os.environ.get("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "false")` at `analysis_finance.py:1853`).
+**Expected** (per PR #157 + Apr 23 state):
+- `SMARTBI_GOLD_READ_PRIMARY_ENABLED=true`
+- `SMARTBI_GOLD_SHADOW_READ_ENABLED=false`
+- `SMARTBI_ENABLE_SILVER_DUAL_WRITE=true`
+- `ALIYUN_OSS_ENABLED=true`
 
-If anything else, **STOP, ping organizer**.
+If any flag mismatches Apr 23 baseline, **STOP, ping organizer** — someone may have unilaterally edited `.env.prod` outside this MO scope.
 
 ---
 
@@ -531,14 +610,17 @@ Create `docs/qa-audits/2026-05-09-pr-135-prod-deploy.md` with:
 - **Step 1 baseline snapshot**: smartbi_migrations rowcounts, NRestarts, RSS baselines
 - **Step 2 BG output**: copy-paste `[BG 1/4]` through `[BG 5/5]` lines + post-switch 5/5 rounds
 - **Step 3 Python output**: copy-paste `[3.5/5]` through `[5/5]` + ONNX warmup probe times
-- **Step 5 smoke results table**:
-  | State | Factory | Endpoint | kpiCards | charts | insights | suggestions | Result |
-  |---|---|---|---:|---:|---:|---:|---|
-  | C (default flag) | F999 | analysis/finance | 10 | 3 | 1 | 2 | ✅ |
-  | C (default flag) | F001 | analysis/finance | 10 | 3 | n/a | n/a | ✅ |
-  | B (flag=true, test 8084) | F999 | analysis/finance | 0 | 0 | 0 | 0 | ✅ (optional) |
-  | A (flag=true, test 8084) | F001 | analysis/finance | 4 | 0 | 0 | 0 | ✅ (optional) |
-- **Step 6 env var verify**: paste output showing flag=false on prod
+- **Step 5 smoke results table** (amended per PR #157 — flag=true Apr 23 baseline):
+  | State | Factory | Path | Expected kpiCards | Expected top_stores | Result |
+  |---|---|---|---:|---:|---|
+  | A | F001 | Python prod 8083 | 4 (revenue/bills/avgBill/stores) | ≤10 | ✅ |
+  | B | F999 | Python prod 8083 | 0 | n/a | ✅ |
+  | B-equiv | F002 | Java 10010 (pre-T6.4) | 0 | n/a | ✅ |
+  | B-equiv | R001 | Java 10010 (pre-T6.4) | 0 | n/a | ✅ |
+  | B-equiv | RES_GML_001 | Java 10010 (pre-T6.4) | 0 | n/a | ✅ |
+  | A (test) | F001 | Python test 8084 | 4 | ≤10 | ✅ (optional sanity) |
+  | B (test) | F999 | Python test 8084 | 0 | n/a | ✅ (optional sanity) |
+- **Step 6 env var verify**: paste output confirming flag=true on prod (matches Apr 23 Phase B baseline)
 - **Step 7 24h soak data**: T+1h, T+6h, T+24h checkpoint outputs side-by-side
 - **GO/NO-GO verdict** at T+24h
 
@@ -555,18 +637,20 @@ audit(t6-4): PR #135 prod deploy + 24h soak — Pattern B 3-state code prerequis
 When all Step 7 thresholds hold at T+24h, T6.4 trigger is unblocked. Ping organizer with:
 
 ```text
-✅ PR #135 prod deploy + 24h soak GO (commit 2e90a2016 deployed 2026-05-09 <hh:mm> CST)
-   - cretas-python NRestarts: <pre> → <post> (Δ=0 over 24h)
+✅ PR #135 prod re-verification + 24h soak GO (commit 2e90a2016 deployed 2026-05-07 11:36 CST via N=2 cutover)
+   - cretas-python NRestarts: <pre> → <post> (Δ=0 over 24h soak window)
    - cretas-backend NRestarts: <pre> → <post> (Δ=0 over 24h)
    - Python prod RSS @T+24h: <X.X> GB (cap 4 GB)
    - Java active RSS @T+24h: <X.X> GB (cap 3 GB)
    - 5xx rate per-endpoint p99: <X.XX>% (cap 0.5%)
    - p99 latency per-endpoint: <XXX> ms (cap 2000 ms)
-   - Java fallback hits: 0 (cutover scope)
-   - Pattern B exception count: 0
-   - flag=false on prod confirmed
-   - State C smoke F999/F001 ✅
-   T6.4 cutover unblocked. Customer comms T-24h notice (per PR #141) → schedule Strategy B Day 1 (3-4 customers) for ~14:00 CST May 10.
+   - Java fallback hits: 0 (T6.2 + T6.3 cutover scope)
+   - Pattern B exception count: 0 (no `[gold-primary] failed, falling back to legacy` in 24h log)
+   - flag=true on prod confirmed (Apr 23 Phase B baseline preserved)
+   - State A smoke F001 ✅ (4-card Gold)
+   - State B smoke F999 ✅ (empty stub)
+   - State B-equiv 14 T6.4 customers (Java 10010) ✅ (empty per K-1 audit)
+   T6.4 cutover unblocked. Customer comms T-24h notice (per PR #141) → schedule Strategy B Day 1 (F002 + F003) for ~03:00 CST May 10.
 ```
 
 If any criterion fails, ping with NO-GO summary + which `--rollback` path was engaged.
@@ -603,6 +687,9 @@ When this MO triggers (T6.3 24h soak GO + T6.1 22h dryrun GO both confirmed):
 - PR [#141](https://github.com/j4xie/my-prototype-logistics/pull/141) (`068ebd8b8`) — customer comms templates (T-24h notice template applies after this MO 24h GO)
 - PR [#142](https://github.com/j4xie/my-prototype-logistics/pull/142) (`41552a9622`) — rollback rehearsal + backup mislabel finding (relevant to T6.4 cutover Step 0, **not** to this MO)
 - PR [#143](https://github.com/j4xie/my-prototype-logistics/pull/143) (`8b8f758752`) — T6.4 baseline metrics (this MO uses the same `scripts/capture-t6-4-baseline.sh` pattern for prod smoke; baseline fixtures in `tests/fixtures/t6-4-baseline/` are the post-T6.4-cutover comparison reference)
+- PR [#147](https://github.com/j4xie/my-prototype-logistics/pull/147) (`a687814bd`) — K-1 customer Gold state audit (14 T6.4 customers all 0 rows in `smart_bi_sales_data`; State B-equiv parity by data state)
+- PR [#157](https://github.com/j4xie/my-prototype-logistics/pull/157) (`45a71487b`) — flag-flip investigation (Apr 23 Phase B baseline confirmed, May 6 mtime misinterpretation corrected, this MO amended per §4.3)
+- Memory `project_apr23_dashboard_gold_uiport.md` — Apr 23 Phase B Dashboard Gold UI port (commits `b1cf06fd8` + `315887092`, Bug #417 perf fix dependency on flag=true)
 - Memory `project_2026_05_08_t6_4_readiness_gates.md` — overall T6.4 readiness 3/3 gates closed
 - Memory `reference_blue_green_java_deploy.md` — BG mode internals
 - Memory `reference_smartbi_migration_runner.md` — Step 3.5 migration runner
