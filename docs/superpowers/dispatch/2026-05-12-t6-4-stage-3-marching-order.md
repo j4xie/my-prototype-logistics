@@ -33,6 +33,48 @@
 
 ---
 
+## ⚠️ 48h High-Stakes Special Considerations (Stage 3 specific)
+
+Stage 3 carries the highest pre-restaurant-chain stakes — 桂满陇 (RES_GML_001) is a live production chain restaurant + QHJ_PROD (RES_3101_009) is a production tenant. Customer-visible failure = 100%. The 9 considerations below MUST be honored in addition to the standard prereq gate above. Each item links to its enforcement step in the cutover sequence.
+
+1. **48h soak (NOT 24h)** — high-volume real customer (桂满陇 chain + QHJ_PROD prod tenant) warrants doubled observation window before declaring Stage 3 GO. Enforced in Step 6 (this MO uses 48h soak gate, do NOT shortcut to 24h).
+
+2. **Tighter quantitative thresholds** — error rate <**0.3%** (vs standard 0.5%) / p99 <**1500ms** (vs 2000ms) / PG conn peak <**80** (vs 85) / real metrics ±**10%** of baseline (vs ±20%). Enforced in Step 6 GO criteria. Any single threshold breach = STOP, do not declare GO until investigated or rolled back.
+
+3. **Pattern B State distribution must be IDENTICAL to baseline** — any unexpected State A→B transition during 48h = **P1 trigger** (real-customer Gold data divergence risk peaks at this stage). Capture baseline State distribution in §3.5 prereq metrics; compare hourly during soak. Enforced in Step 6.
+
+4. **Multi-channel T-24h pre-notice** (NOT email-only) — send pre-cutover notice via **邮件 + 微信 + 钉钉 + 电话** to 桂满陇 + QHJ_PROD ops contacts. Standard tier customers get 邮件 + 微信; Stage 3 escalates to all 4 channels because chain-restaurant ops teams operate 24/7 across mixed channels. Enforced in prereq gate above.
+
+5. **Extended on-call T-24h to T+48h** — 销售对接人 + 技术值班 + organizer **all three** must confirm availability for the full 72h window. Standard stages need only 销售 on-call T-24h to T+24h. Stage 3 doubles both roster size and duration. Enforced in prereq gate above.
+
+6. **Personalized phone confirm at T+15min** (NOT template-only) — after smoke pass, 销售对接人 must directly phone 桂满陇 + QHJ_PROD ops 联络人 to verify service is normal. Use PR #141 §3.4 template as the script base, but the phone call itself is mandatory — silent template-only confirm is insufficient at this tier. Enforced in Step 5.
+
+7. **Confirm 03:00-05:00 cutover window has NO batch jobs** — 桂满陇 nightly reports + QHJ_PROD ops calendar must be reviewed pre-cutover with customer ops to confirm no scheduled batch / nightly report runs collide with the cutover window. If any collision found, reschedule cutover to next available no-batch window. Enforced in prereq gate above (Stage 3-specific check).
+
+8. **Coordinate with chat 4 (Pattern B owner) for FULL 48h** — chat 4 owns PR #135 Pattern B 3-state dispatcher. Real-customer Gold data divergence risk peaks at this stage (桂满陇 + QHJ_PROD may have populated Gold POS data that test factories lack). Daily sync at T+0 / T+12h / T+24h / T+36h / T+48h checkpoints; chat 4 must be on-call for emergency Pattern B State investigation if any divergence detected. Cross-ref Step 6 GO criterion 3 (Pattern B State identity).
+
+9. **Tighter rollback trigger** — any P1 from RES_GML_001 OR RES_3101_009 → **immediate** `bak.t6_4_s3_pre.<TS>` restore + 销售直接电话致歉 within **5 min** (NOT 15 min standard). The phone-first rollback comms reflects chain-restaurant SLA sensitivity. Internal P1 ticket + post-mortem trigger within 10 min. Next-day retry decision blocked on RCA completion. Enforced in Step 7.
+
+### Cross-reference table
+
+| Consideration | Enforced in step | Default-stage value | Stage 3 value |
+|---|---|---|---|
+| 1. Soak duration | Step 6 | 24h | **48h** |
+| 2a. Error rate gate | Step 6 | <0.5% | **<0.3%** |
+| 2b. p99 latency gate | Step 6 | <2000ms | **<1500ms** |
+| 2c. PG conn peak gate | Step 6 | <85 | **<80** |
+| 2d. Real metrics deviation gate | Step 6 | ±20% | **±10%** |
+| 3. Pattern B State drift = P1 | Step 6 | distribution stable | **identical to baseline** |
+| 4. Pre-notice channel count | Prereq gate | 2 (邮件 + 微信) | **4 (+ 钉钉 + 电话)** |
+| 5. On-call roster | Prereq gate | 1 sales | **3 (sales + tech + organizer)** |
+| 5. On-call duration | Prereq gate | T-24h → T+24h | **T-24h → T+48h** |
+| 6. Smoke pass confirm | Step 5 | template only | **template + phone call** |
+| 7. Batch-job collision check | Prereq gate | not required | **required pre-cutover** |
+| 8. Chat 4 sync cadence | Step 6 monitoring | end-of-soak only | **5 checkpoints across 48h** |
+| 9. Rollback comms first-touch | Step 7 | T+15min template | **T+5min phone call** |
+
+---
+
 ## Step 0 — Worktree
 
 ```bash
