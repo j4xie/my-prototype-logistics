@@ -1319,7 +1319,19 @@ async function handleCreatePayment() {
         <el-form-item label="订单总额">
           <span style="font-weight:600;color:#67C23A">{{ formatAmount(Number(order?.totalAmount || 0)) }}</span>
         </el-form-item>
-        <el-form-item v-if="financeReviewForm.isApprove" label="预估成本 (元)">
+        <!--
+          P2-3 (audio May 7 客户通话): 客户要求暂时隐藏 "预估成本" 字段.
+          原话: "这个建议暂时先去掉, 容易产生那个冲突的, 财务那边肯定会比较跳的".
+          客户后期 (V2) 计划自动从 BOM 推导, 届时再启用此字段.
+
+          双轨说明:
+          - LEGACY (本文件): v-if="false" 暂时隐藏
+          - CANVAS DynamicModulePage: estimatedCost 字段未在 sales_order
+            field_schema (V20260409_02) 中暴露, 已经不显示, 无需 schema migration
+
+          重新启用方式: 改 v-if="false" 为 v-if="financeReviewForm.isApprove"
+        -->
+        <el-form-item v-if="false" label="预估成本 (元)">
           <el-input-number
             v-model="financeReviewForm.estimatedCost"
             :min="0" :precision="2"
@@ -1331,6 +1343,7 @@ async function handleCreatePayment() {
             提示: V1.5 手动录入,V2 将自动从 BOM 推导
           </div>
         </el-form-item>
+        <!-- 预估利润依赖 estimatedCost, estimatedCost 未填则 financeReviewProfit=null, 此 form-item 自动隐藏 (无需独立改动) -->
         <el-form-item v-if="financeReviewForm.isApprove && financeReviewProfit !== null" label="预估利润">
           <span :style="{ fontWeight: 600, color: financeReviewProfit >= 0 ? '#67C23A' : '#F56C6C' }">
             {{ formatAmount(financeReviewProfit) }}
