@@ -42,14 +42,24 @@ const suppliers = ref<Record<string, unknown>[]>([]);
 const materials = ref<Record<string, unknown>[]>([]);
 const salesOrders = ref<Record<string, unknown>[]>([]);
 
-// 包装层级缓存: materialTypeId → { level1Unit, level2Unit, level3Unit }
-// 选原料后调 /material-packaging/by-material/{id} 拉取, 用于单位下拉
-const packagingCache = ref<Record<string, { level1Unit?: string; level2Unit?: string | null; level3Unit?: string | null }>>({});
+// 包装层级缓存: materialTypeId → { level1Unit, level2Unit, level3Unit, level1PerLevel2 }
+// 选原料后调 /material-packaging/by-material/{id} 拉取, 用于单位下拉 + 自动算箱数 (P1-2)
+const packagingCache = ref<Record<string, {
+  level1Unit?: string;
+  level2Unit?: string | null;
+  level3Unit?: string | null;
+  level1PerLevel2?: number | null;
+}>>({});
 
 async function ensurePackagingLoaded(materialId: string) {
   if (!materialId || packagingCache.value[materialId]) return;
   try {
-    const res = await get<{ level1Unit?: string; level2Unit?: string | null; level3Unit?: string | null } | null>(
+    const res = await get<{
+      level1Unit?: string;
+      level2Unit?: string | null;
+      level3Unit?: string | null;
+      level1PerLevel2?: number | null;
+    } | null>(
       `/${factoryId.value}/material-packaging/by-material/${materialId}`,
     );
     packagingCache.value[materialId] = res.data || {};
@@ -84,7 +94,37 @@ function onItemMaterialChange(item: Record<string, unknown>) {
     // 选原料后默认带入该原料的一级单位 (除非用户已经填了)
     const mat = materials.value.find((m) => m.id === matId);
     if (mat && mat.unit && !item.unit) item.unit = String(mat.unit);
+    recalcBoxQuantity(item);  // P1-2: packaging 拉到后立即算箱数
   });
+}
+
+/**
+ * P1-2/3 (audio May 7 客户通话): 箱数自动算 + 抄码品识别.
+ *
+ * 客户原话: "規格寫是抄码那我在折算箱數的時候比如說那個規格是抄码,
+ * 那個箱數自動會顯示抄码品, 然後就不顯示多少箱". 抄码 = 餐饮/食品行业
+ * 称重商品 (每箱重量不一致, 如鲜牛肉/鲜鱼), 不能按箱计.
+ *
+ * 双轨说明: 这是 LEGACY 实现. CANVAS DynamicModulePage 等 Phase B C-6
+ * 框架落地 (ReferenceSelector projectFields + SpEL evaluator), 见
+ * docs/superpowers/specs/2026-05-09-canvas-c6-reactive-default-framework.md
+ */
+function isAbacaItem(item: Record<string, unknown>): boolean {
+  return String(item.specification || '').includes('抄码');
+}
+
+function recalcBoxQuantity(item: Record<string, unknown>) {
+  if (isAbacaItem(item)) {
+    item.boxQuantity = null;  // 抄码品: 不算箱数
+    return;
+  }
+  const matId = String(item.materialTypeId || '');
+  const qty = Number(item.quantity || 0);
+  const pkg = packagingCache.value[matId];
+  if (!pkg || !pkg.level1PerLevel2 || Number(pkg.level1PerLevel2) <= 0 || qty <= 0) return;
+  // 箱数 = 数量 / level1PerLevel2 (一级单位 kg 转二级单位 箱)
+  const box = qty / Number(pkg.level1PerLevel2);
+  item.boxQuantity = Math.round(box * 100) / 100;
 }
 
 const statusMap: Record<string, { text: string; type: string }> = {
@@ -467,8 +507,8 @@ function handleAiFill(params: Record<string, unknown>) {
           >
             <el-option v-for="m in materials" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
-          <el-input v-model="item.specification" placeholder="规格" style="width: 140px" />
-          <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 140px" />
+          <el-input v-model="item.specification" placeholder="规格" style="width: 140px" @change="recalcBoxQuantity(item)" />
+          <el-input-number v-model="item.quantity" :min="1" placeholder="数量" style="width: 140px" @change="recalcBoxQuantity(item)" />
           <!-- 单位下拉: 选定原料后显示该原料的 1/2/3 级单位; 未选时退化空选项 -->
           <el-select
             v-model="item.unit"
@@ -487,7 +527,9 @@ function handleAiFill(params: Record<string, unknown>) {
             />
           </el-select>
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 160px" />
-          <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 140px" />
+          <!-- P1-2/3: 抄码品显示 tag, 否则显示箱数 input (recalcBoxQuantity 自动填) -->
+          <div v-if="isAbacaItem(item)" :style="{ width: '140px', height: '32px', lineHeight: '32px', textAlign: 'center', color: '#e6a23c', backgroundColor: '#fdf6ec', border: '1px solid #f3d19e', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box' }">抄码品</div>
+          <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 140px" />
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1" style="width: 70px">删除</el-button>
         </div>
         <el-button style="width: 100%; margin-top: 8px" @click="addItem">+ 添加行</el-button>
