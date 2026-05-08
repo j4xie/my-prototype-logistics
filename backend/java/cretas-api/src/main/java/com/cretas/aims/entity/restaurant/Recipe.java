@@ -66,8 +66,11 @@ public class Recipe extends BaseEntity {
 
     /**
      * 工厂/餐厅 ID，用于数据隔离
+     *
+     * 移除 @NotBlank — RecipeController.create 在 @Valid 之后 setFactoryId(pathFactoryId).
+     * @Valid 先跑导致"factoryId: 不能为空"误报. DB 列仍 NOT NULL.
+     * 与 MaterialRequisition.java:63-64 (Apr 20 BR-02 fix) 同模式。
      */
-    @NotBlank
     @Column(name = "factory_id", nullable = false, length = 100)
     private String factoryId;
 

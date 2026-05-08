@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -42,7 +43,7 @@ public class WastageRecordController {
     // ==================== 列表查询 ====================
 
     @GetMapping
-    @Operation(summary = "损耗记录列表", description = "支持按日期范围、状态、类型筛选")
+    @Operation(summary = "损耗记录列表", description = "支持按日期范围、状态、类型组合筛选；任意参数可为空")
     public ApiResponse<Page<WastageRecord>> list(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -53,18 +54,28 @@ public class WastageRecordController {
             @RequestParam(defaultValue = "20") int size) {
         PageRequest pageable = PageRequest.of(Math.max(0, page - 1), size);
 
-        if (status != null) {
-            WastageRecord.Status s = WastageRecord.Status.valueOf(status);
-            return ApiResponse.success(
-                    wastageRepository.findByFactoryIdAndStatusOrderByCreatedAtDesc(factoryId, s, pageable));
+        // May 9 fix (Bug 5-7): 旧 if-else 链不支持组合筛选，且空字符串
+        // 当作 non-null 触发 IllegalArgumentException — 改用 findByFilters 统一处理。
+        WastageRecord.Status statusEnum = null;
+        if (StringUtils.hasText(status)) {
+            try {
+                statusEnum = WastageRecord.Status.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(400, "无效的状态值: " + status)
+                        .withHint("可选: DRAFT / SUBMITTED / APPROVED / REJECTED");
+            }
         }
-        if (type != null) {
-            WastageRecord.WastageType t = WastageRecord.WastageType.valueOf(type);
-            return ApiResponse.success(
-                    wastageRepository.findByFactoryIdAndTypeOrderByCreatedAtDesc(factoryId, t, pageable));
+        WastageRecord.WastageType typeEnum = null;
+        if (StringUtils.hasText(type)) {
+            try {
+                typeEnum = WastageRecord.WastageType.valueOf(type);
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(400, "无效的损耗类型: " + type)
+                        .withHint("查看 WastageType 枚举可选值");
+            }
         }
         return ApiResponse.success(
-                wastageRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable));
+                wastageRepository.findByFilters(factoryId, statusEnum, typeEnum, startDate, endDate, pageable));
     }
 
     // ==================== 详情 ====================

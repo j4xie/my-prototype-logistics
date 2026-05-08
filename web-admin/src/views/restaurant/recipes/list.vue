@@ -109,7 +109,8 @@
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="showDetail(row)">查看</el-button>
             <el-button v-if="canWrite" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="canWrite && row.isActive" type="warning" link size="small" @click="handleDeactivate(row)">停用</el-button>
+            <el-button v-if="canWrite && !row.isActive" type="success" link size="small" @click="handleActivate(row)">启用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -592,19 +593,43 @@ async function showDetail(row: RecipeItem) {
   } catch { /* keep cached row data */ }
 }
 
-async function handleDelete(row: RecipeItem) {
+async function handleDeactivate(row: RecipeItem) {
   try {
-    await ElMessageBox.confirm('确认删除该配方？', '提示', { type: 'warning' });
+    await ElMessageBox.confirm(
+      '确认停用该配方？停用后配方将不参与领料计算和成本核算，可随时重新启用。',
+      '提示',
+      { type: 'warning', confirmButtonText: '停用', cancelButtonText: '取消' }
+    );
     const res = await deleteRecipe(factoryId.value, row.id);
     if (res.success) {
-      ElMessage.success('已删除');
+      ElMessage.success('已停用');
       loadData();
     } else {
-      ElMessage.error(res.message || '删除失败');
+      ElMessage.error(res.message || '停用失败');
     }
   } catch (e) {
     // Interceptor already shows specific sticky toast for ApiError.
-    if (e !== 'cancel') console.error('Delete recipe failed:', e);
+    if (e !== 'cancel') console.error('Deactivate recipe failed:', e);
+  }
+}
+
+async function handleActivate(row: RecipeItem) {
+  try {
+    await ElMessageBox.confirm('确认启用该配方？', '提示', {
+      type: 'info',
+      confirmButtonText: '启用',
+      cancelButtonText: '取消',
+    });
+    // 后端无独立 activate endpoint，复用 PUT update 把 isActive 翻回 true。
+    const res = await updateRecipe(factoryId.value, row.id, { ...row, isActive: true });
+    if (res.success) {
+      ElMessage.success('已启用');
+      loadData();
+    } else {
+      ElMessage.error(res.message || '启用失败');
+    }
+  } catch (e) {
+    if (e !== 'cancel') console.error('Activate recipe failed:', e);
   }
 }
 

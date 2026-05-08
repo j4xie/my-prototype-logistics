@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -42,7 +43,7 @@ public class MaterialRequisitionController {
     // ==================== 列表查询 ====================
 
     @GetMapping
-    @Operation(summary = "领料单列表", description = "支持按日期、状态、类型筛选")
+    @Operation(summary = "领料单列表", description = "支持按日期、状态、类型组合筛选；任意参数可为空")
     public ApiResponse<Page<MaterialRequisition>> list(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -52,18 +53,28 @@ public class MaterialRequisitionController {
             @RequestParam(defaultValue = "20") int size) {
         PageRequest pageable = PageRequest.of(Math.max(0, page - 1), size);
 
-        if (status != null) {
-            MaterialRequisition.Status s = MaterialRequisition.Status.valueOf(status);
-            return ApiResponse.success(
-                    requisitionRepository.findByFactoryIdAndStatusOrderByCreatedAtDesc(factoryId, s, pageable));
+        // May 9 fix (Bug 1-4): 旧 if-else 链不支持组合筛选，且空字符串
+        // 当作 non-null 触发 IllegalArgumentException — 改用 findByFilters 统一处理。
+        MaterialRequisition.Status statusEnum = null;
+        if (StringUtils.hasText(status)) {
+            try {
+                statusEnum = MaterialRequisition.Status.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(400, "无效的状态值: " + status)
+                        .withHint("可选: DRAFT / SUBMITTED / APPROVED / REJECTED");
+            }
         }
-        if (type != null) {
-            MaterialRequisition.RequisitionType t = MaterialRequisition.RequisitionType.valueOf(type);
-            return ApiResponse.success(
-                    requisitionRepository.findByFactoryIdAndTypeOrderByCreatedAtDesc(factoryId, t, pageable));
+        MaterialRequisition.RequisitionType typeEnum = null;
+        if (StringUtils.hasText(type)) {
+            try {
+                typeEnum = MaterialRequisition.RequisitionType.valueOf(type);
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(400, "无效的领料类型: " + type)
+                        .withHint("可选: PRODUCTION / MANUAL");
+            }
         }
         return ApiResponse.success(
-                requisitionRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable));
+                requisitionRepository.findByFilters(factoryId, statusEnum, typeEnum, date, pageable));
     }
 
     // ==================== 详情 ====================
