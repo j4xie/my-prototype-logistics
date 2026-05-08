@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import calendar
 import logging
+import os
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
@@ -1577,10 +1578,23 @@ async def _query_finance_sales_fallback(
 
 # ============================================================
 # Section 3: Composite path — finance overview real port
-# Replaces former empty stub per PR #124 investigation Pattern B.
-# Mirrors Java FinanceAnalysisServiceImpl.getFinanceOverview legacy
-# fallback (line 149-189). Spec: docs/superpowers/specs/
-# 2026-05-07-phase2a-finance-overview-real-port-spec.md
+# 3-state mirror of Java FinanceAnalysisServiceImpl.getFinanceOverview
+# (line 111-189):
+#   State A — flag=true, Gold has data    → Gold-populated DashboardResponse
+#   State B — flag=true, Gold null/empty  → empty DashboardResponse (Java line 135-142)
+#   State C — flag=false OR Gold throws   → legacy populated (Java line 149-189)
+#
+# PR #131 (initial PR-B): introduced State C via composer helpers.
+# PR-B v2 (this section):  3-state branching gated by env var
+#   SMARTBI_GOLD_READ_PRIMARY_ENABLED (mirrors Java
+#   smartbi.gold.read-primary.enabled flag, default false).
+#   Resolves task #20 latent (Python now reads the flag).
+#
+# Direct in-process call to smartbi.gold.queries.finance_summary
+# (Python IS the Gold producer per memory
+#   reference_smartbi_gold_layer_architecture.md; no HTTP self-call needed).
+#
+# Spec: docs/superpowers/specs/2026-05-07-phase2a-finance-overview-real-port-spec.md
 # ============================================================
 
 
@@ -1716,10 +1730,148 @@ def _generate_finance_suggestions(
     return suggestions
 
 
+async def _build_finance_overview_from_gold(
+    factory_id: str, range_: DateRange
+) -> Optional[dict]:
+    """Mirror Java GoldDashboardBuilder.buildFromFinanceSummary (line 58-117).
+
+    Direct in-process call to smartbi.gold.queries.finance_summary instead
+    of HTTP self-loop (per PR #127 spec §1.2 cleaner option).
+
+    Returns None when Gold reports revenue=0 AND bills=0 (caller falls
+    through to State B empty per Java line 124+ contract). Raises any
+    exception from the Gold service for the caller to catch and fall
+    through to State C legacy.
+    """
+    # Lazy import: avoids module-level circular and keeps import cost off
+    # the cold-start path when flag is disabled. Same pattern as line 1391+.
+    from smartbi.config import get_pg_pool  # type: ignore
+    from smartbi.gold.queries import finance_summary  # type: ignore
+
+    pool = await get_pg_pool()
+    gold = await finance_summary(
+        pool, factory_id, (range_.start_date, range_.end_date), top_n_stores=10,
+    )
+
+    revenue = _to_decimal(gold.get("total_revenue"))
+    bills = _to_decimal(gold.get("bill_count"))
+    avg_bill = _to_decimal(gold.get("avg_bill_value"))
+    stores = _to_decimal(gold.get("store_count"))
+
+    # Java line 68-72: empty Gold → null contract (caller falls through to State B).
+    if revenue == Decimal("0") and bills == Decimal("0"):
+        return None
+
+    # Java line 74-90: 4 KPI cards (Lombok @Builder + Jackson default emit).
+    kpi_cards = [
+        _new_kpi_card_dict(
+            key="total_revenue", title="总营收",
+            value=_format_kpi_value(revenue, "元"),
+            raw_value=revenue, unit="元", status="green",
+        ),
+        _new_kpi_card_dict(
+            key="bill_count", title="账单数",
+            value=_format_kpi_value(bills, "单"),
+            raw_value=bills, unit="单", status="green",
+        ),
+        _new_kpi_card_dict(
+            key="avg_bill_value", title="客单价",
+            value=_format_kpi_value(avg_bill, "元"),
+            raw_value=avg_bill, unit="元", status="green",
+        ),
+        _new_kpi_card_dict(
+            key="store_count", title="门店数",
+            value=_format_kpi_value(stores, "家"),
+            raw_value=stores, unit="家", status="green",
+        ),
+    ]
+
+    # Java line 92-105: top_stores rankings (rank starts at 1, walks Gold list).
+    top_stores: list[dict] = []
+    top_stores_raw = gold.get("top_stores")
+    if isinstance(top_stores_raw, list):
+        rank = 1
+        for item in top_stores_raw:
+            if not isinstance(item, dict):
+                continue
+            top_stores.append(_new_ranking_item_dict(
+                rank=rank,
+                name=str(item.get("store_name")),
+                value=_to_decimal(item.get("revenue")),
+            ))
+            rank += 1
+
+    rankings = {"top_stores": top_stores}
+
+    # Java line 109-117 builder — empty charts/aiInsights/suggestions are
+    # explicit empty lists/maps, NOT null. Mirror via factory defaults.
+    return _new_dashboard_response_dict(
+        kpi_cards=kpi_cards,
+        charts={},
+        rankings=rankings,
+        ai_insights=[],
+        suggestions=[],
+        last_updated=_utc_now_iso(),
+    )
+
+
+def _build_empty_dashboard_response() -> dict:
+    """State B — Gold returned null, skip legacy scan (Java line 135-142).
+
+    Empty DashboardResponse with explicit empty lists/maps for the 5
+    populated-collection fields plus volatile lastUpdated. All other
+    fields default per _new_dashboard_response_dict.
+    """
+    return _new_dashboard_response_dict(
+        last_updated=_utc_now_iso(),
+        suggestions=[],
+    )
+
+
 async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
-    """Mirror Java FinanceAnalysisServiceImpl.getFinanceOverview legacy path
-    (line 149-189). Replaces former empty stub per PR #124 investigation
-    (Pattern B: Java legacy fallback that Python's port omitted).
+    """3-state mirror of Java FinanceAnalysisServiceImpl.getFinanceOverview
+    (line 111-189). Branching gated by SMARTBI_GOLD_READ_PRIMARY_ENABLED.
+
+    State A (flag=true + Gold populated):  Gold KPIs + top_stores rankings
+    State B (flag=true + Gold null/empty): empty DashboardResponse
+    State C (flag=false OR Gold throws):   legacy populated (10 KPIs + 3 charts +
+                                            overdue ranking + insights + suggestions)
+
+    Default flag=false matches Java `@Value("${smartbi.gold.read-primary.enabled:false}")`
+    line 77, so Python defaults to State C — same behavior as PR #131 ship.
+    """
+    flag_raw = os.environ.get("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "false")
+    gold_primary_enabled = flag_raw.strip().lower() == "true"
+
+    if gold_primary_enabled:
+        try:
+            gold_response = await _build_finance_overview_from_gold(factory_id, range_)
+            if gold_response is not None:
+                logger.info(
+                    "[gold-primary] finance factory=%s served from Gold", factory_id
+                )
+                return gold_response
+            logger.info(
+                "[gold-primary] finance factory=%s Gold empty — skipping legacy",
+                factory_id,
+            )
+            return _build_empty_dashboard_response()
+        except Exception as e:
+            # Mirror Java line 143-146: any Gold failure → fall through to legacy.
+            logger.warning(
+                "[gold-primary] finance factory=%s failed, falling back to legacy: %s",
+                factory_id, str(e),
+            )
+
+    return await _build_finance_overview_legacy(factory_id, range_)
+
+
+async def _build_finance_overview_legacy(
+    factory_id: str, range_: DateRange
+) -> dict:
+    """Java FinanceAnalysisServiceImpl.getFinanceOverview legacy path
+    (line 149-189). Reused by 3-state dispatcher when flag=false OR
+    Gold call raises.
 
     Steps mirror Java line numbers:
       150-153  profit + receivable metrics → KPI cards
@@ -1729,10 +1881,6 @@ async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
       180      fireGoldShadowRead — fire-and-forget log-only, Python skips
                (Python IS the Gold producer; no HTTP self-call to mirror)
       182-189  build DashboardResponse
-
-    Note: this port intentionally always emits the legacy shape regardless
-    of factory data state. Java's Gold-primary path (State A) and empty
-    branch (State B) are out of scope per spec §3.5 / §3.7.
     """
     profit_metrics = await _get_profit_metrics(factory_id, range_)
     receivable_metrics = await _get_receivable_metrics(factory_id, range_.end_date)
