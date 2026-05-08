@@ -11,7 +11,7 @@
  */
 import { computed, watch } from 'vue'
 import ReferenceSelector from './ReferenceSelector.vue'
-import { evaluateSpelBoolean } from '@/utils/spelEvaluator'
+import { evaluateSpelBoolean, evaluateSpelValue } from '@/utils/spelEvaluator'
 
 interface ItemField {
   code: string
@@ -74,24 +74,40 @@ function removeRow(index: number) {
 
 function updateField(rowIndex: number, fieldCode: string, value: unknown) {
   const updated = rows.value.map((r, i) => (i === rowIndex ? { ...r, [fieldCode]: value } : r))
-  // 自动计算 computed 字段 (如 lineAmount = quantity * unitPrice)
   const row = updated[rowIndex]
+  recomputeRow(row)
+  emit('update:modelValue', updated)
+}
+
+/**
+ * C-6 Task 3: SpEL evaluator 替换 toy parser.
+ *
+ * 旧版只支持 `split('*')` 两操作数乘法 — `"quantity * unitPrice"` 这种简单情况.
+ * 新版用 `evaluateSpelValue` 复用现有 spelEvaluator.ts:78 实现, 支持:
+ *   - 除法: `"quantity / _level1PerLevel2"`
+ *   - 三元 null-guard: `"qty > 0 && _x != null && _x > 0 ? qty / _x : null"`
+ *   - 字符串方法: `"_spec.includes('抄码')"` (visibleWhen 用)
+ *
+ * R2 reviewer finding 防御: spelEvaluator catch 返 `true` (line 70) — 若数值字段
+ * computed 失败被 Number(true)=1 静默写入会破坏数据. 显式跳过 boolean 结果.
+ *
+ * 向后兼容: 旧 `"a * b"` 在新 evaluator 下 JS 乘法等价输出, lineAmount 等
+ * 现有 schema (purchase_order V20260410_08, sales_order V20260409_02) 不受影响.
+ */
+function recomputeRow(row: Record<string, unknown>) {
   props.itemSchema.fields
     .filter((f) => f.computed)
     .forEach((f) => {
       try {
-        // 简单乘法: "quantity * unitPrice"
-        const parts = f.computed!.split('*').map((p) => p.trim())
-        if (parts.length === 2) {
-          const a = Number(row[parts[0]]) || 0
-          const b = Number(row[parts[1]]) || 0
-          row[f.code] = Math.round(a * b * 100) / 100
-        }
+        const result = evaluateSpelValue(f.computed!, row)
+        if (typeof result === 'boolean') return  // R2: catch-fallback 返 true 不污染数值字段
+        if (result == null) { row[f.code] = null; return }
+        const n = Number(result)
+        if (!isNaN(n)) row[f.code] = Math.round(n * 100) / 100
       } catch {
-        // ignore
+        // ignore — keep existing value on eval error
       }
     })
-  emit('update:modelValue', updated)
 }
 
 const totalAmount = computed(() => {
