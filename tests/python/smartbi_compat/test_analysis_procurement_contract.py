@@ -1074,3 +1074,87 @@ class TestProcurementOverviewArithmetic:
         assert result == Decimal("60.0000"), (
             f"Round 4 precision lock: expected Decimal('60.0000'), got {result!r}"
         )
+
+
+class TestProcurementOverviewMomFormattedValueRule12:
+    """Rule 12 regression: overview-mode PROCUREMENT_MOM_GROWTH formattedValue
+    must use HALF_UP at scale-1 (mirror Java String.format("%+.1f", ...)),
+    NOT Python f-string :+.1f banker's rounding via float() bridge.
+
+    Latent bug pre-fix (analysis_procurement.py:899):
+      f"{float(mom_growth):+.1f}%" with mom_growth=Decimal("46.55") emits
+      "+46.5%" (banker's at .5 boundary), Java would emit "+46.6%".
+
+    Per Rule 12 graduated rule (.claude/rules/python-java-port.md): pre-quantize
+    HALF_UP at exact target scale before f-string render, then float() bridge
+    is safe (boundary already resolved).
+    """
+
+    def test_mom_growth_formatted_value_half_boundary(self, client, monkeypatch):
+        """Setup mom_growth = (146.55 - 100) / 100 * 100 = 46.55, .5 boundary.
+
+        Pre-fix banker's: '+46.5%' (FAIL)
+        Post-fix HALF_UP: '+46.6%' (PASS, mirror Java String.format)
+        """
+        from datetime import date as _date
+        from decimal import Decimal as _Dec
+
+        async def fake_batches(factory_id, start_date, end_date):
+            # Current period (June 2025): total = 146.55
+            if start_date == _date(2025, 6, 1):
+                return [
+                    {"unit_price": _Dec("146.55"), "receipt_quantity": _Dec("1"),
+                     "supplier_id": "S1", "material_type_id": "M1",
+                     "receipt_date": _date(2025, 6, 15), "status": "AVAILABLE"},
+                ]
+            # Previous period (May 2025): total = 100
+            return [
+                {"unit_price": _Dec("100"), "receipt_quantity": _Dec("1"),
+                 "supplier_id": "S1", "material_type_id": "M1",
+                 "receipt_date": _date(2025, 5, 15), "status": "AVAILABLE"},
+            ]
+
+        async def fake_suppliers(factory_id):
+            return []
+
+        async def fake_supplier_by_id(supplier_id, factory_id):
+            return None
+
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_procurement._query_material_batches_in_range",
+            fake_batches,
+        )
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_procurement._query_active_suppliers",
+            fake_suppliers,
+        )
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_procurement._query_supplier_by_id",
+            fake_supplier_by_id,
+        )
+
+        # Default analysisType = overview (no analysisType param)
+        resp = client.get(
+            "/api/mobile/F001/smart-bi/analysis/procurement"
+            "?startDate=2025-06-01&endDate=2025-06-30",
+            headers={"Authorization": f"Bearer {_make_token('F001')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+
+        # Overview path emits kpiCards (KPICard 13-field shape), find MoM card
+        kpi_cards = resp.json()["data"]["overview"]["kpiCards"]
+        mom_card = next(
+            (c for c in kpi_cards if c["key"] == "PROCUREMENT_MOM_GROWTH"), None
+        )
+        assert mom_card is not None, (
+            f"PROCUREMENT_MOM_GROWTH missing from kpiCards. "
+            f"Got keys: {[c['key'] for c in kpi_cards]}"
+        )
+
+        # KPICard "value" field gets MetricResult.formattedValue when set
+        # (Java line 1063: value = formattedValue ?? value.toString() ?? "-")
+        # Rule 12 fix: HALF_UP at .5 boundary → "+46.6%", NOT banker's "+46.5%"
+        assert mom_card["value"] == "+46.6%", (
+            f"Rule 12 regression: expected '+46.6%' (HALF_UP), got {mom_card['value']!r}. "
+            f"Pre-fix banker's bug would produce '+46.5%'."
+        )

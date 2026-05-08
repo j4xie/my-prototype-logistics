@@ -891,12 +891,16 @@ async def _build_overview_metric_results(
         previous_amount = _calculate_total_value(previous_batches)
         mom_growth = _calculate_mom_growth(total_amount, previous_amount)
         direction = _determine_change_direction(mom_growth)
+        # Rule 12: pre-quantize HALF_UP to scale-1 before f-string render to
+        # mirror Java String.format("%+.1f", ...). Plain f-string :+.1f via
+        # float() bridge uses banker's rounding (e.g. 46.55 → 46.5 vs Java 46.6).
+        mom_growth_display = mom_growth.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
         metric_results.append({
             "metricCode":      "PROCUREMENT_MOM_GROWTH",
             "metricName":      "环比增长",
             "value":           _decimal_to_number(
                 mom_growth.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-            "formattedValue":  f"{float(mom_growth):+.1f}%",
+            "formattedValue":  f"{float(mom_growth_display):+.1f}%",
             "unit":            "%",
             "changePercent":   _decimal_to_number(mom_growth),
             "changeDirection": direction,
