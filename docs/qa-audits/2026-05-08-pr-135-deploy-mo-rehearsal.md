@@ -112,26 +112,32 @@ Children:
 |---|---|---|---|
 | `.env.prod` file | **`true`** | `false` or unset | 🚨 **GAP — MISMATCH** |
 | Running process env (`/proc/665167/environ`) | **`true`** | `false` | 🚨 **GAP — MISMATCH** |
-| File mtime | 2026-05-06 03:24:55 (~3 days ago) | (n/a, MO assumes false at deploy time) | — |
+| File mtime | 2026-05-06 03:24:55 | (n/a, see corrected interpretation below) | — |
 
-**File backup history** suggests this was a deliberate flip 3 days ago, not a recent accident:
+**File backup history** with **corrected interpretation per chat 3 investigation (commit `107f93eaa`, future PR #157)**:
+
 ```text
+.env.prod.bak                              (Apr 14)  ← pre-Phase B baseline
 .env.prod.bak.20260505_015029              (5/5 01:50)
 .env.prod.bak.20260505_023843_stage3       (5/5 02:38)
 .env.prod.bak.20260505_091800_stage4       (5/5 09:18)
-.env.prod.bak.20260506_024911_before_semthreshold      (5/6 02:49)
+.env.prod.bak.20260506_024911_before_semthreshold          (5/6 02:49)
 .env.prod.bak.20260506_032128_before_bge_threshold_restore (5/6 03:21)
-.env.prod.bak.20260506_032455_before_bge_threshold     (5/6 03:24)  ← last backup, file flipped 3s after
+.env.prod.bak.20260506_032455_before_bge_threshold         (5/6 03:24)  ← last backup
 ```
 
-Other related env vars also `true` on prod:
-- `SMARTBI_AGENT_LAYER_ENABLED=true`
-- `SMARTBI_ENABLE_SILVER_DUAL_WRITE=true`
-- `SMARTBI_ENABLE_SHEET_MERGER=true`
-- `SMARTBI_ENABLE_B_WRITERS=true`
-- `SMARTBI_GOLD_SHADOW_READ_ENABLED=false`
+**My initial reading of "file mtime 2026-05-06 03:24:55 = flag flip date" was WRONG.** Chat 3 investigation (107f93eaa) clarified:
 
-→ Looks like Phase 2B/Gold rollout flags toggled on for some recent test or staged enablement. Not a recent accident.
+- **Actual flag flip date**: **Apr 23**, intentional per memory `project_apr23_dashboard_gold_uiport.md` (Phase B Dashboard Gold UI port end-state)
+- **May 6 03:24:55 mtime** is unrelated — that mtime corresponds to a separate edit of `AI_SEMANTIC_THRESHOLD=0.55` (BGE threshold tuning), the bak filenames `*_before_bge_threshold` confirm this was BGE-tuning context, not Gold-flag flip
+- Backups from 5/5-5/6 are Phase 2B + BGE staged enablement work, not the Gold flag itself
+
+**Additional context from chat 3 investigation**:
+- **PR #135 already deployed May 7 via N=2 cutover** (commit `2e90a2016` on prod disk)
+- **Python prod log confirms Pattern B 3-state firing** (Phase B end-state already serving real traffic)
+- Other related Phase 2B/Gold rollout flags also `true` on prod: `SMARTBI_AGENT_LAYER_ENABLED`, `SMARTBI_ENABLE_SILVER_DUAL_WRITE`, `SMARTBI_ENABLE_SHEET_MERGER`, `SMARTBI_ENABLE_B_WRITERS` (`SMARTBI_GOLD_SHADOW_READ_ENABLED=false` is the only one off)
+
+→ This is **intentional Phase B end-state**, not an accident. MO §6 "stays false" assumption is **stale** — written before chat 3's Phase B Dashboard Gold UI port investigation surfaced the actual prod state.
 
 ### §2.7 origin/main HEAD
 
@@ -166,32 +172,36 @@ ETA full window: ~2026-05-09 05:00 UTC = 13:00 CST May 9
 
 ## §3 — Gaps detected
 
-### 🚨 GAP-1: `SMARTBI_GOLD_READ_PRIMARY_ENABLED=true` on prod (was expected `false`)
+### 🚨 GAP-1: `SMARTBI_GOLD_READ_PRIMARY_ENABLED=true` on prod — MO §6 assumption is stale
 
-**Severity**: 🔴 **RED** — must resolve before MO dispatch (May 9 13:01 CST)
+**Severity**: 🟠 **AMBER** (downgraded from RED after chat 3 amendment) — MO §5/§6 needs revision before dispatch, but this is intentional Phase B end-state, not an accident to "fix"
 
-**Evidence**:
+**Evidence (corrected per chat 3 investigation `107f93eaa` / future PR #157)**:
 - `.env.prod` file content + running process env both confirm `=true`
-- Has been `true` since 2026-05-06 03:24:55 (3 days, deliberate flip per backup history)
-- Related Phase 2B Gold rollout flags also `true` (likely batch-flipped during Phase 2B prep)
+- **Actual flag flip date**: Apr 23, intentional per memory `project_apr23_dashboard_gold_uiport.md` (Phase B Dashboard Gold UI port). Initial reading "May 6 03:24:55 mtime = flag flip date" was wrong — that mtime is a separate `AI_SEMANTIC_THRESHOLD=0.55` edit (BGE tuning), bak filenames `*_before_bge_threshold` confirm BGE context
+- **PR #135 code already deployed May 7** via N=2 cutover (commit `2e90a2016` on prod disk)
+- **Python prod log confirms Pattern B 3-state firing** in real traffic (Phase B end-state already serving)
+- Related Phase 2B/Gold rollout flags batch-on: `SMARTBI_AGENT_LAYER_ENABLED`, `SMARTBI_ENABLE_SILVER_DUAL_WRITE`, `SMARTBI_ENABLE_SHEET_MERGER`, `SMARTBI_ENABLE_B_WRITERS` all `true`. Only `SMARTBI_GOLD_SHADOW_READ_ENABLED=false`
 
 **Impact on MO Step 5 + Step 6**:
 
-| MO step | Expected behavior (assumes flag=false) | Actual behavior (flag=true) |
+| MO step | Expected behavior (assumes flag=false) | Actual behavior (flag=true since Apr 23, intentional) |
 |---|---|---|
-| Step 5 State C smoke F001 | `kpiCards=10 charts=3` (legacy path) | `kpiCards=4 keys=[total_revenue, bill_count, avg_bill_value, store_count]` (State A Gold path because F001 has Gold POS data) |
-| MO Step 5 line 315 | "If F001 returns 4-card Gold shape... **STOP, ping organizer immediately**" | Will trigger this STOP |
-| Step 6 env var verify line 392 | "either `=false` or unset" | Will fail "STOP, ping organizer" condition |
+| Step 5 State C smoke F001 | `kpiCards=10 charts=3` (legacy path) | `kpiCards=4 keys=[total_revenue, bill_count, avg_bill_value, store_count]` (State A Gold path — F001 has Gold POS data, this is the **already-serving** prod behavior since Apr 23) |
+| MO Step 5 line 315 | "If F001 returns 4-card Gold shape... **STOP, ping organizer immediately**" | Will trigger this STOP — but state is intentional, not a fault |
+| Step 6 env var verify line 392 | "either `=false` or unset" | Will fail "STOP, ping organizer" — flag is intentionally `true` |
 
-→ MO will **STOP at Step 5 or Step 6**, not because of bug but because actual prod state differs from MO assumption.
+→ MO will **STOP at Step 5 or Step 6**, not because of bug but because **MO was written assuming pre-Phase-B prod state** that hadn't yet been rolled out. Actual prod is post-Phase-B since Apr 23.
 
 **Recommended resolution** (organizer decides):
 
-1. **Option A** — flip flag back to `false` before dispatch + re-verify with MO unchanged (preserves MO assumption + continues legacy-path-only customer behavior). Backup → edit → restart Python → re-test.
-2. **Option B** — keep flag `true` + revise MO Step 5 (F001 expects State A 4-card) + revise MO Step 6 (expect `=true`, document why intentional) + add State A regression check (Gold returning expected 4 keys).
-3. **Option C** — investigate whether the 3-day-old flag flip is intentional (some Phase 2B staged rollout) vs forgotten leftover from a test. If forgotten → Option A. If intentional → Option B.
+1. **Option A — revise MO Step 5/6** (recommended given chat 3 evidence): keep prod flag `true`, update MO §5 F001 expectation to State A (`kpiCards=4` with the 4 Gold keys), update §6 expected value to `true` with cross-ref to `project_apr23_dashboard_gold_uiport.md` rationale, add regression check that Gold Pattern B State A still returns expected 4 keys.
+2. **Option B — flip flag back temporarily** for MO execution: only valid if MO purpose is "rehearsal of pre-Phase-B deploy"; otherwise this would regress current customer behavior. Not recommended given Phase B is already production end-state.
+3. **Option C — re-scope the MO entirely**: since PR #135 already deployed May 7 N=2 cutover, this MO may be redundant. If MO purpose is "BG Java cycle hygiene + verify Pattern B re-emerges after deploy", that purpose is still valid but the smoke expectations must match current state.
 
-→ Without this resolution, MO execution at May 9 13:01 will halt within Step 5/6.
+→ Without resolution, MO execution at May 9 13:01 will halt within Step 5/6.
+
+**Cross-ref**: chat 3 investigation commit `107f93eaa` (future PR #157) provides full Apr 23 timeline + memory `project_apr23_dashboard_gold_uiport.md` rationale. Read this BEFORE deciding A/B/C.
 
 ### ⚠️ GAP-2: nginx upstream config filename mismatch
 
@@ -245,7 +255,7 @@ Optional polish, not blocker.
 | smartbi_migrations tracker | ✅ 35 rows prod + test |
 | Python prod N=2 workers | ✅ Confirmed (parent + 2 spawns) |
 | origin/main HEAD | ✅ Has all 11 referenced PRs |
-| **`SMARTBI_GOLD_READ_PRIMARY_ENABLED` flag** | 🚨 **RED — `true` on prod, MO assumes false** |
+| **`SMARTBI_GOLD_READ_PRIMARY_ENABLED` flag** | 🟠 **AMBER — `true` since Apr 23 (intentional Phase B), MO §6 assumption stale** |
 | **nginx upstream config filename in MO** | 🟡 **YELLOW — wrong filename in 2 places** |
 | BG dryrun parallel state | ✅ Not disrupted, on track for ~13:00 CST May 9 |
 
@@ -253,17 +263,18 @@ Optional polish, not blocker.
 
 **Rationale**: 9/11 categories ✅ READY. Two gaps detected, both fixable BEFORE May 9 13:01 dispatch:
 
-1. **GAP-1 (RED)** is genuinely blocking — MO will halt at Step 5/6 unless flag is flipped back to `false` OR MO is revised to handle the `true` reality. Organizer decision needed (Option A / B / C in §3.GAP-1).
+1. **GAP-1 (AMBER, downgraded from RED after chat 3 amendment)** — MO §6 assumption is stale, written before chat 3 surfaced Apr 23 Phase B Dashboard Gold UI port intentional rollout + May 7 PR #135 N=2 cutover. Prod is already Phase B end-state (flag=true since Apr 23, PR #135 deployed May 7, Pattern B 3-state firing in real traffic). MO needs revision to match current state — recommended Option A (revise §5/§6 expectations to State A, not flip flag back). See §3.GAP-1 for full options.
 
 2. **GAP-2 (YELLOW)** is a 30-second `sed` fix in the MO doc + memory file. Not blocking deploy, but blocks MO verify steps. Recommend doing this fix when GAP-1 is being resolved.
 
-3. No emergency. Plenty of runway (~13h until dispatch).
+3. No emergency. Plenty of runway (~13h until dispatch). chat 3 investigation `107f93eaa` (future PR #157) provides the corrected Apr 23 timeline.
 
 ### Action items for organizer
 
-- [ ] **Decide GAP-1**: flip flag back to `false` (Option A) OR revise MO to expect `true` (Option B) OR investigate intent (Option C). Recommended: Option A unless there's a Phase 2B reason to keep `true`.
+- [ ] **Decide GAP-1**: read chat 3 PR #157 first → revise MO §5 (F001 expects State A 4-card) + §6 (expect `=true` with cross-ref to `project_apr23_dashboard_gold_uiport.md`) — recommended Option A. Flipping flag back (Option B) would regress current Phase B production behavior.
 - [ ] **Fix GAP-2**: `sed` filename replace in deploy MO + relevant memory file (or accept gap as known limitation).
 - [ ] **Optional GAP-3 polish**: improve MO Step 1 worker-count grep pattern.
+- [ ] **Optional re-scope check**: since PR #135 already deployed May 7, verify MO purpose is "BG Java cycle hygiene + Pattern B re-emerge verify post-redeploy" rather than "first-time deploy". Adjust expectations accordingly.
 
 After resolution, ping execution chat (chat 4 or other) at May 9 13:01 dispatch.
 
@@ -280,7 +291,9 @@ After resolution, ping execution chat (chat 4 or other) at May 9 13:01 dispatch.
 ## Cross-references
 
 - Source MO: `docs/superpowers/dispatch/2026-05-09-pr-135-prod-deploy-marching-order.md` (commit `e25642120`)
+- **Chat 3 investigation amending GAP-1**: commit `107f93eaa` (future PR #157) — Apr 23 Phase B Dashboard Gold UI port date correction + May 6 mtime BGE-context disambiguation
 - T6.4 readiness gates: memory `project_2026_05_08_t6_4_readiness_gates.md`
+- Phase B Dashboard Gold UI port rationale: memory `project_apr23_dashboard_gold_uiport.md`
 - BG deploy pattern: memory `reference_blue_green_java_deploy.md`
 - N=2 multi-worker context: memory `project_2026_05_07_uvicorn_n2_path_x_lite.md`
 - migration runner: memory `reference_smartbi_migration_runner.md`
