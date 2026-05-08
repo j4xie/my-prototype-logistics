@@ -26,6 +26,8 @@ interface ItemField {
     displayField: string
     valueField: string
     apiEndpoint: string
+    /** C-6 Task 2: 选 entity 后写回 shadow 字段映射 (entity field → row shadow key, 推荐 _ 前缀). */
+    projectFields?: Record<string, string>
   }
   computed?: string
   /** Apr 25 2026: schema-driven initial value for new rows (e.g. items.unit defaultValue:'kg'). */
@@ -76,6 +78,24 @@ function updateField(rowIndex: number, fieldCode: string, value: unknown) {
   const updated = rows.value.map((r, i) => (i === rowIndex ? { ...r, [fieldCode]: value } : r))
   const row = updated[rowIndex]
   recomputeRow(row)
+  emit('update:modelValue', updated)
+}
+
+/**
+ * C-6 Task 2: 接收 ReferenceSelector @project event, 把 entity 的 projected 字段
+ * 写入对应 row 的 shadow 字段, 然后触发 computed 重算.
+ *
+ * `projected` 由 ReferenceSelector.emitProjectFields 构造, 其中 shadowKey 已经过
+ * SHADOW_KEY_RE 校验 (单一 emit 来源, defense-in-depth 不在此重复校验).
+ *
+ * Vue 3 reactivity: spread 创建新 row 对象, rows.value[rowIndex] 赋值 → 触发
+ * computed 重算 (含 visibleWhen 表达式), 使 boxQuantity / 抄码品 tag 立即更新.
+ */
+function onReferenceProject(rowIndex: number, projected: Record<string, unknown>) {
+  const updated = rows.value.map((r, i) =>
+    i === rowIndex ? { ...r, ...projected } : r
+  )
+  recomputeRow(updated[rowIndex])
   emit('update:modelValue', updated)
 }
 
@@ -157,6 +177,7 @@ function isColumnVisible(field: ItemField): boolean {
               :config="(field.referenceConfig as never)"
               :disabled="disabled || !!field.computed"
               @update:model-value="(v) => updateField($index, field.code, v)"
+              @project="(projected: Record<string, unknown>) => onReferenceProject($index, projected)"
             />
             <!-- select -->
             <el-select
