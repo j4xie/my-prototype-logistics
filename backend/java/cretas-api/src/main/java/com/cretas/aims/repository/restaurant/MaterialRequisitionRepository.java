@@ -36,6 +36,32 @@ public interface MaterialRequisitionRepository extends JpaRepository<MaterialReq
 
     Optional<MaterialRequisition> findByFactoryIdAndRequisitionNumber(String factoryId, String requisitionNumber);
 
+    /**
+     * 多条件组合筛选（May 9 fix）：status / type / requisitionDate 全部可选。
+     *
+     * 取代旧 controller 里"if-else 链 + early return"模式（只能单条件，
+     * 且空字符串当作 non-null 抛 IllegalArgumentException）。
+     *
+     * <p>JPQL `:param IS NULL OR field = :param` 模式让任意参数为 null
+     * 时退化为通配，避免动态拼 SQL。</p>
+     *
+     * @param factoryId 必传
+     * @param status 可选
+     * @param type 可选
+     * @param date 可选（精确匹配 requisition_date）
+     */
+    @Query("SELECT r FROM MaterialRequisition r WHERE r.factoryId = :factoryId " +
+            "AND (:status IS NULL OR r.status = :status) " +
+            "AND (:type IS NULL OR r.type = :type) " +
+            "AND (:date IS NULL OR r.requisitionDate = :date) " +
+            "ORDER BY r.createdAt DESC")
+    Page<MaterialRequisition> findByFilters(
+            @Param("factoryId") String factoryId,
+            @Param("status") MaterialRequisition.Status status,
+            @Param("type") MaterialRequisition.RequisitionType type,
+            @Param("date") LocalDate date,
+            Pageable pageable);
+
     // ==================== 日期范围查询 ====================
 
     @Query("SELECT r FROM MaterialRequisition r WHERE r.factoryId = :factoryId " +

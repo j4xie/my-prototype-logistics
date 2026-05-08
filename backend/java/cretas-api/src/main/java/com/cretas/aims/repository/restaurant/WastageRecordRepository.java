@@ -36,6 +36,32 @@ public interface WastageRecordRepository extends JpaRepository<WastageRecord, St
 
     Optional<WastageRecord> findByFactoryIdAndWastageNumber(String factoryId, String wastageNumber);
 
+    /**
+     * 多条件组合筛选（May 9 fix）：status / type / wastageDate 全部可选。
+     *
+     * 取代旧 controller "if-else 链 + early return" 模式。
+     * 与 MaterialRequisitionRepository.findByFilters 同模式。
+     *
+     * @param factoryId 必传
+     * @param status 可选
+     * @param type 可选
+     * @param startDate 可选（与 endDate 配对作为日期区间）
+     * @param endDate 可选
+     */
+    @Query("SELECT w FROM WastageRecord w WHERE w.factoryId = :factoryId " +
+            "AND (:status IS NULL OR w.status = :status) " +
+            "AND (:type IS NULL OR w.type = :type) " +
+            "AND (:startDate IS NULL OR w.wastageDate >= :startDate) " +
+            "AND (:endDate IS NULL OR w.wastageDate <= :endDate) " +
+            "ORDER BY w.createdAt DESC")
+    Page<WastageRecord> findByFilters(
+            @Param("factoryId") String factoryId,
+            @Param("status") WastageRecord.Status status,
+            @Param("type") WastageRecord.WastageType type,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            Pageable pageable);
+
     // ==================== 日期范围查询 ====================
 
     @Query("SELECT w FROM WastageRecord w WHERE w.factoryId = :factoryId " +
