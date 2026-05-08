@@ -1,0 +1,41 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "overview": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [],
+      "metricCards": null,
+      "rankings": {},
+      "charts": {},
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "YELLOW",
+          "category": "数据状态",
+          "message": "当前暂无库存数据",
+          "relatedEntity": null,
+          "actionSuggestion": "请先录入原材料批次数据"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "请先录入库存数据以开始分析"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T13:46:37.028892752",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "endDate": "2026-05-08",
+    "startDate": "2026-01-01"
+  },
+  "timestamp": "2026-05-08T13:46:37.028936083",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

@@ -1,0 +1,64 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "overview": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [],
+      "metricCards": null,
+      "rankings": {},
+      "charts": {},
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "YELLOW",
+          "category": "数据状态",
+          "message": "当前时间范围内暂无销售数据",
+          "relatedEntity": null,
+          "actionSuggestion": "请上传销售数据或调整时间范围"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "请先上传销售数据以开始分析"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T05:46:35.667807",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "customerRanking": [],
+    "productRanking": [],
+    "dateRange": {
+      "startDate": "2026-01-01",
+      "endDate": "2026-05-08",
+      "granularity": "YEAR",
+      "originalExpression": "2026-01-01 至 2026-05-08",
+      "relative": false,
+      "days": 128,
+      "valid": true
+    },
+    "salespersonRanking": [],
+    "generatedAt": "2026-05-08T05:46:35.669889",
+    "trendChart": {
+      "chartType": "LINE",
+      "title": "销售趋势",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showDataLabels": false,
+        "smooth": true
+      },
+      "xaxisField": "date",
+      "yaxisField": "amount"
+    }
+  },
+  "timestamp": "2026-05-08T13:46:35.670276",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
