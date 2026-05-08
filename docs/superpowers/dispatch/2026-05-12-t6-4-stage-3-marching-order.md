@@ -2,7 +2,7 @@
 
 **From**: organizer chat (Phase 2A T6.4 5-stage cutover)
 **Date drafted**: 2026-05-08
-**Target execution**: 2026-05-12 03:00-05:00 CST (Day 3 — **HIGH-VOLUME real customer day**)
+**Target execution**: 2026-05-12 14:00-15:00 CST (Day 3 — **HIGH-VOLUME real customer day**; T6.4 cutover window override per PR #141 §2.2)
 **Phase**: cutover execution — modifies prod nginx vhost on 139
 
 ---
@@ -29,7 +29,7 @@
 - [ ] Pattern B PR #135 prod-deployed verified (this is the stage where real-customer Gold data divergence risk peaks)
 - [ ] Stage 2 backup filename recorded
 - [ ] No active P1 incident on prod
-- [ ] **Stage 3-specific check**: 桂满陇 + QHJ_PROD 没有 scheduled batch jobs / nightly reports in 03:00-05:00 window — confirm with customer ops
+- [ ] **Stage 3-specific check**: 桂满陇 + QHJ_PROD 没有 scheduled jobs / dashboard 高峰使用 / business operations spike in 14:00-15:00 window — confirm with customer ops (note: window shifted from 03:00-05:00 to 14:00-15:00 per PR #141 §2.2 T6.4 override; collision check now scoped to afternoon ops not nightly batch)
 
 ---
 
@@ -49,7 +49,7 @@ Stage 3 carries the highest pre-restaurant-chain stakes — 桂满陇 (RES_GML_0
 
 6. **Personalized phone confirm at T+15min** (NOT template-only) — after smoke pass, 销售对接人 must directly phone 桂满陇 + QHJ_PROD ops 联络人 to verify service is normal. Use PR #141 §3.4 template as the script base, but the phone call itself is mandatory — silent template-only confirm is insufficient at this tier. Enforced in Step 5.
 
-7. **Confirm 03:00-05:00 cutover window has NO batch jobs** — 桂满陇 nightly reports + QHJ_PROD ops calendar must be reviewed pre-cutover with customer ops to confirm no scheduled batch / nightly report runs collide with the cutover window. If any collision found, reschedule cutover to next available no-batch window. Enforced in prereq gate above (Stage 3-specific check).
+7. **Confirm 14:00-15:00 cutover window has NO collision** — 桂满陇 + QHJ_PROD ops calendar must be reviewed pre-cutover with customer ops to confirm no scheduled jobs / dashboard 高峰使用 / business operations spike collide with the cutover window. If any collision found, reschedule cutover to next available no-collision window. Note: window shifted from 03:00-05:00 (default per PR #141 §2.1) to 14:00-15:00 (T6.4 override per §2.2) — collision-check scope shifts from nightly batch jobs to afternoon business ops. Enforced in prereq gate above (Stage 3-specific check).
 
 8. **Coordinate with chat 4 (Pattern B owner) for FULL 48h** — chat 4 owns PR #135 Pattern B 3-state dispatcher. Real-customer Gold data divergence risk peaks at this stage (桂满陇 + QHJ_PROD may have populated Gold POS data that test factories lack). Daily sync at T+0 / T+12h / T+24h / T+36h / T+48h checkpoints; chat 4 must be on-call for emergency Pattern B State investigation if any divergence detected. Cross-ref Step 6 GO criterion 3 (Pattern B State identity).
 
