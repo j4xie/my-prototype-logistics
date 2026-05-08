@@ -6,9 +6,137 @@
       "period": null,
       "startDate": null,
       "endDate": null,
-      "kpiCards": [],
+      "kpiCards": [
+        {
+          "key": "total_revenue",
+          "title": "总营收",
+          "value": "20639884.52",
+          "rawValue": 20639884.52,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": null,
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "bill_count",
+          "title": "账单数",
+          "value": "140541",
+          "rawValue": 140541,
+          "unit": "单",
+          "change": null,
+          "changeRate": null,
+          "trend": null,
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "avg_bill_value",
+          "title": "客单价",
+          "value": "146.86",
+          "rawValue": 146.86,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": null,
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "store_count",
+          "title": "门店数",
+          "value": "8",
+          "rawValue": 8,
+          "unit": "家",
+          "change": null,
+          "changeRate": null,
+          "trend": null,
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
       "metricCards": null,
-      "rankings": {},
+      "rankings": {
+        "top_stores": [
+          {
+            "rank": 1,
+            "name": "青花椒大丸百货店",
+            "value": 7431228.74,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 2,
+            "name": "青花椒徐汇日月光店",
+            "value": 5132845.53,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 3,
+            "name": "青花椒徐汇光启城店",
+            "value": 2720994.05,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 4,
+            "name": "青花椒南方百联店",
+            "value": 2361005.54,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 5,
+            "name": "青花椒南桥百联店",
+            "value": 1651960.76,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 6,
+            "name": "青花椒川食山语颛桥龙湖店",
+            "value": 1246993.02,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 7,
+            "name": "青花椒成山巴春店",
+            "value": 85304.28,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          },
+          {
+            "rank": 8,
+            "name": "青花椒川食山语颛桥龙湖天街店",
+            "value": 9552.6,
+            "target": null,
+            "completionRate": null,
+            "alertLevel": null
+          }
+        ]
+      },
       "charts": {},
       "chartList": null,
       "aiInsights": [],
@@ -16,7 +144,7 @@
       "recommendations": null,
       "suggestions": [],
       "generatedAt": null,
-      "lastUpdated": "2026-05-08T11:02:50.581809167",
+      "lastUpdated": "2026-05-08T11:02:50.603486681",
       "fromCache": false,
       "cacheExpireAt": null
     },
@@ -45,7 +173,7 @@
       "days": 365,
       "valid": true
     },
-    "generatedAt": "2026-05-08T11:02:50.58345695",
+    "generatedAt": "2026-05-08T11:02:50.604674539",
     "profitMetrics": [
       {
         "metricCode": "GROSS_PROFIT",
@@ -156,7 +284,7 @@
       "yaxisField": "amount"
     }
   },
-  "timestamp": "2026-05-08T11:02:50.583519792",
+  "timestamp": "2026-05-08T11:02:50.604733511",
   "success": true,
   "actionHint": null,
   "severity": null,

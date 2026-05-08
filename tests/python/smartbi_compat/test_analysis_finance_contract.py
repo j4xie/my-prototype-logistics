@@ -113,13 +113,34 @@ class TestAnalysisFinanceComposite:
             f"  golden: {golden_data_keys}"
         )
 
-    def test_f999_composite_byte_shape(self, client):
-        """Full byte-shape compare on data block (envelope skipped due to A.5 finding)."""
-        resp = client.get(
-            "/api/mobile/F999/smart-bi/analysis/finance"
-            "?startDate=2025-01-01&endDate=2025-12-31",
-            headers={"Authorization": f"Bearer {_make_token('F999')}"},
-        )
+    def test_f999_composite_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block (envelope skipped due to A.5 finding).
+
+        Post-PR-B-v2 (PR #135): golden was re-recorded with Java test env
+        SMARTBI_GOLD_READ_PRIMARY_ENABLED=true and F999 (no Gold data) →
+        Java line 124-142 State B empty path. To match, this test sets the
+        same flag=true and mocks the Gold service to return revenue=0+bills=0
+        so Python's _get_finance_overview takes the State B branch.
+        """
+        from unittest.mock import AsyncMock, patch
+        from decimal import Decimal as _D
+
+        monkeypatch.setenv("SMARTBI_GOLD_READ_PRIMARY_ENABLED", "true")
+        empty_gold = {
+            "total_revenue": _D("0"),
+            "bill_count": 0,
+            "avg_bill_value": None,
+            "store_count": 0,
+            "top_stores": [],
+        }
+        with patch("smartbi.config.get_pg_pool", new=AsyncMock(return_value=None)), \
+             patch("smartbi.gold.queries.finance_summary",
+                   new=AsyncMock(return_value=empty_gold)):
+            resp = client.get(
+                "/api/mobile/F999/smart-bi/analysis/finance"
+                "?startDate=2025-01-01&endDate=2025-12-31",
+                headers={"Authorization": f"Bearer {_make_token('F999')}"},
+            )
         assert resp.status_code == 200
 
         py_data = _strip_volatile(resp.json()["data"])

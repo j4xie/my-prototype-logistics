@@ -1776,30 +1776,34 @@ async def _build_finance_overview_from_gold(
         return None
 
     # Java line 74-90: 4 KPI cards (Lombok @Builder + Jackson default emit).
+    # Rule 4: rawValue must pass through _decimal_to_number so FastAPI emits
+    # JSON number (matches Java BigDecimal serialization). Without this
+    # wrap, FastAPI default Decimal→string would diverge from Java number.
     kpi_cards = [
         _new_kpi_card_dict(
             key="total_revenue", title="总营收",
             value=_format_kpi_value(revenue, "元"),
-            raw_value=revenue, unit="元", status="green",
+            raw_value=_decimal_to_number(revenue), unit="元", status="green",
         ),
         _new_kpi_card_dict(
             key="bill_count", title="账单数",
             value=_format_kpi_value(bills, "单"),
-            raw_value=bills, unit="单", status="green",
+            raw_value=_decimal_to_number(bills), unit="单", status="green",
         ),
         _new_kpi_card_dict(
             key="avg_bill_value", title="客单价",
             value=_format_kpi_value(avg_bill, "元"),
-            raw_value=avg_bill, unit="元", status="green",
+            raw_value=_decimal_to_number(avg_bill), unit="元", status="green",
         ),
         _new_kpi_card_dict(
             key="store_count", title="门店数",
             value=_format_kpi_value(stores, "家"),
-            raw_value=stores, unit="家", status="green",
+            raw_value=_decimal_to_number(stores), unit="家", status="green",
         ),
     ]
 
     # Java line 92-105: top_stores rankings (rank starts at 1, walks Gold list).
+    # Rule 4: same as above — value field must be JSON-number-shaped.
     top_stores: list[dict] = []
     top_stores_raw = gold.get("top_stores")
     if isinstance(top_stores_raw, list):
@@ -1810,7 +1814,7 @@ async def _build_finance_overview_from_gold(
             top_stores.append(_new_ranking_item_dict(
                 rank=rank,
                 name=str(item.get("store_name")),
-                value=_to_decimal(item.get("revenue")),
+                value=_decimal_to_number(_to_decimal(item.get("revenue"))),
             ))
             rank += 1
 
