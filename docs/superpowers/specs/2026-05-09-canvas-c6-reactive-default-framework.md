@@ -331,6 +331,35 @@ interface ItemField {
 // 选中 entity 后，将 projectFields 映射的 entity 字段值 emit 给父组件
 ```
 
+**实现要点（spec amendment per code-reviewer audit, May 9 2026）：**
+
+1. **Parallel `Map<value, entity>` 缓存**（**不**augment options[i]._entity）：
+   ```typescript
+   const optionEntities = ref<Map<string, Record<string, unknown>>>(new Map())
+   ```
+   - `search()` 时 rebuild map（保留当前 `modelValue` 对应 entry 防 watch 触发不必要的 fetch）
+   - `fetchById()` 拉到 entity 后 `optionEntities.set(value, entity)`
+   - 取舍：option 大对象不进 v-for diff，更轻
+
+2. **`fetchToken` 并发竞争防御**：
+   ```typescript
+   let fetchToken = 0
+   async function fetchById(id) {
+     const myToken = ++fetchToken
+     // ... fetch ...
+     if (myToken !== fetchToken) return  // stale, abandon
+   }
+   ```
+   防止用户连续切 modelValue 时旧响应覆盖新选择。
+
+3. **`SHADOW_KEY_RE` 校验**（详见 §3.4.4）
+
+4. **emit 时机汇总**：
+   - `handleChange(val)` 用户主动选 → emit('update:modelValue') + emit('project')
+   - `fetchById(id)` 完成后（edit 模式 init）→ emit('project')
+   - `watch(modelValue)` cache-hit 路径 → emit('project') 同步从 cache 读
+   - `watch(modelValue)` value 变 null（clearable）→ emit('project', {shadowKey:null,...})
+
 #### 3.4.3 后端端点扩展需求
 
 **选项 1（推荐）：** `GET /raw-material-types/{id}` 响应合并包装层级数据。修改 `RawMaterialTypeController.java:108-116` 的 `getMaterialTypeById`，在 `RawMaterialTypeDTO` 里嵌套 `packagingInfo`（或直接展平 `level1PerLevel2`、`level2Unit` 等字段）。好处：一次 API 调用完成，不增加请求数。
@@ -339,9 +368,30 @@ interface ItemField {
 
 **当前采购单 LEGACY 已使用选项 2**（`procurement/orders/list.vue:49-58`），但 C-6 推荐选项 1，让 entity GET 端点成为 one-stop-shop。
 
+**⛔ 强制 (spec amendment per reviewer audit)**：选项 1 后端响应 **MUST be flat** — `projectFields` 的 entityKey 是 entity 字段顶层 key，不支持 lodash-style nested path。即返回 `{ id, name, level1PerLevel2: 10, level2Unit: '箱', ... }`，**禁止** `{ id, name, packagingInfo: { level1PerLevel2: 10 } }` 嵌套结构（会让 schema 作者无法引用）。如果 entity 数据来自多张表 join，后端在 DTO 层做 flatten。
+
 需要扩展的端点列表（实施阶段确认）：
-- `GET /api/mobile/{factoryId}/raw-material-types/{id}` — 合并 `level1PerLevel2, level2Unit, level2PerLevel3, level3Unit, specification`（如 entity 有此字段）
+- `GET /api/mobile/{factoryId}/raw-material-types/{id}` — 扁平合并 `level1PerLevel2, level2Unit, level2PerLevel3, level3Unit, specification`（如 entity 有此字段）
 - `GET /api/mobile/{factoryId}/product-types/{id}` 或 finished-goods equivalent — 确认 `boxConversionCoefficient, unitPrice` 是否已经在响应中（sales LEGACY 已能从 products 列表里取到这些字段）
+
+#### 3.4.4 Shadow key validation (spec amendment per reviewer audit)
+
+`projectFields` 的 value（写回的 shadow key）来自 DB-driven `module_schemas`。Admin 可以配置任意字符串。`{...row, shadowKey: value}` spread 在 V8 上：
+
+- `shadowKey === '__proto__'` → 真的会改 row 的 prototype
+- `shadowKey === 'constructor'` → 改 row.constructor，影响 `instanceof`
+- 数字 / 包含 `.`、空格、特殊字符 → 破坏 Vue reactivity tracking
+
+**强制 regex**:
+```typescript
+const SHADOW_KEY_RE = /^_[a-zA-Z][a-zA-Z0-9_]*$/
+```
+
+- 必须 `_` 前缀（与 Task 6 SchemaFormRenderer.handleSubmit 的 `payload[k].startsWith('_')` 过滤约定一致）
+- 后续仅 alphanumeric + underscore
+- 不匹配 → `console.error` 跳过该字段（**不抛**，避免单字段配错破坏整个 form）
+
+ReferenceSelector + LineItemsEditor 在 emit/写入路径都要校验。Backend `module_schemas` save 时也应在 service 层校验（Phase B Task 8 候选）。
 
 TODO: 确认 RawMaterialType entity 是否有 `specification` 字段。当前 `RawMaterialTypeDTO.java` 没有此字段，`RawMaterialType.java` 实体也未找到此字段。P1-3 的"抄码品"判断究竟基于哪个字段？需要 reviewer 在 audio/veteran_9.txt 中再确认，或检查 `MaterialSpecConfig.java`。
 
@@ -397,14 +447,74 @@ C-6 的派生值计算发生在**前端客户端**：`ReferenceSelector` 选中�
 
 **文件**: `web-admin/src/views/modules/components/ReferenceSelector.vue`
 
-**改动点**:
+**spec amendment (per reviewer audit, May 9 2026)**：原 Task 1 拆分为 4 个子任务以覆盖完整 emit 时机和并发/校验边界。
 
-1. `props` 中 `config: ReferenceConfig` 类型已通过 Task 0 扩展含 `projectFields`
-2. `handleChange`（line 106-108）修改为：当 `config.projectFields` 存在时，从 `fetchById` 拉取的 entity 中提取对应字段，emit 新的 `project` event
-3. `fetchById`（line 143-187）修改为：命中 entity 后，将 `projectFields` 映射的字段存到组件内部 `currentEntity ref`，供 `handleChange` 使用
-4. `search` 回调（line 55-103）修改为：选项构建时在 option 上附加完整 entity ref（`_entity`），以便 `handleChange` 时不需要再次 fetch
+#### Task 1a: 数据结构 + 同步 emit 路径（handleChange）
 
-**注意**：`search` 结果里 entity 已经完整；`fetchById` edit 模式也拿到完整 entity。两条路径都需要保存 entity 供 `handleChange` 读取。
+1. 新增 `optionEntities = ref<Map<string, Record<string, unknown>>>(new Map())` parallel cache（**不**augment `options[i]._entity` — 见 §3.4.2 取舍）
+2. 新增常量 `SHADOW_KEY_RE = /^_[a-zA-Z][a-zA-Z0-9_]*$/`（§3.4.4）
+3. 新增 helper `emitProjectFields(val)`：
+   - `!props.config.projectFields` → noop
+   - `shadowKey` 不匹配 SHADOW_KEY_RE → console.error 跳过
+   - `!val`（clear）→ 所有 shadow key 写 null
+   - cache miss → shadow 写 null
+4. `search()` 在 options.value 赋值后，rebuild `optionEntities`：
+   ```typescript
+   const newEntities = new Map()
+   for (const item of list) newEntities.set(String(item[valueField]), item)
+   if (props.modelValue) {
+     const cur = optionEntities.value.get(String(props.modelValue))
+     if (cur && !newEntities.has(...)) newEntities.set(..., cur)  // 保留 current
+   }
+   optionEntities.value = newEntities
+   ```
+5. `handleChange(val)` 末尾 `emitProjectFields(val)`
+
+#### Task 1b: 异步 emit 路径（fetchById）+ 并发竞争防御
+
+1. 模块顶部 `let fetchToken = 0`
+2. `fetchById(id)` 入口 `const myToken = ++fetchToken`
+3. await 后立即 `if (myToken !== fetchToken) return`（C2 reviewer fix）
+4. 拉到 entity 后 `optionEntities.value.set(realValue, item)`（M2 reviewer fix）
+5. 接 `emitProjectFields(realValue)`（Task 7 折叠：edit 模式 init）
+
+#### Task 1c: watch cache-hit 路径（C1 reviewer fix）
+
+```typescript
+watch(() => props.modelValue, (val) => {
+  if (!val) { emitProjectFields(null); return }  // I2 clear
+  if (options.value.find(o => o.value === val)) {
+    emitProjectFields(val)  // C1 cache hit — 旧逻辑只触发 fetchById,不在 cache hit 时 emit
+  } else {
+    fetchById(val)
+  }
+})
+```
+
+#### Task 1d: legacy non-ASCII PK 兼容（M1 reviewer fix）
+
+`fetchById` 在 `if (!looksLikeId(id))` 早返之前，先 `if (optionEntities.has(id)) emitProjectFields(id)` — 防止 legacy 实体 (e.g. `张三` 作 PK) 在 watch 路径下 shadow 字段永空。
+
+**新增 emit signature**:
+```typescript
+const emit = defineEmits<{
+  'update:modelValue': [value: string | number | null]
+  'project': [fields: Record<string, unknown>]
+}>()
+```
+
+**预估**: ~100 行（含注释 + 4 子任务），实测 +101/-4。
+
+**完成态**：见 commit `c5c32566d6` (feat/canvas-c6-impl branch).
+
+**单元测试要求**:
+- 选中有 level1PerLevel2=10 的物料 → emit project 含 `{ _level1PerLevel2: 10 }`
+- config 无 projectFields → 不 emit project（向后兼容）
+- value clearable cleared → emit project 中 shadow key 全为 null（I2）
+- shadowKey="__proto__" → console.error，不写入 projected
+- 并发 fetchById：早开始的响应晚回 → 被 token 拦截，不覆盖新 cache（C2）
+- watch cache-hit 路径 → 同步 emit project（C1）
+- looksLikeId false 但 cache hit → 仍 emit project（M1）
 
 **新增 emit**:
 ```typescript
@@ -756,6 +866,24 @@ SELECT field_schema->'items'->'itemFields' FROM module_schemas WHERE module_code
 **描述**: 两种 seed 格式（array-of-fields vs object-with-fields-key）导致 jsonb migration 逻辑不同。
 
 **缓解**: 实施前先读取 prod 实际值（见 §5 TODO），针对真实格式编写 SQL，而不是依赖 seed 文件格式。
+
+### R6: 并发 fetchById 竞争（spec amendment per reviewer audit）
+
+**描述**: 用户连续切 modelValue → 多个 `fetchById` 并发 → 旧响应可能晚于新响应到达 → `options.value` / `optionEntities` 被旧 entity 覆盖 → modelValue=B 但 shadow 字段是 A → computed 算错 → **submit payload 含错误数据**（不仅是 UX flicker，是数据正确性）。
+
+**缓解**: `fetchToken` 模式（Task 1b）。每次 fetchById 入口 `const myToken = ++fetchToken`，await 后 `if (myToken !== fetchToken) return`。
+
+### R7: Prototype pollution via DB-driven shadowKey（spec amendment）
+
+**描述**: Admin 配置 `projectFields: {"name": "__proto__"}` → spread `{...row, __proto__: poison}` 在 V8 真的改 row 的 prototype → 后续 `row.toString()`/`hasOwnProperty()` 等被攻击者控制 → JSON 序列化把污染传到后端。
+
+**缓解**: SHADOW_KEY_RE 校验（§3.4.4）+ 强制 `_` 前缀。后端 `module_schemas` save 时也应校验（Phase B follow-up Task 8）。
+
+### R8: Clearable=true 清空时 shadow 字段留 stale（spec amendment）
+
+**描述**: `<el-select clearable>` 用户点 X → `update:modelValue=null`，但 watch 旧逻辑只在 `val && !options.find` 时 fetchById → null 路径不 emit project → shadow 字段保留前一次值 → computed 仍在用旧 `_level1PerLevel2` 算 → boxQuantity 错。
+
+**缓解**: watch 加 null 分支 `emitProjectFields(null)`（Task 1c），`emitProjectFields(null)` 把所有 shadowKey 写 null（Task 1a）。computed 表达式有 null-guard 三元才能正确返 null。
 
 ---
 
