@@ -109,8 +109,14 @@ function onItemMaterialChange(item: Record<string, unknown>) {
  * 框架落地 (ReferenceSelector projectFields + SpEL evaluator), 见
  * docs/superpowers/specs/2026-05-09-canvas-c6-reactive-default-framework.md
  */
+/**
+ * R2 fix #3: 精确匹配 trim() === '抄码', 不用 includes.
+ * 旧: includes 误报 — "抄码区限量款" / "抄码加工标识" 都会被识别为抄码品.
+ * 客户原话 "規格寫是抄码" 暗示 spec 字面值就是 "抄码", 而非含 "抄码" 子串.
+ * 后续如客户报漏匹配 (繁体 "抄碼" / 含空格), 改加 normalize: trim + lower + 简繁同义.
+ */
 function isAbacaItem(item: Record<string, unknown>): boolean {
-  return String(item.specification || '').includes('抄码');
+  return String(item.specification || '').trim() === '抄码';
 }
 
 function recalcBoxQuantity(item: Record<string, unknown>) {
@@ -539,8 +545,8 @@ function handleAiFill(params: Record<string, unknown>) {
             />
           </el-select>
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" placeholder="单价" style="width: 160px" />
-          <!-- P1-2/3: 抄码品显示 tag, 否则显示箱数 input (recalcBoxQuantity 自动填) -->
-          <div v-if="isAbacaItem(item)" :style="{ width: '140px', height: '32px', lineHeight: '32px', textAlign: 'center', color: '#e6a23c', backgroundColor: '#fdf6ec', border: '1px solid #f3d19e', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box' }">抄码品</div>
+          <!-- P1-2/3 R2 fix: el-tag 替换 inline-styled div, 跟随 Element Plus 主题 + 暗模式 -->
+          <el-tag v-if="isAbacaItem(item)" type="warning" effect="light" size="default" style="width: 140px; text-align: center;">抄码品</el-tag>
           <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" placeholder="箱" style="width: 140px" />
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1" style="width: 70px">删除</el-button>
         </div>

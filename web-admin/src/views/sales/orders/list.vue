@@ -314,8 +314,12 @@ function onProductSelect(item: Record<string, unknown>, productId: string) {
  * 双轨说明: LEGACY 实现; CANVAS 等 Phase B C-6 框架落地, 见
  * docs/superpowers/specs/2026-05-09-canvas-c6-reactive-default-framework.md
  */
+/**
+ * R2 fix #3: 精确匹配 trim() === '抄码', 不用 includes (避免误报).
+ * 与 procurement/orders/list.vue isAbacaItem 同模式 (M-1 follow-up 抽 composable).
+ */
 function isAbacaItem(item: Record<string, unknown>): boolean {
-  return String(item.specification || '').includes('抄码');
+  return String(item.specification || '').trim() === '抄码';
 }
 
 function calcBox(item: Record<string, unknown>) {
@@ -877,8 +881,8 @@ async function submitQuickPayment() {
           <el-input-number v-model="item.quantity" :min="1" style="width: 100px" @change="() => calcBox(item)" />
           <el-input v-model="item.unit" style="width: 80px" />
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
-          <!-- P1-3: 抄码品显示 tag, 否则显示箱数 input -->
-          <div v-if="isAbacaItem(item)" :style="{ width: '80px', height: '32px', lineHeight: '32px', textAlign: 'center', color: '#e6a23c', backgroundColor: '#fdf6ec', border: '1px solid #f3d19e', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }">抄码品</div>
+          <!-- P1-3 R2 fix: el-tag 替换 inline-styled div, 跟随 Element Plus 主题 -->
+          <el-tag v-if="isAbacaItem(item)" type="warning" effect="light" size="default" style="width: 80px; text-align: center;">抄码品</el-tag>
           <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
           <el-select v-model="item.taxRate" placeholder="税率" style="width: 90px" size="default">
             <el-option :value="0" label="0% 免税" />

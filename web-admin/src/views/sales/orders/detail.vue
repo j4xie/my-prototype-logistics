@@ -251,12 +251,19 @@ const financeReviewProfit = computed(() => {
   return total - Number(cost);
 });
 
+// P2-3 R2 fix: 字段隐藏期间, 始终设 null 避免无意中持久化历史值.
+// 旧逻辑预填上次拒批的 estimatedCost → 此 PR 隐藏 input 后用户看不到也清不了 →
+// 重审通过时静默把旧值再次提交 → 违反"禁止降级处理/假数据"原则.
+// 重启用此字段时改回 `order.value?.estimatedCost ? Number(...) : null`.
+const ESTIMATED_COST_ENABLED = false;
+
 function openFinanceReview(action: 'approve' | 'reject') {
   const isApprove = action === 'approve';
   financeReviewForm.value = {
     notes: '',
-    // Pre-populate with existing estimatedCost if already set (e.g. previously rejected then resubmitted)
-    estimatedCost: order.value?.estimatedCost ? Number(order.value.estimatedCost) : null,
+    estimatedCost: ESTIMATED_COST_ENABLED && order.value?.estimatedCost
+      ? Number(order.value.estimatedCost)
+      : null,
     isApprove,
   };
   financeReviewVisible.value = true;
@@ -273,7 +280,9 @@ async function submitFinanceReview() {
   try {
     const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
     const body: Record<string, unknown> = { notes: notes || '' };
-    if (isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
+    // P2-3 R2 fix: 双重防御 — 即使 form 状态被脏化 (e.g. 直接 devtools 改),
+    // ESTIMATED_COST_ENABLED=false 时也不发送, 防止静默降级.
+    if (ESTIMATED_COST_ENABLED && isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
     const res = await post(url, body);
     if (res.success) {
       ElMessage.success(`${labelText}成功`);
