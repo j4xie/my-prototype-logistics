@@ -1,0 +1,164 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "overview": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [],
+      "metricCards": null,
+      "rankings": {},
+      "charts": {},
+      "chartList": null,
+      "aiInsights": [],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T13:46:32.307181346",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "costStructure": {
+      "chartType": "PIE",
+      "title": "成本结构分析",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showPercentage": true,
+        "colors": [
+          "#5470c6",
+          "#91cc75",
+          "#fac858"
+        ]
+      },
+      "xaxisField": "category",
+      "yaxisField": "value"
+    },
+    "dateRange": {
+      "startDate": "2026-01-01",
+      "endDate": "2026-05-08",
+      "granularity": "YEAR",
+      "originalExpression": "2026-01-01 至 2026-05-08",
+      "relative": false,
+      "days": 128,
+      "valid": true
+    },
+    "generatedAt": "2026-05-08T13:46:32.312165103",
+    "profitMetrics": [
+      {
+        "metricCode": "GROSS_PROFIT",
+        "metricName": "毛利额",
+        "value": 1129.7,
+        "formattedValue": "1,129.70",
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "销售收入减去销售成本"
+      },
+      {
+        "metricCode": "GROSS_MARGIN",
+        "metricName": "毛利率",
+        "value": 10.67,
+        "formattedValue": "10.67%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "RED",
+        "dimensionValue": null,
+        "description": "毛利额占销售收入的比例"
+      },
+      {
+        "metricCode": "NET_PROFIT",
+        "metricName": "净利润",
+        "value": 1670.5,
+        "formattedValue": "1,670.50",
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "毛利减去各项费用后的利润"
+      },
+      {
+        "metricCode": "NET_MARGIN",
+        "metricName": "净利率",
+        "value": 15.78,
+        "formattedValue": "15.78%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "净利润占销售收入的比例"
+      },
+      {
+        "metricCode": "ROI",
+        "metricName": "投入产出比",
+        "value": 11.95,
+        "formattedValue": "11.95%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "YELLOW",
+        "dimensionValue": null,
+        "description": "毛利额与成本的比率"
+      }
+    ],
+    "receivableAging": {
+      "chartType": "BAR",
+      "title": "应收账款账龄分布",
+      "seriesField": null,
+      "data": [
+        {
+          "agingBucket": "0-30天",
+          "amount": 4.0,
+          "percentage": 100.0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "agingBucket": "31-60天",
+          "amount": 0,
+          "percentage": 0.0,
+          "alertLevel": "YELLOW"
+        },
+        {
+          "agingBucket": "61-90天",
+          "amount": 0,
+          "percentage": 0.0,
+          "alertLevel": "YELLOW"
+        },
+        {
+          "agingBucket": "90天以上",
+          "amount": 0,
+          "percentage": 0.0,
+          "alertLevel": "RED"
+        }
+      ],
+      "options": {
+        "colors": [
+          "#91cc75",
+          "#fac858",
+          "#ee6666",
+          "#c23531"
+        ],
+        "showAlert": true
+      },
+      "xaxisField": "agingBucket",
+      "yaxisField": "amount"
+    }
+  },
+  "timestamp": "2026-05-08T13:46:32.312213015",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

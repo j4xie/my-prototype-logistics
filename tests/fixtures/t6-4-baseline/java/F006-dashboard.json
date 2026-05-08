@@ -1,0 +1,5800 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "period": "year",
+    "startDate": "2026-01-01",
+    "endDate": "2026-12-31",
+    "sales": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [],
+      "metricCards": null,
+      "rankings": {},
+      "charts": {
+        "department_trend": {
+          "chartType": "LINE",
+          "title": "部门销售趋势对比",
+          "seriesField": null,
+          "data": [],
+          "options": null,
+          "xaxisField": null,
+          "yaxisField": null
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "YELLOW",
+          "category": "数据状态",
+          "message": "当前时间范围内暂无销售数据",
+          "relatedEntity": null,
+          "actionSuggestion": "请上传销售数据或调整时间范围"
+        },
+        {
+          "level": "YELLOW",
+          "category": "数据状态",
+          "message": "当前时间范围内暂无销售数据",
+          "relatedEntity": null,
+          "actionSuggestion": "请上传销售数据或调整时间范围"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "请先上传销售数据以开始分析"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T13:46:32.89464464",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "finance": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [],
+      "metricCards": null,
+      "rankings": {},
+      "charts": {},
+      "chartList": null,
+      "aiInsights": [],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T13:46:32.902645222",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "inventory": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [
+        {
+          "key": "INVENTORY_VALUE",
+          "title": "库存总值",
+          "value": "141,926.54",
+          "rawValue": 141926.54,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "BATCH_COUNT",
+          "title": "库存批次",
+          "value": "3",
+          "rawValue": 3,
+          "unit": "批",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "TURNOVER_RATE",
+          "title": "库存周转率",
+          "value": "0.0 次/年",
+          "rawValue": 0.0,
+          "unit": "次/年",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "red",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "EXPIRY_RISK_RATE",
+          "title": "临期风险率",
+          "value": "0.0%",
+          "rawValue": 0.0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "30天内临期库存占比",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "HEALTH_SCORE",
+          "title": "库存健康评分",
+          "value": "80 分",
+          "rawValue": 80,
+          "unit": "分",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "满分100分",
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
+      "metricCards": null,
+      "rankings": {
+        "expiring": [],
+        "aging": []
+      },
+      "charts": {
+        "库龄分布": {
+          "chartType": "BAR",
+          "title": "库龄分布",
+          "seriesField": null,
+          "data": [
+            {
+              "aging": "0-30天",
+              "value": 141926.54
+            },
+            {
+              "aging": "31-60天",
+              "value": 0.0
+            },
+            {
+              "aging": "61-90天",
+              "value": 0.0
+            },
+            {
+              "aging": "90天以上",
+              "value": 0.0
+            }
+          ],
+          "options": {
+            "showDataLabels": true,
+            "colors": [
+              "#52c41a",
+              "#1890ff",
+              "#faad14",
+              "#ff4d4f"
+            ]
+          },
+          "xaxisField": "aging",
+          "yaxisField": "value"
+        },
+        "临期风险分布": {
+          "chartType": "PIE",
+          "title": "临期风险分布",
+          "seriesField": null,
+          "data": [
+            {
+              "status": "正常（>30天）",
+              "value": 3900.0
+            },
+            {
+              "status": "关注（15-30天）",
+              "value": 0.0
+            },
+            {
+              "status": "预警（7-15天）",
+              "value": 0.0
+            },
+            {
+              "status": "紧急（<7天）",
+              "value": 0.0
+            },
+            {
+              "status": "无保质期",
+              "value": 138026.54
+            }
+          ],
+          "options": {
+            "showPercentage": true,
+            "showLegend": true,
+            "colors": [
+              "#52c41a",
+              "#faad14",
+              "#ff7a45",
+              "#ff4d4f",
+              "#8c8c8c"
+            ]
+          },
+          "xaxisField": "status",
+          "yaxisField": "value"
+        },
+        "材料类别库存占比": {
+          "chartType": "PIE",
+          "title": "材料类别库存占比",
+          "seriesField": null,
+          "data": [
+            {
+              "category": "RMT_1777690110201",
+              "value": 138026.54
+            },
+            {
+              "category": "RMT_1777441647274",
+              "value": 3900.0
+            }
+          ],
+          "options": {
+            "showPercentage": true,
+            "showLegend": true
+          },
+          "xaxisField": "category",
+          "yaxisField": "value"
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "RED",
+          "category": "周转效率",
+          "message": "库存周转率仅 0.0 次/年，库存积压严重",
+          "relatedEntity": null,
+          "actionSuggestion": "建议减少采购量，加快库存消化，优化安全库存设置"
+        },
+        {
+          "level": "GREEN",
+          "category": "整体健康",
+          "message": "库存健康评分 80 分，状况良好",
+          "relatedEntity": null,
+          "actionSuggestion": "继续保持当前库存管理策略"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "库存周转率偏低，建议优化安全库存设置，减少不必要的采购"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T13:46:32.905707468",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "production": {
+      "period": "CUSTOM",
+      "startDate": "2026-01-01",
+      "endDate": "2026-12-31",
+      "kpiCards": [
+        {
+          "key": "OEE",
+          "title": "综合设备效率 (OEE)",
+          "value": "79.5%",
+          "rawValue": 79.54,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "yellow",
+          "compareText": null,
+          "description": "OEE = 可用性 x 性能 x 质量",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "AVAILABILITY",
+          "title": "可用性",
+          "value": "91.4%",
+          "rawValue": 91.4,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "实际运行时间 / 计划运行时间",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "PERFORMANCE",
+          "title": "性能",
+          "value": "89.6%",
+          "rawValue": 89.61,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "yellow",
+          "compareText": null,
+          "description": "实际产量 / 理论产量",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "QUALITY_RATE",
+          "title": "质量率",
+          "value": "97.1%",
+          "rawValue": 97.12,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "yellow",
+          "compareText": null,
+          "description": "良品数 / 总产量",
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
+      "metricCards": null,
+      "rankings": {
+        "equipment": [
+          {
+            "rank": 1,
+            "name": "设备3",
+            "value": 79.71,
+            "target": 85,
+            "completionRate": 93.78,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 2,
+            "name": "设备4",
+            "value": 79.67,
+            "target": 85,
+            "completionRate": 93.73,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 3,
+            "name": "设备1",
+            "value": 79.48,
+            "target": 85,
+            "completionRate": 93.51,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 4,
+            "name": "设备5",
+            "value": 79.47,
+            "target": 85,
+            "completionRate": 93.5,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 5,
+            "name": "设备2",
+            "value": 79.4,
+            "target": 85,
+            "completionRate": 93.41,
+            "alertLevel": "YELLOW"
+          }
+        ],
+        "production_line": [
+          {
+            "rank": 1,
+            "name": "产线C",
+            "value": 94.8,
+            "target": 100,
+            "completionRate": 94.8,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 2,
+            "name": "产线D",
+            "value": 94.69,
+            "target": 100,
+            "completionRate": 94.69,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 3,
+            "name": "产线A",
+            "value": 94.69,
+            "target": 100,
+            "completionRate": 94.69,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 4,
+            "name": "产线B",
+            "value": 94.41,
+            "target": 100,
+            "completionRate": 94.41,
+            "alertLevel": "GREEN"
+          }
+        ]
+      },
+      "charts": {
+        "oee_trend": {
+          "chartType": "LINE",
+          "title": "OEE 趋势",
+          "seriesField": "metric",
+          "data": [
+            {
+              "date": "2026-01-01",
+              "oee": 81.77,
+              "availability": 91.94,
+              "performance": 91.58,
+              "quality": 97.11
+            },
+            {
+              "date": "2026-01-02",
+              "oee": 78.72,
+              "availability": 91.91,
+              "performance": 88.16,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-01-03",
+              "oee": 80.28,
+              "availability": 92.84,
+              "performance": 89.28,
+              "quality": 96.86
+            },
+            {
+              "date": "2026-01-04",
+              "oee": 78.34,
+              "availability": 92.39,
+              "performance": 87.36,
+              "quality": 97.06
+            },
+            {
+              "date": "2026-01-05",
+              "oee": 83.84,
+              "availability": 94.25,
+              "performance": 91.83,
+              "quality": 96.87
+            },
+            {
+              "date": "2026-01-06",
+              "oee": 81.38,
+              "availability": 92.03,
+              "performance": 90.97,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-01-07",
+              "oee": 80.56,
+              "availability": 92.01,
+              "performance": 90.0,
+              "quality": 97.29
+            },
+            {
+              "date": "2026-01-08",
+              "oee": 82.24,
+              "availability": 91.9,
+              "performance": 91.16,
+              "quality": 98.17
+            },
+            {
+              "date": "2026-01-09",
+              "oee": 78.56,
+              "availability": 92.0,
+              "performance": 87.82,
+              "quality": 97.24
+            },
+            {
+              "date": "2026-01-10",
+              "oee": 80.19,
+              "availability": 91.78,
+              "performance": 89.96,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-01-11",
+              "oee": 78.86,
+              "availability": 91.53,
+              "performance": 88.69,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-01-12",
+              "oee": 80.07,
+              "availability": 91.89,
+              "performance": 89.14,
+              "quality": 97.75
+            },
+            {
+              "date": "2026-01-13",
+              "oee": 80.16,
+              "availability": 91.28,
+              "performance": 90.34,
+              "quality": 97.21
+            },
+            {
+              "date": "2026-01-14",
+              "oee": 81.18,
+              "availability": 92.05,
+              "performance": 90.43,
+              "quality": 97.52
+            },
+            {
+              "date": "2026-01-15",
+              "oee": 81.11,
+              "availability": 92.14,
+              "performance": 90.78,
+              "quality": 96.97
+            },
+            {
+              "date": "2026-01-16",
+              "oee": 81.03,
+              "availability": 93.07,
+              "performance": 89.77,
+              "quality": 96.98
+            },
+            {
+              "date": "2026-01-17",
+              "oee": 77.37,
+              "availability": 90.52,
+              "performance": 88.01,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-01-18",
+              "oee": 79.85,
+              "availability": 93.39,
+              "performance": 88.03,
+              "quality": 97.13
+            },
+            {
+              "date": "2026-01-19",
+              "oee": 77.93,
+              "availability": 90.73,
+              "performance": 88.74,
+              "quality": 96.79
+            },
+            {
+              "date": "2026-01-20",
+              "oee": 76.0,
+              "availability": 88.84,
+              "performance": 87.62,
+              "quality": 97.63
+            },
+            {
+              "date": "2026-01-21",
+              "oee": 80.74,
+              "availability": 91.52,
+              "performance": 90.85,
+              "quality": 97.11
+            },
+            {
+              "date": "2026-01-22",
+              "oee": 80.71,
+              "availability": 92.2,
+              "performance": 90.34,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-01-23",
+              "oee": 78.26,
+              "availability": 90.4,
+              "performance": 88.59,
+              "quality": 97.72
+            },
+            {
+              "date": "2026-01-24",
+              "oee": 78.86,
+              "availability": 92.09,
+              "performance": 88.35,
+              "quality": 96.92
+            },
+            {
+              "date": "2026-01-25",
+              "oee": 79.45,
+              "availability": 91.4,
+              "performance": 89.38,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-01-26",
+              "oee": 84.13,
+              "availability": 92.33,
+              "performance": 93.52,
+              "quality": 97.43
+            },
+            {
+              "date": "2026-01-27",
+              "oee": 78.59,
+              "availability": 93.19,
+              "performance": 87.17,
+              "quality": 96.74
+            },
+            {
+              "date": "2026-01-28",
+              "oee": 78.21,
+              "availability": 92.01,
+              "performance": 87.39,
+              "quality": 97.27
+            },
+            {
+              "date": "2026-01-29",
+              "oee": 77.05,
+              "availability": 90.63,
+              "performance": 87.46,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-01-30",
+              "oee": 76.46,
+              "availability": 88.66,
+              "performance": 89.22,
+              "quality": 96.66
+            },
+            {
+              "date": "2026-01-31",
+              "oee": 80.28,
+              "availability": 91.83,
+              "performance": 89.86,
+              "quality": 97.29
+            },
+            {
+              "date": "2026-02-01",
+              "oee": 81.75,
+              "availability": 93.69,
+              "performance": 89.48,
+              "quality": 97.52
+            },
+            {
+              "date": "2026-02-02",
+              "oee": 79.4,
+              "availability": 91.45,
+              "performance": 89.42,
+              "quality": 97.1
+            },
+            {
+              "date": "2026-02-03",
+              "oee": 80.29,
+              "availability": 93.14,
+              "performance": 89.15,
+              "quality": 96.7
+            },
+            {
+              "date": "2026-02-04",
+              "oee": 78.34,
+              "availability": 89.74,
+              "performance": 90.17,
+              "quality": 96.81
+            },
+            {
+              "date": "2026-02-05",
+              "oee": 83.31,
+              "availability": 92.25,
+              "performance": 92.94,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-02-06",
+              "oee": 80.34,
+              "availability": 92.82,
+              "performance": 88.98,
+              "quality": 97.27
+            },
+            {
+              "date": "2026-02-07",
+              "oee": 80.87,
+              "availability": 91.74,
+              "performance": 90.23,
+              "quality": 97.7
+            },
+            {
+              "date": "2026-02-08",
+              "oee": 77.58,
+              "availability": 89.58,
+              "performance": 89.26,
+              "quality": 97.03
+            },
+            {
+              "date": "2026-02-09",
+              "oee": 81.37,
+              "availability": 91.88,
+              "performance": 90.7,
+              "quality": 97.64
+            },
+            {
+              "date": "2026-02-10",
+              "oee": 79.18,
+              "availability": 89.61,
+              "performance": 90.63,
+              "quality": 97.5
+            },
+            {
+              "date": "2026-02-11",
+              "oee": 78.41,
+              "availability": 92.59,
+              "performance": 87.29,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-02-12",
+              "oee": 77.04,
+              "availability": 89.76,
+              "performance": 88.81,
+              "quality": 96.64
+            },
+            {
+              "date": "2026-02-13",
+              "oee": 80.62,
+              "availability": 90.71,
+              "performance": 90.9,
+              "quality": 97.78
+            },
+            {
+              "date": "2026-02-14",
+              "oee": 79.48,
+              "availability": 92.52,
+              "performance": 88.76,
+              "quality": 96.79
+            },
+            {
+              "date": "2026-02-15",
+              "oee": 79.3,
+              "availability": 91.8,
+              "performance": 89.37,
+              "quality": 96.66
+            },
+            {
+              "date": "2026-02-16",
+              "oee": 80.97,
+              "availability": 91.35,
+              "performance": 91.13,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-02-17",
+              "oee": 80.92,
+              "availability": 90.75,
+              "performance": 91.76,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-02-18",
+              "oee": 81.21,
+              "availability": 90.47,
+              "performance": 92.17,
+              "quality": 97.39
+            },
+            {
+              "date": "2026-02-19",
+              "oee": 78.39,
+              "availability": 91.9,
+              "performance": 87.88,
+              "quality": 97.06
+            },
+            {
+              "date": "2026-02-20",
+              "oee": 78.84,
+              "availability": 92.72,
+              "performance": 87.2,
+              "quality": 97.51
+            },
+            {
+              "date": "2026-02-21",
+              "oee": 79.7,
+              "availability": 90.95,
+              "performance": 90.69,
+              "quality": 96.63
+            },
+            {
+              "date": "2026-02-22",
+              "oee": 81.77,
+              "availability": 91.79,
+              "performance": 91.72,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-02-23",
+              "oee": 81.3,
+              "availability": 91.75,
+              "performance": 91.72,
+              "quality": 96.61
+            },
+            {
+              "date": "2026-02-24",
+              "oee": 82.17,
+              "availability": 93.33,
+              "performance": 90.76,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-02-25",
+              "oee": 77.72,
+              "availability": 90.1,
+              "performance": 89.13,
+              "quality": 96.78
+            },
+            {
+              "date": "2026-02-26",
+              "oee": 79.24,
+              "availability": 90.26,
+              "performance": 90.39,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-02-27",
+              "oee": 79.45,
+              "availability": 91.94,
+              "performance": 88.53,
+              "quality": 97.61
+            },
+            {
+              "date": "2026-02-28",
+              "oee": 81.17,
+              "availability": 92.31,
+              "performance": 90.6,
+              "quality": 97.05
+            },
+            {
+              "date": "2026-03-01",
+              "oee": 81.02,
+              "availability": 90.39,
+              "performance": 91.96,
+              "quality": 97.47
+            },
+            {
+              "date": "2026-03-02",
+              "oee": 77.87,
+              "availability": 90.9,
+              "performance": 88.29,
+              "quality": 97.03
+            },
+            {
+              "date": "2026-03-03",
+              "oee": 79.23,
+              "availability": 90.99,
+              "performance": 89.42,
+              "quality": 97.38
+            },
+            {
+              "date": "2026-03-04",
+              "oee": 75.77,
+              "availability": 88.66,
+              "performance": 87.73,
+              "quality": 97.42
+            },
+            {
+              "date": "2026-03-05",
+              "oee": 81.93,
+              "availability": 91.34,
+              "performance": 92.04,
+              "quality": 97.45
+            },
+            {
+              "date": "2026-03-06",
+              "oee": 80.06,
+              "availability": 90.29,
+              "performance": 91.68,
+              "quality": 96.72
+            },
+            {
+              "date": "2026-03-07",
+              "oee": 77.57,
+              "availability": 90.29,
+              "performance": 88.89,
+              "quality": 96.65
+            },
+            {
+              "date": "2026-03-08",
+              "oee": 79.74,
+              "availability": 90.97,
+              "performance": 90.63,
+              "quality": 96.72
+            },
+            {
+              "date": "2026-03-09",
+              "oee": 78.71,
+              "availability": 91.31,
+              "performance": 88.68,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-03-10",
+              "oee": 79.18,
+              "availability": 88.93,
+              "performance": 91.55,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-03-11",
+              "oee": 77.73,
+              "availability": 90.22,
+              "performance": 88.54,
+              "quality": 97.31
+            },
+            {
+              "date": "2026-03-12",
+              "oee": 78.63,
+              "availability": 91.92,
+              "performance": 87.56,
+              "quality": 97.7
+            },
+            {
+              "date": "2026-03-13",
+              "oee": 79.81,
+              "availability": 91.5,
+              "performance": 89.73,
+              "quality": 97.21
+            },
+            {
+              "date": "2026-03-14",
+              "oee": 77.87,
+              "availability": 90.6,
+              "performance": 89.17,
+              "quality": 96.39
+            },
+            {
+              "date": "2026-03-15",
+              "oee": 79.46,
+              "availability": 91.57,
+              "performance": 89.28,
+              "quality": 97.19
+            },
+            {
+              "date": "2026-03-16",
+              "oee": 79.21,
+              "availability": 90.18,
+              "performance": 90.2,
+              "quality": 97.38
+            },
+            {
+              "date": "2026-03-17",
+              "oee": 77.79,
+              "availability": 90.04,
+              "performance": 88.72,
+              "quality": 97.38
+            },
+            {
+              "date": "2026-03-18",
+              "oee": 82.09,
+              "availability": 91.71,
+              "performance": 91.89,
+              "quality": 97.41
+            },
+            {
+              "date": "2026-03-19",
+              "oee": 78.66,
+              "availability": 91.21,
+              "performance": 89.02,
+              "quality": 96.88
+            },
+            {
+              "date": "2026-03-20",
+              "oee": 80.13,
+              "availability": 91.73,
+              "performance": 90.06,
+              "quality": 96.99
+            },
+            {
+              "date": "2026-03-21",
+              "oee": 76.68,
+              "availability": 89.17,
+              "performance": 88.54,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-03-22",
+              "oee": 79.72,
+              "availability": 92.13,
+              "performance": 89.37,
+              "quality": 96.82
+            },
+            {
+              "date": "2026-03-23",
+              "oee": 78.6,
+              "availability": 91.37,
+              "performance": 88.83,
+              "quality": 96.84
+            },
+            {
+              "date": "2026-03-24",
+              "oee": 79.59,
+              "availability": 90.14,
+              "performance": 91.12,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-03-25",
+              "oee": 76.72,
+              "availability": 91.28,
+              "performance": 86.51,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-03-26",
+              "oee": 81.82,
+              "availability": 92.78,
+              "performance": 90.89,
+              "quality": 97.03
+            },
+            {
+              "date": "2026-03-27",
+              "oee": 80.03,
+              "availability": 92.0,
+              "performance": 89.99,
+              "quality": 96.67
+            },
+            {
+              "date": "2026-03-28",
+              "oee": 78.25,
+              "availability": 91.65,
+              "performance": 88.48,
+              "quality": 96.49
+            },
+            {
+              "date": "2026-03-29",
+              "oee": 77.61,
+              "availability": 90.28,
+              "performance": 88.98,
+              "quality": 96.61
+            },
+            {
+              "date": "2026-03-30",
+              "oee": 79.22,
+              "availability": 90.8,
+              "performance": 89.54,
+              "quality": 97.44
+            },
+            {
+              "date": "2026-03-31",
+              "oee": 82.88,
+              "availability": 92.52,
+              "performance": 92.11,
+              "quality": 97.25
+            },
+            {
+              "date": "2026-04-01",
+              "oee": 78.14,
+              "availability": 91.35,
+              "performance": 88.31,
+              "quality": 96.86
+            },
+            {
+              "date": "2026-04-02",
+              "oee": 79.04,
+              "availability": 91.22,
+              "performance": 88.91,
+              "quality": 97.45
+            },
+            {
+              "date": "2026-04-03",
+              "oee": 77.35,
+              "availability": 91.45,
+              "performance": 87.7,
+              "quality": 96.44
+            },
+            {
+              "date": "2026-04-04",
+              "oee": 79.56,
+              "availability": 92.04,
+              "performance": 89.34,
+              "quality": 96.75
+            },
+            {
+              "date": "2026-04-05",
+              "oee": 78.78,
+              "availability": 90.6,
+              "performance": 89.48,
+              "quality": 97.18
+            },
+            {
+              "date": "2026-04-06",
+              "oee": 80.48,
+              "availability": 92.29,
+              "performance": 90.06,
+              "quality": 96.83
+            },
+            {
+              "date": "2026-04-07",
+              "oee": 81.14,
+              "availability": 92.61,
+              "performance": 90.31,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-04-08",
+              "oee": 81.46,
+              "availability": 91.21,
+              "performance": 92.22,
+              "quality": 96.85
+            },
+            {
+              "date": "2026-04-09",
+              "oee": 80.93,
+              "availability": 92.7,
+              "performance": 90.29,
+              "quality": 96.69
+            },
+            {
+              "date": "2026-04-10",
+              "oee": 79.07,
+              "availability": 91.58,
+              "performance": 89.26,
+              "quality": 96.73
+            },
+            {
+              "date": "2026-04-11",
+              "oee": 78.5,
+              "availability": 91.01,
+              "performance": 88.31,
+              "quality": 97.67
+            },
+            {
+              "date": "2026-04-12",
+              "oee": 79.57,
+              "availability": 92.45,
+              "performance": 88.36,
+              "quality": 97.41
+            },
+            {
+              "date": "2026-04-13",
+              "oee": 81.06,
+              "availability": 92.93,
+              "performance": 89.78,
+              "quality": 97.16
+            },
+            {
+              "date": "2026-04-14",
+              "oee": 81.52,
+              "availability": 93.97,
+              "performance": 90.04,
+              "quality": 96.35
+            },
+            {
+              "date": "2026-04-15",
+              "oee": 79.11,
+              "availability": 91.88,
+              "performance": 88.99,
+              "quality": 96.75
+            },
+            {
+              "date": "2026-04-16",
+              "oee": 80.96,
+              "availability": 93.51,
+              "performance": 88.99,
+              "quality": 97.29
+            },
+            {
+              "date": "2026-04-17",
+              "oee": 78.18,
+              "availability": 90.28,
+              "performance": 88.94,
+              "quality": 97.37
+            },
+            {
+              "date": "2026-04-18",
+              "oee": 78.7,
+              "availability": 91.53,
+              "performance": 88.43,
+              "quality": 97.23
+            },
+            {
+              "date": "2026-04-19",
+              "oee": 75.69,
+              "availability": 90.4,
+              "performance": 86.86,
+              "quality": 96.39
+            },
+            {
+              "date": "2026-04-20",
+              "oee": 79.52,
+              "availability": 91.48,
+              "performance": 89.48,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-04-21",
+              "oee": 78.47,
+              "availability": 91.12,
+              "performance": 88.29,
+              "quality": 97.54
+            },
+            {
+              "date": "2026-04-22",
+              "oee": 80.88,
+              "availability": 90.67,
+              "performance": 91.82,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-04-23",
+              "oee": 79.48,
+              "availability": 89.37,
+              "performance": 91.57,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-04-24",
+              "oee": 82.54,
+              "availability": 93.32,
+              "performance": 90.88,
+              "quality": 97.33
+            },
+            {
+              "date": "2026-04-25",
+              "oee": 79.6,
+              "availability": 90.09,
+              "performance": 90.57,
+              "quality": 97.55
+            },
+            {
+              "date": "2026-04-26",
+              "oee": 79.24,
+              "availability": 91.92,
+              "performance": 89.04,
+              "quality": 96.82
+            },
+            {
+              "date": "2026-04-27",
+              "oee": 80.11,
+              "availability": 93.49,
+              "performance": 87.89,
+              "quality": 97.5
+            },
+            {
+              "date": "2026-04-28",
+              "oee": 78.96,
+              "availability": 91.22,
+              "performance": 88.62,
+              "quality": 97.68
+            },
+            {
+              "date": "2026-04-29",
+              "oee": 80.41,
+              "availability": 90.84,
+              "performance": 91.3,
+              "quality": 96.95
+            },
+            {
+              "date": "2026-04-30",
+              "oee": 77.21,
+              "availability": 90.5,
+              "performance": 88.04,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-05-01",
+              "oee": 81.23,
+              "availability": 92.28,
+              "performance": 90.41,
+              "quality": 97.36
+            },
+            {
+              "date": "2026-05-02",
+              "oee": 79.5,
+              "availability": 91.26,
+              "performance": 89.97,
+              "quality": 96.82
+            },
+            {
+              "date": "2026-05-03",
+              "oee": 76.44,
+              "availability": 89.65,
+              "performance": 87.52,
+              "quality": 97.42
+            },
+            {
+              "date": "2026-05-04",
+              "oee": 78.43,
+              "availability": 90.24,
+              "performance": 89.7,
+              "quality": 96.89
+            },
+            {
+              "date": "2026-05-05",
+              "oee": 78.65,
+              "availability": 89.71,
+              "performance": 90.3,
+              "quality": 97.09
+            },
+            {
+              "date": "2026-05-06",
+              "oee": 80.84,
+              "availability": 92.14,
+              "performance": 90.23,
+              "quality": 97.24
+            },
+            {
+              "date": "2026-05-07",
+              "oee": 81.0,
+              "availability": 90.42,
+              "performance": 92.18,
+              "quality": 97.18
+            },
+            {
+              "date": "2026-05-08",
+              "oee": 84.59,
+              "availability": 94.02,
+              "performance": 92.5,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-05-09",
+              "oee": 80.37,
+              "availability": 92.57,
+              "performance": 89.8,
+              "quality": 96.68
+            },
+            {
+              "date": "2026-05-10",
+              "oee": 75.66,
+              "availability": 88.19,
+              "performance": 88.26,
+              "quality": 97.21
+            },
+            {
+              "date": "2026-05-11",
+              "oee": 79.45,
+              "availability": 90.48,
+              "performance": 90.69,
+              "quality": 96.82
+            },
+            {
+              "date": "2026-05-12",
+              "oee": 81.72,
+              "availability": 93.12,
+              "performance": 90.78,
+              "quality": 96.67
+            },
+            {
+              "date": "2026-05-13",
+              "oee": 80.01,
+              "availability": 91.37,
+              "performance": 89.45,
+              "quality": 97.89
+            },
+            {
+              "date": "2026-05-14",
+              "oee": 79.23,
+              "availability": 92.98,
+              "performance": 87.49,
+              "quality": 97.39
+            },
+            {
+              "date": "2026-05-15",
+              "oee": 79.43,
+              "availability": 91.21,
+              "performance": 89.15,
+              "quality": 97.68
+            },
+            {
+              "date": "2026-05-16",
+              "oee": 81.32,
+              "availability": 91.97,
+              "performance": 90.24,
+              "quality": 97.98
+            },
+            {
+              "date": "2026-05-17",
+              "oee": 78.83,
+              "availability": 90.48,
+              "performance": 89.8,
+              "quality": 97.02
+            },
+            {
+              "date": "2026-05-18",
+              "oee": 80.21,
+              "availability": 92.12,
+              "performance": 89.87,
+              "quality": 96.88
+            },
+            {
+              "date": "2026-05-19",
+              "oee": 79.61,
+              "availability": 91.3,
+              "performance": 89.81,
+              "quality": 97.09
+            },
+            {
+              "date": "2026-05-20",
+              "oee": 76.9,
+              "availability": 88.12,
+              "performance": 90.35,
+              "quality": 96.59
+            },
+            {
+              "date": "2026-05-21",
+              "oee": 79.6,
+              "availability": 92.41,
+              "performance": 88.85,
+              "quality": 96.95
+            },
+            {
+              "date": "2026-05-22",
+              "oee": 79.82,
+              "availability": 91.77,
+              "performance": 89.49,
+              "quality": 97.19
+            },
+            {
+              "date": "2026-05-23",
+              "oee": 80.23,
+              "availability": 92.42,
+              "performance": 90.02,
+              "quality": 96.43
+            },
+            {
+              "date": "2026-05-24",
+              "oee": 80.01,
+              "availability": 91.32,
+              "performance": 90.05,
+              "quality": 97.3
+            },
+            {
+              "date": "2026-05-25",
+              "oee": 83.25,
+              "availability": 92.68,
+              "performance": 92.72,
+              "quality": 96.88
+            },
+            {
+              "date": "2026-05-26",
+              "oee": 79.95,
+              "availability": 91.73,
+              "performance": 89.69,
+              "quality": 97.18
+            },
+            {
+              "date": "2026-05-27",
+              "oee": 78.72,
+              "availability": 90.31,
+              "performance": 89.52,
+              "quality": 97.37
+            },
+            {
+              "date": "2026-05-28",
+              "oee": 77.85,
+              "availability": 89.15,
+              "performance": 90.02,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-05-29",
+              "oee": 83.99,
+              "availability": 93.69,
+              "performance": 92.68,
+              "quality": 96.73
+            },
+            {
+              "date": "2026-05-30",
+              "oee": 80.99,
+              "availability": 91.25,
+              "performance": 91.31,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-05-31",
+              "oee": 79.27,
+              "availability": 91.8,
+              "performance": 88.81,
+              "quality": 97.23
+            },
+            {
+              "date": "2026-06-01",
+              "oee": 77.33,
+              "availability": 90.25,
+              "performance": 87.82,
+              "quality": 97.57
+            },
+            {
+              "date": "2026-06-02",
+              "oee": 82.27,
+              "availability": 94.09,
+              "performance": 90.25,
+              "quality": 96.88
+            },
+            {
+              "date": "2026-06-03",
+              "oee": 80.72,
+              "availability": 91.4,
+              "performance": 90.7,
+              "quality": 97.37
+            },
+            {
+              "date": "2026-06-04",
+              "oee": 76.96,
+              "availability": 92.47,
+              "performance": 86.11,
+              "quality": 96.65
+            },
+            {
+              "date": "2026-06-05",
+              "oee": 78.54,
+              "availability": 90.66,
+              "performance": 89.37,
+              "quality": 96.93
+            },
+            {
+              "date": "2026-06-06",
+              "oee": 79.9,
+              "availability": 92.63,
+              "performance": 88.73,
+              "quality": 97.21
+            },
+            {
+              "date": "2026-06-07",
+              "oee": 78.28,
+              "availability": 89.45,
+              "performance": 90.01,
+              "quality": 97.23
+            },
+            {
+              "date": "2026-06-08",
+              "oee": 80.64,
+              "availability": 91.43,
+              "performance": 90.94,
+              "quality": 96.99
+            },
+            {
+              "date": "2026-06-09",
+              "oee": 79.15,
+              "availability": 90.17,
+              "performance": 89.87,
+              "quality": 97.67
+            },
+            {
+              "date": "2026-06-10",
+              "oee": 81.82,
+              "availability": 92.79,
+              "performance": 90.89,
+              "quality": 97.02
+            },
+            {
+              "date": "2026-06-11",
+              "oee": 78.69,
+              "availability": 91.08,
+              "performance": 88.86,
+              "quality": 97.23
+            },
+            {
+              "date": "2026-06-12",
+              "oee": 80.57,
+              "availability": 91.33,
+              "performance": 90.82,
+              "quality": 97.13
+            },
+            {
+              "date": "2026-06-13",
+              "oee": 79.42,
+              "availability": 91.37,
+              "performance": 89.67,
+              "quality": 96.94
+            },
+            {
+              "date": "2026-06-14",
+              "oee": 78.98,
+              "availability": 91.27,
+              "performance": 88.83,
+              "quality": 97.42
+            },
+            {
+              "date": "2026-06-15",
+              "oee": 80.13,
+              "availability": 91.17,
+              "performance": 90.48,
+              "quality": 97.14
+            },
+            {
+              "date": "2026-06-16",
+              "oee": 79.23,
+              "availability": 91.33,
+              "performance": 89.46,
+              "quality": 96.97
+            },
+            {
+              "date": "2026-06-17",
+              "oee": 83.18,
+              "availability": 92.14,
+              "performance": 92.86,
+              "quality": 97.22
+            },
+            {
+              "date": "2026-06-18",
+              "oee": 82.11,
+              "availability": 94.17,
+              "performance": 89.62,
+              "quality": 97.29
+            },
+            {
+              "date": "2026-06-19",
+              "oee": 80.15,
+              "availability": 92.19,
+              "performance": 89.33,
+              "quality": 97.33
+            },
+            {
+              "date": "2026-06-20",
+              "oee": 79.15,
+              "availability": 92.32,
+              "performance": 88.27,
+              "quality": 97.13
+            },
+            {
+              "date": "2026-06-21",
+              "oee": 80.24,
+              "availability": 92.22,
+              "performance": 89.79,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-06-22",
+              "oee": 77.21,
+              "availability": 89.08,
+              "performance": 89.86,
+              "quality": 96.45
+            },
+            {
+              "date": "2026-06-23",
+              "oee": 79.62,
+              "availability": 91.17,
+              "performance": 90.01,
+              "quality": 97.02
+            },
+            {
+              "date": "2026-06-24",
+              "oee": 82.62,
+              "availability": 94.11,
+              "performance": 90.52,
+              "quality": 96.99
+            },
+            {
+              "date": "2026-06-25",
+              "oee": 79.6,
+              "availability": 90.53,
+              "performance": 90.45,
+              "quality": 97.21
+            },
+            {
+              "date": "2026-06-26",
+              "oee": 76.49,
+              "availability": 89.77,
+              "performance": 87.79,
+              "quality": 97.06
+            },
+            {
+              "date": "2026-06-27",
+              "oee": 77.68,
+              "availability": 88.97,
+              "performance": 89.84,
+              "quality": 97.19
+            },
+            {
+              "date": "2026-06-28",
+              "oee": 79.99,
+              "availability": 92.2,
+              "performance": 89.15,
+              "quality": 97.32
+            },
+            {
+              "date": "2026-06-29",
+              "oee": 80.69,
+              "availability": 93.29,
+              "performance": 89.2,
+              "quality": 96.97
+            },
+            {
+              "date": "2026-06-30",
+              "oee": 75.79,
+              "availability": 89.61,
+              "performance": 87.27,
+              "quality": 96.91
+            },
+            {
+              "date": "2026-07-01",
+              "oee": 81.17,
+              "availability": 93.64,
+              "performance": 89.05,
+              "quality": 97.34
+            },
+            {
+              "date": "2026-07-02",
+              "oee": 79.68,
+              "availability": 91.48,
+              "performance": 90.13,
+              "quality": 96.64
+            },
+            {
+              "date": "2026-07-03",
+              "oee": 82.03,
+              "availability": 92.4,
+              "performance": 90.93,
+              "quality": 97.63
+            },
+            {
+              "date": "2026-07-04",
+              "oee": 81.31,
+              "availability": 92.08,
+              "performance": 90.95,
+              "quality": 97.09
+            },
+            {
+              "date": "2026-07-05",
+              "oee": 78.93,
+              "availability": 91.26,
+              "performance": 89.16,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-07-06",
+              "oee": 80.06,
+              "availability": 93.52,
+              "performance": 88.48,
+              "quality": 96.75
+            },
+            {
+              "date": "2026-07-07",
+              "oee": 76.98,
+              "availability": 89.28,
+              "performance": 88.98,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-07-08",
+              "oee": 78.66,
+              "availability": 90.39,
+              "performance": 89.68,
+              "quality": 97.04
+            },
+            {
+              "date": "2026-07-09",
+              "oee": 82.55,
+              "availability": 91.83,
+              "performance": 92.95,
+              "quality": 96.71
+            },
+            {
+              "date": "2026-07-10",
+              "oee": 77.26,
+              "availability": 89.57,
+              "performance": 88.98,
+              "quality": 96.94
+            },
+            {
+              "date": "2026-07-11",
+              "oee": 79.98,
+              "availability": 91.45,
+              "performance": 90.14,
+              "quality": 97.03
+            },
+            {
+              "date": "2026-07-12",
+              "oee": 78.92,
+              "availability": 90.68,
+              "performance": 89.75,
+              "quality": 96.97
+            },
+            {
+              "date": "2026-07-13",
+              "oee": 77.85,
+              "availability": 91.59,
+              "performance": 88.11,
+              "quality": 96.47
+            },
+            {
+              "date": "2026-07-14",
+              "oee": 79.19,
+              "availability": 92.19,
+              "performance": 88.95,
+              "quality": 96.57
+            },
+            {
+              "date": "2026-07-15",
+              "oee": 81.57,
+              "availability": 92.58,
+              "performance": 90.81,
+              "quality": 97.02
+            },
+            {
+              "date": "2026-07-16",
+              "oee": 79.3,
+              "availability": 91.58,
+              "performance": 89.52,
+              "quality": 96.73
+            },
+            {
+              "date": "2026-07-17",
+              "oee": 76.4,
+              "availability": 89.34,
+              "performance": 88.27,
+              "quality": 96.88
+            },
+            {
+              "date": "2026-07-18",
+              "oee": 77.32,
+              "availability": 90.46,
+              "performance": 88.22,
+              "quality": 96.89
+            },
+            {
+              "date": "2026-07-19",
+              "oee": 78.23,
+              "availability": 89.14,
+              "performance": 90.33,
+              "quality": 97.16
+            },
+            {
+              "date": "2026-07-20",
+              "oee": 78.78,
+              "availability": 91.19,
+              "performance": 88.74,
+              "quality": 97.35
+            },
+            {
+              "date": "2026-07-21",
+              "oee": 83.93,
+              "availability": 93.16,
+              "performance": 92.54,
+              "quality": 97.35
+            },
+            {
+              "date": "2026-07-22",
+              "oee": 79.79,
+              "availability": 90.89,
+              "performance": 89.93,
+              "quality": 97.62
+            },
+            {
+              "date": "2026-07-23",
+              "oee": 79.76,
+              "availability": 90.11,
+              "performance": 90.81,
+              "quality": 97.47
+            },
+            {
+              "date": "2026-07-24",
+              "oee": 77.71,
+              "availability": 91.3,
+              "performance": 87.85,
+              "quality": 96.89
+            },
+            {
+              "date": "2026-07-25",
+              "oee": 77.05,
+              "availability": 88.57,
+              "performance": 89.56,
+              "quality": 97.13
+            },
+            {
+              "date": "2026-07-26",
+              "oee": 80.88,
+              "availability": 92.2,
+              "performance": 89.66,
+              "quality": 97.84
+            },
+            {
+              "date": "2026-07-27",
+              "oee": 80.24,
+              "availability": 91.54,
+              "performance": 89.93,
+              "quality": 97.47
+            },
+            {
+              "date": "2026-07-28",
+              "oee": 80.06,
+              "availability": 90.54,
+              "performance": 90.65,
+              "quality": 97.54
+            },
+            {
+              "date": "2026-07-29",
+              "oee": 77.5,
+              "availability": 90.22,
+              "performance": 88.2,
+              "quality": 97.39
+            },
+            {
+              "date": "2026-07-30",
+              "oee": 80.27,
+              "availability": 92.19,
+              "performance": 89.68,
+              "quality": 97.09
+            },
+            {
+              "date": "2026-07-31",
+              "oee": 76.97,
+              "availability": 89.14,
+              "performance": 89.36,
+              "quality": 96.63
+            },
+            {
+              "date": "2026-08-01",
+              "oee": 78.11,
+              "availability": 90.18,
+              "performance": 88.91,
+              "quality": 97.42
+            },
+            {
+              "date": "2026-08-02",
+              "oee": 76.86,
+              "availability": 88.52,
+              "performance": 89.66,
+              "quality": 96.84
+            },
+            {
+              "date": "2026-08-03",
+              "oee": 79.06,
+              "availability": 91.05,
+              "performance": 89.65,
+              "quality": 96.86
+            },
+            {
+              "date": "2026-08-04",
+              "oee": 80.72,
+              "availability": 92.07,
+              "performance": 90.39,
+              "quality": 96.99
+            },
+            {
+              "date": "2026-08-05",
+              "oee": 79.92,
+              "availability": 92.27,
+              "performance": 89.74,
+              "quality": 96.52
+            },
+            {
+              "date": "2026-08-06",
+              "oee": 79.37,
+              "availability": 91.95,
+              "performance": 88.69,
+              "quality": 97.33
+            },
+            {
+              "date": "2026-08-07",
+              "oee": 79.2,
+              "availability": 89.62,
+              "performance": 91.3,
+              "quality": 96.79
+            },
+            {
+              "date": "2026-08-08",
+              "oee": 79.45,
+              "availability": 91.88,
+              "performance": 88.72,
+              "quality": 97.46
+            },
+            {
+              "date": "2026-08-09",
+              "oee": 80.7,
+              "availability": 91.47,
+              "performance": 90.89,
+              "quality": 97.07
+            },
+            {
+              "date": "2026-08-10",
+              "oee": 79.09,
+              "availability": 90.84,
+              "performance": 89.97,
+              "quality": 96.77
+            },
+            {
+              "date": "2026-08-11",
+              "oee": 83.51,
+              "availability": 93.83,
+              "performance": 91.43,
+              "quality": 97.34
+            },
+            {
+              "date": "2026-08-12",
+              "oee": 77.73,
+              "availability": 91.35,
+              "performance": 88.09,
+              "quality": 96.6
+            },
+            {
+              "date": "2026-08-13",
+              "oee": 82.33,
+              "availability": 94.05,
+              "performance": 90.63,
+              "quality": 96.59
+            },
+            {
+              "date": "2026-08-14",
+              "oee": 79.89,
+              "availability": 91.75,
+              "performance": 89.82,
+              "quality": 96.94
+            },
+            {
+              "date": "2026-08-15",
+              "oee": 79.98,
+              "availability": 92.25,
+              "performance": 88.96,
+              "quality": 97.46
+            },
+            {
+              "date": "2026-08-16",
+              "oee": 79.85,
+              "availability": 91.49,
+              "performance": 89.3,
+              "quality": 97.73
+            },
+            {
+              "date": "2026-08-17",
+              "oee": 79.97,
+              "availability": 91.19,
+              "performance": 90.08,
+              "quality": 97.35
+            },
+            {
+              "date": "2026-08-18",
+              "oee": 77.7,
+              "availability": 90.44,
+              "performance": 88.43,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-08-19",
+              "oee": 81.29,
+              "availability": 92.55,
+              "performance": 90.36,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-08-20",
+              "oee": 80.59,
+              "availability": 92.74,
+              "performance": 89.4,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-08-21",
+              "oee": 79.87,
+              "availability": 90.37,
+              "performance": 90.61,
+              "quality": 97.54
+            },
+            {
+              "date": "2026-08-22",
+              "oee": 77.83,
+              "availability": 90.0,
+              "performance": 89.15,
+              "quality": 97.0
+            },
+            {
+              "date": "2026-08-23",
+              "oee": 79.64,
+              "availability": 90.29,
+              "performance": 90.64,
+              "quality": 97.31
+            },
+            {
+              "date": "2026-08-24",
+              "oee": 81.09,
+              "availability": 91.7,
+              "performance": 90.8,
+              "quality": 97.39
+            },
+            {
+              "date": "2026-08-25",
+              "oee": 80.05,
+              "availability": 92.04,
+              "performance": 89.84,
+              "quality": 96.81
+            },
+            {
+              "date": "2026-08-26",
+              "oee": 79.06,
+              "availability": 91.88,
+              "performance": 88.64,
+              "quality": 97.07
+            },
+            {
+              "date": "2026-08-27",
+              "oee": 79.37,
+              "availability": 90.49,
+              "performance": 89.96,
+              "quality": 97.5
+            },
+            {
+              "date": "2026-08-28",
+              "oee": 82.46,
+              "availability": 93.03,
+              "performance": 91.15,
+              "quality": 97.24
+            },
+            {
+              "date": "2026-08-29",
+              "oee": 78.22,
+              "availability": 90.3,
+              "performance": 89.44,
+              "quality": 96.85
+            },
+            {
+              "date": "2026-08-30",
+              "oee": 78.4,
+              "availability": 91.26,
+              "performance": 88.38,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-08-31",
+              "oee": 78.79,
+              "availability": 91.18,
+              "performance": 89.51,
+              "quality": 96.54
+            },
+            {
+              "date": "2026-09-01",
+              "oee": 80.99,
+              "availability": 91.81,
+              "performance": 90.72,
+              "quality": 97.24
+            },
+            {
+              "date": "2026-09-02",
+              "oee": 79.14,
+              "availability": 91.73,
+              "performance": 88.96,
+              "quality": 96.98
+            },
+            {
+              "date": "2026-09-03",
+              "oee": 79.32,
+              "availability": 91.01,
+              "performance": 89.24,
+              "quality": 97.66
+            },
+            {
+              "date": "2026-09-04",
+              "oee": 77.76,
+              "availability": 90.52,
+              "performance": 88.65,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-09-05",
+              "oee": 80.03,
+              "availability": 91.22,
+              "performance": 90.48,
+              "quality": 96.96
+            },
+            {
+              "date": "2026-09-06",
+              "oee": 80.15,
+              "availability": 92.67,
+              "performance": 88.79,
+              "quality": 97.41
+            },
+            {
+              "date": "2026-09-07",
+              "oee": 78.09,
+              "availability": 88.63,
+              "performance": 90.59,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-09-08",
+              "oee": 81.19,
+              "availability": 92.47,
+              "performance": 90.68,
+              "quality": 96.83
+            },
+            {
+              "date": "2026-09-09",
+              "oee": 77.34,
+              "availability": 88.68,
+              "performance": 89.19,
+              "quality": 97.78
+            },
+            {
+              "date": "2026-09-10",
+              "oee": 77.35,
+              "availability": 91.91,
+              "performance": 86.98,
+              "quality": 96.75
+            },
+            {
+              "date": "2026-09-11",
+              "oee": 79.02,
+              "availability": 91.02,
+              "performance": 89.06,
+              "quality": 97.48
+            },
+            {
+              "date": "2026-09-12",
+              "oee": 80.49,
+              "availability": 92.1,
+              "performance": 89.53,
+              "quality": 97.62
+            },
+            {
+              "date": "2026-09-13",
+              "oee": 77.71,
+              "availability": 89.47,
+              "performance": 89.29,
+              "quality": 97.28
+            },
+            {
+              "date": "2026-09-14",
+              "oee": 80.37,
+              "availability": 89.63,
+              "performance": 91.93,
+              "quality": 97.54
+            },
+            {
+              "date": "2026-09-15",
+              "oee": 80.72,
+              "availability": 92.17,
+              "performance": 90.01,
+              "quality": 97.3
+            },
+            {
+              "date": "2026-09-16",
+              "oee": 81.51,
+              "availability": 92.89,
+              "performance": 90.24,
+              "quality": 97.24
+            },
+            {
+              "date": "2026-09-17",
+              "oee": 81.85,
+              "availability": 92.32,
+              "performance": 91.68,
+              "quality": 96.71
+            },
+            {
+              "date": "2026-09-18",
+              "oee": 79.55,
+              "availability": 92.01,
+              "performance": 89.06,
+              "quality": 97.08
+            },
+            {
+              "date": "2026-09-19",
+              "oee": 77.77,
+              "availability": 91.68,
+              "performance": 87.06,
+              "quality": 97.43
+            },
+            {
+              "date": "2026-09-20",
+              "oee": 79.05,
+              "availability": 92.48,
+              "performance": 88.01,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-09-21",
+              "oee": 76.44,
+              "availability": 90.93,
+              "performance": 86.53,
+              "quality": 97.15
+            },
+            {
+              "date": "2026-09-22",
+              "oee": 81.24,
+              "availability": 91.26,
+              "performance": 91.88,
+              "quality": 96.89
+            },
+            {
+              "date": "2026-09-23",
+              "oee": 78.27,
+              "availability": 92.22,
+              "performance": 87.35,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-09-24",
+              "oee": 79.89,
+              "availability": 93.76,
+              "performance": 87.6,
+              "quality": 97.27
+            },
+            {
+              "date": "2026-09-25",
+              "oee": 74.23,
+              "availability": 88.49,
+              "performance": 86.86,
+              "quality": 96.57
+            },
+            {
+              "date": "2026-09-26",
+              "oee": 78.62,
+              "availability": 91.64,
+              "performance": 88.08,
+              "quality": 97.4
+            },
+            {
+              "date": "2026-09-27",
+              "oee": 78.87,
+              "availability": 89.96,
+              "performance": 90.22,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-09-28",
+              "oee": 77.72,
+              "availability": 89.5,
+              "performance": 89.6,
+              "quality": 96.92
+            },
+            {
+              "date": "2026-09-29",
+              "oee": 80.56,
+              "availability": 89.86,
+              "performance": 92.38,
+              "quality": 97.04
+            },
+            {
+              "date": "2026-09-30",
+              "oee": 77.58,
+              "availability": 90.83,
+              "performance": 88.37,
+              "quality": 96.65
+            },
+            {
+              "date": "2026-10-01",
+              "oee": 77.82,
+              "availability": 91.52,
+              "performance": 87.55,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-10-02",
+              "oee": 76.13,
+              "availability": 89.14,
+              "performance": 87.78,
+              "quality": 97.29
+            },
+            {
+              "date": "2026-10-03",
+              "oee": 81.24,
+              "availability": 91.69,
+              "performance": 90.99,
+              "quality": 97.38
+            },
+            {
+              "date": "2026-10-04",
+              "oee": 82.43,
+              "availability": 93.85,
+              "performance": 90.59,
+              "quality": 96.95
+            },
+            {
+              "date": "2026-10-05",
+              "oee": 77.54,
+              "availability": 91.68,
+              "performance": 87.23,
+              "quality": 96.96
+            },
+            {
+              "date": "2026-10-06",
+              "oee": 80.33,
+              "availability": 92.22,
+              "performance": 89.76,
+              "quality": 97.04
+            },
+            {
+              "date": "2026-10-07",
+              "oee": 78.35,
+              "availability": 89.45,
+              "performance": 89.97,
+              "quality": 97.35
+            },
+            {
+              "date": "2026-10-08",
+              "oee": 81.31,
+              "availability": 92.3,
+              "performance": 90.06,
+              "quality": 97.82
+            },
+            {
+              "date": "2026-10-09",
+              "oee": 78.97,
+              "availability": 90.37,
+              "performance": 90.04,
+              "quality": 97.05
+            },
+            {
+              "date": "2026-10-10",
+              "oee": 76.78,
+              "availability": 90.25,
+              "performance": 87.96,
+              "quality": 96.72
+            },
+            {
+              "date": "2026-10-11",
+              "oee": 81.65,
+              "availability": 93.34,
+              "performance": 90.02,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-10-12",
+              "oee": 77.88,
+              "availability": 89.76,
+              "performance": 89.37,
+              "quality": 97.09
+            },
+            {
+              "date": "2026-10-13",
+              "oee": 78.28,
+              "availability": 91.03,
+              "performance": 88.35,
+              "quality": 97.33
+            },
+            {
+              "date": "2026-10-14",
+              "oee": 80.64,
+              "availability": 91.86,
+              "performance": 90.53,
+              "quality": 96.97
+            },
+            {
+              "date": "2026-10-15",
+              "oee": 79.05,
+              "availability": 91.34,
+              "performance": 89.04,
+              "quality": 97.2
+            },
+            {
+              "date": "2026-10-16",
+              "oee": 82.37,
+              "availability": 94.02,
+              "performance": 89.99,
+              "quality": 97.35
+            },
+            {
+              "date": "2026-10-17",
+              "oee": 80.04,
+              "availability": 90.48,
+              "performance": 90.54,
+              "quality": 97.7
+            },
+            {
+              "date": "2026-10-18",
+              "oee": 78.16,
+              "availability": 90.75,
+              "performance": 88.78,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-10-19",
+              "oee": 78.42,
+              "availability": 90.79,
+              "performance": 88.54,
+              "quality": 97.55
+            },
+            {
+              "date": "2026-10-20",
+              "oee": 80.0,
+              "availability": 91.71,
+              "performance": 89.6,
+              "quality": 97.36
+            },
+            {
+              "date": "2026-10-21",
+              "oee": 79.87,
+              "availability": 92.14,
+              "performance": 89.53,
+              "quality": 96.82
+            },
+            {
+              "date": "2026-10-22",
+              "oee": 78.56,
+              "availability": 91.03,
+              "performance": 88.86,
+              "quality": 97.12
+            },
+            {
+              "date": "2026-10-23",
+              "oee": 78.9,
+              "availability": 92.83,
+              "performance": 87.77,
+              "quality": 96.84
+            },
+            {
+              "date": "2026-10-24",
+              "oee": 80.39,
+              "availability": 92.77,
+              "performance": 89.18,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-10-25",
+              "oee": 80.85,
+              "availability": 91.43,
+              "performance": 91.36,
+              "quality": 96.79
+            },
+            {
+              "date": "2026-10-26",
+              "oee": 80.88,
+              "availability": 91.73,
+              "performance": 90.3,
+              "quality": 97.64
+            },
+            {
+              "date": "2026-10-27",
+              "oee": 78.15,
+              "availability": 90.6,
+              "performance": 88.7,
+              "quality": 97.25
+            },
+            {
+              "date": "2026-10-28",
+              "oee": 80.38,
+              "availability": 92.73,
+              "performance": 89.51,
+              "quality": 96.84
+            },
+            {
+              "date": "2026-10-29",
+              "oee": 79.36,
+              "availability": 91.18,
+              "performance": 89.61,
+              "quality": 97.13
+            },
+            {
+              "date": "2026-10-30",
+              "oee": 79.16,
+              "availability": 91.07,
+              "performance": 89.65,
+              "quality": 96.96
+            },
+            {
+              "date": "2026-10-31",
+              "oee": 80.93,
+              "availability": 91.54,
+              "performance": 90.99,
+              "quality": 97.16
+            },
+            {
+              "date": "2026-11-01",
+              "oee": 82.19,
+              "availability": 92.92,
+              "performance": 91.27,
+              "quality": 96.91
+            },
+            {
+              "date": "2026-11-02",
+              "oee": 78.97,
+              "availability": 89.81,
+              "performance": 90.42,
+              "quality": 97.25
+            },
+            {
+              "date": "2026-11-03",
+              "oee": 78.48,
+              "availability": 90.45,
+              "performance": 88.98,
+              "quality": 97.51
+            },
+            {
+              "date": "2026-11-04",
+              "oee": 79.26,
+              "availability": 90.13,
+              "performance": 90.59,
+              "quality": 97.07
+            },
+            {
+              "date": "2026-11-05",
+              "oee": 81.26,
+              "availability": 93.31,
+              "performance": 89.77,
+              "quality": 97.01
+            },
+            {
+              "date": "2026-11-06",
+              "oee": 79.61,
+              "availability": 92.29,
+              "performance": 88.16,
+              "quality": 97.84
+            },
+            {
+              "date": "2026-11-07",
+              "oee": 77.91,
+              "availability": 90.24,
+              "performance": 88.74,
+              "quality": 97.29
+            },
+            {
+              "date": "2026-11-08",
+              "oee": 80.42,
+              "availability": 91.68,
+              "performance": 91.14,
+              "quality": 96.25
+            },
+            {
+              "date": "2026-11-09",
+              "oee": 78.55,
+              "availability": 91.37,
+              "performance": 88.75,
+              "quality": 96.87
+            },
+            {
+              "date": "2026-11-10",
+              "oee": 77.27,
+              "availability": 89.11,
+              "performance": 89.36,
+              "quality": 97.04
+            },
+            {
+              "date": "2026-11-11",
+              "oee": 79.97,
+              "availability": 93.31,
+              "performance": 87.91,
+              "quality": 97.49
+            },
+            {
+              "date": "2026-11-12",
+              "oee": 82.62,
+              "availability": 92.63,
+              "performance": 92.18,
+              "quality": 96.76
+            },
+            {
+              "date": "2026-11-13",
+              "oee": 78.21,
+              "availability": 91.03,
+              "performance": 88.34,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-11-14",
+              "oee": 78.26,
+              "availability": 91.51,
+              "performance": 88.11,
+              "quality": 97.06
+            },
+            {
+              "date": "2026-11-15",
+              "oee": 80.6,
+              "availability": 90.93,
+              "performance": 90.62,
+              "quality": 97.82
+            },
+            {
+              "date": "2026-11-16",
+              "oee": 78.8,
+              "availability": 88.93,
+              "performance": 91.14,
+              "quality": 97.22
+            },
+            {
+              "date": "2026-11-17",
+              "oee": 79.56,
+              "availability": 92.67,
+              "performance": 88.8,
+              "quality": 96.68
+            },
+            {
+              "date": "2026-11-18",
+              "oee": 78.07,
+              "availability": 90.2,
+              "performance": 88.87,
+              "quality": 97.39
+            },
+            {
+              "date": "2026-11-19",
+              "oee": 82.69,
+              "availability": 93.57,
+              "performance": 91.03,
+              "quality": 97.08
+            },
+            {
+              "date": "2026-11-20",
+              "oee": 79.68,
+              "availability": 91.75,
+              "performance": 89.44,
+              "quality": 97.1
+            },
+            {
+              "date": "2026-11-21",
+              "oee": 78.3,
+              "availability": 90.31,
+              "performance": 89.4,
+              "quality": 96.98
+            },
+            {
+              "date": "2026-11-22",
+              "oee": 78.07,
+              "availability": 91.56,
+              "performance": 88.04,
+              "quality": 96.85
+            },
+            {
+              "date": "2026-11-23",
+              "oee": 78.83,
+              "availability": 92.08,
+              "performance": 88.35,
+              "quality": 96.9
+            },
+            {
+              "date": "2026-11-24",
+              "oee": 82.53,
+              "availability": 93.27,
+              "performance": 91.32,
+              "quality": 96.89
+            },
+            {
+              "date": "2026-11-25",
+              "oee": 79.58,
+              "availability": 90.29,
+              "performance": 90.71,
+              "quality": 97.17
+            },
+            {
+              "date": "2026-11-26",
+              "oee": 77.73,
+              "availability": 89.88,
+              "performance": 89.22,
+              "quality": 96.93
+            },
+            {
+              "date": "2026-11-27",
+              "oee": 80.35,
+              "availability": 91.76,
+              "performance": 89.84,
+              "quality": 97.47
+            },
+            {
+              "date": "2026-11-28",
+              "oee": 81.34,
+              "availability": 92.39,
+              "performance": 90.19,
+              "quality": 97.61
+            },
+            {
+              "date": "2026-11-29",
+              "oee": 76.94,
+              "availability": 90.62,
+              "performance": 87.92,
+              "quality": 96.57
+            },
+            {
+              "date": "2026-11-30",
+              "oee": 76.42,
+              "availability": 90.41,
+              "performance": 87.07,
+              "quality": 97.08
+            },
+            {
+              "date": "2026-12-01",
+              "oee": 78.09,
+              "availability": 89.55,
+              "performance": 90.52,
+              "quality": 96.33
+            },
+            {
+              "date": "2026-12-02",
+              "oee": 80.48,
+              "availability": 91.37,
+              "performance": 90.13,
+              "quality": 97.73
+            },
+            {
+              "date": "2026-12-03",
+              "oee": 79.12,
+              "availability": 90.39,
+              "performance": 89.92,
+              "quality": 97.34
+            },
+            {
+              "date": "2026-12-04",
+              "oee": 78.54,
+              "availability": 88.94,
+              "performance": 90.93,
+              "quality": 97.11
+            },
+            {
+              "date": "2026-12-05",
+              "oee": 79.19,
+              "availability": 92.36,
+              "performance": 87.86,
+              "quality": 97.59
+            },
+            {
+              "date": "2026-12-06",
+              "oee": 78.83,
+              "availability": 90.28,
+              "performance": 89.93,
+              "quality": 97.09
+            },
+            {
+              "date": "2026-12-07",
+              "oee": 79.53,
+              "availability": 92.25,
+              "performance": 89.29,
+              "quality": 96.55
+            },
+            {
+              "date": "2026-12-08",
+              "oee": 80.2,
+              "availability": 92.02,
+              "performance": 89.37,
+              "quality": 97.52
+            },
+            {
+              "date": "2026-12-09",
+              "oee": 80.4,
+              "availability": 92.64,
+              "performance": 89.5,
+              "quality": 96.97
+            },
+            {
+              "date": "2026-12-10",
+              "oee": 79.75,
+              "availability": 90.86,
+              "performance": 90.52,
+              "quality": 96.96
+            },
+            {
+              "date": "2026-12-11",
+              "oee": 77.03,
+              "availability": 90.54,
+              "performance": 87.44,
+              "quality": 97.3
+            },
+            {
+              "date": "2026-12-12",
+              "oee": 79.08,
+              "availability": 90.96,
+              "performance": 89.38,
+              "quality": 97.27
+            },
+            {
+              "date": "2026-12-13",
+              "oee": 81.55,
+              "availability": 91.65,
+              "performance": 91.16,
+              "quality": 97.61
+            },
+            {
+              "date": "2026-12-14",
+              "oee": 78.74,
+              "availability": 92.59,
+              "performance": 87.6,
+              "quality": 97.08
+            },
+            {
+              "date": "2026-12-15",
+              "oee": 80.13,
+              "availability": 92.26,
+              "performance": 89.68,
+              "quality": 96.85
+            },
+            {
+              "date": "2026-12-16",
+              "oee": 78.54,
+              "availability": 91.28,
+              "performance": 88.37,
+              "quality": 97.37
+            },
+            {
+              "date": "2026-12-17",
+              "oee": 77.67,
+              "availability": 90.75,
+              "performance": 88.25,
+              "quality": 96.98
+            },
+            {
+              "date": "2026-12-18",
+              "oee": 80.63,
+              "availability": 91.14,
+              "performance": 90.37,
+              "quality": 97.9
+            },
+            {
+              "date": "2026-12-19",
+              "oee": 77.09,
+              "availability": 90.27,
+              "performance": 87.8,
+              "quality": 97.26
+            },
+            {
+              "date": "2026-12-20",
+              "oee": 78.17,
+              "availability": 90.64,
+              "performance": 89.32,
+              "quality": 96.56
+            },
+            {
+              "date": "2026-12-21",
+              "oee": 79.13,
+              "availability": 91.98,
+              "performance": 88.82,
+              "quality": 96.86
+            },
+            {
+              "date": "2026-12-22",
+              "oee": 78.38,
+              "availability": 91.86,
+              "performance": 87.9,
+              "quality": 97.07
+            },
+            {
+              "date": "2026-12-23",
+              "oee": 79.51,
+              "availability": 90.79,
+              "performance": 90.86,
+              "quality": 96.38
+            },
+            {
+              "date": "2026-12-24",
+              "oee": 81.11,
+              "availability": 93.62,
+              "performance": 89.73,
+              "quality": 96.55
+            },
+            {
+              "date": "2026-12-25",
+              "oee": 79.82,
+              "availability": 91.74,
+              "performance": 89.61,
+              "quality": 97.1
+            },
+            {
+              "date": "2026-12-26",
+              "oee": 81.6,
+              "availability": 93.28,
+              "performance": 89.88,
+              "quality": 97.33
+            },
+            {
+              "date": "2026-12-27",
+              "oee": 81.58,
+              "availability": 93.27,
+              "performance": 90.12,
+              "quality": 97.06
+            },
+            {
+              "date": "2026-12-28",
+              "oee": 77.2,
+              "availability": 89.7,
+              "performance": 88.41,
+              "quality": 97.35
+            },
+            {
+              "date": "2026-12-29",
+              "oee": 78.98,
+              "availability": 89.71,
+              "performance": 90.34,
+              "quality": 97.45
+            },
+            {
+              "date": "2026-12-30",
+              "oee": 83.42,
+              "availability": 92.19,
+              "performance": 92.77,
+              "quality": 97.54
+            },
+            {
+              "date": "2026-12-31",
+              "oee": 79.68,
+              "availability": 89.54,
+              "performance": 91.22,
+              "quality": 97.55
+            }
+          ],
+          "options": {
+            "showLegend": true,
+            "multiLine": true,
+            "yAxisMax": 100
+          },
+          "xaxisField": "date",
+          "yaxisField": "oee"
+        },
+        "production_line_comparison": {
+          "chartType": "BAR",
+          "title": "产线 OEE 对比",
+          "seriesField": "metric",
+          "data": [
+            {
+              "productionLine": "产线D",
+              "oee": 79.35,
+              "availability": 91.13,
+              "performance": 89.65,
+              "quality": 97.13
+            },
+            {
+              "productionLine": "产线B",
+              "oee": 79.52,
+              "availability": 91.62,
+              "performance": 89.38,
+              "quality": 97.1
+            },
+            {
+              "productionLine": "产线C",
+              "oee": 79.7,
+              "availability": 91.43,
+              "performance": 89.75,
+              "quality": 97.13
+            },
+            {
+              "productionLine": "产线A",
+              "oee": 79.61,
+              "availability": 91.43,
+              "performance": 89.65,
+              "quality": 97.13
+            }
+          ],
+          "options": {
+            "showLegend": true,
+            "grouped": true
+          },
+          "xaxisField": "productionLine",
+          "yaxisField": "oee"
+        },
+        "downtime_distribution": {
+          "chartType": "PIE",
+          "title": "停机原因分布",
+          "seriesField": null,
+          "data": [
+            {
+              "reason": "物料短缺",
+              "downtime": 1507.45
+            },
+            {
+              "reason": "计划维护",
+              "downtime": 1458.68
+            },
+            {
+              "reason": "质量问题",
+              "downtime": 1454.22
+            },
+            {
+              "reason": "换型调整",
+              "downtime": 1414.64
+            },
+            {
+              "reason": "设备故障",
+              "downtime": 1413.56
+            }
+          ],
+          "options": {
+            "showPercentage": true,
+            "showLegend": true
+          },
+          "xaxisField": "reason",
+          "yaxisField": "downtime"
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "YELLOW",
+          "category": "OEE",
+          "message": "综合设备效率为 79.5%，有提升空间",
+          "relatedEntity": null,
+          "actionSuggestion": "建议关注效率最低的设备和产线，制定改进计划"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "主要停机原因是「物料短缺」，建议重点改善",
+        "故障次数较多，建议加强预防性维护，制定设备保养计划",
+        "性能指标偏低，建议检查设备速度设定、消除微停机"
+      ],
+      "generatedAt": "2026-05-08T13:46:32.925592084",
+      "lastUpdated": "2026-05-08T13:46:32.925592854",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "quality": {
+      "period": "CUSTOM",
+      "startDate": "2026-01-01",
+      "endDate": "2026-12-31",
+      "kpiCards": [
+        {
+          "key": "FPY",
+          "title": "首次通过率 (FPY)",
+          "value": "95.28%",
+          "rawValue": 95.28,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "yellow",
+          "compareText": null,
+          "description": "首次检验通过数 / 总检验数",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "DEFECT_RATE",
+          "title": "不良率",
+          "value": "4.72%",
+          "rawValue": 4.72,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "yellow",
+          "compareText": null,
+          "description": "不良品数 / 总检验数",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "REWORK_COST",
+          "title": "返工成本",
+          "value": "517,345.00",
+          "rawValue": 517345.0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "SCRAP_COST",
+          "title": "报废成本",
+          "value": "1,433,348.00",
+          "rawValue": 1433348.0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "TOTAL_QUALITY_COST",
+          "title": "质量成本总计",
+          "value": "1,950,693.00",
+          "rawValue": 1950693.0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "CUSTOMER_COMPLAINT_COUNT",
+          "title": "客户投诉数",
+          "value": "4325 件",
+          "rawValue": 4325,
+          "unit": "件",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "red",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
+      "metricCards": null,
+      "rankings": {
+        "defect_type": [
+          {
+            "rank": 1,
+            "name": "尺寸偏差",
+            "value": 8842,
+            "target": null,
+            "completionRate": 21.62,
+            "alertLevel": "RED"
+          },
+          {
+            "rank": 2,
+            "name": "装配不良",
+            "value": 8346,
+            "target": null,
+            "completionRate": 20.41,
+            "alertLevel": "RED"
+          },
+          {
+            "rank": 3,
+            "name": "功能故障",
+            "value": 8066,
+            "target": null,
+            "completionRate": 19.72,
+            "alertLevel": "RED"
+          },
+          {
+            "rank": 4,
+            "name": "材料缺陷",
+            "value": 7831,
+            "target": null,
+            "completionRate": 19.15,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 5,
+            "name": "外观缺陷",
+            "value": 7810,
+            "target": null,
+            "completionRate": 19.1,
+            "alertLevel": "GREEN"
+          }
+        ],
+        "product_line": [
+          {
+            "rank": 1,
+            "name": "产线C",
+            "value": 95.41,
+            "target": 98,
+            "completionRate": 97.36,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 2,
+            "name": "产线B",
+            "value": 95.29,
+            "target": 98,
+            "completionRate": 97.23,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 3,
+            "name": "产线A",
+            "value": 95.27,
+            "target": 98,
+            "completionRate": 97.21,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "rank": 4,
+            "name": "产线D",
+            "value": 95.15,
+            "target": 98,
+            "completionRate": 97.09,
+            "alertLevel": "YELLOW"
+          }
+        ]
+      },
+      "charts": {
+        "quality_trend": {
+          "chartType": "LINE",
+          "title": "质量趋势",
+          "seriesField": "metric",
+          "data": [
+            {
+              "date": "2026-01-01",
+              "fpy": 95.21,
+              "defectRate": 4.79,
+              "totalInspections": 2424
+            },
+            {
+              "date": "2026-01-02",
+              "fpy": 95.98,
+              "defectRate": 4.02,
+              "totalInspections": 2112
+            },
+            {
+              "date": "2026-01-03",
+              "fpy": 96.06,
+              "defectRate": 3.94,
+              "totalInspections": 2359
+            },
+            {
+              "date": "2026-01-04",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2405
+            },
+            {
+              "date": "2026-01-05",
+              "fpy": 95.7,
+              "defectRate": 4.3,
+              "totalInspections": 2723
+            },
+            {
+              "date": "2026-01-06",
+              "fpy": 95.98,
+              "defectRate": 4.02,
+              "totalInspections": 2290
+            },
+            {
+              "date": "2026-01-07",
+              "fpy": 95.43,
+              "defectRate": 4.57,
+              "totalInspections": 2361
+            },
+            {
+              "date": "2026-01-08",
+              "fpy": 96.17,
+              "defectRate": 3.83,
+              "totalInspections": 2611
+            },
+            {
+              "date": "2026-01-09",
+              "fpy": 96.38,
+              "defectRate": 3.62,
+              "totalInspections": 2403
+            },
+            {
+              "date": "2026-01-10",
+              "fpy": 95.54,
+              "defectRate": 4.46,
+              "totalInspections": 2242
+            },
+            {
+              "date": "2026-01-11",
+              "fpy": 95.44,
+              "defectRate": 4.56,
+              "totalInspections": 2629
+            },
+            {
+              "date": "2026-01-12",
+              "fpy": 94.88,
+              "defectRate": 5.12,
+              "totalInspections": 2461
+            },
+            {
+              "date": "2026-01-13",
+              "fpy": 95.6,
+              "defectRate": 4.4,
+              "totalInspections": 2068
+            },
+            {
+              "date": "2026-01-14",
+              "fpy": 95.31,
+              "defectRate": 4.69,
+              "totalInspections": 2497
+            },
+            {
+              "date": "2026-01-15",
+              "fpy": 95.79,
+              "defectRate": 4.21,
+              "totalInspections": 2423
+            },
+            {
+              "date": "2026-01-16",
+              "fpy": 96.0,
+              "defectRate": 4.0,
+              "totalInspections": 2651
+            },
+            {
+              "date": "2026-01-17",
+              "fpy": 94.54,
+              "defectRate": 5.46,
+              "totalInspections": 2398
+            },
+            {
+              "date": "2026-01-18",
+              "fpy": 95.28,
+              "defectRate": 4.72,
+              "totalInspections": 2182
+            },
+            {
+              "date": "2026-01-19",
+              "fpy": 95.83,
+              "defectRate": 4.17,
+              "totalInspections": 2424
+            },
+            {
+              "date": "2026-01-20",
+              "fpy": 95.5,
+              "defectRate": 4.5,
+              "totalInspections": 2176
+            },
+            {
+              "date": "2026-01-21",
+              "fpy": 94.86,
+              "defectRate": 5.14,
+              "totalInspections": 2373
+            },
+            {
+              "date": "2026-01-22",
+              "fpy": 95.52,
+              "defectRate": 4.48,
+              "totalInspections": 2525
+            },
+            {
+              "date": "2026-01-23",
+              "fpy": 95.85,
+              "defectRate": 4.15,
+              "totalInspections": 2433
+            },
+            {
+              "date": "2026-01-24",
+              "fpy": 95.1,
+              "defectRate": 4.9,
+              "totalInspections": 2347
+            },
+            {
+              "date": "2026-01-25",
+              "fpy": 95.79,
+              "defectRate": 4.21,
+              "totalInspections": 2258
+            },
+            {
+              "date": "2026-01-26",
+              "fpy": 95.73,
+              "defectRate": 4.27,
+              "totalInspections": 2414
+            },
+            {
+              "date": "2026-01-27",
+              "fpy": 95.76,
+              "defectRate": 4.24,
+              "totalInspections": 1935
+            },
+            {
+              "date": "2026-01-28",
+              "fpy": 94.68,
+              "defectRate": 5.32,
+              "totalInspections": 1935
+            },
+            {
+              "date": "2026-01-29",
+              "fpy": 95.13,
+              "defectRate": 4.87,
+              "totalInspections": 2421
+            },
+            {
+              "date": "2026-01-30",
+              "fpy": 96.2,
+              "defectRate": 3.8,
+              "totalInspections": 2265
+            },
+            {
+              "date": "2026-01-31",
+              "fpy": 94.96,
+              "defectRate": 5.04,
+              "totalInspections": 2044
+            },
+            {
+              "date": "2026-02-01",
+              "fpy": 94.56,
+              "defectRate": 5.44,
+              "totalInspections": 2352
+            },
+            {
+              "date": "2026-02-02",
+              "fpy": 95.11,
+              "defectRate": 4.89,
+              "totalInspections": 2248
+            },
+            {
+              "date": "2026-02-03",
+              "fpy": 94.69,
+              "defectRate": 5.31,
+              "totalInspections": 2713
+            },
+            {
+              "date": "2026-02-04",
+              "fpy": 95.61,
+              "defectRate": 4.39,
+              "totalInspections": 1961
+            },
+            {
+              "date": "2026-02-05",
+              "fpy": 95.66,
+              "defectRate": 4.34,
+              "totalInspections": 2579
+            },
+            {
+              "date": "2026-02-06",
+              "fpy": 95.4,
+              "defectRate": 4.6,
+              "totalInspections": 2459
+            },
+            {
+              "date": "2026-02-07",
+              "fpy": 94.66,
+              "defectRate": 5.34,
+              "totalInspections": 2492
+            },
+            {
+              "date": "2026-02-08",
+              "fpy": 94.78,
+              "defectRate": 5.22,
+              "totalInspections": 2205
+            },
+            {
+              "date": "2026-02-09",
+              "fpy": 95.73,
+              "defectRate": 4.27,
+              "totalInspections": 2433
+            },
+            {
+              "date": "2026-02-10",
+              "fpy": 95.06,
+              "defectRate": 4.94,
+              "totalInspections": 2491
+            },
+            {
+              "date": "2026-02-11",
+              "fpy": 95.17,
+              "defectRate": 4.83,
+              "totalInspections": 2504
+            },
+            {
+              "date": "2026-02-12",
+              "fpy": 95.61,
+              "defectRate": 4.39,
+              "totalInspections": 2303
+            },
+            {
+              "date": "2026-02-13",
+              "fpy": 95.22,
+              "defectRate": 4.78,
+              "totalInspections": 2385
+            },
+            {
+              "date": "2026-02-14",
+              "fpy": 95.88,
+              "defectRate": 4.12,
+              "totalInspections": 2356
+            },
+            {
+              "date": "2026-02-15",
+              "fpy": 95.55,
+              "defectRate": 4.45,
+              "totalInspections": 2402
+            },
+            {
+              "date": "2026-02-16",
+              "fpy": 94.74,
+              "defectRate": 5.26,
+              "totalInspections": 2624
+            },
+            {
+              "date": "2026-02-17",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2485
+            },
+            {
+              "date": "2026-02-18",
+              "fpy": 94.66,
+              "defectRate": 5.34,
+              "totalInspections": 2321
+            },
+            {
+              "date": "2026-02-19",
+              "fpy": 94.04,
+              "defectRate": 5.96,
+              "totalInspections": 2213
+            },
+            {
+              "date": "2026-02-20",
+              "fpy": 95.83,
+              "defectRate": 4.17,
+              "totalInspections": 2136
+            },
+            {
+              "date": "2026-02-21",
+              "fpy": 95.78,
+              "defectRate": 4.22,
+              "totalInspections": 2178
+            },
+            {
+              "date": "2026-02-22",
+              "fpy": 96.01,
+              "defectRate": 3.99,
+              "totalInspections": 2785
+            },
+            {
+              "date": "2026-02-23",
+              "fpy": 95.54,
+              "defectRate": 4.46,
+              "totalInspections": 2555
+            },
+            {
+              "date": "2026-02-24",
+              "fpy": 94.66,
+              "defectRate": 5.34,
+              "totalInspections": 2489
+            },
+            {
+              "date": "2026-02-25",
+              "fpy": 96.54,
+              "defectRate": 3.46,
+              "totalInspections": 2310
+            },
+            {
+              "date": "2026-02-26",
+              "fpy": 95.08,
+              "defectRate": 4.92,
+              "totalInspections": 2522
+            },
+            {
+              "date": "2026-02-27",
+              "fpy": 94.44,
+              "defectRate": 5.56,
+              "totalInspections": 2284
+            },
+            {
+              "date": "2026-02-28",
+              "fpy": 95.62,
+              "defectRate": 4.38,
+              "totalInspections": 2053
+            },
+            {
+              "date": "2026-03-01",
+              "fpy": 95.09,
+              "defectRate": 4.91,
+              "totalInspections": 2242
+            },
+            {
+              "date": "2026-03-02",
+              "fpy": 95.29,
+              "defectRate": 4.71,
+              "totalInspections": 2397
+            },
+            {
+              "date": "2026-03-03",
+              "fpy": 95.8,
+              "defectRate": 4.2,
+              "totalInspections": 2431
+            },
+            {
+              "date": "2026-03-04",
+              "fpy": 95.26,
+              "defectRate": 4.74,
+              "totalInspections": 2196
+            },
+            {
+              "date": "2026-03-05",
+              "fpy": 95.29,
+              "defectRate": 4.71,
+              "totalInspections": 2080
+            },
+            {
+              "date": "2026-03-06",
+              "fpy": 94.11,
+              "defectRate": 5.89,
+              "totalInspections": 2291
+            },
+            {
+              "date": "2026-03-07",
+              "fpy": 96.17,
+              "defectRate": 3.83,
+              "totalInspections": 2483
+            },
+            {
+              "date": "2026-03-08",
+              "fpy": 94.56,
+              "defectRate": 5.44,
+              "totalInspections": 2461
+            },
+            {
+              "date": "2026-03-09",
+              "fpy": 94.85,
+              "defectRate": 5.15,
+              "totalInspections": 2561
+            },
+            {
+              "date": "2026-03-10",
+              "fpy": 95.0,
+              "defectRate": 5.0,
+              "totalInspections": 2340
+            },
+            {
+              "date": "2026-03-11",
+              "fpy": 95.92,
+              "defectRate": 4.08,
+              "totalInspections": 2206
+            },
+            {
+              "date": "2026-03-12",
+              "fpy": 95.07,
+              "defectRate": 4.93,
+              "totalInspections": 2594
+            },
+            {
+              "date": "2026-03-13",
+              "fpy": 95.27,
+              "defectRate": 4.73,
+              "totalInspections": 2727
+            },
+            {
+              "date": "2026-03-14",
+              "fpy": 94.51,
+              "defectRate": 5.49,
+              "totalInspections": 2331
+            },
+            {
+              "date": "2026-03-15",
+              "fpy": 95.32,
+              "defectRate": 4.68,
+              "totalInspections": 2562
+            },
+            {
+              "date": "2026-03-16",
+              "fpy": 95.63,
+              "defectRate": 4.38,
+              "totalInspections": 2400
+            },
+            {
+              "date": "2026-03-17",
+              "fpy": 95.12,
+              "defectRate": 4.88,
+              "totalInspections": 2334
+            },
+            {
+              "date": "2026-03-18",
+              "fpy": 95.76,
+              "defectRate": 4.24,
+              "totalInspections": 2384
+            },
+            {
+              "date": "2026-03-19",
+              "fpy": 95.5,
+              "defectRate": 4.5,
+              "totalInspections": 2401
+            },
+            {
+              "date": "2026-03-20",
+              "fpy": 94.92,
+              "defectRate": 5.08,
+              "totalInspections": 2482
+            },
+            {
+              "date": "2026-03-21",
+              "fpy": 95.49,
+              "defectRate": 4.51,
+              "totalInspections": 2328
+            },
+            {
+              "date": "2026-03-22",
+              "fpy": 94.96,
+              "defectRate": 5.04,
+              "totalInspections": 2342
+            },
+            {
+              "date": "2026-03-23",
+              "fpy": 95.12,
+              "defectRate": 4.88,
+              "totalInspections": 2211
+            },
+            {
+              "date": "2026-03-24",
+              "fpy": 95.59,
+              "defectRate": 4.41,
+              "totalInspections": 2040
+            },
+            {
+              "date": "2026-03-25",
+              "fpy": 95.99,
+              "defectRate": 4.01,
+              "totalInspections": 2541
+            },
+            {
+              "date": "2026-03-26",
+              "fpy": 94.96,
+              "defectRate": 5.04,
+              "totalInspections": 2243
+            },
+            {
+              "date": "2026-03-27",
+              "fpy": 94.92,
+              "defectRate": 5.08,
+              "totalInspections": 2226
+            },
+            {
+              "date": "2026-03-28",
+              "fpy": 95.06,
+              "defectRate": 4.94,
+              "totalInspections": 2327
+            },
+            {
+              "date": "2026-03-29",
+              "fpy": 95.55,
+              "defectRate": 4.45,
+              "totalInspections": 2518
+            },
+            {
+              "date": "2026-03-30",
+              "fpy": 95.2,
+              "defectRate": 4.8,
+              "totalInspections": 2686
+            },
+            {
+              "date": "2026-03-31",
+              "fpy": 95.37,
+              "defectRate": 4.63,
+              "totalInspections": 2287
+            },
+            {
+              "date": "2026-04-01",
+              "fpy": 96.49,
+              "defectRate": 3.51,
+              "totalInspections": 2421
+            },
+            {
+              "date": "2026-04-02",
+              "fpy": 95.25,
+              "defectRate": 4.75,
+              "totalInspections": 2274
+            },
+            {
+              "date": "2026-04-03",
+              "fpy": 95.35,
+              "defectRate": 4.65,
+              "totalInspections": 2666
+            },
+            {
+              "date": "2026-04-04",
+              "fpy": 93.95,
+              "defectRate": 6.05,
+              "totalInspections": 2562
+            },
+            {
+              "date": "2026-04-05",
+              "fpy": 95.11,
+              "defectRate": 4.89,
+              "totalInspections": 2472
+            },
+            {
+              "date": "2026-04-06",
+              "fpy": 95.86,
+              "defectRate": 4.14,
+              "totalInspections": 2534
+            },
+            {
+              "date": "2026-04-07",
+              "fpy": 94.9,
+              "defectRate": 5.1,
+              "totalInspections": 2019
+            },
+            {
+              "date": "2026-04-08",
+              "fpy": 95.62,
+              "defectRate": 4.38,
+              "totalInspections": 2831
+            },
+            {
+              "date": "2026-04-09",
+              "fpy": 94.88,
+              "defectRate": 5.12,
+              "totalInspections": 2498
+            },
+            {
+              "date": "2026-04-10",
+              "fpy": 95.12,
+              "defectRate": 4.88,
+              "totalInspections": 2846
+            },
+            {
+              "date": "2026-04-11",
+              "fpy": 95.2,
+              "defectRate": 4.8,
+              "totalInspections": 1978
+            },
+            {
+              "date": "2026-04-12",
+              "fpy": 95.71,
+              "defectRate": 4.29,
+              "totalInspections": 2520
+            },
+            {
+              "date": "2026-04-13",
+              "fpy": 95.22,
+              "defectRate": 4.78,
+              "totalInspections": 2387
+            },
+            {
+              "date": "2026-04-14",
+              "fpy": 93.81,
+              "defectRate": 6.19,
+              "totalInspections": 2506
+            },
+            {
+              "date": "2026-04-15",
+              "fpy": 95.03,
+              "defectRate": 4.97,
+              "totalInspections": 2194
+            },
+            {
+              "date": "2026-04-16",
+              "fpy": 95.41,
+              "defectRate": 4.59,
+              "totalInspections": 2482
+            },
+            {
+              "date": "2026-04-17",
+              "fpy": 95.15,
+              "defectRate": 4.85,
+              "totalInspections": 2060
+            },
+            {
+              "date": "2026-04-18",
+              "fpy": 94.63,
+              "defectRate": 5.37,
+              "totalInspections": 2625
+            },
+            {
+              "date": "2026-04-19",
+              "fpy": 94.56,
+              "defectRate": 5.44,
+              "totalInspections": 2574
+            },
+            {
+              "date": "2026-04-20",
+              "fpy": 95.08,
+              "defectRate": 4.92,
+              "totalInspections": 2520
+            },
+            {
+              "date": "2026-04-21",
+              "fpy": 95.1,
+              "defectRate": 4.9,
+              "totalInspections": 2243
+            },
+            {
+              "date": "2026-04-22",
+              "fpy": 95.07,
+              "defectRate": 4.93,
+              "totalInspections": 2108
+            },
+            {
+              "date": "2026-04-23",
+              "fpy": 95.51,
+              "defectRate": 4.49,
+              "totalInspections": 2516
+            },
+            {
+              "date": "2026-04-24",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2546
+            },
+            {
+              "date": "2026-04-25",
+              "fpy": 94.28,
+              "defectRate": 5.72,
+              "totalInspections": 2481
+            },
+            {
+              "date": "2026-04-26",
+              "fpy": 95.79,
+              "defectRate": 4.21,
+              "totalInspections": 2447
+            },
+            {
+              "date": "2026-04-27",
+              "fpy": 94.68,
+              "defectRate": 5.32,
+              "totalInspections": 2160
+            },
+            {
+              "date": "2026-04-28",
+              "fpy": 96.07,
+              "defectRate": 3.93,
+              "totalInspections": 2542
+            },
+            {
+              "date": "2026-04-29",
+              "fpy": 94.93,
+              "defectRate": 5.07,
+              "totalInspections": 2270
+            },
+            {
+              "date": "2026-04-30",
+              "fpy": 94.85,
+              "defectRate": 5.15,
+              "totalInspections": 2039
+            },
+            {
+              "date": "2026-05-01",
+              "fpy": 94.53,
+              "defectRate": 5.47,
+              "totalInspections": 2193
+            },
+            {
+              "date": "2026-05-02",
+              "fpy": 95.74,
+              "defectRate": 4.26,
+              "totalInspections": 2252
+            },
+            {
+              "date": "2026-05-03",
+              "fpy": 95.05,
+              "defectRate": 4.95,
+              "totalInspections": 2362
+            },
+            {
+              "date": "2026-05-04",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2344
+            },
+            {
+              "date": "2026-05-05",
+              "fpy": 94.42,
+              "defectRate": 5.58,
+              "totalInspections": 2724
+            },
+            {
+              "date": "2026-05-06",
+              "fpy": 95.63,
+              "defectRate": 4.37,
+              "totalInspections": 2472
+            },
+            {
+              "date": "2026-05-07",
+              "fpy": 94.97,
+              "defectRate": 5.03,
+              "totalInspections": 2029
+            },
+            {
+              "date": "2026-05-08",
+              "fpy": 95.5,
+              "defectRate": 4.5,
+              "totalInspections": 2245
+            },
+            {
+              "date": "2026-05-09",
+              "fpy": 95.08,
+              "defectRate": 4.92,
+              "totalInspections": 2315
+            },
+            {
+              "date": "2026-05-10",
+              "fpy": 95.08,
+              "defectRate": 4.92,
+              "totalInspections": 2297
+            },
+            {
+              "date": "2026-05-11",
+              "fpy": 96.11,
+              "defectRate": 3.89,
+              "totalInspections": 2542
+            },
+            {
+              "date": "2026-05-12",
+              "fpy": 94.78,
+              "defectRate": 5.22,
+              "totalInspections": 2299
+            },
+            {
+              "date": "2026-05-13",
+              "fpy": 95.11,
+              "defectRate": 4.89,
+              "totalInspections": 2168
+            },
+            {
+              "date": "2026-05-14",
+              "fpy": 94.37,
+              "defectRate": 5.63,
+              "totalInspections": 2504
+            },
+            {
+              "date": "2026-05-15",
+              "fpy": 95.79,
+              "defectRate": 4.21,
+              "totalInspections": 2376
+            },
+            {
+              "date": "2026-05-16",
+              "fpy": 94.91,
+              "defectRate": 5.09,
+              "totalInspections": 2064
+            },
+            {
+              "date": "2026-05-17",
+              "fpy": 95.18,
+              "defectRate": 4.82,
+              "totalInspections": 2280
+            },
+            {
+              "date": "2026-05-18",
+              "fpy": 94.96,
+              "defectRate": 5.04,
+              "totalInspections": 2282
+            },
+            {
+              "date": "2026-05-19",
+              "fpy": 95.17,
+              "defectRate": 4.83,
+              "totalInspections": 2383
+            },
+            {
+              "date": "2026-05-20",
+              "fpy": 95.19,
+              "defectRate": 4.81,
+              "totalInspections": 2310
+            },
+            {
+              "date": "2026-05-21",
+              "fpy": 95.76,
+              "defectRate": 4.24,
+              "totalInspections": 2005
+            },
+            {
+              "date": "2026-05-22",
+              "fpy": 95.93,
+              "defectRate": 4.07,
+              "totalInspections": 2312
+            },
+            {
+              "date": "2026-05-23",
+              "fpy": 96.04,
+              "defectRate": 3.96,
+              "totalInspections": 2197
+            },
+            {
+              "date": "2026-05-24",
+              "fpy": 94.99,
+              "defectRate": 5.01,
+              "totalInspections": 2533
+            },
+            {
+              "date": "2026-05-25",
+              "fpy": 95.23,
+              "defectRate": 4.77,
+              "totalInspections": 2160
+            },
+            {
+              "date": "2026-05-26",
+              "fpy": 94.85,
+              "defectRate": 5.15,
+              "totalInspections": 2312
+            },
+            {
+              "date": "2026-05-27",
+              "fpy": 94.85,
+              "defectRate": 5.15,
+              "totalInspections": 2312
+            },
+            {
+              "date": "2026-05-28",
+              "fpy": 95.34,
+              "defectRate": 4.66,
+              "totalInspections": 2103
+            },
+            {
+              "date": "2026-05-29",
+              "fpy": 95.78,
+              "defectRate": 4.22,
+              "totalInspections": 2467
+            },
+            {
+              "date": "2026-05-30",
+              "fpy": 95.22,
+              "defectRate": 4.78,
+              "totalInspections": 2467
+            },
+            {
+              "date": "2026-05-31",
+              "fpy": 95.84,
+              "defectRate": 4.16,
+              "totalInspections": 2214
+            },
+            {
+              "date": "2026-06-01",
+              "fpy": 95.04,
+              "defectRate": 4.96,
+              "totalInspections": 2640
+            },
+            {
+              "date": "2026-06-02",
+              "fpy": 95.12,
+              "defectRate": 4.88,
+              "totalInspections": 2501
+            },
+            {
+              "date": "2026-06-03",
+              "fpy": 95.49,
+              "defectRate": 4.51,
+              "totalInspections": 2218
+            },
+            {
+              "date": "2026-06-04",
+              "fpy": 94.7,
+              "defectRate": 5.3,
+              "totalInspections": 2433
+            },
+            {
+              "date": "2026-06-05",
+              "fpy": 95.47,
+              "defectRate": 4.53,
+              "totalInspections": 2648
+            },
+            {
+              "date": "2026-06-06",
+              "fpy": 95.52,
+              "defectRate": 4.48,
+              "totalInspections": 2411
+            },
+            {
+              "date": "2026-06-07",
+              "fpy": 94.88,
+              "defectRate": 5.12,
+              "totalInspections": 2361
+            },
+            {
+              "date": "2026-06-08",
+              "fpy": 94.6,
+              "defectRate": 5.4,
+              "totalInspections": 2706
+            },
+            {
+              "date": "2026-06-09",
+              "fpy": 96.03,
+              "defectRate": 3.97,
+              "totalInspections": 2925
+            },
+            {
+              "date": "2026-06-10",
+              "fpy": 95.5,
+              "defectRate": 4.5,
+              "totalInspections": 2445
+            },
+            {
+              "date": "2026-06-11",
+              "fpy": 95.92,
+              "defectRate": 4.08,
+              "totalInspections": 2228
+            },
+            {
+              "date": "2026-06-12",
+              "fpy": 95.03,
+              "defectRate": 4.97,
+              "totalInspections": 2497
+            },
+            {
+              "date": "2026-06-13",
+              "fpy": 95.31,
+              "defectRate": 4.69,
+              "totalInspections": 2603
+            },
+            {
+              "date": "2026-06-14",
+              "fpy": 96.45,
+              "defectRate": 3.55,
+              "totalInspections": 1970
+            },
+            {
+              "date": "2026-06-15",
+              "fpy": 95.12,
+              "defectRate": 4.88,
+              "totalInspections": 2356
+            },
+            {
+              "date": "2026-06-16",
+              "fpy": 95.68,
+              "defectRate": 4.32,
+              "totalInspections": 2291
+            },
+            {
+              "date": "2026-06-17",
+              "fpy": 95.35,
+              "defectRate": 4.65,
+              "totalInspections": 2557
+            },
+            {
+              "date": "2026-06-18",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2607
+            },
+            {
+              "date": "2026-06-19",
+              "fpy": 95.97,
+              "defectRate": 4.03,
+              "totalInspections": 2852
+            },
+            {
+              "date": "2026-06-20",
+              "fpy": 95.95,
+              "defectRate": 4.05,
+              "totalInspections": 2417
+            },
+            {
+              "date": "2026-06-21",
+              "fpy": 96.31,
+              "defectRate": 3.69,
+              "totalInspections": 1922
+            },
+            {
+              "date": "2026-06-22",
+              "fpy": 95.65,
+              "defectRate": 4.35,
+              "totalInspections": 2435
+            },
+            {
+              "date": "2026-06-23",
+              "fpy": 95.14,
+              "defectRate": 4.86,
+              "totalInspections": 2552
+            },
+            {
+              "date": "2026-06-24",
+              "fpy": 96.04,
+              "defectRate": 3.96,
+              "totalInspections": 2119
+            },
+            {
+              "date": "2026-06-25",
+              "fpy": 95.68,
+              "defectRate": 4.32,
+              "totalInspections": 2361
+            },
+            {
+              "date": "2026-06-26",
+              "fpy": 95.91,
+              "defectRate": 4.09,
+              "totalInspections": 2371
+            },
+            {
+              "date": "2026-06-27",
+              "fpy": 95.31,
+              "defectRate": 4.69,
+              "totalInspections": 2535
+            },
+            {
+              "date": "2026-06-28",
+              "fpy": 96.04,
+              "defectRate": 3.96,
+              "totalInspections": 2396
+            },
+            {
+              "date": "2026-06-29",
+              "fpy": 94.66,
+              "defectRate": 5.34,
+              "totalInspections": 2229
+            },
+            {
+              "date": "2026-06-30",
+              "fpy": 94.51,
+              "defectRate": 5.49,
+              "totalInspections": 2479
+            },
+            {
+              "date": "2026-07-01",
+              "fpy": 95.21,
+              "defectRate": 4.79,
+              "totalInspections": 2257
+            },
+            {
+              "date": "2026-07-02",
+              "fpy": 95.61,
+              "defectRate": 4.39,
+              "totalInspections": 2622
+            },
+            {
+              "date": "2026-07-03",
+              "fpy": 94.16,
+              "defectRate": 5.84,
+              "totalInspections": 2089
+            },
+            {
+              "date": "2026-07-04",
+              "fpy": 95.74,
+              "defectRate": 4.26,
+              "totalInspections": 2232
+            },
+            {
+              "date": "2026-07-05",
+              "fpy": 95.5,
+              "defectRate": 4.5,
+              "totalInspections": 2022
+            },
+            {
+              "date": "2026-07-06",
+              "fpy": 95.44,
+              "defectRate": 4.56,
+              "totalInspections": 2279
+            },
+            {
+              "date": "2026-07-07",
+              "fpy": 94.47,
+              "defectRate": 5.53,
+              "totalInspections": 2313
+            },
+            {
+              "date": "2026-07-08",
+              "fpy": 95.13,
+              "defectRate": 4.87,
+              "totalInspections": 2320
+            },
+            {
+              "date": "2026-07-09",
+              "fpy": 95.44,
+              "defectRate": 4.56,
+              "totalInspections": 2260
+            },
+            {
+              "date": "2026-07-10",
+              "fpy": 94.56,
+              "defectRate": 5.44,
+              "totalInspections": 2225
+            },
+            {
+              "date": "2026-07-11",
+              "fpy": 95.91,
+              "defectRate": 4.09,
+              "totalInspections": 1980
+            },
+            {
+              "date": "2026-07-12",
+              "fpy": 94.82,
+              "defectRate": 5.18,
+              "totalInspections": 2221
+            },
+            {
+              "date": "2026-07-13",
+              "fpy": 95.88,
+              "defectRate": 4.12,
+              "totalInspections": 2376
+            },
+            {
+              "date": "2026-07-14",
+              "fpy": 96.25,
+              "defectRate": 3.75,
+              "totalInspections": 2158
+            },
+            {
+              "date": "2026-07-15",
+              "fpy": 94.21,
+              "defectRate": 5.79,
+              "totalInspections": 2178
+            },
+            {
+              "date": "2026-07-16",
+              "fpy": 96.2,
+              "defectRate": 3.8,
+              "totalInspections": 2370
+            },
+            {
+              "date": "2026-07-17",
+              "fpy": 95.16,
+              "defectRate": 4.84,
+              "totalInspections": 2396
+            },
+            {
+              "date": "2026-07-18",
+              "fpy": 95.05,
+              "defectRate": 4.95,
+              "totalInspections": 2423
+            },
+            {
+              "date": "2026-07-19",
+              "fpy": 94.9,
+              "defectRate": 5.1,
+              "totalInspections": 2586
+            },
+            {
+              "date": "2026-07-20",
+              "fpy": 95.6,
+              "defectRate": 4.4,
+              "totalInspections": 2157
+            },
+            {
+              "date": "2026-07-21",
+              "fpy": 95.6,
+              "defectRate": 4.4,
+              "totalInspections": 2637
+            },
+            {
+              "date": "2026-07-22",
+              "fpy": 94.9,
+              "defectRate": 5.1,
+              "totalInspections": 2491
+            },
+            {
+              "date": "2026-07-23",
+              "fpy": 95.17,
+              "defectRate": 4.83,
+              "totalInspections": 2196
+            },
+            {
+              "date": "2026-07-24",
+              "fpy": 94.88,
+              "defectRate": 5.12,
+              "totalInspections": 2482
+            },
+            {
+              "date": "2026-07-25",
+              "fpy": 94.78,
+              "defectRate": 5.22,
+              "totalInspections": 2145
+            },
+            {
+              "date": "2026-07-26",
+              "fpy": 95.48,
+              "defectRate": 4.52,
+              "totalInspections": 2344
+            },
+            {
+              "date": "2026-07-27",
+              "fpy": 94.58,
+              "defectRate": 5.42,
+              "totalInspections": 2659
+            },
+            {
+              "date": "2026-07-28",
+              "fpy": 95.58,
+              "defectRate": 4.42,
+              "totalInspections": 2306
+            },
+            {
+              "date": "2026-07-29",
+              "fpy": 95.27,
+              "defectRate": 4.73,
+              "totalInspections": 2112
+            },
+            {
+              "date": "2026-07-30",
+              "fpy": 94.74,
+              "defectRate": 5.26,
+              "totalInspections": 2131
+            },
+            {
+              "date": "2026-07-31",
+              "fpy": 95.15,
+              "defectRate": 4.85,
+              "totalInspections": 2350
+            },
+            {
+              "date": "2026-08-01",
+              "fpy": 96.11,
+              "defectRate": 3.89,
+              "totalInspections": 2724
+            },
+            {
+              "date": "2026-08-02",
+              "fpy": 95.33,
+              "defectRate": 4.67,
+              "totalInspections": 2119
+            },
+            {
+              "date": "2026-08-03",
+              "fpy": 96.06,
+              "defectRate": 3.94,
+              "totalInspections": 2614
+            },
+            {
+              "date": "2026-08-04",
+              "fpy": 94.46,
+              "defectRate": 5.54,
+              "totalInspections": 2545
+            },
+            {
+              "date": "2026-08-05",
+              "fpy": 94.09,
+              "defectRate": 5.91,
+              "totalInspections": 2131
+            },
+            {
+              "date": "2026-08-06",
+              "fpy": 94.93,
+              "defectRate": 5.07,
+              "totalInspections": 2386
+            },
+            {
+              "date": "2026-08-07",
+              "fpy": 95.45,
+              "defectRate": 4.55,
+              "totalInspections": 2486
+            },
+            {
+              "date": "2026-08-08",
+              "fpy": 95.44,
+              "defectRate": 4.56,
+              "totalInspections": 2568
+            },
+            {
+              "date": "2026-08-09",
+              "fpy": 95.83,
+              "defectRate": 4.17,
+              "totalInspections": 2135
+            },
+            {
+              "date": "2026-08-10",
+              "fpy": 95.25,
+              "defectRate": 4.75,
+              "totalInspections": 2336
+            },
+            {
+              "date": "2026-08-11",
+              "fpy": 95.59,
+              "defectRate": 4.41,
+              "totalInspections": 2334
+            },
+            {
+              "date": "2026-08-12",
+              "fpy": 95.75,
+              "defectRate": 4.25,
+              "totalInspections": 2283
+            },
+            {
+              "date": "2026-08-13",
+              "fpy": 95.4,
+              "defectRate": 4.6,
+              "totalInspections": 2502
+            },
+            {
+              "date": "2026-08-14",
+              "fpy": 95.56,
+              "defectRate": 4.44,
+              "totalInspections": 2186
+            },
+            {
+              "date": "2026-08-15",
+              "fpy": 95.37,
+              "defectRate": 4.63,
+              "totalInspections": 2180
+            },
+            {
+              "date": "2026-08-16",
+              "fpy": 94.48,
+              "defectRate": 5.52,
+              "totalInspections": 2336
+            },
+            {
+              "date": "2026-08-17",
+              "fpy": 95.35,
+              "defectRate": 4.65,
+              "totalInspections": 2410
+            },
+            {
+              "date": "2026-08-18",
+              "fpy": 95.65,
+              "defectRate": 4.35,
+              "totalInspections": 2461
+            },
+            {
+              "date": "2026-08-19",
+              "fpy": 94.97,
+              "defectRate": 5.03,
+              "totalInspections": 2626
+            },
+            {
+              "date": "2026-08-20",
+              "fpy": 95.24,
+              "defectRate": 4.76,
+              "totalInspections": 2120
+            },
+            {
+              "date": "2026-08-21",
+              "fpy": 94.04,
+              "defectRate": 5.96,
+              "totalInspections": 2197
+            },
+            {
+              "date": "2026-08-22",
+              "fpy": 95.29,
+              "defectRate": 4.71,
+              "totalInspections": 2780
+            },
+            {
+              "date": "2026-08-23",
+              "fpy": 95.59,
+              "defectRate": 4.41,
+              "totalInspections": 2062
+            },
+            {
+              "date": "2026-08-24",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2043
+            },
+            {
+              "date": "2026-08-25",
+              "fpy": 95.14,
+              "defectRate": 4.86,
+              "totalInspections": 2039
+            },
+            {
+              "date": "2026-08-26",
+              "fpy": 96.32,
+              "defectRate": 3.68,
+              "totalInspections": 2256
+            },
+            {
+              "date": "2026-08-27",
+              "fpy": 95.2,
+              "defectRate": 4.8,
+              "totalInspections": 2563
+            },
+            {
+              "date": "2026-08-28",
+              "fpy": 95.76,
+              "defectRate": 4.24,
+              "totalInspections": 2359
+            },
+            {
+              "date": "2026-08-29",
+              "fpy": 95.95,
+              "defectRate": 4.05,
+              "totalInspections": 2295
+            },
+            {
+              "date": "2026-08-30",
+              "fpy": 96.15,
+              "defectRate": 3.85,
+              "totalInspections": 2260
+            },
+            {
+              "date": "2026-08-31",
+              "fpy": 95.38,
+              "defectRate": 4.62,
+              "totalInspections": 1949
+            },
+            {
+              "date": "2026-09-01",
+              "fpy": 94.86,
+              "defectRate": 5.14,
+              "totalInspections": 2313
+            },
+            {
+              "date": "2026-09-02",
+              "fpy": 95.28,
+              "defectRate": 4.72,
+              "totalInspections": 2437
+            },
+            {
+              "date": "2026-09-03",
+              "fpy": 94.22,
+              "defectRate": 5.78,
+              "totalInspections": 2612
+            },
+            {
+              "date": "2026-09-04",
+              "fpy": 95.92,
+              "defectRate": 4.08,
+              "totalInspections": 2620
+            },
+            {
+              "date": "2026-09-05",
+              "fpy": 95.83,
+              "defectRate": 4.17,
+              "totalInspections": 2396
+            },
+            {
+              "date": "2026-09-06",
+              "fpy": 96.03,
+              "defectRate": 3.97,
+              "totalInspections": 2214
+            },
+            {
+              "date": "2026-09-07",
+              "fpy": 94.79,
+              "defectRate": 5.21,
+              "totalInspections": 2609
+            },
+            {
+              "date": "2026-09-08",
+              "fpy": 95.95,
+              "defectRate": 4.05,
+              "totalInspections": 2693
+            },
+            {
+              "date": "2026-09-09",
+              "fpy": 95.21,
+              "defectRate": 4.79,
+              "totalInspections": 2570
+            },
+            {
+              "date": "2026-09-10",
+              "fpy": 94.17,
+              "defectRate": 5.83,
+              "totalInspections": 2866
+            },
+            {
+              "date": "2026-09-11",
+              "fpy": 95.47,
+              "defectRate": 4.53,
+              "totalInspections": 2340
+            },
+            {
+              "date": "2026-09-12",
+              "fpy": 96.58,
+              "defectRate": 3.42,
+              "totalInspections": 2571
+            },
+            {
+              "date": "2026-09-13",
+              "fpy": 95.48,
+              "defectRate": 4.52,
+              "totalInspections": 2433
+            },
+            {
+              "date": "2026-09-14",
+              "fpy": 95.13,
+              "defectRate": 4.87,
+              "totalInspections": 2487
+            },
+            {
+              "date": "2026-09-15",
+              "fpy": 95.62,
+              "defectRate": 4.38,
+              "totalInspections": 2445
+            },
+            {
+              "date": "2026-09-16",
+              "fpy": 94.37,
+              "defectRate": 5.63,
+              "totalInspections": 2522
+            },
+            {
+              "date": "2026-09-17",
+              "fpy": 95.71,
+              "defectRate": 4.29,
+              "totalInspections": 2375
+            },
+            {
+              "date": "2026-09-18",
+              "fpy": 95.51,
+              "defectRate": 4.49,
+              "totalInspections": 2203
+            },
+            {
+              "date": "2026-09-19",
+              "fpy": 95.7,
+              "defectRate": 4.3,
+              "totalInspections": 2491
+            },
+            {
+              "date": "2026-09-20",
+              "fpy": 94.86,
+              "defectRate": 5.14,
+              "totalInspections": 2294
+            },
+            {
+              "date": "2026-09-21",
+              "fpy": 95.26,
+              "defectRate": 4.74,
+              "totalInspections": 2509
+            },
+            {
+              "date": "2026-09-22",
+              "fpy": 95.44,
+              "defectRate": 4.56,
+              "totalInspections": 2084
+            },
+            {
+              "date": "2026-09-23",
+              "fpy": 95.07,
+              "defectRate": 4.93,
+              "totalInspections": 2741
+            },
+            {
+              "date": "2026-09-24",
+              "fpy": 94.99,
+              "defectRate": 5.01,
+              "totalInspections": 2457
+            },
+            {
+              "date": "2026-09-25",
+              "fpy": 96.15,
+              "defectRate": 3.85,
+              "totalInspections": 2470
+            },
+            {
+              "date": "2026-09-26",
+              "fpy": 94.88,
+              "defectRate": 5.12,
+              "totalInspections": 2147
+            },
+            {
+              "date": "2026-09-27",
+              "fpy": 95.32,
+              "defectRate": 4.68,
+              "totalInspections": 2350
+            },
+            {
+              "date": "2026-09-28",
+              "fpy": 95.18,
+              "defectRate": 4.82,
+              "totalInspections": 2531
+            },
+            {
+              "date": "2026-09-29",
+              "fpy": 95.24,
+              "defectRate": 4.76,
+              "totalInspections": 2603
+            },
+            {
+              "date": "2026-09-30",
+              "fpy": 94.82,
+              "defectRate": 5.18,
+              "totalInspections": 2125
+            },
+            {
+              "date": "2026-10-01",
+              "fpy": 96.32,
+              "defectRate": 3.68,
+              "totalInspections": 2579
+            },
+            {
+              "date": "2026-10-02",
+              "fpy": 95.28,
+              "defectRate": 4.72,
+              "totalInspections": 2733
+            },
+            {
+              "date": "2026-10-03",
+              "fpy": 95.26,
+              "defectRate": 4.74,
+              "totalInspections": 2723
+            },
+            {
+              "date": "2026-10-04",
+              "fpy": 95.21,
+              "defectRate": 4.79,
+              "totalInspections": 2338
+            },
+            {
+              "date": "2026-10-05",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2385
+            },
+            {
+              "date": "2026-10-06",
+              "fpy": 95.36,
+              "defectRate": 4.64,
+              "totalInspections": 2155
+            },
+            {
+              "date": "2026-10-07",
+              "fpy": 95.36,
+              "defectRate": 4.64,
+              "totalInspections": 2220
+            },
+            {
+              "date": "2026-10-08",
+              "fpy": 95.89,
+              "defectRate": 4.11,
+              "totalInspections": 2312
+            },
+            {
+              "date": "2026-10-09",
+              "fpy": 95.43,
+              "defectRate": 4.57,
+              "totalInspections": 2514
+            },
+            {
+              "date": "2026-10-10",
+              "fpy": 96.06,
+              "defectRate": 3.94,
+              "totalInspections": 2435
+            },
+            {
+              "date": "2026-10-11",
+              "fpy": 95.6,
+              "defectRate": 4.4,
+              "totalInspections": 2706
+            },
+            {
+              "date": "2026-10-12",
+              "fpy": 95.55,
+              "defectRate": 4.45,
+              "totalInspections": 2092
+            },
+            {
+              "date": "2026-10-13",
+              "fpy": 95.28,
+              "defectRate": 4.72,
+              "totalInspections": 2688
+            },
+            {
+              "date": "2026-10-14",
+              "fpy": 95.3,
+              "defectRate": 4.7,
+              "totalInspections": 2257
+            },
+            {
+              "date": "2026-10-15",
+              "fpy": 94.97,
+              "defectRate": 5.03,
+              "totalInspections": 2424
+            },
+            {
+              "date": "2026-10-16",
+              "fpy": 94.79,
+              "defectRate": 5.21,
+              "totalInspections": 2263
+            },
+            {
+              "date": "2026-10-17",
+              "fpy": 95.38,
+              "defectRate": 4.62,
+              "totalInspections": 2512
+            },
+            {
+              "date": "2026-10-18",
+              "fpy": 96.48,
+              "defectRate": 3.52,
+              "totalInspections": 2158
+            },
+            {
+              "date": "2026-10-19",
+              "fpy": 96.01,
+              "defectRate": 3.99,
+              "totalInspections": 2028
+            },
+            {
+              "date": "2026-10-20",
+              "fpy": 94.33,
+              "defectRate": 5.67,
+              "totalInspections": 2379
+            },
+            {
+              "date": "2026-10-21",
+              "fpy": 95.06,
+              "defectRate": 4.94,
+              "totalInspections": 2449
+            },
+            {
+              "date": "2026-10-22",
+              "fpy": 94.16,
+              "defectRate": 5.84,
+              "totalInspections": 2088
+            },
+            {
+              "date": "2026-10-23",
+              "fpy": 94.29,
+              "defectRate": 5.71,
+              "totalInspections": 2539
+            },
+            {
+              "date": "2026-10-24",
+              "fpy": 95.4,
+              "defectRate": 4.6,
+              "totalInspections": 2067
+            },
+            {
+              "date": "2026-10-25",
+              "fpy": 95.39,
+              "defectRate": 4.61,
+              "totalInspections": 2102
+            },
+            {
+              "date": "2026-10-26",
+              "fpy": 95.76,
+              "defectRate": 4.24,
+              "totalInspections": 2500
+            },
+            {
+              "date": "2026-10-27",
+              "fpy": 95.87,
+              "defectRate": 4.13,
+              "totalInspections": 2496
+            },
+            {
+              "date": "2026-10-28",
+              "fpy": 94.28,
+              "defectRate": 5.72,
+              "totalInspections": 2362
+            },
+            {
+              "date": "2026-10-29",
+              "fpy": 95.75,
+              "defectRate": 4.25,
+              "totalInspections": 2494
+            },
+            {
+              "date": "2026-10-30",
+              "fpy": 95.95,
+              "defectRate": 4.05,
+              "totalInspections": 2395
+            },
+            {
+              "date": "2026-10-31",
+              "fpy": 95.49,
+              "defectRate": 4.51,
+              "totalInspections": 2548
+            },
+            {
+              "date": "2026-11-01",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2464
+            },
+            {
+              "date": "2026-11-02",
+              "fpy": 96.34,
+              "defectRate": 3.66,
+              "totalInspections": 2489
+            },
+            {
+              "date": "2026-11-03",
+              "fpy": 95.34,
+              "defectRate": 4.66,
+              "totalInspections": 2489
+            },
+            {
+              "date": "2026-11-04",
+              "fpy": 95.82,
+              "defectRate": 4.18,
+              "totalInspections": 2342
+            },
+            {
+              "date": "2026-11-05",
+              "fpy": 95.55,
+              "defectRate": 4.45,
+              "totalInspections": 2809
+            },
+            {
+              "date": "2026-11-06",
+              "fpy": 94.86,
+              "defectRate": 5.14,
+              "totalInspections": 2255
+            },
+            {
+              "date": "2026-11-07",
+              "fpy": 96.16,
+              "defectRate": 3.84,
+              "totalInspections": 2788
+            },
+            {
+              "date": "2026-11-08",
+              "fpy": 95.11,
+              "defectRate": 4.89,
+              "totalInspections": 2598
+            },
+            {
+              "date": "2026-11-09",
+              "fpy": 94.85,
+              "defectRate": 5.15,
+              "totalInspections": 2330
+            },
+            {
+              "date": "2026-11-10",
+              "fpy": 95.58,
+              "defectRate": 4.42,
+              "totalInspections": 2735
+            },
+            {
+              "date": "2026-11-11",
+              "fpy": 93.91,
+              "defectRate": 6.09,
+              "totalInspections": 2201
+            },
+            {
+              "date": "2026-11-12",
+              "fpy": 95.85,
+              "defectRate": 4.15,
+              "totalInspections": 2362
+            },
+            {
+              "date": "2026-11-13",
+              "fpy": 94.58,
+              "defectRate": 5.42,
+              "totalInspections": 2622
+            },
+            {
+              "date": "2026-11-14",
+              "fpy": 95.35,
+              "defectRate": 4.65,
+              "totalInspections": 2451
+            },
+            {
+              "date": "2026-11-15",
+              "fpy": 95.27,
+              "defectRate": 4.73,
+              "totalInspections": 2620
+            },
+            {
+              "date": "2026-11-16",
+              "fpy": 94.9,
+              "defectRate": 5.1,
+              "totalInspections": 2119
+            },
+            {
+              "date": "2026-11-17",
+              "fpy": 95.19,
+              "defectRate": 4.81,
+              "totalInspections": 2577
+            },
+            {
+              "date": "2026-11-18",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2226
+            },
+            {
+              "date": "2026-11-19",
+              "fpy": 95.3,
+              "defectRate": 4.7,
+              "totalInspections": 2192
+            },
+            {
+              "date": "2026-11-20",
+              "fpy": 95.92,
+              "defectRate": 4.08,
+              "totalInspections": 2426
+            },
+            {
+              "date": "2026-11-21",
+              "fpy": 95.28,
+              "defectRate": 4.72,
+              "totalInspections": 2456
+            },
+            {
+              "date": "2026-11-22",
+              "fpy": 95.33,
+              "defectRate": 4.67,
+              "totalInspections": 2635
+            },
+            {
+              "date": "2026-11-23",
+              "fpy": 95.63,
+              "defectRate": 4.37,
+              "totalInspections": 2333
+            },
+            {
+              "date": "2026-11-24",
+              "fpy": 95.57,
+              "defectRate": 4.43,
+              "totalInspections": 2120
+            },
+            {
+              "date": "2026-11-25",
+              "fpy": 94.73,
+              "defectRate": 5.27,
+              "totalInspections": 2105
+            },
+            {
+              "date": "2026-11-26",
+              "fpy": 94.57,
+              "defectRate": 5.43,
+              "totalInspections": 2319
+            },
+            {
+              "date": "2026-11-27",
+              "fpy": 94.84,
+              "defectRate": 5.16,
+              "totalInspections": 2444
+            },
+            {
+              "date": "2026-11-28",
+              "fpy": 95.05,
+              "defectRate": 4.95,
+              "totalInspections": 2526
+            },
+            {
+              "date": "2026-11-29",
+              "fpy": 94.73,
+              "defectRate": 5.27,
+              "totalInspections": 2353
+            },
+            {
+              "date": "2026-11-30",
+              "fpy": 95.13,
+              "defectRate": 4.87,
+              "totalInspections": 2341
+            },
+            {
+              "date": "2026-12-01",
+              "fpy": 94.66,
+              "defectRate": 5.34,
+              "totalInspections": 2323
+            },
+            {
+              "date": "2026-12-02",
+              "fpy": 95.39,
+              "defectRate": 4.61,
+              "totalInspections": 2472
+            },
+            {
+              "date": "2026-12-03",
+              "fpy": 95.41,
+              "defectRate": 4.59,
+              "totalInspections": 2399
+            },
+            {
+              "date": "2026-12-04",
+              "fpy": 95.29,
+              "defectRate": 4.71,
+              "totalInspections": 2337
+            },
+            {
+              "date": "2026-12-05",
+              "fpy": 95.63,
+              "defectRate": 4.37,
+              "totalInspections": 2036
+            },
+            {
+              "date": "2026-12-06",
+              "fpy": 94.46,
+              "defectRate": 5.54,
+              "totalInspections": 1951
+            },
+            {
+              "date": "2026-12-07",
+              "fpy": 96.09,
+              "defectRate": 3.91,
+              "totalInspections": 1994
+            },
+            {
+              "date": "2026-12-08",
+              "fpy": 94.07,
+              "defectRate": 5.93,
+              "totalInspections": 2478
+            },
+            {
+              "date": "2026-12-09",
+              "fpy": 94.08,
+              "defectRate": 5.92,
+              "totalInspections": 2282
+            },
+            {
+              "date": "2026-12-10",
+              "fpy": 96.31,
+              "defectRate": 3.69,
+              "totalInspections": 2709
+            },
+            {
+              "date": "2026-12-11",
+              "fpy": 94.92,
+              "defectRate": 5.08,
+              "totalInspections": 2382
+            },
+            {
+              "date": "2026-12-12",
+              "fpy": 94.32,
+              "defectRate": 5.68,
+              "totalInspections": 2517
+            },
+            {
+              "date": "2026-12-13",
+              "fpy": 95.74,
+              "defectRate": 4.26,
+              "totalInspections": 2159
+            },
+            {
+              "date": "2026-12-14",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2667
+            },
+            {
+              "date": "2026-12-15",
+              "fpy": 95.58,
+              "defectRate": 4.42,
+              "totalInspections": 2057
+            },
+            {
+              "date": "2026-12-16",
+              "fpy": 94.74,
+              "defectRate": 5.26,
+              "totalInspections": 2679
+            },
+            {
+              "date": "2026-12-17",
+              "fpy": 95.2,
+              "defectRate": 4.8,
+              "totalInspections": 3003
+            },
+            {
+              "date": "2026-12-18",
+              "fpy": 95.33,
+              "defectRate": 4.67,
+              "totalInspections": 2399
+            },
+            {
+              "date": "2026-12-19",
+              "fpy": 94.89,
+              "defectRate": 5.11,
+              "totalInspections": 2249
+            },
+            {
+              "date": "2026-12-20",
+              "fpy": 94.97,
+              "defectRate": 5.03,
+              "totalInspections": 2684
+            },
+            {
+              "date": "2026-12-21",
+              "fpy": 94.25,
+              "defectRate": 5.75,
+              "totalInspections": 2278
+            },
+            {
+              "date": "2026-12-22",
+              "fpy": 94.14,
+              "defectRate": 5.86,
+              "totalInspections": 2320
+            },
+            {
+              "date": "2026-12-23",
+              "fpy": 94.93,
+              "defectRate": 5.07,
+              "totalInspections": 2290
+            },
+            {
+              "date": "2026-12-24",
+              "fpy": 95.01,
+              "defectRate": 4.99,
+              "totalInspections": 2126
+            },
+            {
+              "date": "2026-12-25",
+              "fpy": 95.16,
+              "defectRate": 4.84,
+              "totalInspections": 2335
+            },
+            {
+              "date": "2026-12-26",
+              "fpy": 95.93,
+              "defectRate": 4.07,
+              "totalInspections": 1988
+            },
+            {
+              "date": "2026-12-27",
+              "fpy": 94.95,
+              "defectRate": 5.05,
+              "totalInspections": 2376
+            },
+            {
+              "date": "2026-12-28",
+              "fpy": 95.55,
+              "defectRate": 4.45,
+              "totalInspections": 2471
+            },
+            {
+              "date": "2026-12-29",
+              "fpy": 95.27,
+              "defectRate": 4.73,
+              "totalInspections": 2262
+            },
+            {
+              "date": "2026-12-30",
+              "fpy": 95.14,
+              "defectRate": 4.86,
+              "totalInspections": 2203
+            },
+            {
+              "date": "2026-12-31",
+              "fpy": 95.58,
+              "defectRate": 4.42,
+              "totalInspections": 2150
+            }
+          ],
+          "options": {
+            "showLegend": true,
+            "multiLine": true,
+            "yAxisMax": 100
+          },
+          "xaxisField": "date",
+          "yaxisField": "fpy"
+        },
+        "defect_pareto": {
+          "chartType": "BAR",
+          "title": "不良类型帕累托分析",
+          "seriesField": "metric",
+          "data": [
+            {
+              "defectType": "尺寸偏差",
+              "count": 8842,
+              "percentage": 21.62,
+              "cumulative": 21.62
+            },
+            {
+              "defectType": "装配不良",
+              "count": 8346,
+              "percentage": 20.41,
+              "cumulative": 42.03
+            },
+            {
+              "defectType": "功能故障",
+              "count": 8066,
+              "percentage": 19.72,
+              "cumulative": 61.75
+            },
+            {
+              "defectType": "材料缺陷",
+              "count": 7831,
+              "percentage": 19.15,
+              "cumulative": 80.9
+            },
+            {
+              "defectType": "外观缺陷",
+              "count": 7810,
+              "percentage": 19.1,
+              "cumulative": 100.0
+            }
+          ],
+          "options": {
+            "showCumulativeLine": true,
+            "showPercentage": true
+          },
+          "xaxisField": "defectType",
+          "yaxisField": "count"
+        },
+        "quality_cost_distribution": {
+          "chartType": "PIE",
+          "title": "质量成本分布",
+          "seriesField": null,
+          "data": [
+            {
+              "category": "返工成本",
+              "cost": 517345.0
+            },
+            {
+              "category": "报废成本",
+              "cost": 1433348.0
+            }
+          ],
+          "options": {
+            "showPercentage": true,
+            "showLegend": true
+          },
+          "xaxisField": "category",
+          "yaxisField": "cost"
+        },
+        "product_line_quality": {
+          "chartType": "BAR",
+          "title": "产线质量对比",
+          "seriesField": "metric",
+          "data": [
+            {
+              "productionLine": "产线D",
+              "fpy": 95.15,
+              "defectRate": 4.85
+            },
+            {
+              "productionLine": "产线B",
+              "fpy": 95.29,
+              "defectRate": 4.71
+            },
+            {
+              "productionLine": "产线C",
+              "fpy": 95.41,
+              "defectRate": 4.59
+            },
+            {
+              "productionLine": "产线A",
+              "fpy": 95.27,
+              "defectRate": 4.73
+            }
+          ],
+          "options": {
+            "showLegend": true,
+            "grouped": true
+          },
+          "xaxisField": "productionLine",
+          "yaxisField": "fpy"
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "YELLOW",
+          "category": "FPY",
+          "message": "首次通过率为 95.28%，有提升空间",
+          "relatedEntity": null,
+          "actionSuggestion": "建议关注主要不良类型，制定质量改进计划"
+        },
+        {
+          "level": "RED",
+          "category": "客户投诉",
+          "message": "客户投诉数达到 4325 件，需要重点关注",
+          "relatedEntity": null,
+          "actionSuggestion": "建议分析投诉原因，制定客户投诉处理和预防措施"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "主要不良类型为：尺寸偏差、装配不良、功能故障，建议优先改善",
+        "返工率较高，建议评估返工工艺，考虑是否可通过工艺改进降低返工率",
+        "报废成本高于返工成本，建议评估是否可以通过返工挽救更多不良品"
+      ],
+      "generatedAt": "2026-05-08T13:46:32.909340443",
+      "lastUpdated": "2026-05-08T13:46:32.909341193",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "procurement": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [
+        {
+          "key": "PROCUREMENT_AMOUNT",
+          "title": "采购总额",
+          "value": "141,926.54",
+          "rawValue": 141926.54,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "BATCH_COUNT",
+          "title": "采购批次",
+          "value": "3",
+          "rawValue": 3,
+          "unit": "批",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "AVG_BATCH_AMOUNT",
+          "title": "平均批次金额",
+          "value": "47,308.85",
+          "rawValue": 47308.85,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "SUPPLIER_CONCENTRATION",
+          "title": "供应商集中度",
+          "value": "100.0%",
+          "rawValue": 100.0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "red",
+          "compareText": null,
+          "description": "最大供应商占比",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "PROCUREMENT_MOM_GROWTH",
+          "title": "环比增长",
+          "value": "+0.0%",
+          "rawValue": 0.0,
+          "unit": "%",
+          "change": null,
+          "changeRate": 0.0,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
+      "metricCards": null,
+      "rankings": {
+        "supplier": [
+          {
+            "rank": 1,
+            "name": "北京飞熊",
+            "value": 141926.54,
+            "target": 3,
+            "completionRate": 100.0,
+            "alertLevel": "GREEN"
+          }
+        ]
+      },
+      "charts": {
+        "采购趋势": {
+          "chartType": "LINE",
+          "title": "采购趋势",
+          "seriesField": null,
+          "data": [
+            {
+              "date": "2026-05-02",
+              "amount": 138026.54
+            },
+            {
+              "date": "2026-05-07",
+              "amount": 3900.0
+            }
+          ],
+          "options": {
+            "showDataLabels": false,
+            "smooth": true
+          },
+          "xaxisField": "date",
+          "yaxisField": "amount"
+        },
+        "供应商采购占比": {
+          "chartType": "PIE",
+          "title": "供应商采购占比",
+          "seriesField": null,
+          "data": [
+            {
+              "supplier": "北京飞熊",
+              "amount": 141926.54
+            }
+          ],
+          "options": {
+            "showPercentage": true,
+            "showLegend": true
+          },
+          "xaxisField": "supplier",
+          "yaxisField": "amount"
+        },
+        "材料类别采购金额": {
+          "chartType": "BAR",
+          "title": "材料类别采购金额",
+          "seriesField": null,
+          "data": [
+            {
+              "category": "RMT_1777690110201",
+              "amount": 138026.54
+            },
+            {
+              "category": "RMT_1777441647274",
+              "amount": 3900.0
+            }
+          ],
+          "options": {
+            "showDataLabels": true
+          },
+          "xaxisField": "category",
+          "yaxisField": "amount"
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "RED",
+          "category": "供应商风险",
+          "message": "供应商集中度高达 100.0%，存在供应链风险",
+          "relatedEntity": null,
+          "actionSuggestion": "建议开发备选供应商，分散采购风险"
+        },
+        {
+          "level": "INFO",
+          "category": "采购分布",
+          "message": "最大供应商 北京飞熊 采购金额 141,926.54 元",
+          "relatedEntity": "北京飞熊",
+          "actionSuggestion": "建议与该供应商协商更优惠的采购条款"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "当前活跃供应商数量较少，建议开发更多供应商以降低供应链风险",
+        "有 1 批次采购单价高于平均价格50%以上，建议核查采购价格"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-08T13:46:32.904343776",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "departmentRanking": [],
+    "regionRanking": [],
+    "alerts": [],
+    "recommendations": [],
+    "aiInsights": null,
+    "generatedAt": "2026-05-08T13:46:32.899148902",
+    "fromCache": false,
+    "cacheExpireAt": null,
+    "dataVersion": "1778219192899",
+    "alertCount": 0,
+    "urgentAlertCount": 0,
+    "highPriorityRecommendationCount": 0
+  },
+  "timestamp": "2026-05-08T13:46:32.925640785",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
