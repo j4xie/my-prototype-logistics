@@ -58,25 +58,45 @@ Per cutover runbook §2.2 recommendation, T6.4 uses **Option B** (staggered, 4 s
 
 ### 2.1 Stage-to-customer mapping
 
-| Stage | Day | Cutover window (CST suggestion) | Customers | Comms load |
+| Stage | Day | Cutover window (CST) | Customers | Comms load |
 |---|---|---|---|---|
-| **B1** | Day 1 | 03:00-05:00 (low-traffic) | F002, F003 (2) | 2 pre-notices, 2 post-confirms |
-| **B2** | Day 2 | 03:00-05:00 | F004, F006, R001 (3) | 3 pre-notices, 3 post-confirms |
-| **B3** | Day 3 | 03:00-05:00 | RES_GML_001, RES_3101_009 (2) | 2 pre-notices, 2 post-confirms |
-| **B4a** | Day 4 | 03:00-05:00 | R_GML_DEMO, R_XMX_CHAIN, R_XMX_FRESH, R_XMX_FRESH2 (4) | 4 pre-notices, 4 post-confirms |
-| **B4b** | Day 5 | 03:00-05:00 | R_XMX_FRESH3, R_YHDJ_DEMO, R_YJJ_DEMO (3) | 3 pre-notices, 3 post-confirms |
+| **B1** | Day 1 | 14:00-15:00 (T6.4 override) | F002, F003 (2) | 2 pre-notices, 2 post-confirms |
+| **B2** | Day 2 | 14:00-15:00 (T6.4 override) | F004, F006, R001 (3) | 3 pre-notices, 3 post-confirms |
+| **B3** | Day 3 | 14:00-15:00 (T6.4 override) | RES_GML_001, RES_3101_009 (2) | 2 pre-notices, 2 post-confirms |
+| **B4a** | Day 4 | 14:00-15:00 (T6.4 override) | R_GML_DEMO, R_XMX_CHAIN, R_XMX_FRESH, R_XMX_FRESH2 (4) | 4 pre-notices, 4 post-confirms |
+| **B4b** | Day 5 | 14:00-15:00 (T6.4 override) | R_XMX_FRESH3, R_YHDJ_DEMO, R_YJJ_DEMO (3) | 3 pre-notices, 3 post-confirms |
+
+**Long-term default**: 03:00-05:00 CST (low-traffic, see §2.2 below for full default-vs-override framework). T6.4 is a one-time event using 14:00-15:00 override; future cutovers post-customer-return revert to 03:00-05:00 default.
 
 **Total**: 14 pre-notices over 5 days (max 4/day = manageable for sales team). 14 post-confirms.
 
-### 2.2 Why 03:00-05:00 CST window
+### 2.2 T6.4 cutover window override — 14:00-15:00 CST (one-time, pre-customer-return state)
 
+**Long-term default** (post-customer-return, §2.1 baseline): **03:00-05:00 CST** low-traffic window. Rationale retained for future cutovers:
 - **餐饮 customers** (R_*, RES_*): low-traffic — post-meal-service, pre-breakfast prep. Real-time POS load minimal.
 - **F-numeric food/manufacturing** (F002-F006): no public ordering load, internal ops only. Window flexible but consistent 03:00-05:00 simplifies scheduling.
 - **Cutover blip target <2 min** (graceful nginx reload). Even if customer logs in during window, dashboard refresh shows new page within seconds.
 
-### 2.3 Per-customer window override
+**T6.4 explicit override** (organizer decision 2026-05-09, scoped to T6.4 5-stage cutover only): **14:00-15:00 CST** weekday afternoon block. Rationale:
+- **0 customers actively using product** in current pre-customer-return state — "low-traffic" defense provides no value when traffic is uniformly 0 across all hours
+- **Operator alertness > hypothetical low-traffic**: Steve / organizer / sister chats fully awake during day, rollback decisions made at peak cognitive function = lower error rate; 03:00 cutover historically introduces fatigue-driven mistakes
+- **Stage 3 48h soak fully observable**: spans 2 complete daytime business cycles end-to-end (D 14:00 → D+2 14:00) with all observers awake, vs night-cutover's first 12h being half-asleep coverage
+- **Cutover blip <2 min target preserved**: nginx graceful reload identical regardless of wall-clock time
+- **Customer-side risk unchanged**: with 0 active customer traffic, afternoon vs night makes no observable customer impact difference
 
-If sales team confirms a customer has **transactional sensitivity** during default window (e.g. 24h ordering, batch jobs at 04:00), defer that customer's stage by 1 day or shift to alternative window (e.g. 14:00-15:00 weekday afternoon lull). Document in §7 customization checklist.
+**Override is documented invocation**, not a hack — see §2.3 below for the alternative-window framework that validates this pattern. Once customers return (post-T6.4), future cutovers revert to §2.1 03:00-05:00 default per long-term enterprise convention.
+
+**Cross-reference**: organizer decision logged in memory `project_2026_05_09_organizer_handoff_taken.md`; handoff doc projection bug (4× repeated "May 10 14:00 CST" while shipped MOs anchored 03:00-05:00) caught by chat 2 during Stage 1 customer comms schedule prep, reconciled by Steve override 2026-05-09.
+
+### 2.3 Per-customer window override (when customers return)
+
+The default-vs-alternative window framework: long-term default (per §2.1 table baseline + §2.2) is **03:00-05:00 CST**; the alternative is **14:00-15:00 CST** (currently in use as T6.4 override).
+
+Once customers return (post-T6.4), if a future cutover stage's customer has **transactional sensitivity** at the active default window:
+- If default is 03:00-05:00 and customer has 24h ordering / 04:00 batch jobs → defer that customer's stage by 1 day or shift to **14:00-15:00** alternative
+- If default is 14:00-15:00 and customer has 午后 dashboard 高使用 / afternoon ops spike → defer that customer's stage by 1 day or shift back to **03:00-05:00** alternative
+
+Document choice in §7 customization checklist with explicit rationale (which window default applied, which alternative selected, why).
 
 ### 2.4 Inter-stage soak
 
@@ -314,13 +334,13 @@ Document in customer-facing tracker
 
 ### 6.2 Daily during-T6.4 cadence
 
-- **D-1 18:00**: Sales sends §3.1 pre-notices for next-day stage customers
-- **D 02:00**: 技术值班 final pre-flight (cutover runbook §3 checklist)
-- **D 03:00**: Cutover starts, §3.3 internal status begins
-- **D 03:30**: Smoke complete, §3.4 post-confirm sent to customers
-- **D 06:00**: Sales monitors customer feedback channels for first business hours
-- **D 18:00**: Day-end check, no issues → §3.5 stage GO confirm sent (or defer 24h)
-- **D+1 03:00**: Repeat for next stage
+- **D-1 14:00**: Sales sends §3.1 pre-notices for next-day stage customers (24h before cutover)
+- **D 13:00**: 技术值班 final pre-flight (cutover runbook §3 checklist; 1h before cutover)
+- **D 14:00**: Cutover starts, §3.3 internal status begins
+- **D 14:30**: Smoke complete, §3.4 post-confirm sent to customers
+- **D 14:30-18:00**: Sales monitors customer feedback channels through afternoon block (peak product-usage observation window once customers return; pre-customer-return state = uniformly 0)
+- **D 18:00**: End-of-business-day check, no issues → ongoing soak monitoring (§3.5 24h GO confirm sent at D+1 14:00, or defer)
+- **D+1 14:00**: Repeat for next stage (Stage 3 = D+2 14:00 due to 48h soak)
 
 ### 6.3 Sales feedback channel
 
@@ -444,7 +464,7 @@ T6.4 Stage B1 cannot trigger until **all** dependencies clear.
 |---|---|
 | 14 real customer factories per cutover runbook §1.1 | Authoritative roster, no re-discovery |
 | Strategy B 4-5 day stagger | Sales comms load distributed (max 4/day pre-notices) |
-| 03:00-05:00 CST low-traffic window | Most customers not actively using → comms can be lower-urgency tone |
+| T6.4 override window 14:00-15:00 CST (per §2.2) | 0 customers using product currently → "low-traffic" defense provides no value at any hour; operator-alertness preferred. Long-term default 03:00-05:00 CST returns post-customer-return. Comms can be lower-urgency tone (uniformly 0-traffic state). |
 | `_DEMO`/`_FRESH` suffix misleading | All 14 treated as customer-impacting (not test) — full comms protocol |
 | <2 min nginx blip target | Pre-notice can promise "瞬时刷新" (not minutes of downtime) |
 | 4-12h inter-stage soak | 24h GO confirm aligns with full business day cycle observation |

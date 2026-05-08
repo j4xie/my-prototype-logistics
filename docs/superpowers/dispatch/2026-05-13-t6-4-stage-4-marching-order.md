@@ -2,7 +2,7 @@
 
 **From**: organizer chat (Phase 2A T6.4 5-stage cutover)
 **Date drafted**: 2026-05-08
-**Target execution**: 2026-05-13 03:00-05:00 CST (Day 4 — restaurant chain pilots wave 1)
+**Target execution**: 2026-05-13 14:00-15:00 CST (Day 4 — restaurant chain pilots wave 1; T6.4 cutover window override per PR #141 §2.2)
 **Phase**: cutover execution — modifies prod nginx vhost on 139
 
 ---
