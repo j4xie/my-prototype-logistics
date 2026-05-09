@@ -1,8 +1,16 @@
 /**
- * Type validation test for useSmartBIShortcuts composable
- * This file ensures TypeScript types are correct and exports work as expected
+ * Type validation + smoke tests for useSmartBIShortcuts composable.
+ *
+ * Originally a pure type-check file (no describe/it) — vitest emits
+ * "No test suite found in file" and exits 1. Wrapped the type assertions
+ * in describe/it so vitest sees a real suite.
+ *
+ * The composable internally uses onMounted/onBeforeUnmount lifecycle hooks
+ * which only run inside a Vue component setup context. Calling it outside
+ * a component will warn but not throw. We assert the returned shape and
+ * type contract; integration tests live elsewhere.
  */
-
+import { describe, it, expect } from 'vitest';
 import { ref } from 'vue';
 import {
   useSmartBIShortcuts,
@@ -10,77 +18,70 @@ import {
   type ShortcutDefinition,
 } from '../useSmartBIShortcuts';
 
-// Test 1: Basic usage with all callbacks
-function test1() {
-  const config: ShortcutConfig = {
-    onPrevSheet: () => console.log('prev'),
-    onNextSheet: () => console.log('next'),
-    onRefresh: () => console.log('refresh'),
-    onExport: () => console.log('export'),
-    onExportPDF: () => console.log('pdf'),
-    onShare: () => console.log('share'),
-    onUpload: () => console.log('upload'),
-    onToggleLayout: () => console.log('toggle'),
-    onHelp: () => console.log('help'),
-    onFullscreen: () => console.log('fullscreen'),
-  };
+describe('useSmartBIShortcuts (type contract)', () => {
+  it('returns showHelp ref and shortcuts array for full config', () => {
+    const config: ShortcutConfig = {
+      onPrevSheet: () => {},
+      onNextSheet: () => {},
+      onRefresh: () => {},
+      onExport: () => {},
+      onExportPDF: () => {},
+      onShare: () => {},
+      onUpload: () => {},
+      onToggleLayout: () => {},
+      onHelp: () => {},
+      onFullscreen: () => {},
+    };
 
-  const { showHelp, shortcuts } = useSmartBIShortcuts(config);
+    const { showHelp, shortcuts } = useSmartBIShortcuts(config);
 
-  // Type checks
-  const _help: boolean = showHelp.value;
-  const _shortcuts: ShortcutDefinition[] = shortcuts;
+    expect(typeof showHelp.value).toBe('boolean');
+    expect(Array.isArray(shortcuts)).toBe(true);
+  });
 
-  console.log(_help, _shortcuts);
-}
+  it('accepts partial config (all callbacks optional)', () => {
+    const config: ShortcutConfig = {
+      onRefresh: () => {},
+    };
 
-// Test 2: Partial config (all callbacks are optional)
-function test2() {
-  const config: ShortcutConfig = {
-    onRefresh: () => console.log('refresh only'),
-  };
+    const { showHelp, shortcuts } = useSmartBIShortcuts(config);
 
-  const { showHelp, shortcuts } = useSmartBIShortcuts(config);
-  console.log(showHelp.value, shortcuts.length);
-}
+    expect(showHelp).toBeDefined();
+    expect(shortcuts.length).toBeGreaterThanOrEqual(0);
+  });
 
-// Test 3: With enabled ref
-function test3() {
-  const enabled = ref(true);
+  it('accepts empty config', () => {
+    const config: ShortcutConfig = {};
+    const { showHelp, shortcuts } = useSmartBIShortcuts(config);
 
-  const config: ShortcutConfig = {
-    onRefresh: () => console.log('refresh'),
-    enabled,
-  };
+    expect(showHelp).toBeDefined();
+    expect(shortcuts).toBeDefined();
+  });
 
-  const { showHelp } = useSmartBIShortcuts(config);
+  it('accepts enabled ref in config', () => {
+    const enabled = ref(true);
+    const config: ShortcutConfig = {
+      onRefresh: () => {},
+      enabled,
+    };
 
-  // Disable shortcuts
-  enabled.value = false;
+    const { showHelp } = useSmartBIShortcuts(config);
 
-  console.log(showHelp.value);
-}
+    enabled.value = false;
+    expect(showHelp).toBeDefined();
+  });
 
-// Test 4: Empty config (valid)
-function test4() {
-  const config: ShortcutConfig = {};
-  const { showHelp, shortcuts } = useSmartBIShortcuts(config);
-  console.log(showHelp.value, shortcuts);
-}
+  it('ShortcutDefinition shape compiles', () => {
+    const shortcut: ShortcutDefinition = {
+      key: 'Alt+R',
+      label: '刷新',
+      action: 'onRefresh',
+      description: '重新加载',
+    };
 
-// Test 5: ShortcutDefinition type
-function test5() {
-  const shortcut: ShortcutDefinition = {
-    key: 'Alt+R',
-    label: '刷新',
-    action: 'onRefresh',
-    description: '重新加载',
-  };
-
-  console.log(shortcut.key, shortcut.label);
-}
-
-// Export tests to prevent "unused" errors
-export { test1, test2, test3, test4, test5 };
-
-// This file is for type checking only, not for runtime execution
+    expect(shortcut.key).toBe('Alt+R');
+    expect(shortcut.label).toBe('刷新');
+    expect(shortcut.action).toBe('onRefresh');
+    expect(shortcut.description).toBe('重新加载');
+  });
+});
