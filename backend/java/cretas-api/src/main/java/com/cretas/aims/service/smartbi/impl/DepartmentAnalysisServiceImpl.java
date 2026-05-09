@@ -282,73 +282,6 @@ public class DepartmentAnalysisServiceImpl implements DepartmentAnalysisService 
                 .build();
     }
 
-    // ==================== 部门人员分布 ====================
-
-    @Override
-    public ChartConfig getDepartmentHeadcountChart(String factoryId, LocalDate date) {
-        log.info("获取部门人员分布: factoryId={}, date={}", factoryId, date);
-
-        // 获取最近日期的部门数据
-        List<SmartBiDepartmentData> departmentDataList = departmentDataRepository
-                .findByFactoryIdAndRecordDateBetween(factoryId, date.minusDays(30), date);
-
-        if (departmentDataList.isEmpty()) {
-            return createEmptyPieChart("部门人员分布");
-        }
-
-        // 获取每个部门最新的人员数据
-        Map<String, Integer> departmentHeadcount = new LinkedHashMap<>();
-        Map<String, LocalDate> departmentLatestDate = new HashMap<>();
-
-        for (SmartBiDepartmentData data : departmentDataList) {
-            String dept = data.getDepartment();
-            LocalDate recordDate = data.getRecordDate();
-
-            if (!departmentLatestDate.containsKey(dept) || recordDate.isAfter(departmentLatestDate.get(dept))) {
-                departmentLatestDate.put(dept, recordDate);
-                departmentHeadcount.put(dept, data.getHeadcount() != null ? data.getHeadcount() : 0);
-            }
-        }
-
-        // 构建饼图数据
-        List<Map<String, Object>> chartData = new ArrayList<>();
-        int totalHeadcount = 0;
-
-        for (Map.Entry<String, Integer> entry : departmentHeadcount.entrySet()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("department", entry.getKey());
-            item.put("headcount", entry.getValue());
-            chartData.add(item);
-            totalHeadcount += entry.getValue();
-        }
-
-        // 按人数降序排序
-        chartData.sort((a, b) -> ((Integer) b.get("headcount")).compareTo((Integer) a.get("headcount")));
-
-        // 计算百分比
-        for (Map<String, Object> item : chartData) {
-            int count = (Integer) item.get("headcount");
-            BigDecimal percentage = totalHeadcount > 0
-                    ? BigDecimal.valueOf(count * 100.0 / totalHeadcount).setScale(DISPLAY_SCALE, ROUNDING_MODE)
-                    : BigDecimal.ZERO;
-            item.put("percentage", percentage);
-        }
-
-        // 构建图表选项
-        Map<String, Object> options = new LinkedHashMap<>();
-        options.put("centerText", String.format("总人数: %d", totalHeadcount));
-        options.put("showPercentage", true);
-
-        return ChartConfig.builder()
-                .chartType("PIE")
-                .title("部门人员分布")
-                .xAxisField("department")
-                .yAxisField("headcount")
-                .data(chartData)
-                .options(options)
-                .build();
-    }
-
     // ==================== 部门趋势对比 ====================
 
     @Override
@@ -408,78 +341,6 @@ public class DepartmentAnalysisServiceImpl implements DepartmentAnalysisService 
                 .chartType("LINE")
                 .title("部门销售趋势对比")
                 .xAxisField("period")
-                .yAxisField("amount")
-                .seriesField("department")
-                .data(chartData)
-                .options(options)
-                .build();
-    }
-
-    // ==================== 部门销售占比 ====================
-
-    @Override
-    public ChartConfig getDepartmentShareTrend(String factoryId, LocalDate startDate, LocalDate endDate) {
-        log.info("获取部门销售占比变化: factoryId={}, period={} to {}", factoryId, startDate, endDate);
-
-        List<SmartBiSalesData> salesDataList = salesDataRepository
-                .findByFactoryIdAndOrderDateBetween(factoryId, startDate, endDate);
-
-        if (salesDataList.isEmpty()) {
-            return createEmptyAreaChart("部门销售占比变化");
-        }
-
-        // 按月份和部门聚合
-        Map<String, Map<String, BigDecimal>> monthlyData = aggregateTrendData(salesDataList, PERIOD_MONTH);
-
-        // 计算每月总额和占比
-        List<Map<String, Object>> chartData = new ArrayList<>();
-        Set<String> allDepartments = new LinkedHashSet<>();
-
-        // 收集所有部门
-        for (Map<String, BigDecimal> deptSales : monthlyData.values()) {
-            allDepartments.addAll(deptSales.keySet());
-        }
-
-        for (Map.Entry<String, Map<String, BigDecimal>> entry : monthlyData.entrySet()) {
-            String month = entry.getKey();
-            Map<String, BigDecimal> departmentSales = entry.getValue();
-
-            // 计算月度总额
-            BigDecimal monthTotal = departmentSales.values().stream()
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("month", month);
-            point.put("total", monthTotal.setScale(DISPLAY_SCALE, ROUNDING_MODE));
-
-            // 计算各部门占比
-            for (String dept : allDepartments) {
-                BigDecimal amount = departmentSales.getOrDefault(dept, BigDecimal.ZERO);
-                BigDecimal percentage = monthTotal.compareTo(BigDecimal.ZERO) > 0
-                        ? amount.multiply(BigDecimal.valueOf(100))
-                        .divide(monthTotal, SCALE, ROUNDING_MODE)
-                        : BigDecimal.ZERO;
-
-                point.put(dept, amount.setScale(DISPLAY_SCALE, ROUNDING_MODE));
-                point.put(dept + "_share", percentage.setScale(DISPLAY_SCALE, ROUNDING_MODE));
-            }
-
-            chartData.add(point);
-        }
-
-        // 按月份排序
-        chartData.sort((a, b) -> ((String) a.get("month")).compareTo((String) b.get("month")));
-
-        // 构建图表选项
-        Map<String, Object> options = new LinkedHashMap<>();
-        options.put("series", new ArrayList<>(allDepartments));
-        options.put("stack", true);
-        options.put("showPercentage", true);
-
-        return ChartConfig.builder()
-                .chartType("AREA")
-                .title("部门销售占比变化")
-                .xAxisField("month")
                 .yAxisField("amount")
                 .seriesField("department")
                 .data(chartData)
@@ -806,25 +667,9 @@ public class DepartmentAnalysisServiceImpl implements DepartmentAnalysisService 
                 .build();
     }
 
-    private ChartConfig createEmptyPieChart(String title) {
-        return ChartConfig.builder()
-                .chartType("PIE")
-                .title(title)
-                .data(Collections.emptyList())
-                .build();
-    }
-
     private ChartConfig createEmptyLineChart(String title) {
         return ChartConfig.builder()
                 .chartType("LINE")
-                .title(title)
-                .data(Collections.emptyList())
-                .build();
-    }
-
-    private ChartConfig createEmptyAreaChart(String title) {
-        return ChartConfig.builder()
-                .chartType("AREA")
                 .title(title)
                 .data(Collections.emptyList())
                 .build();
