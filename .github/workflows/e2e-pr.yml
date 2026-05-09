@@ -54,15 +54,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ── DB setup: create smartbi_db + smartbi_user (postgres service only creates cretas_*) ──
-      - name: Bootstrap smartbi_db + user
+      # ── DB setup: create smartbi_db + smartbi_user + pgvector ext on both DBs ──
+      - name: Bootstrap smartbi_db + user + pgvector ext on cretas_db & smartbi_db
         run: |
           psql -h localhost -U cretas_user -d cretas_db -c "CREATE USER smartbi_user WITH PASSWORD 'smartbi_pass';"
           psql -h localhost -U cretas_user -d cretas_db -c "CREATE DATABASE smartbi_db OWNER smartbi_user;"
           psql -h localhost -U cretas_user -d cretas_db -c "GRANT ALL PRIVILEGES ON DATABASE smartbi_db TO smartbi_user;"
-          # pgvector is not in the standard postgres:17 image — skip gracefully.
-          # Backend entities use BYTEA/BLOB for embeddings, so missing vector ext is OK for PR gate.
-          psql -h localhost -U cretas_user -d smartbi_db -c "CREATE EXTENSION IF NOT EXISTS vector;" 2>&1 || echo "::warning::pgvector extension not available — SmartBI semantic features will be disabled in CI"
+          # pgvector ext IS pre-installed in pgvector/pgvector:pg17 image (see services.postgres.image above)
+          # but each DB still needs explicit `CREATE EXTENSION vector` (extension is per-database).
+          # cretas_db: Java backend Flyway migrations create vector(N) columns → need ext.
+          # smartbi_db: Python smartbi schemas (food_kb embeddings etc.) need ext.
+          # Without this, Java backend Spring Boot startup dies during Hibernate init when
+          # encountering vector-typed entities; e2e-pr-gate fails with "Backend not responding"
+          # 4 minutes after wait-for-health timeout.
+          psql -h localhost -U cretas_user -d cretas_db   -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -h localhost -U cretas_user -d smartbi_db  -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       # ── Toolchain ────────────────────────────────────────────────────────────
       - uses: actions/setup-java@v4
@@ -100,12 +106,30 @@ jobs:
           echo "backend_pid=$!" >> $GITHUB_ENV
 
       - name: Wait for backend health (up to 4 min)
-        continue-on-error: true  # CI postgres lacks pgvector ext — infra debt, see main branch too
+        continue-on-error: true  # Defensive — backend bootstrap occasionally still flaky on CI runner; should be green now that pgvector ext is enabled on cretas_db
         run: bash tests/v1-e2e/scripts/wait-for-health.sh http://localhost:10010/api/mobile/health 240
 
-      - name: Wait-for-health result (non-blocking if CI postgres lacks pgvector)
+      - name: Wait-for-health result
         run: |
           curl -sf http://localhost:10010/api/mobile/health && echo OK || echo "Backend skipped (see /tmp/backend.log); downstream steps may fail cleanly"
+
+      # Diagnose backend startup failures: logback redirects all post-config logs to
+      # backend/java/cretas-api/logs/*.log (not /tmp/backend.log). Cat them when health
+      # check fails so root cause is visible in CI output.
+      - name: Diagnose backend on health failure
+        if: always()
+        run: |
+          echo "=== /tmp/backend.log (mvn stdout — usually only logback init + Spring banner) ==="
+          tail -200 /tmp/backend.log || echo "(no /tmp/backend.log)"
+          echo ""
+          echo "=== backend/java/cretas-api/logs/*.log (Spring runtime — actual exceptions live here) ==="
+          for f in backend/java/cretas-api/logs/cretas-backend*.log; do
+            if [ -f "$f" ]; then
+              echo "--- $f (last 200 lines) ---"
+              tail -200 "$f"
+              echo ""
+            fi
+          done || echo "(no project logs/*.log files)"
 
       # ── Web-admin startup ────────────────────────────────────────────────────
       - name: Start Vite dev server (background)
