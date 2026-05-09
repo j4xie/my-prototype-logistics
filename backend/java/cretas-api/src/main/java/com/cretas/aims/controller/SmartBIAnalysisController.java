@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -103,38 +104,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "End date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Department filter") @RequestParam(required = false) String department,
             @Parameter(description = "Dimension: salesperson/product/customer/trend") @RequestParam(required = false) String dimension) {
-
-        log.info("Get sales analysis: factoryId={}, startDate={}, endDate={}, dimension={}", factoryId, startDate, endDate, dimension);
-
-        try {
-            if (smartBIService != null) {
-                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(factoryId, startDate, endDate, "sales");
-                return ResponseEntity.ok(ApiResponse.success(result));
-            }
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-
-            if ("salesperson".equals(dimension)) {
-                result.put("ranking", salesAnalysisService.getSalespersonRanking(factoryId, startDate, endDate));
-            } else if ("product".equals(dimension)) {
-                result.put("ranking", salesAnalysisService.getProductRanking(factoryId, startDate, endDate));
-                result.put("chart", salesAnalysisService.getProductDistributionChart(factoryId, startDate, endDate));
-            } else if ("customer".equals(dimension)) {
-                result.put("ranking", salesAnalysisService.getCustomerRanking(factoryId, startDate, endDate));
-            } else if ("trend".equals(dimension)) {
-                result.put("chart", salesAnalysisService.getSalesTrendChart(factoryId, startDate, endDate, "DAY"));
-            } else {
-                DashboardResponse overview = salesAnalysisService.getSalesOverview(factoryId, startDate, endDate);
-                result.put("overview", overview);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get sales analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取销售分析失败: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/sales factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/sales (since 2026-05-09)")
+        );
     }
 
     // ==================== Department Analysis ====================
@@ -146,34 +119,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Start date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "End date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Department name") @RequestParam(required = false) String department) {
-
-        log.info("Get department analysis: factoryId={}, startDate={}, endDate={}, department={}", factoryId, startDate, endDate, department);
-
-        try {
-            if (smartBIService != null) {
-                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(factoryId, startDate, endDate, "department");
-                return ResponseEntity.ok(ApiResponse.success(result));
-            }
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-
-            if (department != null && !department.isEmpty()) {
-                DashboardResponse detail = departmentAnalysisService.getDepartmentDetail(factoryId, department, startDate, endDate);
-                result.put("detail", detail);
-            } else {
-                result.put("ranking", departmentAnalysisService.getDepartmentRanking(factoryId, startDate, endDate));
-                result.put("completionRates", departmentAnalysisService.getDepartmentCompletionRates(factoryId, startDate, endDate));
-                result.put("efficiencyMatrix", departmentAnalysisService.getDepartmentEfficiencyMatrix(factoryId, startDate, endDate));
-                result.put("trendComparison", departmentAnalysisService.getDepartmentTrendComparison(factoryId, startDate, endDate, "MONTH"));
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get department analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get department analysis failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/department factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/department (since 2026-05-09)")
+        );
     }
 
     // ==================== Region Analysis ====================
@@ -185,36 +134,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Start date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "End date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Region name") @RequestParam(required = false) String region) {
-
-        log.info("Get region analysis: factoryId={}, startDate={}, endDate={}, region={}", factoryId, startDate, endDate, region);
-
-        try {
-            if (smartBIService != null) {
-                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(factoryId, startDate, endDate, "region");
-                return ResponseEntity.ok(ApiResponse.success(result));
-            }
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-
-            if (region != null && !region.isEmpty()) {
-                DashboardResponse detail = regionAnalysisService.getRegionDetail(factoryId, region, startDate, endDate);
-                result.put("detail", detail);
-                result.put("provinceRanking", regionAnalysisService.getProvinceRanking(factoryId, region, startDate, endDate));
-            } else {
-                result.put("ranking", regionAnalysisService.getRegionRanking(factoryId, startDate, endDate));
-                result.put("opportunityScores", regionAnalysisService.getRegionOpportunityScores(factoryId, startDate, endDate));
-                result.put("heatmap", regionAnalysisService.getGeographicHeatmapData(factoryId, startDate, endDate));
-                result.put("treemap", regionAnalysisService.getRegionProvinceTreemap(factoryId, startDate, endDate));
-                result.put("allRegions", regionAnalysisService.getAllRegions(factoryId));
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get region analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get region analysis failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/region factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/region (since 2026-05-09)")
+        );
     }
 
     // ==================== Finance Analysis ====================
@@ -226,51 +149,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Start date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "End date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Analysis type: profit/cost/receivable/payable/budget") @RequestParam(required = false) String analysisType) {
-
-        log.info("Get finance analysis: factoryId={}, startDate={}, endDate={}, type={}", factoryId, startDate, endDate, analysisType);
-
-        try {
-            // When no specific analysisType, use smartBIService overview if available
-            if (smartBIService != null && (analysisType == null || analysisType.isEmpty())) {
-                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(factoryId, startDate, endDate, "finance");
-                return ResponseEntity.ok(ApiResponse.success(result));
-            }
-
-            // Per-type analysis: use financeAnalysisService for tab-specific data
-            Map<String, Object> result = new HashMap<>();
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-
-            if ("profit".equals(analysisType)) {
-                result.put("metrics", financeAnalysisService.getProfitMetrics(factoryId, startDate, endDate));
-                result.put("trendChart", financeAnalysisService.getProfitTrendChart(factoryId, startDate, endDate, "MONTH"));
-            } else if ("cost".equals(analysisType)) {
-                result.put("structureChart", financeAnalysisService.getCostStructureChart(factoryId, startDate, endDate));
-                result.put("trendChart", financeAnalysisService.getCostTrendChart(factoryId, startDate, endDate, "MONTH"));
-            } else if ("receivable".equals(analysisType)) {
-                result.put("metrics", financeAnalysisService.getReceivableMetrics(factoryId, endDate));
-                result.put("agingChart", financeAnalysisService.getReceivableAgingChart(factoryId, endDate));
-                result.put("overdueRanking", financeAnalysisService.getOverdueCustomerRanking(factoryId, endDate));
-                result.put("trendChart", financeAnalysisService.getReceivableTrendChart(factoryId, startDate, endDate));
-            } else if ("payable".equals(analysisType)) {
-                result.put("metrics", financeAnalysisService.getPayableMetrics(factoryId, endDate));
-                result.put("agingChart", financeAnalysisService.getPayableAgingChart(factoryId, endDate));
-            } else if ("budget".equals(analysisType)) {
-                int year = endDate.getYear();
-                int month = endDate.getMonthValue();
-                result.put("metrics", financeAnalysisService.getBudgetMetrics(factoryId, year, month));
-                result.put("waterfall", financeAnalysisService.getBudgetExecutionWaterfall(factoryId, year));
-                result.put("comparison", financeAnalysisService.getBudgetVsActualChart(factoryId, startDate, endDate));
-            } else {
-                DashboardResponse overview = financeAnalysisService.getFinanceOverview(factoryId, startDate, endDate);
-                result.put("overview", overview);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get finance analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get finance analysis failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/finance factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/finance (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/analysis/finance/budget-achievement")
@@ -279,16 +161,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Year") @RequestParam int year,
             @Parameter(description = "Metric: revenue/cost/profit/expense") @RequestParam(defaultValue = "revenue") String metric) {
-
-        log.info("Get budget achievement: factoryId={}, year={}, metric={}", factoryId, year, metric);
-
-        try {
-            ChartConfig result = financeAnalysisService.getBudgetAchievementChart(factoryId, year, metric);
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get budget achievement failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get budget achievement failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/finance/budget-achievement factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/finance/budget-achievement (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/analysis/finance/yoy-mom")
@@ -299,16 +175,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Start period") @RequestParam String startPeriod,
             @Parameter(description = "End period") @RequestParam(required = false) String endPeriod,
             @Parameter(description = "Metric: revenue/cost/profit/gross_margin") @RequestParam(defaultValue = "revenue") String metric) {
-
-        log.info("Get YoY/MoM: factoryId={}, periodType={}, metric={}", factoryId, periodType, metric);
-
-        try {
-            ChartConfig result = financeAnalysisService.getYoYMoMComparisonChart(factoryId, periodType, startPeriod, endPeriod, metric);
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get YoY/MoM failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get YoY/MoM failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/finance/yoy-mom factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/finance/yoy-mom (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/analysis/finance/category-comparison")
@@ -317,16 +187,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Current year") @RequestParam int year,
             @Parameter(description = "Compare year") @RequestParam int compareYear) {
-
-        log.info("Get category comparison: factoryId={}, year={}, compareYear={}", factoryId, year, compareYear);
-
-        try {
-            ChartConfig result = financeAnalysisService.getCategoryStructureComparisonChart(factoryId, year, compareYear);
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get category comparison failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get category comparison failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/finance/category-comparison factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/finance/category-comparison (since 2026-05-09)")
+        );
     }
 
     // ==================== Production Analysis ====================
@@ -415,36 +279,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Start date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "End date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Analysis type: turnover/expiry/aging") @RequestParam(required = false) String analysisType) {
-
-        log.info("Get inventory analysis: factoryId={}, type={}", factoryId, analysisType);
-
-        try {
-            Map<String, Object> result = new HashMap<>();
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-
-            if ("turnover".equals(analysisType)) {
-                result.put("metrics", inventoryHealthAnalysisService.getTurnoverAnalysis(factoryId, startDate, endDate));
-                result.put("ranking", inventoryHealthAnalysisService.getTurnoverByCategory(factoryId, startDate, endDate));
-                result.put("trendChart", inventoryHealthAnalysisService.getTurnoverTrendChart(factoryId, startDate, endDate, "MONTH"));
-            } else if ("expiry".equals(analysisType)) {
-                result.put("riskAnalysis", inventoryHealthAnalysisService.getExpiryRiskAnalysis(factoryId));
-                result.put("expiringBatches", inventoryHealthAnalysisService.getExpiringBatchesRanking(factoryId, 30));
-                result.put("riskChart", inventoryHealthAnalysisService.getExpiryRiskChart(factoryId));
-            } else if ("aging".equals(analysisType)) {
-                result.put("agingMetrics", inventoryHealthAnalysisService.getAgingMetrics(factoryId));
-                result.put("agingChart", inventoryHealthAnalysisService.getInventoryAgingChart(factoryId));
-                result.put("longAgingBatches", inventoryHealthAnalysisService.getLongAgingBatchesRanking(factoryId, 60));
-            } else {
-                DashboardResponse overview = inventoryHealthAnalysisService.getInventoryHealth(factoryId, startDate, endDate);
-                result.put("overview", overview);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get inventory analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get inventory analysis failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/inventory factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/inventory (since 2026-05-09)")
+        );
     }
 
     // ==================== Procurement Analysis ====================
@@ -456,33 +294,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Start date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "End date") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Analysis type: supplier/cost/trend") @RequestParam(required = false) String analysisType) {
-
-        log.info("Get procurement analysis: factoryId={}, type={}", factoryId, analysisType);
-
-        try {
-            Map<String, Object> result = new HashMap<>();
-            result.put("startDate", startDate);
-            result.put("endDate", endDate);
-
-            if ("supplier".equals(analysisType)) {
-                result.put("ranking", procurementAnalysisService.getSupplierRanking(factoryId, startDate, endDate));
-                result.put("evaluation", procurementAnalysisService.getSupplierEvaluation(factoryId, startDate, endDate));
-            } else if ("cost".equals(analysisType)) {
-                result.put("metrics", procurementAnalysisService.getCostMetrics(factoryId, startDate, endDate));
-                result.put("costAnalysis", procurementAnalysisService.getPurchaseCostAnalysis(factoryId, startDate, endDate));
-                result.put("categoryRanking", procurementAnalysisService.getMaterialCategoryRanking(factoryId, startDate, endDate));
-            } else if ("trend".equals(analysisType)) {
-                result.put("trendChart", procurementAnalysisService.getProcurementTrendChart(factoryId, startDate, endDate, "MONTH"));
-            } else {
-                DashboardResponse overview = procurementAnalysisService.getProcurementOverview(factoryId, startDate, endDate);
-                result.put("overview", overview);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(result));
-        } catch (Exception e) {
-            log.error("Get procurement analysis failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get procurement analysis failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /analysis/procurement factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/analysis/procurement (since 2026-05-09)")
+        );
     }
 
     // ==================== Natural Language Query ====================
@@ -592,28 +407,10 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<List<Alert>>> getAlerts(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Category: sales/finance/department") @RequestParam(required = false) String category) {
-
-        log.info("Get alerts: factoryId={}, category={}", factoryId, category);
-
-        try {
-            DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod("month");
-            List<Alert> alerts;
-
-            if ("sales".equals(category)) {
-                alerts = recommendationService.generateSalesAlerts(factoryId, range);
-            } else if ("finance".equals(category)) {
-                alerts = recommendationService.generateFinanceAlerts(factoryId, range);
-            } else if ("department".equals(category)) {
-                alerts = recommendationService.generateDepartmentAlerts(factoryId, range);
-            } else {
-                alerts = recommendationService.generateAllAlerts(factoryId, range);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(alerts));
-        } catch (Exception e) {
-            log.error("Get alerts failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get alerts failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /alerts factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/alerts (since 2026-05-09)")
+        );
     }
 
     // ==================== Recommendations ====================
@@ -623,17 +420,10 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<List<Recommendation>>> getRecommendations(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Analysis type: sales/finance/department/all") @RequestParam(required = false) String analysisType) {
-
-        log.info("Get recommendations: factoryId={}, type={}", factoryId, analysisType);
-
-        try {
-            String type = analysisType != null ? analysisType : "all";
-            List<Recommendation> recommendations = recommendationService.generateRecommendations(factoryId, type);
-            return ResponseEntity.ok(ApiResponse.success(recommendations));
-        } catch (Exception e) {
-            log.error("Get recommendations failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get recommendations failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /recommendations factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/recommendations (since 2026-05-09)")
+        );
     }
 
     // ==================== Incentive Plans ====================
@@ -644,32 +434,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Target type: salesperson/department/region") @PathVariable String targetType,
             @Parameter(description = "Target ID") @PathVariable String targetId) {
-
-        log.info("Get incentive plan: factoryId={}, targetType={}, targetId={}", factoryId, targetType, targetId);
-
-        try {
-            DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod("month");
-            IncentivePlan plan;
-
-            switch (targetType) {
-                case "salesperson":
-                    plan = recommendationService.generateSalespersonIncentivePlan(factoryId, targetId, range);
-                    break;
-                case "department":
-                    plan = recommendationService.generateDepartmentIncentivePlan(factoryId, targetId, range);
-                    break;
-                case "region":
-                    plan = recommendationService.generateIncentivePlan(factoryId, targetType);
-                    break;
-                default:
-                    return ResponseEntity.ok(ApiResponse.error("Unsupported target type: " + targetType));
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(plan));
-        } catch (Exception e) {
-            log.error("Get incentive plan failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get incentive plan failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /incentive-plan/{}/{} factoryId={} returning 410 Gone", targetType, targetId, factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/incentive-plan/{targetType}/{targetId} (since 2026-05-09)")
+        );
     }
 
     // ==================== Schema Management ====================
@@ -681,16 +449,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Excel file") @RequestParam("file") MultipartFile file,
             @Parameter(description = "Datasource name") @RequestParam("datasourceName") String datasourceName) {
-
-        log.info("Upload and detect schema: factoryId={}, datasourceName={}", factoryId, datasourceName);
-
-        try {
-            SchemaChangePreview preview = schemaService.uploadAndDetectSchema(file, datasourceName, factoryId);
-            return ResponseEntity.ok(ApiResponse.success("Schema detection complete", preview));
-        } catch (Exception e) {
-            log.error("Schema detection failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Schema detection failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /datasource/upload factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/datasource/upload (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/datasource/{datasourceId}/preview")
@@ -698,16 +460,10 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<SchemaChangePreview>> previewSchemaChanges(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Datasource ID") @PathVariable Long datasourceId) {
-
-        log.info("Preview schema changes: factoryId={}, datasourceId={}", factoryId, datasourceId);
-
-        try {
-            SchemaChangePreview preview = schemaService.previewSchemaChanges(datasourceId);
-            return ResponseEntity.ok(ApiResponse.success(preview));
-        } catch (Exception e) {
-            log.error("Get schema preview failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get preview failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /datasource/{}/preview factoryId={} returning 410 Gone", datasourceId, factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/datasource/{id}/preview (since 2026-05-09)")
+        );
     }
 
     @RequirePermission({"analytics:read_write"})
@@ -716,32 +472,20 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<Void>> applySchemaChanges(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @RequestBody @Valid SchemaApplyRequest request) {
-
-        log.info("Apply schema changes: factoryId={}, datasourceId={}", factoryId, request.getDatasourceId());
-
-        try {
-            schemaService.applySchemaChanges(request);
-            return ResponseEntity.ok(ApiResponse.successMessage("Schema changes applied"));
-        } catch (Exception e) {
-            log.error("Apply schema changes failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Apply changes failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /datasource/apply factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/datasource/apply (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/datasource/list")
     @Operation(summary = "List datasources", description = "Get all datasources for the factory")
     public ResponseEntity<ApiResponse<List<SmartBiDatasource>>> listDatasources(
             @Parameter(description = "Factory ID") @PathVariable String factoryId) {
-
-        log.info("List datasources: factoryId={}", factoryId);
-
-        try {
-            List<SmartBiDatasource> datasources = schemaService.listDatasources(factoryId);
-            return ResponseEntity.ok(ApiResponse.success(datasources));
-        } catch (Exception e) {
-            log.error("List datasources failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("List failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /datasource/list factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/datasource/list (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/datasource/{datasourceId}/fields")
@@ -749,16 +493,10 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<List<SmartBiFieldDefinition>>> getDatasourceFields(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Datasource ID") @PathVariable Long datasourceId) {
-
-        log.info("Get field definitions: factoryId={}, datasourceId={}", factoryId, datasourceId);
-
-        try {
-            List<SmartBiFieldDefinition> fields = schemaService.getDatasourceFields(datasourceId);
-            return ResponseEntity.ok(ApiResponse.success(fields));
-        } catch (Exception e) {
-            log.error("Get field definitions failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get field definitions failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /datasource/{}/fields factoryId={} returning 410 Gone", datasourceId, factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/datasource/{id}/fields (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/datasource/{datasourceId}/history")
@@ -767,16 +505,10 @@ public class SmartBIAnalysisController {
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Datasource ID") @PathVariable Long datasourceId,
             @PageableDefault(size = 20) Pageable pageable) {
-
-        log.info("Get schema history: factoryId={}, datasourceId={}", factoryId, datasourceId);
-
-        try {
-            Page<SmartBiSchemaHistory> history = schemaService.getSchemaHistory(datasourceId, pageable);
-            return ResponseEntity.ok(ApiResponse.success(history));
-        } catch (Exception e) {
-            log.error("Get schema history failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get history failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /datasource/{}/history factoryId={} returning 410 Gone", datasourceId, factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/datasource/{id}/history (since 2026-05-09)")
+        );
     }
 
     // ==================== Internal DTOs ====================
@@ -957,8 +689,10 @@ public class SmartBIAnalysisController {
     @Operation(summary = "List query templates", description = "Get all query templates for a factory")
     public ResponseEntity<ApiResponse<List<SmartBiQueryTemplate>>> getQueryTemplates(
             @PathVariable String factoryId) {
-        List<SmartBiQueryTemplate> templates = queryTemplateRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId);
-        return ResponseEntity.ok(ApiResponse.success(templates));
+        log.info("[SMARTBI_MIGRATED] GET /query-templates factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/query-templates (since 2026-05-09)")
+        );
     }
 
     @RequirePermission({"analytics:read_write"})
@@ -967,9 +701,10 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<SmartBiQueryTemplate>> createQueryTemplate(
             @PathVariable String factoryId,
             @RequestBody SmartBiQueryTemplate template) {
-        template.setFactoryId(factoryId);
-        SmartBiQueryTemplate saved = queryTemplateRepository.save(template);
-        return ResponseEntity.ok(ApiResponse.success(saved));
+        log.info("[SMARTBI_MIGRATED] POST /query-templates factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/query-templates (since 2026-05-09)")
+        );
     }
 
     @RequirePermission({"analytics:read_write"})
@@ -979,18 +714,10 @@ public class SmartBIAnalysisController {
             @PathVariable String factoryId,
             @PathVariable Long templateId,
             @RequestBody SmartBiQueryTemplate template) {
-        return queryTemplateRepository.findById(templateId)
-                .filter(t -> factoryId.equals(t.getFactoryId()))
-                .map(existing -> {
-                    existing.setName(template.getName());
-                    existing.setCategory(template.getCategory());
-                    existing.setDescription(template.getDescription());
-                    existing.setQueryTemplate(template.getQueryTemplate());
-                    existing.setParameters(template.getParameters());
-                    SmartBiQueryTemplate saved = queryTemplateRepository.save(existing);
-                    return ResponseEntity.ok(ApiResponse.success(saved));
-                })
-                .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));
+        log.info("[SMARTBI_MIGRATED] PUT /query-templates/{} factoryId={} returning 410 Gone", templateId, factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/query-templates/{id} (since 2026-05-09)")
+        );
     }
 
     @RequirePermission({"analytics:read_write"})
@@ -999,13 +726,10 @@ public class SmartBIAnalysisController {
     public ResponseEntity<ApiResponse<Void>> deleteQueryTemplate(
             @PathVariable String factoryId,
             @PathVariable Long templateId) {
-        return queryTemplateRepository.findById(templateId)
-                .filter(t -> factoryId.equals(t.getFactoryId()))
-                .map(existing -> {
-                    queryTemplateRepository.delete(existing);
-                    return ResponseEntity.ok(ApiResponse.<Void>success(null));
-                })
-                .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));
+        log.info("[SMARTBI_MIGRATED] DELETE /query-templates/{} factoryId={} returning 410 Gone", templateId, factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/query-templates/{id} (since 2026-05-09)")
+        );
     }
 
     private List<String> generateFollowUpQuestions(IntentResult intentResult) {

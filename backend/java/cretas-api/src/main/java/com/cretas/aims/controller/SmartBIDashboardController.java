@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -346,31 +347,10 @@ public class SmartBIDashboardController {
     @Operation(summary = "Get data date range", description = "Auto-detect sales data time span in database")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDataDateRange(
             @Parameter(description = "Factory ID") @PathVariable String factoryId) {
-
-        log.info("Get data date range: factoryId={}", factoryId);
-
-        try {
-            Map<String, Object> result = new HashMap<>();
-
-            if (smartBIService != null) {
-                DateRange dataRange = smartBIService.getDataDateRange(factoryId);
-                if (dataRange != null && dataRange.isValid()) {
-                    result.put("hasData", true);
-                    result.put("startDate", dataRange.getStartDate().toString());
-                    result.put("endDate", dataRange.getEndDate().toString());
-                    result.put("granularity", dataRange.getGranularity());
-                    result.put("description", dataRange.getOriginalExpression());
-                    return ResponseEntity.ok(ApiResponse.success("Data date range detected", result));
-                }
-            }
-
-            result.put("hasData", false);
-            result.put("message", "No sales data detected");
-            return ResponseEntity.ok(ApiResponse.success("No sales data detected", result));
-        } catch (Exception e) {
-            log.error("Get data date range failed: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("Get data date range failed: " + ErrorSanitizer.sanitize(e)));
-        }
+        log.info("[SMARTBI_MIGRATED] /data-date-range factoryId={} returning 410 Gone", factoryId);
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/data-date-range (since 2026-05-09)")
+        );
     }
 
     @GetMapping("/dashboard")
