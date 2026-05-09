@@ -1,0 +1,4 @@
+# Generic health-check preset — for deploy-verify use case.
+
+GET /api/mobile/health
+GET /api/smartbi/health

@@ -1,0 +1,33 @@
+# 22 SmartBI analysis endpoints already on Python post-T6.4 (per PR #178 §3.1.a)
+# Use with replay-and-compare.py: java vs python dict-eq match rate.
+# Same paths as preset-stub-23 minus /data-date-range (23rd is on Dashboard ctrl).
+
+# 9 analysis
+GET /api/mobile/{factoryId}/smart-bi/analysis/sales?startDate=2026-01-01&endDate=2026-05-09
+GET /api/mobile/{factoryId}/smart-bi/analysis/department?startDate=2026-01-01&endDate=2026-05-09
+GET /api/mobile/{factoryId}/smart-bi/analysis/region?startDate=2026-01-01&endDate=2026-05-09
+GET /api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-05-09
+GET /api/mobile/{factoryId}/smart-bi/analysis/finance/budget-achievement?year=2026&metric=revenue
+GET /api/mobile/{factoryId}/smart-bi/analysis/finance/yoy-mom?periodType=MONTH&startPeriod=2026-01&metric=revenue
+GET /api/mobile/{factoryId}/smart-bi/analysis/finance/category-comparison?year=2026&compareYear=2025
+GET /api/mobile/{factoryId}/smart-bi/analysis/inventory?startDate=2026-01-01&endDate=2026-05-09
+GET /api/mobile/{factoryId}/smart-bi/analysis/procurement?startDate=2026-01-01&endDate=2026-05-09
+
+# 3 alerts/recs/incentive
+GET /api/mobile/{factoryId}/smart-bi/alerts
+GET /api/mobile/{factoryId}/smart-bi/recommendations
+GET /api/mobile/{factoryId}/smart-bi/incentive-plan/salesperson/test_id
+
+# 6 datasource
+POST /api/mobile/{factoryId}/smart-bi/datasource/upload
+GET /api/mobile/{factoryId}/smart-bi/datasource/1/preview
+POST /api/mobile/{factoryId}/smart-bi/datasource/apply
+GET /api/mobile/{factoryId}/smart-bi/datasource/list
+GET /api/mobile/{factoryId}/smart-bi/datasource/1/fields
+GET /api/mobile/{factoryId}/smart-bi/datasource/1/history
+
+# 4 query-templates
+GET /api/mobile/{factoryId}/smart-bi/query-templates
+POST /api/mobile/{factoryId}/smart-bi/query-templates
+PUT /api/mobile/{factoryId}/smart-bi/query-templates/1
+DELETE /api/mobile/{factoryId}/smart-bi/query-templates/1
