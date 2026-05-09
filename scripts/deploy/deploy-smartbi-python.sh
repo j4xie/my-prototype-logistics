@@ -230,12 +230,44 @@ case "$DEPLOY_ENV" in
         ;;
 esac
 
+# SG Phase 3 收紧 (2026-04-11, per .claude/rules/aliyun-credentials.md) 后 47:8083/8084
+# 仅允许 nginx 139 source IP (139.196.165.140/32). 本地开发机 curl 拿 HTTP 000 被
+# 防火墙 reject, deploy script 误判为 server down. 改走 SSH 进 47 本机 curl
+# localhost:${port}/health 绕过 SG 限制 — 服务真实状态跟 deploy success 都能正确反映.
+wait_for_health_via_ssh() {
+    local port="$1"
+    local retries="${2:-15}"
+    local interval="${3:-2}"
+    local total_wait=$((retries * interval))
+
+    log "INFO" "健康检查 (SSH localhost): port=${port} (最多等待 ${total_wait}s)"
+
+    local i status=""
+    for i in $(seq 1 "$retries"); do
+        status=$(ssh "$SERVER" "curl -s -o /dev/null --connect-timeout 2 --max-time 3 -w '%{http_code}' http://localhost:${port}/health 2>/dev/null || echo '000'" 2>/dev/null | tail -1)
+
+        if [ "$status" = "200" ]; then
+            log "INFO" "服务正常 (HTTP 200, 等待 $((i * interval))s)"
+            return 0
+        fi
+
+        if [ $((i % 5)) -eq 0 ]; then
+            log "INFO" "等待服务启动... ($((i * interval))/${total_wait}s, HTTP $status)"
+        fi
+
+        sleep "$interval"
+    done
+
+    log "ERROR" "健康检查超时 (${total_wait}s), 最后状态: HTTP $status"
+    return 1
+}
+
 # 5. 验证服务
 log "INFO" "[5/5] 验证服务..."
 sleep 3
 
 if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
-    if wait_for_health "http://${SERVER_IP}:8083/health" 15 2; then
+    if wait_for_health_via_ssh 8083 15 2; then
         log "INFO" "[生产] Python 服务 (8083) 部署成功"
     else
         log "WARN" "[生产] 健康检查超时，请检查: ssh $SERVER 'tail -50 $REMOTE_CRETAS_DIR/python-prod.log'"
@@ -243,7 +275,7 @@ if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
 fi
 
 if [[ "$DEPLOY_ENV" == "test" || "$DEPLOY_ENV" == "all" ]]; then
-    if wait_for_health "http://${SERVER_IP}:8084/health" 15 2; then
+    if wait_for_health_via_ssh 8084 15 2; then
         log "INFO" "[测试] Python 服务 (8084) 部署成功"
     else
         log "WARN" "[测试] 健康检查超时，请检查: ssh $SERVER 'tail -50 $REMOTE_CRETAS_DIR/python-test.log'"
