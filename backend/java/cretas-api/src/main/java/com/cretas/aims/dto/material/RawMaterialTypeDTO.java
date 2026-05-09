@@ -61,4 +61,13 @@ public class RawMaterialTypeDTO {
     private BigDecimal currentStock;
     private BigDecimal totalValue;
     private BigDecimal movingAvgPrice;
+
+    // C-6 Canvas Reactive Default (2026-05-09): 包装层级换算系数 + 二级单位.
+    // 由 RawMaterialTypeServiceImpl.getMaterialTypeById 单点 LEFT JOIN
+    // material_packaging_hierarchy 写入 (其他 list 端点不取, 避免 N+1).
+    // 前端 ReferenceSelector projectFields 选物料后写到 row 的 _level1PerLevel2 /
+    // _level2Unit shadow 字段, 让 boxQuantity 等 computed 表达式可引用包装数据.
+    // null 表示该 material 没配置包装 — 前端 boxQuantity computed 表达式必须 null-guard.
+    private BigDecimal level1PerLevel2;
+    private String level2Unit;
 }
