@@ -12,6 +12,8 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ConversionRepository;
+import com.cretas.aims.repository.MaterialPackagingHierarchyRepository;
+import com.cretas.aims.entity.MaterialPackagingHierarchy;
 import com.cretas.aims.service.RawMaterialTypeService;
 import com.cretas.aims.utils.ExcelUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +49,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
     private final RawMaterialTypeRepository materialTypeRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final ConversionRepository conversionRepository;
+    private final MaterialPackagingHierarchyRepository packagingRepository;  // C-6: enrich getById with packaging
     private final ExcelUtil excelUtil;
 
     @PersistenceContext
@@ -247,7 +250,19 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                     .withHint("当前原材料类型不属于该工厂, 无法查看");
         }
 
-        return convertToDTO(materialType);
+        RawMaterialTypeDTO dto = convertToDTO(materialType);
+
+        // C-6 Canvas Reactive Default (2026-05-09): enrich with packaging hierarchy fields
+        // for the by-id endpoint only (frontend ReferenceSelector projectFields fetchById path).
+        // List endpoints intentionally don't enrich (avoids N+1 query on /raw-material-types).
+        // Returns null when no packaging configured — frontend boxQuantity computed expr
+        // does null-guard via `_level1PerLevel2 != null && _level1PerLevel2 > 0 ? ... : null`.
+        packagingRepository.findByMaterialTypeId(id).ifPresent(pkg -> {
+            dto.setLevel1PerLevel2(pkg.getLevel1PerLevel2());
+            dto.setLevel2Unit(pkg.getLevel2Unit());
+        });
+
+        return dto;
     }
 
     @Override
