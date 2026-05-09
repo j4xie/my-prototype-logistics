@@ -169,6 +169,20 @@ function getLabel(field: EffectiveField): string {
   return config.value?.customLabels?.[field.code] || field.label
 }
 
+/**
+ * C-6 Task 4: 接收顶层 ReferenceSelector @project event, 写 formData shadow 字段.
+ * computedWhen 是 Vue computed property (line 156-165), 自动 react formData 变化
+ * 重算, 不需要手动 trigger.
+ *
+ * shadowKey 已在 ReferenceSelector.emitProjectFields (SHADOW_KEY_RE) 校验,
+ * 单一 emit 来源, 此处直接 spread 不重复 validate.
+ */
+function onTopLevelProject(projected: Record<string, unknown>) {
+  for (const [k, v] of Object.entries(projected)) {
+    formData.value[k] = v
+  }
+}
+
 // 提交
 function handleSubmit() {
   if (!config.value) return
@@ -196,11 +210,24 @@ function handleSubmit() {
 
   // Canvas V3: Split JPA vs dynamic fields so backend can route them
   // Dynamic fields go into customFields Map (dual-track architecture)
+  //
+  // C-6 Task 6 注: 顶层 shadow 字段 (`_` 前缀) 自然被此循环过滤 — 因为我们仅迭代
+  // config.value.fields 中声明的字段, shadow 字段不在 schema 中. line_items 字段
+  // 内部 row 的 shadow 字段需在下方显式过滤 (单独 helper).
   const customFields: Record<string, unknown> = {}
   const jpaPayload: Record<string, unknown> = {}
   for (const field of config.value.fields) {
-    const val = payload[field.code]
+    let val = payload[field.code]
     if (val === undefined) continue
+
+    // C-6 Task 6: line_items 行里的 shadow 字段 (_ 前缀) 在 submit 前过滤,
+    // 避免发到后端 (后端不识别这些虚拟字段, 可能 400 reject 或忽略).
+    if (field.type === 'line_items' && Array.isArray(val)) {
+      val = (val as Record<string, unknown>[]).map((row) =>
+        Object.fromEntries(Object.entries(row).filter(([k]) => !k.startsWith('_')))
+      )
+    }
+
     if (field.source === 'dynamic') {
       customFields[field.code] = val
     } else {
@@ -346,6 +373,7 @@ watch(
                 :config="(field.extra?.referenceConfig as any)"
                 :disabled="isReadonly(field)"
                 :placeholder="`请选择${getLabel(field)}`"
+                @project="onTopLevelProject"
               />
 
               <!-- json_array -->

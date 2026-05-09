@@ -24,12 +24,71 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | number | null]
+  /**
+   * C-6 reactive default: 选中 entity 后, 把 schema-configured projectFields 映射的
+   * entity 字段 emit 给父组件 (LineItemsEditor.onReferenceProject 或
+   * SchemaFormRenderer.onTopLevelProject 接收, 写到 row/formData shadow 字段).
+   * fields key 已经过 SHADOW_KEY_RE 校验, 防止 prototype pollution.
+   */
+  'project': [fields: Record<string, unknown>]
 }>()
 
 const authStore = useAuthStore()
 const options = ref<Array<{ label: string; value: string | number }>>([])
 const loading = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * C-6 cache: value → 完整 entity. 用于 handleChange / watch / fetchById 各路径
+ * 写 shadow 字段时同步从 cache 读 entity 的额外字段 (level1PerLevel2 等).
+ *
+ * 取舍: parallel Map 比 augment options[i]._entity 更清晰 (el-option v-for diff
+ * 不被 entity 大对象拖慢). search 时整体 rebuild, 但保留当前 modelValue 对应
+ * entity 防止 watch 触发不必要的 fetchById round-trip.
+ */
+const optionEntities = ref<Map<string, Record<string, unknown>>>(new Map())
+
+/**
+ * C-6 C3 reviewer fix: shadowKey 校验, 防止 admin 配 __proto__/constructor 等
+ * 危险 key 通过 spread 污染 row/formData prototype.
+ *
+ * 强制 `_` 前缀 + alphanumeric/underscore — 与 Task 6 (SchemaFormRenderer
+ * submit filter) 的 `payload[k].startsWith('_')` 约定一致.
+ */
+const SHADOW_KEY_RE = /^_[a-zA-Z][a-zA-Z0-9_]*$/
+
+/**
+ * C-6 C2 reviewer fix: 并发 fetchById token. 用户连续切 modelValue 时,
+ * 旧响应不能覆盖新选择的 options/cache.
+ */
+let fetchToken = 0
+
+/**
+ * C-6 helper: 按 projectFields 映射构造 emit payload.
+ * - val=null (clear) → 所有 shadow key 写 null (I2 reviewer fix)
+ * - shadowKey 不合规 → console.error 跳过 (C3)
+ * - cache miss → shadow 写 null (避免发 stale)
+ */
+function emitProjectFields(val: string | number | null) {
+  if (!props.config.projectFields) return
+  const projected: Record<string, unknown> = {}
+  for (const [entityKey, shadowKey] of Object.entries(props.config.projectFields)) {
+    if (!SHADOW_KEY_RE.test(shadowKey)) {
+      console.error(
+        `[ReferenceSelector] invalid shadowKey "${shadowKey}" — must match ${SHADOW_KEY_RE}. ` +
+        `Skipping. Fix module_schemas.field_schema.referenceConfig.projectFields.`
+      )
+      continue
+    }
+    if (!val) {
+      projected[shadowKey] = null
+      continue
+    }
+    const entity = optionEntities.value.get(String(val))
+    projected[shadowKey] = entity ? (entity[entityKey] ?? null) : null
+  }
+  emit('project', projected)
+}
 
 function resolveEndpoint(): string {
   // R12 audit S2 fix: defensively detect missing apiEndpoint (legacy referenceModule-only
@@ -72,6 +131,19 @@ async function search(query: string) {
         label: String(item[props.config.displayField] || ''),
         value: String(item[props.config.valueField]),
       }))
+      // C-6 I1 reviewer fix: rebuild optionEntities map每次 search,避免无界增长.
+      // 保留当前 modelValue 对应的 entity (若不在新结果中), 让 watch 后续 cache-hit
+      // 路径不需要重新 fetchById.
+      const newEntities = new Map<string, Record<string, unknown>>()
+      for (const item of list) {
+        newEntities.set(String(item[props.config.valueField]), item as Record<string, unknown>)
+      }
+      if (props.modelValue) {
+        const curKey = String(props.modelValue)
+        const cur = optionEntities.value.get(curKey)
+        if (cur && !newEntities.has(curKey)) newEntities.set(curKey, cur)
+      }
+      optionEntities.value = newEntities
       // R17 audit MIN-5: catch displayField/response-key mismatches (the V11→V13 class bug
       // that 8 reviewers missed because labels resolved to '' silently). Warn ONCE per
       // fetch when >50% labels are blank — clear signal that schema.displayField doesn't
@@ -105,6 +177,8 @@ async function search(query: string) {
 
 function handleChange(val: string | number | null) {
   emit('update:modelValue', val)
+  // C-6: 同步 emit project (cache 已在 search 时填好). null (clearable) 走 I2 path.
+  emitProjectFields(val)
 }
 
 /**
@@ -141,13 +215,21 @@ function looksLikeId(v: string | number): boolean {
 const selectKey = ref(0)
 
 async function fetchById(id: string | number) {
+  // C-6 C2 reviewer fix: token 并发竞争, 旧响应不覆盖新选择.
+  const myToken = ++fetchToken
+
   // Synchronous placeholder so el-select has options[0].value === modelValue immediately.
   // Without this, first paint sees empty options + raw modelValue → renders raw id as label,
   // and Element Plus caches that "currentLabel" — async option updates don't refresh it.
   options.value = [{ label: String(id), value: id }]
 
   // Skip lookup for non-ID-shaped values (legacy display-name strings, e.g., "张三")
-  if (!looksLikeId(id)) return
+  // C-6 M1 reviewer fix: legacy ID 仍尝试从 cache emit project (search() 已填) — 避免
+  // legacy entity 在 watch 路径下 shadow 字段永空.
+  if (!looksLikeId(id)) {
+    if (optionEntities.value.has(String(id))) emitProjectFields(id)
+    return
+  }
 
   loading.value = true
   try {
@@ -165,6 +247,8 @@ async function fetchById(id: string | number) {
     const res = await request.get(idUrl, {
       _silent: true  // suppress global error toast for 404 lookups
     } as never)
+    // C-6 C2: stale token check — 用户在 fetch 期间又切了 modelValue, 这次响应作废.
+    if (myToken !== fetchToken) return
     const item = res.data?.data || res.data
     if (item && typeof item === 'object' && item[props.config.valueField] != null) {
       const realLabel = String(item[props.config.displayField] || id)
@@ -173,6 +257,10 @@ async function fetchById(id: string | number) {
       // the formData side. Strict-eq match needs both sides String.
       const realValue = String(item[props.config.valueField])
       options.value = [{ label: realLabel, value: realValue }]
+      // C-6 M2 reviewer fix: cache the fetched entity for project emit + watch cache-hit path.
+      optionEntities.value.set(realValue, item as Record<string, unknown>)
+      // C-6 Task 7: edit 模式 init — fetch 完成后 emit project 给父组件填 shadow 字段.
+      emitProjectFields(realValue)
       // Force el-select to re-mount so its cached currentLabel picks up the real label
       // instead of the raw-id placeholder. Safe because dropdown isn't open during fetch.
       if (realLabel !== String(id)) selectKey.value++
@@ -195,11 +283,24 @@ onMounted(() => {
 })
 
 watch(() => props.modelValue, (val) => {
-  // Bug E: re-fetch display when value changes externally (form re-init etc.)
-  if (val && !options.value.find(o => o.value === val)) {
-    fetchById(val)
+  // C-6 I2 reviewer fix: clear path emits null shadow fields, computed 看到 null-guard.
+  if (!val) {
+    emitProjectFields(null)
+    return
+  }
+  // C-6 C1 reviewer fix: cache-hit path 也要 emit project (edit 模式 reset 后 options
+  // 仍含 value, 旧逻辑 fetchById 被跳过 → shadow 字段永远 null).
+  if (options.value.find(o => o.value === val)) {
+    emitProjectFields(val)
+  } else {
+    // Bug E: re-fetch display when value changes externally (form re-init etc.)
+    fetchById(val)  // fetchById 完成后内部会调 emitProjectFields
   }
 })
+
+// C-6 unit-test surface (expose internals so vitest can call without UI driver).
+// Intentionally minimal — only what tests need, no production caller relies on these.
+defineExpose({ search, handleChange, fetchById, emitProjectFields })
 </script>
 
 <template>

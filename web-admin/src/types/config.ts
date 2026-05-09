@@ -125,6 +125,14 @@ export interface ReferenceConfig {
   searchFields?: string[]
   filter?: Record<string, unknown>
   apiEndpoint: string
+  /**
+   * C-6 reactive default: 选中 entity 后写回 shadow 字段的映射.
+   * key   = entity 响应字段名 (如 level1PerLevel2)
+   * value = 写回 row/formData 的 shadow 键 (推荐 `_` 前缀, 如 _level1PerLevel2)
+   * 配合 `computed`/`visibleWhen` SpEL 表达式实现 "选 X → 派生 Y" 模式.
+   * 见 docs/superpowers/specs/2026-05-09-canvas-c6-reactive-default-framework.md §3.1
+   */
+  projectFields?: Record<string, string>
 }
 
 // ========== 行项目 Schema ==========
@@ -138,7 +146,14 @@ export interface ItemSchemaField {
   max?: number
   precision?: number
   options?: FieldOption[]
+  /** SpEL 表达式 — 行内跨字段计算 (e.g. "quantity * unitPrice", "qty / _level1PerLevel2"). C-6 Task 3 起用 evaluateSpelValue 而非 split('*') toy parser. */
   computed?: string
+  /** C-6: SpEL 表达式 — 行内字段显隐控制 (e.g. "_specification == '抄码'"). 与 EffectiveField.visibleWhen 语义一致. */
+  visibleWhen?: string
+  /** C-6: 行内 reference 字段配置 (与顶层 EffectiveField.extra.referenceConfig 对齐). LineItemsEditor 使用. */
+  referenceConfig?: ReferenceConfig
+  /** C-6: 行内字段默认值 (sentinel TODAY/NOW/YESTERDAY 或字面量). LineItemsEditor.addRow 使用. */
+  defaultValue?: unknown
 }
 
 // ========== 模块 API 路径映射 ==========

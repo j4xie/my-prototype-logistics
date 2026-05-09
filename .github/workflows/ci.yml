@@ -88,6 +88,13 @@ jobs:
       - name: Type check
         run: npx vue-tsc -b
         continue-on-error: true
+      - name: Vitest unit tests
+        run: npm test
+        # Phase B C-6 (May 9 2026): 28 unit tests for Canvas reactive default framework.
+        # continue-on-error 跟随 java-build-test/rn-test 风格 — 暴露 pre-existing
+        # spec failures (e.g. CapabilityGate/data-quality 等) 但不阻塞 main 部署.
+        # 后续 follow-up: 清理 pre-existing failures 后移除 continue-on-error.
+        continue-on-error: true
 
   # ---- React Native: Jest Tests ----
   rn-test:
