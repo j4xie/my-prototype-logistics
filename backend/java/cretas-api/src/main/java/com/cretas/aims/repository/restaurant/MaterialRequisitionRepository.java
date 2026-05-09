@@ -42,8 +42,10 @@ public interface MaterialRequisitionRepository extends JpaRepository<MaterialReq
      * 取代旧 controller 里"if-else 链 + early return"模式（只能单条件，
      * 且空字符串当作 non-null 抛 IllegalArgumentException）。
      *
-     * <p>JPQL `:param IS NULL OR field = :param` 模式让任意参数为 null
-     * 时退化为通配，避免动态拼 SQL。</p>
+     * <p>PG 兼容：parameter-side `IS NULL` 必须 CAST，否则 Postgres 推不出
+     * 纯 null 占位符的类型（"could not determine data type of parameter $2"）。
+     * 同 RawMaterialTypeRepository#findSimilarByNameAndCategory（PR #120 hot-fix）。
+     * 见 .claude/rules/database-entity-sync.md。</p>
      *
      * @param factoryId 必传
      * @param status 可选
@@ -51,9 +53,9 @@ public interface MaterialRequisitionRepository extends JpaRepository<MaterialReq
      * @param date 可选（精确匹配 requisition_date）
      */
     @Query("SELECT r FROM MaterialRequisition r WHERE r.factoryId = :factoryId " +
-            "AND (:status IS NULL OR r.status = :status) " +
-            "AND (:type IS NULL OR r.type = :type) " +
-            "AND (:date IS NULL OR r.requisitionDate = :date) " +
+            "AND (CAST(:status AS string) IS NULL OR r.status = :status) " +
+            "AND (CAST(:type AS string) IS NULL OR r.type = :type) " +
+            "AND (CAST(:date AS string) IS NULL OR r.requisitionDate = :date) " +
             "ORDER BY r.createdAt DESC")
     Page<MaterialRequisition> findByFilters(
             @Param("factoryId") String factoryId,
