@@ -138,20 +138,4 @@ public interface SalesAnalysisService {
      * @return 图表配置
      */
     ChartConfig getSalesTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period);
-
-    // ==================== 对比分析 ====================
-
-    /**
-     * 获取销售员对比图表配置
-     *
-     * 返回柱状图或雷达图的配置，对比多个销售员的业绩表现。
-     *
-     * @param factoryId        工厂ID
-     * @param salespersonNames 要对比的销售员姓名列表
-     * @param startDate        开始日期
-     * @param endDate          结束日期
-     * @return 图表配置
-     */
-    ChartConfig getSalespersonComparisonChart(String factoryId, List<String> salespersonNames,
-                                               LocalDate startDate, LocalDate endDate);
 }
