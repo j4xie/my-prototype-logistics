@@ -42,6 +42,9 @@ public interface WastageRecordRepository extends JpaRepository<WastageRecord, St
      * 取代旧 controller "if-else 链 + early return" 模式。
      * 与 MaterialRequisitionRepository.findByFilters 同模式。
      *
+     * <p>PG 兼容：parameter-side `IS NULL` 必须 CAST。见
+     * .claude/rules/database-entity-sync.md。</p>
+     *
      * @param factoryId 必传
      * @param status 可选
      * @param type 可选
@@ -49,10 +52,10 @@ public interface WastageRecordRepository extends JpaRepository<WastageRecord, St
      * @param endDate 可选
      */
     @Query("SELECT w FROM WastageRecord w WHERE w.factoryId = :factoryId " +
-            "AND (:status IS NULL OR w.status = :status) " +
-            "AND (:type IS NULL OR w.type = :type) " +
-            "AND (:startDate IS NULL OR w.wastageDate >= :startDate) " +
-            "AND (:endDate IS NULL OR w.wastageDate <= :endDate) " +
+            "AND (CAST(:status AS string) IS NULL OR w.status = :status) " +
+            "AND (CAST(:type AS string) IS NULL OR w.type = :type) " +
+            "AND (CAST(:startDate AS string) IS NULL OR w.wastageDate >= :startDate) " +
+            "AND (CAST(:endDate AS string) IS NULL OR w.wastageDate <= :endDate) " +
             "ORDER BY w.createdAt DESC")
     Page<WastageRecord> findByFilters(
             @Param("factoryId") String factoryId,

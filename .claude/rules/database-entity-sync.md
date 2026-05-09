@@ -81,6 +81,52 @@ column "xxx" must appear in the GROUP BY clause or be used in an aggregate funct
 ```
 修复: 在 GROUP BY 中列出所有 SELECT 的非聚合列。
 
+### could not determine data type of parameter $N (PostgreSQL)
+
+JPQL **parameter-side** `IS NULL` 检查在 PG 上失败，因为 PG 严格类型推断不接受 untyped `?` 占位符。
+
+**反 pattern**（PG 报错 `could not determine data type of parameter`）：
+
+```java
+// ❌ BAD: :status 当 null 传入, PG 推不出 ? 的类型
+@Query("SELECT r FROM Foo r WHERE r.factoryId = :factoryId " +
+       "AND (:status IS NULL OR r.status = :status)")
+```
+
+**正 pattern**（用 `CAST` 给 PG 类型 hint）：
+
+```java
+// ✅ GOOD: CAST(:status AS string) 让 Hibernate 显式声明类型
+@Query("SELECT r FROM Foo r WHERE r.factoryId = :factoryId " +
+       "AND (CAST(:status AS string) IS NULL OR r.status = :status)")
+```
+
+**何时适用**：
+- JPQL 中**参数**出现在 `IS NULL` 左边（不是列）— 即 `(:param IS NULL OR ...)`
+- 参数实际**会传 null**（call site 检查）
+- 数据库是 PostgreSQL（H2/MySQL 不强制类型推断，所以 CI mock 漏报）
+
+**列-side null 不需要 CAST**（列类型 PG 从 schema 已知）：
+
+```java
+// ✅ OK: 列在 IS NULL 左边, PG 知道 c.factoryId 的类型
+"AND (c.factoryId IS NULL OR c.factoryId = :factoryId)"
+```
+
+**为什么用 `string`**：Hibernate 6 的 `CAST(... AS string)` 给所有 Java 类型（enum/LocalDate/Boolean/...）一个 universal toString 转换。CAST 本身只用作 null 检测的类型 hint，并不影响 `r.status = :status` 的实际比较（Hibernate 还是按 entity 列类型走）。
+
+**Audit grep**（找潜在风险）：
+
+```bash
+# 找 parameter-side IS NULL pattern (param `:` 紧跟 IS NULL)
+grep -rn ':[a-zA-Z][a-zA-Z0-9]* IS NULL' backend/java/cretas-api/src/main/java --include='*.java'
+```
+
+**修复历史**：
+- PR #120 (`839ef9df57`) — `RawMaterialTypeRepository.findSimilarByNameAndCategory` 首次踩 + 修
+- PR after #169 (May 9 2026) — `MaterialRequisitionRepository.findByFilters` + `WastageRecordRepository.findByFilters` 同样问题（CI H2 mock 漏报，PG test env deploy 后才暴）
+- 已知 dead code 同模式: `ProductionPlanRepository.findByFactoryIdWithFilters` (0 callers, 不修)
+
 ---
 
 ## 推荐配置
