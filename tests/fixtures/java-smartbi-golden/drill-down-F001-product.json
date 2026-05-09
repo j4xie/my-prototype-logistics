@@ -1,0 +1,114 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "drillPath": "全部",
+    "data": [
+      {
+        "rank": 1,
+        "name": "酱料",
+        "value": 1492413.2,
+        "target": null,
+        "completionRate": 22.13,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 2,
+        "name": "川味底料",
+        "value": 1293045.8,
+        "target": null,
+        "completionRate": 19.18,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 3,
+        "name": "调味汁",
+        "value": 1208374.1,
+        "target": null,
+        "completionRate": 17.92,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 4,
+        "name": "团餐",
+        "value": 963795.4,
+        "target": null,
+        "completionRate": 14.29,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 5,
+        "name": "预制菜",
+        "value": 843909.3,
+        "target": null,
+        "completionRate": 12.52,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 6,
+        "name": "中式汤底",
+        "value": 671071.5,
+        "target": null,
+        "completionRate": 9.95,
+        "alertLevel": "GREEN"
+      },
+      {
+        "rank": 7,
+        "name": "复合调味粉",
+        "value": 270179.3,
+        "target": null,
+        "completionRate": 4.01,
+        "alertLevel": "GREEN"
+      }
+    ],
+    "level": 1,
+    "nextLevel": null,
+    "chart": {
+      "chartType": "PIE",
+      "title": "产品销售占比",
+      "seriesField": null,
+      "data": [
+        {
+          "category": "酱料",
+          "amount": 1492413.2
+        },
+        {
+          "category": "川味底料",
+          "amount": 1293045.8
+        },
+        {
+          "category": "调味汁",
+          "amount": 1208374.1
+        },
+        {
+          "category": "团餐",
+          "amount": 963795.4
+        },
+        {
+          "category": "预制菜",
+          "amount": 843909.3
+        },
+        {
+          "category": "中式汤底",
+          "amount": 671071.5
+        },
+        {
+          "category": "复合调味粉",
+          "amount": 270179.3
+        }
+      ],
+      "options": {
+        "showPercentage": true,
+        "showLegend": true
+      },
+      "xaxisField": "category",
+      "yaxisField": "amount"
+    },
+    "dimension": "product"
+  },
+  "timestamp": "2026-05-09T22:42:35.095848716",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
