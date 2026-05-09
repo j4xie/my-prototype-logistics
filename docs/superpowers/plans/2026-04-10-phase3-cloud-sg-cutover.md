@@ -41,8 +41,8 @@
 
 **Rollback reference (if needed):**
 ```bash
-AK=LTAI5tD9HGcb6Mgafs98ZYcq
-SK=bq7kbm1vz56n6krpea3kNwH6iFsNhx
+AK=<REDACTED-AK-SEE-LOCAL-CREDENTIAL-FILE>
+SK=<REDACTED-SECRET-SEE-LOCAL-CREDENTIAL-FILE>
 SG=sg-uf64n0hcl8w37d34zfmy
 aliyun ecs AuthorizeSecurityGroup --access-key-id $AK --access-key-secret $SK --region cn-shanghai \
   --SecurityGroupId $SG --IpProtocol tcp --PortRange "10010/10010" --SourceCidrIp 0.0.0.0/0 \

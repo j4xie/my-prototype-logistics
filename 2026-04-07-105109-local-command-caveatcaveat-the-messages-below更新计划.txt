@@ -1266,11 +1266,11 @@ completed (exit code 0)
   ⎿  Added 2 lines, removed 2 lines
       1  [Credentials]
       2  language=CH
-      3 -accessKeySecret=SBEB6eKVnw8NeclrBxD3owEUDZ41lm                  
-      3 +accessKeySecret=B5p7rjWjtXSk1pflWFh5lQz1J3zxUw                  
+      3 -accessKeySecret=<REDACTED-SECRET>
+      3 +accessKeySecret=<REDACTED-SECRET-SEE-LOCAL-CREDENTIAL-FILE>
       4  endpoint=oss-cn-shanghai.aliyuncs.com
-      5 -accessKeyID=LTAI5tQYf2EUyydHSE5R1tfo                            
-      5 +accessKeyID=LTAI5tGjGs6wnKDk8BZDNKFL                            
+      5 -accessKeyID=<REDACTED-AK>
+      5 +accessKeyID=<REDACTED-AK-SEE-LOCAL-CREDENTIAL-FILE>
 
 ● Bash(/c/tools/ossutil64.exe ls oss://cretas-media/deploy/ 2>&1 | tail -10)
   ⎿  2026-01-24 05:05:17 -0500 EST    140562611      Standard   1FAE15F0D46
