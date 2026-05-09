@@ -86,11 +86,11 @@ export function useSmartBIDrillDown(deps: {
               filterValue: drillDownContext.value.filterValue,
               result: drillDownResult.value,
               hierarchyType: drillDownResult.value.hierarchy?.type,
-              currentLevel: drillDownResult.value.current_level ?? undefined,
+              currentLevel: drillDownResult.value.currentLevel ?? undefined,
             });
           }
 
-          const availDims = drillDownResult.value?.available_dimensions;
+          const availDims = drillDownResult.value?.availableDimensions;
           const nextDim = availDims?.length ? availDims[0] : drillDownContext.value.dimension;
           const clickValue = params.name;
 
@@ -239,7 +239,7 @@ export function useSmartBIDrillDown(deps: {
       filterValue: drillDownContext.value.filterValue,
       result: drillDownResult.value,
       hierarchyType: drillDownResult.value.hierarchy?.type,
-      currentLevel: drillDownResult.value.current_level ?? undefined,
+      currentLevel: drillDownResult.value.currentLevel ?? undefined,
     });
 
     drillDownContext.value = {

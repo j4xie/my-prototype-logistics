@@ -510,15 +510,15 @@ async function checkHealthWithRetry(maxRetries = 3): Promise<boolean> {
 const safeBatchName = (batch: UploadBatch): string => {
   const candidates = [
     batch.fileName,
-    (batch as Record<string, unknown>).batchName as string | undefined,
-    (batch as Record<string, unknown>).originalFileName as string | undefined,
+    (batch as unknown as Record<string, unknown>).batchName as string | undefined,
+    (batch as unknown as Record<string, unknown>).originalFileName as string | undefined,
   ];
   for (const name of candidates) {
     if (name && name !== 'null' && name !== 'undefined' && name.trim() !== '') return name;
   }
   // Last resort: generate from upload time or batch id
   if (batch.uploadTime) return `Excel_${batch.uploadTime.replace(/[- :]/g, '')}`;
-  const batchId = (batch as Record<string, unknown>).uploadId ?? (batch as Record<string, unknown>).id;
+  const batchId = (batch as unknown as Record<string, unknown>).uploadId ?? (batch as unknown as Record<string, unknown>).id;
   return batchId ? `Upload #${batchId}` : 'Excel数据';
 };
 /** 判断批次是否来自自动同步 (detectedTableType === 'AUTO_PRODUCTION') */
@@ -1025,7 +1025,7 @@ const getStructuredInsight = (sheet: SheetResult): AIInsight | null => {
     }
     if (structured.opportunities?.length) {
       for (const o of structured.opportunities) {
-        suggestions.push(`${o.title}: ${o.description}${o.action_required ? ` → ${o.action_required}` : ''}`);
+        suggestions.push(`${o.title}: ${o.description}${o.actionRequired ? ` → ${o.actionRequired}` : ''}`);
       }
     }
   }

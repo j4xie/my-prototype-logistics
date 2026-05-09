@@ -6,8 +6,43 @@
  *
  * 替代全量引入:
  *   import * as echarts from 'echarts'  // ← 不要再用
+ *
+ * 类型补丁 (2026-05-09): echarts/core 不导出 EChartsOption / SeriesOption 等
+ * 高级类型,但运行时 use() 注册后这些类型实际可用. 通过 namespace merge
+ * 把 echarts top-level type 合并进 @/utils/echarts 的默认导出 namespace.
  */
 import * as echarts from 'echarts/core'
+import type {
+  EChartsOption as _EChartsOption,
+  SeriesOption as _SeriesOption,
+  LineSeriesOption as _LineSeriesOption,
+  BarSeriesOption as _BarSeriesOption,
+  ScatterSeriesOption as _ScatterSeriesOption,
+  GraphicComponentOption as _GraphicComponentOption,
+  MarkAreaComponentOption as _MarkAreaComponentOption,
+  MarkLineComponentOption as _MarkLineComponentOption,
+  GaugeSeriesOption as _GaugeSeriesOption,
+  RadarComponentOption as _RadarComponentOption,
+  CustomSeriesRenderItemReturn as _CustomSeriesRenderItemReturn,
+  DefaultLabelFormatterCallbackParams as _DefaultLabelFormatterCallbackParams,
+} from 'echarts'
+
+// Augment echarts/core namespace so `echarts.EChartsOption` resolves.
+declare module 'echarts/core' {
+  type EChartsOption = _EChartsOption
+  type SeriesOption = _SeriesOption
+  type LineSeriesOption = _LineSeriesOption
+  type BarSeriesOption = _BarSeriesOption
+  type ScatterSeriesOption = _ScatterSeriesOption
+  type GraphicComponentOption = _GraphicComponentOption
+  type MarkAreaComponentOption = _MarkAreaComponentOption
+  type MarkLineComponentOption = _MarkLineComponentOption
+  type GaugeSeriesOption = _GaugeSeriesOption
+  type RadarComponentOption = _RadarComponentOption
+  type CustomSeriesRenderItemReturn = _CustomSeriesRenderItemReturn
+  type DefaultLabelFormatterCallbackParams = _DefaultLabelFormatterCallbackParams
+}
+
 
 // ---- Charts ----
 import {

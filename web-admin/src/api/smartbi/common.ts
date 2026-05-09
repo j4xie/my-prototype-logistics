@@ -155,7 +155,7 @@ export function transformKeys(obj: unknown): unknown {
  * For FormData uploads, pass `headers: {}` to remove the default Content-Type
  * so the browser sets multipart/form-data automatically.
  */
-export async function pythonFetch(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<unknown> {
+export async function pythonFetch<T = unknown>(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
   const { timeoutMs, ...fetchOptions } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs || PYTHON_TIMEOUT_MS);
@@ -188,11 +188,11 @@ export async function pythonFetch(path: string, options: RequestInit & { timeout
 
     // Handle 204 No Content (e.g., DELETE endpoints) without attempting JSON parse
     if (response.status === 204) {
-      return null as unknown;
+      return null as unknown as T;
     }
 
     const json = await response.json();
-    return transformKeys(json);
+    return transformKeys(json) as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error('Python service request timed out');
@@ -456,6 +456,8 @@ interface FinancialRow {
   label: string;
   values: Record<string, number>;
   total: number;
+  /** Sum across periods (used by computeSensitivityFallback). May be 0 if not aggregated. */
+  sum?: number;
 }
 
 export interface FinancialMetrics {

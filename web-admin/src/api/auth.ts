@@ -5,13 +5,21 @@ import request from './request';
 import type { ApiResponse } from '@/types/api';
 import type { User, AuthTokens, LoginRequest, LoginResponse } from '@/types/auth';
 
-// 登录响应数据
+// 登录响应数据 — 后端 UnifiedLoginResponse 实际返回的扁平字段
 interface LoginData {
   accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
-  user: User;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresIn?: number;
+  user?: User;
+  // Flat fields actually consumed by store/modules/auth.ts:
+  token?: string;
+  userId?: string | number;
+  username?: string;
+  role?: string;
+  factoryId?: string;
+  factoryType?: string;
+  permissions?: string[];
 }
 
 /**

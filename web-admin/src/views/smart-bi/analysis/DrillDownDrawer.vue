@@ -33,9 +33,9 @@
 
     <div v-else-if="result">
       <!-- P4: 可用下钻维度按钮组 -->
-      <div v-if="result.available_dimensions?.length" class="drill-dimensions">
+      <div v-if="result.availableDimensions?.length" class="drill-dimensions">
         <span class="drill-dim-label">可继续下钻:</span>
-        <el-button v-for="dim in result.available_dimensions" :key="dim" size="small" @click="onDrillByDimension(dim)">
+        <el-button v-for="dim in result.availableDimensions" :key="dim" size="small" @click="onDrillByDimension(dim)">
           {{ getColumnLabel(dim) }}
         </el-button>
       </div>

@@ -11,7 +11,7 @@
  * - finance_manager → DashboardFinance (财务管理)
  * - 其他角色 → DashboardDefault (通用版)
  */
-import { computed, defineAsyncComponent, h } from 'vue';
+import { computed, defineAsyncComponent, defineComponent, h } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { getDashboardComponent } from '@/components/dashboard';
 

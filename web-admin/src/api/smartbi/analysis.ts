@@ -33,6 +33,7 @@ import {
   type EnrichResult,
   type EnrichProgress,
   type SmartKPI,
+  type FieldDefinition,
   computeSensitivityFallback,
   PYTHON_LLM_TIMEOUT_MS,
 } from './common';

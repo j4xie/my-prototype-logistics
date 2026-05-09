@@ -92,7 +92,7 @@ const chartOptions = computed<EChartsOption>(() => {
       },
       formatter: (params) => {
         if (!Array.isArray(params)) return '';
-        const date = params[0]?.axisValue || '';
+        const date = (params[0] as { axisValue?: string })?.axisValue || '';
         let html = `<div style="font-weight: 600; margin-bottom: 8px;">${date}</div>`;
         params.forEach((param) => {
           if (param.value !== null && param.value !== undefined) {

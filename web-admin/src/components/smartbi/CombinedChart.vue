@@ -275,7 +275,7 @@ const chartOptions = computed<EChartsOption>(() => {
       },
       formatter: (params) => {
         if (!Array.isArray(params)) return '';
-        const category = params[0]?.axisValue || '';
+        const category = (params[0] as { axisValue?: string })?.axisValue || '';
         let html = `<div style="font-weight: 600; margin-bottom: 8px;">${category}</div>`;
 
         params.forEach((param) => {

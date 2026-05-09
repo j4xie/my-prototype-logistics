@@ -20,7 +20,7 @@ vi.mock('@/store/modules/config', () => ({
 vi.mock('@/store/modules/auth', () => ({
   useAuthStore: () => ({
     factoryId: 'F001',
-    user: null,
+    user: null as unknown,
     isAuthenticated: false,
   }),
 }))
@@ -45,8 +45,8 @@ function buildConfig(extra: Record<string, unknown> = { autoGenerate: true }) {
         required: false,
         visible: true,
         readonly: false,
-        defaultValue: null,
-        options: null,
+        defaultValue: null as unknown,
+        options: null as unknown,
         group: 'g1',
         order: 0,
         extra,

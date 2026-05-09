@@ -22,7 +22,44 @@ const productTypes = ref<Record<string, unknown>[]>([]);
 const costSummary = ref<Record<string, unknown> | null>(null);
 
 // BOM Items (原辅料)
-const bomItems = ref<Record<string, unknown>[]>([]);
+interface BomItemRow {
+  id?: number | null;
+  productTypeId?: string;
+  materialTypeId?: string;
+  materialName?: string;
+  standardQuantity?: number;
+  yieldRate?: number;
+  unit?: string;
+  unitPrice?: number;
+  taxRate?: number;
+  sortOrder?: number;
+  notes?: string;
+  [k: string]: unknown;
+}
+interface LaborCostRow {
+  id?: number | null;
+  productTypeId?: string;
+  processName?: string;
+  processCategory?: string;
+  unitPrice?: number;
+  priceUnit?: string;
+  standardQuantity?: number;
+  sortOrder?: number;
+  notes?: string;
+  [k: string]: unknown;
+}
+interface OverheadCostRow {
+  id?: number | null;
+  name?: string;
+  category?: string;
+  unitPrice?: number;
+  priceUnit?: string;
+  allocationRate?: number;
+  sortOrder?: number;
+  notes?: string;
+  [k: string]: unknown;
+}
+const bomItems = ref<BomItemRow[]>([]);
 const bomDialogVisible = ref(false);
 const bomDialogLoading = ref(false);
 const isBomEdit = ref(false);
@@ -41,7 +78,7 @@ const bomForm = ref({
 });
 
 // Labor Costs (人工费用)
-const laborCosts = ref<Record<string, unknown>[]>([]);
+const laborCosts = ref<LaborCostRow[]>([]);
 const laborDialogVisible = ref(false);
 const laborDialogLoading = ref(false);
 const isLaborEdit = ref(false);
@@ -58,7 +95,7 @@ const laborForm = ref({
 });
 
 // Overhead Costs (均摊费用)
-const overheadCosts = ref<Record<string, unknown>[]>([]);
+const overheadCosts = ref<OverheadCostRow[]>([]);
 const overheadDialogVisible = ref(false);
 const overheadDialogLoading = ref(false);
 const isOverheadEdit = ref(false);
