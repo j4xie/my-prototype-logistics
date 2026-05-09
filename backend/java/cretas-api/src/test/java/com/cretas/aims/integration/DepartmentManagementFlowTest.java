@@ -3,8 +3,12 @@ package com.cretas.aims.integration;
 import com.cretas.aims.dto.DepartmentDTO;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.Department;
+import com.cretas.aims.entity.Factory;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.DepartmentRepository;
+import com.cretas.aims.repository.FactoryRepository;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.DepartmentService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +43,46 @@ class DepartmentManagementFlowTest {
     @Autowired
     private DepartmentRepository departmentRepository;
 
+    @Autowired
+    private FactoryRepository factoryRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     private static final String TEST_FACTORY_ID = "F001";
+
+    @BeforeEach
+    void ensureFactoryExists() {
+        // 2026-05-09: H2 in-memory test DB doesn't seed factories — create F001
+        // before each test so departments(factory_id) FK resolves.
+        ensureFactory(TEST_FACTORY_ID, "Test Factory F001");
+    }
+
+    private Long ensureUser(String username) {
+        return userRepository.findByUsername(username)
+                .map(User::getId)
+                .orElseGet(() -> {
+                    User u = new User();
+                    u.setFactoryId(TEST_FACTORY_ID);
+                    u.setUsername(username);
+                    u.setPasswordHash("$2a$10$dummyHashForTesting");
+                    u.setFullName("Test User " + username);
+                    u.setIsActive(true);
+                    u.setRoleCode("operator");
+                    return userRepository.saveAndFlush(u).getId();
+                });
+    }
+
+    private void ensureFactory(String factoryId, String name) {
+        if (!factoryRepository.existsById(factoryId)) {
+            Factory f = new Factory();
+            f.setId(factoryId);
+            f.setName(name);
+            f.setIndustry("FOOD");
+            f.setIndustryCode("FOOD_GENERAL");
+            factoryRepository.saveAndFlush(f);
+        }
+    }
 
     // ==================== 1. 部门创建和查询测试 ====================
 
@@ -261,11 +304,15 @@ class DepartmentManagementFlowTest {
     @Transactional
     @DisplayName("Test10: 设置和查询部门负责人")
     void testDepartmentManager() {
+        // 2026-05-09: seed two real user rows; H2 doesn't pre-seed users(id=1).
+        Long managerId1 = ensureUser("test_dept_manager_1");
+        Long managerId2 = ensureUser("test_dept_manager_2");
+
         // Given: 创建部门并设置负责人
         DepartmentDTO dto = DepartmentDTO.builder()
                 .name("有负责人的部门")
                 .code("WITH_MANAGER")
-                .managerUserId(1L) // 假设用户ID=1存在
+                .managerUserId(managerId1)
                 .isActive(true)
                 .build();
 
@@ -274,16 +321,16 @@ class DepartmentManagementFlowTest {
 
         // Then: 验证负责人信息
         assertThat(created).isNotNull();
-        assertThat(created.getManagerUserId()).isEqualTo(1L);
+        assertThat(created.getManagerUserId()).isEqualTo(managerId1);
 
         // When: 更新负责人
         DepartmentDTO updateDto = DepartmentDTO.builder()
-                .managerUserId(2L)
+                .managerUserId(managerId2)
                 .build();
         DepartmentDTO updated = departmentService.updateDepartment(TEST_FACTORY_ID, created.getId(), updateDto);
 
         // Then: 验证负责人更新
-        assertThat(updated.getManagerUserId()).isEqualTo(2L);
+        assertThat(updated.getManagerUserId()).isEqualTo(managerId2);
     }
 
     // ==================== 6. 部门搜索测试 ====================
@@ -378,6 +425,8 @@ class DepartmentManagementFlowTest {
     void testInitializeDefaultDepartments() {
         // Given: 清空当前工厂的部门
         String testFactoryId = "TEST_FACTORY_INIT";
+        // 2026-05-09: ensure factory exists for FK constraint.
+        ensureFactory(testFactoryId, "Test Factory Init");
         departmentRepository.findByFactoryId(testFactoryId)
                 .forEach(dept -> departmentRepository.delete(dept));
 

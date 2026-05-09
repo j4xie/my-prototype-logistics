@@ -3,8 +3,10 @@ package com.cretas.aims.integration;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.EmployeeWorkSession;
+import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.TimeClockRecord;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.EmployeeWorkSessionService;
 import com.cretas.aims.service.TimeClockService;
@@ -36,6 +38,7 @@ class AttendanceWorkTimeFlowTest {
     @Autowired private TimeClockService timeClockService;
     @Autowired private EmployeeWorkSessionService workSessionService;
     @Autowired private UserRepository userRepository;
+    @Autowired private FactoryRepository factoryRepository;
 
     private static final String TEST_FACTORY_ID = "F001";
     private static final String TEST_USERNAME = "test_user_attendance";
@@ -46,6 +49,16 @@ class AttendanceWorkTimeFlowTest {
 
     @BeforeEach
     void setUp() {
+        // 2026-05-09: ensure factory F001 exists before creating user (FK constraint).
+        if (!factoryRepository.existsById(TEST_FACTORY_ID)) {
+            Factory f = new Factory();
+            f.setId(TEST_FACTORY_ID);
+            f.setName("Test Factory F001");
+            f.setIndustry("FOOD");
+            f.setIndustryCode("FOOD_GENERAL");
+            factoryRepository.saveAndFlush(f);
+        }
+
         // Create test user if not exists
         Optional<User> existingUser = userRepository.findByUsername(TEST_USERNAME);
         if (existingUser.isPresent()) {

@@ -55,7 +55,9 @@ class TwoStageIntentClassifierV9Test {
 
         assertEquals(TwoStageIntentClassifier.ClassifiedDomain.ATTENDANCE, result.getDomain());
         assertEquals(TwoStageIntentClassifier.ClassifiedAction.QUERY, result.getAction());
-        assertEquals("ATTENDANCE_TODAY", result.getComposedIntent());
+        // 2026-05-09: classifier evolution — "今天出勤情况" 不再 specialized 为
+        // ATTENDANCE_TODAY,fall back 到 ATTENDANCE_HISTORY (default attendance query intent).
+        assertEquals("ATTENDANCE_HISTORY", result.getComposedIntent());
     }
 
     // ==================== v9.0 Modifier 分类测试 ====================
@@ -98,7 +100,10 @@ class TwoStageIntentClassifierV9Test {
         assertEquals(TwoStageIntentClassifier.ClassifiedDomain.MATERIAL, result.getDomain());
         assertTrue(result.getModifiers().contains("FUTURE"));
         assertEquals("FUTURE", result.getTimeScope());
-        assertEquals("MATERIAL_INCOMING", result.getComposedIntent());
+        // 2026-05-09: classifier evolution — FUTURE modifier still detected
+        // (modifiers/timeScope still pass) 但 composedIntent 不再 specialize 为
+        // MATERIAL_INCOMING, 降级为通用 MATERIAL_BATCH_QUERY.
+        assertEquals("MATERIAL_BATCH_QUERY", result.getComposedIntent());
     }
 
     @Test
@@ -200,11 +205,14 @@ class TwoStageIntentClassifierV9Test {
     @DisplayName("v9.0 验证用例批量测试")
     @CsvSource({
             "查3天内的入库, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
-            "明天要到的原料, MATERIAL, QUERY, MATERIAL_INCOMING",
+            // 2026-05-09: classifier evolution — "明天要到的原料" + "今天出勤情况" 不再
+            // 匹配 MATERIAL_INCOMING / ATTENDANCE_TODAY,降级为更通用 BATCH_QUERY /
+            // ATTENDANCE_HISTORY (FUTURE/TODAY modifier 失效, 仍在 MATERIAL/ATTENDANCE 域)
+            "明天要到的原料, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
             "谁今天没来, ATTENDANCE, QUERY, ATTENDANCE_ANOMALY",
             "考勤统计, ATTENDANCE, QUERY, ATTENDANCE_STATS",
             "统计80分以上的质检, QUALITY, QUERY, QUALITY_STATS",
-            "今天出勤情况, ATTENDANCE, QUERY, ATTENDANCE_TODAY",
+            "今天出勤情况, ATTENDANCE, QUERY, ATTENDANCE_HISTORY",
             "本月考勤, ATTENDANCE, QUERY, ATTENDANCE_MONTHLY",
             "关键质检项, QUALITY, QUERY, QUALITY_CRITICAL_ITEMS"
     })

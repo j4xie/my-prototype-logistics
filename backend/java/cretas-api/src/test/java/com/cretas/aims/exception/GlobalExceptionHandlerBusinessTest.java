@@ -82,7 +82,10 @@ class GlobalExceptionHandlerBusinessTest {
 
         assertNotNull(body);
         assertNull(body.getActionHint(), "未设 actionHint 时 body.actionHint 必须是 null");
-        assertNull(body.getSeverity());
+        // R73-FIX-A (2026-04-30): handler now defaults severity by HTTP code when
+        // unset — 409 → "warning", 401/403/500/5xx → "error", else null.
+        assertEquals("warning", body.getSeverity(),
+                "code=409 未显式设 severity 时, handler 自动 fall back 到 'warning'");
         assertNull(body.getHintTarget());
     }
 

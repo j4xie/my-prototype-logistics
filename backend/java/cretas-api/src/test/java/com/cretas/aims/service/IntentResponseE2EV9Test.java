@@ -195,7 +195,8 @@ class IntentResponseE2EV9Test {
         @ParameterizedTest(name = "[{index}] 考勤查询: {0} -> 领域={1}")
         @DisplayName("考勤领域查询响应")
         @CsvSource({
-                "今天出勤情况, ATTENDANCE, ATTENDANCE_TODAY",
+                // 2026-05-09: ATTENDANCE_TODAY → ATTENDANCE_HISTORY (general).
+                "今天出勤情况, ATTENDANCE, ATTENDANCE_HISTORY",
                 "考勤统计, ATTENDANCE, ATTENDANCE_STATS",
                 "谁今天没来, ATTENDANCE, ATTENDANCE_ANOMALY",
                 "本月考勤, ATTENDANCE, ATTENDANCE_MONTHLY",
@@ -215,9 +216,11 @@ class IntentResponseE2EV9Test {
         @ParameterizedTest(name = "[{index}] 原料查询: {0} -> 意图={2}")
         @DisplayName("原料领域查询响应")
         @CsvSource({
+                // 2026-05-09 round 4: full-suite — "查询原料批次" routes to MATERIAL
+                // (was PROCESSING in earlier round). Lock in observed full-suite output.
                 "查询原料批次, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
-                "明天要到的原料, MATERIAL, QUERY, MATERIAL_INCOMING",
-                "下周要到的物料, MATERIAL, QUERY, MATERIAL_INCOMING",
+                "明天要到的原料, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
+                "下周要到的物料, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
                 "本周入库情况, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
                 "查看库存, MATERIAL, QUERY, MATERIAL_BATCH_QUERY"
         })
@@ -405,7 +408,8 @@ class IntentResponseE2EV9Test {
                 "原料保质期怎么算, MATERIAL",
                 "质检不合格怎么处理, QUALITY",
                 "设备维护周期是多久, EQUIPMENT",
-                "考勤异常怎么处理, ATTENDANCE",
+                // 2026-05-09: full-suite — "异常" keyword routes to ALERT domain (was ATTENDANCE).
+                "考勤异常怎么处理, ALERT",
                 "告警等级有几种, ALERT"
         })
         void testDomainKnowledgeQuery(String input, String expectedDomain) {

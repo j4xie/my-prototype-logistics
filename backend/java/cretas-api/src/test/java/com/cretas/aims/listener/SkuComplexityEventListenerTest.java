@@ -662,13 +662,13 @@ class SkuComplexityEventListenerTest {
     class PotentialIssueTests {
 
         @Test
-        @DisplayName("SCEL-024: 验证null事件会导致NullPointerException")
-        void testNullEvent_ShouldThrowNPE() {
-            // 当前实现没有对null event进行检查
-            // 这个测试记录了当前行为，表明可能需要添加null检查
-            assertThrows(NullPointerException.class,
+        @DisplayName("SCEL-024: 验证null事件被优雅处理（生产代码已加 null-check）")
+        void testNullEvent_ShouldBeHandledGracefully() {
+            // 2026-05-09: 生产代码已加 null-check（"收到空的SKU复杂度变更事件，忽略处理" warn log）。
+            // 原测试是规避用 — 现在验证 null event 被忽略, 不抛 NPE.
+            assertDoesNotThrow(
                     () -> listener.handleSkuComplexityChanged(null),
-                    "null event 目前会导致 NullPointerException，建议添加null检查");
+                    "null event 应被生产代码静默忽略，不再抛 NullPointerException");
         }
 
         @Test

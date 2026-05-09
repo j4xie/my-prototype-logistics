@@ -118,15 +118,18 @@ class OrderUsageWhitelistsTest {
 
     @Test
     void so_by_usage_keys_match_documented_rest_contract() {
+        // 2026-05-09: contract extended to include "cancellable" usage.
         assertEquals(
-                Set.of("invoiceable", "shippable", "deliverable", "in_flight", "plannable", "all"),
+                Set.of("invoiceable", "shippable", "deliverable", "in_flight",
+                        "plannable", "cancellable", "all"),
                 OrderUsageWhitelists.SO_BY_USAGE.keySet());
     }
 
     @Test
     void po_by_usage_keys_match_documented_rest_contract() {
+        // 2026-05-09: contract extended to include "cancellable" usage.
         assertEquals(
-                Set.of("invoiceable", "receivable", "ops_receivable", "all"),
+                Set.of("invoiceable", "receivable", "ops_receivable", "cancellable", "all"),
                 OrderUsageWhitelists.PO_BY_USAGE.keySet());
     }
 

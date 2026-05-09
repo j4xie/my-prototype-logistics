@@ -1,5 +1,6 @@
 package com.cretas.aims.service.config;
 
+import com.cretas.aims.dto.config.EffectiveField;
 import com.cretas.aims.service.config.impl.FactoryConfigServiceImpl;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +22,8 @@ class FactoryConfigAutoGenerateTest {
         // calling 0-arg ctor but FactoryConfigServiceImpl now requires 5 dependencies.
         // Reflection-only test (calls private buildEffectiveFields), so 5 nulls suffice —
         // the method under test doesn't touch any field via the instance.
+        // 2026-05-09: production return type changed from List<Map> to List<EffectiveField>;
+        // updated to call the new EffectiveField DTO accessor.
         FactoryConfigServiceImpl svc = new FactoryConfigServiceImpl(null, null, null, null, null);
 
         Map<String, Object> field = new HashMap<>();
@@ -48,11 +51,11 @@ class FactoryConfigAutoGenerateTest {
         m.setAccessible(true);
 
         // Invoke with three map parameters: schema, effectiveFieldConfig, customLabels
-        List<Map<String, Object>> result =
-                (List<Map<String, Object>>) m.invoke(svc, schema, Map.of(), Map.of());
+        List<EffectiveField> result =
+                (List<EffectiveField>) m.invoke(svc, schema, Map.of(), Map.of());
 
         assertEquals(1, result.size(), "Expected one field in result");
-        Map<String, Object> extra = (Map<String, Object>) result.get(0).get("extra");
+        Map<String, Object> extra = result.get(0).getExtra();
         assertTrue((Boolean) extra.get("autoGenerate"),
             "autoGenerate flag must be forwarded to EffectiveField.extra");
     }

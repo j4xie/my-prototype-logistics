@@ -53,7 +53,12 @@ class ExternalVerifierServiceTest {
             String tableName = "material_batches";
             Map<String, Object> conditions = Map.of("batch_number", "MB-001");
 
-            when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object[]) any()))
+            // Spring queryForObject(String, Class, Object...) 是 varargs;
+            // 用 any(Object[].class) 才能稳定匹配. (Object[]) any() 在某些
+            // Mockito 版本下匹配空 varargs (null Object[])，跟 production 传
+            // params.toArray() 不一致 → 测试假阴性.
+            when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class),
+                    any(Object[].class)))
                     .thenReturn(5);
 
             // When
@@ -76,7 +81,8 @@ class ExternalVerifierServiceTest {
             String tableName = "material_batches";
             Map<String, Object> conditions = Map.of("batch_number", "NOT-EXIST");
 
-            when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), (Object[]) any()))
+            when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class),
+                    any(Object[].class)))
                     .thenReturn(0);
 
             // When

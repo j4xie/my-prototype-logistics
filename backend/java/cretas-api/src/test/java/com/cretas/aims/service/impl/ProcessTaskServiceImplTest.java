@@ -7,7 +7,11 @@ import com.cretas.aims.entity.enums.ProcessTaskStatus;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.ProcessTaskRepository;
+import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.repository.ProductWorkProcessRepository;
+import com.cretas.aims.repository.ProductionReportRepository;
 import com.cretas.aims.repository.StateMachineRepository;
+import com.cretas.aims.repository.WorkProcessRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -58,6 +62,18 @@ class ProcessTaskServiceImplTest {
 
     @Mock
     private StateMachineRepository stateMachineRepository;
+
+    @Mock
+    private WorkProcessRepository workProcessRepository;
+
+    @Mock
+    private ProductWorkProcessRepository productWorkProcessRepository;
+
+    @Mock
+    private ProductTypeRepository productTypeRepository;
+
+    @Mock
+    private ProductionReportRepository reportRepository;
 
     @InjectMocks
     private ProcessTaskServiceImpl service;

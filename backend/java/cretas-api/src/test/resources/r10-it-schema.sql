@@ -46,6 +46,7 @@ CREATE TABLE factory_module_configs (
     layout_config JSONB NOT NULL DEFAULT '{}'::jsonb,
     custom_labels JSONB NOT NULL DEFAULT '{}'::jsonb,
     computed_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+    role_module_override JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     deleted_at TIMESTAMP,

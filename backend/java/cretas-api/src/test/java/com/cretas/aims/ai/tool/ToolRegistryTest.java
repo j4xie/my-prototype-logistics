@@ -52,33 +52,45 @@ class ToolRegistryTest {
 
     @BeforeEach
     void setUp() {
+        // lenient() — different nested test groups exercise different mock subsets;
+        // strict mode would flag stubs that a particular test path doesn't reach.
         // Setup mock tool 1
-        when(mockTool1.getToolName()).thenReturn(TOOL_1_NAME);
-        when(mockTool1.isEnabled()).thenReturn(true);
-        when(mockTool1.requiresPermission()).thenReturn(false);
-        when(mockTool1.getDescription()).thenReturn("Test Tool 1");
-        when(mockTool1.getParametersSchema()).thenReturn(createMockSchema());
+        lenient().when(mockTool1.getToolName()).thenReturn(TOOL_1_NAME);
+        lenient().when(mockTool1.isEnabled()).thenReturn(true);
+        lenient().when(mockTool1.requiresPermission()).thenReturn(false);
+        lenient().when(mockTool1.getDescription()).thenReturn("Test Tool 1");
+        lenient().when(mockTool1.getParametersSchema()).thenReturn(createMockSchema());
+        // Governance metadata (ToolExecutor defaults aren't reached on mocks):
+        lenient().when(mockTool1.getActionType()).thenReturn(ToolExecutor.ActionType.READ);
+        lenient().when(mockTool1.getRiskLevel()).thenReturn(ToolExecutor.RiskLevel.LOW);
+        lenient().when(mockTool1.getDomainTags()).thenReturn(Collections.emptySet());
 
         // Setup mock tool 2
-        when(mockTool2.getToolName()).thenReturn(TOOL_2_NAME);
-        when(mockTool2.isEnabled()).thenReturn(true);
-        when(mockTool2.requiresPermission()).thenReturn(false);
-        when(mockTool2.getDescription()).thenReturn("Test Tool 2");
-        when(mockTool2.getParametersSchema()).thenReturn(createMockSchema());
+        lenient().when(mockTool2.getToolName()).thenReturn(TOOL_2_NAME);
+        lenient().when(mockTool2.isEnabled()).thenReturn(true);
+        lenient().when(mockTool2.requiresPermission()).thenReturn(false);
+        lenient().when(mockTool2.getDescription()).thenReturn("Test Tool 2");
+        lenient().when(mockTool2.getParametersSchema()).thenReturn(createMockSchema());
+        lenient().when(mockTool2.getActionType()).thenReturn(ToolExecutor.ActionType.READ);
+        lenient().when(mockTool2.getRiskLevel()).thenReturn(ToolExecutor.RiskLevel.LOW);
+        lenient().when(mockTool2.getDomainTags()).thenReturn(Collections.emptySet());
 
         // Setup disabled tool
-        when(mockToolDisabled.getToolName()).thenReturn(DISABLED_TOOL_NAME);
-        when(mockToolDisabled.isEnabled()).thenReturn(false);
+        lenient().when(mockToolDisabled.getToolName()).thenReturn(DISABLED_TOOL_NAME);
+        lenient().when(mockToolDisabled.isEnabled()).thenReturn(false);
 
         // Setup tool with permission
-        when(mockToolWithPermission.getToolName()).thenReturn(PERMISSION_TOOL_NAME);
-        when(mockToolWithPermission.isEnabled()).thenReturn(true);
-        when(mockToolWithPermission.requiresPermission()).thenReturn(true);
-        when(mockToolWithPermission.hasPermission("super_admin")).thenReturn(true);
-        when(mockToolWithPermission.hasPermission("factory_super_admin")).thenReturn(true);
-        when(mockToolWithPermission.hasPermission("user")).thenReturn(false);
-        when(mockToolWithPermission.getDescription()).thenReturn("Admin Only Tool");
-        when(mockToolWithPermission.getParametersSchema()).thenReturn(createMockSchema());
+        lenient().when(mockToolWithPermission.getToolName()).thenReturn(PERMISSION_TOOL_NAME);
+        lenient().when(mockToolWithPermission.isEnabled()).thenReturn(true);
+        lenient().when(mockToolWithPermission.requiresPermission()).thenReturn(true);
+        lenient().when(mockToolWithPermission.hasPermission("super_admin")).thenReturn(true);
+        lenient().when(mockToolWithPermission.hasPermission("factory_super_admin")).thenReturn(true);
+        lenient().when(mockToolWithPermission.hasPermission("user")).thenReturn(false);
+        lenient().when(mockToolWithPermission.getDescription()).thenReturn("Admin Only Tool");
+        lenient().when(mockToolWithPermission.getParametersSchema()).thenReturn(createMockSchema());
+        lenient().when(mockToolWithPermission.getActionType()).thenReturn(ToolExecutor.ActionType.READ);
+        lenient().when(mockToolWithPermission.getRiskLevel()).thenReturn(ToolExecutor.RiskLevel.LOW);
+        lenient().when(mockToolWithPermission.getDomainTags()).thenReturn(Collections.emptySet());
 
         // Create registry
         toolRegistry = new ToolRegistry();
@@ -139,8 +151,10 @@ class ToolRegistryTest {
         void testEmptyNameToolNotRegistered() {
             // Arrange
             ToolExecutor emptyNameTool = mock(ToolExecutor.class);
-            when(emptyNameTool.getToolName()).thenReturn("");
-            when(emptyNameTool.isEnabled()).thenReturn(true);
+            // lenient() — production short-circuits on empty toolName before
+            // touching isEnabled/governance metadata. Strict mode would flag.
+            lenient().when(emptyNameTool.getToolName()).thenReturn("");
+            lenient().when(emptyNameTool.isEnabled()).thenReturn(true);
             setToolExecutors(List.of(mockTool1, emptyNameTool));
 
             // Act
@@ -156,8 +170,10 @@ class ToolRegistryTest {
         void testDuplicateToolNameNotRegistered() {
             // Arrange
             ToolExecutor duplicateTool = mock(ToolExecutor.class);
-            when(duplicateTool.getToolName()).thenReturn(TOOL_1_NAME); // Same name
-            when(duplicateTool.isEnabled()).thenReturn(true);
+            // lenient() — production rejects on duplicate name before reaching
+            // governance metadata stubs.
+            lenient().when(duplicateTool.getToolName()).thenReturn(TOOL_1_NAME); // Same name
+            lenient().when(duplicateTool.isEnabled()).thenReturn(true);
             setToolExecutors(List.of(mockTool1, duplicateTool));
 
             // Act

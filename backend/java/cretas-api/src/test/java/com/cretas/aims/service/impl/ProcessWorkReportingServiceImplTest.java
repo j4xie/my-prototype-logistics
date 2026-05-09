@@ -271,8 +271,11 @@ class ProcessWorkReportingServiceImplTest {
         }
 
         @Test
-        @DisplayName("UT-PWR-08: 批量审批中工厂ID不匹配 — 抛异常，全部回滚")
-        void batchApprove_wrongFactory_throwsAndRollsBack() {
+        @DisplayName("UT-PWR-08: 批量审批中工厂ID不匹配 — 部分批准 + 跳过原因")
+        void batchApprove_wrongFactory_skipsAndReports() {
+            // 2026-05-09: 行为变化 (R69-BUG-1 fix) — wrong factory 现在被静默
+            // 跳过 (skippedDetails 含 reason=WRONG_FACTORY)，而不是抛异常。
+            // partial success 走 200 通道 + UI 可读 skippedIds.
             ProductionReport report1 = pendingReport().build();
             ProductionReport report2 = pendingReport().id(101L).factoryId(OTHER_FACTORY).build();
 
@@ -283,9 +286,19 @@ class ProcessWorkReportingServiceImplTest {
                     activeTask(ProcessTaskStatus.IN_PROGRESS).build()));
             when(taskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            // The second report has factoryId=F999, should throw for FACTORY_ID=F001
-            assertThrows(BusinessException.class,
-                    () -> service.batchApprove(FACTORY_ID, List.of(REPORT_ID, 101L), APPROVER_ID));
+            Map<String, Object> result = service.batchApprove(
+                    FACTORY_ID, List.of(REPORT_ID, 101L), APPROVER_ID);
+
+            // 第 1 条 approved, 第 2 条 (wrong factory) skipped with reason
+            assertEquals(1, result.get("approved"));
+            assertEquals(1, result.get("skipped"));
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> skippedIds =
+                    (List<Map<String, Object>>) result.get("skippedIds");
+            assertEquals(1, skippedIds.size());
+            assertEquals(101L, skippedIds.get(0).get("reportId"));
+            assertEquals("WRONG_FACTORY", skippedIds.get(0).get("reason"));
         }
     }
 
