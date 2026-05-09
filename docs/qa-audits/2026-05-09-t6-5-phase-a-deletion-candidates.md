@@ -144,7 +144,7 @@ For each Java SmartBI file:
 > ⚠️ **v3 amendment (datasource POST Python missing — deferred Phase 3 backlog, NOT latent bug)** per Chat 4 cross-verify (PR-W §6.1) + Chat 5 cross-check (PR #184) reframing: nginx routes 75-cohort + F999 the 3 paths `POST /datasource/upload`, `GET /datasource/{id}/preview`, `POST /datasource/apply` to Python upstream, but Python `smartbi_compat/api/datasource.py` does **not** implement them — Returns 404 since T6.4 cutover (May 9 06:34 CST), with **0 frontend callers + 0 prod log hits** confirming customer-invisible.
 >
 > - **Chat 5 audit (PR #184)**: `docs/qa-audits/2026-05-09-nginx-python-coverage-cross-check.md` — evidence + recommendation matrix.
-> - **Chat G (Python contract-completeness stub impl)**: PR `<chat-G-PR>` (placeholder; organizer 会在 admin-merge 前 sed 替换成实际 PR number).
+> - **Chat G (Python contract-completeness stub impl)**: PR `#185` (placeholder; organizer 会在 admin-merge 前 sed 替换成实际 PR number).
 > - **Truth**: 这 3 个 endpoint 既不在 Java 也不在 Python 真正实现 — 是 known Phase 3 backlog (PR #45/#49/#50 plan)。Java side 是 TODO stub (always returns `hasChanges:false` envelope), Phase 2A 没真正 port (router-file 占位 only)。
 >
 > The SAFE_NGINX_ROUTED + Stub 410 verdict still applies once Python contract-completeness stub lands (Chat G); in the interim Phase B stub-out is BLOCKED for these 3 rows so the framing reflects "deferred" rather than "broken".
