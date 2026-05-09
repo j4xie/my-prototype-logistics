@@ -69,9 +69,9 @@ class SmartBIAnalysisController {
     @GetMapping("/alerts")                       // ported (PR-M-1)
     @GetMapping("/recommendations")              // ported
     @GetMapping("/incentive-plan/{type}/{id}")   // ported
-    @PostMapping("/datasource/upload")           // ported
-    @GetMapping("/datasource/{id}/preview")      // ported
-    @PostMapping("/datasource/apply")            // ported
+    @PostMapping("/datasource/upload")           // deferred per PR #45/#49/#50 (Phase 3 backlog), Java + Python 都是 TODO stub
+    @GetMapping("/datasource/{id}/preview")      // deferred per PR #45/#49/#50 (Phase 3 backlog), Java + Python 都是 TODO stub
+    @PostMapping("/datasource/apply")            // deferred per PR #45/#49/#50 (Phase 3 backlog), Java + Python 都是 TODO stub
     @GetMapping("/datasource/list")              // ported (PR-M-7 microsecond fix)
     @GetMapping("/datasource/{id}/fields")       // ported
     @GetMapping("/datasource/{id}/history")      // ported
@@ -98,6 +98,8 @@ Note: `service/smartbi/impl/` contains ~30 .java files total — the 10 above ar
 > ⚠️ **Phase A audit amendment (Decision 4B)**: §1.2 IN-SCOPE silently assumes the 10 analysis service classes are *exclusively* coupled to SmartBIAnalysisController. Phase A audit §3.2.a confirms **all 10 are SHARED** with at least one OUT-OF-SCOPE controller (Dashboard/PublicDemo/Upload). Wholesale class-file deletion in Phase C would cause **compile errors** in the controllers explicitly KEPT by §1.2 OUT-OF-SCOPE below. **§1.2 IN-SCOPE / OUT-OF-SCOPE are internally inconsistent** as originally written.
 >
 > **Resolution**: Phase B touches *only* the 22+1=23 controller endpoint method bodies (no service-class touches). Phase C is refined to **method-level audit** within service impls (see §C.1 amendment) — service class files stay intact, only orphaned methods removed. The IN-SCOPE service-impl list above is **retained for traceability** of the port source but is **NOT a Phase C deletion list** — see §C.1.
+
+> ⚠️ **Phase A audit Chat 5 follow-up correction (2026-05-09)**: The 3 datasource POST/preview/apply lines above (`POST /datasource/upload` + `GET /datasource/{id}/preview` + `POST /datasource/apply`) were originally tagged `// ported` — that label is wrong. These 3 endpoints' **Java side is itself a TODO stub** (per PR #45 / #49 / #50 backlog defer plan from 2026-05-01), and **customers have never called them** (0 frontend caller + 0 prod log hit per Chat 5 audit `docs/qa-audits/2026-05-09-nginx-python-coverage-cross-check.md`). Phase 2A did **not** actually port them. Phase 2A → T6.5 → Phase 3 full chain: see Chat G PR `<chat-G-PR>` (Python contract-completeness stub) + PR #45 / #49 / #50 (Phase 3 backlog defer docs). Other `/datasource/*` lines (`/list`, `/{id}/fields`, `/{id}/history`) are genuinely ported and remain `// ported`.
 
 #### OUT OF SCOPE (T6.5 KEEPS Java code)
 
