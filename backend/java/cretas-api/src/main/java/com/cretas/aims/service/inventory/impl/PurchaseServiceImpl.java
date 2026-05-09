@@ -470,6 +470,16 @@ public class PurchaseServiceImpl implements PurchaseService {
                 throw new BusinessException(409, "只有已审批、财务已审核或部分到货状态的订单可以入库")
                         .withHint("请刷新订单列表查看最新状态");
             }
+
+            // PR #173 reviewer follow-up I-2: 早返超收上限校验.
+            // 旧行为: cap 校验只在 confirmReceive → updateOrderReceiveStatus (line ~845) 触发,
+            // 即用户走完 DRAFT 创建 + QC 流程, 在 confirm 阶段才知道超收 → 体验差.
+            // 新行为: 在 DRAFT 创建时同步校验 (基于 request.items 的累计预估),
+            // 用户立即看到 "超出可入库上限" 提示, 不用再走质检流程.
+            // 注: confirmReceive 也保留 updateOrderReceiveStatus 内的二次校验作为防御
+            // (防止 DRAFT → PENDING_QC → CONFIRMED 期间另一并发入库已 commit, 致使原本合法的草稿在
+            // confirm 时变非法).
+            validateOverReceiveCap(order, request.getItems());
         }
 
         // 生成入库单号: RCV-YYYYMMDD-序号
@@ -824,6 +834,57 @@ public class PurchaseServiceImpl implements PurchaseService {
         return batch;
     }
 
+    /**
+     * PR #173 reviewer follow-up I-2 (May 9 2026): 抄收上限校验提取为可复用 helper.
+     *
+     * 原 audio P1-7 (commit e44b1fd28) 的校验只在 confirmReceive → updateOrderReceiveStatus 触发,
+     * 即用户已走完 DRAFT → PENDING_QC 流程后才知道超收 → 体验差 + 已经创建了一些副作用 (in-memory state).
+     *
+     * 提取后:
+     * - createReceiveRecord (DRAFT 创建早返) — 用 CreateReceiveRecordRequest.ReceiveItemDTO
+     * - updateOrderReceiveStatus (confirmReceive 二次防御) — 用 PurchaseReceiveItem
+     *
+     * 双校验防御并发: DRAFT 创建时合法 → PENDING_QC 期间另一并发入库已 commit
+     * → confirmReceive 阶段累计已超 cap → 二次校验抛 → 事务回滚.
+     *
+     * @param order 已加载的 PurchaseOrder (非 null, caller 责任)
+     * @param items 入库 items, 用 (materialTypeId, materialName, receivedQuantity) 三元组校验
+     */
+    private void validateOverReceiveCap(PurchaseOrder order,
+            List<CreateReceiveRecordRequest.ReceiveItemDTO> items) {
+        if (items == null || items.isEmpty()) return;
+
+        List<PurchaseOrderItem> orderItems = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+        for (CreateReceiveRecordRequest.ReceiveItemDTO receiveItem : items) {
+            for (PurchaseOrderItem orderItem : orderItems) {
+                if (orderItem.getMaterialTypeId().equals(receiveItem.getMaterialTypeId())) {
+                    BigDecimal alreadyReceived = orderItem.getReceivedQuantity() != null
+                            ? orderItem.getReceivedQuantity() : BigDecimal.ZERO;
+                    BigDecimal thisReceive = receiveItem.getReceivedQuantity() != null
+                            ? receiveItem.getReceivedQuantity() : BigDecimal.ZERO;
+                    BigDecimal newReceived = alreadyReceived.add(thisReceive);
+
+                    if (orderItem.getQuantity() != null) {
+                        BigDecimal maxAllowed = orderItem.getQuantity()
+                                .multiply(BigDecimal.ONE.add(overReceiveRate));
+                        if (newReceived.compareTo(maxAllowed) > 0) {
+                            throw new BusinessException(409, String.format(
+                                    "超出可入库上限: 物料「%s」已收 %s, 本次 %s, 累计 %s, 下单 %s, 最大可收 %s (含 %s%% 抄收)",
+                                    receiveItem.getMaterialName(),
+                                    alreadyReceived.stripTrailingZeros().toPlainString(),
+                                    thisReceive.stripTrailingZeros().toPlainString(),
+                                    newReceived.stripTrailingZeros().toPlainString(),
+                                    orderItem.getQuantity().stripTrailingZeros().toPlainString(),
+                                    maxAllowed.stripTrailingZeros().toPlainString(),
+                                    overReceiveRate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString()))
+                                    .withHint("如需更多入库, 请采购另下新订单或联系采购员调整下单量");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void updateOrderReceiveStatus(PurchaseReceiveRecord record) {
         PurchaseOrder order = purchaseOrderRepository.findById(record.getPurchaseOrderId()).orElse(null);
         if (order == null) return;
@@ -836,9 +897,11 @@ public class PurchaseServiceImpl implements PurchaseService {
                 if (orderItem.getMaterialTypeId().equals(receiveItem.getMaterialTypeId())) {
                     BigDecimal newReceived = orderItem.getReceivedQuantity().add(receiveItem.getReceivedQuantity());
 
-                    // May 9 fix (audio P1-7): 抄收上限校验.
+                    // May 9 fix (audio P1-7): 抄收上限校验 (二次防御 — 主校验已在 createReceiveRecord 早返).
                     // 旧逻辑无上限 → 分批入库时累计可任意超出下单量.
                     // 客户原话: "正常抄收应该是30%以内, 如果有特殊情况, 那采购另外再下个单子".
+                    // PR #173 follow-up I-2: 早返已加在 createReceiveRecord, 此处保留作为
+                    // DRAFT → CONFIRMED 期间并发入库已 commit 致原合法草稿变非法时的兜底.
                     if (orderItem.getQuantity() != null) {
                         BigDecimal maxAllowed = orderItem.getQuantity()
                                 .multiply(BigDecimal.ONE.add(overReceiveRate));

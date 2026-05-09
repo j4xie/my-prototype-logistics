@@ -398,9 +398,15 @@ function handleEdit(row: Record<string, unknown>) {
           quantity: Number(item.quantity || 0),
           unit: String(item.unit || 'kg'),
           unitPrice: Number(item.unitPrice || 0),
+          // PR #173 reviewer follow-up M-4 (May 9 2026): preserve specification + boxQuantity
+          // on edit. 旧 bug: handleEdit 重建 form.items 时漏了这两字段, 用户编辑现有订单后
+          // 提交导致 specification/boxQuantity 被覆盖为空 (新 form 不含 → 后端把 null 写库).
+          // 抄码品识别 + 箱数自动算依赖这两字段, 不能丢.
+          specification: String(item.specification || ''),
+          boxQuantity: item.boxQuantity != null ? Number(item.boxQuantity) : null,
           taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
         }))
-      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
+      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
     version: typeof row.version === 'number' ? row.version : null,
   };
