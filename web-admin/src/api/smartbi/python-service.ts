@@ -113,10 +113,10 @@ export async function smartRecommendChart(params: {
     const data = result.data as Record<string, unknown> | undefined;
     return {
       success: result.success as boolean,
-      recommendations: data?.recommendations as typeof returnType['recommendations'],
+      recommendations: data?.recommendations as returnType['recommendations'],
       diversityScore: data?.diversityScore as number | undefined,
       method: data?.method as string | undefined,
-      dataInfo: data?.dataInfo as typeof returnType['dataInfo'],
+      dataInfo: data?.dataInfo as returnType['dataInfo'],
       error: result.message as string | undefined
     };
   } catch (error) {

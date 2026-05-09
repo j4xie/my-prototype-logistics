@@ -471,7 +471,7 @@ const chartOptions = computed<EChartsOption>(() => {
       },
       formatter: (params) => {
         if (!Array.isArray(params)) return '';
-        const period = params[0]?.axisValue || '';
+        const period = (params[0] as { axisValue?: string })?.axisValue || '';
         const dataPoint = props.data.find(d => d.period === period);
 
         let html = `<div style="font-weight: 600; margin-bottom: 8px;">${period}</div>`;

@@ -445,7 +445,7 @@ const chartOptions = computed<EChartsOption>(() => {
       },
       formatter: (params) => {
         if (!Array.isArray(params)) return '';
-        const date = params[0]?.axisValue || '';
+        const date = (params[0] as { axisValue?: string })?.axisValue || '';
         const isAnomaly = anomalyPoints.value.some(a => a.date === date);
         let html = `<div style="font-weight: 600; margin-bottom: 8px;">${date}${isAnomaly ? ' <span style="color:#f56c6c;">(异常)</span>' : ''}</div>`;
         params.forEach((param) => {

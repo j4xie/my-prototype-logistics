@@ -363,12 +363,12 @@ export async function getUploadHistory(params?: { status?: string; page?: number
     const mergedParams = { page: 0, size: 200, ...params };
     const res = await get<{ content?: UploadHistoryItem[] } | UploadHistoryItem[]>(`${getSmartBIBasePath()}/uploads`, { params: mergedParams, _silent: true } as Record<string, unknown>);
     // Handle paginated response (Spring Page: { content: [], totalElements, ... })
-    if (res.success && res.data && Array.isArray(res.data.content)) {
+    if (res.success && res.data && !Array.isArray(res.data) && Array.isArray(res.data.content)) {
       return { success: true, data: res.data.content };
     }
     // Backward compat: plain array
     if (res.success && Array.isArray(res.data)) {
-      return res;
+      return { success: true, data: res.data };
     }
     return { success: res.success, data: [] };
   } catch {
