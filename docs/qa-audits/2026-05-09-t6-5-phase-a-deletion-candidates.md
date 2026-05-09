@@ -11,6 +11,13 @@
 ## 0. TL;DR
 
 > **v3 amendment (post sister-chat review)**: 4 处 sister-chat-discovered fixes inlined per Chat 3 PR-Z (method name drift, Test.java 不存在) + Chat 4 PR-W (datasource POST Python missing, IncentivePlan name independent confirm). 详见 §3.1.a / §6.2.a / §3.2.d 各自 footnote。v2 → v3 LOC 增量 ~30 行 amendment annotations。
+>
+> **v3.1 framing correction (post-Chat 5 PR #184 cross-check)**: §3.1.a 之前 "latent T6.4 cutover bug" framing 过载 — Chat 5 evidence 反转事实:
+> - Java 端这 3 个 endpoint 自身 TODO stub (PR #45/#49/#50 defer 到 Phase 3)
+> - 0 frontend caller / 0 prod log hit (客户从未调用过)
+> - Phase 2A 没真正 port (只 router-file 占位)
+>
+> 修订后 framing 反映 ground truth: deferred Phase 3 backlog, NOT prod regression。Steve 决定仍 impl Python (Chat G PR) for contract completeness — 跟 Phase 3 PR #45/#49/#50 plan 协调,不冲突。LOC 增量 ~10 行 amendment annotations。
 
 Phase 2A cutover completed 2026-05-09 06:34 CST puts 75/75 customer factories on Python `/api/smartbi/analysis/*`. T6.5 spec (PR #150) was authored against an idealized "all analysis services dead" model; this Phase A audit reconciles that against actual nginx regex coverage and Java service-class sharing.
 
@@ -119,9 +126,9 @@ For each Java SmartBI file:
 | `getAlerts` | `GET /alerts` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getRecommendations` | `GET /recommendations` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getIncentivePlan` | `GET /incentive-plan/{type}/{id}` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `uploadAndDetectSchema` | `POST /datasource/upload` | **Python missing — latent T6.4 cutover bug** | SAFE_NGINX_ROUTED | Stub 410 |
-| `previewSchemaChanges` | `GET /datasource/{id}/preview` | **Python missing — latent T6.4 cutover bug** | SAFE_NGINX_ROUTED | Stub 410 |
-| `applySchemaChanges` | `POST /datasource/apply` | **Python missing — latent T6.4 cutover bug** | SAFE_NGINX_ROUTED | Stub 410 |
+| `uploadAndDetectSchema` | `POST /datasource/upload` | Python missing — **deferred per PR #45/#49/#50 (Phase 3 backlog), NOT latent bug**. Java side 也是 TODO stub (always returns `hasChanges:false` envelope). 0 frontend callers + 0 prod log hits per Chat 5 cross-check (PR #184 — `docs/qa-audits/2026-05-09-nginx-python-coverage-cross-check.md`). Steve 决定仍派 Chat G 做 Python contract-completeness stub mirror Java behavior。 | SAFE_NGINX_ROUTED | Stub 410 |
+| `previewSchemaChanges` | `GET /datasource/{id}/preview` | Python missing — **deferred per PR #45/#49/#50 (Phase 3 backlog), NOT latent bug**. Java side 也是 TODO stub (always returns `hasChanges:false` envelope). 0 frontend callers + 0 prod log hits per Chat 5 cross-check (PR #184 — `docs/qa-audits/2026-05-09-nginx-python-coverage-cross-check.md`). Steve 决定仍派 Chat G 做 Python contract-completeness stub mirror Java behavior。 | SAFE_NGINX_ROUTED | Stub 410 |
+| `applySchemaChanges` | `POST /datasource/apply` | Python missing — **deferred per PR #45/#49/#50 (Phase 3 backlog), NOT latent bug**. Java side 也是 TODO stub (always returns `hasChanges:false` envelope). 0 frontend callers + 0 prod log hits per Chat 5 cross-check (PR #184 — `docs/qa-audits/2026-05-09-nginx-python-coverage-cross-check.md`). Steve 决定仍派 Chat G 做 Python contract-completeness stub mirror Java behavior。 | SAFE_NGINX_ROUTED | Stub 410 |
 | `listDatasources` | `GET /datasource/list` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getDatasourceFields` | `GET /datasource/{id}/fields` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getSchemaHistory` | `GET /datasource/{id}/history` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
@@ -134,7 +141,13 @@ For each Java SmartBI file:
 
 > **v3 amendment (method names)**: 8 method names corrected from spec-paraphrased forms (`getFinanceBudgetAchievement`, `getFinanceYoYMoM`, `getFinanceCategoryComparison`, `nlQuery`, `uploadDatasource`, `previewDatasource`, `applyDatasource`, `listDatasource`) to actual class member names. Verified against `grep '@(Get|Post|Put|Delete|Patch)Mapping' SmartBIAnalysisController.java` post-Chat 3 PR-Z review.
 
-> ⚠️ **v3 amendment (datasource POST Python missing — latent T6.4 cutover bug)** per Chat 4 cross-verify (PR-W §6.1): nginx routes 75-cohort + F999 the 3 paths `POST /datasource/upload`, `GET /datasource/{id}/preview`, `POST /datasource/apply` to Python upstream, but Python `smartbi_compat/api/datasource.py` does **not** implement them. Returns 404 since T6.4 cutover (May 9 06:34 CST). Frontend usage check + impl is the new Chat E task (派工 5/6) — see PR `<chat-E-PR>` for impl status. The SAFE_NGINX_ROUTED + Stub 410 verdict still applies once Python parity is restored; in the interim Phase B stub-out is BLOCKED for these 3 rows because stubbing Java would replace 404 with 410 (no functional regression but masks the underlying gap).
+> ⚠️ **v3 amendment (datasource POST Python missing — deferred Phase 3 backlog, NOT latent bug)** per Chat 4 cross-verify (PR-W §6.1) + Chat 5 cross-check (PR #184) reframing: nginx routes 75-cohort + F999 the 3 paths `POST /datasource/upload`, `GET /datasource/{id}/preview`, `POST /datasource/apply` to Python upstream, but Python `smartbi_compat/api/datasource.py` does **not** implement them — Returns 404 since T6.4 cutover (May 9 06:34 CST), with **0 frontend callers + 0 prod log hits** confirming customer-invisible.
+>
+> - **Chat 5 audit (PR #184)**: `docs/qa-audits/2026-05-09-nginx-python-coverage-cross-check.md` — evidence + recommendation matrix.
+> - **Chat G (Python contract-completeness stub impl)**: PR `<chat-G-PR>` (placeholder; organizer 会在 admin-merge 前 sed 替换成实际 PR number).
+> - **Truth**: 这 3 个 endpoint 既不在 Java 也不在 Python 真正实现 — 是 known Phase 3 backlog (PR #45/#49/#50 plan)。Java side 是 TODO stub (always returns `hasChanges:false` envelope), Phase 2A 没真正 port (router-file 占位 only)。
+>
+> The SAFE_NGINX_ROUTED + Stub 410 verdict still applies once Python contract-completeness stub lands (Chat G); in the interim Phase B stub-out is BLOCKED for these 3 rows so the framing reflects "deferred" rather than "broken".
 
 #### 3.1.b SmartBIDashboardController — `/data-date-range` Phase B candidate
 
