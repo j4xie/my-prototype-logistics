@@ -1,0 +1,8 @@
+# 4 NOT_SAFE_FALLTHROUGH paths — STILL serve alive Java for all factories.
+# Source: scripts/t6-5-phase-b-smoke.py + PR #178 §3.1.a "NOT_SAFE_FALLTHROUGH"
+# These MUST NOT return 410 — assertion mode --expect-status-not 410.
+
+GET /api/mobile/{factoryId}/smart-bi/analysis/production?startDate=2026-01-01&endDate=2026-05-09
+GET /api/mobile/{factoryId}/smart-bi/analysis/quality?startDate=2026-01-01&endDate=2026-05-09
+POST /api/mobile/{factoryId}/smart-bi/query
+POST /api/mobile/{factoryId}/smart-bi/drill-down
