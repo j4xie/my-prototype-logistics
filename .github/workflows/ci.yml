@@ -30,7 +30,15 @@ jobs:
           cache-dependency-path: backend/java/cretas-api/pom.xml
       - name: Maven compile and test
         working-directory: backend/java/cretas-api
-        continue-on-error: true  # TODO: fix test failures then remove
+        # TODO: remove continue-on-error after the remaining ~137 pre-existing
+        # test failures are addressed (Mockito UnnecessaryStubbingException +
+        # ToolRegistry mock wiring + a handful of spec/data drift cases).
+        # The IntentParityTest H2 schema collision (40/40 ApplicationContext
+        # failure) was the blocker fixed in 2026-05-09: smartbi.postgres.enabled
+        # was missing from application-test.properties so the SmartBIPostgresPool
+        # tried to connect to localhost:5432 with empty password during context
+        # initialization. See test/resources/application-test.properties.
+        continue-on-error: true
         run: mvn -B clean verify -Dspring.profiles.active=test -pl .
       - name: Upload test results
         if: always()
