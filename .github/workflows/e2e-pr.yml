@@ -113,6 +113,24 @@ jobs:
         run: |
           curl -sf http://localhost:10010/api/mobile/health && echo OK || echo "Backend skipped (see /tmp/backend.log); downstream steps may fail cleanly"
 
+      # Diagnose backend startup failures: logback redirects all post-config logs to
+      # backend/java/cretas-api/logs/*.log (not /tmp/backend.log). Cat them when health
+      # check fails so root cause is visible in CI output.
+      - name: Diagnose backend on health failure
+        if: always()
+        run: |
+          echo "=== /tmp/backend.log (mvn stdout — usually only logback init + Spring banner) ==="
+          tail -200 /tmp/backend.log || echo "(no /tmp/backend.log)"
+          echo ""
+          echo "=== backend/java/cretas-api/logs/*.log (Spring runtime — actual exceptions live here) ==="
+          for f in backend/java/cretas-api/logs/cretas-backend*.log; do
+            if [ -f "$f" ]; then
+              echo "--- $f (last 200 lines) ---"
+              tail -200 "$f"
+              echo ""
+            fi
+          done || echo "(no project logs/*.log files)"
+
       # ── Web-admin startup ────────────────────────────────────────────────────
       - name: Start Vite dev server (background)
         working-directory: web-admin
