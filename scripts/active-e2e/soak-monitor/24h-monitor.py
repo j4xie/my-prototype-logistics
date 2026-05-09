@@ -167,8 +167,14 @@ def ssh_journalctl(
         ssh_target,
         "journalctl",
         *unit_args,
-        f"--since={since.strftime('%Y-%m-%d %H:%M:%S')}",
-        f"--until={until.strftime('%Y-%m-%d %H:%M:%S')}",
+        # Quote timestamp value: SSH joins remote argv with spaces, so the remote
+        # shell word-splits `--since=2026-05-09 23:33:00` into two args and
+        # journalctl rejects "23:33:00" as an invalid match. Wrapping the value
+        # in literal double-quotes survives both Git-bash ssh.exe (Windows host)
+        # and the remote shell join. Verified against `journalctl` on the
+        # cretas-backend systemd unit.
+        f'--since="{since.strftime("%Y-%m-%d %H:%M:%S")}"',
+        f'--until="{until.strftime("%Y-%m-%d %H:%M:%S")}"',
         "--no-pager",
         "-o", "short-iso",
     ]
