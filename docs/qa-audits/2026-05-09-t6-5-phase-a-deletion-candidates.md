@@ -10,6 +10,8 @@
 
 ## 0. TL;DR
 
+> **v3 amendment (post sister-chat review)**: 4 处 sister-chat-discovered fixes inlined per Chat 3 PR-Z (method name drift, Test.java 不存在) + Chat 4 PR-W (datasource POST Python missing, IncentivePlan name independent confirm). 详见 §3.1.a / §6.2.a / §3.2.d 各自 footnote。v2 → v3 LOC 增量 ~30 行 amendment annotations。
+
 Phase 2A cutover completed 2026-05-09 06:34 CST puts 75/75 customer factories on Python `/api/smartbi/analysis/*`. T6.5 spec (PR #150) was authored against an idealized "all analysis services dead" model; this Phase A audit reconciles that against actual nginx regex coverage and Java service-class sharing.
 
 **Headline findings**:
@@ -105,22 +107,22 @@ For each Java SmartBI file:
 | `getDepartmentAnalysis` | `GET /analysis/department` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getRegionAnalysis` | `GET /analysis/region` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getFinanceAnalysis` | `GET /analysis/finance` | Python ✓ (regex `/finance(/.*)?`) | SAFE_NGINX_ROUTED | Stub 410 |
-| `getFinanceBudgetAchievement` | `GET /analysis/finance/budget-achievement` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `getFinanceYoYMoM` | `GET /analysis/finance/yoy-mom` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `getFinanceCategoryComparison` | `GET /analysis/finance/category-comparison` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
+| `getBudgetAchievementChart` | `GET /analysis/finance/budget-achievement` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
+| `getYoYMoMComparisonChart` | `GET /analysis/finance/yoy-mom` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
+| `getCategoryStructureComparisonChart` | `GET /analysis/finance/category-comparison` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getInventoryAnalysis` | `GET /analysis/inventory` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getProcurementAnalysis` | `GET /analysis/procurement` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | **`getProductionAnalysis`** | `GET /analysis/production` | **Java for all 75** | **NOT_SAFE_FALLTHROUGH** | KEEP — port to Python first or accept dual code path |
 | **`getQualityAnalysis`** | `GET /analysis/quality` | **Java for all 75** | **NOT_SAFE_FALLTHROUGH** | KEEP — port to Python first |
-| **`nlQuery`** | `POST /query` | **Java for all 75** | **NOT_SAFE_FALLTHROUGH** | KEEP — NL query path stays Java (Python lacks intent service equivalent) |
+| **`query`** | `POST /query` | **Java for all 75** | **NOT_SAFE_FALLTHROUGH** | KEEP — NL query path stays Java (Python lacks intent service equivalent) |
 | **`drillDown`** | `POST /drill-down` | **Java for all 75** | **NOT_SAFE_FALLTHROUGH** | KEEP — Python has `analysis_drilldown.py` but nginx doesn't route to it |
 | `getAlerts` | `GET /alerts` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getRecommendations` | `GET /recommendations` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getIncentivePlan` | `GET /incentive-plan/{type}/{id}` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `uploadDatasource` | `POST /datasource/upload` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `previewDatasource` | `GET /datasource/{id}/preview` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `applyDatasource` | `POST /datasource/apply` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
-| `listDatasource` | `GET /datasource/list` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
+| `uploadAndDetectSchema` | `POST /datasource/upload` | **Python missing — latent T6.4 cutover bug** | SAFE_NGINX_ROUTED | Stub 410 |
+| `previewSchemaChanges` | `GET /datasource/{id}/preview` | **Python missing — latent T6.4 cutover bug** | SAFE_NGINX_ROUTED | Stub 410 |
+| `applySchemaChanges` | `POST /datasource/apply` | **Python missing — latent T6.4 cutover bug** | SAFE_NGINX_ROUTED | Stub 410 |
+| `listDatasources` | `GET /datasource/list` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getDatasourceFields` | `GET /datasource/{id}/fields` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getSchemaHistory` | `GET /datasource/{id}/history` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 | `getQueryTemplates` | `GET /query-templates` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
@@ -129,6 +131,10 @@ For each Java SmartBI file:
 | `deleteQueryTemplate` | `DELETE /query-templates/{id}` | Python ✓ | SAFE_NGINX_ROUTED | Stub 410 |
 
 **Counts**: 22 SAFE_NGINX_ROUTED + 4 NOT_SAFE_FALLTHROUGH = **26 of 26 endpoints classified** (verified by `grep -c "@(Get|Post|Put|Delete|Patch)Mapping"` against `SmartBIAnalysisController.java`). Net **22 of 26 stub-able from this controller**; **+1 from SmartBIDashboardController** (`/data-date-range`, see §3.1.b) = **23 Phase B stub candidates total**.
+
+> **v3 amendment (method names)**: 8 method names corrected from spec-paraphrased forms (`getFinanceBudgetAchievement`, `getFinanceYoYMoM`, `getFinanceCategoryComparison`, `nlQuery`, `uploadDatasource`, `previewDatasource`, `applyDatasource`, `listDatasource`) to actual class member names. Verified against `grep '@(Get|Post|Put|Delete|Patch)Mapping' SmartBIAnalysisController.java` post-Chat 3 PR-Z review.
+
+> ⚠️ **v3 amendment (datasource POST Python missing — latent T6.4 cutover bug)** per Chat 4 cross-verify (PR-W §6.1): nginx routes 75-cohort + F999 the 3 paths `POST /datasource/upload`, `GET /datasource/{id}/preview`, `POST /datasource/apply` to Python upstream, but Python `smartbi_compat/api/datasource.py` does **not** implement them. Returns 404 since T6.4 cutover (May 9 06:34 CST). Frontend usage check + impl is the new Chat E task (派工 5/6) — see PR `<chat-E-PR>` for impl status. The SAFE_NGINX_ROUTED + Stub 410 verdict still applies once Python parity is restored; in the interim Phase B stub-out is BLOCKED for these 3 rows because stubbing Java would replace 404 with 410 (no functional regression but masks the underlying gap).
 
 #### 3.1.b SmartBIDashboardController — `/data-date-range` Phase B candidate
 
@@ -199,6 +205,8 @@ PR #150 spec §1.2 IN-SCOPE list (line 85) cites **`IncentivePlanServiceImpl`** 
 Spec drift origin: likely paraphrased from the `/incentive-plan/{type}/{id}` endpoint name on SmartBIAnalysisController. The endpoint exists, the service is `IncentiveRuleService` (concept: rules drive plan generation). Phase B/C dispatch must reference the actual class name. Audit recommends amending PR #150 spec §1.2 to reflect the correct class name.
 
 `IncentiveRuleService` is referenced from SmartBIAnalysisController (`/incentive-plan/*` Python-routed) AND likely from SmartBIConfigController (`/incentive-rules` config CRUD per `Grep` line 245-324) → **KEEP_FOR_OUT_OF_SCOPE_CONTROLLER** (already classified in §3.2.c).
+
+> **v3 amendment (independent cross-confirmation)** per Chat 4 cross-verify (PR-W §6.4): `ls backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/Incentive*` returns only `IncentiveRuleServiceImpl.java`. PR #150 spec line 85 drift confirmed by independent grep. PR-X (Decision 4B spec amend) fixes the spec; this audit was already correct (no content change needed, just cross-confirmed).
 
 ### 3.3 DTOs (56 files in `dto/smartbi/`)
 
@@ -380,6 +388,10 @@ For NOT_SAFE_FALLTHROUGH paths, monitor traffic volume only — they are alive c
 - **NOT_SAFE_FALLTHROUGH controller methods** (`/analysis/production`, `/quality`, `/query`, `/drill-down`) STAY in controller entirely. These are alive paths.
 
 **Estimated Phase C effort**: ~5-10 person-days method-level audit + impl reduction. Lower scope than spec §C.1 implied.
+
+#### 6.2.a v3 amendment — Test.java does not exist (PR #150 spec §C.2 obsolete)
+
+> **v3 amendment per Chat 3 PR-Z review**: PR #150 spec §C.2 enumerates `SmartBIAnalysisControllerTest.java` as a Phase C test-file deletion candidate. **That test file does NOT exist** in the repo (verified via `Glob 'backend/java/cretas-api/src/test/**/SmartBIAnalysisControllerTest.java'` post-cutover — 0 matches). Phase B has no controller test deletion work. Smoke verification is handled at env-level (test env `curl` per stub list in PR-Z marching order) instead of unit test removal. PR #150 spec §C.2 should be amended (PR-X scope) to drop the `SmartBIAnalysisControllerTest.java` row; this audit retains the §6.2.a callout for traceability so future readers don't re-discover the same gap.
 
 ### 6.3 Phase D (ongoing, post-T6.5)
 
