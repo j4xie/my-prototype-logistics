@@ -80,21 +80,6 @@ public interface RegionAnalysisService {
      */
     DashboardResponse getRegionDetail(String factoryId, String region, LocalDate startDate, LocalDate endDate);
 
-    // ==================== 趋势分析 ====================
-
-    /**
-     * 获取区域销售趋势图表
-     *
-     * 按时间周期展示各区域的销售趋势，支持日/周/月粒度。
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @param period    时间周期: DAY, WEEK, MONTH
-     * @return 趋势图表配置
-     */
-    ChartConfig getRegionTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period);
-
     // ==================== 目标完成分析 ====================
 
     /**
@@ -145,46 +130,4 @@ public interface RegionAnalysisService {
      */
     List<RegionOpportunityScore> getRegionOpportunityScores(String factoryId, LocalDate startDate, LocalDate endDate);
 
-    // ==================== 树图分析 ====================
-
-    /**
-     * 获取区域-省份销售占比树图
-     *
-     * 以树图形式展示区域和省份的销售额占比关系。
-     * 一级节点为区域，二级节点为省份。
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 树图图表配置
-     */
-    ChartConfig getRegionProvinceTreemap(String factoryId, LocalDate startDate, LocalDate endDate);
-
-    // ==================== 辅助方法 ====================
-
-    /**
-     * 获取所有区域列表
-     *
-     * @param factoryId 工厂ID
-     * @return 区域名称列表
-     */
-    List<String> getAllRegions(String factoryId);
-
-    /**
-     * 获取指定区域下的所有省份
-     *
-     * @param factoryId 工厂ID
-     * @param region    区域名称
-     * @return 省份名称列表
-     */
-    List<String> getProvincesByRegion(String factoryId, String region);
-
-    /**
-     * 获取指定省份下的所有城市
-     *
-     * @param factoryId 工厂ID
-     * @param province  省份名称
-     * @return 城市名称列表
-     */
-    List<String> getCitiesByProvince(String factoryId, String province);
 }

@@ -20,7 +20,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -223,47 +222,6 @@ public class RegionAnalysisServiceImpl implements RegionAnalysisService {
                 .build();
     }
 
-    // ==================== 趋势分析 ====================
-
-    @Override
-    public ChartConfig getRegionTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period) {
-        log.info("获取区域销售趋势: factoryId={}, period={}, granularity={}", factoryId, startDate + " to " + endDate, period);
-
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, startDate, endDate);
-
-        if (salesData.isEmpty()) {
-            return ChartConfig.builder()
-                    .chartType("LINE")
-                    .title("区域销售趋势")
-                    .data(Collections.emptyList())
-                    .build();
-        }
-
-        // 获取所有区域
-        Set<String> regions = salesData.stream()
-                .map(SmartBiSalesData::getRegion)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        // 按时间周期和区域聚合
-        List<Map<String, Object>> chartData = aggregateByPeriodAndRegion(salesData, period, regions);
-
-        return ChartConfig.builder()
-                .chartType("LINE")
-                .title("区域销售趋势")
-                .xAxisField("period")
-                .yAxisField("amount")
-                .seriesField("region")
-                .data(chartData)
-                .options(Map.of(
-                        "smooth", true,
-                        "showLegend", true,
-                        "showTooltip", true
-                ))
-                .build();
-    }
-
     // ==================== 目标完成分析 ====================
 
     @Override
@@ -461,139 +419,6 @@ public class RegionAnalysisServiceImpl implements RegionAnalysisService {
         scores.sort((s1, s2) -> s2.getTotalScore().compareTo(s1.getTotalScore()));
 
         return scores;
-    }
-
-    // ==================== 树图分析 ====================
-
-    @Override
-    public ChartConfig getRegionProvinceTreemap(String factoryId, LocalDate startDate, LocalDate endDate) {
-        log.info("获取区域-省份树图: factoryId={}, period={} to {}", factoryId, startDate, endDate);
-
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, startDate, endDate);
-
-        if (salesData.isEmpty()) {
-            return ChartConfig.builder()
-                    .chartType("TREEMAP")
-                    .title("区域-省份销售占比")
-                    .data(Collections.emptyList())
-                    .build();
-        }
-
-        // 按区域和省份聚合
-        Map<String, Map<String, BigDecimal>> regionProvinceData = new LinkedHashMap<>();
-
-        for (SmartBiSalesData sale : salesData) {
-            String region = sale.getRegion();
-            String province = sale.getProvince();
-
-            if (region == null || region.isEmpty()) {
-                region = "未分类";
-            }
-            if (province == null || province.isEmpty()) {
-                province = "未分类";
-            }
-
-            regionProvinceData
-                    .computeIfAbsent(region, k -> new LinkedHashMap<>())
-                    .merge(province, sale.getAmount() != null ? sale.getAmount() : BigDecimal.ZERO, BigDecimal::add);
-        }
-
-        // 构建树图数据
-        List<Map<String, Object>> treemapData = new ArrayList<>();
-        for (Map.Entry<String, Map<String, BigDecimal>> regionEntry : regionProvinceData.entrySet()) {
-            String region = regionEntry.getKey();
-            Map<String, BigDecimal> provinces = regionEntry.getValue();
-
-            BigDecimal regionTotal = provinces.values().stream()
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            // 构建子节点
-            List<Map<String, Object>> children = new ArrayList<>();
-            for (Map.Entry<String, BigDecimal> provinceEntry : provinces.entrySet()) {
-                Map<String, Object> child = new LinkedHashMap<>();
-                child.put("name", provinceEntry.getKey());
-                child.put("value", provinceEntry.getValue().setScale(DISPLAY_SCALE, ROUNDING_MODE));
-                children.add(child);
-            }
-
-            // 按销售额排序子节点
-            children.sort((c1, c2) -> {
-                BigDecimal v1 = (BigDecimal) c1.get("value");
-                BigDecimal v2 = (BigDecimal) c2.get("value");
-                return v2.compareTo(v1);
-            });
-
-            Map<String, Object> regionNode = new LinkedHashMap<>();
-            regionNode.put("name", region);
-            regionNode.put("value", regionTotal.setScale(DISPLAY_SCALE, ROUNDING_MODE));
-            regionNode.put("children", children);
-
-            treemapData.add(regionNode);
-        }
-
-        // 按销售额排序区域节点
-        treemapData.sort((r1, r2) -> {
-            BigDecimal v1 = (BigDecimal) r1.get("value");
-            BigDecimal v2 = (BigDecimal) r2.get("value");
-            return v2.compareTo(v1);
-        });
-
-        return ChartConfig.builder()
-                .chartType("TREEMAP")
-                .title("区域-省份销售占比")
-                .xAxisField("name")
-                .yAxisField("value")
-                .data(treemapData)
-                .options(Map.of(
-                        "showBreadcrumb", true,
-                        "roam", true,
-                        "leafDepth", 2
-                ))
-                .build();
-    }
-
-    // ==================== 辅助方法 ====================
-
-    @Override
-    public List<String> getAllRegions(String factoryId) {
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, LocalDate.now().minusYears(1), LocalDate.now());
-
-        return salesData.stream()
-                .map(SmartBiSalesData::getRegion)
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<String> getProvincesByRegion(String factoryId, String region) {
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, LocalDate.now().minusYears(1), LocalDate.now());
-
-        return salesData.stream()
-                .filter(s -> region.equals(s.getRegion()))
-                .map(SmartBiSalesData::getProvince)
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<String> getCitiesByProvince(String factoryId, String province) {
-        List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
-                factoryId, LocalDate.now().minusYears(1), LocalDate.now());
-
-        return salesData.stream()
-                .filter(s -> province.equals(s.getProvince()))
-                .map(SmartBiSalesData::getCity)
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
     }
 
     // ==================== 私有辅助方法 ====================
@@ -964,59 +789,6 @@ public class RegionAnalysisServiceImpl implements RegionAnalysisService {
         suggestions.add("建议定期检查各省份的客户覆盖情况，提升市场渗透率。");
 
         return suggestions;
-    }
-
-    /**
-     * 按时间周期和区域聚合
-     */
-    private List<Map<String, Object>> aggregateByPeriodAndRegion(List<SmartBiSalesData> salesData,
-                                                                   String period,
-                                                                   Set<String> regions) {
-        // 按周期分组
-        Map<String, Map<String, BigDecimal>> periodRegionData = new LinkedHashMap<>();
-
-        for (SmartBiSalesData sale : salesData) {
-            LocalDate date = sale.getOrderDate();
-            String periodKey = getPeriodKey(date, period);
-            String region = sale.getRegion() != null ? sale.getRegion() : "未分类";
-
-            periodRegionData
-                    .computeIfAbsent(periodKey, k -> new LinkedHashMap<>())
-                    .merge(region, sale.getAmount() != null ? sale.getAmount() : BigDecimal.ZERO, BigDecimal::add);
-        }
-
-        // 转换为图表数据格式
-        List<Map<String, Object>> chartData = new ArrayList<>();
-        for (Map.Entry<String, Map<String, BigDecimal>> periodEntry : periodRegionData.entrySet()) {
-            String periodKey = periodEntry.getKey();
-            Map<String, BigDecimal> regionAmounts = periodEntry.getValue();
-
-            for (String region : regions) {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("period", periodKey);
-                item.put("region", region);
-                item.put("amount", regionAmounts.getOrDefault(region, BigDecimal.ZERO).setScale(DISPLAY_SCALE, ROUNDING_MODE));
-                chartData.add(item);
-            }
-        }
-
-        return chartData;
-    }
-
-    /**
-     * 获取周期键值
-     */
-    private String getPeriodKey(LocalDate date, String period) {
-        switch (period.toUpperCase()) {
-            case "DAY":
-                return date.toString();
-            case "WEEK":
-                int weekNumber = date.get(WeekFields.ISO.weekOfWeekBasedYear());
-                return date.getYear() + "-W" + String.format("%02d", weekNumber);
-            case "MONTH":
-            default:
-                return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
-        }
     }
 
     /**
