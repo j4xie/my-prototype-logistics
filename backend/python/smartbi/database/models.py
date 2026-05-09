@@ -8,7 +8,7 @@ Uses PostgreSQL JSONB for flexible schema storage.
 from datetime import datetime
 from typing import Dict, Any
 
-from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, UniqueConstraint, ForeignKey  # noqa: E501
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -255,7 +255,7 @@ class RestaurantSkuForm(Base):
             "totalCogsAmount": round(total_cogs, 2),
             "sellingPrice": selling_price,
             "cogsPct": round(cogs_pct, 4) if cogs_pct is not None else None,
-            "monthlySalesQuantity": float(self.monthly_sales_quantity) if self.monthly_sales_quantity is not None else None,
+            "monthlySalesQuantity": float(self.monthly_sales_quantity) if self.monthly_sales_quantity is not None else None,  # noqa: E501
             "ingredients": self.ingredients or [],
             "uploadedBy": self.uploaded_by,
             "notes": self.notes,

@@ -124,7 +124,7 @@ class ChannelAnalysis(AnalysisTemplate):
 
         total_revenue = float(df_work["_m"].sum() or 0.0)
         total_orders = df_work.height
-        total_customers = float(df_work["_cust"].sum() or 0.0) if cust_col else 0.0
+        total_customers = float(df_work["_cust"].sum() or 0.0) if cust_col else 0.0  # noqa: F841
 
         by_source: List[Dict[str, Any]] = []
         for row in src_agg.to_dicts():

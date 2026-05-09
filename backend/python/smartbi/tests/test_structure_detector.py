@@ -14,11 +14,12 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.structure_detector import StructureDetector
+from services.structure_detector import StructureDetector  # noqa: E402
 
 
 class StructureTestResult:
     """结构检测测试结果"""
+
     def __init__(self, name: str):
         self.name = name
         self.passed = False
@@ -281,7 +282,7 @@ async def test_multi_header_detection(detector: StructureDetector) -> StructureT
         # Multi-row headers should be detected
         if detection.success:
             result.passed = True
-            result.message = f"Detected {detection.header_row_count} header rows, {len(detection.merged_cells)} merged cells"
+            result.message = f"Detected {detection.header_row_count} header rows, {len(detection.merged_cells)} merged cells"  # noqa: E501
         else:
             result.message = f"Detection failed: {detection.error}"
     except Exception as e:

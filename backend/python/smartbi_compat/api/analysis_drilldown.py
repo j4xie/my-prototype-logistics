@@ -19,19 +19,19 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
-from smartbi_compat.api.analysis_finance import (
+from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _decimal_to_number, _to_decimal, _utc_now_iso,
 )
-from smartbi_compat.api.analysis_sales import (
+from smartbi_compat.api.analysis_sales import (  # noqa: E402
     _to_thread, _get_sync_engine,
     _get_product_ranking, _get_sales_trend_chart, _get_salesperson_ranking,
 )
-from smartbi_compat.api.analysis_region import _get_region_analysis
-from smartbi_compat.api.analysis_department import _get_department_ranking
-from smartbi_compat._java_compat import _format_decimal_half_up
-from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
-from smartbi_compat.date_range import DateRange
-from smartbi_compat.schema_compat import wrap_response, wrap_error
+from smartbi_compat.api.analysis_region import _get_region_analysis  # noqa: E402
+from smartbi_compat.api.analysis_department import _get_department_ranking  # noqa: E402
+from smartbi_compat._java_compat import _format_decimal_half_up  # noqa: E402
+from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
+from smartbi_compat.date_range import DateRange  # noqa: E402
+from smartbi_compat.schema_compat import wrap_response, wrap_error  # noqa: E402
 
 
 _SUPPORTED_DIMENSIONS = frozenset({
@@ -46,6 +46,7 @@ router = APIRouter()
 class DrilldownBusinessException(Exception):
     """Mirror Java BusinessException(code, message). withHint/withHintTarget
     NOT exposed (T10: controller catch flattens to 5-field envelope)."""
+
     def __init__(self, code: int, message: str):
         self.code = code
         self.message = message

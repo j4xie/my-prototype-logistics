@@ -6,6 +6,7 @@ import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class ProcurementForecastHandler(AbstractSectionHandler):
     section_name = "procurement_forecast"
 
@@ -22,7 +23,7 @@ class ProcurementForecastHandler(AbstractSectionHandler):
         yoy = float(p.get("yoy_adjustment", 1.0))
 
         lookup = {h.get("day", ""): {"avg_revenue": float(h.get("avg_revenue", 0)),
-                   "avg_covers": float(h.get("avg_covers", 0))} for h in historical}
+                                     "avg_covers": float(h.get("avg_covers", 0))} for h in historical}
 
         daily_plan, total_rev, total_cov = [], 0, 0
         for i in range(min(next_days, len(day_names) if day_names else next_days)):
@@ -31,9 +32,9 @@ class ProcurementForecastHandler(AbstractSectionHandler):
             rev = round(base["avg_revenue"] * holiday_mult * yoy)
             cov = round(base["avg_covers"] * holiday_mult * yoy)
             daily_plan.append({"day": day, "forecast_revenue": rev, "forecast_covers": cov,
-                "holiday_multiplier": holiday_mult, "yoy_adjustment": yoy, "base_revenue": base["avg_revenue"]})
-            total_rev += rev; total_cov += cov
+                               "holiday_multiplier": holiday_mult, "yoy_adjustment": yoy, "base_revenue": base["avg_revenue"]})  # noqa: E501
+            total_rev += rev; total_cov += cov  # noqa: E702
 
         return self.ok(request, data={"daily_plan": daily_plan, "total_forecast_revenue": total_rev,
-            "total_forecast_covers": total_cov, "days_planned": len(daily_plan),
-            "note": "节假日/特殊活动请手动调整 holiday_multiplier"}, started=started)
+                                      "total_forecast_covers": total_cov, "days_planned": len(daily_plan),
+                                      "note": "节假日/特殊活动请手动调整 holiday_multiplier"}, started=started)

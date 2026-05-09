@@ -198,7 +198,7 @@ def test_find_time_column_none_when_no_time():
 # ─── infer_agg_strategy ──────────────────────────────────────────────────────
 
 
-from smartbi.services.field_classifier import infer_agg_strategy
+from smartbi.services.field_classifier import infer_agg_strategy  # noqa: E402
 
 
 def test_infer_agg_strategy_id_returns_none():

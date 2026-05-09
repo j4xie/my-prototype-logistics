@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.staff_performance import 
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("服务员", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=5, primary_measure="营业额")
+                      fields=tuple([Field("服务员", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=5, primary_measure="营业额")
 
 
 def test_staff_ranking():
@@ -29,8 +29,8 @@ def test_staff_ranking():
 
 def test_staff_skip_when_no_staff_col():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = StaffPerformance().run(backend, schema)
     assert not result.applies

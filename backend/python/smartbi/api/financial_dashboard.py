@@ -250,7 +250,7 @@ async def export_ppt(request: PPTExportRequest):
             io.BytesIO(pptx_bytes),
             media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
             headers={
-                "Content-Disposition": f"attachment; filename=\"{filename_ascii}\"; filename*=UTF-8''{filename_encoded}",
+                "Content-Disposition": f"attachment; filename=\"{filename_ascii}\"; filename*=UTF-8''{filename_encoded}",  # noqa: E501
             },
         )
     except Exception as e:
@@ -281,7 +281,7 @@ async def export_excel(request: ExcelExportRequest):
         header_font = Font(bold=True, color="FFFFFF", size=11)
         header_fill = PatternFill(start_color="1B65A8", end_color="1B65A8", fill_type="solid")
         header_align = Alignment(horizontal="center", vertical="center")
-        thin_border = Border(
+        thin_border = Border(  # noqa: F841
             left=Side(style="thin", color="D9D9D9"),
             right=Side(style="thin", color="D9D9D9"),
             top=Side(style="thin", color="D9D9D9"),

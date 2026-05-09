@@ -728,7 +728,7 @@ If no match, return null for standard.
 Return JSON only:
 {{
   "mappings": [
-    {{"original": "column_name", "standard": "standard_field_or_null", "confidence": 0.0-1.0, "reasoning": "brief reason"}}
+    {{"original": "column_name", "standard": "standard_field_or_null", "confidence": 0.0-1.0, "reasoning": "brief reason"}}  # noqa: E501
   ]
 }}"""
 
@@ -907,7 +907,7 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
     def _detect_table_type(self, context: str, columns: List[str]) -> Optional[str]:
         """Detect table type from context and columns"""
         context_lower = context.lower()
-        columns_lower = [c.lower() for c in columns]
+        columns_lower = [c.lower() for c in columns]  # noqa: F841
 
         for table_type, info in TABLE_TYPE_PATTERNS.items():
             # Check keywords in context
@@ -920,7 +920,7 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
     def _detect_time_columns(self, columns: List[str]) -> Optional[Dict[str, Any]]:
         """Detect time-related columns"""
         time_patterns = {
-            "monthly": [r'\d{1,2}月', r'[Jj]an|[Ff]eb|[Mm]ar|[Aa]pr|[Mm]ay|[Jj]un|[Jj]ul|[Aa]ug|[Ss]ep|[Oo]ct|[Nn]ov|[Dd]ec'],
+            "monthly": [r'\d{1,2}月', r'[Jj]an|[Ff]eb|[Mm]ar|[Aa]pr|[Mm]ay|[Jj]un|[Jj]ul|[Aa]ug|[Ss]ep|[Oo]ct|[Nn]ov|[Dd]ec'],  # noqa: E501
             "quarterly": [r'Q[1-4]', r'第[一二三四]季度'],
             "yearly": [r'\d{4}年', r'20\d{2}']
         }

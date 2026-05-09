@@ -164,7 +164,7 @@ async def _auto_pregenerate_recipe_drafts(
             # Filter out dishes already with recipes (avoid wasting LLM tokens)
             dish_names = [r["name"] for r in rows if r["name"]]
             existing = await cretas.fetch(
-                "SELECT name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[]) AND deleted_at IS NULL",
+                "SELECT name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[]) AND deleted_at IS NULL",  # noqa: E501
                 factory_id, dish_names,
             )
             already_set = {r["name"] for r in existing}

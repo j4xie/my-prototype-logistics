@@ -8,6 +8,7 @@ import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class ShiftAnalysisHandler(AbstractSectionHandler):
     section_name = "shift_analysis"
 
@@ -28,7 +29,7 @@ class ShiftAnalysisHandler(AbstractSectionHandler):
         pt_cost = float(pt.get("total_cost", 0))
 
         total_hc = ft_count + pt_count
-        total_hours = ft_hours + pt_hours
+        total_hours = ft_hours + pt_hours  # noqa: F841
         total_cost = ft_cost + pt_cost
         revenue = float(p.get("revenue", 0))
         min_hours = int(p.get("min_guaranteed_hours", 168))

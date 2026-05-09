@@ -31,6 +31,7 @@ BM25_ENABLED = True
 
 class KnowledgeDocument:
     """知识文档结果"""
+
     def __init__(self, row: dict):
         self.id = row.get("id")
         self.title = row.get("title", "")

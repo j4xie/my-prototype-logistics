@@ -385,8 +385,8 @@ class RestaurantAnalyzer:
             actual_col = amount_col
 
         logger.info(f"Restaurant columns detected: store={store_col}, product={product_col}, "
-                     f"category={category_col}, qty={qty_single_col}, "
-                     f"amount={amount_col}, actual={actual_col}, date={date_col}")
+                    f"category={category_col}, qty={qty_single_col}, "
+                    f"amount={amount_col}, actual={actual_col}, date={date_col}")
 
         # Work on a copy to avoid mutating caller's DataFrame
         df = df.copy()
@@ -395,7 +395,7 @@ class RestaurantAnalyzer:
         data_quality_warnings: list[str] = []
         for nc in [actual_col, amount_col, qty_single_col, qty_combo_col, return_col]:
             if nc and nc in df.columns:
-                before_na = df[nc].isna().sum() + (pd.to_numeric(df[nc], errors="coerce").isna().sum() - df[nc].isna().sum())
+                before_na = df[nc].isna().sum() + (pd.to_numeric(df[nc], errors="coerce").isna().sum() - df[nc].isna().sum())  # noqa: E501
                 df[nc] = pd.to_numeric(df[nc], errors="coerce").fillna(0)
                 if before_na > 0:
                     pct = before_na / len(df) * 100
@@ -438,7 +438,7 @@ class RestaurantAnalyzer:
                 gross=pd.NamedAgg(column=amount_col, aggfunc="sum"),
                 net=pd.NamedAgg(column=actual_col, aggfunc="sum"),
             ).reset_index()
-            store_disc_df["discountPct"] = ((1 - store_disc_df["net"] / store_disc_df["gross"].replace(0, 1)) * 100).clip(0, 100)
+            store_disc_df["discountPct"] = ((1 - store_disc_df["net"] / store_disc_df["gross"].replace(0, 1)) * 100).clip(0, 100)  # noqa: E501
 
         ops_metrics = self._operations_metrics(df, product_col, actual_col, return_col, price_median, sub_sector)
         platform_readiness = self._platform_readiness(ops_metrics, sub_sector)
@@ -817,7 +817,7 @@ class RestaurantAnalyzer:
                 "label": "口味优中选优",
                 "pass": consistency > 50,
                 "detail": "稳定性评分 %d/100，出品稳定" % int(consistency) if consistency > 50
-                    else "出品稳定性不足，需加强品控",
+                else "出品稳定性不足，需加强品控",
                 "source": "data",
             },
             {
@@ -916,7 +916,7 @@ class RestaurantAnalyzer:
         if weighted_score >= 60:
             recommended_lists.append({"list": "好评榜", "readiness": "中", "action": "优化不达标项后申请"})
         recommended_lists.append({"list": "热门榜", "readiness": "高" if weighted_score >= 50 else "低",
-                                   "action": "提升客流量和真实评价数即可"})
+                                  "action": "提升客流量和真实评价数即可"})
         if sig_conc > 30:
             recommended_lists.append({"list": "口味榜", "readiness": "高", "action": "招牌菜突出，口味榜有优势"})
 
@@ -1010,7 +1010,7 @@ class RestaurantAnalyzer:
         })
 
         # 热门榜
-        remen_score = min(90, 50 + store_count * 5 + (20 if total_revenue > 100_0000 else 10 if total_revenue > 50_0000 else 0))
+        remen_score = min(90, 50 + store_count * 5 + (20 if total_revenue > 100_0000 else 10 if total_revenue > 50_0000 else 0))  # noqa: E501
         list_eligibility.append({
             "list": "热门榜",
             "score": min(100, remen_score),
@@ -1806,4 +1806,3 @@ class RestaurantAnalyzer:
             if len(sample) > 0 and sample.astype(str).str.contains(_CJK_RE).mean() > 0.3:
                 return c
         return None
-

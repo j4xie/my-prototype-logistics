@@ -100,31 +100,31 @@ class ScenarioDetector:
         DataScenario.PROFIT_STATEMENT: {
             "title": ["利润表", "损益表", "profit", "income statement", "p&l"],
             "columns": ["营业收入", "营业成本", "毛利", "净利润", "利润总额",
-                       "revenue", "cost", "profit", "gross margin"],
+                        "revenue", "cost", "profit", "gross margin"],
             "patterns": ["一、营业收入", "二、营业成本", "三、毛利"]
         },
         DataScenario.BUDGET_REPORT: {
             "title": ["预算", "budget", "计划", "执行", "完成率"],
             "columns": ["预算数", "实际数", "完成率", "差异", "执行率",
-                       "budget", "actual", "variance", "achievement"],
+                        "budget", "actual", "variance", "achievement"],
             "patterns": ["预算", "实际", "差异"]
         },
         DataScenario.SALES_DETAIL: {
             "title": ["销售", "订单", "sales", "order"],
             "columns": ["客户", "产品", "数量", "单价", "金额", "业务员",
-                       "customer", "product", "quantity", "price", "amount"],
+                        "customer", "product", "quantity", "price", "amount"],
             "patterns": ["客户名称", "产品名称", "销售员"]
         },
         DataScenario.DEPARTMENT_REPORT: {
             "title": ["部门", "department", "团队", "组织"],
             "columns": ["部门", "人数", "业绩", "目标", "完成率",
-                       "department", "headcount", "performance", "target"],
+                        "department", "headcount", "performance", "target"],
             "patterns": ["销售一部", "销售二部", "电商部"]
         },
         DataScenario.COST_ANALYSIS: {
             "title": ["成本", "cost", "费用", "expense"],
             "columns": ["原料", "人工", "制造费用", "折旧", "总成本",
-                       "material", "labor", "overhead", "depreciation"],
+                        "material", "labor", "overhead", "depreciation"],
             "patterns": ["直接成本", "间接成本", "成本构成"]
         }
     }
@@ -326,7 +326,7 @@ class FieldMapper:
         for col in columns:
             col_name = col.get("name", "")
             col_name_lower = col_name.lower()
-            original_name = col.get("original_name", col_name)
+            original_name = col.get("original_name", col_name)  # noqa: F841
             data_type = col.get("data_type", "text")
             sub_type = col.get("sub_type")
 

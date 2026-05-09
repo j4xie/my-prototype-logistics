@@ -6,10 +6,10 @@ from smartbi.services.materialized_analytics.templates.time_slot_revenue import 
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("开单时间", FieldRole.TIME, "datetime"),
-                      Field("区域", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=10, primary_measure="营业额", time_field="开单时间")
+                      fields=tuple([Field("开单时间", FieldRole.TIME, "datetime"),
+                                    Field("区域", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=10, primary_measure="营业额", time_field="开单时间")
 
 
 def test_time_slot_buckets():
@@ -28,9 +28,9 @@ def test_time_slot_buckets():
 
 def test_time_slot_skip_no_time():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("区域", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额", time_field=None)
+                        fields=tuple([Field("区域", FieldRole.DIMENSION, "string"),
+                                      Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额", time_field=None)
     backend = PolarsBackend.from_rows([{"区域": "A", "营业额": 100}])
     result = TimeSlotRevenue().run(backend, schema)
     assert not result.applies

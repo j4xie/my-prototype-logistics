@@ -103,7 +103,7 @@ class VideoEfficiencyAnalyzer:
         temp_dir = tempfile.mkdtemp()
 
         ffmpeg_paths = [
-            r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",
+            r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",  # noqa: E501
             r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Links\ffmpeg.exe",
             r"C:\ffmpeg\bin\ffmpeg.exe",
             r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",

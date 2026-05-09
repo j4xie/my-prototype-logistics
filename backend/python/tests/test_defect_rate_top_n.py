@@ -10,6 +10,7 @@ from smartbi.services.materialized_analytics.templates.defect_rate_top_n import 
 
 class _MockBackend:
     """Minimal ComputeBackend stub holding a polars DataFrame for tests."""
+
     def __init__(self, df):
         self._df = df
 

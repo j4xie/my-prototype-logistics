@@ -11,9 +11,9 @@ from smartbi.services.materialized_analytics.templates.top_n_by_dim import TopNB
 def qhj_like_backend() -> PolarsBackend:
     rows = []
     for store, total in [("大丸百货店", 10691165), ("南方百联店", 7515520),
-                          ("徐汇日月光店", 6913905), ("徐汇光启城店", 6496736),
-                          ("南桥百联店", 2444902), ("边缘店1", 100000),
-                          ("边缘店2", 50000)]:
+                         ("徐汇日月光店", 6913905), ("徐汇光启城店", 6496736),
+                         ("南桥百联店", 2444902), ("边缘店1", 100000),
+                         ("边缘店2", 50000)]:
         # simulate N orders per store
         for _ in range(5):
             rows.append({"门店名称": store, "品类": "主食", "销售金额": total / 5})

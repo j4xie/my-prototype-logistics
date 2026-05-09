@@ -85,7 +85,7 @@ class LLMArbitrator(BaseAgent):
         if start == -1 or end == -1 or end <= start:
             return None
         try:
-            return json.loads(text[start : end + 1])
+            return json.loads(text[start: end + 1])
         except (json.JSONDecodeError, ValueError):
             return None
 

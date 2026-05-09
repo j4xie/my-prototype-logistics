@@ -6,10 +6,10 @@ from smartbi.services.materialized_analytics.templates.dish_time_slot_matrix imp
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("开单时间", FieldRole.TIME, "datetime"),
-                      Field("商品信息", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=5, primary_measure="营业额", time_field="开单时间")
+                      fields=tuple([Field("开单时间", FieldRole.TIME, "datetime"),
+                                    Field("商品信息", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=5, primary_measure="营业额", time_field="开单时间")
 
 
 def test_matrix_detects_dinner_peak():
@@ -28,8 +28,8 @@ def test_matrix_detects_dinner_peak():
 
 def test_matrix_skip_when_no_item_or_time():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额", time_field=None)
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额", time_field=None)
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = DishTimeSlotMatrix().run(backend, schema)
     assert not result.applies

@@ -39,7 +39,7 @@ Severity = Literal["info", "warning", "critical"]
 class StoredValueReport:
     """充卡依赖度分析报告"""
     stored_value_giveaway: float         # 充卡赠送 (期间)
-    stored_value_charge: Optional[float] # 充卡新充 (期间)
+    stored_value_charge: Optional[float]  # 充卡新充 (期间)
     revenue: float                       # 期间营收
     previous_balance: Optional[float]    # 上月末储值余额
 
@@ -60,8 +60,8 @@ class StoredValueReport:
             "revenue": round(self.revenue, 2),
             "previousBalance": round(self.previous_balance, 2) if self.previous_balance is not None else None,
             "dependencyPct": round(self.dependency_pct, 4),
-            "chargeToRevenueRatio": round(self.charge_to_revenue_ratio, 4) if self.charge_to_revenue_ratio is not None else None,
-            "estimatedCashflowDependency": round(self.estimated_cashflow_dependency, 4) if self.estimated_cashflow_dependency is not None else None,
+            "chargeToRevenueRatio": round(self.charge_to_revenue_ratio, 4) if self.charge_to_revenue_ratio is not None else None,  # noqa: E501
+            "estimatedCashflowDependency": round(self.estimated_cashflow_dependency, 4) if self.estimated_cashflow_dependency is not None else None,  # noqa: E501
             "severity": self.severity,
             "messageZh": self.message_zh,
             "warnings": self.warnings,

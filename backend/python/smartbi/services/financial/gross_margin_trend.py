@@ -43,10 +43,10 @@ class GrossMarginTrendBuilder(AbstractFinancialChartBuilder):
             cost_df = df_classified[df_classified['pnl_type'] == 'cost']
 
             if not rev_df.empty and not cost_df.empty:
-                rev_monthly = rev_df.groupby('month')['actual'].sum().reindex(range(start_month, end_month + 1)).fillna(0)
-                cost_monthly = cost_df.groupby('month')['actual'].sum().reindex(range(start_month, end_month + 1)).fillna(0)
+                rev_monthly = rev_df.groupby('month')['actual'].sum().reindex(range(start_month, end_month + 1)).fillna(0)  # noqa: E501
+                cost_monthly = cost_df.groupby('month')['actual'].sum().reindex(range(start_month, end_month + 1)).fillna(0)  # noqa: E501
                 rev_ly = rev_df.groupby('month')['last_year'].sum().reindex(range(start_month, end_month + 1)).fillna(0)
-                cost_ly = cost_df.groupby('month')['last_year'].sum().reindex(range(start_month, end_month + 1)).fillna(0)
+                cost_ly = cost_df.groupby('month')['last_year'].sum().reindex(range(start_month, end_month + 1)).fillna(0)  # noqa: E501
 
                 current_margins = []
                 ly_margins_list = []

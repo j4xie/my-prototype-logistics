@@ -205,7 +205,7 @@ class StoreCustomerStratification(AnalysisTemplate):
                 "bin": label,
                 "orders": overall_bins[label],
                 "share_pct": round(overall_bins[label] / total_shown_orders * 100, 2)
-                    if total_shown_orders > 0 else 0.0,
+                if total_shown_orders > 0 else 0.0,
             }
             for label, _, _ in _BINS
         ]

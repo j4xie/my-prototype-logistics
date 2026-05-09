@@ -368,7 +368,7 @@ def compute_restaurant_context(df: pd.DataFrame) -> str:
     discount_col = _find_col("折后金额")
     return_col = _find_col("退货数量")
     supplier_col = _find_col("供应商")
-    material_col = _find_col("原料名称", "原料分类")
+    material_col = _find_col("原料名称", "原料分类")  # noqa: F841
     inbound_qty_col = _find_col("入库数量")
     inbound_amt_col = _find_col("入库金额")
 

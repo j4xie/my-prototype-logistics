@@ -528,6 +528,7 @@ def _new_dashboard_response_dict(
         "cacheExpireAt": cache_expire_at,
     }
 
+
 def _new_ranking_item_dict(
     rank: int,
     name: str,
@@ -580,7 +581,6 @@ def _new_chart_config_dict(
         "xaxisField": xaxis_field,
         "yaxisField": yaxis_field,
     }
-
 
 
 def _new_ai_insight_dict(
@@ -1707,13 +1707,13 @@ async def _get_comprehensive_sales_analysis(
     The Jackson order is what we mirror.
     """
     return {
-        "overview":           await _get_sales_overview(factory_id, range_),
-        "customerRanking":    await _get_customer_ranking(factory_id, range_),
-        "productRanking":     await _get_product_ranking(factory_id, range_),
+        "overview": await _get_sales_overview(factory_id, range_),
+        "customerRanking": await _get_customer_ranking(factory_id, range_),
+        "productRanking": await _get_product_ranking(factory_id, range_),
         "dateRange":          _new_date_range_dict(range_),
         "salespersonRanking": await _get_salesperson_ranking(factory_id, range_),
         "generatedAt":        _utc_now_iso(),
-        "trendChart":         await _get_sales_trend_chart(factory_id, range_, "DAY"),
+        "trendChart": await _get_sales_trend_chart(factory_id, range_, "DAY"),
     }
 
 

@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 # 尝试导入数据库仓库
 try:
-    from ..database.repository import get_repository, EfficiencyRepository
+    from ..database.repository import get_repository, EfficiencyRepository  # noqa: F401,E501
     DATABASE_AVAILABLE = True
 except ImportError:
     DATABASE_AVAILABLE = False
@@ -935,7 +935,7 @@ class WorkerTrackingService:
             }
             for record in self.tracking_records.values()
             if color_lower in record.features.clothing_upper.lower() or
-               color_lower in record.features.clothing_lower.lower()
+            color_lower in record.features.clothing_lower.lower()
         ]
 
     def get_worker_movement_summary(self, tracking_id: str) -> Optional[Dict]:

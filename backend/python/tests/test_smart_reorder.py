@@ -2,9 +2,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.smart_reorder import SmartReorderHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id="S-001", store_name="测试店", params=params)
+
 
 def test_basic_reorder():
     resp = SmartReorderHandler().compute(
@@ -24,14 +26,16 @@ def test_basic_reorder():
     assert beef["daily_need"] == 12.0
     assert beef["order_qty"] > 0
 
+
 def test_no_order_when_sufficient():
     resp = SmartReorderHandler().compute(
         _req({
-            "bom_recipes": [{"dish": "米饭", "ingredient": "大米", "qty_per_dish": 0.2, "unit": "kg", "daily_sales_estimate": 50}],
+            "bom_recipes": [{"dish": "米饭", "ingredient": "大米", "qty_per_dish": 0.2, "unit": "kg", "daily_sales_estimate": 50}],  # noqa: E501
             "current_stock": {"大米": 100.0}, "lead_days": 1, "safety_factor": 1.0,
         }), {})
     rice = next(o for o in resp.data["suggested_orders"] if o["ingredient"] == "大米")
     assert rice["order_qty"] == 0
+
 
 def test_skipped_no_bom():
     resp = SmartReorderHandler().compute(_req({}), {})

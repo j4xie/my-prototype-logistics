@@ -27,11 +27,11 @@ if sys.platform == 'win32':
 sys.path.insert(0, str(Path(__file__).parent.parent))
 os.chdir(Path(__file__).parent.parent)
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 load_dotenv()
 
-import pandas as pd
-from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth
+import pandas as pd  # noqa: E402
+from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth  # noqa: E402
 
 
 class PhaseTimer:
@@ -194,7 +194,7 @@ class ResultAnalyzer:
         for insight in insights:
             text_len = len(insight.text) if insight.text else 0
             has_numbers = any(c.isdigit() for c in (insight.text or ""))
-            has_recommendation = bool(insight.recommendation)
+            has_recommendation = bool(insight.recommendation)  # noqa: F841
 
             if text_len > 30 and has_numbers:
                 quality_insights += 1
@@ -245,7 +245,7 @@ class ResultAnalyzer:
             "data_score": data_quality["score"],
             "chart_score": chart_quality["score"],
             "insight_score": insight_quality["score"],
-            "grade": "A" if overall >= 85 else "B" if overall >= 70 else "C" if overall >= 55 else "D" if overall >= 40 else "F"
+            "grade": "A" if overall >= 85 else "B" if overall >= 70 else "C" if overall >= 55 else "D" if overall >= 40 else "F"  # noqa: E501
         }
 
 
@@ -329,8 +329,8 @@ async def test_single_file(
 
                 # Print quality summary
                 print("\n  Quality Assessment:")
-                print(f"    Data:    {data_quality['score']:3d}/100 ({data_quality['field_count']} fields, scenario={data_quality['scenario']})")
-                print(f"    Charts:  {chart_quality['score']:3d}/100 ({chart_quality['chart_count']} charts: {chart_quality['chart_types']})")
+                print(f"    Data:    {data_quality['score']:3d}/100 ({data_quality['field_count']} fields, scenario={data_quality['scenario']})")  # noqa: E501
+                print(f"    Charts:  {chart_quality['score']:3d}/100 ({chart_quality['chart_count']} charts: {chart_quality['chart_types']})")  # noqa: E501
                 print(f"    Insights:{insight_quality['score']:3d}/100 ({insight_quality['insight_count']} insights)")
                 print(f"    Overall: {overall['overall_score']:.1f}/100 (Grade: {overall['grade']})")
 
@@ -377,8 +377,8 @@ async def test_single_file(
 
     # Quality averages
     quality_scores = [s["quality"]["overall"]["overall_score"]
-                     for s in file_results["sheets"]
-                     if s["success"] and "quality" in s]
+                      for s in file_results["sheets"]
+                      if s["success"] and "quality" in s]
     if quality_scores:
         file_results["summary"]["avg_quality_score"] = round(sum(quality_scores) / len(quality_scores), 1)
 

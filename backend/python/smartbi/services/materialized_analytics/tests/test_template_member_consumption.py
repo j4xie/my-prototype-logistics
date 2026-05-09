@@ -10,8 +10,8 @@ def _schema(with_time=False):
     if with_time:
         fields.append(Field("营业日期", FieldRole.TIME, "datetime"))
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple(fields), row_count=10, primary_measure="营业额",
-        time_field="营业日期" if with_time else None)
+                      fields=tuple(fields), row_count=10, primary_measure="营业额",
+                      time_field="营业日期" if with_time else None)
 
 
 def test_member_consumption_calculates_share():
@@ -32,8 +32,8 @@ def test_member_consumption_calculates_share():
 
 def test_member_skip_when_no_member_column():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = MemberConsumption().run(backend, schema)
     assert not result.applies

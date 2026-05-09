@@ -1,9 +1,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.daily_reconciliation import DailyReconciliationHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id="S-001", store_name="测试店", params=params)
+
 
 def test_normal_day():
     resp = DailyReconciliationHandler().compute(
@@ -18,6 +20,7 @@ def test_normal_day():
     assert beef["variance"] == -0.5
     assert beef["within_tolerance"]
 
+
 def test_over_tolerance():
     resp = DailyReconciliationHandler().compute(
         _req({"date": "2026-04-11", "opening_stock": {"牛肉": 20.0},
@@ -26,6 +29,7 @@ def test_over_tolerance():
     beef = next(i for i in resp.data["reconciliation"] if i["ingredient"] == "牛肉")
     assert not beef["within_tolerance"]
     assert beef["severity"] == "HIGH"
+
 
 def test_skipped_no_stock():
     resp = DailyReconciliationHandler().compute(_req({}), {})

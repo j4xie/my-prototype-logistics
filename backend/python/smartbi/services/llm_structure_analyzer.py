@@ -197,7 +197,7 @@ class LLMStructureAnalyzer:
 - 合并单元格数: {len(raw_data.merged_cells)}
 
 ## 合并单元格信息
-{json.dumps([m.to_dict() for m in raw_data.merged_cells[:10]], ensure_ascii=False, indent=2) if raw_data.merged_cells else "无"}
+{json.dumps([m.to_dict() for m in raw_data.merged_cells[:10]], ensure_ascii=False, indent=2) if raw_data.merged_cells else "无"}  # noqa: E501
 
 ## 原始数据
 {md_content}
@@ -244,7 +244,7 @@ class LLMStructureAnalyzer:
 - 行索引从0开始
 - 如果有多行表头（如分组表头），都列入header_rows
 - role说明: dimension=维度(分类), measure=度量(数值), time=时间, label=标签, empty=空列
-- table_type可选: profit_statement, sales_detail, budget_report, department_report, cost_analysis, receivable_aging, inventory_report, general_table"""
+- table_type可选: profit_statement, sales_detail, budget_report, department_report, cost_analysis, receivable_aging, inventory_report, general_table"""  # noqa: E501
 
         return prompt
 
@@ -411,7 +411,7 @@ class LLMStructureAnalyzer:
             total_cols=raw_data.total_cols,
             title_rows=title_rows,
             header_rows=header_rows if header_rows else [0],
-            data_start_row=potential_data_start if potential_data_start else (max(header_rows) + 1 if header_rows else 1),
+            data_start_row=potential_data_start if potential_data_start else (max(header_rows) + 1 if header_rows else 1),  # noqa: E501
             data_end_row=None,
             columns=columns,
             table_type=table_type,

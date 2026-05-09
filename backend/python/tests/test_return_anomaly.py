@@ -2,9 +2,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.return_anomaly import ReturnAnomalyHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id=None, store_name=None, params=params)
+
 
 def test_detects_anomaly():
     resp = ReturnAnomalyHandler().compute(
@@ -19,6 +21,7 @@ def test_detects_anomaly():
     assert resp.data["anomalies"][0]["store"] == "门店C"
     assert resp.data["anomalies"][0]["return_pct"] == 25.0
 
+
 def test_no_anomaly():
     resp = ReturnAnomalyHandler().compute(
         _req({"deliveries": [
@@ -27,6 +30,7 @@ def test_no_anomaly():
         ]}), {})
     assert resp.status.value == "ok"
     assert len(resp.data["anomalies"]) == 0
+
 
 def test_skipped_no_deliveries():
     resp = ReturnAnomalyHandler().compute(_req({}), {})

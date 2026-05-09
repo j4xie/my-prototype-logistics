@@ -554,7 +554,7 @@ class ParallelProcessor:
 
         # Get all sheet names for matching
         sheet_names = {s.name.lower(): s for s in sheets_preview}
-        sheet_indices = {s.index: s for s in sheets_preview}
+        sheet_indices = {s.index: s for s in sheets_preview}  # noqa: F841
 
         # Convert DataFrame to string matrix for analysis
         rows_data = []
@@ -622,7 +622,7 @@ class ParallelProcessor:
 
             if matched_sheet:
                 # Skip the index sheet itself
-                if matched_sheet.index != sheets_preview[0].index or matched_sheet.name.lower() not in [p for p in ["目录", "索引", "index", "toc", "contents"]]:
+                if matched_sheet.index != sheets_preview[0].index or matched_sheet.name.lower() not in [p for p in ["目录", "索引", "index", "toc", "contents"]]:  # noqa: E501
                     mappings.append(IndexSheetMapping(
                         index=matched_sheet.index,
                         sheet_name=matched_sheet.name,

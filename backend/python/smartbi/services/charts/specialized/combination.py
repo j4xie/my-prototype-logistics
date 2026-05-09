@@ -28,10 +28,10 @@ class CombinationChartStrategy(BaseChartStrategy):
                 series.append({"name": y_fields[0], "type": "bar", "data": df[y_fields[0]].tolist(), "yAxisIndex": 0})
             if y_fields[1] in df.columns:
                 y_axis_list.append({"type": "value", "position": "right"})
-                series.append({"name": y_fields[1], "type": "line", "data": df[y_fields[1]].tolist(), "yAxisIndex": 1, "smooth": True})
+                series.append({"name": y_fields[1], "type": "line", "data": df[y_fields[1]].tolist(), "yAxisIndex": 1, "smooth": True})  # noqa: E501
             for y_field in y_fields[2:]:
                 if y_field in df.columns:
-                    series.append({"name": y_field, "type": "line", "data": df[y_field].tolist(), "yAxisIndex": 1, "smooth": True})
+                    series.append({"name": y_field, "type": "line", "data": df[y_field].tolist(), "yAxisIndex": 1, "smooth": True})  # noqa: E501
 
         return {
             "xAxis": {"type": "category", "data": x_data},

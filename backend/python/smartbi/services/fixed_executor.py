@@ -278,7 +278,7 @@ class FixedExecutor:
                     try:
                         df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows, skiprows=csv_skiprows)
                     except UnicodeDecodeError:
-                        df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows, skiprows=csv_skiprows)
+                        df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows, skiprows=csv_skiprows)  # noqa: E501
             else:
                 # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
                 if header_rows > 2 or structure_config.merged_cells:
@@ -362,7 +362,7 @@ class FixedExecutor:
                             io.BytesIO(file_bytes), read_only=True, data_only=True
                         )
                         _sheet_name = structure_config.sheet_name or _wb_probe.sheetnames[0]
-                        _ws_probe = _wb_probe[_sheet_name] if _sheet_name in _wb_probe.sheetnames else _wb_probe[_wb_probe.sheetnames[0]]
+                        _ws_probe = _wb_probe[_sheet_name] if _sheet_name in _wb_probe.sheetnames else _wb_probe[_wb_probe.sheetnames[0]]  # noqa: E501
                         _probe_rows = _ws_probe.max_row or 0
                         _probe_cols = _ws_probe.max_column or 1
                         _wb_probe.close()
@@ -423,7 +423,7 @@ class FixedExecutor:
                     try:
                         import openpyxl
                         wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True, read_only=True)
-                        sheet = wb[structure_config.sheet_name] if structure_config.sheet_name in wb.sheetnames else wb[wb.sheetnames[0]]
+                        sheet = wb[structure_config.sheet_name] if structure_config.sheet_name in wb.sheetnames else wb[wb.sheetnames[0]]  # noqa: E501
                         detected_header_row = None
                         for row_idx, row in enumerate(sheet.iter_rows(values_only=True, max_row=20)):
                             cells = list(row)
@@ -432,12 +432,12 @@ class FixedExecutor:
                                 continue
                             text_vals = [
                                 v for v in non_empty
-                                if isinstance(v, str) and not str(v).replace('.', '').replace('-', '').replace(',', '').strip().isdigit()
+                                if isinstance(v, str) and not str(v).replace('.', '').replace('-', '').replace(',', '').strip().isdigit()  # noqa: E501
                             ]
                             if len(text_vals) >= len(non_empty) * 0.8:
                                 detected_header_row = row_idx
                                 logger.info(
-                                    f"Bug #25 auto-header-detect: row_idx={row_idx} headers={[str(v)[:20] for v in non_empty[:5]]}"
+                                    f"Bug #25 auto-header-detect: row_idx={row_idx} headers={[str(v)[:20] for v in non_empty[:5]]}"  # noqa: E501
                                 )
                                 break
                         wb.close()
@@ -473,7 +473,7 @@ class FixedExecutor:
 
             if has_collision or is_csv_passthrough:
                 logger.info(
-                    f"Column rename SKIPPED — preserving original headers ({'collision' if has_collision else 'csv_passthrough'}): {df.columns.tolist()[:5]}..."
+                    f"Column rename SKIPPED — preserving original headers ({'collision' if has_collision else 'csv_passthrough'}): {df.columns.tolist()[:5]}..."  # noqa: E501
                 )
                 # Don't rename, but still ensure no duplicate original names (rare edge case)
                 seen: Dict[str, int] = {}
@@ -551,7 +551,7 @@ class FixedExecutor:
                 result.context = self._context_extractor.extract_from_bytes(
                     file_bytes=file_bytes,
                     sheet_index=0 if not structure_config.sheet_name else
-                        self._get_sheet_index(file_bytes, structure_config.sheet_name),
+                    self._get_sheet_index(file_bytes, structure_config.sheet_name),
                     data_end_row=structure_config.data_start_row + result.row_count
                 )
 
@@ -792,11 +792,11 @@ class FixedExecutor:
 
             # Debug logging (temporary, use INFO to see in logs)
             if row_idx <= 5:
-                logger.info(f"Row {row_idx} CHECK: unique={len(unique_values)}, has_keyword={has_title_keyword}, non_empty={len(non_empty)}, is_title={is_title_row}, first='{non_empty[0][:30] if non_empty else ''}'...")
+                logger.info(f"Row {row_idx} CHECK: unique={len(unique_values)}, has_keyword={has_title_keyword}, non_empty={len(non_empty)}, is_title={is_title_row}, first='{non_empty[0][:30] if non_empty else ''}'...")  # noqa: E501
 
             is_unit_row = any("单位" in v or "编制" in v or "Unit" in v.lower() for v in non_empty)
             # Date row: few non-empty values with datetime pattern
-            is_date_row = len(unique_values) <= 3 and any("00:00:00" in v or (len(v) == 10 and "-" in v) for v in non_empty)
+            is_date_row = len(unique_values) <= 3 and any("00:00:00" in v or (len(v) == 10 and "-" in v) for v in non_empty)  # noqa: E501
 
             # 判断是否是数据行（数字占比 > 30%，且有足够多的非空值）
             numeric_ratio = numeric_count / total_count if total_count > 0 else 0
@@ -809,11 +809,11 @@ class FixedExecutor:
                 # 这是数据行，不是表头！更新实际数据开始行
                 if actual_data_start is None:
                     actual_data_start = row_idx
-                logger.info(f"Row {row_idx} detected as DATA row (numeric_ratio={numeric_ratio:.2f}, first_cell='{first_cell[:20]}...')")
+                logger.info(f"Row {row_idx} detected as DATA row (numeric_ratio={numeric_ratio:.2f}, first_cell='{first_cell[:20]}...')")  # noqa: E501
                 continue
 
             if is_title_row:
-                logger.info(f"Row {row_idx} is TITLE row (non_empty={len(non_empty)}, unique={len(unique_values)}), skipping: '{non_empty[0][:30] if non_empty else ''}'")
+                logger.info(f"Row {row_idx} is TITLE row (non_empty={len(non_empty)}, unique={len(unique_values)}), skipping: '{non_empty[0][:30] if non_empty else ''}'")  # noqa: E501
                 continue
 
             if is_unit_row:
@@ -825,7 +825,7 @@ class FixedExecutor:
                 continue
 
             meaningful_rows.append((row_idx, row_values))
-            logger.info(f"Row {row_idx} is MEANINGFUL header row (non_empty={len(non_empty)}, unique={len(unique_values)})")
+            logger.info(f"Row {row_idx} is MEANINGFUL header row (non_empty={len(non_empty)}, unique={len(unique_values)})")  # noqa: E501
 
         # 如果检测到数据行在表头范围内，使用检测到的实际数据开始行
         # 否则使用结构检测器提供的 data_start_row

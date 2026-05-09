@@ -67,11 +67,11 @@ class TemporalComparisonHandler(AbstractSectionHandler):
             return self.skipped(request, "pos_df 不是 DataFrame (缺 columns 属性)", started)
 
         datetime_col = _resolve_col(pos_df, request.params.get("datetime_col"),
-                                     ["开单时间", "结单时间", "营业日期", "下单时间", "订单时间", "交易时间"])
+                                    ["开单时间", "结单时间", "营业日期", "下单时间", "订单时间", "交易时间"])
         revenue_col = _resolve_col(pos_df, request.params.get("revenue_col"),
-                                    ["实收", "实收额", "营业额", "应收金额", "实收金额", "总金额"])
+                                   ["实收", "实收额", "营业额", "应收金额", "实收金额", "总金额"])
         group_col = _resolve_col(pos_df, request.params.get("group_col"),
-                                  [self.DEFAULT_GROUP_COL, "门店名称", "店铺名称", "门店", "店铺", "store_name"])
+                                 [self.DEFAULT_GROUP_COL, "门店名称", "店铺名称", "门店", "店铺", "store_name"])
 
         if datetime_col not in pos_df.columns:
             return self.skipped(request, "POS 缺时间列 (尝试: 开单时间/营业日期/订单时间)", started)

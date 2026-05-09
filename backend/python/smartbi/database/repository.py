@@ -310,21 +310,21 @@ class FieldDefinitionRepository:
         """Get measure fields for an upload"""
         return self.db.query(SmartBiPgFieldDefinition).filter(
             SmartBiPgFieldDefinition.upload_id == upload_id,
-            SmartBiPgFieldDefinition.is_measure == True
+            SmartBiPgFieldDefinition.is_measure == True  # noqa: E712
         ).order_by(SmartBiPgFieldDefinition.display_order).all()
 
     def get_dimensions(self, upload_id: int) -> List[SmartBiPgFieldDefinition]:
         """Get dimension fields for an upload"""
         return self.db.query(SmartBiPgFieldDefinition).filter(
             SmartBiPgFieldDefinition.upload_id == upload_id,
-            SmartBiPgFieldDefinition.is_dimension == True
+            SmartBiPgFieldDefinition.is_dimension == True  # noqa: E712
         ).order_by(SmartBiPgFieldDefinition.display_order).all()
 
     def get_time_fields(self, upload_id: int) -> List[SmartBiPgFieldDefinition]:
         """Get time fields for an upload"""
         return self.db.query(SmartBiPgFieldDefinition).filter(
             SmartBiPgFieldDefinition.upload_id == upload_id,
-            SmartBiPgFieldDefinition.is_time == True
+            SmartBiPgFieldDefinition.is_time == True  # noqa: E712
         ).all()
 
 

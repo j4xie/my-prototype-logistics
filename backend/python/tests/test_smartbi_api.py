@@ -74,7 +74,8 @@ class TestChartAPI:
 
         # Anomaly detection at service layer (API may not expose field
         # if response model was cached without it)
-        import sys, os
+        import sys
+        import os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "smartbi"))
         from services.chart_builder import ChartBuilder
 
@@ -132,7 +133,8 @@ class TestChartAPI:
                 assert color in business["colors"], f"{color} missing from business palette"
 
         # Verify ChartBuilder.THEME_PALETTES has business colors (service layer)
-        import sys, os
+        import sys
+        import os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "smartbi"))
         from services.chart_builder import ChartBuilder
         palette = ChartBuilder.THEME_PALETTES["business"]["charts"]

@@ -34,9 +34,9 @@ router = APIRouter()
 
 class KnowledgeQueryRequest(BaseModel):
     query: str = Field(..., description="查询文本")
-    categories: Optional[List[str]] = Field(None, description="过滤知识类别: standard, regulation, process, haccp, sop, additive, microbe")
+    categories: Optional[List[str]] = Field(None, description="过滤知识类别: standard, regulation, process, haccp, sop, additive, microbe")  # noqa: E501
     top_k: int = Field(5, ge=1, le=20, description="返回结果数量")
-    similarity_threshold: float = Field(0.60, ge=0.0, le=1.0, description="最小相似度阈值 (P0-2: lowered from 0.72 to reduce false negatives)")
+    similarity_threshold: float = Field(0.60, ge=0.0, le=1.0, description="最小相似度阈值 (P0-2: lowered from 0.72 to reduce false negatives)")  # noqa: E501
     include_expired: bool = Field(False, description="是否包含过期文档")
 
 

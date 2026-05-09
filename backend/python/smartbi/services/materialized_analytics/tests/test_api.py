@@ -36,6 +36,7 @@ def test_cached_returns_empty_when_no_results(app_with_router):
 
         # _get_upload_factory returns F001
         conn_mock = MagicMock()
+
         async def _fetchrow(sql, *args):
             if "smart_bi_pg_excel_uploads" in sql:
                 return {"factory_id": "F001"}
@@ -74,8 +75,10 @@ def test_cached_returns_empty_when_no_results(app_with_router):
 class _Acquire:
     def __init__(self, conn):
         self._conn = conn
+
     async def __aenter__(self):
         return self._conn
+
     async def __aexit__(self, *a):
         pass
 

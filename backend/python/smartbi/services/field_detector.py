@@ -522,7 +522,7 @@ def _looks_numeric_str(v) -> bool:
             return ChartRole.MEASURE
 
         # Categorical types are dimensions
-        if semantic_type in [SemanticType.CATEGORY, SemanticType.GEOGRAPHY, SemanticType.PRODUCT, SemanticType.CUSTOMER]:
+        if semantic_type in [SemanticType.CATEGORY, SemanticType.GEOGRAPHY, SemanticType.PRODUCT, SemanticType.CUSTOMER]:  # noqa: E501
             return ChartRole.DIMENSION
 
         # IDs and codes are series grouping

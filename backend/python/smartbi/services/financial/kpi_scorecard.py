@@ -78,7 +78,7 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
         monthly_revenue = []
         if 'month' in df.columns and 'actual' in df.columns:
             if has_item:
-                rev_df = df[df['item'].apply(lambda x: normalizer.classify_pnl_item(str(x)) == 'revenue' if pd.notna(x) else False)]
+                rev_df = df[df['item'].apply(lambda x: normalizer.classify_pnl_item(str(x)) == 'revenue' if pd.notna(x) else False)]  # noqa: E501
             else:
                 rev_df = df
             monthly = rev_df.groupby('month')['actual'].sum().reindex(
@@ -227,7 +227,7 @@ class KpiScorecardBuilder(AbstractFinancialChartBuilder):
                     "fontWeight": "bold",
                     "color": COLORS['primary'],
                     "offsetCenter": [0, "30%"],
-                    "formatter": f"{{value}}{scale['suffix']}{card['unit']}" if card['unit'] == '元' else f"{{value}}{card['unit']}",
+                    "formatter": f"{{value}}{scale['suffix']}{card['unit']}" if card['unit'] == '元' else f"{{value}}{card['unit']}",  # noqa: E501
                 },
                 "data": [{"value": round(val, 1), "name": card['label']}],
             })

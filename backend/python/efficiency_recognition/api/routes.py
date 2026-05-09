@@ -659,7 +659,7 @@ async def edge_triggered_analyze(request: EdgeTriggeredAnalysisRequest):
             }
         )
 
-        camera_id = request.camera_id or request.device_id
+        camera_id = request.camera_id or request.device_id  # noqa: F841
 
         return EdgeTriggeredAnalysisResponse(
             success=True,

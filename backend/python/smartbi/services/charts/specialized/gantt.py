@@ -19,7 +19,7 @@ class GanttChartStrategy(BaseChartStrategy):
         series_field: Optional[str] = None,
         options: Optional[dict] = None,
     ) -> dict:
-        palette = get_palette()
+        palette = get_palette()  # noqa: F841
         col_lower = {c.lower().strip(): c for c in df.columns}
 
         task_col = x_field
@@ -165,7 +165,7 @@ class GanttChartStrategy(BaseChartStrategy):
             prev_cat = None
             for i, t in enumerate(tasks):
                 if prev_cat is not None and t["category"] != prev_cat:
-                    separator_lines.append({"yAxis": i - 0.5, "lineStyle": {"type": "dashed", "color": "#ddd", "width": 1}, "label": {"show": False}, "symbol": ["none", "none"]})
+                    separator_lines.append({"yAxis": i - 0.5, "lineStyle": {"type": "dashed", "color": "#ddd", "width": 1}, "label": {"show": False}, "symbol": ["none", "none"]})  # noqa: E501
                 prev_cat = t["category"]
 
         config = {
@@ -190,12 +190,12 @@ class GanttChartStrategy(BaseChartStrategy):
                 {
                     "name": "任务", "type": "bar", "stack": "gantt", "data": bar_data,
                     "barMaxWidth": 22, "barMinWidth": 12,
-                    "label": {"show": True, "position": "inside", "fontSize": 10, "color": "#fff", "formatter": "__FMT__gantt_bar_label"},
+                    "label": {"show": True, "position": "inside", "fontSize": 10, "color": "#fff", "formatter": "__FMT__gantt_bar_label"},  # noqa: E501
                     "emphasis": {"itemStyle": {"shadowBlur": 8, "shadowColor": "rgba(0,0,0,0.2)"}},
                     "markLine": {
                         "silent": True, "symbol": ["none", "none"],
                         "lineStyle": {"type": "dashed", "color": "#FF5630", "width": 2},
-                        "label": {"show": True, "position": "start", "formatter": "今天", "color": "#FF5630", "fontSize": 10},
+                        "label": {"show": True, "position": "start", "formatter": "今天", "color": "#FF5630", "fontSize": 10},  # noqa: E501
                         "data": [{"xAxis": today_offset}],
                     },
                 },
@@ -204,13 +204,13 @@ class GanttChartStrategy(BaseChartStrategy):
             "_ganttMeta": {
                 "refDate": ref_date.strftime("%Y-%m-%d"), "totalDays": total_days,
                 "taskCount": len(tasks), "todayOffset": today_offset,
-                "tasks": [{"name": t["name"], "start": t["start"], "end": t["end"], "duration": t["duration"], "status": t["status"], "progress": t["progress"], "category": t["category"]} for t in tasks],
+                "tasks": [{"name": t["name"], "start": t["start"], "end": t["end"], "duration": t["duration"], "status": t["status"], "progress": t["progress"], "category": t["category"]} for t in tasks],  # noqa: E501
             },
         }
 
         if len(tasks) > 15:
             config["dataZoom"] = [
-                {"type": "slider", "yAxisIndex": 0, "right": 5, "start": 0, "end": round(15 / len(tasks) * 100), "width": 15, "borderColor": "transparent", "backgroundColor": "#f3f4f6", "fillerColor": "rgba(45,139,87,0.12)", "handleStyle": {"color": "#2D8B57"}},
+                {"type": "slider", "yAxisIndex": 0, "right": 5, "start": 0, "end": round(15 / len(tasks) * 100), "width": 15, "borderColor": "transparent", "backgroundColor": "#f3f4f6", "fillerColor": "rgba(45,139,87,0.12)", "handleStyle": {"color": "#2D8B57"}},  # noqa: E501
                 {"type": "inside", "yAxisIndex": 0},
             ]
 

@@ -228,8 +228,12 @@ async def materialize_upload(
     total_rows = 0
 
     def _flush_batch() -> None:
+        # noqa: F821 — `batch` and `frames` are closures over outer-scope
+        # AnnAssign vars (lines 224-225); pyflakes has a known false-positive
+        # detecting AnnAssign-then-closure binding, but Python runtime resolves
+        # them via cell-variable lookup correctly.
         nonlocal inferred_schema
-        if not batch:
+        if not batch:  # noqa: F821
             return
         if inferred_schema is None:
             # Apr 26 2026 fix: was infer_schema_length=min(1000, len(batch))
@@ -240,21 +244,21 @@ async def materialize_upload(
             # "or value overflows data-type's capacity"). Scan whole batch
             # (≤10K) — small upfront cost avoids type-mismatch crashes.
             try:
-                df = pl.from_dicts(batch, infer_schema_length=len(batch))
+                df = pl.from_dicts(batch, infer_schema_length=len(batch))  # noqa: F821
             except Exception:
                 # Last resort: schema=None (slowest but most permissive)
-                df = pl.from_dicts(batch, infer_schema_length=None)
+                df = pl.from_dicts(batch, infer_schema_length=None)  # noqa: F821
             inferred_schema = dict(df.schema)
         else:
             try:
-                df = pl.from_dicts(batch, schema=inferred_schema)
+                df = pl.from_dicts(batch, schema=inferred_schema)  # noqa: F821
             except Exception:
                 # Loose fallback: re-infer per chunk and let concat reconcile
                 # via diagonal merge. Only hit if a later chunk has a new
                 # non-null column that didn't appear in the first 10K.
-                df = pl.from_dicts(batch, infer_schema_length=len(batch))
-        frames.append(df)
-        batch.clear()
+                df = pl.from_dicts(batch, infer_schema_length=len(batch))  # noqa: F821
+        frames.append(df)  # noqa: F821
+        batch.clear()  # noqa: F821
 
     async with pool.acquire() as conn:
         async with conn.transaction():

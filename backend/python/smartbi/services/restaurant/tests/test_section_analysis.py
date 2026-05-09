@@ -255,7 +255,7 @@ def test_f3_stored_value_mode_prepaid_default_behavior():
     assert report.severity == "critical"
     # Mode should be recorded in the report
     report_dict = report.to_dict() if hasattr(report, "to_dict") else report.__dict__
-    assert str(report_dict.get("mode", "")).upper() == "PREPAID" or report_dict.get("mode") == StoredValueTreatment.PREPAID.value
+    assert str(report_dict.get("mode", "")).upper() == "PREPAID" or report_dict.get("mode") == StoredValueTreatment.PREPAID.value  # noqa: E501
 
 
 def test_f3_stored_value_mode_revenue_treats_as_expense():
@@ -271,7 +271,7 @@ def test_f3_stored_value_mode_revenue_treats_as_expense():
     )
     # Same ratio (7.07%) but different mode
     report_dict = report.to_dict() if hasattr(report, "to_dict") else report.__dict__
-    assert str(report_dict.get("mode", "")).upper() == "REVENUE" or report_dict.get("mode") == StoredValueTreatment.REVENUE.value
+    assert str(report_dict.get("mode", "")).upper() == "REVENUE" or report_dict.get("mode") == StoredValueTreatment.REVENUE.value  # noqa: E501
     # Severity still depends on ratio (7.07% > 7% → critical)
     assert report.severity == "critical"
 
@@ -290,7 +290,7 @@ def test_f3_stored_value_mode_excluded_is_info():
     # When excluded from revenue, there's no dependency risk
     assert report.severity == "info"
     report_dict = report.to_dict() if hasattr(report, "to_dict") else report.__dict__
-    assert str(report_dict.get("mode", "")).upper() == "EXCLUDED" or report_dict.get("mode") == StoredValueTreatment.EXCLUDED.value
+    assert str(report_dict.get("mode", "")).upper() == "EXCLUDED" or report_dict.get("mode") == StoredValueTreatment.EXCLUDED.value  # noqa: E501
 
 
 def test_f3_stored_value_mode_omitted_defaults_to_prepaid():

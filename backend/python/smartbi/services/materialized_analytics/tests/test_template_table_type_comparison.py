@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.table_type_comparison imp
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("桌位", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=10, primary_measure="营业额")
+                      fields=tuple([Field("桌位", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=10, primary_measure="营业额")
 
 
 def test_table_type_splits_takeaway_vs_hall():
@@ -31,8 +31,8 @@ def test_table_type_splits_takeaway_vs_hall():
 
 def test_table_type_skip_when_no_table_col():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = TableTypeComparison().run(backend, schema)
     assert not result.applies

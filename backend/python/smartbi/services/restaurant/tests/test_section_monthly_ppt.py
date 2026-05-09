@@ -68,13 +68,13 @@ def test_monthly_ppt_section_with_all_optional_params():
             "financial_metrics": {"revenue": 100000, "foodCost": 40000},
             "department_breakdown": {
                 "departments": [
-                    {"code": "热菜", "nameZh": "热菜", "laborCost": 20000, "headCount": 5, "laborShare": 0.5, "perHeadCost": 4000},
+                    {"code": "热菜", "nameZh": "热菜", "laborCost": 20000, "headCount": 5, "laborShare": 0.5, "perHeadCost": 4000},  # noqa: E501
                 ],
                 "aggregated": {"后厨": 20000},
                 "totalLaborCost": 20000,
             },
             "shrinkage_report": {
-                "rows": [{"department": "热菜", "standardCost": 5000, "actualCost": 5200, "varianceAmount": 200, "varianceRate": 0.04}],
+                "rows": [{"department": "热菜", "standardCost": 5000, "actualCost": 5200, "varianceAmount": 200, "varianceRate": 0.04}],  # noqa: E501
                 "totalStandardCost": 5000,
                 "totalActualCost": 5200,
                 "totalVarianceAmount": 200,

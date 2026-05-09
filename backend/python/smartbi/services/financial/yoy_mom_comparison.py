@@ -105,7 +105,7 @@ class YoyMomComparisonBuilder(AbstractFinancialChartBuilder):
             q_end = q * 3 + 3
             if q_start_m < start_month or q_end > end_month:
                 continue
-            q_actual = sum(actual_vals[m - start_month] for m in range(q_start_m, q_end + 1) if start_month <= m <= end_month)
+            q_actual = sum(actual_vals[m - start_month] for m in range(q_start_m, q_end + 1) if start_month <= m <= end_month)  # noqa: E501
             q_formatted = f"{round(q_actual / divisor):,}" if divisor > 1 else f"{round(q_actual):,}"
             # Position above the middle month of the quarter
             q_mid_idx = month_range.index(q_start_m + 1) if (q_start_m + 1) in month_range else month_range.index(q_end)

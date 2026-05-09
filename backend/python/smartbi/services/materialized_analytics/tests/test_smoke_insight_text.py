@@ -14,10 +14,10 @@ from smartbi.services.materialized_analytics.templates.member_consumption import
 
 def test_insight_includes_action_rec_dish_sales_top_n():
     schema = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('门店名称', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float'),
-                      Field('商品信息', FieldRole.DIMENSION, 'string')]),
-        row_count=3, primary_measure='营业额')
+                        fields=tuple([Field('门店名称', FieldRole.DIMENSION, 'string'),
+                                      Field('营业额', FieldRole.MEASURE, 'float'),
+                                      Field('商品信息', FieldRole.DIMENSION, 'string')]),
+                        row_count=3, primary_measure='营业额')
     rows = [
         {'商品信息': '招牌青花椒鱼_2份*200+米饭_2份*5', '营业额': 410.0},
         {'商品信息': '招牌青花椒鱼_1份*200+饮料_1份*10', '营业额': 210.0},
@@ -32,9 +32,9 @@ def test_insight_includes_action_rec_dish_sales_top_n():
 
 def test_insight_includes_action_rec_dish_slow_movers():
     schema = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('商品信息', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=10, primary_measure='营业额')
+                        fields=tuple([Field('商品信息', FieldRole.DIMENSION, 'string'),
+                                      Field('营业额', FieldRole.MEASURE, 'float')]),
+                        row_count=10, primary_measure='营业额')
     rows = [{'商品信息': '可口可乐_1听*6', '营业额': 6} for _ in range(10)]
     rows += [{'商品信息': '冷门菜A_1份*20', '营业额': 20}]
     rows += [{'商品信息': '冷门菜B_1份*15', '营业额': 15}]
@@ -48,9 +48,9 @@ def test_insight_includes_action_rec_dish_slow_movers():
 
 def test_insight_includes_action_rec_channel_analysis():
     schema = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('订单来源', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=5, primary_measure='营业额')
+                        fields=tuple([Field('订单来源', FieldRole.DIMENSION, 'string'),
+                                      Field('营业额', FieldRole.MEASURE, 'float')]),
+                        row_count=5, primary_measure='营业额')
     rows = [
         {'订单来源': '店内桌位单', '营业额': 400},
         {'订单来源': '店内桌位单', '营业额': 600},
@@ -66,9 +66,9 @@ def test_insight_includes_action_rec_channel_analysis():
 
 def test_insight_includes_action_rec_staff_performance():
     schema = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('服务员', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=4, primary_measure='营业额')
+                        fields=tuple([Field('服务员', FieldRole.DIMENSION, 'string'),
+                                      Field('营业额', FieldRole.MEASURE, 'float')]),
+                        row_count=4, primary_measure='营业额')
     rows = [
         {'服务员': '杨生', '营业额': 4000},
         {'服务员': '杨生', '营业额': 5000},
@@ -83,9 +83,9 @@ def test_insight_includes_action_rec_staff_performance():
 
 def test_insight_includes_action_rec_store_performance():
     schema = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('门店名称', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=3, primary_measure='营业额')
+                        fields=tuple([Field('门店名称', FieldRole.DIMENSION, 'string'),
+                                      Field('营业额', FieldRole.MEASURE, 'float')]),
+                        row_count=3, primary_measure='营业额')
     rows = [
         {'门店名称': '青花椒徐汇日月光店', '营业额': 10000},
         {'门店名称': '青花椒徐汇日月光店', '营业额': 15000},
@@ -100,9 +100,9 @@ def test_insight_includes_action_rec_store_performance():
 
 def test_insight_includes_action_rec_member_consumption():
     schema = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('会员卡', FieldRole.MEASURE, 'float'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=4, primary_measure='营业额')
+                        fields=tuple([Field('会员卡', FieldRole.MEASURE, 'float'),
+                                      Field('营业额', FieldRole.MEASURE, 'float')]),
+                        row_count=4, primary_measure='营业额')
     rows = [
         {'会员卡': 100, '营业额': 200},
         {'会员卡': 50, '营业额': 80},
@@ -118,10 +118,10 @@ def test_insight_includes_action_rec_member_consumption():
 def test_insight_print_for_audit(capsys):
     """Print all insight_texts for visual inspection — run with pytest -s."""
     schema_top_n = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('门店名称', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float'),
-                      Field('商品信息', FieldRole.DIMENSION, 'string')]),
-        row_count=3, primary_measure='营业额')
+                              fields=tuple([Field('门店名称', FieldRole.DIMENSION, 'string'),
+                                            Field('营业额', FieldRole.MEASURE, 'float'),
+                                            Field('商品信息', FieldRole.DIMENSION, 'string')]),
+                              row_count=3, primary_measure='营业额')
     rows1 = [
         {'商品信息': '招牌青花椒鱼_2份*200', '营业额': 400},
         {'商品信息': '米饭_2份*5', '营业额': 10},
@@ -132,9 +132,9 @@ def test_insight_print_for_audit(capsys):
     print(f'(len={len(r1.insight_text)})')
 
     schema_staff = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('服务员', FieldRole.DIMENSION, 'string'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=4, primary_measure='营业额')
+                              fields=tuple([Field('服务员', FieldRole.DIMENSION, 'string'),
+                                            Field('营业额', FieldRole.MEASURE, 'float')]),
+                              row_count=4, primary_measure='营业额')
     rows3 = [
         {'服务员': '杨生', '营业额': 9000},
         {'服务员': '李四', '营业额': 1000},
@@ -145,9 +145,9 @@ def test_insight_print_for_audit(capsys):
     print(f'(len={len(r3.insight_text)})')
 
     schema_member = DataSchema(upload_id=1, factory_id='F001', domain=Domain.RESTAURANT,
-        fields=tuple([Field('会员卡', FieldRole.MEASURE, 'float'),
-                      Field('营业额', FieldRole.MEASURE, 'float')]),
-        row_count=4, primary_measure='营业额')
+                               fields=tuple([Field('会员卡', FieldRole.MEASURE, 'float'),
+                                             Field('营业额', FieldRole.MEASURE, 'float')]),
+                               row_count=4, primary_measure='营业额')
     rows4 = [
         {'会员卡': 100, '营业额': 200},
         {'会员卡': 50, '营业额': 80},

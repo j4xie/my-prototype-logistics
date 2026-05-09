@@ -42,7 +42,7 @@ if settings.postgres_enabled:
             echo=settings.debug,
         )
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        logger.info(f"PostgreSQL connection pool created: {settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}")
+        logger.info(f"PostgreSQL connection pool created: {settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}")  # noqa: E501
     except Exception as e:
         logger.error(f"Failed to create PostgreSQL connection: {e}")
         engine = None

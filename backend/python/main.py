@@ -18,31 +18,31 @@ _smartbi_dir = Path(__file__).parent / "smartbi"
 if str(_smartbi_dir) not in sys.path:
     sys.path.insert(0, str(_smartbi_dir))
 
-import logging
-import os
-from contextlib import asynccontextmanager
-from datetime import datetime
+import logging  # noqa: E402
+import os  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
+from datetime import datetime  # noqa: E402
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
 
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+from slowapi import Limiter, _rate_limit_exceeded_handler  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
+from slowapi.util import get_remote_address  # noqa: E402
 
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
 
-from auth_middleware import JWTAuthMiddleware
-from common.middleware.correlation import CorrelationIdMiddleware, CorrelationIdLogFilter
-from common.responses import ApiException, error_response, ErrorCode
+from auth_middleware import JWTAuthMiddleware  # noqa: E402
+from common.middleware.correlation import CorrelationIdMiddleware, CorrelationIdLogFilter  # noqa: E402
+from common.responses import ApiException, error_response, ErrorCode  # noqa: E402
 
 # Import settings from smartbi config
-from smartbi.config import get_settings
+from smartbi.config import get_settings  # noqa: E402
 
 # Import SmartBI API routers
-from smartbi.api import (
+from smartbi.api import (  # noqa: E402
     excel,
     excel_async,  # B MVP (Apr 20 2026, task #323): async upload endpoints
     field,
@@ -75,10 +75,10 @@ from smartbi.api import (
     rfm,
     financial_ratios,
 )
-from smartbi.api import restaurant_sections
-from smartbi.api import intent_analysis
-from smartbi.api.materialized_analytics import router as materialized_analytics_router
-from smartbi.capability.api import router as capability_router
+from smartbi.api import restaurant_sections  # noqa: E402
+from smartbi.api import intent_analysis  # noqa: E402
+from smartbi.api.materialized_analytics import router as materialized_analytics_router  # noqa: E402
+from smartbi.capability.api import router as capability_router  # noqa: E402
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
@@ -108,7 +108,7 @@ except ImportError as e:
 
 # Import Client Requirement API router (wizard_api.py is the complete router with
 # legacy endpoints + wizard endpoints + gap-analysis + guide-config)
-from client_requirement import wizard_api as client_requirement_routes
+from client_requirement import wizard_api as client_requirement_routes  # noqa: E402
 
 # Import Completeness Calculator API router (optional - requires asyncpg)
 try:
@@ -302,7 +302,7 @@ async def lifespan(app: FastAPI):
             db_url = settings.food_kb_db_url
 
             # Configure embedding service
-            from food_kb.services.embedding import configure as configure_embedding, get_embedding, close as close_embedding
+            from food_kb.services.embedding import configure as configure_embedding, get_embedding, close as close_embedding  # noqa: E501
             configure_embedding(
                 api_key=settings.llm_api_key,
                 base_url=settings.llm_base_url,
@@ -871,7 +871,7 @@ async def lifespan(app: FastAPI):
         try:
             from food_kb.services.knowledge_retriever import get_knowledge_retriever
             from food_kb.services.document_ingester import get_document_ingester
-            from food_kb.services.embedding import close as close_embedding
+            from food_kb.services.embedding import close as close_embedding  # noqa: F811,E501
             from food_kb.services.reranker import get_reranker
             await get_knowledge_retriever().close()
             await get_document_ingester().close()
@@ -899,10 +899,13 @@ app = FastAPI(
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 # Rate limiting — exempt internal Java→Python calls (X-Internal-Secret header)
+
+
 def _rate_limit_key(request: Request) -> str:
     if request.headers.get("X-Internal-Secret"):
         return "internal-exempt"
     return get_remote_address(request)
+
 
 limiter = Limiter(
     key_func=_rate_limit_key,
@@ -977,12 +980,12 @@ app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["
 app.include_router(capability_router)
 
 # Gold layer reads — v1 Phase B pilot (§5). Finance-summary from agg_daily.
-from smartbi.api import gold_reads
+from smartbi.api import gold_reads  # noqa: E402
 app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"])
 
 # Sub-Project C Day 26: cell-level field_provenance audit (§6.3).
 # Admin-gated read endpoint powering /audit/cell?type=&id=&field= page.
-from smartbi.api import provenance_audit
+from smartbi.api import provenance_audit  # noqa: E402
 app.include_router(
     provenance_audit.router,
     prefix="/api/smartbi/provenance",
@@ -991,7 +994,7 @@ app.include_router(
 
 # Sub-Project C Day 27: factory-level provenance config admin (§6.4).
 # Admin GET + PUT for diff_threshold / priority_overrides / industry_default_overrides.
-from smartbi.api import factory_provenance_config
+from smartbi.api import factory_provenance_config  # noqa: E402
 app.include_router(
     factory_provenance_config.router,
     prefix="/api/smartbi/factory-config",
@@ -1008,11 +1011,11 @@ else:
     logger.info("Week 5 Agent layer disabled (set SMARTBI_AGENT_LAYER_ENABLED=true to enable)")
 
 # LLM usage admin (BUG-9 + 模型切换监控)
-from smartbi.api import llm_usage_admin
+from smartbi.api import llm_usage_admin  # noqa: E402
 app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])
 
 # Phase 1 (Apr 23 2026): LLM fallback query log admin + feedback write
-from smartbi.api import llm_fallback_admin
+from smartbi.api import llm_fallback_admin  # noqa: E402
 app.include_router(
     llm_fallback_admin.router,
     prefix="/api/smartbi/admin/fallback-log",
@@ -1034,7 +1037,7 @@ except ImportError as e:
     logger.warning(f"LLM Router admin routes not registered: {e}")
 
 # Phase A A-1 Restaurant ETL admin (Apr 28 2026): trigger + status endpoints
-from smartbi.api import restaurant_etl_admin
+from smartbi.api import restaurant_etl_admin  # noqa: E402
 app.include_router(
     restaurant_etl_admin.router,
     prefix="/api/smartbi/restaurant/etl",
@@ -1042,7 +1045,7 @@ app.include_router(
 )
 
 # Restaurant completeness API (餐饮 Phase A Task 2.1)
-from smartbi.api import restaurant_completeness
+from smartbi.api import restaurant_completeness  # noqa: E402
 app.include_router(
     restaurant_completeness.router,
     prefix="/api/smartbi/restaurant",
@@ -1050,7 +1053,7 @@ app.include_router(
 )
 
 # Restaurant outliers API (餐饮 Phase B-1 Task 7 — outlier detection + dismissal)
-from smartbi.api import restaurant_outliers
+from smartbi.api import restaurant_outliers  # noqa: E402
 app.include_router(
     restaurant_outliers.router,
     prefix="/api/restaurant",
@@ -1059,7 +1062,7 @@ app.include_router(
 
 # Phase A A-3 Data quality queue admin (餐饮 Phase A Task 3.2 — list endpoint)
 # Tasks 3.3/3.4/3.6 will add resolve/reject/batch/history to the same module.
-from smartbi.api import data_quality_queue_admin
+from smartbi.api import data_quality_queue_admin  # noqa: E402
 app.include_router(
     data_quality_queue_admin.router,
     prefix="/api/smartbi/admin/data-quality-queue",
@@ -1067,7 +1070,7 @@ app.include_router(
 )
 
 # Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
-from smartbi.api import memory_admin
+from smartbi.api import memory_admin  # noqa: E402
 app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
@@ -1116,7 +1119,7 @@ else:
 # =====================================================
 if _food_kb_available:
     app.include_router(food_kb_api.router, prefix="/api/food-kb", tags=["Food Knowledge Base"])
-    app.include_router(food_kb_industry_report_api.router, prefix="/api/food-kb/industry-report", tags=["Industry Report RAG"])
+    app.include_router(food_kb_industry_report_api.router, prefix="/api/food-kb/industry-report", tags=["Industry Report RAG"])  # noqa: E501
     app.include_router(food_kb_manual_chat_api.router, prefix="/api/food-kb", tags=["Manual Chat"])
 else:
     logger.warning("Food Knowledge Base routes not registered")
@@ -1240,14 +1243,14 @@ async def health_check():
             "modules": [
                 "smartbi",
                 "client_requirement",
-                *( ["completeness_calculator"] if _completeness_available else []),
-                *( ["efficiency_recognition"] if _efficiency_available else []),
-                *( ["scene_intelligence"] if _scene_available else []),
-                *( ["food_knowledge_base"] if _food_kb_available else []),
-                *( ["food_kb_feedback"] if _food_kb_feedback_available else []),
-                *( ["foreign_object_detection"] if _fod_available else []),
-                *( ["ai_intent"] if _ai_module_available else []),
-                *( ["llm_router"] if _llm_available else []),
+                *(["completeness_calculator"] if _completeness_available else []),
+                *(["efficiency_recognition"] if _efficiency_available else []),
+                *(["scene_intelligence"] if _scene_available else []),
+                *(["food_knowledge_base"] if _food_kb_available else []),
+                *(["food_kb_feedback"] if _food_kb_feedback_available else []),
+                *(["foreign_object_detection"] if _fod_available else []),
+                *(["ai_intent"] if _ai_module_available else []),
+                *(["llm_router"] if _llm_available else []),
             ],
             "postgres": postgres_status
         }
@@ -1309,8 +1312,8 @@ async def api_exception_handler(request, exc: ApiException):
 # 和项目契约 {success:false, message, code} 不一致 → 前端 interceptor 拿不到
 # .message → 用户看 axios 通用 "Request failed with status code 404".
 # 统一转成项目格式.
-from fastapi import HTTPException as FastAPIHTTPException
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi import HTTPException as FastAPIHTTPException  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
 
 
 @app.exception_handler(FastAPIHTTPException)

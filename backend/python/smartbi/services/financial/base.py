@@ -41,7 +41,7 @@ def _sanitize_for_json(obj):
 def _detect_value_scale(values: list) -> dict:
     """Return divisor and suffix based on max value."""
     try:
-        abs_values = [abs(v) for v in values if isinstance(v, (int, float)) and not (isinstance(v, float) and math.isnan(v))]
+        abs_values = [abs(v) for v in values if isinstance(v, (int, float)) and not (isinstance(v, float) and math.isnan(v))]  # noqa: E501
         if not abs_values:
             return {"divisor": 1, "suffix": "", "name_suffix": ""}
         max_val = max(abs_values)

@@ -122,7 +122,7 @@ class TestSpecificChartTypes:
 
     def test_specialized_charts(self):
         for ct in ["sunburst", "treemap", "pareto", "gantt", "wordcloud",
-                    "slope", "funnel", "gauge", "radar", "combination"]:
+                   "slope", "funnel", "gauge", "radar", "combination"]:
             assert ct in CHART_REGISTRY, f"Specialized chart '{ct}' not registered"
 
     def test_donut_variants(self):

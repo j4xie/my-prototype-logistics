@@ -85,7 +85,7 @@ class YOLODetector:
                 provider_label = "CUDA+CPU"
             else:
                 providers = ["CPUExecutionProvider"]
-                provider_label = "CPU"
+                provider_label = "CPU"  # noqa: F841
 
             self._session = ort.InferenceSession(
                 self.model_path,
@@ -296,7 +296,7 @@ class YOLODetector:
             output = output.T
 
         num_detections = output.shape[0]
-        num_classes = output.shape[1] - 4
+        num_classes = output.shape[1] - 4  # noqa: F841
 
         boxes_cxcywh = output[:, :4]
         class_scores = output[:, 4:]

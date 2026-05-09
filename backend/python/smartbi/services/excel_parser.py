@@ -160,7 +160,7 @@ class ExcelParser:
                 "columnCount": len(headers),
                 "direction": direction.value,
                 "sheetNames": sheet_names,
-                "currentSheet": sheet_name if isinstance(sheet_name, str) else sheet_names[sheet_name] if sheet_name < len(sheet_names) else sheet_names[0]
+                "currentSheet": sheet_name if isinstance(sheet_name, str) else sheet_names[sheet_name] if sheet_name < len(sheet_names) else sheet_names[0]  # noqa: E501
             }
 
         except Exception as e:

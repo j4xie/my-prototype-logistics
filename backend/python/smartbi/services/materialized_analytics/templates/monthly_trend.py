@@ -122,6 +122,6 @@ class MonthlyTrend(AnalysisTemplate):
             insight_text=(
                 f"{measure} 累计 {total:,.0f} 元,峰值 {peak['period']} "
                 f"({peak['total']:,.0f} 元),谷值 {trough['period']} "
-                f"({trough['total']:,.0f} 元)。按{ {'D':'日','W':'周','M':'月'}.get(freq_used, freq_used) }聚合,共 {len(series)} 个周期。 {action_rec}"
+                f"({trough['total']:,.0f} 元)。按{ {'D':'日','W':'周','M':'月'}.get(freq_used, freq_used) }聚合,共 {len(series)} 个周期。 {action_rec}"  # noqa: E501
             ),
         )

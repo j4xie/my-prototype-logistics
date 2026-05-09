@@ -39,7 +39,7 @@ _BUCKET_RULES = [
     ]),
     ("移动支付", [
         lambda c: c in ("微信", "[微信]", "支付宝", "[支付宝]", "微信支付", "支付宝支付")
-                  or c.startswith("[微信") or c.startswith("[支付宝"),
+        or c.startswith("[微信") or c.startswith("[支付宝"),
     ]),
     ("储值卡/会员卡", [
         lambda c: any(k in c for k in ("储值卡", "会员卡")),

@@ -375,7 +375,7 @@ async def resolve_recipe_cost(
             logger.warning(f"[recipe_cost] dish name lookup failed: {e}")
 
     top_text = "\n".join([
-        f"  {i+1}. {name_map.get(r['product_source_pk'], '#' + r['product_source_pk'])}: ¥{r['food_cost']:.2f} ({r['ingredient_count']} 种食材)"
+        f"  {i+1}. {name_map.get(r['product_source_pk'], '#' + r['product_source_pk'])}: ¥{r['food_cost']:.2f} ({r['ingredient_count']} 种食材)"  # noqa: E501
         for i, r in enumerate(rows)
     ]) or "  (尚未录入配方数据或食材单价为空)"
 
@@ -399,8 +399,8 @@ async def resolve_recipe_cost(
         charts=charts,
         kpis=[
             {"title": "菜品数", "value": len(rows), "rawValue": len(rows)},
-            {"title": "最高成本", "value": f"¥{rows[0]['food_cost']:.2f}" if rows else "—", "rawValue": rows[0]["food_cost"] if rows else 0},
-            {"title": "Top 菜品", "value": name_map.get(rows[0]["product_source_pk"], "—") if rows else "—", "rawValue": 0},
+            {"title": "最高成本", "value": f"¥{rows[0]['food_cost']:.2f}" if rows else "—", "rawValue": rows[0]["food_cost"] if rows else 0},  # noqa: E501
+            {"title": "Top 菜品", "value": name_map.get(rows[0]["product_source_pk"], "—") if rows else "—", "rawValue": 0},  # noqa: E501
         ],
         meta={"top_n": top_n},
     )
@@ -782,7 +782,7 @@ async def resolve_store_margin(
     avg_rate = total_profit / total_rev_with_cost if total_rev_with_cost > 0 else 0
 
     top_text = "\n".join([
-        f"  {i+1}. {s['name']}: 营收 ¥{s['revenue']:,.2f} / 毛利 ¥{s['gross_profit']:,.2f} ({s['margin_rate'] * 100:.1f}%), {s['bills']} 单"
+        f"  {i+1}. {s['name']}: 营收 ¥{s['revenue']:,.2f} / 毛利 ¥{s['gross_profit']:,.2f} ({s['margin_rate'] * 100:.1f}%), {s['bills']} 单"  # noqa: E501
         for i, s in enumerate(top_slice)
     ])
     answer = (

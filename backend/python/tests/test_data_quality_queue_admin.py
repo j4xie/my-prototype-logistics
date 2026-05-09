@@ -151,6 +151,7 @@ async def test_batch_resolve_partial_success():
         factory_id = "F001"
         user_id = 1
         username = "admin1"
+
     class _Req:
         state = _S()
 

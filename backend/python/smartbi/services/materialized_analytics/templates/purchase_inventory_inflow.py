@@ -138,7 +138,7 @@ class PurchaseInventoryInflow(AnalysisTemplate):
                     "amount": round(float(r["amount"] or 0.0), 2),
                     "orders": int(r["orders"]),
                     "share_pct": round(float(r["amount"] or 0.0) / total_amount * 100, 2)
-                        if total_amount > 0 else 0.0,
+                    if total_amount > 0 else 0.0,
                 }
                 for r in rows
             ]
@@ -188,7 +188,7 @@ class PurchaseInventoryInflow(AnalysisTemplate):
                     "amount": round(float(r["amount"] or 0.0), 2),
                     "orders": int(r["orders"]),
                     "share_pct": round(float(r["amount"] or 0.0) / total_amount * 100, 2)
-                        if total_amount > 0 else 0.0,
+                    if total_amount > 0 else 0.0,
                 }
                 for r in rows
             ]

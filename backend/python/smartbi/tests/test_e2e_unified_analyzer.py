@@ -47,16 +47,17 @@ smartbi_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, smartbi_dir)
 os.chdir(smartbi_dir)  # Change to smartbi dir so .env can be loaded
 
-from services.unified_analyzer import (
+from services.unified_analyzer import (  # noqa: E402
     UnifiedAnalyzer,
     AnalysisOptions,
     AnalysisDepth
 )
-from services.analysis_cache import get_cache_manager
+from services.analysis_cache import get_cache_manager  # noqa: E402
 
 
 class TestResult:
     """Test result tracker"""
+
     def __init__(self, name: str):
         self.name = name
         self.passed = 0

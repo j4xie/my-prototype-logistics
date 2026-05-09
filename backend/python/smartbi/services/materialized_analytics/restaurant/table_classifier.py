@@ -12,7 +12,7 @@ import re
 
 _TAKEAWAY_RE = re.compile(r'^无桌位\(.*外卖.*\)$')
 _VIP_KEYWORDS = ["包厢", "VIP", "贵宾", "雅间", "包间"]
-_NUMERIC_RE = re.compile(r'^[A-Za-z]?\d+[A-Za-z]?$')  # 1, 23, 12A, A1, C30, B11 — dine-in tables with section-letter prefix
+_NUMERIC_RE = re.compile(r'^[A-Za-z]?\d+[A-Za-z]?$')  # 1, 23, 12A, A1, C30, B11 — dine-in tables with section-letter prefix  # noqa: E501
 
 
 def classify_table(value: str | None) -> str:

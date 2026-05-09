@@ -182,7 +182,7 @@ def test_channel_margin_accepts_custom_venue_list():
         revenue_col="实收额",
         venue_list=["包厢", "宴会", "午茶", "大厅晚餐", "外卖"],
     )
-    details = report.to_dict().get("channelDetails") or report.to_dict().get("channels") or report.to_dict().get("rows") or []
+    details = report.to_dict().get("channelDetails") or report.to_dict().get("channels") or report.to_dict().get("rows") or []  # noqa: E501
     # At least 5 venues should appear (exact key name depends on the report structure)
     assert len(details) >= 5
 
@@ -199,7 +199,7 @@ def test_channel_margin_accepts_custom_venue_list():
         revenue_col="实收额",
         venue_list=["堂食", "外卖"],
     )
-    details2 = report2.to_dict().get("channelDetails") or report2.to_dict().get("channels") or report2.to_dict().get("rows") or []
+    details2 = report2.to_dict().get("channelDetails") or report2.to_dict().get("channels") or report2.to_dict().get("rows") or []  # noqa: E501
     assert len(details2) >= 2
 
 

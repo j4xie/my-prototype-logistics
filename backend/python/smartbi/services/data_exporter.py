@@ -35,7 +35,7 @@ class ColumnDef:
     name: str                      # Flattened column name (e.g., "01月_预算数")
     original_name: str             # Original column name from Excel
     data_type: str = "text"        # Data type: numeric, date, text, percentage
-    sub_type: Optional[str] = None # Sub-type: amount, rate, quantity, category
+    sub_type: Optional[str] = None  # Sub-type: amount, rate, quantity, category
     index: int = 0                 # Column index (0-based)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -434,7 +434,7 @@ class DataExporter:
                                           'Budget', 'Actual', 'YTD', 'MTD']
                     text_lower = ' '.join(subheader_values).lower()
                     if any(kw.lower() in text_lower for kw in subheader_keywords):
-                        is_subheader = True
+                        is_subheader = True  # noqa: F841
                         header_end_row = potential_subheader_row
                         logger.debug(f"Row {potential_subheader_row} detected as sub-header row")
 

@@ -166,8 +166,8 @@ async def yoy_comparison(request: YoYRequest):
 
             # 4. Parse JSONB row_data
             import json
-            current_data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in current_rows]
-            compare_data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in compare_rows]
+            current_data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in current_rows]  # noqa: E501
+            compare_data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in compare_rows]  # noqa: E501
 
             # 5. Detect label field (first text column)
             label_field = None

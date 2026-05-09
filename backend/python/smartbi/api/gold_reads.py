@@ -340,6 +340,7 @@ async def get_analysis_results(
 def _row_to_result(row) -> dict:
     """Parse JSONB fields (asyncpg returns them as strings) + date isoformat."""
     import json as _json
+
     def _j(v):
         if v is None:
             return None

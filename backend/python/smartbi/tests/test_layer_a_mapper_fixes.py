@@ -18,14 +18,14 @@ BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-import pytest
+import pytest  # noqa: E402
 
-from smartbi.services.semantic_mapper import FieldMapping, SemanticMapper
-from smartbi.services.chart_recommender import (
+from smartbi.services.semantic_mapper import FieldMapping, SemanticMapper  # noqa: E402
+from smartbi.services.chart_recommender import (  # noqa: E402
     DataSummary,
     ChartRecommender,
 )
-from smartbi.services.cross_sheet_aggregator import CrossSheetAggregator
+from smartbi.services.cross_sheet_aggregator import CrossSheetAggregator  # noqa: E402
 
 
 # -------------------- A1 dedupe --------------------

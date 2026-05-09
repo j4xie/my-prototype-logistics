@@ -10,7 +10,7 @@ def _schema(has_item_col=True):
     if has_item_col:
         fields.append(Field("商品信息", FieldRole.DIMENSION, "string"))
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-                     fields=tuple(fields), row_count=10, primary_measure="营业额")
+                      fields=tuple(fields), row_count=10, primary_measure="营业额")
 
 
 def test_top_n_computes_from_parsed_items():

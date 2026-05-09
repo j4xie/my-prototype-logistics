@@ -38,7 +38,7 @@ class WordcloudChartStrategy(BaseChartStrategy):
             word = str(row[text_col]).strip()
             val = float(row[value_col])
             if word and not (math.isnan(val) or math.isinf(val)) and val > 0:
-                word_data.append({"name": word, "value": round(val, 2), "textStyle": {"color": palette[i % len(palette)]}})
+                word_data.append({"name": word, "value": round(val, 2), "textStyle": {"color": palette[i % len(palette)]}})  # noqa: E501
 
         if not word_data:
             return empty_chart_config("词云图无有效数据")

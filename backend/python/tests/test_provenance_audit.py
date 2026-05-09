@@ -464,7 +464,7 @@ class _AdminRequest:
     [
         ("0", "正整数"),                          # zero rejected by ``v <= 0`` branch
         ("-5", "正整数"),                          # negative rejected by same branch
-        ("9999999999999999999999", "BIGINT 范围"), # overflows PG BIGINT max
+        ("9999999999999999999999", "BIGINT 范围"),  # overflows PG BIGINT max
     ],
 )
 async def test_audit_rejects_entity_id_boundary(bad_entity_id, expected_substr):

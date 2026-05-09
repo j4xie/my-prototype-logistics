@@ -378,7 +378,7 @@ class DynamicConfigResolver:
         if self.db is None:
             raise RuntimeError("无 db_session")
         self.db.execute(
-            text("UPDATE business_config_overrides SET deleted_at = NOW() WHERE id = :id AND factory_id = :fid AND domain = :d"),
+            text("UPDATE business_config_overrides SET deleted_at = NOW() WHERE id = :id AND factory_id = :fid AND domain = :d"),  # noqa: E501
             {"id": override_id, "fid": self.factory_id, "d": self.domain},
         )
         self.db.commit()

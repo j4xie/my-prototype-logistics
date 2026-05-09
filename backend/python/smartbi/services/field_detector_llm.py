@@ -516,7 +516,7 @@ class LLMFieldDetector:
                 chart_role = llm_info.get("chart_role", "dimension")
 
                 # Validate chart_role based on data type
-                if info.get("data_type") in ("integer", "float") and semantic_type in ("amount", "quantity", "percentage"):
+                if info.get("data_type") in ("integer", "float") and semantic_type in ("amount", "quantity", "percentage"):  # noqa: E501
                     chart_role = "measure"
                 elif info.get("data_type") == "date" or semantic_type == "date":
                     chart_role = "time"

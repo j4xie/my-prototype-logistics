@@ -5,6 +5,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 import random
 
+
 def create_test_excel(output_path: str):
     """创建包含5个不同类型Sheet的测试Excel"""
     wb = openpyxl.Workbook()

@@ -324,7 +324,7 @@ async def classify_intent(raw_request: Request):
         settings = get_settings()
         ck = AiProxyCache.make_key("intent_classify", text, candidates_str)
         result = await _call_llm(
-            system_prompt="你是意图分类器。根据用户输入判断最匹配的意图。返回JSON：{\"intent\": \"意图代码\", \"confidence\": 0.95, \"reasoning\": \"理由\"}",
+            system_prompt="你是意图分类器。根据用户输入判断最匹配的意图。返回JSON：{\"intent\": \"意图代码\", \"confidence\": 0.95, \"reasoning\": \"理由\"}",  # noqa: E501
             user_prompt=f"用户输入：{text}\n\n候选意图：\n{candidates_str}",
             cache_key=ck,
             model=settings.llm_fast_model,
@@ -348,8 +348,8 @@ async def clarify_intent(request: IntentClarifyRequest):
         settings = get_settings()
         ck = AiProxyCache.make_key("intent_clarify", request.text, ambiguous_str)
         result = await _call_llm(
-            system_prompt="你是对话助手。当用户意图不明确时，生成一个澄清问题帮助确认意图。返回JSON：{\"question\": \"澄清问题\", \"options\": [\"选项1\", \"选项2\"]}",
-            user_prompt=f"用户输入：{request.text}\n\n当前识别意图：{request.current_intent or '未识别'}\n模糊意图列表：{request.ambiguous_intents or []}",
+            system_prompt="你是对话助手。当用户意图不明确时，生成一个澄清问题帮助确认意图。返回JSON：{\"question\": \"澄清问题\", \"options\": [\"选项1\", \"选项2\"]}",  # noqa: E501
+            user_prompt=f"用户输入：{request.text}\n\n当前识别意图：{request.current_intent or '未识别'}\n模糊意图列表：{request.ambiguous_intents or []}",  # noqa: E501
             cache_key=ck,
             model=settings.llm_fast_model,
         )
@@ -384,7 +384,7 @@ async def parse_data_operation(request: DataOperationParseRequest):
         settings = get_settings()
         ck = AiProxyCache.make_key("data_op", request.text)
         result = await _call_llm(
-            system_prompt="你是数据操作解析器。将用户的自然语言描述转换为数据操作指令。返回JSON：{\"operation\": \"QUERY/CREATE/UPDATE/DELETE\", \"entity\": \"实体名\", \"conditions\": {}, \"fields\": []}",
+            system_prompt="你是数据操作解析器。将用户的自然语言描述转换为数据操作指令。返回JSON：{\"operation\": \"QUERY/CREATE/UPDATE/DELETE\", \"entity\": \"实体名\", \"conditions\": {}, \"fields\": []}",  # noqa: E501
             user_prompt=f"用户输入：{request.text}\n\n可用实体：{entities_str}",
             cache_key=ck,
             model=settings.llm_fast_model,
@@ -408,7 +408,7 @@ async def generate_form_schema(request: FormSchemaRequest):
         ck = AiProxyCache.make_key("form_schema", request.description)
         result = await _call_llm(
             system_prompt="你是表单设计专家。根据描述生成表单Schema（字段名、类型、验证规则、标签）。返回JSON格式的表单定义。",
-            user_prompt=f"请为以下场景生成表单Schema：\n\n{request.description}\n\n实体类型：{request.entity_type or '自动检测'}\n字段提示：{request.fields_hint or '自动生成'}",
+            user_prompt=f"请为以下场景生成表单Schema：\n\n{request.description}\n\n实体类型：{request.entity_type or '自动检测'}\n字段提示：{request.fields_hint or '自动生成'}",  # noqa: E501
             max_tokens=3000,
             cache_key=ck,
             model=settings.llm_model,

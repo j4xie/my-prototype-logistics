@@ -59,7 +59,7 @@ async def clean_rows(pool):
 
 
 def _make_admin_request(factory_id: str = _TENANT, *,
-                         user_id: int = 1, username: str = "admin:test"):
+                        user_id: int = 1, username: str = "admin:test"):
     """Build a fake Request with admin auth state populated."""
 
     class _S:

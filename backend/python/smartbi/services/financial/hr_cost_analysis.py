@@ -103,7 +103,7 @@ class HRCostAnalysisBuilder(AbstractFinancialChartBuilder):
 
         # --- KPIs ---
         total_hr_cost = sum(v or 0 for v in actual_vals)
-        total_salary = sum(v or 0 for v in salary_vals)
+        total_salary = sum(v or 0 for v in salary_vals)  # noqa: F841
         avg_efficiency = sum(efficiency_vals) / max(len(efficiency_vals), 1)
         # HR cost ratio (assume HR is ~30% of total revenue — synthetic estimate)
         hr_cost_ratio = 32.5  # placeholder percentage

@@ -215,7 +215,7 @@ def sample_quick_summary_data():
 # stays per-file because the table sets to wipe differ; this one
 # centralizes the pool acquisition + skip-when-no-PG behavior.
 # ─────────────────────────────────────────────────────────────────────
-import pytest_asyncio
+import pytest_asyncio  # noqa: E402
 
 
 # ─────────────────────────────────────────────────────────────────────

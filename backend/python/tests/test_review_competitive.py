@@ -2,9 +2,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.review_competitive import ReviewCompetitiveHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id=None, store_name=None, params=params)
+
 
 def test_competitive_ranking():
     resp = ReviewCompetitiveHandler().compute(
@@ -19,11 +21,13 @@ def test_competitive_ranking():
     assert own["rank"] > 0
     assert "insights" in resp.data
 
+
 def test_own_brand_only():
     resp = ReviewCompetitiveHandler().compute(
         _req({"own_brand": {"name": "青花椒", "rating": 4.2, "review_count": 500, "avg_ticket": 120}}), {})
     assert resp.status.value == "ok"
     assert resp.data["ranking"][0]["name"] == "青花椒"
+
 
 def test_skipped_no_brand():
     resp = ReviewCompetitiveHandler().compute(_req({}), {})

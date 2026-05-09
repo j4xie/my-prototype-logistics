@@ -61,7 +61,7 @@ def load_all_templates():
     # W1 generic (5)
     from . import top_n_by_dim          # noqa: F401
     from . import monthly_trend         # noqa: F401
-    from . import category_distribution # noqa: F401
+    from . import category_distribution  # noqa: F401
     from . import anomaly_detection     # noqa: F401
     from . import pareto_analysis       # noqa: F401
     # W2 restaurant-specific (12)

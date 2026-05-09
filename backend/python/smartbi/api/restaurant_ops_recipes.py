@@ -107,7 +107,7 @@ async def batch_import_recipes(
 
             # Look up existing or create
             existing = await conn.fetchrow(
-                "SELECT id, unit_price FROM raw_material_types WHERE factory_id = $1 AND name = $2 AND deleted_at IS NULL",
+                "SELECT id, unit_price FROM raw_material_types WHERE factory_id = $1 AND name = $2 AND deleted_at IS NULL",  # noqa: E501
                 factory_id, iname,
             )
             if existing:
@@ -197,7 +197,7 @@ async def batch_import_recipes(
             if existing:
                 # Update quantity
                 await conn.execute(
-                    "UPDATE recipes SET standard_quantity = $1, unit = $2, is_main_ingredient = $3, updated_at = NOW() WHERE id = $4",
+                    "UPDATE recipes SET standard_quantity = $1, unit = $2, is_main_ingredient = $3, updated_at = NOW() WHERE id = $4",  # noqa: E501
                     qty, unit, is_main, existing["id"],
                 )
             else:
@@ -559,14 +559,14 @@ async def list_excluded(request: Request) -> Dict[str, Any]:
     try:
         await _ensure_excluded_dishes_table(conn)
         rows = await conn.fetch(
-            "SELECT pos_name, reason, created_at FROM dim_product_excluded WHERE factory_id = $1 ORDER BY created_at DESC",
+            "SELECT pos_name, reason, created_at FROM dim_product_excluded WHERE factory_id = $1 ORDER BY created_at DESC",  # noqa: E501
             factory_id,
         )
         return {
             "success": True,
             "data": {
                 "excluded": [
-                    {"posName": r["pos_name"], "reason": r["reason"], "createdAt": r["created_at"].isoformat() if r["created_at"] else None}
+                    {"posName": r["pos_name"], "reason": r["reason"], "createdAt": r["created_at"].isoformat() if r["created_at"] else None}  # noqa: E501
                     for r in rows
                 ],
             },

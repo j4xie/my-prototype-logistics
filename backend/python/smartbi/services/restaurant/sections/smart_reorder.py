@@ -10,6 +10,7 @@ from collections import defaultdict
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class SmartReorderHandler(AbstractSectionHandler):
     section_name = "smart_reorder"
 
@@ -34,7 +35,7 @@ class SmartReorderHandler(AbstractSectionHandler):
             entry["daily_need"] += daily_need
             entry["unit"] = line.get("unit", "")
             entry["dishes"].append({"dish": line.get("dish", ""), "qty_per_dish": qty,
-                                     "daily_sales": daily_sales, "contribution": round(daily_need, 2)})
+                                    "daily_sales": daily_sales, "contribution": round(daily_need, 2)})
 
         suggested = []
         for ing, info in needs.items():
@@ -43,10 +44,10 @@ class SmartReorderHandler(AbstractSectionHandler):
             cur = float(stock.get(ing, 0))
             order = round(max(0, total - cur), 2)
             suggested.append({"ingredient": ing, "unit": info["unit"], "daily_need": daily,
-                "lead_days": lead, "safety_factor": safety, "total_need": total,
-                "current_stock": cur, "order_qty": order,
-                "priority": "HIGH" if order > daily * 2 else "MEDIUM" if order > 0 else "LOW",
-                "contributing_dishes": info["dishes"]})
+                              "lead_days": lead, "safety_factor": safety, "total_need": total,
+                              "current_stock": cur, "order_qty": order,
+                              "priority": "HIGH" if order > daily * 2 else "MEDIUM" if order > 0 else "LOW",
+                              "contributing_dishes": info["dishes"]})
         suggested.sort(key=lambda x: x["order_qty"], reverse=True)
 
         return self.ok(request, data={

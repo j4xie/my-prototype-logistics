@@ -20,11 +20,12 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.excel_parser import ExcelParser
+from services.excel_parser import ExcelParser  # noqa: E402
 
 
 class MultiSheetTestResult:
     """多Sheet测试结果"""
+
     def __init__(self, name: str):
         self.name = name
         self.passed = False
@@ -78,7 +79,7 @@ def create_comprehensive_workbook() -> bytes:
 
         # Sheet 4: 财务报表
         finance = pd.DataFrame({
-            "Account": ["Revenue", "COGS", "Gross Profit", "SG&A", "Admin", "R&D", "Operating Profit", "Tax", "Net Profit"],
+            "Account": ["Revenue", "COGS", "Gross Profit", "SG&A", "Admin", "R&D", "Operating Profit", "Tax", "Net Profit"],  # noqa: E501
             "Current": [10000, 6000, 4000, 1000, 800, 500, 1700, 425, 1275],
             "Previous": [8000, 5000, 3000, 800, 700, 400, 1100, 275, 825],
             "YoY_Change": ["25%", "20%", "33%", "25%", "14%", "25%", "55%", "55%", "55%"]

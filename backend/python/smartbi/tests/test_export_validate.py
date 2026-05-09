@@ -9,8 +9,8 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.data_exporter import DataExporter, BatchExporter
-from services.export_validator import ExportValidator
+from services.data_exporter import DataExporter, BatchExporter  # noqa: E402
+from services.export_validator import ExportValidator  # noqa: E402
 
 
 async def test_single_sheet_export():

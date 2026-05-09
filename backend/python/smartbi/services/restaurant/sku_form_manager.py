@@ -158,7 +158,7 @@ class SkuFormManager:
             category=row.category,
             total_cogs_amount=float(row.total_cogs_amount),
             selling_price=float(row.selling_price) if row.selling_price is not None else None,
-            monthly_sales_quantity=float(row.monthly_sales_quantity) if row.monthly_sales_quantity is not None else None,
+            monthly_sales_quantity=float(row.monthly_sales_quantity) if row.monthly_sales_quantity is not None else None,  # noqa: E501
             ingredients=ingredients,
             uploaded_at=row.created_at.isoformat() if row.created_at else datetime.now().isoformat(),
             uploaded_by=row.uploaded_by,

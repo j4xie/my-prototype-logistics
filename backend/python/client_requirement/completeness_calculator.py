@@ -121,7 +121,7 @@ async def compute_completeness(factory_id: str, entity_types: Optional[List[str]
                         cnt = row[f"cnt_{f}"]
                         field_completeness[f] = round(cnt / total * 100, 1)
 
-                overall = round(sum(field_completeness.values()) / len(field_completeness), 1) if field_completeness else 0
+                overall = round(sum(field_completeness.values()) / len(field_completeness), 1) if field_completeness else 0  # noqa: E501
 
                 results.append(CompletenessResult(
                     entity_type=entity_type,

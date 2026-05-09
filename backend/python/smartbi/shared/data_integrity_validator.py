@@ -42,7 +42,7 @@ Severity = Literal["info", "warning", "critical"]
 class IntegrityWarning:
     """单个完整性问题"""
     severity: Severity
-    code: str                            # 'truncated' | 'metadata_rows_skipped' | 'month_gap' | 'month_anomaly' | 'date_range_incomplete'
+    code: str                            # 'truncated' | 'metadata_rows_skipped' | 'month_gap' | 'month_anomaly' | 'date_range_incomplete'  # noqa: E501
     message_zh: str
     affected_rows: int = 0
     detail: dict = field(default_factory=dict)

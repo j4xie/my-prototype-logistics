@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.weekday_weekend_pattern i
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业日期", FieldRole.TIME, "datetime"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=14, primary_measure="营业额", time_field="营业日期")
+                      fields=tuple([Field("营业日期", FieldRole.TIME, "datetime"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=14, primary_measure="营业额", time_field="营业日期")
 
 
 def test_weekday_weekend_split():
@@ -35,8 +35,8 @@ def test_weekday_weekend_skip_small_data():
     rows = [{"营业日期": "2025-03-01 12:00:00", "营业额": 100}]
     backend = PolarsBackend.from_rows(rows)
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业日期", FieldRole.TIME, "datetime"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额", time_field="营业日期")
+                        fields=tuple([Field("营业日期", FieldRole.TIME, "datetime"),
+                                      Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额", time_field="营业日期")
     result = WeekdayWeekendPattern().run(backend, schema)
     assert not result.applies

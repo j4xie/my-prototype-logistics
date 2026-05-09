@@ -119,7 +119,7 @@ def _compute_rfm_from_db(conn, factory_id: Optional[str]):
         # Score 1-5 using quantiles
         for col, score_col in [("recency_days", "r_score"), ("frequency", "f_score"), ("monetary", "m_score")]:
             try:
-                df[score_col] = pd.qcut(df[col], 5, labels=[5, 4, 3, 2, 1] if col == "recency_days" else [1, 2, 3, 4, 5], duplicates="drop").astype(int)
+                df[score_col] = pd.qcut(df[col], 5, labels=[5, 4, 3, 2, 1] if col == "recency_days" else [1, 2, 3, 4, 5], duplicates="drop").astype(int)  # noqa: E501
             except ValueError:
                 df[score_col] = 3
 

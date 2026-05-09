@@ -72,7 +72,6 @@ def _persist_restaurant_flag(db, upload_id: int, is_restaurant: bool) -> None:
             pass
 
 
-
 def _load_upload_df(db, upload_id: int) -> tuple[pd.DataFrame, bool]:
     """Load dynamic_data rows for an upload into a DataFrame.
     Caps at 30K rows (LARGE_DATASET_THRESHOLD) to bound memory — 200K × 231
@@ -289,7 +288,7 @@ def list_restaurant_uploads(request: Request):
 
             # Pass 1: detect via metadata (no extra DB queries)
             needs_fallback = []  # uploads that need dynamic_data sample
-            for uid, file_name, sheet_name, row_count, created_at, _fid, context_info, detected_table_type, field_mappings in uploads:
+            for uid, file_name, sheet_name, row_count, created_at, _fid, context_info, detected_table_type, field_mappings in uploads:  # noqa: E501
                 # Short-circuit: cached analytics = definitively restaurant
                 if uid in cached_ids:
                     restaurant_uploads.append({
@@ -321,7 +320,7 @@ def list_restaurant_uploads(request: Request):
                     col_names = []
                     if field_mappings:
                         if isinstance(field_mappings, list):
-                            col_names = [m.get("original") or m.get("originalColumn") or "" for m in field_mappings if isinstance(m, dict)]
+                            col_names = [m.get("original") or m.get("originalColumn") or "" for m in field_mappings if isinstance(m, dict)]  # noqa: E501
                         elif isinstance(field_mappings, dict):
                             col_names = list(field_mappings.keys())
                     if not col_names and isinstance(ctx, dict):
@@ -483,7 +482,7 @@ def compute_restaurant_analytics(upload_id: int, request: Request, force: bool =
                         "code": "UNCLAIMED_UPLOAD",
                     }
                 if token_factory and upload[1] != token_factory:
-                    logger.warning(f"IDOR blocked: user factory={token_factory}, upload factory={upload[1]}, upload_id={upload_id}")
+                    logger.warning(f"IDOR blocked: user factory={token_factory}, upload factory={upload[1]}, upload_id={upload_id}")  # noqa: E501
                     return {"success": False, "message": "Access denied", "code": "FACTORY_MISMATCH"}
 
             # Check cache first (skip if force refresh)
@@ -1508,7 +1507,7 @@ async def upload_reviews(request: Request):
                     time_raw = rv.get("review_time") or rv.get("reviewTime") or rv.get("评价时间") or rv.get("created_at")
                     if time_raw:
                         if isinstance(time_raw, str):
-                            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d"):
+                            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d"):  # noqa: E501
                                 try:
                                     review_time = datetime.strptime(time_raw, fmt)
                                     break

@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.dish_category_breakdown i
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("商品信息", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=3, primary_measure="营业额")
+                      fields=tuple([Field("商品信息", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=3, primary_measure="营业额")
 
 
 def test_category_splits_drink_main_side():
@@ -27,8 +27,8 @@ def test_category_splits_drink_main_side():
 
 def test_category_skip_when_no_item_column():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = DishCategoryBreakdown().run(backend, schema)
     assert not result.applies

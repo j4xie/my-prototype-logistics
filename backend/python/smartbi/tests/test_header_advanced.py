@@ -83,7 +83,7 @@ def parse_json_response(response: str) -> Optional[Dict]:
         if start >= 0 and end > start:
             text = text[start:end]
         return json.loads(text)
-    except:
+    except:  # noqa: E722
         return None
 
 
@@ -125,7 +125,7 @@ def merge_header_rows(rows: List[List], header_indices: List[int], num_cols: int
                         if '-' in date_part:
                             month = int(date_part.split('-')[1])
                             val_str = f"{month}月"
-                    except:
+                    except:  # noqa: E722
                         pass
                 if val_str and val_str != last_value:
                     parts.append(val_str)
@@ -204,7 +204,7 @@ def scheme1_llm_infer_empty_columns(rows: List[List], num_cols: int, data_start:
 {chr(10).join(context_lines)}
 
 表头行数据：
-{chr(10).join([f"Row {i}: {[str(v)[:15] if pd.notna(v) else '(空)' for v in rows[i][:min(15, num_cols)]]}" for i in header_indices[:2]])}
+{chr(10).join([f"Row {i}: {[str(v)[:15] if pd.notna(v) else '(空)' for v in rows[i][:min(15, num_cols)]]}" for i in header_indices[:2]])}  # noqa: E501
 
 根据相邻列名和数据特征，推断每个空列的含义。
 
@@ -296,7 +296,7 @@ def _infer_column_name(rows: List[List], headers: List[str], col_idx: int, data_
         if values:
             avg = sum(values) / len(values)
             max_val = max(values)
-            min_val = min(values)
+            min_val = min(values)  # noqa: F841
 
             # 比率特征：值在 0.5-1.5 之间（完成率）
             if 0.5 <= avg <= 1.5 and max_val <= 2.0:
@@ -456,7 +456,7 @@ def main():
     print("-"*70)
 
     for r in results:
-        print(f"{r['sheet'][:30]:<30} {r['baseline']*100:>7.1f}% {r['scheme1']*100:>7.1f}% {r['scheme2']*100:>7.1f}% {r['best']:>10}")
+        print(f"{r['sheet'][:30]:<30} {r['baseline']*100:>7.1f}% {r['scheme1']*100:>7.1f}% {r['scheme2']*100:>7.1f}% {r['best']:>10}")  # noqa: E501
 
     # 平均
     if results:

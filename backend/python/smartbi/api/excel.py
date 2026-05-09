@@ -5,6 +5,7 @@ Excel Parsing API
 Endpoints for Excel file parsing and processing.
 Includes Zero-Code auto-parse functionality.
 """
+import asyncio
 import logging
 import time
 from typing import Optional, List, Dict, Any
@@ -277,7 +278,7 @@ async def list_sheets_detailed(file: UploadFile = File(...)):
         # Primes StructureAnalysisCache so "Analyze" is instant
         try:
             from smartbi.services.precompute import trigger_precompute
-            asyncio.create_task(trigger_precompute(content, filename))
+            asyncio.create_task(trigger_precompute(content, file.filename))
         except Exception:
             pass  # Never block the response
 
@@ -802,7 +803,7 @@ async def auto_parse_excel(
                             ncols = len(df_peek.columns)
                             # Skip metadata-like sheets: <=3 columns and <50 rows
                             if ncols <= 3 and nrows < 50:
-                                logger.info(f"Sheet '{sname}' (idx={idx}) skipped as metadata-like: {nrows} rows, {ncols} cols")
+                                logger.info(f"Sheet '{sname}' (idx={idx}) skipped as metadata-like: {nrows} rows, {ncols} cols")  # noqa: E501
                                 continue
                             if nrows > best_rows or (nrows == best_rows and ncols > best_cols):
                                 best_idx, best_rows, best_cols = idx, nrows, ncols
@@ -810,7 +811,7 @@ async def auto_parse_excel(
                             continue
                     if best_rows > 0:
                         effective_index = best_idx
-                        logger.info(f"Smart sheet selection: picked sheet {best_idx} '{xl.sheet_names[best_idx]}' ({best_rows} rows, {best_cols} cols)")
+                        logger.info(f"Smart sheet selection: picked sheet {best_idx} '{xl.sheet_names[best_idx]}' ({best_rows} rows, {best_cols} cols)")  # noqa: E501
             except Exception as e:
                 logger.warning(f"Smart sheet selection failed, falling back to 0: {e}")
 
@@ -908,7 +909,7 @@ async def auto_parse_excel(
                 _wb_r = _opxl_region.load_workbook(
                     _io_region.BytesIO(content), read_only=True, data_only=True
                 )
-                sheet_display_name = _wb_r.sheetnames[effective_index] if effective_index < len(_wb_r.sheetnames) else filename
+                sheet_display_name = _wb_r.sheetnames[effective_index] if effective_index < len(_wb_r.sheetnames) else filename  # noqa: E501
                 _wb_r.close()
             except Exception:
                 sheet_display_name = filename.rsplit(".", 1)[0]
@@ -982,7 +983,7 @@ async def auto_parse_excel(
                 # Title-row auto-skip loop — now on probe (nrows=100), not full file
                 if effective_header_override is None:
                     def looks_like_title_row(hdrs):
-                        if not hdrs: return False
+                        if not hdrs: return False  # noqa: E701
                         unnamed_count = sum(1 for h in hdrs if _unnamed_pat.match(h))
                         if unnamed_count >= 0.8 * len(hdrs):
                             return True
@@ -996,7 +997,7 @@ async def auto_parse_excel(
                         tried_skiprows += 1
                         df_probe, detected_encoding = _probe(tried_skiprows)
                         headers_preview = [str(c) for c in df_probe.columns]
-                        logger.info(f"CSV title-row auto-skip (probe): skiprows={tried_skiprows}, headers={headers_preview[:3]}")
+                        logger.info(f"CSV title-row auto-skip (probe): skiprows={tried_skiprows}, headers={headers_preview[:3]}")  # noqa: E501
                     csv_skiprows = tried_skiprows
 
                 # Identify real cols from the probe: drop trailing Unnamed cols
@@ -1130,13 +1131,13 @@ async def auto_parse_excel(
                     header_rows=[RowInfo(index=0, type="column_names", content=",".join(headers_csv))],
                     merged_cells=[],
                     columns=[
-                        ColumnInfo(index=i, name=h, data_type="text", sample_values=list(df_csv[h].dropna().head(3).astype(str)))
+                        ColumnInfo(index=i, name=h, data_type="text", sample_values=list(df_csv[h].dropna().head(3).astype(str)))  # noqa: E501
                         for i, h in enumerate(headers_csv)
                     ],
                     preview_rows=preview,
                     csv_skiprows=csv_skiprows,
                 )
-                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows, skiprows={csv_skiprows} (header_override={effective_header_override})")
+                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows, skiprows={csv_skiprows} (header_override={effective_header_override})")  # noqa: E501
             else:
                 structure_result = await detector.detect(
                     content,
@@ -1157,7 +1158,7 @@ async def auto_parse_excel(
 
             # Apply header_rows_override if provided (bypass auto-detection)
             if effective_header_override is not None and effective_header_override > 0:
-                logger.info(f"Applying header_rows_override={effective_header_override} (auto-detected was {structure_result.header_row_count})")
+                logger.info(f"Applying header_rows_override={effective_header_override} (auto-detected was {structure_result.header_row_count})")  # noqa: E501
                 structure_result.header_row_count = effective_header_override
                 structure_result.data_start_row = effective_header_override
                 structure_result.method = "manual_override"
@@ -1172,7 +1173,7 @@ async def auto_parse_excel(
         # Step 3: Map fields if not cached
         if mapping_result is None:
             columns = [col.name for col in structure_result.columns]
-            sample_data = structure_result.preview_rows[structure_result.data_start_row:][:5] if structure_result.preview_rows else None
+            sample_data = structure_result.preview_rows[structure_result.data_start_row:][:5] if structure_result.preview_rows else None  # noqa: E501
 
             mapping_result = await mapper.map_fields(
                 columns=columns,
@@ -1221,7 +1222,7 @@ async def auto_parse_excel(
             if mapping_result.table_type is None or detected_table_type in ["index", "summary", "metadata"]:
                 mapping_result.table_type = detected_table_type
                 logger.info(f"TableClassifier detected table_type={detected_table_type} "
-                           f"(confidence={classification.confidence:.2f})")
+                            f"(confidence={classification.confidence:.2f})")
         except Exception as e:
             logger.warning(f"TableClassifier failed, using semantic mapper result: {e}")
 
@@ -1413,7 +1414,7 @@ async def auto_parse_excel(
                 return False, None
             n_total = len(headers)
             non_empty = [(k, v) for k, v in row_dict.items()
-                          if v is not None and (not isinstance(v, str) or v.strip())]
+                         if v is not None and (not isinstance(v, str) or v.strip())]
             n_filled = len(non_empty)
             if n_filled == 0:
                 return False, None
@@ -1443,6 +1444,7 @@ async def auto_parse_excel(
             # cells to be text (not just the first cell). Some pivot exports
             # have leftover string in col 0 + numeric in col 1 — those are
             # partial data rows, not section headers.
+
             def _is_numeric_str(s_val):
                 if not isinstance(s_val, str):
                     return False
@@ -1472,7 +1474,7 @@ async def auto_parse_excel(
         # cell length ≤ 12 chars, it's a sub-header — drop it.
         def _is_dense_subheader(row_dict, headers):
             non_empty = [v for v in row_dict.values()
-                          if v is not None and (not isinstance(v, str) or v.strip())]
+                         if v is not None and (not isinstance(v, str) or v.strip())]
             if len(non_empty) < 3:
                 return False
             n_num = 0
@@ -2386,7 +2388,7 @@ async def match_parse_rule(
         ws = wb[wb.sheetnames[sheet_index]]
 
         # 提取特征
-        preview_rows = []
+        preview_rows = []  # noqa: F841
         keywords = []
         title = ""
 
@@ -2455,7 +2457,7 @@ async def smart_parse_excel(
     from services.smart_parser import RuleEngine
 
     try:
-        filename = file.filename or "workbook.xlsx"
+        filename = file.filename or "workbook.xlsx"  # noqa: F841
         content = await file.read()
 
         # 1. 使用现有 DataExporter 解析
@@ -3348,7 +3350,7 @@ async def smart_analyze_excel(
         columns = structure_result.structure.columns
 
         # 提取列名
-        headers = [c.name for c in columns]
+        headers = [c.name for c in columns]  # noqa: F841
 
         # 提取数据行
         rows = []
@@ -3634,10 +3636,10 @@ async def analyze_workbook(
                             if not charts and sheet.statistics:
                                 # Auto-generate a bar chart from statistics
                                 numeric_cols = [k for k, v in sheet.statistics.items()
-                                              if v and isinstance(v, dict) and "sum" in v][:5]
+                                                if v and isinstance(v, dict) and "sum" in v][:5]
                                 if numeric_cols:
                                     chart_data = [{"name": col, "value": sheet.statistics[col].get("sum", 0)}
-                                                for col in numeric_cols]
+                                                  for col in numeric_cols]
                                     chart_result = chart_builder.build(
                                         chart_type="bar",
                                         data=chart_data,
@@ -3704,7 +3706,7 @@ async def analyze_workbook(
                                             "id": f"stat_{col_name}",
                                             "level": "green",
                                             "category": "统计",
-                                            "text": f"{col_name}: 均值 {stats.get('mean', 0):.2f}, 标准差 {stats.get('std', 0):.2f}"
+                                            "text": f"{col_name}: 均值 {stats.get('mean', 0):.2f}, 标准差 {stats.get('std', 0):.2f}"  # noqa: E501
                                         })
                                     if "sum" in stats:
                                         metrics.append({

@@ -48,8 +48,8 @@ class SeatOccupancyHandler(AbstractSectionHandler):
             gap = round(demand_pct - table_pct, 1)
             status = "SHORTAGE" if gap > 10 else "SURPLUS" if gap < -10 else "BALANCED"
             seat_analysis.append({"seat_type": seat_key, "seat_count": size, "table_count": tc,
-                                   "table_pct": table_pct, "demand_count": demand_count,
-                                   "demand_pct": demand_pct, "gap": gap, "status": status})
+                                  "table_pct": table_pct, "demand_count": demand_count,
+                                  "demand_pct": demand_pct, "gap": gap, "status": status})
             if gap > 10:
                 recommendations.append(f"{seat_key} 供不应求 (需求 {demand_pct}% vs 供给 {table_pct}%), 建议增加")
             elif gap < -10:
@@ -59,4 +59,4 @@ class SeatOccupancyHandler(AbstractSectionHandler):
             recommendations.append("当前桌位配置基本匹配客群分布, 无需调整")
 
         return self.ok(request, data={"seat_analysis": seat_analysis, "recommendations": recommendations,
-                                       "total_tables": total_tables, "total_parties": total_parties}, started=started)
+                                      "total_tables": total_tables, "total_parties": total_parties}, started=started)

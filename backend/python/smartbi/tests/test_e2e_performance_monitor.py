@@ -153,7 +153,7 @@ class PerformanceMonitor:
         try:
             FieldDetectionCache._cache.clear()
             print("  [OK] Field detection cache cleared")
-        except:
+        except:  # noqa: E722
             pass
 
         from services.scenario_detector import get_scenario_detector
@@ -162,7 +162,7 @@ class PerformanceMonitor:
             if hasattr(detector, '_cache'):
                 detector._cache.clear()
             print("  [OK] Scenario detection cache cleared")
-        except:
+        except:  # noqa: E722
             pass
 
         from services.chart_recommender import get_chart_recommender
@@ -171,7 +171,7 @@ class PerformanceMonitor:
             if hasattr(recommender, '_cache'):
                 recommender._cache.clear()
             print("  [OK] Chart recommender cache cleared")
-        except:
+        except:  # noqa: E722
             pass
 
         print("  [OK] All caches cleared\n")
@@ -189,7 +189,7 @@ class PerformanceMonitor:
         overall_start = time.time()
 
         try:
-            options = self.AnalysisOptions(
+            options = self.AnalysisOptions(  # noqa: F841
                 depth=getattr(self.AnalysisDepth, depth.upper()),
                 max_charts=3,
                 max_insights=3,
@@ -368,7 +368,7 @@ class PerformanceMonitor:
                     # Use iloc to safely get dtype
                     try:
                         col_dtype = str(df.iloc[:, i].dtype)
-                    except:
+                    except:  # noqa: E722
                         col_dtype = "object"
 
                     col_data = {
@@ -504,7 +504,7 @@ class PerformanceMonitor:
         perf.total_time_ms = int((time.time() - overall_start) * 1000)
         return perf
 
-    def _build_dataframe_from_raw(self, raw_data) -> 'pd.DataFrame':
+    def _build_dataframe_from_raw(self, raw_data) -> 'pd.DataFrame':  # noqa: F821
         """Build DataFrame from RawSheetData"""
         import pandas as pd
 
@@ -639,7 +639,7 @@ class PerformanceMonitor:
             phases[phase].append(t)
 
         for phase, timings in phases.items():
-            phase_total = sum(t.duration_ms for t in timings if "Phase" in t.phase and not any(c.isalpha() and c.islower() for c in t.phase.split(":")[0][-2:]))
+            phase_total = sum(t.duration_ms for t in timings if "Phase" in t.phase and not any(c.isalpha() and c.islower() for c in t.phase.split(":")[0][-2:]))  # noqa: F841,E501
 
             # Only show phase summary and sub-timings
             for t in timings:
@@ -708,7 +708,7 @@ class PerformanceMonitor:
         print("  " + "-" * 60)
         for sheet in report.sheets:
             status = "CACHE" if sheet.from_cache else ("OK" if sheet.success else "FAIL")
-            print(f"    [{status:5}] Sheet {sheet.sheet_index}: {sheet.sheet_name[:30]:30} | {sheet.total_time_ms:>6}ms")
+            print(f"    [{status:5}] Sheet {sheet.sheet_index}: {sheet.sheet_name[:30]:30} | {sheet.total_time_ms:>6}ms")  # noqa: E501
 
         print("\n" + "=" * 80)
 
@@ -783,7 +783,7 @@ async def main():
             try:
                 shutil.rmtree(cache_dir)
                 print(f"  Cleaned up test cache: {cache_dir}")
-            except:
+            except:  # noqa: E722
                 pass
 
 

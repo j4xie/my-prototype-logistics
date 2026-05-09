@@ -225,22 +225,22 @@ def test_new_slot_models_match_free_audit():
     sm = llm_router.SLOT_MODELS
 
     # aliyun_b — free-quota mine
-    assert sm[SLOT.CHAT]["aliyun_b"]      == "qwen3.6-flash"
-    assert sm[SLOT.INSIGHTS]["aliyun_b"]  == "qwen3.6-flash"
-    assert sm[SLOT.CHART]["aliyun_b"]     == "glm-5"
-    assert sm[SLOT.MAPPER]["aliyun_b"]    == "qwen-turbo"
+    assert sm[SLOT.CHAT]["aliyun_b"] == "qwen3.6-flash"
+    assert sm[SLOT.INSIGHTS]["aliyun_b"] == "qwen3.6-flash"
+    assert sm[SLOT.CHART]["aliyun_b"] == "glm-5"
+    assert sm[SLOT.MAPPER]["aliyun_b"] == "qwen-turbo"
     assert sm[SLOT.REASONING]["aliyun_b"] == "deepseek-r1"
-    assert sm[SLOT.VL]["aliyun_b"]        == "qwen-vl-plus-2025-05-07"
-    assert sm[SLOT.REVIEW]["aliyun_b"]    == "deepseek-r1-distill-qwen-32b"
+    assert sm[SLOT.VL]["aliyun_b"] == "qwen-vl-plus-2025-05-07"
+    assert sm[SLOT.REVIEW]["aliyun_b"] == "deepseek-r1-distill-qwen-32b"
 
     # aliyun_a — only version-suffixed SKUs are free
-    assert sm[SLOT.CHAT]["aliyun_a"]      == "qwen3.5-plus-2026-04-20"
-    assert sm[SLOT.INSIGHTS]["aliyun_a"]  == "qwen3.6-flash-2026-04-16"
-    assert sm[SLOT.CHART]["aliyun_a"]     == "glm-5"
-    assert sm[SLOT.MAPPER]["aliyun_a"]    == "qwen3.5-122b-a10b"
+    assert sm[SLOT.CHAT]["aliyun_a"] == "qwen3.5-plus-2026-04-20"
+    assert sm[SLOT.INSIGHTS]["aliyun_a"] == "qwen3.6-flash-2026-04-16"
+    assert sm[SLOT.CHART]["aliyun_a"] == "glm-5"
+    assert sm[SLOT.MAPPER]["aliyun_a"] == "qwen3.5-122b-a10b"
     assert sm[SLOT.REASONING]["aliyun_a"] == "qwen3.5-397b-a17b"
-    assert sm[SLOT.VL]["aliyun_a"]        == "qwen3-vl-flash"
-    assert sm[SLOT.REVIEW]["aliyun_a"]    == "qwen3.5-397b-a17b"
+    assert sm[SLOT.VL]["aliyun_a"] == "qwen3-vl-flash"
+    assert sm[SLOT.REVIEW]["aliyun_a"] == "qwen3.5-397b-a17b"
 
     # No bare PAID aliases left in aliyun_a/aliyun_b configs
     for slot, providers in sm.items():

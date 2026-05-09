@@ -228,7 +228,7 @@ class RegionAnalysisService(BaseAnalysisService):
                 normalized_region = self._normalize_region_name(region)
                 df = df[df[region_col].apply(
                     lambda x: normalized_region in self._normalize_region_name(str(x)) or
-                              self._normalize_region_name(str(x)) in normalized_region
+                    self._normalize_region_name(str(x)) in normalized_region
                 )]
 
             if df.empty:
@@ -460,7 +460,7 @@ class RegionAnalysisService(BaseAnalysisService):
             normalized_region = self._normalize_region_name(region)
             region_df = df[df[region_col].apply(
                 lambda x: normalized_region in self._normalize_region_name(str(x)) or
-                          self._normalize_region_name(str(x)) in normalized_region
+                self._normalize_region_name(str(x)) in normalized_region
             )].copy()
 
             if region_df.empty:

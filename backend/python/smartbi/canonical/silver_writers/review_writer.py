@@ -138,7 +138,7 @@ class ReviewWriter(BaseWriter):
                         negative += 1
 
             for i in range(0, len(fact_rows), self.FACT_BATCH_SIZE):
-                batch = fact_rows[i : i + self.FACT_BATCH_SIZE]
+                batch = fact_rows[i: i + self.FACT_BATCH_SIZE]
                 # ON CONFLICT expression must EXACTLY match `uq_fre_natkey`
                 # (V20260428_01). PG 13 lacks NULLS NOT DISTINCT so COALESCE
                 # the nullable hash to '' as a sentinel.

@@ -380,7 +380,7 @@ class InsightDimensionAnalyzer:
             # Calculate basic stats
             current = values.iloc[-1] if len(values) > 0 else 0
             previous = values.iloc[-2] if len(values) > 1 else current
-            mean_val = values.mean()
+            mean_val = values.mean()  # noqa: F841
 
             # Calculate change
             if previous != 0:
@@ -405,7 +405,7 @@ class InsightDimensionAnalyzer:
                 metric_value=current,
                 comparison_value=previous,
                 change_percentage=change_pct,
-                impact=ImpactLevel.HIGH if abs(change_pct) > 20 else ImpactLevel.MEDIUM if abs(change_pct) > 5 else ImpactLevel.LOW,
+                impact=ImpactLevel.HIGH if abs(change_pct) > 20 else ImpactLevel.MEDIUM if abs(change_pct) > 5 else ImpactLevel.LOW,  # noqa: E501
                 confidence=0.9,
                 suggested_chart="line" if len(values) > 3 else "bar"
             )
@@ -681,7 +681,7 @@ class InsightDimensionAnalyzer:
             return "数据量不足，无法生成有效分析。"
 
         # Count by impact
-        high_impact = [i for i in insights if i.impact == ImpactLevel.HIGH]
+        high_impact = [i for i in insights if i.impact == ImpactLevel.HIGH]  # noqa: F841
 
         # Find key trends
         trends = [i for i in insights if i.dimension == InsightDimension.WHAT_HAPPENED]

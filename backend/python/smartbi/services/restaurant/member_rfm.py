@@ -92,7 +92,7 @@ class RfmReport:
     segment_revenue: dict[str, float] = field(default_factory=dict)  # 每个 segment 贡献的总营收
 
     top_champions: list[MemberScore] = field(default_factory=list)   # TOP 10
-    at_risk_members: list[MemberScore] = field(default_factory=list) # TOP 10 至风险
+    at_risk_members: list[MemberScore] = field(default_factory=list)  # TOP 10 至风险
     members: list[MemberScore] = field(default_factory=list)         # all (可大)
 
     avg_recency: float = 0.0

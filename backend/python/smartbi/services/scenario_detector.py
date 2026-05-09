@@ -38,12 +38,12 @@ class ScenarioResult:
     confidence: float               # Detection confidence (0.0-1.0)
     dimensions: List[str]           # Identified dimensions (time/region/product etc.)
     measures: List[str]             # Identified measures (revenue/cost/profit etc.)
-    recommended_analyses: List[str] # Recommended analysis types
+    recommended_analyses: List[str]  # Recommended analysis types
     reasoning: str                  # LLM's reasoning process
 
     # Additional metadata
     method: str = "llm"             # Detection method: "llm", "cache", "rule_fallback"
-    cache_key: Optional[str] = None # Cache key if result was cached
+    cache_key: Optional[str] = None  # Cache key if result was cached
     detection_time_ms: float = 0.0  # Time taken for detection
 
     def to_dict(self) -> Dict[str, Any]:
@@ -631,15 +631,15 @@ class LLMScenarioDetector:
         measures = []
 
         dimension_keywords = ["date", "time", "month", "year", "region", "product",
-                             "customer", "department", "category", "name", "type",
-                             "日期", "时间", "月", "年", "地区", "区域", "产品",
-                             "客户", "部门", "分类", "类别", "名称", "类型",
-                             "门店", "品牌", "渠道", "供应商"]
+                              "customer", "department", "category", "name", "type",
+                              "日期", "时间", "月", "年", "地区", "区域", "产品",
+                              "客户", "部门", "分类", "类别", "名称", "类型",
+                              "门店", "品牌", "渠道", "供应商"]
         measure_keywords = ["amount", "quantity", "price", "cost", "profit", "rate",
-                          "total", "sum", "count", "revenue", "budget", "actual",
-                          "金额", "数量", "单价", "价格", "成本", "利润", "率",
-                          "合计", "总计", "收入", "预算", "实际", "销量",
-                          "产量", "库存", "费用", "毛利", "净利"]
+                            "total", "sum", "count", "revenue", "budget", "actual",
+                            "金额", "数量", "单价", "价格", "成本", "利润", "率",
+                            "合计", "总计", "收入", "预算", "实际", "销量",
+                            "产量", "库存", "费用", "毛利", "净利"]
 
         for col in columns:
             col_l = col.lower()

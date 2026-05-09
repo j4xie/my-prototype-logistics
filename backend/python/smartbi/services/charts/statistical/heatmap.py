@@ -52,7 +52,7 @@ class HeatmapChartStrategy(BaseChartStrategy):
         return {
             "xAxis": {"type": "category", "data": x_data},
             "yAxis": {"type": "category", "data": y_data},
-            "visualMap": {"min": float(min_val), "max": float(max_val), "calculable": True, "orient": "horizontal", "left": "center", "bottom": "0%"},
+            "visualMap": {"min": float(min_val), "max": float(max_val), "calculable": True, "orient": "horizontal", "left": "center", "bottom": "0%"},  # noqa: E501
             "series": [{"name": value_col, "type": "heatmap", "data": data, "label": {"show": True}}],
             "tooltip": {"position": "top"},
         }
@@ -81,7 +81,7 @@ class CorrelationMatrixChartStrategy(BaseChartStrategy):
         labels = y_fields[:len(corr_matrix)]
         for i, col_i in enumerate(labels):
             for j, col_j in enumerate(labels):
-                val = corr_matrix.loc[col_i, col_j] if col_i in corr_matrix.index and col_j in corr_matrix.columns else 0
+                val = corr_matrix.loc[col_i, col_j] if col_i in corr_matrix.index and col_j in corr_matrix.columns else 0  # noqa: E501
                 if pd.isna(val):
                     val = 0
                 heatmap_data.append([i, j, round(float(val), 2)])
@@ -159,8 +159,8 @@ class MatrixHeatmapChartStrategy(BaseChartStrategy):
         return {
             "tooltip": {**make_enhanced_tooltip("item"), "formatter": "__FMT__matrix_heatmap_tooltip"},
             "grid": {"left": "15%", "right": "12%", "top": "8%", "bottom": "20%"},
-            "xAxis": {"type": "category", "data": col_labels, "splitArea": {"show": True}, "axisLabel": {"rotate": 30, "fontSize": 11, "hideOverlap": True}},
-            "yAxis": {"type": "category", "data": row_labels, "splitArea": {"show": True}, "axisLabel": {"fontSize": 11}},
+            "xAxis": {"type": "category", "data": col_labels, "splitArea": {"show": True}, "axisLabel": {"rotate": 30, "fontSize": 11, "hideOverlap": True}},  # noqa: E501
+            "yAxis": {"type": "category", "data": row_labels, "splitArea": {"show": True}, "axisLabel": {"fontSize": 11}},  # noqa: E501
             "visualMap": {
                 "min": round(min_val, 2), "max": round(max_val, 2), "calculable": True,
                 "orient": "horizontal", "left": "center", "bottom": 0,

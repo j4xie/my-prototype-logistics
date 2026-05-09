@@ -89,7 +89,7 @@ class PeriodComparisonTrend(AnalysisTemplate):
         cust_col = find_customer_col(cols)
         if date_col is None or rev_col is None:
             return TemplateResult(code=self.code, title=self.title, data={},
-                applies=False, skip_reason="missing date or revenue col")
+                                  applies=False, skip_reason="missing date or revenue col")
 
         # Meta-row filter (合计/总计/...)
         df = df.filter(
@@ -125,7 +125,7 @@ class PeriodComparisonTrend(AnalysisTemplate):
 
         if len(months) < 2:
             return TemplateResult(code=self.code, title=self.title, data={},
-                applies=False, skip_reason=f"only {len(months)} month(s) of data; need >=2 for comparison")
+                                  applies=False, skip_reason=f"only {len(months)} month(s) of data; need >=2 for comparison")  # noqa: E501
 
         # Enrich each month with deltas vs previous
         monthly: List[Dict[str, Any]] = []

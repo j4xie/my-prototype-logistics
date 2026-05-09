@@ -8,8 +8,8 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.data_exporter import DataExporter
-from services.smart_analyzer import SmartAnalyzer
+from services.data_exporter import DataExporter  # noqa: E402
+from services.smart_analyzer import SmartAnalyzer  # noqa: E402
 
 
 async def main():

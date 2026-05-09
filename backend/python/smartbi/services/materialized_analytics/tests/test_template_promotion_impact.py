@@ -10,7 +10,7 @@ def _schema(with_rate=True):
     if with_rate:
         fields.append(Field("折扣率", FieldRole.MEASURE, "float"))
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple(fields), row_count=5, primary_measure="营业额")
+                      fields=tuple(fields), row_count=5, primary_measure="营业额")
 
 
 def test_promotion_coupon_share():
@@ -29,8 +29,8 @@ def test_promotion_coupon_share():
 
 def test_promotion_skip_when_no_fields():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = PromotionImpact().run(backend, schema)
     assert not result.applies

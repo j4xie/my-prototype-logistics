@@ -468,7 +468,7 @@ class SQLGenerator:
             meas = measures[0]
             return (
                 f"SELECT row_data->>'{dim.matched_name}' AS \"{dim.original_name}\",\n"
-                f"       {agg_func}(CAST(NULLIF(row_data->>'{meas.matched_name}', '') AS DECIMAL(18,2))) AS \"{agg_func.lower()}_{meas.original_name}\"\n"
+                f"       {agg_func}(CAST(NULLIF(row_data->>'{meas.matched_name}', '') AS DECIMAL(18,2))) AS \"{agg_func.lower()}_{meas.original_name}\"\n"  # noqa: E501
                 f"FROM smart_bi_dynamic_data\n"
                 f"{base_where}\n"
                 f"  AND row_data->>'{dim.matched_name}' IS NOT NULL\n"
@@ -483,7 +483,7 @@ class SQLGenerator:
             if dim:
                 return (
                     f"SELECT row_data->>'{dim.matched_name}' AS \"{dim.original_name}\",\n"
-                    f"       {agg_func}(CAST(NULLIF(row_data->>'{meas.matched_name}', '') AS DECIMAL(18,2))) AS \"{meas.original_name}\"\n"
+                    f"       {agg_func}(CAST(NULLIF(row_data->>'{meas.matched_name}', '') AS DECIMAL(18,2))) AS \"{meas.original_name}\"\n"  # noqa: E501
                     f"FROM smart_bi_dynamic_data\n"
                     f"{base_where}\n"
                     f"  AND row_data->>'{dim.matched_name}' IS NOT NULL\n"
@@ -505,7 +505,7 @@ class SQLGenerator:
             meas = measures[0]
             return (
                 f"SELECT row_data->>'{tf.matched_name}' AS \"{tf.original_name}\",\n"
-                f"       {agg_func}(CAST(NULLIF(row_data->>'{meas.matched_name}', '') AS DECIMAL(18,2))) AS \"{meas.original_name}\"\n"
+                f"       {agg_func}(CAST(NULLIF(row_data->>'{meas.matched_name}', '') AS DECIMAL(18,2))) AS \"{meas.original_name}\"\n"  # noqa: E501
                 f"FROM smart_bi_dynamic_data\n"
                 f"{base_where}\n"
                 f"  AND row_data->>'{tf.matched_name}' IS NOT NULL\n"
@@ -519,7 +519,7 @@ class SQLGenerator:
             meas_cols = []
             for m in measures[:5]:  # max 5 measures
                 meas_cols.append(
-                    f"       {agg_func}(CAST(NULLIF(row_data->>'{m.matched_name}', '') AS DECIMAL(18,2))) AS \"{m.original_name}\""
+                    f"       {agg_func}(CAST(NULLIF(row_data->>'{m.matched_name}', '') AS DECIMAL(18,2))) AS \"{m.original_name}\""  # noqa: E501
                 )
             return (
                 f"SELECT row_data->>'{dim.matched_name}' AS \"{dim.original_name}\",\n"
@@ -596,7 +596,7 @@ class SQLGenerator:
 
         matched_text = ""
         if matched_fields:
-            lines = [f"  - \"{m.user_term}\" -> row_data->>'{m.matched_name}' (score={m.score})" for m in matched_fields[:8]]
+            lines = [f"  - \"{m.user_term}\" -> row_data->>'{m.matched_name}' (score={m.score})" for m in matched_fields[:8]]  # noqa: E501
             matched_text = "Matched fields:\n" + "\n".join(lines)
 
         system_prompt = (
@@ -621,9 +621,9 @@ class SQLGenerator:
             "6. Column aliases should use Chinese names from originalName\n"
             "7. For GROUP BY, always use the full expression (not alias)\n"
             "8. NEVER use bare column names for business fields — always use row_data->>'fieldName'\n"
-            "9. The skeleton SQL provided is already correct syntax — only refine logic, do not change accessor patterns\n"
+            "9. The skeleton SQL provided is already correct syntax — only refine logic, do not change accessor patterns\n"  # noqa: E501
             "10. Bug #26 fix (Apr 17 2026): ranking/aggregation questions (Top N / 最高 / 最多 / 排名 / 哪个...最) "
-            "MUST use GROUP BY on the dimension + SUM/AVG/COUNT on the measure. Never return raw rows for such questions.\n"
+            "MUST use GROUP BY on the dimension + SUM/AVG/COUNT on the measure. Never return raw rows for such questions.\n"  # noqa: E501
             "11. ALWAYS filter out meta-rows in WHERE clause: add "
             "`AND row_data->>'<primary_dim>' NOT IN ('合计','总计','小计','汇总','Total','TOTAL')` "
             "when primary dim is text (门店名称/商品/部门/地区 etc). Without this, 合计 row pollutes Top N.\n"
@@ -703,7 +703,7 @@ class SQLGenerator:
         if content.startswith("```"):
             lines = content.split("\n")
             # Remove first line (```json or ```) and last line (```)
-            lines = [l for l in lines if not l.strip().startswith("```")]
+            lines = [l for l in lines if not l.strip().startswith("```")]  # noqa: E741
             content = "\n".join(lines).strip()
 
         try:

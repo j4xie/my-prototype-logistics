@@ -565,7 +565,7 @@ class DepartmentAnalysisService(BaseAnalysisService):
 
             # Calculate efficiency score (normalized)
             max_per_capita = grouped['per_capita_sales'].max()
-            grouped['efficiency_score'] = (grouped['per_capita_sales'] / max_per_capita * 100) if max_per_capita > 0 else 0
+            grouped['efficiency_score'] = (grouped['per_capita_sales'] / max_per_capita * 100) if max_per_capita > 0 else 0  # noqa: E501
 
             # Build matrix
             matrix = []

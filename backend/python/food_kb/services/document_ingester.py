@@ -49,6 +49,7 @@ CHUNK_CONFIG = {
 
 class DocumentChunk:
     """A chunk of a document ready for embedding and storage."""
+
     def __init__(self, title: str, content: str, category: str,
                  source: str = "", version: str = "", chunk_index: int = 0,
                  metadata: Optional[Dict] = None):

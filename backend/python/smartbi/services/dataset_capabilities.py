@@ -16,6 +16,7 @@ massive UX lift on sparse tenants.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 # Capability detection: keyword in field name → capability flag.
@@ -94,12 +95,12 @@ _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
         'net_profit', 'gross_margin', 'gross_profit', 'net_income',
         'lirun', 'maoli', 'chengben',
     ],
-    'has_inventory':[
+    'has_inventory': [
         '库存', '进货', '采购',
         # English / pinyin
         'inventory', 'stock', 'purchase', 'kucun', 'caigou',
     ],
-    'has_promotion':[
+    'has_promotion': [
         '促销', '优惠', '折扣', '满减',
         # English / pinyin
         'promotion', 'discount', 'coupon', 'voucher', 'youhui', 'cuxiao',
@@ -118,7 +119,7 @@ _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
 #   "revenue (1)" / "revenue (2)" — Excel duplicate column rename
 # Without stripping, AI capability check fails to recognize "net_profit_3"
 # as a finance field. Strip these tags before keyword match.
-import re as _re
+import re as _re  # noqa: E402
 
 # Multiple suffix patterns, applied in order until none match. Each strips
 # ONE suffix per pass so layered suffixes (rare but possible) get cleaned:
@@ -169,8 +170,8 @@ _CAPABILITY_LABELS: dict[str, str] = {
     'has_channel':  '渠道/平台',
     'has_staff':    '员工/服务员',
     'has_finance':  '利润/成本',
-    'has_inventory':'库存/采购',
-    'has_promotion':'促销/优惠',
+    'has_inventory': '库存/采购',
+    'has_promotion': '促销/优惠',
 }
 
 

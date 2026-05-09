@@ -149,6 +149,7 @@ async def test_cache_hit_short_circuits_without_llm_call(pool):
 
     # MockTransport raises if LLM actually called
     called = {"n": 0}
+
     def fail_on_call(req):
         called["n"] += 1
         return httpx.Response(500, json={})
@@ -187,6 +188,7 @@ async def test_budget_exhausted_returns_degraded_without_llm_call(pool):
     await tracker.consume(_TENANT, 20)  # over cap=10 → blocked
 
     called = {"n": 0}
+
     def fail_on_call(req):
         called["n"] += 1
         return httpx.Response(500, json={})

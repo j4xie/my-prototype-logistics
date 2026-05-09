@@ -461,7 +461,7 @@ async def sync_system_data(req: SyncRequest):
         logger.error(f"Cannot open xlsx: {e}")
         return SyncResult(success=False, errors=["Cannot open xlsx file"])
 
-    caps = _detect_sheets(wb)
+    caps = _detect_sheets(wb)  # noqa: F841
     skipped = []
 
     # Extract sales

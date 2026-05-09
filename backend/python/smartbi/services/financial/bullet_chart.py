@@ -242,7 +242,7 @@ class BulletChartBuilder(AbstractFinancialChartBuilder):
 
         # Use a single markLine with average of targets (ECharts limitation per-category)
         # Instead, add achievement rate annotation via label
-        actual_series_with_rates = {
+        actual_series_with_rates = {  # noqa: F841
             **actual_series,
             "label": {
                 "show": True,
@@ -257,7 +257,7 @@ class BulletChartBuilder(AbstractFinancialChartBuilder):
         }
 
         # Target line (single reference line at 100% scaled as average budget)
-        avg_budget_scaled = round(sum(m['budget'] for m in metrics) / max(len(metrics), 1) / divisor, 2)
+        avg_budget_scaled = round(sum(m['budget'] for m in metrics) / max(len(metrics), 1) / divisor, 2)  # noqa: F841
 
         option["series"] = band_series + [actual_series]
 

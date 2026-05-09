@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.dish_slow_movers import D
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("商品信息", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=10, primary_measure="营业额")
+                      fields=tuple([Field("商品信息", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=10, primary_measure="营业额")
 
 
 def test_slow_movers_detects_low_sellers():
@@ -26,8 +26,8 @@ def test_slow_movers_detects_low_sellers():
 
 def test_slow_movers_skip_when_no_item_col():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = DishSlowMovers().run(backend, schema)
     assert not result.applies

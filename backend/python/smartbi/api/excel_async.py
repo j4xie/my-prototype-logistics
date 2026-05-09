@@ -706,7 +706,7 @@ async def _async_worker_impl(
             pool = await get_pg_pool()
             deleted = await NarrativeCacheService(pool).invalidate_on_upload(factory_id)
             logger.info(
-                f"[stream-worker] upload {upload_id}: invalidated {deleted} narrative_cache rows for factory={factory_id}"
+                f"[stream-worker] upload {upload_id}: invalidated {deleted} narrative_cache rows for factory={factory_id}"  # noqa: E501
             )
         except Exception:
             logger.exception(

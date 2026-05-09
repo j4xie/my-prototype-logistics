@@ -91,7 +91,7 @@ async def generate_production_commentary(request: ProductionCommentaryRequest):
     """
     try:
         plans = request.plans
-        reported = request.reportedData or []
+        reported = request.reportedData or []  # noqa: F841
 
         if not plans:
             return ProductionCommentaryResponse(
@@ -127,7 +127,7 @@ async def generate_production_commentary(request: ProductionCommentaryRequest):
         parts.append(f"当前整体完成率 {completion_rate:.0f}%，计划总量 {total_planned}，已报产量 {total_reported}。")
 
         if lagging:
-            lag_desc = "、".join(f"{l['name']}({l['progress']}%)" for l in lagging[:3])
+            lag_desc = "、".join(f"{l['name']}({l['progress']}%)" for l in lagging[:3])  # noqa: E741
             parts.append(f"进度落后工序：{lag_desc}，建议增派人手。")
 
         if ahead:
@@ -145,7 +145,7 @@ async def generate_production_commentary(request: ProductionCommentaryRequest):
 
         # Build alerts
         alerts = []
-        for l in lagging:
+        for l in lagging:  # noqa: E741
             if l["progress"] < 30:
                 alerts.append({
                     "level": "critical",

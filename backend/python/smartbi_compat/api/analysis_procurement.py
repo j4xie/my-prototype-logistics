@@ -18,34 +18,34 @@ from fastapi import APIRouter, Depends, Query
 
 logger = logging.getLogger(__name__)
 
-from smartbi_compat.api.analysis_finance import (
+from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _decimal_to_number,
     _fetch_all,
     _to_decimal,
     _utc_now_iso,
 )
-from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
+from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 # Java HashMap iter-order helpers (extracted to shared module per task #22 —
 # previously defined inline here, now reusable across all smartbi_compat
 # endpoints via single source of truth).
-from smartbi_compat._java_compat import (
+from smartbi_compat._java_compat import (  # noqa: E402
     _sort_entries_java_iter_then_value_desc,
 )
 
 # T1: 3 inline threshold pairs (alert_thresholds.json has NO procurement section, verified)
-_PROCUREMENT_ON_TIME_RED          = Decimal("70")
-_PROCUREMENT_ON_TIME_YELLOW       = Decimal("85")
-_PROCUREMENT_QUALITY_RED          = Decimal("90")
-_PROCUREMENT_QUALITY_YELLOW       = Decimal("95")
+_PROCUREMENT_ON_TIME_RED = Decimal("70")
+_PROCUREMENT_ON_TIME_YELLOW = Decimal("85")
+_PROCUREMENT_QUALITY_RED = Decimal("90")
+_PROCUREMENT_QUALITY_YELLOW = Decimal("95")
 # T1 INVERSE direction: high concentration = high risk
-_PROCUREMENT_CONCENTRATION_RED    = Decimal("60")
+_PROCUREMENT_CONCENTRATION_RED = Decimal("60")
 _PROCUREMENT_CONCENTRATION_YELLOW = Decimal("40")
 
 # Java SCALE constants (mirror ProcurementAnalysisServiceImpl line 52-54)
-_SCALE             = Decimal("0.0001")
-_DISPLAY_SCALE     = Decimal("0.01")
-_QUANTIZE_HALF_UP  = ROUND_HALF_UP
+_SCALE = Decimal("0.0001")
+_DISPLAY_SCALE = Decimal("0.01")
+_QUANTIZE_HALF_UP = ROUND_HALF_UP
 
 
 router = APIRouter()
@@ -490,7 +490,7 @@ async def _get_cost_metrics(
             "changePercent":   _decimal_to_number(mom_growth),
             "changeDirection": direction,
             "changeValue":     None,    # Java MetricResult.ofWithTrend Lombok @Builder default (null)
-            "alertLevel":      "GREEN", # Java MetricResult.ofWithTrend line 162 always sets GREEN
+            "alertLevel":      "GREEN",  # Java MetricResult.ofWithTrend line 162 always sets GREEN
             "dimensionValue":  None,
             "description":     None,
         })
@@ -901,7 +901,7 @@ async def _build_overview_metric_results(
             "changePercent":   _decimal_to_number(mom_growth),
             "changeDirection": direction,
             "changeValue":     None,    # MetricResult.ofWithTrend Lombok default null
-            "alertLevel":      "GREEN", # ofWithTrend always GREEN
+            "alertLevel":      "GREEN",  # ofWithTrend always GREEN
             "dimensionValue":  None,
             "description":     None,
         })
@@ -1162,7 +1162,7 @@ async def _get_procurement_analysis(
     end_iso = end_date.isoformat()
 
     if analysis_type == "supplier":
-        ranking    = await _get_supplier_ranking(factory_id, start_date, end_date)
+        ranking = await _get_supplier_ranking(factory_id, start_date, end_date)
         evaluation = await _get_supplier_evaluation(factory_id, start_date, end_date)
         return {
             "evaluation": evaluation,
@@ -1172,8 +1172,8 @@ async def _get_procurement_analysis(
         }
 
     if analysis_type == "cost":
-        metrics          = await _get_cost_metrics(factory_id, start_date, end_date)
-        cost_analysis    = await _get_purchase_cost_analysis(factory_id, start_date, end_date)
+        metrics = await _get_cost_metrics(factory_id, start_date, end_date)
+        cost_analysis = await _get_purchase_cost_analysis(factory_id, start_date, end_date)
         category_ranking = await _get_material_category_ranking(factory_id, start_date, end_date)
         return {
             "endDate":         end_iso,

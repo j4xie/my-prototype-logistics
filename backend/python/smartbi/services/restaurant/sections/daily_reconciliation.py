@@ -6,6 +6,7 @@ import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class DailyReconciliationHandler(AbstractSectionHandler):
     section_name = "daily_reconciliation"
 
@@ -33,11 +34,11 @@ class DailyReconciliationHandler(AbstractSectionHandler):
             within = variance_pct <= tolerance_pct
             severity = "OK" if within else "HIGH" if variance_pct > tolerance_pct * 3 else "MEDIUM"
             reconciliation.append({"ingredient": ing, "opening": op, "deliveries": deliv,
-                "expected_usage": usage, "expected_closing": expected_close,
-                "actual_closing": actual_close, "variance": variance,
-                "variance_pct": variance_pct, "within_tolerance": within, "severity": severity})
+                                   "expected_usage": usage, "expected_closing": expected_close,
+                                   "actual_closing": actual_close, "variance": variance,
+                                   "variance_pct": variance_pct, "within_tolerance": within, "severity": severity})
             if not within:
                 alerts.append(f"{ing}: 差异 {variance:+.2f} ({variance_pct}%), {'损耗' if variance < 0 else '结余偏多'}")
         return self.ok(request, data={"date": date, "reconciliation": reconciliation, "alerts": alerts,
-            "tolerance_pct": tolerance_pct, "total_ingredients": len(reconciliation),
-            "within_tolerance_count": sum(1 for r in reconciliation if r["within_tolerance"])}, started=started)
+                                      "tolerance_pct": tolerance_pct, "total_ingredients": len(reconciliation),
+                                      "within_tolerance_count": sum(1 for r in reconciliation if r["within_tolerance"])}, started=started)  # noqa: E501

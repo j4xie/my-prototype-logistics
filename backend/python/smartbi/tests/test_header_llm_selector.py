@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 规则定义
 # ============================================================
 
+
 def rule_A_single_row(rows: List[List], data_start: int, num_cols: int, **kwargs) -> List[str]:
     """
     规则A: 单行表头
@@ -117,7 +118,7 @@ def rule_G_merge_with_date_cleanup(rows: List[List], data_start: int, num_cols: 
                             p = f"{month}月"
                     new_parts.append(p)
                 h = '_'.join(new_parts)
-            except:
+            except:  # noqa: E722
                 pass
         cleaned.append(h)
     return cleaned

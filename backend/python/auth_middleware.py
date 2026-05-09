@@ -140,7 +140,6 @@ class JWTAuthMiddleware:
             finally:
                 if tenant_token is not None:
                     try:
-                        from smartbi.tenant_ctx import reset_factory_id
                         reset_factory_id(tenant_token)
                     except Exception:
                         pass

@@ -868,7 +868,7 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
             for rule_name in rule_names:
                 if rule_name in self.rules and rule_name not in existing_rules:
                     # 获取规则的源代码（如果可能）
-                    func = self.rules[rule_name]
+                    func = self.rules[rule_name]  # noqa: F841
                     # 标记为已学习
                     new_rules[rule_name] = {
                         'learned_at': datetime.now().isoformat(),
@@ -932,7 +932,7 @@ def rule_function(data: List[Dict], columns: List[str]) -> int:
         # 检查每列
         for col_idx, col_info in enumerate(columns):
             col_name = col_info.get("name", f"列{col_idx}")
-            col_role = col_info.get("role", "")
+            col_role = col_info.get("role", "")  # noqa: F841
 
             indent_found = False
             chinese_num_found = False

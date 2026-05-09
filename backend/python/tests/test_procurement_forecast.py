@@ -2,9 +2,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.procurement_forecast import ProcurementForecastHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id=None, store_name=None, params=params)
+
 
 def test_weekday_vs_weekend():
     resp = ProcurementForecastHandler().compute(
@@ -20,11 +22,13 @@ def test_weekday_vs_weekend():
     assert plan[0]["day"] == "周五"
     assert plan[0]["forecast_revenue"] == 40000
 
+
 def test_holiday_multiplier():
     resp = ProcurementForecastHandler().compute(
         _req({"historical_daily": [{"day": "周六", "avg_revenue": 50000, "avg_covers": 160}],
               "next_days": 1, "next_day_names": ["周六"], "holiday_multiplier": 1.5}), {})
     assert resp.data["daily_plan"][0]["forecast_revenue"] == 75000
+
 
 def test_skipped_no_history():
     resp = ProcurementForecastHandler().compute(_req({}), {})

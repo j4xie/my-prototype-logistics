@@ -203,7 +203,7 @@ class DishByTableType(AnalysisTemplate):
                 "table_type_count": len(observed_types),
                 "top_table_type": by_type[0]["table_type"],
                 "top_dish_in_top_type": by_type[0]["top_dishes"][0]["name"]
-                    if by_type[0]["top_dishes"] else None,
+                if by_type[0]["top_dishes"] else None,
             },
             insight_text=insight_text,
         )

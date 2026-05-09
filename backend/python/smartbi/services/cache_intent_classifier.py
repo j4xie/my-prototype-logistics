@@ -164,7 +164,7 @@ TOP_N_REJECT_DOMAINS: set[str] = {
     # for quality/equipment/production analytic style which need narrative.
     'quality',    # 不良/良品率/合格率 → LLM (no manufacturing template yet)
     'equipment',  # 设备/OEE/稼动率 → LLM
-    'production', # 工单/产量/良率 → LLM
+    'production',  # 工单/产量/良率 → LLM
 }
 
 

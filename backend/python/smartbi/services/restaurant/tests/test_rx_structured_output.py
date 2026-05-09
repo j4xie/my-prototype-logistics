@@ -23,7 +23,7 @@ def test_cost_rigidity_playbook_returns_structured_rx_actions():
             break
 
     assert cost_rigidity_diag is not None, (
-        f"cost_rigidity diagnosis not found. Got: {[(getattr(d, 'metric_key', None) or getattr(d, 'metric', None)) for d in diagnoses]}"
+        f"cost_rigidity diagnosis not found. Got: {[(getattr(d, 'metric_key', None) or getattr(d, 'metric', None)) for d in diagnoses]}"  # noqa: E501
     )
 
     # rx_actions field must exist and have ≥3 structured items

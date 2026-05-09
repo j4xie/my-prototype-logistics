@@ -7,7 +7,7 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.raw_exporter import RawExporter
+from services.raw_exporter import RawExporter  # noqa: E402
 
 
 def main():
@@ -57,7 +57,7 @@ def main():
             values = [c.value for c in row.cells[:3]]
             values_str = str(values)[:30]
             fill_rate = row.non_empty_count / sheet_data.total_cols if sheet_data.total_cols > 0 else 0
-            print(f"  {row.row_number:>4} | {row.non_empty_count:>4} | {row.numeric_count:>4} | {fill_rate:>6.0%} | {values_str}")
+            print(f"  {row.row_number:>4} | {row.non_empty_count:>4} | {row.numeric_count:>4} | {fill_rate:>6.0%} | {values_str}")  # noqa: E501
 
     # 保存JSON输出
     os.makedirs("exports", exist_ok=True)

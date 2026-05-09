@@ -193,8 +193,8 @@ class BudgetComparisonChartStrategy(BaseChartStrategy):
                     "markLine": {
                         "silent": True, "symbol": "none", "lineStyle": {"type": "dashed"},
                         "data": [
-                            {"yAxis": 80, "label": {"show": True, "formatter": "80%", "position": "end"}, "lineStyle": {"color": "#f56c6c"}},
-                            {"yAxis": 100, "label": {"show": True, "formatter": "100%", "position": "end"}, "lineStyle": {"color": "#67c23a"}},
+                            {"yAxis": 80, "label": {"show": True, "formatter": "80%", "position": "end"}, "lineStyle": {"color": "#f56c6c"}},  # noqa: E501
+                            {"yAxis": 100, "label": {"show": True, "formatter": "100%", "position": "end"}, "lineStyle": {"color": "#67c23a"}},  # noqa: E501
                         ],
                     },
                 },
@@ -204,7 +204,7 @@ class BudgetComparisonChartStrategy(BaseChartStrategy):
         if len(departments) > 10:
             end_pct = min(100, round((10 / len(departments)) * 100))
             config["dataZoom"] = [
-                {"type": "slider", "show": True, "xAxisIndex": 0, "start": 0, "end": end_pct, "height": 20, "bottom": 8},
+                {"type": "slider", "show": True, "xAxisIndex": 0, "start": 0, "end": end_pct, "height": 20, "bottom": 8},  # noqa: E501
                 {"type": "inside", "xAxisIndex": 0, "start": 0, "end": end_pct},
             ]
             config["grid"]["bottom"] = 60
