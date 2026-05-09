@@ -331,15 +331,6 @@ public class ProductionAnalysisServiceImpl implements ProductionAnalysisService 
         return buildOEETrendChartFromData(productionData, period);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public ChartConfig getProductionLineComparisonChart(String factoryId, LocalDate startDate, LocalDate endDate) {
-        log.info("获取产线对比图表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
-
-        List<Map<String, Object>> productionData = generateMockProductionData(factoryId, startDate, endDate);
-        return buildProductionLineComparisonFromData(productionData);
-    }
-
     // ==================== 私有辅助方法 ====================
 
     /**
