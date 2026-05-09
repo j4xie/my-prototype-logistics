@@ -25,7 +25,7 @@ class ColumnDefinition:
     col_index: int              # 列索引 (0-based)
     col_letter: str             # 列字母 (A, B, C...)
     merged_name: str            # 合并后的列名
-    original_headers: List[str] # 原始多行表头值
+    original_headers: List[str]  # 原始多行表头值
     role: str                   # dimension, measure, time, label
     data_type: str              # text, number, date, percentage
 

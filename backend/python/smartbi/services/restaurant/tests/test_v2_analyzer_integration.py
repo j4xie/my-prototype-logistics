@@ -93,7 +93,7 @@ def sample_reviews() -> list[dict]:
 def sample_members() -> list[dict]:
     """A small member list with enough diversity to compute quintiles."""
     return [
-        {"member_id": f"M{i:03d}", "last_order_days_ago": i * 5, "order_count": 10 - i // 2, "total_amount": (10 - i) * 200}
+        {"member_id": f"M{i:03d}", "last_order_days_ago": i * 5, "order_count": 10 - i // 2, "total_amount": (10 - i) * 200}  # noqa: E501
         for i in range(1, 11)
     ]
 

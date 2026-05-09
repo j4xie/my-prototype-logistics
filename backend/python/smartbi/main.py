@@ -21,12 +21,12 @@ from smartbi.api import restaurant_sections
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from efficiency_recognition.api import router as efficiency_router
-from efficiency_recognition.api import stream_router, photo_router, tracking_router, cost_router, recording_router, scene_router
+from efficiency_recognition.api import router as efficiency_router  # noqa: E402
+from efficiency_recognition.api import stream_router, photo_router, tracking_router, cost_router, recording_router, scene_router  # noqa: E402,E501
 
 # 导入客户需求反馈模块
-from client_requirement.api import router as client_requirement_router
-from client_requirement.completeness_calculator import router as completeness_router
+from client_requirement.api import router as client_requirement_router  # noqa: E402
+from client_requirement.completeness_calculator import router as completeness_router  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

@@ -295,7 +295,7 @@ async def test_delete_transaction_cascades_to_children(pool, clean_rows):
                 _TENANT_A, store_id, date(2026, 4, 21),
             )
             await conn.execute(
-                "INSERT INTO fact_pos_item (transaction_id, factory_id, product_id, qty, amount) VALUES ($1, $2, $3, 1, 10)",
+                "INSERT INTO fact_pos_item (transaction_id, factory_id, product_id, qty, amount) VALUES ($1, $2, $3, 1, 10)",  # noqa: E501
                 txn_id, _TENANT_A, product_id,
             )
             await conn.execute(
@@ -303,7 +303,7 @@ async def test_delete_transaction_cascades_to_children(pool, clean_rows):
                 txn_id, _TENANT_A, channel_id,
             )
             await conn.execute(
-                "INSERT INTO fact_pos_discount (transaction_id, factory_id, discount_id, quantity, amount) VALUES ($1, $2, $3, 1, 5)",
+                "INSERT INTO fact_pos_discount (transaction_id, factory_id, discount_id, quantity, amount) VALUES ($1, $2, $3, 1, 5)",  # noqa: E501
                 txn_id, _TENANT_A, discount_id,
             )
             # Delete the parent — cascades.

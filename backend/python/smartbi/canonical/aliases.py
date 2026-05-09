@@ -75,7 +75,7 @@ ALIAS_TO_ATTR: Dict[str, str] = {
     "折后金额": "net_amount",  # v1.0 加 (RES_GML_001 / xmx)
 
     "actual_receive": "actual_receive",
-    "收款金额": "actual_receive",
+    "收款金额": "actual_receive",  # noqa: F601 — see TODO at line ~205 (collision with payment_amount; payment_amount wins)
     "实收": "actual_receive",
 
     # counts
@@ -202,7 +202,7 @@ ALIAS_TO_ATTR: Dict[str, str] = {
     "payment_amount": "payment_amount",
     "支付金额": "payment_amount",
     "付款金额": "payment_amount",
-    "收款金额": "payment_amount",
+    "收款金额": "payment_amount",  # noqa: F601 — TODO: domain reviewer to disambiguate from line ~78 actual_receive mapping
 
     # SVC (储值卡) shape (B v2.0) — stored_value_card_consumption
     "card_no": "card_no",

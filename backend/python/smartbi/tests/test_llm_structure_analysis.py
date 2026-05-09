@@ -13,8 +13,8 @@ import asyncio
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.raw_exporter import RawExporter
-from services.llm_structure_analyzer import LLMStructureAnalyzer
+from services.raw_exporter import RawExporter  # noqa: E402
+from services.llm_structure_analyzer import LLMStructureAnalyzer  # noqa: E402
 
 
 async def test_structure_analysis():

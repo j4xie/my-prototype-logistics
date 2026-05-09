@@ -8,7 +8,7 @@ Future: swap in semantic embedding match via pgvector (W3).
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -329,7 +329,7 @@ _TIME_LIMITER_KEYWORDS = (
 )
 
 # Regex: 年份(2024/2025) 或 月份(1月-12月) 或 日期(YYYY-MM-DD)
-import re as _re
+import re as _re  # noqa: E402
 _TIME_LIMITER_RE = _re.compile(
     r"(?:"
     r"20\d{2}[-年]\d{1,2}|"          # 2025-08 / 2025年8

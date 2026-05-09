@@ -197,7 +197,7 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
         return {"success": False, "message": "db pool unavailable"}
 
     try:
-        ans = await resolve_gross_margin(pool, factory_id, days=days, top_n=500)
+        ans = await resolve_gross_margin(pool, factory_id, days=days, top_n=500)  # noqa: F841
     except Exception as e:
         logger.exception("[gross-margin] resolver failed")
         return {"success": False, "message": f"compute failed: {e}"}
@@ -295,10 +295,10 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
     INDUSTRY_DEFAULT_COST_RATIO = {
         "RESTAURANT_CHUAN": 0.35,    # 川菜
         "RESTAURANT_HOTPOT": 0.28,   # 火锅
-        "RESTAURANT_FASTFOOD": 0.25, # 快餐
+        "RESTAURANT_FASTFOOD": 0.25,  # 快餐
         "RESTAURANT_WESTERN": 0.30,  # 西餐
         "RESTAURANT_NOODLES": 0.30,  # 面食
-        "RESTAURANT_JAPANESE": 0.40, # 日料 (食材贵)
+        "RESTAURANT_JAPANESE": 0.40,  # 日料 (食材贵)
         "RESTAURANT_CANTONESE": 0.32,
         "DEFAULT": 0.32,
     }
@@ -321,7 +321,7 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
         if not has_cost:
             est_cost_total = r["revenue"] * industry_cost_ratio
             est_gp = r["revenue"] - est_cost_total
-            est_rate = 1.0 - industry_cost_ratio
+            est_rate = 1.0 - industry_cost_ratio  # noqa: F841
             total_rev_estimated += r["revenue"]
             total_profit_estimated += est_gp
         dishes.append({

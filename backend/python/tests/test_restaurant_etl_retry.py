@@ -43,6 +43,7 @@ async def test_etl_retry_succeeds_after_one_failure():
     smartbi_pool = _make_pool_with_conn(smartbi_conn)
 
     call_count = 0
+
     async def flaky(*args, **kwargs):
         nonlocal call_count
         call_count += 1

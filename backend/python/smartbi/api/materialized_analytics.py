@@ -44,14 +44,15 @@ def _spawn_bg(coro) -> asyncio.Task:
     task.add_done_callback(_PENDING_BG_TASKS.discard)
     return task
 
-from smartbi.config import get_pg_pool
-from smartbi.services.field_classifier import classify_column, infer_agg_strategy
-from smartbi.services.materialized_analytics.materializer import build_schema, materialize_upload
-from smartbi.services.materialized_analytics.persistence import (
+
+from smartbi.config import get_pg_pool  # noqa: E402
+from smartbi.services.field_classifier import classify_column, infer_agg_strategy  # noqa: E402
+from smartbi.services.materialized_analytics.materializer import build_schema, materialize_upload  # noqa: E402
+from smartbi.services.materialized_analytics.persistence import (  # noqa: E402
     load_materialization_results,
     save_materialization_results,
 )
-from smartbi.services.materialized_analytics.schema import Domain
+from smartbi.services.materialized_analytics.schema import Domain  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

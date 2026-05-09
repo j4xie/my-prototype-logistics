@@ -179,7 +179,7 @@ class CashFlowWaterfallBuilder(AbstractFinancialChartBuilder):
 
         color_map = {
             'operating': '#2D8B57',        # green
-            'operating_detail': '#4C9AFF', # light blue
+            'operating_detail': '#4C9AFF',  # light blue
             'investing': '#FFAB00',        # amber
             'financing': '#6B778C',        # grey
             'net': '#36B37E' if items[-1]['value'] >= 0 else '#FF5630',  # green/red

@@ -105,7 +105,7 @@ class LlmReviewAnalyzer:
 输出 JSON 对象, 顶层 key 为 "reviews", 值为数组:
 {
   "reviews": [
-    {"review_id": 1, "dishes": [{"name": "招牌毛肚", "sentiment": "positive"}], "overall_sentiment": "positive", "aspects": {"service": "positive"}},
+    {"review_id": 1, "dishes": [{"name": "招牌毛肚", "sentiment": "positive"}], "overall_sentiment": "positive", "aspects": {"service": "positive"}},  # noqa: E501
     {"review_id": 2, "dishes": [...], "overall_sentiment": "neutral"}
   ]
 }
@@ -188,7 +188,7 @@ class LlmReviewAnalyzer:
 
         # 按批次 LLM 抽取
         extracts: list[LlmExtractResult] = []
-        batches = [valid[i : i + self._BATCH_SIZE] for i in range(0, len(valid), self._BATCH_SIZE)]
+        batches = [valid[i: i + self._BATCH_SIZE] for i in range(0, len(valid), self._BATCH_SIZE)]
         logger.info(f"LLM analyzing {len(valid)} reviews in {len(batches)} batches")
 
         # 并发控制

@@ -89,7 +89,7 @@ class TreemapChartStrategy(BaseChartStrategy):
 
             tree_data = []
             for i, (name, val) in enumerate(
-                sorted(((str(k), abs(float(v))) for k, v in grouped.items() if pd.notna(v) and float(v) != 0), key=lambda x: -x[1])
+                sorted(((str(k), abs(float(v))) for k, v in grouped.items() if pd.notna(v) and float(v) != 0), key=lambda x: -x[1])  # noqa: E501
             ):
                 if not math.isfinite(val):
                     continue
@@ -112,16 +112,16 @@ class TreemapChartStrategy(BaseChartStrategy):
             "width": "92%", "height": "85%", "top": "5%", "left": "center",
             "breadcrumb": {
                 "show": True, "bottom": 5, "left": "center",
-                "itemStyle": {"color": "#f5f5f5", "borderColor": "#ddd", "borderWidth": 1, "shadowBlur": 2, "shadowColor": "rgba(0,0,0,0.05)", "textStyle": {"color": "#333", "fontSize": 12}},
+                "itemStyle": {"color": "#f5f5f5", "borderColor": "#ddd", "borderWidth": 1, "shadowBlur": 2, "shadowColor": "rgba(0,0,0,0.05)", "textStyle": {"color": "#333", "fontSize": 12}},  # noqa: E501
                 "emphasis": {"itemStyle": {"color": "#e0e0e0"}},
             },
-            "label": {"show": True, "formatter": "__FMT__treemap_label", "fontSize": 12, "color": "#fff", "fontWeight": "bold", "textShadowBlur": 2, "textShadowColor": "rgba(0,0,0,0.3)"},
-            "upperLabel": {"show": True, "height": 24, "color": "#fff", "fontSize": 12, "fontWeight": "bold", "backgroundColor": "transparent"},
+            "label": {"show": True, "formatter": "__FMT__treemap_label", "fontSize": 12, "color": "#fff", "fontWeight": "bold", "textShadowBlur": 2, "textShadowColor": "rgba(0,0,0,0.3)"},  # noqa: E501
+            "upperLabel": {"show": True, "height": 24, "color": "#fff", "fontSize": 12, "fontWeight": "bold", "backgroundColor": "transparent"},  # noqa: E501
             "itemStyle": {"borderColor": "#fff", "borderWidth": 2, "gapWidth": 2},
             "levels": [
                 {"itemStyle": {"borderColor": "#999", "borderWidth": 3, "gapWidth": 3}, "upperLabel": {"show": True}},
-                {"itemStyle": {"borderColor": "#ccc", "borderWidth": 2, "gapWidth": 2}, "label": {"show": True}, "upperLabel": {"show": False}},
-                {"itemStyle": {"borderColor": "#ddd", "borderWidth": 1, "gapWidth": 1}, "label": {"show": True, "fontSize": 10}},
+                {"itemStyle": {"borderColor": "#ccc", "borderWidth": 2, "gapWidth": 2}, "label": {"show": True}, "upperLabel": {"show": False}},  # noqa: E501
+                {"itemStyle": {"borderColor": "#ddd", "borderWidth": 1, "gapWidth": 1}, "label": {"show": True, "fontSize": 10}},  # noqa: E501
             ],
             "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
         }
@@ -129,7 +129,7 @@ class TreemapChartStrategy(BaseChartStrategy):
         config = {
             "series": [series_config],
             "tooltip": {**make_enhanced_tooltip("item"), "formatter": "__FMT__treemap_tooltip"},
-            "_treemapMeta": {"totalValue": round(total_value, 2), "nodeCount": len(tree_data), "hasHierarchy": parent_col is not None},
+            "_treemapMeta": {"totalValue": round(total_value, 2), "nodeCount": len(tree_data), "hasHierarchy": parent_col is not None},  # noqa: E501
         }
 
         if color_col:

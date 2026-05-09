@@ -127,7 +127,7 @@ class Settings(BaseSettings):
         """Get Food KB PostgreSQL connection URL (for asyncpg)"""
         user = quote(self.food_kb_postgres_user, safe='')
         passwd = quote(self.food_kb_postgres_password, safe='')
-        return f"postgresql://{user}:{passwd}@{self.food_kb_postgres_host}:{self.food_kb_postgres_port}/{self.food_kb_postgres_db}"
+        return f"postgresql://{user}:{passwd}@{self.food_kb_postgres_host}:{self.food_kb_postgres_port}/{self.food_kb_postgres_db}"  # noqa: E501
 
     @property
     def postgres_url(self) -> str:
@@ -213,7 +213,7 @@ async def get_pg_pool():
 # ==========================================
 # Shared asyncpg pool for Cretas app DB (cretas_db)
 # ==========================================
-_cretas_pool: Optional[asyncpg.Pool] = None  # type: ignore[name-defined]
+_cretas_pool: Optional[asyncpg.Pool] = None  # type: ignore[name-defined]  # noqa: F821
 _cretas_pool_lock = None  # initialised lazily (asyncio.Lock must be created inside event loop)
 
 

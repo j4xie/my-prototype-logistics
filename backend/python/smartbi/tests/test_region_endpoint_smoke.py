@@ -15,7 +15,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # The endpoint lives in smartbi.api.excel — import function and DTOs.
-from smartbi.api.excel import detect_table_regions, DetectRegionsResponse
+from smartbi.api.excel import detect_table_regions, DetectRegionsResponse  # noqa: E402
 
 
 def _make_xlsx(rows: List[List[Any]]) -> bytes:
@@ -31,6 +31,7 @@ def _make_xlsx(rows: List[List[Any]]) -> bytes:
 
 class _MockUpload:
     """Minimal stand-in for FastAPI UploadFile so we can invoke the coroutine."""
+
     def __init__(self, filename: str, content: bytes):
         self.filename = filename
         self._content = content

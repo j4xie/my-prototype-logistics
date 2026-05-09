@@ -68,7 +68,7 @@ def _ngrams_from_run(run: str) -> List[str]:
     out: List[str] = []
     for n in (2, 3, 4):
         for i in range(len(run) - n + 1):
-            out.append(run[i : i + n])
+            out.append(run[i: i + n])
     return out
 
 
@@ -119,7 +119,7 @@ def extract_new_keywords(query: str, existing: Iterable[str]) -> Set[str]:
         run_start = match.start()
         for n in (2, 3, 4):
             for i in range(len(run) - n + 1):
-                tok = run[i : i + n]
+                tok = run[i: i + n]
                 if tok in STOP_WORDS or tok in existing_set:
                     continue
                 # Skip if every position inside this n-gram is already covered

@@ -28,7 +28,7 @@ class DualAxisChartStrategy(BaseChartStrategy):
                 series.append({"name": y_fields[0], "type": "bar", "data": df[y_fields[0]].tolist(), "yAxisIndex": 0})
             if y_fields[1] in df.columns:
                 y_axis_list.append({"type": "value", "name": y_fields[1], "position": "right"})
-                series.append({"name": y_fields[1], "type": "line", "data": df[y_fields[1]].tolist(), "yAxisIndex": 1, "smooth": True})
+                series.append({"name": y_fields[1], "type": "line", "data": df[y_fields[1]].tolist(), "yAxisIndex": 1, "smooth": True})  # noqa: E501
 
         return {
             "xAxis": {"type": "category", "data": x_data},

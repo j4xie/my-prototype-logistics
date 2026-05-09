@@ -746,8 +746,8 @@ async def test_closed_loop_sheet_merger_to_template(
     try:
         # 1. Seed: dim_store + dim_product + upload row + field defs + 1 dynamic row
         async with scoped_pool.acquire() as conn:
-            store_id = await _seed_dim_store(conn, TEST_FACTORY, "测试店")
-            product_id = await _seed_dim_product(
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "测试店")  # noqa: F841
+            product_id = await _seed_dim_product(  # noqa: F841
                 conn, TEST_FACTORY, "测试菜", "测试菜"
             )
 

@@ -21,15 +21,15 @@ import polars as pl
 
 logger = logging.getLogger(__name__)
 
-from smartbi.capability.contract import RequiresSpec
+from smartbi.capability.contract import RequiresSpec  # noqa: E402
 
-from ..compute.base import ComputeBackend
-from ..restaurant import industry_benchmarks as bench
-from ..restaurant.action_rec_formatter import format_action_rec
-from ..schema import DataSchema
-from .base import AnalysisTemplate, TemplateResult
-from .registry import register
-from ..restaurant import schema_helpers
+from ..compute.base import ComputeBackend  # noqa: E402
+from ..restaurant import industry_benchmarks as bench  # noqa: E402
+from ..restaurant.action_rec_formatter import format_action_rec  # noqa: E402
+from ..schema import DataSchema  # noqa: E402
+from .base import AnalysisTemplate, TemplateResult  # noqa: E402
+from .registry import register  # noqa: E402
+from ..restaurant import schema_helpers  # noqa: E402
 
 _TOP_N = 10
 
@@ -83,7 +83,7 @@ class ReviewsSentimentSummary(AnalysisTemplate):
 
         if star_col is None:
             return TemplateResult(code=self.code, title=self.title, data={},
-                applies=False, skip_reason="no 星级 column")
+                                  applies=False, skip_reason="no 星级 column")
 
         total = df.height
 

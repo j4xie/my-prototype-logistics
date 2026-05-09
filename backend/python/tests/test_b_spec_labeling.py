@@ -133,7 +133,7 @@ def test_assign_split_for_deterministic_with_seed():
 def test_assign_split_for_changes_with_different_seed():
     """Different seed CAN produce different split (proves seed is mixed in)."""
     splits_seed1 = {assign_split_for(i, seed=1) for i in range(20)}
-    splits_seed2 = {assign_split_for(i, seed=999) for i in range(20)}
+    splits_seed2 = {assign_split_for(i, seed=999) for i in range(20)}  # noqa: F841
     assert splits_seed1 == {"train", "dev", "holdout"} or len(splits_seed1) >= 2
     found_diff = any(
         assign_split_for(i, seed=1) != assign_split_for(i, seed=999)

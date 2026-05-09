@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # 导入本地预处理器
 try:
-    from .local_preprocessor import get_preprocessor, LocalPreprocessor
+    from .local_preprocessor import get_preprocessor, LocalPreprocessor  # noqa: F401 — re-exported for downstream usage
     LOCAL_PREPROCESSING_AVAILABLE = True
 except ImportError:
     LOCAL_PREPROCESSING_AVAILABLE = False
@@ -142,7 +142,7 @@ class MultiStreamSampler:
     def _find_ffmpeg(self) -> str:
         """查找 FFmpeg 可执行文件"""
         ffmpeg_paths = [
-            r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",
+            r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",  # noqa: E501
             r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Links\ffmpeg.exe",
             r"C:\ffmpeg\bin\ffmpeg.exe",
             r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
@@ -544,7 +544,7 @@ class MultiStreamSampler:
 
                 if (task.config.use_local_preprocessing and
                     task.config.skip_unchanged_frames and
-                    self.preprocessor is not None):
+                        self.preprocessor is not None):
 
                     preprocess_result = self.preprocessor.should_analyze(
                         frame,

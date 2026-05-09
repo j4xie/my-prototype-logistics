@@ -133,7 +133,7 @@ class InventoryWriter(BaseWriter):
                 )
 
             for i in range(0, len(records), self.BATCH_SIZE):
-                batch = records[i : i + self.BATCH_SIZE]
+                batch = records[i: i + self.BATCH_SIZE]
                 await conn.executemany(
                     """
                     INSERT INTO fact_inventory_snapshot

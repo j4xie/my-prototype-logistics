@@ -40,7 +40,7 @@ class TemporalDelta:
     compare_value: float
     delta_abs: float                     # current - compare
     delta_pct: float                     # (current - compare) / compare
-    trend: Literal["up", "down", "flat"] # 方向
+    trend: Literal["up", "down", "flat"]  # 方向
 
     def to_dict(self) -> dict:
         return {

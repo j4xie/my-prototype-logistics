@@ -69,7 +69,7 @@ class SankeyChartStrategy(BaseChartStrategy):
         if not links:
             return empty_chart_config("桑基图无有效流向数据")
 
-        nodes = [{"name": name, "itemStyle": {"color": palette[i % len(palette)]}} for i, name in enumerate(sorted(node_set))]
+        nodes = [{"name": name, "itemStyle": {"color": palette[i % len(palette)]}} for i, name in enumerate(sorted(node_set))]  # noqa: E501
         total_value = sum(lk["value"] for lk in links)
         orient = "horizontal" if len(nodes) <= 10 else "vertical"
 
@@ -174,7 +174,7 @@ class SankeyChartStrategy(BaseChartStrategy):
         for name in node_names:
             if name not in seen:
                 seen.add(name)
-                nodes.append({"name": name, "itemStyle": {"color": node_colors.get(name, palette[len(seen) % len(palette)])}})
+                nodes.append({"name": name, "itemStyle": {"color": node_colors.get(name, palette[len(seen) % len(palette)])}})  # noqa: E501
 
         return {
             "series": [{

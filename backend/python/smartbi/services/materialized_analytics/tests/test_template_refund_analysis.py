@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.refund_analysis import Re
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("订单状态", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=5, primary_measure="营业额")
+                      fields=tuple([Field("订单状态", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=5, primary_measure="营业额")
 
 
 def test_refund_strategy_a_counts_non_completed():
@@ -28,8 +28,8 @@ def test_refund_strategy_a_counts_non_completed():
 
 def test_refund_skip_when_no_signals():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = RefundAnalysis().run(backend, schema)
     assert not result.applies

@@ -163,7 +163,7 @@ class ExcelParser:
                 "columnCount": len(headers),
                 "direction": direction.value,
                 "sheetNames": sheet_names,
-                "currentSheet": sheet_name if isinstance(sheet_name, str) else sheet_names[sheet_name] if sheet_name < len(sheet_names) else sheet_names[0]
+                "currentSheet": sheet_name if isinstance(sheet_name, str) else sheet_names[sheet_name] if sheet_name < len(sheet_names) else sheet_names[0]  # noqa: E501
             }
 
         except Exception as e:
@@ -1039,7 +1039,7 @@ class ExcelParser:
         preview_rows = detection.get("previewRows", [])
 
         logger.info(f"Detection result: header_rows={detected_header_rows}, "
-                   f"has_multi_header={has_multi_header}, merged_cells={len(merged_cells)}")
+                    f"has_multi_header={has_multi_header}, merged_cells={len(merged_cells)}")
 
         # Step 2: Check if this sheet needs special merged header handling
         # Criteria: many merged cells in header region AND multi-header detected
@@ -1063,7 +1063,7 @@ class ExcelParser:
 
                     # If score is good enough, use this result
                     if merged_score >= 50:
-                        merged_result["_parse_strategy"] = {"method": "merged_headers", "header_rows": detected_header_rows}
+                        merged_result["_parse_strategy"] = {"method": "merged_headers", "header_rows": detected_header_rows}  # noqa: E501
                         merged_result["_parse_score"] = merged_score
 
                         # Analyze data features
@@ -1189,8 +1189,8 @@ class ExcelParser:
                 best_result["_measure_count"] = measure_count
 
         logger.info(f"Smart parse complete: score={best_score}, "
-                   f"headers={len(best_result.get('headers', []))}, "
-                   f"rows={best_result.get('rowCount', 0)}")
+                    f"headers={len(best_result.get('headers', []))}, "
+                    f"rows={best_result.get('rowCount', 0)}")
 
         return best_result
 
@@ -1284,7 +1284,7 @@ class ExcelParser:
             if second_row:
                 # Look for month patterns (1月, 2月, etc.)
                 import re
-                month_pattern = re.compile(r'(\d{1,2}月|一月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)', re.IGNORECASE)
+                month_pattern = re.compile(r'(\d{1,2}月|一月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)', re.IGNORECASE)  # noqa: E501
                 month_count = sum(1 for v in second_row if v and month_pattern.search(str(v)))
 
                 if month_count >= 3:
@@ -1302,7 +1302,7 @@ class ExcelParser:
                         total_count = len(non_null_values)
                         # If many repeated values, likely sub-headers
                         if total_count >= 6 and unique_count <= total_count / 3:
-                            logger.debug(f"Detected repeating sub-headers: {unique_count} unique in {total_count} values")
+                            logger.debug(f"Detected repeating sub-headers: {unique_count} unique in {total_count} values")  # noqa: E501
                             return True
 
         return False

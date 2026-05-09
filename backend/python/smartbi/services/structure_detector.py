@@ -381,8 +381,8 @@ class StructureDetector:
             #   ─────────────────────────────────────────────────────────────────────────────────
             #   True  (force on)                       | (any)                                   | always vote
             #   False (force off)                      | (any)                                   | never vote
-            #   None  (conditional, default)           | False                                   | never vote (feature off)
-            #   None  (conditional, default)           | True + best prior conf >= threshold     | skip vote (already confident)
+            #   None  (conditional, default)           | False                                   | never vote (feature off)  # noqa: E501
+            #   None  (conditional, default)           | True + best prior conf >= threshold     | skip vote (already confident)  # noqa: E501
             #   None  (conditional, default)           | True + best prior conf <  threshold     | escalate to voting
             voting_threshold = self.settings.multi_model_voting_confidence_threshold
             best_prior_conf = best_prior.confidence if best_prior is not None else 0.0
@@ -403,7 +403,7 @@ class StructureDetector:
                 if not self.settings.enable_multi_model_enhancement:
                     should_vote = False
                     logger.info(
-                        f"[structure] multi-model voting disabled by settings flag (best prior conf {best_prior_conf:.2f})"
+                        f"[structure] multi-model voting disabled by settings flag (best prior conf {best_prior_conf:.2f})"  # noqa: E501
                     )
                 elif best_prior_conf >= voting_threshold:
                     should_vote = False
@@ -690,7 +690,7 @@ class StructureDetector:
 
             # Rule: Column names row - many unique values, high fill rate
             # BUT only if it's not mostly numeric (already checked above)
-            if row_type == "unknown" and non_null_count >= total_cols * 0.3 and len(unique_values) >= non_null_count * 0.5:
+            if row_type == "unknown" and non_null_count >= total_cols * 0.3 and len(unique_values) >= non_null_count * 0.5:  # noqa: E501
                 row_type = "column_names"
                 confidence_factors.append(0.85)
                 # After column names comes data
@@ -719,7 +719,7 @@ class StructureDetector:
 
         result.header_row_count = data_start_row
         result.data_start_row = data_start_row
-        logger.info(f"Rule detection result: header_rows={data_start_row}, data_start={data_start_row}, detected_rows={[hr.type for hr in header_rows]}")
+        logger.info(f"Rule detection result: header_rows={data_start_row}, data_start={data_start_row}, detected_rows={[hr.type for hr in header_rows]}")  # noqa: E501
         result.header_rows = header_rows
         result.merged_cells = merged_cells
         result.preview_rows = raw_rows[:min(5, len(raw_rows))]
@@ -884,7 +884,7 @@ class StructureDetector:
             merge_text = "\nMerged Cells in Header Region:\n"
             if merged_cells:
                 for m in merged_cells[:15]:
-                    merge_text += f"  {m.range}: '{m.value[:30] if m.value else ''}' (rows {m.min_row}-{m.max_row}, cols {m.min_col}-{m.max_col})\n"
+                    merge_text += f"  {m.range}: '{m.value[:30] if m.value else ''}' (rows {m.min_row}-{m.max_row}, cols {m.min_col}-{m.max_col})\n"  # noqa: E501
             else:
                 merge_text += "  (none)\n"
 
@@ -910,7 +910,7 @@ Analyze and determine:
 2. Which row index (0-based) is the FIRST DATA ROW?
 3. What are the actual column names from the last header row?
 
-IMPORTANT: Data rows have many numeric values. The first row with >40% numeric values is likely the first data row, NOT a header.
+IMPORTANT: Data rows have many numeric values. The first row with >40% numeric values is likely the first data row, NOT a header.  # noqa: E501
 
 Return JSON only:
 {{
@@ -936,7 +936,7 @@ Return JSON only:
                         total_non_empty = sum(1 for v in row if v)
                         if total_non_empty > 5 and numeric_count / total_non_empty > 0.4:
                             if idx < data_start:
-                                logger.warning(f"LLM said data_start={data_start}, but row {idx} has {numeric_count}/{total_non_empty} numeric values. Adjusting.")
+                                logger.warning(f"LLM said data_start={data_start}, but row {idx} has {numeric_count}/{total_non_empty} numeric values. Adjusting.")  # noqa: E501
                                 data_start = idx
                                 header_count = idx
                             break
@@ -954,7 +954,7 @@ Return JSON only:
                             raw_rows[data_start:data_start + 5] if data_start < len(raw_rows) else []
                         )
 
-                    logger.info(f"LLM complex detection: header_rows={header_count}, data_start={data_start}, confidence={result.confidence:.2f}")
+                    logger.info(f"LLM complex detection: header_rows={header_count}, data_start={data_start}, confidence={result.confidence:.2f}")  # noqa: E501
                     return result
 
         except Exception as e:

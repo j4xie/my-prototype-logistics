@@ -39,7 +39,7 @@ class CellInfo:
     col_letter: str         # 列字母 (A, B, C...)
     value: Any              # 原始值
     value_type: str         # 值类型: text, number, date, bool, empty
-    is_merged: bool = False # 是否是合并单元格的一部分
+    is_merged: bool = False  # 是否是合并单元格的一部分
     merge_master: Optional[str] = None  # 如果是合并单元格，指向主单元格
 
     def to_dict(self) -> Dict:

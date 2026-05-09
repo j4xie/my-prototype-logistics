@@ -457,7 +457,7 @@ class FoodNERService:
 
         return self._decode_bio(text, predictions, confidences, offset_mapping, BIO_LABELS)
 
-    def _decode_bio(self, text: str, predictions: list, confidences, offset_mapping: list, labels: list) -> List[Entity]:
+    def _decode_bio(self, text: str, predictions: list, confidences, offset_mapping: list, labels: list) -> List[Entity]:  # noqa: E501
         """Decode BIO predictions into Entity objects."""
         entities = []
         current_entity = None

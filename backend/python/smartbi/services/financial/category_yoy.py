@@ -124,7 +124,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
                 "type": "bar",
                 "stack": "current",
                 "data": actual_scaled,
-                "itemStyle": {"color": self._gradient_color(color), "borderRadius": [1, 1, 0, 0] if ci == len(categories) - 1 else [0, 0, 0, 0]},
+                "itemStyle": {"color": self._gradient_color(color), "borderRadius": [1, 1, 0, 0] if ci == len(categories) - 1 else [0, 0, 0, 0]},  # noqa: E501
                 "barMaxWidth": 24,
                 "barGap": "20%",
                 "emphasis": {"itemStyle": {"shadowBlur": 10, "shadowColor": "rgba(0,0,0,0.2)"}},
@@ -332,7 +332,7 @@ class CategoryYoyComparisonBuilder(AbstractFinancialChartBuilder):
             })
 
         table_data = {
-            "headers": ["品类", f"本年{scale['name_suffix']}", f"上年{scale['name_suffix']}", f"差异{scale['name_suffix']}", "同比"],
+            "headers": ["品类", f"本年{scale['name_suffix']}", f"上年{scale['name_suffix']}", f"差异{scale['name_suffix']}", "同比"],  # noqa: E501
             "rows": table_rows,
         }
 

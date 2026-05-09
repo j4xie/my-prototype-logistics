@@ -32,6 +32,7 @@ _llm_factory: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("ll
 
 class llm_caller_context:
     """Async-safe context manager for LLM caller attribution."""
+
     def __init__(self, caller: str, factory_id: Optional[str] = None) -> None:
         self.caller = caller
         self.factory_id = factory_id

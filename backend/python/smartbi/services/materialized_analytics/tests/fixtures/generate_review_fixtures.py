@@ -64,7 +64,7 @@ def main():
     print("\nGenerating qhj_3975_meituan_renamed.xlsx...")
     renamed_df = df.rename(columns=MEITUAN_RENAME)
     renamed_df.to_excel(MEITUAN_RENAMED_OUT, index=False, engine="openpyxl")
-    print(f"  wrote {os.path.getsize(MEITUAN_RENAMED_OUT) / 1024 / 1024:.1f} MB to {os.path.basename(MEITUAN_RENAMED_OUT)}")
+    print(f"  wrote {os.path.getsize(MEITUAN_RENAMED_OUT) / 1024 / 1024:.1f} MB to {os.path.basename(MEITUAN_RENAMED_OUT)}")  # noqa: E501
     print(f"  renamed cols: {list(MEITUAN_RENAME.items())}")
 
     # Fixture 2: no review cols (first 100 rows, dropped any rating/review column)

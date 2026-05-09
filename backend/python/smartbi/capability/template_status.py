@@ -6,7 +6,6 @@ from __future__ import annotations
 from collections import defaultdict
 
 
-
 def get_registry():
     """Lazy import to avoid eager pandas/numpy load at module import time.
 

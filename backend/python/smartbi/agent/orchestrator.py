@@ -436,7 +436,7 @@ class AgentOrchestrator:
 
         answer = "".join(full_text_parts).strip()
         if answer:
-            post_budget = await self._budget.consume(factory_id, total_tokens)
+            post_budget = await self._budget.consume(factory_id, total_tokens)  # noqa: F841
             await self._cache.put(
                 factory_id, q_hash, answer,
                 chart_config=None, tokens=total_tokens, ttl_hours=cache_ttl_hours,

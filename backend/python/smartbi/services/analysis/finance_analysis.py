@@ -299,7 +299,7 @@ class FinanceAnalysisService:
             elif variance_col and category_col:
                 # Variance-based waterfall
                 grouped = df.groupby(category_col)[variance_col].sum()
-                start_value = 0
+                start_value = 0  # noqa: F841
 
                 for cat, var in grouped.items():
                     categories.append(str(cat))
@@ -553,10 +553,10 @@ class FinanceAnalysisService:
                     "periodType": period_type,
                     "periods": results,
                     "summary": {
-                        "latestYoY": results[-1]["yoyPercent"] if results and results[-1]["yoyPercent"] is not None else None,
-                        "latestMoM": results[-1]["momPercent"] if results and results[-1]["momPercent"] is not None else None,
-                        "avgYoY": round(np.mean([r["yoyPercent"] for r in results if r["yoyPercent"] is not None]), 2) if any(r["yoyPercent"] is not None for r in results) else None,
-                        "avgMoM": round(np.mean([r["momPercent"] for r in results if r["momPercent"] is not None]), 2) if any(r["momPercent"] is not None for r in results) else None
+                        "latestYoY": results[-1]["yoyPercent"] if results and results[-1]["yoyPercent"] is not None else None,  # noqa: E501
+                        "latestMoM": results[-1]["momPercent"] if results and results[-1]["momPercent"] is not None else None,  # noqa: E501
+                        "avgYoY": round(np.mean([r["yoyPercent"] for r in results if r["yoyPercent"] is not None]), 2) if any(r["yoyPercent"] is not None for r in results) else None,  # noqa: E501
+                        "avgMoM": round(np.mean([r["momPercent"] for r in results if r["momPercent"] is not None]), 2) if any(r["momPercent"] is not None for r in results) else None  # noqa: E501
                     }
                 }
             }
@@ -1282,7 +1282,7 @@ class FinanceAnalysisService:
                     "customer": str(row[customer_col]),
                     "overdue_amount": round(overdue_amount, 2),
                     "overdue_days": int(row[days_col]) if days_col and pd.notna(row.get(days_col)) else None,
-                    "credit_limit": round(float(row[credit_limit_col]), 2) if credit_limit_col and pd.notna(row.get(credit_limit_col)) else None,
+                    "credit_limit": round(float(row[credit_limit_col]), 2) if credit_limit_col and pd.notna(row.get(credit_limit_col)) else None,  # noqa: E501
                     "risk_level": assign_risk_level(row)
                 }
                 rankings.append(ranking_entry)

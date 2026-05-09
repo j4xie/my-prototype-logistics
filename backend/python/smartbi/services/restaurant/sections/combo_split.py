@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class ComboSplitHandler(AbstractSectionHandler):
     section_name = "combo_split"
 
@@ -35,11 +36,11 @@ class ComboSplitHandler(AbstractSectionHandler):
             combo = combo_qty.get(dish, 0)
             total = single + combo
             dish_breakdown.append({"dish": dish, "single_sales": single, "combo_sales": combo,
-                                    "total_sales": total, "combo_pct": round(combo/total*100, 1) if total else 0.0})
+                                   "total_sales": total, "combo_pct": round(combo/total*100, 1) if total else 0.0})
         dish_breakdown.sort(key=lambda x: x["total_sales"], reverse=True)
 
         return self.ok(request, data={
             "dish_breakdown": dish_breakdown, "combo_summary": combo_detail,
             "total_dishes_tracked": len(dish_breakdown),
-            "avg_combo_pct": round(sum(d["combo_pct"] for d in dish_breakdown)/len(dish_breakdown), 1) if dish_breakdown else 0.0,
+            "avg_combo_pct": round(sum(d["combo_pct"] for d in dish_breakdown)/len(dish_breakdown), 1) if dish_breakdown else 0.0,  # noqa: E501
         }, started=started)

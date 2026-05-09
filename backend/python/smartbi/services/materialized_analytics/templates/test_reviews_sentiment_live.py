@@ -33,6 +33,7 @@ QHJ_REVIEW_Q3 = os.path.join(
 
 class _FakeBackend:
     """Minimal ComputeBackend stand-in — template only reads ._df."""
+
     def __init__(self, df):
         self._df = df
 

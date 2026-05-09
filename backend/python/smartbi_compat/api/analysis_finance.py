@@ -188,6 +188,7 @@ def _new_dashboard_response_dict(
         "cacheExpireAt": cache_expire_at,
     }
 
+
 def _new_ranking_item_dict(
     rank: int,
     name: str,
@@ -242,12 +243,10 @@ def _new_chart_config_dict(
     }
 
 
-
 def _new_cost_series_entry(name: str, stack: str) -> dict:
     """Mirror Java Map.of("name", X, "stack", Y) — Map.of(2) iteration order observed
     in F999 golden = [name, stack] (matches put-order for n=2)."""
     return {"name": name, "stack": stack}
-
 
 
 def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict:
@@ -273,7 +272,6 @@ def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict
     }
 
 
-
 def _create_waterfall_item(name: str, value: Decimal, type_: str) -> dict:
     """Mirror Java FinanceAnalysisServiceImpl.createWaterfallItem (line 1579-1585).
 
@@ -291,7 +289,6 @@ def _create_waterfall_item(name: str, value: Decimal, type_: str) -> dict:
         "value": _decimal_to_number(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
         "type": type_,
     }
-
 
 
 def _aggregate_cost_by_period(
@@ -316,7 +313,6 @@ def _aggregate_cost_by_period(
         if c.get("total_cost") is not None:
             slot[3] += abs(_to_decimal(c["total_cost"]))
     return result
-
 
 
 def _new_ai_insight_dict(
@@ -1290,7 +1286,7 @@ def _aging_90_alert(ratio: Decimal) -> str:
 
 # Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
 COST_CATEGORY_MATERIAL = "原材料"
-COST_CATEGORY_LABOR    = "人工"
+COST_CATEGORY_LABOR = "人工"
 COST_CATEGORY_OVERHEAD = "制造费用"
 
 
@@ -2859,9 +2855,9 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
     A.5 recorded F999 Jackson key order (NOT Java put-order):
       [overview, costStructure, dateRange, generatedAt, profitMetrics, receivableAging]
     """
-    overview         = await _get_finance_overview(factory_id, range_)
-    profit_metrics   = await _get_profit_metrics(factory_id, range_)
-    cost_structure   = await _get_cost_structure_chart(factory_id, range_.start_date, range_.end_date)
+    overview = await _get_finance_overview(factory_id, range_)
+    profit_metrics = await _get_profit_metrics(factory_id, range_)
+    cost_structure = await _get_cost_structure_chart(factory_id, range_.start_date, range_.end_date)
     receivable_aging = await _get_receivable_aging_chart(factory_id, range_.end_date)
 
     return {
@@ -2885,7 +2881,7 @@ async def _get_cost_analysis(
     Source: tests/fixtures/java-smartbi-golden/analysis-finance-F999-cost.json
     """
     structure_chart = await _get_cost_structure_chart(factory_id, start_date, end_date)
-    trend_chart     = await _get_cost_trend_chart(factory_id, start_date, end_date, "MONTH")
+    trend_chart = await _get_cost_trend_chart(factory_id, start_date, end_date, "MONTH")
 
     return {
         "endDate":        end_date.isoformat(),

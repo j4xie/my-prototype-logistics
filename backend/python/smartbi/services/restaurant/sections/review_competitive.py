@@ -6,6 +6,7 @@ import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class ReviewCompetitiveHandler(AbstractSectionHandler):
     section_name = "review_competitive"
 
@@ -23,10 +24,10 @@ class ReviewCompetitiveHandler(AbstractSectionHandler):
         ranking = []
         for i, brand in enumerate(all_brands, 1):
             ranking.append({"rank": i, "name": brand.get("name", ""),
-                "rating": float(brand.get("rating", 0)),
-                "review_count": int(brand.get("review_count", 0)),
-                "avg_ticket": float(brand.get("avg_ticket", 0)),
-                "is_own": brand.get("name") == own.get("name")})
+                            "rating": float(brand.get("rating", 0)),
+                            "review_count": int(brand.get("review_count", 0)),
+                            "avg_ticket": float(brand.get("avg_ticket", 0)),
+                            "is_own": brand.get("name") == own.get("name")})
 
         own_rank = next((r["rank"] for r in ranking if r["is_own"]), len(ranking))
         own_rating = float(own.get("rating", 0))
@@ -54,4 +55,4 @@ class ReviewCompetitiveHandler(AbstractSectionHandler):
                 insights.append(f"评论数 {own_reviews} 低于竞品均值 {avg_reviews:.0f} — 建议鼓励留评")
 
         return self.ok(request, data={"ranking": ranking, "own_rank": own_rank,
-            "total_brands": len(ranking), "insights": insights}, started=started)
+                                      "total_brands": len(ranking), "insights": insights}, started=started)

@@ -412,7 +412,7 @@ class ChannelMarginCalculator:
             )
 
         # 2. 外卖渠道占比过高警告
-        delivery_channels = [r for r in rows if "外卖" in r.channel or "美团" in r.channel or "饿了么" in r.channel or "抖音" in r.channel]
+        delivery_channels = [r for r in rows if "外卖" in r.channel or "美团" in r.channel or "饿了么" in r.channel or "抖音" in r.channel]  # noqa: E501
         delivery_revenue = sum(r.revenue for r in delivery_channels)
         delivery_pct = delivery_revenue / total_revenue if total_revenue > 0 else 0.0
         if delivery_pct > 0.7:

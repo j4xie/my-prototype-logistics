@@ -156,7 +156,7 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
 
         kpis = [
             {"label": "营业收入", "value": self._format_value(revenue_total, scale), "unit": "元", "trend": "flat"},
-            {"label": "费用占比", "value": f"{expense_ratio}%", "unit": "", "trend": self._trend_from_value(-expense_ratio + 70)},
+            {"label": "费用占比", "value": f"{expense_ratio}%", "unit": "", "trend": self._trend_from_value(-expense_ratio + 70)},  # noqa: E501
             {"label": "净利率", "value": f"{net_margin}%", "unit": "", "trend": self._trend_from_value(net_margin)},
         ]
 
@@ -188,7 +188,7 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
                     "fontSize": 11,
                     "color": "#333",
                     "fontWeight": "bold",
-                    "formatter": f"__FMT__sankey_financial_label_{scale['suffix']}" if scale['suffix'] else "__FMT__sankey_financial_label",
+                    "formatter": f"__FMT__sankey_financial_label_{scale['suffix']}" if scale['suffix'] else "__FMT__sankey_financial_label",  # noqa: E501
                 },
                 "data": nodes,
                 "links": links,
@@ -225,7 +225,7 @@ class CostFlowSankeyBuilder(AbstractFinancialChartBuilder):
                 "padding": [12, 16],
                 "textStyle": {"color": "#374151", "fontSize": 13},
                 "extraCssText": "box-shadow: 0 4px 20px rgba(0,0,0,0.12);",
-                "formatter": f"__FMT__sankey_financial_tooltip_{scale['suffix']}" if scale['suffix'] else "__FMT__sankey_financial_tooltip",
+                "formatter": f"__FMT__sankey_financial_tooltip_{scale['suffix']}" if scale['suffix'] else "__FMT__sankey_financial_tooltip",  # noqa: E501
             },
         })
 

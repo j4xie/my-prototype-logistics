@@ -134,7 +134,7 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                         {
                             "value": v,
                             "itemStyle": {
-                                "color": self._gradient_color(COLORS['accent'] if v > ly_scaled[i] else COLORS['success']),
+                                "color": self._gradient_color(COLORS['accent'] if v > ly_scaled[i] else COLORS['success']),  # noqa: E501
                                 "borderRadius": [2, 2, 0, 0],
                             },
                         }
@@ -166,7 +166,7 @@ class ExpenseYoyBudgetBuilder(AbstractFinancialChartBuilder):
                             "label": {
                                 "show": True,
                                 "position": "top",
-                                "formatter": f"\u2713{round(r, 1)}%" if r <= 100 and r > 0 else f"\u2713*{round(r, 1)}%",
+                                "formatter": f"\u2713{round(r, 1)}%" if r <= 100 and r > 0 else f"\u2713*{round(r, 1)}%",  # noqa: E501
                                 "fontSize": 11,
                                 "color": COLORS['success'] if r <= 100 and r > 0 else COLORS['achievement'],
                             },

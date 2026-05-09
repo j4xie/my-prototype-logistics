@@ -16,15 +16,15 @@ logger = logging.getLogger(__name__)
 
 # Try to import database dependencies
 try:
-    from sqlalchemy import create_engine, text
-    from sqlalchemy.orm import sessionmaker, Session
+    from sqlalchemy import create_engine, text  # noqa: F401 — re-exported for downstream usage
+    from sqlalchemy.orm import sessionmaker, Session  # noqa: F401 — re-exported for downstream usage
     from sqlalchemy.pool import QueuePool
     SQLALCHEMY_AVAILABLE = True
 except ImportError:
     SQLALCHEMY_AVAILABLE = False
     logger.warning("SQLAlchemy not available, using in-memory storage")
 
-from .models import (
+from .models import (  # noqa: E402
     Base,
     WorkerTrackingFeature,
     WorkerTrajectory,

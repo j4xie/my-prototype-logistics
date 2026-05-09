@@ -135,7 +135,7 @@ def _compute_ratios_from_db(conn, factory_id: str, start_date: Optional[str], en
                 "ratios": [
                     {"name": "流动比率", "value": _safe_div(data["current_assets"], data["current_liabilities"]),
                      "unit": "", "benchmark": 2.0, "status": "", "description": "流动资产/流动负债"},
-                    {"name": "速动比率", "value": _safe_div(data["current_assets"] - data["inventory"], data["current_liabilities"]),
+                    {"name": "速动比率", "value": _safe_div(data["current_assets"] - data["inventory"], data["current_liabilities"]),  # noqa: E501
                      "unit": "", "benchmark": 1.0, "status": "", "description": "(流动资产-存货)/流动负债"},
                     {"name": "现金比率", "value": _safe_div(data["cash"], data["current_liabilities"]),
                      "unit": "", "benchmark": 0.5, "status": "", "description": "现金及等价物/流动负债"},

@@ -78,7 +78,7 @@ class BudgetAchievementBuilder(AbstractFinancialChartBuilder):
         scale = _detect_value_scale(budget_vals + actual_vals)
 
         # Best month
-        best_month_idx = max(range(len(achievement_rates)), key=lambda i: achievement_rates[i]) if achievement_rates else 0
+        best_month_idx = max(range(len(achievement_rates)), key=lambda i: achievement_rates[i]) if achievement_rates else 0  # noqa: E501
         best_month_label = labels[best_month_idx] if best_month_idx < len(labels) else '-'
         best_month_rate = achievement_rates[best_month_idx] if best_month_idx < len(achievement_rates) else 0
 

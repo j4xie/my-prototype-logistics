@@ -270,7 +270,7 @@ async def _run_recording_analysis(task_id: str, request: RecordingAnalysisReques
         from ..services.multi_stream_sampler import MultiStreamSampler
 
         analyzer = VideoEfficiencyAnalyzer()
-        sampler = MultiStreamSampler()
+        sampler = MultiStreamSampler()  # noqa: F841
 
         # 收集分析结果
         results = []
@@ -367,7 +367,7 @@ async def _run_recording_analysis(task_id: str, request: RecordingAnalysisReques
         if request.auto_submit and results:
             try:
                 from ..services.data_collector import EfficiencyDataCollector
-                collector = EfficiencyDataCollector()
+                collector = EfficiencyDataCollector()  # noqa: F841
 
                 # 提交汇总结果
                 # ... (实现提交逻辑)
@@ -398,7 +398,7 @@ async def _capture_frame_from_playback(playback_url: str, seek_seconds: int) -> 
     try:
         # FFmpeg 路径
         ffmpeg_paths = [
-            r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",
+            r"C:\Users\Steve\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffmpeg.exe",  # noqa: E501
             "/usr/bin/ffmpeg",
             "ffmpeg",
         ]
@@ -470,7 +470,7 @@ def _summarize_results(results: List[Dict], analysis_types: List[str]) -> Dict:
                 "avg_worker_count": round(sum(worker_counts) / len(worker_counts), 1) if worker_counts else 0,
                 "max_worker_count": max(worker_counts) if worker_counts else 0,
                 "min_worker_count": min(worker_counts) if worker_counts else 0,
-                "avg_efficiency_score": round(sum(efficiency_scores) / len(efficiency_scores), 1) if efficiency_scores else 0,
+                "avg_efficiency_score": round(sum(efficiency_scores) / len(efficiency_scores), 1) if efficiency_scores else 0,  # noqa: E501
                 "analyzed_frames": len(efficiency_data)
             }
 

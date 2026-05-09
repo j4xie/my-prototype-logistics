@@ -3,7 +3,7 @@
 设计原则:
   - 不替代 legacy services/restaurant_analyzer.py (1751 行), 而是作为**新业务编排层**
   - 专注 Week 2-3 的"邓总救命组合": cost_rigidity + 渠道毛利率 + 对标预警 + 命名归一
-  - 调用 Week 1-2 的所有底层组件 (menu_normalizer + bom_resolver + diagnostics_engine + benchmark_alert_engine + channel_margin_calculator)
+  - 调用 Week 1-2 的所有底层组件 (menu_normalizer + bom_resolver + diagnostics_engine + benchmark_alert_engine + channel_margin_calculator)  # noqa: E501
   - 输出 unified report dict, 含 section 标签便于前端渲染
 
 数据流:
@@ -46,7 +46,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from smartbi.services.finance.margin_spec import MarginSpec
 
 from sqlalchemy.orm import Session
 

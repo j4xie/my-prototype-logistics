@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/smartbi/capability", tags=["Capability"])
 # FE useCapability 收到 503 → fail-open → 老体验. 灰度通过 env var 调整, 不需 redeploy FE.
 # Default = "F001,RES_3101_009" (Day 13 starter cohort, ~17% of 12 factories).
 # Set CAPABILITY_ROLLOUT_FACTORIES="*" to enable all (post-cohort observation period).
-import os
+import os  # noqa: E402
 _ROLLOUT_RAW = os.environ.get("CAPABILITY_ROLLOUT_FACTORIES", "F001,RES_3101_009")
 _ROLLOUT_FACTORIES: Optional[set[str]] = None if _ROLLOUT_RAW.strip() == "*" else {
     f.strip() for f in _ROLLOUT_RAW.split(",") if f.strip()

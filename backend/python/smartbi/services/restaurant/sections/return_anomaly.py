@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse
 
+
 class ReturnAnomalyHandler(AbstractSectionHandler):
     section_name = "return_anomaly"
 
@@ -25,7 +26,7 @@ class ReturnAnomalyHandler(AbstractSectionHandler):
             returned = float(d.get("returned", 0))
             pct = round(returned / ordered * 100, 1) if ordered > 0 else 0.0
             groups[key].append({"store": d.get("store", ""), "ordered": ordered,
-                                 "returned": returned, "return_pct": pct})
+                                "returned": returned, "return_pct": pct})
 
         anomalies = []
         batch_summaries = []
@@ -36,13 +37,13 @@ class ReturnAnomalyHandler(AbstractSectionHandler):
             batch_anomalies = [r for r in records if r["return_pct"] > threshold]
             for a in batch_anomalies:
                 anomalies.append({"store": a["store"], "supplier": supplier, "batch": batch,
-                    "return_pct": a["return_pct"], "peer_avg_pct": round(avg, 1),
-                    "threshold": round(threshold, 1),
-                    "severity": "HIGH" if a["return_pct"] > threshold * 2 else "MEDIUM",
-                    "action": "总部介入调查"})
+                                  "return_pct": a["return_pct"], "peer_avg_pct": round(avg, 1),
+                                  "threshold": round(threshold, 1),
+                                  "severity": "HIGH" if a["return_pct"] > threshold * 2 else "MEDIUM",
+                                  "action": "总部介入调查"})
             batch_summaries.append({"supplier": supplier, "batch": batch,
-                "store_count": len(records), "avg_return_pct": round(avg, 1),
-                "anomaly_count": len(batch_anomalies)})
+                                    "store_count": len(records), "avg_return_pct": round(avg, 1),
+                                    "anomaly_count": len(batch_anomalies)})
 
         return self.ok(request, data={"anomalies": anomalies, "batch_summaries": batch_summaries,
-            "total_deliveries": len(deliveries), "total_anomalies": len(anomalies)}, started=started)
+                                      "total_deliveries": len(deliveries), "total_anomalies": len(anomalies)}, started=started)  # noqa: E501

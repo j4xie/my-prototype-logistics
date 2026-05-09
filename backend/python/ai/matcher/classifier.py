@@ -29,7 +29,7 @@ async def _to_thread(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, partial(fn, *args, **kwargs))
 
-from ai.dto import CandidateIntentDto, MatchMethod
+from ai.dto import CandidateIntentDto, MatchMethod  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

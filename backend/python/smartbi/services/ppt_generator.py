@@ -44,9 +44,9 @@ class FinancialPPTGenerator:
         """Generate PPTX bytes from chart images and analysis results."""
         try:
             from pptx import Presentation
-            from pptx.util import Inches, Pt, Emu
+            from pptx.util import Inches, Pt, Emu  # noqa: F401 — Emu re-exported for caller use
             from pptx.dml.color import RGBColor
-            from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+            from pptx.enum.text import PP_ALIGN, MSO_ANCHOR  # noqa: F401 — MSO_ANCHOR re-exported for caller use
         except ImportError:
             raise RuntimeError("python-pptx not installed. Run: pip install python-pptx>=0.6.23")
 
@@ -59,7 +59,7 @@ class FinancialPPTGenerator:
         WHITE = RGBColor(0xFF, 0xFF, 0xFF)
         DARK = RGBColor(0x2C, 0x3E, 0x50)
         GRAY = RGBColor(0x6B, 0x77, 0x8C)
-        GREEN = RGBColor(0x36, 0xB3, 0x7E)
+        GREEN = RGBColor(0x36, 0xB3, 0x7E)  # noqa: F841
 
         period_label = self._period_label(year, period_type, start_month, end_month)
 

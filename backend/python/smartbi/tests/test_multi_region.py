@@ -20,7 +20,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.structure_detector import StructureDetector
+from services.structure_detector import StructureDetector  # noqa: E402
 
 
 def _make_xlsx(rows: List[List[Any]]) -> bytes:

@@ -11,6 +11,7 @@ from ..financial_data_normalizer import ColumnMapping
 
 logger = logging.getLogger(__name__)
 
+
 class ChartBuilderRegistry:
     """Registry for financial chart builders. Auto-discovers builder subclasses."""
 
@@ -113,7 +114,7 @@ class ChartBuilderRegistry:
                     if (isinstance(attr, type) and
                         issubclass(attr, AbstractFinancialChartBuilder) and
                         attr is not AbstractFinancialChartBuilder and
-                        hasattr(attr, 'chart_type') and attr.chart_type):
+                            hasattr(attr, 'chart_type') and attr.chart_type):
                         builder = attr()
                         self.register(builder)
             except Exception as e:

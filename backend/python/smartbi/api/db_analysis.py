@@ -172,7 +172,7 @@ async def analyze_from_db(request: AnalyzeRequest):
 
                         charts.append({
                             "type": chart_type,
-                            "title": f"{primary_measure.standard_name or primary_measure.original_name} by {dim.standard_name or dim.original_name}",
+                            "title": f"{primary_measure.standard_name or primary_measure.original_name} by {dim.standard_name or dim.original_name}",  # noqa: E501
                             "xAxisLabel": dim.standard_name or dim.original_name,
                             "yAxisLabel": primary_measure.standard_name or primary_measure.original_name,
                             "data": {

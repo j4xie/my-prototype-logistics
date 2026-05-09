@@ -11,9 +11,9 @@ import logging
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.analysis_persistence import get_persistence_service
-from database.connection import is_postgres_enabled, get_db_context
-from database.models import SmartBiPgAnalysisResult
+from services.analysis_persistence import get_persistence_service  # noqa: E402
+from database.connection import is_postgres_enabled, get_db_context  # noqa: E402
+from database.models import SmartBiPgAnalysisResult  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

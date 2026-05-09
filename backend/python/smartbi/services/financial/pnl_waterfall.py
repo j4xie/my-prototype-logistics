@@ -101,13 +101,13 @@ class PnlWaterfallBuilder(AbstractFinancialChartBuilder):
         # Add individual cost items
         for e in entries:
             if e['type'] == 'cost':
-                waterfall_items.append({"name": e['name'], "value": -abs(e['value']), "type": "cost", "is_total": False})
+                waterfall_items.append({"name": e['name'], "value": -abs(e['value']), "type": "cost", "is_total": False})  # noqa: E501
 
         waterfall_items.append({"name": "毛利润", "value": gross_profit, "type": "profit", "is_total": True})
 
         for e in entries:
             if e['type'] == 'expense':
-                waterfall_items.append({"name": e['name'], "value": -abs(e['value']), "type": "expense", "is_total": False})
+                waterfall_items.append({"name": e['name'], "value": -abs(e['value']), "type": "expense", "is_total": False})  # noqa: E501
 
         if tax_total > 0:
             waterfall_items.append({"name": "税金及附加", "value": -tax_total, "type": "tax", "is_total": False})

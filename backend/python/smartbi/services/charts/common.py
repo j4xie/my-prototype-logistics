@@ -349,7 +349,7 @@ def make_enhanced_tooltip(trigger: str = "axis") -> dict:
         "extraCssText": "box-shadow: 0 4px 20px rgba(0,0,0,0.12);",
         "confine": True,
         "valueFormatter": "__FMT__thousands_sep",
-        **({"axisPointer": {"type": "shadow", "shadowStyle": {"color": "rgba(37,99,235,0.06)"}}} if trigger == "axis" else {}),
+        **({"axisPointer": {"type": "shadow", "shadowStyle": {"color": "rgba(37,99,235,0.06)"}}} if trigger == "axis" else {}),  # noqa: E501
     }
 
 

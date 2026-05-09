@@ -60,9 +60,9 @@ router = APIRouter()
 
 # Mirror Java InventoryHealthAnalysisServiceImpl L58-83
 
-_SCALE             = Decimal("0.0001")     # SCALE=4 (Java line 58)
-_DISPLAY_SCALE     = Decimal("0.01")       # DISPLAY_SCALE=2 (Java line 59)
-_QUANTIZE_HALF_UP  = ROUND_HALF_UP         # Java RoundingMode.HALF_UP (line 60)
+_SCALE = Decimal("0.0001")     # SCALE=4 (Java line 58)
+_DISPLAY_SCALE = Decimal("0.01")       # DISPLAY_SCALE=2 (Java line 59)
+_QUANTIZE_HALF_UP = ROUND_HALF_UP         # Java RoundingMode.HALF_UP (line 60)
 
 # T-INV-1 alert thresholds — 4 named helpers + 4 inline (see §3.6)
 #
@@ -78,40 +78,40 @@ _QUANTIZE_HALF_UP  = ROUND_HALF_UP         # Java RoundingMode.HALF_UP (line 60)
 # Java getHealthScore (§3.9) inline arithmetic is the trap site.
 #
 # Named helper thresholds:
-_TURNOVER_RED          = Decimal("6")      # Java line 64, regular dir (lower=worse)
-_TURNOVER_YELLOW       = Decimal("12")     # Java line 66
-_INVENTORY_DAYS_RED    = Decimal("60")     # Java L1308 inline new BigDecimal("60"), INVERSE
+_TURNOVER_RED = Decimal("6")      # Java line 64, regular dir (lower=worse)
+_TURNOVER_YELLOW = Decimal("12")     # Java line 66
+_INVENTORY_DAYS_RED = Decimal("60")     # Java L1308 inline new BigDecimal("60"), INVERSE
 _INVENTORY_DAYS_YELLOW = Decimal("30")     # Java L1311 inline, INVERSE
-_EXPIRY_RISK_RED       = Decimal("15")     # Java line 68, INVERSE (strict `>`)
-_EXPIRY_RISK_YELLOW    = Decimal("10")     # Java line 70, INVERSE (strict `>`)
-_LOSS_RATE_RED         = Decimal("5")      # Java line 72, INVERSE (strict `>`)
-_LOSS_RATE_YELLOW      = Decimal("2")      # Java line 74, INVERSE (strict `>`)
+_EXPIRY_RISK_RED = Decimal("15")     # Java line 68, INVERSE (strict `>`)
+_EXPIRY_RISK_YELLOW = Decimal("10")     # Java line 70, INVERSE (strict `>`)
+_LOSS_RATE_RED = Decimal("5")      # Java line 72, INVERSE (strict `>`)
+_LOSS_RATE_YELLOW = Decimal("2")      # Java line 74, INVERSE (strict `>`)
 
 # Aging segment boundaries (days) — Java line 77-79
-_AGING_FRESH    = 30   # 0-30 days bucket upper bound
-_AGING_NORMAL   = 60   # 31-60 days bucket upper bound
-_AGING_WARNING  = 90   # 61-90 days bucket upper bound; ageDays > 90 = "90天以上"
+_AGING_FRESH = 30   # 0-30 days bucket upper bound
+_AGING_NORMAL = 60   # 31-60 days bucket upper bound
+_AGING_WARNING = 90   # 61-90 days bucket upper bound; ageDays > 90 = "90天以上"
 
 # Expiry warning — Java line 82-83
 _DEFAULT_EXPIRY_WARNING_DAYS = 30
-_HIGH_RISK_EXPIRY_DAYS       = 7
+_HIGH_RISK_EXPIRY_DAYS = 7
 
 # Slow-moving rate inline thresholds (Java L747-751, getAgingMetrics ternary)
 # NOT a named helper, inline in _get_aging_metrics; constants exported for PR-C boundary tests
-_SLOW_MOVING_RED_INLINE    = Decimal("20")  # > 20% RED
+_SLOW_MOVING_RED_INLINE = Decimal("20")  # > 20% RED
 _SLOW_MOVING_YELLOW_INLINE = Decimal("10")  # > 10% YELLOW
 
 # Health score overall alert (Java L903-910, getHealthScore inline)
 # 用于 PR-B health score 总体 alert
-_HEALTH_SCORE_GREEN_MIN  = Decimal("80")    # >= 80 GREEN
+_HEALTH_SCORE_GREEN_MIN = Decimal("80")    # >= 80 GREEN
 _HEALTH_SCORE_YELLOW_MIN = Decimal("60")    # >= 60 YELLOW
 
 # Per-batch ranking inline thresholds (Java L398-404 + L799-805)
 # `getExpiringBatchesRanking` per-row alert
-_EXPIRING_RANKING_RED_DAYS    = 7    # daysUntilExpiry <= 7 RED
+_EXPIRING_RANKING_RED_DAYS = 7    # daysUntilExpiry <= 7 RED
 _EXPIRING_RANKING_YELLOW_DAYS = 15   # daysUntilExpiry <= 15 YELLOW
 # `getLongAgingBatchesRanking` per-row alert
-_LONG_AGING_RANKING_RED_DAYS    = 120   # ageDays > 120 RED
+_LONG_AGING_RANKING_RED_DAYS = 120   # ageDays > 120 RED
 _LONG_AGING_RANKING_YELLOW_DAYS = 90    # ageDays > 90 YELLOW (uses AGING_WARNING constant)
 
 
@@ -189,7 +189,7 @@ async def _query_expiring_batches(
 ) -> list[dict]:
     """Mirror Java MaterialBatchRepository.findExpiringBatches (L173-177).
 
-    @Query JPQL `WHERE m.factoryId = :factoryId AND m.expireDate BETWEEN CURRENT_DATE AND :warningDate ORDER BY m.expireDate ASC`
+    @Query JPQL `WHERE m.factoryId = :factoryId AND m.expireDate BETWEEN CURRENT_DATE AND :warningDate ORDER BY m.expireDate ASC`  # noqa: E501
     — **YES ORDER BY** (single col `expire_date ASC`). Python mirror exact, NO secondary id.
 
     ⚠️ Java side `CURRENT_DATE` = SQL function (server time at query exec). Python

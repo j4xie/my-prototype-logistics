@@ -515,7 +515,7 @@ class InsightGenerator:
         return ds.is_placeholder_col(name)
 
     async def _call_llm(self, prompt, system_role=None, enable_thinking=False,
-                         max_tokens=2500):
+                        max_tokens=2500):
         return await llm.call_llm(
             prompt, system_role, enable_thinking=enable_thinking,
             max_tokens=max_tokens, model_override=self.model_override,

@@ -18,11 +18,11 @@ if sys.platform == 'win32':
 sys.path.insert(0, str(Path(__file__).parent.parent))
 os.chdir(Path(__file__).parent.parent)
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 load_dotenv()
 
-import pandas as pd
-from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth
+import pandas as pd  # noqa: E402
+from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth  # noqa: E402
 
 
 async def quick_test_file(

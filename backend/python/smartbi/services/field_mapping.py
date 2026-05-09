@@ -367,7 +367,7 @@ class FieldMappingService:
             1 for r in results
             if r.mapping_source in (MappingSource.EXACT_MATCH, MappingSource.SYNONYM_MATCH)
         )
-        logger.info(f"Field mapping complete: dictionary_matches={dict_matches}, inferred={len(results) - dict_matches}")
+        logger.info(f"Field mapping complete: dictionary_matches={dict_matches}, inferred={len(results) - dict_matches}")  # noqa: E501
 
         return results
 

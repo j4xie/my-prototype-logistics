@@ -271,8 +271,8 @@ class FoodContextBridge:
                 if isinstance(ner_result, list):
                     seen = set()
                     for ent in ner_result[:30]:
-                        ent_text = ent.text if hasattr(ent, 'text') else (ent.get('entity', '') if isinstance(ent, dict) else str(ent))
-                        ent_type = ent.label if hasattr(ent, 'label') else (ent.get('type', '') if isinstance(ent, dict) else '')
+                        ent_text = ent.text if hasattr(ent, 'text') else (ent.get('entity', '') if isinstance(ent, dict) else str(ent))  # noqa: E501
+                        ent_type = ent.label if hasattr(ent, 'label') else (ent.get('type', '') if isinstance(ent, dict) else '')  # noqa: E501
                         if ent_text and ent_text not in seen:
                             seen.add(ent_text)
                             entities.append({"entity": ent_text, "type": ent_type})
@@ -292,7 +292,7 @@ class FoodContextBridge:
                     for doc in kb_results:
                         if isinstance(doc, dict):
                             text = doc.get("content", doc.get("text", ""))
-                            category = doc.get("category", "")
+                            category = doc.get("category", "")  # noqa: F841
                             if text:
                                 text_truncated = text[:200]
                                 if "标准" in text or "GB" in text or "法规" in text:

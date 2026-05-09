@@ -13,7 +13,7 @@ if sys.platform == 'win32':
 # Add smartbi to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.data_cleaner import DataCleaner
+from services.data_cleaner import DataCleaner  # noqa: E402
 
 
 async def test_auto_learning():

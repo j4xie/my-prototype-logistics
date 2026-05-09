@@ -39,7 +39,7 @@ SUMMARY_CHAR_BUDGET = 750
 TTL_SECONDS = 3600  # 1 hour
 
 
-import re
+import re  # noqa: E402
 
 # Apr 26 2026 H1 (prompt injection defense): patterns to scrub from LLM output
 # before storing as parent_answer_summary. parent_answer_summary is later
@@ -226,7 +226,7 @@ class ChatSessionService:
                         updated_at            = NOW(),
                         expires_at            = NOW() + INTERVAL '1 hour',
                         -- v3: append new turn (truncation in next UPDATE).
-                        turns_history = COALESCE(smart_bi_chat_session.turns_history, '[]'::jsonb) || EXCLUDED.turns_history
+                        turns_history = COALESCE(smart_bi_chat_session.turns_history, '[]'::jsonb) || EXCLUDED.turns_history  # noqa: E501
                     """,
                     session_id, factory_id, user_id,
                     parent_query, summary,

@@ -276,7 +276,7 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
             })
 
             # Determine color based on growth
-            growth_val = cat['growth']
+            growth_val = cat['growth']  # noqa: F841
             if best_cat[0] and cat['name'] == best_cat[0]:
                 line_color = COLORS['success']  # green
                 area_color = "rgba(54,179,126,0.15)"

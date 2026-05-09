@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Core modules (always available)
-from . import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb, chat, db_analysis, cross_sheet, yoy, statistical, analysis_cache, ai_proxy, benchmark, finance_extract, restaurant_analytics, production_ai, whatif
+from . import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb, chat, db_analysis, cross_sheet, yoy, statistical, analysis_cache, ai_proxy, benchmark, finance_extract, restaurant_analytics, production_ai, whatif  # noqa: E402,E501
 
 __all__ = [
     "excel", "field", "metrics", "forecast", "insight", "chart",

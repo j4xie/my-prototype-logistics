@@ -136,7 +136,7 @@ class MultiDimensionResponse(BaseModel):
 # Data Store (In-memory cache for demo, replace with proper storage)
 # ============================================================================
 
-from cachetools import TTLCache
+from cachetools import TTLCache  # noqa: E402
 
 _sheet_data_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 
@@ -598,7 +598,7 @@ async def health_check():
 def _generate_bar_chart_config(
     dimension: str,
     measures: List[str],
-    data: 'pd.DataFrame'
+    data: 'pd.DataFrame'  # noqa: F821
 ) -> Dict[str, Any]:
     """Generate bar chart configuration for drill-down results"""
 

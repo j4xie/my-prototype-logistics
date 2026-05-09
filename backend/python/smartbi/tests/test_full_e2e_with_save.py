@@ -30,12 +30,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 os.chdir(Path(__file__).parent.parent)
 
 # Load environment
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 load_dotenv()
 
-import pandas as pd
-from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth
-from services.analysis_cache import get_cache_manager
+import pandas as pd  # noqa: E402
+from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth  # noqa: E402
+from services.analysis_cache import get_cache_manager  # noqa: E402
 
 
 async def test_full_e2e():

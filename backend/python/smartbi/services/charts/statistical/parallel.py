@@ -18,7 +18,7 @@ class ParallelChartStrategy(BaseChartStrategy):
         series_field: Optional[str] = None,
         options: Optional[dict] = None,
     ) -> dict:
-        palette = get_palette()["charts"]
+        palette = get_palette()["charts"]  # noqa: F841
 
         if not y_fields:
             y_fields = df.select_dtypes(include=['number']).columns.tolist()[:8]
@@ -32,7 +32,7 @@ class ParallelChartStrategy(BaseChartStrategy):
             vals = pd.to_numeric(df[col], errors='coerce').dropna()
             if len(vals) == 0:
                 continue
-            parallel_axis.append({"dim": i, "name": col, "min": round(float(vals.min()), 2), "max": round(float(vals.max()), 2)})
+            parallel_axis.append({"dim": i, "name": col, "min": round(float(vals.min()), 2), "max": round(float(vals.max()), 2)})  # noqa: E501
 
         if len(parallel_axis) < 3:
             return empty_chart_config(None)
@@ -50,8 +50,8 @@ class ParallelChartStrategy(BaseChartStrategy):
             "parallelAxis": parallel_axis,
             "parallel": {
                 "left": "5%", "right": "13%", "bottom": "10%", "top": "10%",
-                "parallelAxisDefault": {"type": "value", "nameLocation": "end", "nameGap": 20, "nameTextStyle": {"fontSize": 11}},
+                "parallelAxisDefault": {"type": "value", "nameLocation": "end", "nameGap": 20, "nameTextStyle": {"fontSize": 11}},  # noqa: E501
             },
             "tooltip": {"trigger": "item"},
-            "series": [{"type": "parallel", "lineStyle": {"width": 2, "opacity": 0.5}, "data": data_rows, "smooth": True}],
+            "series": [{"type": "parallel", "lineStyle": {"width": 2, "opacity": 0.5}, "data": data_rows, "smooth": True}],  # noqa: E501
         }

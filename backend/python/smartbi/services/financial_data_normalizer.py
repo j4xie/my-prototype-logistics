@@ -8,6 +8,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ColumnMapping:
     """Detected column role mapping."""
@@ -21,6 +22,7 @@ class ColumnMapping:
     label_col: Optional[str] = None                            # First text column (row label)
     year: int = 2026
     data_layout: str = "wide"  # "wide" (months as columns) or "long" (month as row values)
+
 
 class FinancialDataNormalizer:
     """Detect column roles and normalize raw Excel data for financial charts."""

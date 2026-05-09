@@ -210,7 +210,7 @@ async def nl_to_sql(request: NL2SQLRequest) -> NL2SQLResponse:
     if not field_definitions:
         return NL2SQLResponse(
             success=False,
-            message=f"No field definitions found for upload_id={request.upload_id}. Please upload and parse data first.",
+            message=f"No field definitions found for upload_id={request.upload_id}. Please upload and parse data first.",  # noqa: E501
         )
 
     # Apr 25 (D2.B2): cache lookup BEFORE invoking the LLM-backed generator.

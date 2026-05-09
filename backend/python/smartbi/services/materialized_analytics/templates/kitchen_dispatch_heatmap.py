@@ -92,7 +92,7 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
         store_col = find_store_col(cols)
 
         def _sum(col):
-            if col is None: return 0.0
+            if col is None: return 0.0  # noqa: E701
             try:
                 return float(df.select(
                     pl.col(col).cast(pl.Float64, strict=False).fill_null(0.0).sum()
@@ -148,7 +148,7 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
         # which are system fee items, not real dishes. Without this filter the
         # "Top 1 菜品" KPI sometimes surfaces 打包盒 on takeout-heavy uploads.
         top_dishes = filter_placeholder_rows(top_dishes, name_key="dish",
-                                              placeholders=POS_PRODUCT_PLACEHOLDERS)
+                                             placeholders=POS_PRODUCT_PLACEHOLDERS)
 
         # By dispatch plan (档口)
         by_plan: List[Dict[str, Any]] = []
@@ -170,7 +170,7 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
                     "dish_count": int(r["dish_count"]),
                     "amount": round(float(r.get("amount") or 0.0), 2) if amount_col else None,
                     "ordered_share_pct": round(float(r.get("ordered") or 0.0) / total_ordered * 100, 2)
-                        if total_ordered > 0 else 0.0,
+                    if total_ordered > 0 else 0.0,
                 }
                 for r in rows
             ]

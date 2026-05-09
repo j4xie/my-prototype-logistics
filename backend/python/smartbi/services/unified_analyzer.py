@@ -98,7 +98,7 @@ class MetricResult:
     success: bool                    # Whether calculation succeeded
     formatted: str                   # Human-readable formatted value
     formula: str = ""                # Calculation formula
-    breakdown: Optional[Dict] = None # Breakdown by dimension
+    breakdown: Optional[Dict] = None  # Breakdown by dimension
     trend: Optional[str] = None      # up, down, stable
     change_rate: Optional[float] = None  # Change rate if applicable
     category: str = "custom"         # Metric category
@@ -226,7 +226,7 @@ class AnalysisOptions:
     depth: AnalysisDepth = AnalysisDepth.STANDARD
     max_charts: int = 5              # Maximum charts to generate
     max_insights: int = 5            # Maximum insights to generate
-    include_predictions: bool = True # Whether to include predictions
+    include_predictions: bool = True  # Whether to include predictions
     prediction_periods: int = 3      # Periods to predict
     language: str = "zh"             # Output language (zh, en)
     # Cache options
@@ -385,7 +385,7 @@ class UnifiedAnalyzer:
             df = None
             context_info = None
             from_cache = False
-            from_analysis_cache = False
+            from_analysis_cache = False  # noqa: F841
 
             if options.use_cache and not options.force_refresh:
                 cached = self.cache_manager.get_cached(file_bytes, sheet_index, include_analysis=True)
@@ -1462,7 +1462,7 @@ class UnifiedAnalyzer:
                 title="分部预实对比分析"
             )
 
-            logger.info(f"[BudgetInjection] build_result success={build_result.get('success')}, keys={list(build_result.keys())}")
+            logger.info(f"[BudgetInjection] build_result success={build_result.get('success')}, keys={list(build_result.keys())}")  # noqa: E501
             if build_result.get("success"):
                 return ChartConfig(
                     chart_type="budget_comparison",

@@ -131,7 +131,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
         names = {f.name for f in schema.fields}
         has_card = any(c in names for c in _CARD_ID_CANDIDATES)
         has_balance = any(c in names for c in _BALANCE_CANDIDATES) or \
-                      any(c in names for c in _TOTAL_RECHARGE_CANDIDATES)
+        any(c in names for c in _TOTAL_RECHARGE_CANDIDATES)  # noqa: E122
         # Must have card ID (proves member-level) + balance/recharge (proves card data)
         # The 商品信息 check rules out order-level POS data that happens to have 会员 field
         not_order_level = "商品信息" not in names and "账单号" not in names
@@ -148,7 +148,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
         recharge_col = next((c for c in _TOTAL_RECHARGE_CANDIDATES if c in cols), None)
         gift_col = next((c for c in _GIFT_AMOUNT_CANDIDATES if c in cols), None)
         name_col = next((c for c in _MEMBER_NAME_CANDIDATES if c in cols), None)
-        open_date_col = next((c for c in _OPEN_DATE_CANDIDATES if c in cols), None)
+        open_date_col = next((c for c in _OPEN_DATE_CANDIDATES if c in cols), None)  # noqa: F841
         gender_col = next((c for c in _GENDER_CANDIDATES if c in cols), None)
 
         if card_col is None:
@@ -190,7 +190,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
                     "level": str(r.get(level_col) or "<空>"),
                     "members": int(r["members"]),
                     "share_pct": round(r["members"] / total_members * 100, 2)
-                        if total_members else 0.0,
+                    if total_members else 0.0,
                     "total_balance": round(float(r.get("total_balance") or 0.0), 2) if balance_col else None,
                     "total_recharge": round(float(r.get("total_recharge") or 0.0), 2) if recharge_col else None,
                 }
@@ -213,7 +213,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
                     "status": str(r.get(status_col) or "<空>"),
                     "members": int(r["members"]),
                     "share_pct": round(r["members"] / total_members * 100, 2)
-                        if total_members else 0.0,
+                    if total_members else 0.0,
                 }
                 for r in rows
             ]
@@ -285,7 +285,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
                         "bin": label,
                         "members": int(r["members"]),
                         "members_share_pct": round(r["members"] / total_members * 100, 2)
-                            if total_members else 0.0,
+                        if total_members else 0.0,
                         "total_balance": round(float(r.get("total") or 0.0), 2),
                     })
                 else:
@@ -375,7 +375,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
                     "gender": str(r.get(gender_col) or "<空>"),
                     "members": int(r["members"]),
                     "share_pct": round(r["members"] / total_members * 100, 2)
-                        if total_members else 0.0,
+                    if total_members else 0.0,
                 }
                 for r in rows
             ]
@@ -451,7 +451,7 @@ class MemberDeepAnalytics(AnalysisTemplate):
                     "radius": ["30%", "65%"],
                     "data": [
                         {"name": l["level"], "value": l["members"]}
-                        for l in by_level if l["members"] > 0
+                        for l in by_level if l["members"] > 0  # noqa: E741
                     ],
                     "label": {"formatter": "{b}: {d}%"},
                 }],

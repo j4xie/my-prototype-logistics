@@ -8,6 +8,7 @@ from .financial.base import _sanitize_for_json
 
 logger = logging.getLogger(__name__)
 
+
 class FinancialDashboardService:
     def __init__(self):
         self.normalizer = FinancialDataNormalizer()

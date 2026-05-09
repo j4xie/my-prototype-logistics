@@ -2,9 +2,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.store_kpi_dashboard import StoreKpiDashboardHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id="S-001", store_name="测试店", params=params)
+
 
 def test_full_dashboard():
     resp = StoreKpiDashboardHandler().compute(
@@ -18,11 +20,13 @@ def test_full_dashboard():
     assert len(d["dimensions"]) == 3
     assert d["overall_health"] in ("GOOD", "WARNING", "CRITICAL")
 
+
 def test_partial_data():
     resp = StoreKpiDashboardHandler().compute(
         _req({"financial": {"revenue": 300000}}), {})
     assert resp.status.value == "ok"
     assert len(resp.data["dimensions"]) >= 1
+
 
 def test_skipped_empty():
     resp = StoreKpiDashboardHandler().compute(_req({}), {})

@@ -151,7 +151,7 @@ class RefundAnalysis(AnalysisTemplate):
         # Spec §4.3: drive refund cluster into root-cause action
         action_rec = format_action_rec(
             object_target=f"主要异常状态「{top_status}」 ({top_count} 笔)" if by_status
-                else f"退单 / 撤单 {refund_count} 笔",
+            else f"退单 / 撤单 {refund_count} 笔",
             benefit_range="复盘高频退单原因 + SOP 修订可降退单率 0.5-1.5 个百分点",
             prerequisite="按状态调取退单详情 + 客诉清单 + 服务员复述确认改单",
             timeline="本周内",

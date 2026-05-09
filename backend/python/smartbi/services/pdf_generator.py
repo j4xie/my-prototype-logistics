@@ -8,7 +8,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 # Chart type display names (shared with ppt_generator)
-from smartbi.services.ppt_generator import CHART_DISPLAY_NAMES
+from smartbi.services.ppt_generator import CHART_DISPLAY_NAMES  # noqa: E402
 
 
 class FinancialPDFGenerator:
@@ -26,7 +26,7 @@ class FinancialPDFGenerator:
             from reportlab.lib.pagesizes import A4, landscape
             from reportlab.lib.units import inch, cm
             from reportlab.lib.colors import HexColor
-            from reportlab.platypus import (
+            from reportlab.platypus import (  # noqa: F401 — KeepTogether re-exported for caller use
                 SimpleDocTemplate, Paragraph, Spacer, Image as RLImage,
                 Table, TableStyle, PageBreak, KeepTogether
             )

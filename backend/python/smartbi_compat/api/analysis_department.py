@@ -18,23 +18,23 @@ from fastapi import APIRouter, Depends, Query
 
 logger = logging.getLogger(__name__)
 
-from smartbi_compat.api.analysis_finance import (
+from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _get_period_key,         # post-PR #30 calendar-year fix (Rule 2 compliant)
     _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
     _to_decimal,             # safe Decimal coercion
     _utc_now_iso,            # ISO timestamp for generatedAt (volatile, stripped)
 )
-from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
+from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 
 # T1 lock — inline const, NOT alert_thresholds.py 80 (different concept for /alerts)
-_DEPARTMENT_TARGET_COMPLETION_RED    = Decimal("60")
+_DEPARTMENT_TARGET_COMPLETION_RED = Decimal("60")
 _DEPARTMENT_TARGET_COMPLETION_YELLOW = Decimal("85")
 
 # SCALE constants matching Java DepartmentAnalysisServiceImpl line 52-54
-_SCALE             = Decimal("0.0001")    # SCALE=4 中间精度
-_DISPLAY_SCALE     = Decimal("0.01")      # DISPLAY_SCALE=2 输出
-_QUANTIZE_HALF_UP  = ROUND_HALF_UP
+_SCALE = Decimal("0.0001")    # SCALE=4 中间精度
+_DISPLAY_SCALE = Decimal("0.01")      # DISPLAY_SCALE=2 输出
+_QUANTIZE_HALF_UP = ROUND_HALF_UP
 
 
 router = APIRouter()
@@ -266,7 +266,7 @@ def _determine_quadrant(
       Q4 = high output, low cost   (明星部门)
     """
     avg_sales = Decimal("0")
-    avg_cost  = Decimal("0")
+    avg_cost = Decimal("0")
     count = 0
 
     # iteration over aggregated_data.values() — LinkedHashMap insertion order
@@ -275,7 +275,7 @@ def _determine_quadrant(
             avg_sales += (agg["salesAmount"] / Decimal(agg["headcount"])).quantize(
                 _SCALE, rounding=_QUANTIZE_HALF_UP
             )
-            avg_cost  += (agg["costAmount"] / Decimal(agg["headcount"])).quantize(
+            avg_cost += (agg["costAmount"] / Decimal(agg["headcount"])).quantize(
                 _SCALE, rounding=_QUANTIZE_HALF_UP
             )
             count += 1
@@ -284,12 +284,12 @@ def _determine_quadrant(
         avg_sales = (avg_sales / Decimal(count)).quantize(
             _SCALE, rounding=_QUANTIZE_HALF_UP
         )
-        avg_cost  = (avg_cost / Decimal(count)).quantize(
+        avg_cost = (avg_cost / Decimal(count)).quantize(
             _SCALE, rounding=_QUANTIZE_HALF_UP
         )
 
     high_output = per_capita_sales >= avg_sales
-    high_cost   = per_capita_cost  >= avg_cost
+    high_cost = per_capita_cost >= avg_cost
 
     # Java labels mirror exactly (Java line 644-652)
     if high_output and high_cost:
@@ -479,7 +479,7 @@ async def _get_department_efficiency_matrix(
 
     chart_data = []
     total_per_capita_sales = Decimal("0")
-    total_per_capita_cost  = Decimal("0")
+    total_per_capita_cost = Decimal("0")
     department_count = 0
 
     for dept, agg in aggregated.items():
@@ -492,7 +492,7 @@ async def _get_department_efficiency_matrix(
             )
         else:
             per_capita_sales = Decimal("0")
-            per_capita_cost  = Decimal("0")
+            per_capita_cost = Decimal("0")
 
         # Java point LinkedHashMap put-order line 236-242
         point = {
@@ -514,7 +514,7 @@ async def _get_department_efficiency_matrix(
         chart_data.append(point)
 
         total_per_capita_sales += per_capita_sales
-        total_per_capita_cost  += per_capita_cost
+        total_per_capita_cost += per_capita_cost
         department_count += 1
 
     if department_count > 0:
@@ -526,7 +526,7 @@ async def _get_department_efficiency_matrix(
         ).quantize(_SCALE, rounding=_QUANTIZE_HALF_UP)
     else:
         avg_per_capita_sales = Decimal("0")
-        avg_per_capita_cost  = Decimal("0")
+        avg_per_capita_cost = Decimal("0")
 
     options = {
         "quadrantLines": {
@@ -653,10 +653,10 @@ async def _get_department_analysis(
     Java HashMap hash-iter order may differ; sister specs (cost / profit / payable
     / receivable) empirically stable across JVM restarts.
     """
-    ranking          = await _get_department_ranking          (factory_id, start_date, end_date)
-    completion_rates = await _get_department_completion_rates (factory_id, start_date, end_date)
+    ranking = await _get_department_ranking(factory_id, start_date, end_date)
+    completion_rates = await _get_department_completion_rates(factory_id, start_date, end_date)
     efficiency_matrix = await _get_department_efficiency_matrix(factory_id, start_date, end_date)
-    trend_comparison = await _get_department_trend_comparison (factory_id, start_date, end_date, "WEEK")
+    trend_comparison = await _get_department_trend_comparison(factory_id, start_date, end_date, "WEEK")
 
     # Top-level data key order per F999 golden (Jackson HashMap hash-iter order):
     # [completionRates, efficiencyMatrix, dateRange, generatedAt, ranking, trendComparison]

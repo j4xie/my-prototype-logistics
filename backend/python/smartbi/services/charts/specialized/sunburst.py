@@ -46,6 +46,6 @@ class SunburstChartStrategy(BaseChartStrategy):
         data = build_tree(df, hierarchy_cols, value_field)
 
         return {
-            "series": [{"type": "sunburst", "data": data, "radius": ["15%", "80%"], "label": {"rotate": "radial"}, "emphasis": {"focus": "ancestor"}}],
+            "series": [{"type": "sunburst", "data": data, "radius": ["15%", "80%"], "label": {"rotate": "radial"}, "emphasis": {"focus": "ancestor"}}],  # noqa: E501
             "tooltip": {"trigger": "item", "formatter": "{b}: {c}"},
         }

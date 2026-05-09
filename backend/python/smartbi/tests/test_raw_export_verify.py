@@ -9,7 +9,7 @@ import io
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.raw_exporter import RawExporter
+from services.raw_exporter import RawExporter  # noqa: E402
 
 
 def verify_completeness():
@@ -56,9 +56,9 @@ def verify_completeness():
 
         # 统计MD中的数据行数（排除表头和分隔符）
         md_lines = md_str.split('\n')
-        md_table_rows = [l for l in md_lines if l.startswith('|') and '---' not in l]
+        md_table_rows = [l for l in md_lines if l.startswith('|') and '---' not in l]  # noqa: E741
         # 减去表头行
-        md_data_rows = len([l for l in md_table_rows if not l.startswith('| 行号')]) - 1  # 减去列名行
+        md_data_rows = len([l for l in md_table_rows if not l.startswith('| 行号')]) - 1  # 减去列名行  # noqa: E741
 
         print(f"    MD总行数: {len(md_lines)}")
         print(f"    表格数据行: {md_data_rows}")

@@ -105,7 +105,7 @@ class CapabilityCalculator:
         has_merge_status = await self._check_merge_status_column()
 
         merge_filter = (
-            "AND (u.merge_status IS NULL OR (u.merge_status != 'SUPERSEDED' AND u.merge_status NOT LIKE 'MERGED_INTO_%'))"
+            "AND (u.merge_status IS NULL OR (u.merge_status != 'SUPERSEDED' AND u.merge_status NOT LIKE 'MERGED_INTO_%'))"  # noqa: E501
             if has_merge_status
             else ""
         )

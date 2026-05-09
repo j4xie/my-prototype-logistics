@@ -12,12 +12,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 os.chdir(Path(__file__).parent.parent)
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 load_dotenv()
 
-import pandas as pd
-from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth
-from services.analysis_cache import get_cache_manager
+import pandas as pd  # noqa: E402
+from services.unified_analyzer import UnifiedAnalyzer, AnalysisOptions, AnalysisDepth  # noqa: E402
+from services.analysis_cache import get_cache_manager  # noqa: E402
 
 
 async def main():
@@ -121,7 +121,7 @@ async def main():
         for entry in sorted(cache_dir.iterdir()):
             if entry.is_dir():
                 files = list(entry.glob("*"))
-                total_size = sum(f.stat().st_size for f in files)
+                total_size = sum(f.stat().st_size for f in files)  # noqa: F841
                 print(f"  {entry.name}/")
                 for f in files:
                     print(f"    - {f.name}: {f.stat().st_size/1024:.1f}KB")

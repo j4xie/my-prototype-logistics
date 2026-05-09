@@ -26,11 +26,12 @@ import numpy as np
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.excel_parser import ExcelParser
+from services.excel_parser import ExcelParser  # noqa: E402
 
 
 class TestResult:
     """Test result container"""
+
     def __init__(self, name: str):
         self.name = name
         self.passed = False

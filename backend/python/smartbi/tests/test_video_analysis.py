@@ -5,8 +5,8 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.video_efficiency_analyzer import analyze_videos
-import json
+from services.video_efficiency_analyzer import analyze_videos  # noqa: E402
+import json  # noqa: E402
 
 # 视频文件路径
 video_paths = [

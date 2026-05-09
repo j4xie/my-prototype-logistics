@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 # 尝试导入数据库仓库
 try:
-    from ..database.repository import get_repository, EfficiencyRepository
+    from ..database.repository import get_repository, EfficiencyRepository  # noqa: F401,E501
     DATABASE_AVAILABLE = True
 except ImportError:
     DATABASE_AVAILABLE = False
@@ -394,10 +394,10 @@ class SceneUnderstandingService:
             self.scene_understandings[camera_id] = understanding
 
             logger.info(f"Scene understanding completed for camera {camera_id}: "
-                       f"{len(understanding.equipment)} equipment, "
-                       f"{len(understanding.workstations)} workstations, "
-                       f"{len(understanding.zones)} zones, "
-                       f"database={self.use_database}")
+                        f"{len(understanding.equipment)} equipment, "
+                        f"{len(understanding.workstations)} workstations, "
+                        f"{len(understanding.zones)} zones, "
+                        f"database={self.use_database}")
 
             return understanding
 
@@ -451,7 +451,7 @@ class SceneUnderstandingService:
     "change_summary": "一句话描述主要变化（如无变化则说明）",
     "change_details": [
         {{
-            "change_type": "equipment_added/equipment_removed/equipment_moved/workstation_added/workstation_removed/workstation_modified/zone_modified/layout_changed/workflow_changed",
+            "change_type": "equipment_added/equipment_removed/equipment_moved/workstation_added/workstation_removed/workstation_modified/zone_modified/layout_changed/workflow_changed",  # noqa: E501
             "description": "变化描述",
             "old_value": "原来的状态（如适用）",
             "new_value": "现在的状态（如适用）",
@@ -463,7 +463,7 @@ class SceneUnderstandingService:
     "impact_level": "low/medium/high/critical",
     "suggested_actions": [
         {{
-            "type": "update_detection_zone/add_workstation/remove_workstation/update_counting_rule/update_workflow/alert_admin",
+            "type": "update_detection_zone/add_workstation/remove_workstation/update_counting_rule/update_workflow/alert_admin",  # noqa: E501
             "description": "建议的操作",
             "params": {{}}
         }}
@@ -607,12 +607,12 @@ class SceneUnderstandingService:
                 self.change_history[camera_id].append(change_result)
 
                 # 更新场景理解
-                new_understanding = await self.understand_scene(current_frame_base64, camera_id)
+                new_understanding = await self.understand_scene(current_frame_base64, camera_id)  # noqa: F841
                 logger.info(f"Scene updated for camera {camera_id} due to detected changes")
 
             logger.info(f"Change detection for camera {camera_id}: "
-                       f"has_changes={change_result.has_changes}, "
-                       f"confidence={change_result.confidence}")
+                        f"has_changes={change_result.has_changes}, "
+                        f"confidence={change_result.confidence}")
 
             return change_result
 
@@ -807,7 +807,7 @@ class SceneUnderstandingService:
             {
                 "camera_id": camera_id,
                 "scene_id": u.scene_id,
-                "scene_description": u.scene_description[:100] + "..." if len(u.scene_description) > 100 else u.scene_description,
+                "scene_description": u.scene_description[:100] + "..." if len(u.scene_description) > 100 else u.scene_description,  # noqa: E501
                 "equipment_count": len(u.equipment),
                 "workstation_count": len(u.workstations),
                 "zone_count": len(u.zones),

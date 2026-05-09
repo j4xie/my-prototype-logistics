@@ -60,9 +60,14 @@ jobs:
           pip install --upgrade pip
           pip install --use-deprecated=legacy-resolver -r requirements.txt || pip install -r requirements.txt
           pip install flake8 pytest pytest-asyncio pytest-cov pytest-timeout
-      - name: Flake8 lint (warnings only)
-        continue-on-error: true
-        run: flake8 --max-line-length=120 --statistics --count --exclude=venv,__pycache__,.git .
+      - name: Flake8 lint (enforced)
+        # 2026-05-09: continue-on-error removed after debt cleanup PR. Sub-1
+        # (PR #233) cleared 563 zero-risk auto-fixable; this PR cleared the
+        # remaining ~933 (E501/E402/E128/F841/F821/F811/F601/etc.) via
+        # autopep8 + targeted noqa with provenance comments. Followups can
+        # gradually replace each # noqa with a proper rewrite.
+        # grpc_stubs/ excluded — auto-generated protobuf code (per PR #217 §1).
+        run: flake8 --max-line-length=120 --statistics --count --exclude=venv,__pycache__,.git,grpc_stubs .
       - name: Run pytest
         run: |
           pytest tests/ -v --timeout=30 \

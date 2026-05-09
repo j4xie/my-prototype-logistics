@@ -20,11 +20,11 @@ _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from smartbi.services.financial_data_normalizer import FinancialDataNormalizer
-from smartbi.services.financial.registry import registry
-from smartbi.services.financial_dashboard import FinancialDashboardService
+from smartbi.services.financial_data_normalizer import FinancialDataNormalizer  # noqa: E402
+from smartbi.services.financial.registry import registry  # noqa: E402
+from smartbi.services.financial_dashboard import FinancialDashboardService  # noqa: E402
 
-from smartbi.tests.test_financial_data import (
+from smartbi.tests.test_financial_data import (  # noqa: E402
     SAMPLE_FINANCIAL_DATA,
     SAMPLE_CATEGORY_DATA,
     SAMPLE_PNL_DATA,

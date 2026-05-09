@@ -83,9 +83,9 @@ class TestStorePnlOnePager:
         assert report.headline_color == "yellow"
         assert report.store_name == "新店"
         # Revenue row present
-        assert any(l.label == "营业收入" for l in report.pnl_lines)
+        assert any(l.label == "营业收入" for l in report.pnl_lines)  # noqa: E741
         # Net profit row absent
-        assert not any(l.label == "净利润" for l in report.pnl_lines)
+        assert not any(l.label == "净利润" for l in report.pnl_lines)  # noqa: E741
 
     def test_profitable_headline_green(self) -> None:
         """Profit >= 5% net margin → green headline."""

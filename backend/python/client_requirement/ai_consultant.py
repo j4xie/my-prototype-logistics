@@ -415,7 +415,7 @@ class AIConsultant:
 8. 对话中未明确提及的字段，根据行业常识推断（confidence 较低）
 9. priority: 1-10 的数字，表示该模块对工厂的重要程度。根据对话中的使用频率和重视程度推断
 10. quickActionOrder: 按对话中提到的使用频率排列快捷操作
-11. disabledScreens 必须使用以下标准名称之一：EquipmentMonitoring, TempMonitoring, AlertHandling, OutboundManagement, InboundManagement, AttendanceManagement, WhitelistManagement, NewHireTracking, QualityInspection, QualityAnalysis, ScheduleManagement, BatchManagement, WorkerManagement, AISchedule, AIAnalysis, SmartBI, Reports, ProductionPlanning, PersonnelManagement"""
+11. disabledScreens 必须使用以下标准名称之一：EquipmentMonitoring, TempMonitoring, AlertHandling, OutboundManagement, InboundManagement, AttendanceManagement, WhitelistManagement, NewHireTracking, QualityInspection, QualityAnalysis, ScheduleManagement, BatchManagement, WorkerManagement, AISchedule, AIAnalysis, SmartBI, Reports, ProductionPlanning, PersonnelManagement"""  # noqa: E501
 
         user_prompt = f"""工厂基本信息：
 - 名称：{basic_info.get('factoryName', '未知')}
@@ -518,7 +518,7 @@ class AIConsultant:
                 "PROCESSING_BATCH": {
                     "type": "object",
                     "properties": {
-                        "actualQuantity": {"type": "number", "title": "产出数量", "required": True, "x-component": "NumberInput"},
+                        "actualQuantity": {"type": "number", "title": "产出数量", "required": True, "x-component": "NumberInput"},  # noqa: E501
                         "goodQuantity": {"type": "number", "title": "良品数量", "x-component": "NumberInput"},
                         "defectQuantity": {"type": "number", "title": "次品数量", "x-component": "NumberInput"},
                         "notes": {"type": "string", "title": "备注", "x-component": "Input.TextArea"},

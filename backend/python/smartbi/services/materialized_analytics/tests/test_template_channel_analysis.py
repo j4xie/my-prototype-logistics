@@ -6,9 +6,9 @@ from smartbi.services.materialized_analytics.templates.channel_analysis import C
 
 def _schema():
     return DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("订单来源", FieldRole.DIMENSION, "string"),
-                      Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=5, primary_measure="营业额")
+                      fields=tuple([Field("订单来源", FieldRole.DIMENSION, "string"),
+                                    Field("营业额", FieldRole.MEASURE, "float")]),
+                      row_count=5, primary_measure="营业额")
 
 
 def test_channel_buckets_splits_dine_takeaway():
@@ -30,8 +30,8 @@ def test_channel_buckets_splits_dine_takeaway():
 
 def test_channel_skip_when_no_source_col():
     schema = DataSchema(upload_id=1, factory_id="F001", domain=Domain.RESTAURANT,
-        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
-        row_count=1, primary_measure="营业额")
+                        fields=tuple([Field("营业额", FieldRole.MEASURE, "float")]),
+                        row_count=1, primary_measure="营业额")
     backend = PolarsBackend.from_rows([{"营业额": 100}])
     result = ChannelAnalysis().run(backend, schema)
     assert not result.applies

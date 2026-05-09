@@ -72,7 +72,7 @@ async def _log_template_hit_safe(pool, query, factory_id, upload_id, template_co
 # H4 (Apr 27 2026): shared helpers for v2 conv memory across multiple SSE
 # endpoints (drill_down_stream / root_cause_stream / benchmark_stream).
 # Keeps the lookup + writeback logic DRY across endpoints.
-async def _v2_conv_lookup(http_request, session_id: Optional[str]) -> tuple[Optional[Dict], Optional[str], Optional[int]]:
+async def _v2_conv_lookup(http_request, session_id: Optional[str]) -> tuple[Optional[Dict], Optional[str], Optional[int]]:  # noqa: E501
     """Phase 0 v2 conv memory lookup. Returns (parent_dict, factory_id, user_id).
 
     parent_dict is None when session_id absent / no factory / lookup fails.
@@ -123,9 +123,9 @@ def _v2_inject_context(parent: Optional[Dict], user_prompt: str) -> str:
 
 
 def _v2_writeback_bg(session_id: Optional[str], factory_id: Optional[str],
-                      user_id: Optional[int], query: str, answer: str,
-                      template_code: Optional[str] = None,
-                      upload_id: Optional[int] = None) -> None:
+                     user_id: Optional[int], query: str, answer: str,
+                     template_code: Optional[str] = None,
+                     upload_id: Optional[int] = None) -> None:
     """Fire-and-forget v2 writeback. Anchored in _PENDING_BG_TASKS so survives
     generator cancellation. Skipped silently when session_id or factory_id missing.
     """
@@ -324,7 +324,7 @@ class MultiDimensionResponse(BaseModel):
 # Data Store (In-memory cache for demo, replace with proper storage)
 # ============================================================================
 
-from cachetools import TTLCache
+from cachetools import TTLCache  # noqa: E402
 
 _sheet_data_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 
@@ -459,7 +459,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
 
         if request.filter_value:
             # Determine the target dimension for breakdown
-            drill_child = child_dimension or request.dimension
+            drill_child = child_dimension or request.dimension  # noqa: F841
             if child_dimension and child_dimension != request.dimension:
                 # True hierarchical drill-down: filter parent, break down by child
                 result = await analyzer.drill_down(
@@ -842,7 +842,7 @@ async def general_analysis(request: GeneralAnalysisRequest, http_request: Reques
                             )
                             if rows:
                                 import json
-                                data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
+                                data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]  # noqa: E501
                                 logger.info(f"[general_analysis] Loaded {len(data)} rows from upload {upload_id}")
             except Exception as e:
                 logger.warning(f"Failed to load upload data: {e}")
@@ -972,7 +972,7 @@ async def general_analysis(request: GeneralAnalysisRequest, http_request: Reques
                 return name
 
             # --- Filter out index/sequence columns (P1-2 fix) ---
-            _INDEX_COL_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}
+            _INDEX_COL_PATTERNS = {'行次', '序号', '编号', '行号', '项目编号', 'index', 'no', 'no.', 'id', 'row_num', 'row_number', 'sn'}  # noqa: E501
             _ID_NAME_FRAGMENTS = ['订单号', '单号', '编码', '工号', '货号', '票号', '凭证号',
                                   'order_id', 'order_no', 'item_id', 'sku_id', 'batch_no']
 
@@ -1018,7 +1018,7 @@ async def general_analysis(request: GeneralAnalysisRequest, http_request: Reques
             label_field = None
             for col in non_numeric_cols:
                 sample = df[col].dropna().head(10).astype(str)
-                has_text = any(len(v) > 1 and not v.replace('.','').replace('-','').isdigit() for v in sample)
+                has_text = any(len(v) > 1 and not v.replace('.', '').replace('-', '').isdigit() for v in sample)
                 if has_text:
                     label_field = col
                     break
@@ -1470,7 +1470,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                             load_materialization_results
                         )
                         if pool is not None:
-                            factory_id = getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None
+                            factory_id = getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None  # noqa: E501
                             cached_results = await load_materialization_results(
                                 pool, upload_id, factory_id=factory_id
                             )
@@ -1532,7 +1532,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 from smartbi.api.materialized_analytics import _spawn_bg
                                 _tpl_log_task = _spawn_bg(_log_template_hit_safe(
                                     pool, user_q,
-                                    getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None,
+                                    getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None,  # noqa: E501
                                     upload_id, matched_code, answer_text, wall_ms,
                                 ))
                                 try:
@@ -1570,7 +1570,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                         ))
                                     except Exception as _e:
                                         logger.warning(f"[chat-session] writeback (template) failed: {_e}")
-                                logger.info(f"[stream] served upload {upload_id} via cache: template={matched_code}, wall={time.time() - start_time:.2f}s, log_id={tpl_log_id}")
+                                logger.info(f"[stream] served upload {upload_id} via cache: template={matched_code}, wall={time.time() - start_time:.2f}s, log_id={tpl_log_id}")  # noqa: E501
                                 return  # early exit — don't invoke LLM
             except Exception as e:
                 # Router is best-effort; fall through to LLM on any error
@@ -1632,7 +1632,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     upload_id
                                 )
                                 if rows:
-                                    data = [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
+                                    data = [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]  # noqa: E501
                                     logger.info(f"[stream] Loaded {len(data)} rows from upload {upload_id}")
                                 # Bug #17 fix (Apr 17 2026): load field_definitions for prompt
                                 # So LLM knows which columns are measures/dimensions/times
@@ -1912,7 +1912,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                         f"ORDER BY total DESC NULLS LAST LIMIT 500"
                                                     )
                                                     prod_rows = await conn.fetch(
-                                                        q_prod, _product_col, primary_measure, _time_col, upload_id, *extra3
+                                                        q_prod, _product_col, primary_measure, _time_col, upload_id, *extra3  # noqa: E501
                                                     )
                                                 else:
                                                     prod_rows = await conn.fetch(
@@ -1930,7 +1930,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                 cat_totals: Dict[str, Dict[str, float]] = {}
                                                 for pr in prod_rows:
                                                     cat = classify_product_info(pr['label'])
-                                                    entry = cat_totals.setdefault(cat, {"total": 0.0, "cnt": 0, "items": 0})
+                                                    entry = cat_totals.setdefault(cat, {"total": 0.0, "cnt": 0, "items": 0})  # noqa: E501
                                                     entry["total"] += float(pr['total'] or 0)
                                                     entry["cnt"] += int(pr['cnt'] or 0)
                                                     entry["items"] += 1
@@ -2006,9 +2006,9 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                     )
                                                     if rr and rr['s'] is not None:
                                                         agg_lines.append(
-                                                            f"- {dim}={lab}: {primary_measure} 总计={rr['s']:,.2f} (行数={rr['c']})"
+                                                            f"- {dim}={lab}: {primary_measure} 总计={rr['s']:,.2f} (行数={rr['c']})"  # noqa: E501
                                                         )
-                                                logger.info(f"[stream] Entity aggregates: {len(uniq_mentioned)} entities")
+                                                logger.info(f"[stream] Entity aggregates: {len(uniq_mentioned)} entities")  # noqa: E501
                                     except Exception as ee:
                                         logger.warning(f"[stream] entity lookup failed: {ee}")
 
@@ -2120,6 +2120,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 # NOT to use this as ranking/grouping dim.
                 _ENTITY_TOKENS = ("名称", "门店", "客户", "员工", "供应商", "店铺")
                 row_index_cols: list[dict] = []
+
                 def _is_row_index(col_name: str) -> bool:
                     # Reviewer round 2 P2: dropped redundant guard (line 2127
                     # already covers None case; the prior `not df_for_card is
@@ -2604,7 +2605,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                             f">=2 distinct values (dims tried: {list(top5_by_dim.keys())})"
                         )
                         primary_dim = None  # skip the append below
-                if 'top5_by_dim' in locals() and top5_by_dim and 'primary_measure' in locals() and primary_measure and primary_dim:
+                if 'top5_by_dim' in locals() and top5_by_dim and 'primary_measure' in locals() and primary_measure and primary_dim:  # noqa: E501
                     charts.append({
                         "type": "bar",
                         "title": f"Top 5 {primary_dim} (按 {primary_measure})",
@@ -2924,7 +2925,7 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
                 return
 
             # Build a concise data summary for LLM streaming
-            filter_desc = f"筛选条件: {request.dimension}={request.filter_value}" if request.filter_value else f"维度: {request.dimension}"
+            filter_desc = f"筛选条件: {request.dimension}={request.filter_value}" if request.filter_value else f"维度: {request.dimension}"  # noqa: E501
             measures_desc = "、".join(valid_measures[:3])
             sample_rows = data[:10]
             data_preview = _json.dumps(sample_rows, ensure_ascii=False, default=str)[:800]
@@ -3239,7 +3240,7 @@ async def multi_dimension_analysis_stream(request: MultiDimensionRequest, http_r
 
             # Summarise data for the LLM prompt
             numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-            non_numeric_cols = [c for c in df.columns if c not in numeric_cols]
+            non_numeric_cols = [c for c in df.columns if c not in numeric_cols]  # noqa: F841
 
             stats_lines = []
             for col in numeric_cols[:5]:
@@ -3432,7 +3433,7 @@ def _build_charts_for_query(query: str, df, data: list) -> List[Dict[str, Any]]:
     label_field = None
     for col in non_numeric_cols:
         sample = df[col].dropna().head(10).astype(str)
-        has_text = any(len(v) > 1 and not v.replace('.','').replace('-','').isdigit() for v in sample)
+        has_text = any(len(v) > 1 and not v.replace('.', '').replace('-', '').isdigit() for v in sample)
         if has_text:
             label_field = col
             break
@@ -3446,7 +3447,7 @@ def _build_charts_for_query(query: str, df, data: list) -> List[Dict[str, Any]]:
         if numeric_cols:
             y_cols = numeric_cols[:3]
             h_names = '、'.join(_humanize_col(c) for c in y_cols[:2])
-            chart_result = builder.build("line", chart_data, x_field=label_field, y_fields=y_cols, title=f"{h_names}趋势分析")
+            chart_result = builder.build("line", chart_data, x_field=label_field, y_fields=y_cols, title=f"{h_names}趋势分析")  # noqa: E501
             chart_entry = _extract_echart_option(chart_result, "line", f"{h_names}趋势")
             if chart_entry:
                 charts.append(chart_entry)
@@ -3454,14 +3455,14 @@ def _build_charts_for_query(query: str, df, data: list) -> List[Dict[str, Any]]:
         if numeric_cols and label_field:
             y_cols = numeric_cols[:2]
             h_names = '、'.join(_humanize_col(c) for c in y_cols[:2])
-            chart_result = builder.build("bar", chart_data, x_field=label_field, y_fields=y_cols, title=f"{h_names}对比分析")
+            chart_result = builder.build("bar", chart_data, x_field=label_field, y_fields=y_cols, title=f"{h_names}对比分析")  # noqa: E501
             chart_entry = _extract_echart_option(chart_result, "bar", f"{h_names}对比")
             if chart_entry:
                 charts.append(chart_entry)
     elif "占比" in query or "构成" in query or "分布" in query:
         if numeric_cols and label_field:
             h_name = _humanize_col(numeric_cols[0])
-            chart_result = builder.build("pie", chart_data, x_field=label_field, y_fields=[numeric_cols[0]], title=f"{h_name}占比分析")
+            chart_result = builder.build("pie", chart_data, x_field=label_field, y_fields=[numeric_cols[0]], title=f"{h_name}占比分析")  # noqa: E501
             chart_entry = _extract_echart_option(chart_result, "pie", f"{h_name}占比")
             if chart_entry:
                 charts.append(chart_entry)
@@ -3569,7 +3570,8 @@ async def health_check():
 # Helper Functions
 # ============================================================================
 
-import math
+import math  # noqa: E402
+
 
 def _sanitize_for_json(obj):
     """Recursively replace NaN/Infinity with None to prevent JSON serialization errors."""
@@ -3583,10 +3585,11 @@ def _sanitize_for_json(obj):
         return [_sanitize_for_json(v) for v in obj]
     return obj
 
+
 def _generate_bar_chart_config(
     dimension: str,
     measures: List[str],
-    data: 'pd.DataFrame'
+    data: 'pd.DataFrame'  # noqa: F821
 ) -> Dict[str, Any]:
     """Generate bar chart configuration for drill-down results"""
 
@@ -3702,7 +3705,7 @@ def _map_hierarchy_to_columns(levels: List[str], columns: List[str]) -> List[str
 
 
 def _find_available_dimensions(
-    df: 'pd.DataFrame',
+    df: 'pd.DataFrame',  # noqa: F821
     current_dimension: str,
     current_measures: List[str]
 ) -> List[str]:

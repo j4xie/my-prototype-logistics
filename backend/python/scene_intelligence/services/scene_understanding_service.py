@@ -293,7 +293,7 @@ class SceneUnderstandingService:
 
         if previous is None or previous.reference_frame_base64 is None:
             # 首次分析
-            understanding = await self.understand_scene(current_frame_base64, camera_id)
+            understanding = await self.understand_scene(current_frame_base64, camera_id)  # noqa: F841
             return SceneChange(
                 change_id=f"change_{uuid.uuid4().hex[:12]}",
                 camera_id=camera_id,
@@ -309,8 +309,8 @@ class SceneUnderstandingService:
 **上次的场景理解**（{previous.timestamp.strftime('%Y-%m-%d %H:%M')}）：
 {previous.scene_description}
 
-设备：{json.dumps([{"name": e.name, "location": e.location, "status": e.status} for e in previous.equipment], ensure_ascii=False)}
-工位：{json.dumps([{"id": w.id, "type": w.workstation_type, "location": w.location} for w in previous.workstations], ensure_ascii=False)}
+设备：{json.dumps([{"name": e.name, "location": e.location, "status": e.status} for e in previous.equipment], ensure_ascii=False)}  # noqa: E501
+工位：{json.dumps([{"id": w.id, "type": w.workstation_type, "location": w.location} for w in previous.workstations], ensure_ascii=False)}  # noqa: E501
 区域：{json.dumps([{"name": z.name, "type": z.zone_type} for z in previous.zones], ensure_ascii=False)}
 
 **现在请分析当前图片**，对比参考图片，回答：

@@ -2,9 +2,11 @@
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.piecework_calc import PieceworkCalcHandler
 
+
 def _req(params):
     return SectionRequest(factory_id="F-TEST", upload_id=None, sub_sector="火锅",
                           store_id="S-001", store_name="测试店", params=params)
+
 
 def test_hostess_individual():
     resp = PieceworkCalcHandler().compute(
@@ -19,6 +21,7 @@ def test_hostess_individual():
     assert h["bonus"] == 1500  # (2500-2000)*3
     assert h["total"] == 6500
 
+
 def test_team_split():
     resp = PieceworkCalcHandler().compute(
         _req({"roles": [
@@ -30,6 +33,7 @@ def test_team_split():
     assert team["total_pool"] == 17000  # 15000 + (4000-3000)*2
     assert team["per_person"] == 5667  # 17000/3 rounded
 
+
 def test_below_threshold():
     resp = PieceworkCalcHandler().compute(
         _req({"roles": [
@@ -39,6 +43,7 @@ def test_below_threshold():
     h = resp.data["role_results"][0]
     assert h["bonus"] == 0
     assert h["total"] == 5000  # still gets base
+
 
 def test_skipped_no_roles():
     resp = PieceworkCalcHandler().compute(_req({}), {})

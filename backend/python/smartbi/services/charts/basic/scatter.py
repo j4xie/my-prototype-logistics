@@ -94,7 +94,7 @@ class ScatterChartStrategy(BaseChartStrategy):
                 else:
                     s["symbolSize"] = 10
                 if label_col and len(group) <= 20:
-                    s["label"] = {"show": True, "formatter": "__FMT__scatter_label", "fontSize": 10, "color": "#666", "position": "right"}
+                    s["label"] = {"show": True, "formatter": "__FMT__scatter_label", "fontSize": 10, "color": "#666", "position": "right"}  # noqa: E501
                 series.append(s)
         else:
             data = []
@@ -112,7 +112,7 @@ class ScatterChartStrategy(BaseChartStrategy):
             else:
                 s["symbolSize"] = 10
             if label_col and len(df) <= 20:
-                s["label"] = {"show": True, "formatter": "__FMT__scatter_label", "fontSize": 10, "color": "#666", "position": "right"}
+                s["label"] = {"show": True, "formatter": "__FMT__scatter_label", "fontSize": 10, "color": "#666", "position": "right"}  # noqa: E501
                 s["_labels"] = labels
             series.append(s)
 

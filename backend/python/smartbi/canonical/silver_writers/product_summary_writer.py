@@ -98,7 +98,7 @@ class ProductSummaryWriter(BaseWriter):
                 )
 
             for i in range(0, len(records), self.BATCH_SIZE):
-                batch = records[i : i + self.BATCH_SIZE]
+                batch = records[i: i + self.BATCH_SIZE]
                 # ON CONFLICT expression must EXACTLY match the unique index
                 # `uq_app_natkey` (V20260427_02). PG 13 does not support NULLS
                 # NOT DISTINCT, so we COALESCE NULL period_start to a sentinel

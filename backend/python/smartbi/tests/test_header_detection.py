@@ -7,7 +7,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.data_exporter import DataExporter
+from services.data_exporter import DataExporter  # noqa: E402
 
 
 async def main():
@@ -26,7 +26,7 @@ async def main():
     exporter = DataExporter()
 
     # 测试每个Sheet
-    sheet_names = ["利润表", "销售明细", "部门预算对比", "产品成本分析", "待补充数据"]
+    sheet_names = ["利润表", "销售明细", "部门预算对比", "产品成本分析", "待补充数据"]  # noqa: F841
 
     for i in range(5):
         data = await exporter.from_excel(content, sheet_index=i)

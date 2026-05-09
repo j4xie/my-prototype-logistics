@@ -202,7 +202,7 @@ async def feedback_stats() -> dict:
 
             # By rating
             rating_rows = await conn.fetch(
-                "SELECT rating, COUNT(*) as cnt FROM food_kb_feedback WHERE rating IS NOT NULL GROUP BY rating ORDER BY rating"
+                "SELECT rating, COUNT(*) as cnt FROM food_kb_feedback WHERE rating IS NOT NULL GROUP BY rating ORDER BY rating"  # noqa: E501
             )
             by_rating = {str(row["rating"]): row["cnt"] for row in rating_rows}
 
@@ -333,7 +333,7 @@ async def log_query(request: LogQueryRequest) -> dict:
                 )
                 logger.info(
                     f"Re-query detected: session={request.session_id}, "
-                    f"query='{request.query[:40]}', similar_to='{similar_recent_query[:40] if similar_recent_query else ''}'"
+                    f"query='{request.query[:40]}', similar_to='{similar_recent_query[:40] if similar_recent_query else ''}'"  # noqa: E501
                 )
 
         return {

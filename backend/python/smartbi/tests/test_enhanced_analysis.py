@@ -4,10 +4,10 @@ Test script for enhanced analysis modules
 import sys
 sys.path.insert(0, '..')
 
-import pandas as pd
-from services.statistical_analyzer import StatisticalAnalyzer
-from services.chart_generator import ChartGenerator
-from services.drilldown_renderer import DrillDownRenderer, EnhancedInsightGenerator
+import pandas as pd  # noqa: E402
+from services.statistical_analyzer import StatisticalAnalyzer  # noqa: E402
+from services.chart_generator import ChartGenerator  # noqa: E402
+from services.drilldown_renderer import DrillDownRenderer, EnhancedInsightGenerator  # noqa: E402
 
 
 def create_test_data():
@@ -24,6 +24,7 @@ def create_test_data():
 
 class MockFieldDef:
     """Mock field definition for testing"""
+
     def __init__(self, name, is_dim=False, is_measure=False, is_time=False):
         self.original_name = name
         self.standard_name = name
@@ -65,7 +66,7 @@ def test_statistical_analyzer():
     print("\nCorrelation Analysis:")
     print(f"  Strong positive: {len(corr.strong_positive)}")
     if corr.top_correlation:
-        print(f"  Top: {corr.top_correlation['var1']} vs {corr.top_correlation['var2']} = {corr.top_correlation['correlation']:.3f}")
+        print(f"  Top: {corr.top_correlation['var1']} vs {corr.top_correlation['var2']} = {corr.top_correlation['correlation']:.3f}")  # noqa: E501
 
     print("\n[PASS] StatisticalAnalyzer tests passed!")
 

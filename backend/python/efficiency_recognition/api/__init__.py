@@ -19,4 +19,4 @@ from .cost_routes import router as cost_router
 from .recording_routes import router as recording_router
 from .scene_routes import router as scene_router
 
-__all__ = ["router", "stream_router", "photo_router", "tracking_router", "cost_router", "recording_router", "scene_router"]
+__all__ = ["router", "stream_router", "photo_router", "tracking_router", "cost_router", "recording_router", "scene_router"]  # noqa: E501

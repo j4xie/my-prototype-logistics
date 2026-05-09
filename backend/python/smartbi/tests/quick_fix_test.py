@@ -2,7 +2,8 @@
 import sys
 sys.path.insert(0, 'C:/Users/Steve/my-prototype-logistics/smartbi')
 
-from services.metric_calculator import MetricCalculator
+from services.metric_calculator import MetricCalculator  # noqa: E402
+
 
 def main():
     calc = MetricCalculator()
@@ -68,6 +69,7 @@ def main():
     print(f'{"="*40}')
 
     return 0 if passed == total else 1
+
 
 if __name__ == '__main__':
     sys.exit(main())

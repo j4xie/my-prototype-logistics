@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 class ChartCategory(str, Enum):
     """Chart category for grouping recommendations"""
     TREND = "trend"           # Time series analysis
-    COMPARISON = "comparison" # Categorical comparison
-    PROPORTION = "proportion" # Part-to-whole
+    COMPARISON = "comparison"  # Categorical comparison
+    PROPORTION = "proportion"  # Part-to-whole
     DISTRIBUTION = "distribution"  # Data distribution
     RELATIONSHIP = "relationship"  # Correlation
     FLOW = "flow"             # Process/flow analysis
@@ -745,7 +745,7 @@ class ChartRecommender:
 - **多样性要求**: 推荐的图表类型必须尽可能多样化，不允许连续2个相同类型
 - **高级类型**: 如果数据有层级结构推荐 sunburst，如果需要80/20分析推荐 pareto，如果有目标/实际对比推荐 bullet，如果有不同量纲指标推荐 dual_axis
 - **最少4种不同类型**: 你的推荐中至少包含4种不同的图表类型
-- **A4 cardinality 守卫**: 若某分类维度 unique_count<2（即全部行只有1个取值），绝对不要把它作为 x_axis 推荐对比/占比图；这种情况应优先推 kpi/scorecard 单值卡片或依靠时间维度作趋势图。
+- **A4 cardinality 守卫**: 若某分类维度 unique_count<2（即全部行只有1个取值），绝对不要把它作为 x_axis 推荐对比/占比图；这种情况应优先推 kpi/scorecard 单值卡片或依靠时间维度作趋势图。  # noqa: E501
 """
         return prompt
 
@@ -1172,7 +1172,7 @@ class ChartRecommender:
         has_time = len(data_summary.time_columns) > 0
         has_categories = len(data_summary.category_columns) > 0
         has_measures = len(data_summary.measures) > 0
-        num_categories = len(data_summary.category_columns)
+        num_categories = len(data_summary.category_columns)  # noqa: F841
         num_measures = len(data_summary.measures)
         row_count = data_summary.row_count
         cat_col = data_summary.category_columns[0] if has_categories else None
@@ -1232,7 +1232,7 @@ class ChartRecommender:
         if has_categories and has_measures and 3 <= row_count <= 30 and cat_has_variety:
             # Detect financial keywords in column names
             financial_keywords = ['收入', '支出', '费用', '利润', '成本', '净利', 'revenue', 'cost', 'profit', 'expense']
-            col_names_lower = ' '.join([c.get('columnName', c.get('column_name', '')) for c in data_summary.columns]).lower()
+            col_names_lower = ' '.join([c.get('columnName', c.get('column_name', '')) for c in data_summary.columns]).lower()  # noqa: E501
             if any(kw in col_names_lower for kw in financial_keywords):
                 recommendations.append(ChartRecommendation(
                     chart_type="waterfall",

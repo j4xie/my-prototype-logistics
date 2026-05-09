@@ -145,7 +145,7 @@ class ReviewAnalysisReport:
     rating_trend: Optional[RatingTrend]
     dish_tags: list[DishMention]             # 按 mention_count 降序
     top_praised_dishes: list[DishMention]    # TOP 5 好评菜品
-    top_complained_dishes: list[DishMention] # TOP 5 差评菜品
+    top_complained_dishes: list[DishMention]  # TOP 5 差评菜品
     hidden_gems: list[DishMention]           # 提及少但好评率高 (潜力菜)
     risk_alerts: list[str]                   # 风险告警
     insights: list[str]                      # 业务洞察

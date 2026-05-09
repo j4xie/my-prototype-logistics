@@ -58,8 +58,8 @@ def test_exporter_handles_all_optional_sections(tmp_path):
         diagnostics=[],
         department_breakdown={
             "departments": [
-                {"code": "热菜", "nameZh": "热菜档", "laborCost": 80000, "headCount": 8, "laborShare": 0.31, "perHeadCost": 10000},
-                {"code": "前厅服务员", "nameZh": "前厅服务员", "laborCost": 50000, "headCount": 15, "laborShare": 0.19, "perHeadCost": 3333},
+                {"code": "热菜", "nameZh": "热菜档", "laborCost": 80000, "headCount": 8, "laborShare": 0.31, "perHeadCost": 10000},  # noqa: E501
+                {"code": "前厅服务员", "nameZh": "前厅服务员", "laborCost": 50000, "headCount": 15, "laborShare": 0.19, "perHeadCost": 3333},  # noqa: E501
             ],
             "aggregated": {"后厨": 180000, "前厅": 65000},
             "totalLaborCost": 245000,
@@ -67,7 +67,7 @@ def test_exporter_handles_all_optional_sections(tmp_path):
         },
         shrinkage_report={
             "rows": [
-                {"department": "刺身", "standardCost": 30000, "actualCost": 34000, "varianceAmount": 4000, "varianceRate": 0.1333},
+                {"department": "刺身", "standardCost": 30000, "actualCost": 34000, "varianceAmount": 4000, "varianceRate": 0.1333},  # noqa: E501
             ],
             "totalStandardCost": 30000,
             "totalActualCost": 34000,

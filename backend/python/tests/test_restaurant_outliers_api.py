@@ -68,8 +68,8 @@ class TestGetOutliersAPI:
         mock_service.detect_totals = AsyncMock(return_value=(mock_outliers, []))
 
         with patch('smartbi.api.restaurant_outliers._service', mock_service), \
-             patch('smartbi.api.restaurant_outliers._query_dismissed_this_month',
-                   new=AsyncMock(return_value=[])):
+        patch('smartbi.api.restaurant_outliers._query_dismissed_this_month',  # noqa: E122
+              new=AsyncMock(return_value=[])):
             r = client.get('/api/restaurant/outliers?factoryId=F002')
 
         assert r.status_code == 200, r.text
@@ -102,8 +102,8 @@ class TestGetOutliersAPI:
         mock_service.detect_totals = AsyncMock(return_value=([], []))
 
         with patch('smartbi.api.restaurant_outliers._service', mock_service), \
-             patch('smartbi.api.restaurant_outliers._query_dismissed_this_month',
-                   new=AsyncMock(return_value=[])):
+        patch('smartbi.api.restaurant_outliers._query_dismissed_this_month',  # noqa: E122
+              new=AsyncMock(return_value=[])):
             r = client.get(
                 '/api/restaurant/outliers?factoryId=F002',
                 headers={'x-role': 'platform_admin', 'x-factory-id': 'F999'},
