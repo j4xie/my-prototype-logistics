@@ -1,7 +1,7 @@
 # 派工 — T6.5 Phase B: 23 endpoint stub 410 Gone (Decision 4B refined scope)
 
 **Status**: ⚡ IMMEDIATE ON TRIGGER — organizer 触发后立即执行。Predecessor PRs **MUST be admin-merged before dispatch**: PR #178 (Phase A audit) + PR-X (PR #150 spec amend incorporating audit findings; TBD).
-**Dispatch date**: TBD by organizer (placeholder filename `2026-05-15`; rename to actual trigger date when fired).
+**Dispatch date**: 2026-05-09 (renamed from placeholder filename `2026-05-15` when this MO was prepared for dispatch by organizer; spec file path references on lines 16 + 310 intentionally kept at `2026-05-15` since the spec file itself was not renamed).
 **Predecessor**: Phase 2A 100% close 2026-05-09 06:34 CST + PR #178 audit + PR-X spec amend.
 **Author**: organizer T6.5 Phase B impl marching order draft (2026-05-09).
 **Successor**: Phase B 14-day soak → Phase C method-level audit dispatch (~July 2026).
