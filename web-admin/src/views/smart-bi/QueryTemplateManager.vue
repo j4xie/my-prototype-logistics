@@ -335,7 +335,9 @@ onMounted(() => {
 async function loadTemplates() {
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/smart-bi/query-templates`);
+    // _silent: true — 拦截器 410 SMARTBI_MIGRATED 已显示友好中文提示,
+    // 避免与下面 catch 块的 ElMessage.error 形成双 toast (issue #229)
+    const response = await get(`/${factoryId.value}/smart-bi/query-templates`, { _silent: true } as never);
     if (response.success) {
       templates.value = (response.data || []).map((t: Record<string, unknown>) => ({
         ...t,
@@ -361,7 +363,8 @@ function serializeTemplate(template: QueryTemplate): Record<string, unknown> {
 
 async function createTemplate(template: QueryTemplate) {
   try {
-    const response = await post(`/${factoryId.value}/smart-bi/query-templates`, serializeTemplate(template));
+    // _silent: true — 见 loadTemplates 注释 (issue #229 双 toast 防御)
+    const response = await post(`/${factoryId.value}/smart-bi/query-templates`, serializeTemplate(template), { _silent: true } as never);
     if (response.success) {
       ElMessage.success('创建成功');
       await loadTemplates();
@@ -379,7 +382,8 @@ async function createTemplate(template: QueryTemplate) {
 
 async function updateTemplate(id: number, template: QueryTemplate) {
   try {
-    const response = await put(`/${factoryId.value}/smart-bi/query-templates/${id}`, serializeTemplate(template));
+    // _silent: true — 见 loadTemplates 注释 (issue #229 双 toast 防御)
+    const response = await put(`/${factoryId.value}/smart-bi/query-templates/${id}`, serializeTemplate(template), { _silent: true } as never);
     if (response.success) {
       ElMessage.success('更新成功');
       await loadTemplates();
@@ -397,7 +401,8 @@ async function updateTemplate(id: number, template: QueryTemplate) {
 
 async function deleteTemplate(id: number) {
   try {
-    const response = await del(`/${factoryId.value}/smart-bi/query-templates/${id}`);
+    // _silent: true — 见 loadTemplates 注释 (issue #229 双 toast 防御)
+    const response = await del(`/${factoryId.value}/smart-bi/query-templates/${id}`, { _silent: true } as never);
     if (response.success) {
       ElMessage.success('删除成功');
       await loadTemplates();

@@ -307,24 +307,32 @@ request.interceptors.response.use(
       return Promise.reject(new ApiError(friendly, 'NOT_FOUND', 404));
     }
 
-    // 410 Gone — Phase 2A SmartBI 端 Java→Python 迁移完成,后端 stub 应该只有 nginx
-    // 漏配 / F999 / 直连后端 时触发. 友好提示 + dev console 日志便于排查 nginx 路由 gap.
-    // Per chat 8 audit PR #214 §5.1 (2026-05-09).
+    // 410 Gone — Phase 2A SmartBI Java→Python 迁移完成 (PR #205 + chat 8 audit PR #214 §5.1, 2026-05-09).
+    // 23 个 SmartBI Analysis endpoint 在 Java 端 stub 成 410, body 含
+    // `SMARTBI_MIGRATED: endpoint moved to Python {NEW_PATH}` 英文消息.
+    // 正常 75 个客户 factory 走 nginx regex 路由到 Python 返 200; 此 410 只在
+    // (a) F999 测试 factory / (b) nginx 漏配 factory / (c) 直连后端 dev 调试 触发.
+    // 把 raw 英文 message 转成友好中文 + dev console 警告便于排查.
     if (status === 410) {
-      const rawMsg410 = error.response?.data?.message as string | undefined;
-      const isMigrated = typeof rawMsg410 === 'string' && rawMsg410.startsWith('SMARTBI_MIGRATED:');
+      const rawMsg = (error.response?.data?.message as string | undefined) || '';
+      const isMigrated = rawMsg.startsWith('SMARTBI_MIGRATED:');
       if (isMigrated) {
-        console.warn('[SMARTBI_MIGRATED] backend returned 410 — nginx may not be routing this path to Python:', rawMsg410);
+        // dev console hint — surface nginx routing gap if any
+        console.warn('[SMARTBI_MIGRATED] backend 410 — nginx may not route this path to Python:', rawMsg);
       }
       if (!originalRequest._silent) {
         showMessage(
           isMigrated
             ? '该功能已迁移升级，请刷新页面重试。如反复出现请联系运维。'
-            : (rawMsg410 || '该资源已下线 (410)'),
-          'warning'
+            : (rawMsg || '该资源已下线 (410)'),
+          'warning'  // warning level (3s auto-dismiss) vs error (sticky)
         );
       }
-      return Promise.reject(new ApiError(rawMsg410 || '410 Gone', error.response?.data?.code, 410));
+      return Promise.reject(new ApiError(
+        isMigrated ? '该功能已迁移升级' : (rawMsg || '410 Gone'),
+        isMigrated ? 'SMARTBI_MIGRATED' : 'GONE',
+        410
+      ));
     }
 
     // 其他错误 — Apr 19 2026 Bug #58: 5xx/网络断开时 axios 默认 error.message 是英文
@@ -392,12 +400,12 @@ export const post = <T>(url: string, data?: object, config?: object): Promise<Ap
   return request.post(url, data, config);
 };
 
-export const put = <T>(url: string, data?: object): Promise<ApiResponse<T>> => {
-  return request.put(url, data);
+export const put = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
+  return request.put(url, data, config);
 };
 
-export const del = <T>(url: string): Promise<ApiResponse<T>> => {
-  return request.delete(url);
+export const del = <T>(url: string, config?: object): Promise<ApiResponse<T>> => {
+  return request.delete(url, config);
 };
 
 // Admin API 便捷方法 — 绕过 /api/mobile baseURL，直接使用绝对路径

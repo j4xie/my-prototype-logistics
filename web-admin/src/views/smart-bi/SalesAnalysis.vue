@@ -619,6 +619,12 @@ watch([dateRange, dimensionType, categoryFilter], () => {
   loadSalesData();
 });
 
+// Track overview-call failure so we can skip the fan-out fallback below.
+// Issue #230: when /analysis/sales returns 410 (or any error), the 3 dimension
+// fallbacks would each re-hit the same broken endpoint and amplify console noise
+// + waste 3 more requests per filter change. Dedupe by skipping fan-out on failure.
+let overviewFailed = false;
+
 async function loadSalesData() {
   // Cancel previous in-flight request
   if (salesAbortController) salesAbortController.abort();
@@ -631,6 +637,7 @@ async function loadSalesData() {
   rankingLoading.value = true;
   trendLoading.value = true;
   pieLoading.value = true;
+  overviewFailed = false;
 
   if (!factoryId.value) {
     loadError.value = '未找到工厂ID，请重新登录';
@@ -646,21 +653,30 @@ async function loadSalesData() {
     // Load overview data first (contains KPIs, charts, rankings in unified response)
     await loadOverviewData(signal);
 
-    // Load dimension-specific data in parallel (only if overview didn't populate them)
+    // Load dimension-specific data in parallel ONLY if overview succeeded but
+    // didn't populate them. Skip entirely on overview failure (issue #230 — 410
+    // storm dedupe) since the 3 dimension calls hit the same endpoint and would
+    // produce identical errors + 3× wasted requests + 3× console.warn spam.
     const tasks: Promise<void>[] = [];
-    if (salesPersonRanking.value.length === 0) {
-      tasks.push(loadRankingData());
+    if (!overviewFailed) {
+      if (salesPersonRanking.value.length === 0) {
+        tasks.push(loadRankingData());
+      } else {
+        rankingLoading.value = false;
+      }
+      if (!trendChartConfig.value) {
+        tasks.push(loadTrendData());
+      } else {
+        trendLoading.value = false;
+      }
+      if (!pieChartConfig.value) {
+        tasks.push(loadProductData());
+      } else {
+        pieLoading.value = false;
+      }
     } else {
       rankingLoading.value = false;
-    }
-    if (!trendChartConfig.value) {
-      tasks.push(loadTrendData());
-    } else {
       trendLoading.value = false;
-    }
-    if (!pieChartConfig.value) {
-      tasks.push(loadProductData());
-    } else {
       pieLoading.value = false;
     }
     if (tasks.length > 0) {
@@ -787,12 +803,20 @@ async function loadOverviewData(signal?: AbortSignal) {
         : raw;
       parseUnifiedResponse(actualData);
     } else {
-      // Don't show error toast here, just log - we'll try dimension-specific calls
+      // Mark failure so fan-out is skipped (issue #230 dedupe)
+      overviewFailed = true;
+      // Don't show error toast here, just log
       console.warn('Sales overview returned non-success:', response.message);
     }
   } catch (error) {
+    // Don't mark abort as failure — user just changed filters mid-flight
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    if (signal?.aborted) return;
+    // Mark failure so fan-out is skipped (issue #230 dedupe). Covers 410
+    // SMARTBI_MIGRATED, 5xx, network error, etc — fan-out would just re-hit
+    // the same endpoint with the same outcome.
+    overviewFailed = true;
     console.warn('加载销售概览失败:', error);
-    // Silent - will show loadError if all calls fail
   } finally {
     kpiLoading.value = false;
   }
