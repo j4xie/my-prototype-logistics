@@ -7,6 +7,8 @@
 **Predecessor**: T6.5 Phase A audit (PR #178), T6.5 deprecation spec (PR #150)
 **Successor**: Phase 2C SmartBI Config / Dashboard / Upload / PublicDemo port (PR #152), hypothetical T7 strict-byte gate
 
+> **Q1 RESOLVED 2026-05-09**: Real DB path chosen (Option B) for `/analysis/production` + `/analysis/quality` endpoint data source. See `2026-05-09-t6-6-q1-real-db-amendment.md` for data source (22 Excel/CSV files, 14 real restaurant chains under `smartbi维度分析/大众点评/真实餐饮连锁数据/`) + revised effort estimate (~20 person-days for T6.6 Phase B production+quality combined including ETL infrastructure). The original §2.1 + §2.2 effort entries (~2-3 person-days each, mock-mirror) are superseded.
+
 ---
 
 ## 0. TL;DR

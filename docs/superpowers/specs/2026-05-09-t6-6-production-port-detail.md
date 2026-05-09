@@ -6,6 +6,8 @@
 **Predecessor**: PR #196 T6.6 Phase A overall design + PR #180 T6.6 4-endpoint base spec
 **Dependencies**: Phase 2A `python-java-port.md` Rules 1-12; existing module pattern in `backend/python/smartbi_compat/api/analysis_finance.py`
 
+> **Q1 RESOLVED 2026-05-09**: Real DB path chosen (Option B), NOT mock parity. See `2026-05-09-t6-6-q1-real-db-amendment.md` for data source (real restaurant chain Excel imports) + revised effort estimate (~5 person-days impl per endpoint vs original 1.5–2 person-days mock). **Implications for this spec**: §3 BLOCKER (`_JavaRandom` LCG + `_java_string_hashcode` bit-exact reproduction) is **NO LONGER NEEDED** — drop entirely. §8 Q1 + §9 Q1 HOLD block + §10 Q4 frozen-sentinel timestamp problem all VOID. The 4-branch dispatcher / sub-method shape / Rule 4-12 audit checklist (§5) remain valid for the real-DB impl.
+
 ---
 
 ## 0. TL;DR

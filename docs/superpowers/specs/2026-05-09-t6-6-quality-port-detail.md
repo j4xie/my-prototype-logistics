@@ -6,6 +6,8 @@
 **Branch**: `ops-t6-6-quality-detail`
 **File**: `docs/superpowers/specs/2026-05-09-t6-6-quality-port-detail.md`
 
+> **Q1 RESOLVED 2026-05-09**: Real DB path chosen (Option B), NOT mock parity. See `2026-05-09-t6-6-q1-real-db-amendment.md` for data source (real restaurant chain Excel imports) + revised effort estimate (~5 person-days impl vs original 1.5–2 person-days mock). **Implications for this spec**: §0 #2 risk (JavaRandom LCG bit-exact reproduction) + §1.3 "Real-DB upgrade" out-of-scope item + §2.2 D1 + §8.8 R7 + §9 Q1 HOLD block all **VOID** — drop the JavaRandom helper entirely. Quality semantics for restaurant tenants (defects/FPY/rework redefinition per §3.2 of the amendment) finalize in Phase B kickoff design doc. The 4-branch dispatcher + 7 service methods + 3 internal helpers + Rule 1-12 audit (§2.2 D-series) remain valid for the real-DB impl.
+
 **Predecessors**:
 - PR #180 — T6.6 base spec (`docs/superpowers/specs/2026-05-09-t6-6-f999-python-migration-spec.md`)
 - PR #196 — T6.6 Phase A design (`docs/superpowers/specs/2026-05-09-t6-6-phase-a-design.md`) — caught spec drift "Quality is mock data, NOT real DB"
