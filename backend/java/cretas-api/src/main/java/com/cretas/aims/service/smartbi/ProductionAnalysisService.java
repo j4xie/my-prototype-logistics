@@ -243,16 +243,4 @@ public interface ProductionAnalysisService {
      * @return 图表配置
      */
     ChartConfig getOEETrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period);
-
-    /**
-     * 获取产线 OEE 对比图表配置
-     *
-     * 返回柱状图或雷达图配置，对比多条产线的 OEE 表现。
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 图表配置
-     */
-    ChartConfig getProductionLineComparisonChart(String factoryId, LocalDate startDate, LocalDate endDate);
 }
