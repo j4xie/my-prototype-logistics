@@ -11,20 +11,47 @@
 
 ## §0 TL;DR
 
-**Classification**: 17 public methods total → **5 KEEP / 12 DELETE**.
+**Classification (v3 — re-verified after compile FAIL on v2 plan)**: 17 public methods total → **6 KEEP / 1 DEFER (Sub-L) / 10 DELETE**.
 
-⚠️ **Per dispatch ⚠️ note + spec §C.1.2**: `FinanceAnalysisServiceImpl` injects `GoldDashboardBuilder` + `GoldFinanceClient` (Phase A audit §4.3) and serves `/dashboard/executive*` composite **for all 75 factories on Java**. Most methods that participate in that Gold-layer chain or in the alive `/query` rule-engine path **must KEEP**. The 12 DELETE candidates are the methods that ONLY served the now-stubbed `getFinanceAnalysis` controller endpoint (Sub-A) plus its standalone Receivable/Payable/Budget/YoY-MoM/Category-comparison sub-endpoints (also stubbed by Sub-A under PR #236).
+### Audit revision history
 
-**Removal scope**:
-- Impl methods: 12 `public` methods (with `@Override`) + their `@Transactional` annotations + private helper chase
-- Interface declarations: 12 entries (lines 96, 145, 191, 203, 217, 230, 244, 256, 272, 293, 330, 352)
-- Tests: 2 `@Test void` methods covering `getProfitTrendChart` (2 of 5 total tests in `FinanceAnalysisServiceImplTest.java`)
-- LOC delta estimate: ~1100 LOC removed from impl + ~80 LOC from interface + ~80 LOC from tests = **~1260 LOC removed**
+- **v1** (2026-05-10 initial): 5 KEEP / 12 DELETE — based on external-only grep across `controller/` + `service/smartbi/impl/` (excluding self).
+- **v2** (post chat5 Sub-D dead-chain finding): 4 KEEP / 1 DEFER / 12 DELETE — `getReceivableAgingChart` reclassified DEFER (sole caller in `SmartBIServiceImpl::getComprehensiveAnalysis` orphan).
+- **v3** (post Steve mvn limited gate FAIL): 6 KEEP / 1 DEFER / 10 DELETE — **mvn caught two internal self-references missed by audit**:
+  - `getFinanceOverview` line 157 calls `getProfitTrendChart`
+  - `getFinanceOverview` line 166 calls `getOverdueCustomerRanking`
+  - Both methods reclassified DELETE → KEEP (Option A — `getFinanceOverview` genuinely needs them for Dashboard composite chart/ranking output).
 
-**KEEP rationale (5 methods)**:
-- All 5 are reached through `SmartBIServiceImpl` facade (`getExecutiveDashboard` Dashboard composite + `processQuery` NL intent dispatcher) and / or `SmartBIDashboardController.getDashboardOverview` direct call and / or `SmartBIAnalysisController.executeQueryByIntent` (alive `/query` NOT_SAFE_FALLTHROUGH NL response generator).
+### v3 lesson — graduate to Phase C audit pattern
 
-**Risks**: see §5. Lowest-risk per Phase A R-6 (Spring component scan break = NONE) since the class file stays alive with KEEP'd methods.
+**Internal self-reference grep is mandatory** for method-level audits. The original §1 methodology grep'd `controller/` + `service/smartbi/impl/` excluding `<YourServiceImpl>.java` self — this missed methods called by KEEP methods *within the same impl file*. Sub-E Finance has historical artifact of method chains where `getFinanceOverview` (Dashboard composite) drives helpers via `addAll/.add(getXxx())` style, while sister sub-batches (Sales / Department / Region per chat5 Sub-D) had less interdependence and didn't surface this gap.
+
+**Corrected methodology** (v3): for each candidate DELETE method, run BOTH grep patterns:
+1. `grep -rn "\.${method}(" backend/java/cretas-api/src/main/java/` (external + internal, no exclusion)
+2. Specifically inspect `<YourServiceImpl>.java` for any internal callers, decide A (reclassify KEEP) or B (remove internal call from KEEP method)
+
+⚠️ **Per dispatch ⚠️ note + spec §C.1.2**: `FinanceAnalysisServiceImpl` injects `GoldDashboardBuilder` + `GoldFinanceClient` (Phase A audit §4.3) and serves `/dashboard/executive*` composite **for all 75 factories on Java**. Most methods that participate in that Gold-layer chain or in the alive `/query` rule-engine path **must KEEP**.
+
+**Removal scope (Sub-E this PR — v3)**:
+- Impl methods: 10 `public` methods (with `@Override`) + their `@Transactional` annotations + private helper chase
+- Interface declarations: 10 entries (mirrors impl)
+- Tests: 0 `@Test void` methods removed (the 2 `getProfitTrendChart_*` tests STAY, since `getProfitTrendChart` reclassified KEEP)
+- LOC delta estimate: ~700 LOC removed from impl + ~70 LOC from interface = **~770 LOC removed**
+
+**Deferred to Sub-L (dead-chain via `getComprehensiveAnalysis`)**:
+- `getReceivableAgingChart` — sole external caller is `SmartBIServiceImpl:604` (`getComprehensiveAnalysis` finance branch). Cannot delete in Sub-E without breaking compile of `getComprehensiveAnalysis`. Sub-L removes `getComprehensiveAnalysis` first → `getReceivableAgingChart` becomes pure zero-caller → delete in Sub-L round 2.
+
+**KEEP rationale (6 methods)**:
+1. `getFinanceOverview` — `SmartBIDashboardController:538` (direct) + `SmartBIServiceImpl:1579` (`processQuery` QUERY_FINANCE_OVERVIEW)
+2. `getProfitMetrics` — `SmartBIAnalysisController:364` (alive `/query` NL helper) + `SmartBIServiceImpl:1582` (`processQuery` QUERY_PROFIT_ANALYSIS)
+3. `getCostStructureChart` — `SmartBIServiceImpl:1585` (`processQuery` QUERY_COST_ANALYSIS)
+4. `getReceivableMetrics` — `SmartBIServiceImpl:1588` (`processQuery` QUERY_RECEIVABLE)
+5. **`getProfitTrendChart`** — `getFinanceOverview:157` internal call (Dashboard chartList composite) **[v3 reclassified DELETE → KEEP]**
+6. **`getOverdueCustomerRanking`** — `getFinanceOverview:166` internal call (Dashboard rankings composite) **[v3 reclassified DELETE → KEEP]**
+
+Cascade safety check: neither newly-KEEP method (`getProfitTrendChart` / `getOverdueCustomerRanking`) calls any of the OTHER 10 DELETE methods. Verified via `sed -n 'X,Yp' | grep -oE '[a-zA-Z]+\('` on each method body — only private helpers + repo methods + Java stdlib called.
+
+**Risks**: see §5. Lowest-risk per Phase A R-6 (Spring component scan break = NONE) since the class file stays alive with 6 KEEP'd methods.
 
 ---
 
@@ -88,27 +115,50 @@ grep -rn "\.${method}(" backend/java/cretas-api/src/main/java/ \
   | grep -v "FinanceAnalysisServiceImpl.java\|FinanceAnalysisService.java"
 ```
 
-| Method | External callers | Classification |
+| Method | All callers (external + internal) | Status |
 |---|---|---|
-| `getFinanceOverview` | `SmartBIDashboardController.java:538` (DASHBOARD_COMPOSITE direct), `SmartBIServiceImpl.java:601` (DASHBOARD_COMPOSITE via facade `getDashboardOverview` finance branch), `SmartBIServiceImpl.java:1579` (NL_QUERY_PATH `executeQueryByIntent` QUERY_FINANCE_OVERVIEW) | **KEEP** |
-| `getProfitTrendChart` | (none) | **DELETE** |
-| `getProfitMetrics` | `SmartBIAnalysisController.java:364` (NL_QUERY_PATH controller-side `generateFinanceQueryResponse` called by `executeQueryByIntent`), `SmartBIServiceImpl.java:602` (DASHBOARD_COMPOSITE via facade), `SmartBIServiceImpl.java:1582` (NL_QUERY_PATH via facade QUERY_PROFIT_ANALYSIS) | **KEEP** |
-| `getCostStructureChart` | `SmartBIServiceImpl.java:603` (DASHBOARD_COMPOSITE via facade), `SmartBIServiceImpl.java:1585` (NL_QUERY_PATH via facade QUERY_COST_ANALYSIS) | **KEEP** |
-| `getCostTrendChart` | (none) | **DELETE** |
-| `getReceivableAgingChart` | `SmartBIServiceImpl.java:604` (DASHBOARD_COMPOSITE via facade) | **KEEP** |
-| `getReceivableMetrics` | `SmartBIServiceImpl.java:1588` (NL_QUERY_PATH via facade QUERY_RECEIVABLE) | **KEEP** |
-| `getOverdueCustomerRanking` | (none) | **DELETE** |
-| `getReceivableTrendChart` | (none) | **DELETE** |
-| `getPayableAgingChart` | (none) | **DELETE** |
-| `getPayableMetrics` | (none) | **DELETE** |
-| `getBudgetExecutionWaterfall` | (none) | **DELETE** |
-| `getBudgetVsActualChart` | (none) | **DELETE** |
-| `getBudgetMetrics` | (none) | **DELETE** |
-| `getBudgetAchievementChart` | (none) | **DELETE** |
-| `getYoYMoMComparisonChart` | (none) | **DELETE** |
-| `getCategoryStructureComparisonChart` | (none) | **DELETE** |
+| `getFinanceOverview` | Dashboard:538 (alive direct) + SmartBIServiceImpl:1579 (alive `processQuery` QUERY_FINANCE_OVERVIEW) + ~~SmartBIServiceImpl:601 (dead-chain getComprehensiveAnalysis)~~ | **KEEP** (2 alive) |
+| **`getProfitTrendChart`** | **`FinanceAnalysisServiceImpl:157` (internal call from `getFinanceOverview` Dashboard chartList composite)** + Tests:192,230 | **KEEP (v3 reclassified)** |
+| `getProfitMetrics` | SmartBIAnalysisController:364 (alive `/query` NL helper) + SmartBIServiceImpl:1582 (alive `processQuery` QUERY_PROFIT_ANALYSIS) + ~~SmartBIServiceImpl:602 (dead-chain)~~ + 2 KEEP tests | **KEEP** (2 alive) |
+| `getCostStructureChart` | SmartBIServiceImpl:1585 (alive `processQuery` QUERY_COST_ANALYSIS) + ~~SmartBIServiceImpl:603 (dead-chain)~~ + 1 KEEP test | **KEEP** (1 alive) |
+| `getCostTrendChart` | (none) | **DELETE** (pure zero-caller) |
+| `getReceivableAgingChart` | ~~SmartBIServiceImpl:604 (dead-chain getComprehensiveAnalysis)~~ — sole caller | **DEFER to Sub-L** (dead-chain) |
+| `getReceivableMetrics` | SmartBIServiceImpl:1588 (alive `processQuery` QUERY_RECEIVABLE) | **KEEP** (1 alive) |
+| **`getOverdueCustomerRanking`** | **`FinanceAnalysisServiceImpl:166` (internal call from `getFinanceOverview` Dashboard rankings composite)** | **KEEP (v3 reclassified)** |
+| `getReceivableTrendChart` | (none) | **DELETE** (pure zero-caller) |
+| `getPayableAgingChart` | (none) | **DELETE** (pure zero-caller) |
+| `getPayableMetrics` | (none) | **DELETE** (pure zero-caller) |
+| `getBudgetExecutionWaterfall` | (none) | **DELETE** (pure zero-caller) |
+| `getBudgetVsActualChart` | (none) | **DELETE** (pure zero-caller) |
+| `getBudgetMetrics` | (none) | **DELETE** (pure zero-caller) |
+| `getBudgetAchievementChart` | (none) | **DELETE** (pure zero-caller) |
+| `getYoYMoMComparisonChart` | (none) | **DELETE** (pure zero-caller) |
+| `getCategoryStructureComparisonChart` | (none) | **DELETE** (pure zero-caller) |
 
-**Result**: 5 KEEP / 12 DELETE.
+**Result (v3)**: 6 KEEP / 1 DEFER to Sub-L / 10 DELETE in this Sub-E.
+
+### §2.2.1 Internal-reference verification (post-v2 mvn FAIL → v3 fix)
+
+```bash
+# Per v3 corrected methodology: include self file in grep
+for m in <12 v2-DELETE candidates>; do
+    grep -n "\b${m}(" backend/java/cretas-api/src/main/java/com/cretas/aims/service/smartbi/impl/FinanceAnalysisServiceImpl.java
+done
+```
+
+Findings: 2 methods have internal callers within `FinanceAnalysisServiceImpl` itself:
+- `getProfitTrendChart` — line 157 (inside `getFinanceOverview`)
+- `getOverdueCustomerRanking` — line 166 (inside `getFinanceOverview`)
+
+Decision: **Option A (reclassify KEEP)** for both, since `getFinanceOverview` Dashboard composite genuinely needs:
+- profit trend chart in `chartList` (one of 3 charts shown to customers — alongside `getCostStructureChart` + `getReceivableAgingChart`)
+- overdue customer ranking in `rankings` map (the only ranking shown — drives `aiInsights` + `suggestions` downstream via `generateFinanceInsights` and `generateFinanceSuggestions`)
+
+Removing these calls (Option B) would:
+- Drop visible Dashboard content for all 75 factories — UX regression
+- Break `aiInsights` / `suggestions` generation logic that consumes `overdueRankings`
+
+Option A is correct. Sub-E delete count revised 12 → 10.
 
 ### §2.3 KEEP justification detail
 
