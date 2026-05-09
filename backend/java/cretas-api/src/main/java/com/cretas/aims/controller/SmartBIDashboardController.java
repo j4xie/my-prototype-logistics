@@ -14,14 +14,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
 
 /**
@@ -341,16 +338,6 @@ public class SmartBIDashboardController {
                     .build();
             return ResponseEntity.ok(ApiResponse.success(emptyDashboard));
         }
-    }
-
-    @GetMapping("/data-date-range")
-    @Operation(summary = "Get data date range", description = "Auto-detect sales data time span in database")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getDataDateRange(
-            @Parameter(description = "Factory ID") @PathVariable String factoryId) {
-        log.info("[SMARTBI_MIGRATED] /data-date-range factoryId={} returning 410 Gone", factoryId);
-        return ResponseEntity.status(HttpStatus.GONE).body(
-                ApiResponse.error(410, "SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/data-date-range (since 2026-05-09)")
-        );
     }
 
     @GetMapping("/dashboard")
