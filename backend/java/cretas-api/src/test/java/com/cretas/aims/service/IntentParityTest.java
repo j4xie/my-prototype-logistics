@@ -57,11 +57,21 @@ class IntentParityTest {
             for (String line : content.split("\n")) {
                 if (line.trim().isEmpty()) continue;
                 JsonNode node = MAPPER.readTree(line);
+                // Fixture has both numeric userIds and sentinel "test-user" string —
+                // normalize to a valid Long to avoid NumberFormatException at invokeMatch.
+                String rawUserId = node.get("userId").asText("22");
+                String userId;
+                try {
+                    Long.parseLong(rawUserId);
+                    userId = rawUserId;
+                } catch (NumberFormatException e) {
+                    userId = "22";  // default factory_super_admin numeric id
+                }
                 cases.add(new TestCase(
                         node.get("id").asText(),
                         node.get("query").asText(),
                         node.get("factoryId").asText(),
-                        node.get("userId").asText("22"),
+                        userId,
                         node.get("role").asText("factory_super_admin"),
                         node.get("expectedIntentCode").asText()
                 ));
