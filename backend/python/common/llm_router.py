@@ -116,68 +116,59 @@ class SLOT(str, Enum):
 
 
 # ─── Slot → per-provider model name ───
-# Priority: aliyun_b (newest/freshest quota) → aliyun_a → zhipu → deepseek
-# All 4 are OpenAI-compatible via /chat/completions
-# Model names must match what each provider exposes.
+# May 9 2026 free-quota audit: aliyun_b is the free-quota mine
+# (~all 1M tokens/month per SKU). aliyun_a has free quota only on
+# version-suffixed SKUs — bare aliases like `qwen-plus`/`qwen-turbo`/
+# `qwen-flash` route to PAID SKUs on A. DeepSeek-official is paid API
+# (no free tier). Net: chain free providers first, deepseek-official last.
+# Audit evidence: docs/superpowers/dispatch + bailian.console screenshots.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
-    # Apr 27 2026 v4-fix: DeepSeek API rev'd to V4 only (v4-flash + v4-pro).
-    # Per api-docs.deepseek.com:
-    #   - deepseek-v4-flash: standard chat (= legacy `deepseek-chat` alias)
-    #   - deepseek-v4-pro: reasoning (= legacy `deepseek-reasoner` alias,
-    #     2026-07-24 retire)
-    #   - deepseek-chat / deepseek-reasoner: back-compat aliases (deprecated
-    #     but still routed)
-    # CRITICAL: V4 default `thinking.type=enabled` adds ~5s of invisible
-    # reasoning before visible answer + truncates output. We force
+    # CRITICAL: deepseek-v4 default `thinking.type=enabled` adds ~5s of
+    # invisible reasoning before visible answer + truncates output. We force
     # `thinking: {"type": "disabled"}` in _normalize_payload_for_provider
-    # for chat-class slots. Reasoning slots opt-in by NOT setting that key.
+    # for the deepseek-official provider. Reasoning slots opt-in by NOT
+    # setting that key. DeepSeek models routed via aliyun_b (DashScope
+    # compatible-mode) are NOT touched by that hook — DashScope handles
+    # thinking semantics itself per its own API contract.
     SLOT.CHAT: {
-        # Apr 27 2026 (F4): aliyun_b changed qwen-plus → qwen-flash for chain
-        # diversity. Both aliyun_a + aliyun_b previously hit qwen-plus → shared
-        # DashScope rate-limit, when DashScope hiccups both fail at once.
-        # qwen-flash is the smaller/faster qwen variant (~3-5s in API probe vs
-        # ~10s for qwen-plus). RICH 412-468 char answer with full GUARD
-        # structure preserved (3 段 + 量化 + 时间窗口). Chain order means it's
-        # only used as last fallback after deepseek-v4-flash + aliyun_a/qwen-plus
-        # + zhipu/glm-4-plus exhaust — rare but valuable灾备.
-        "aliyun_b": "qwen-flash",
-        "aliyun_a": "qwen-plus",
+        "aliyun_b": "qwen3.6-flash",               # ✅ B free 997K/1M (version-pinned per audit)
+        "aliyun_a": "qwen3.5-plus-2026-04-20",     # ✅ A free 999K/1M (bare qwen-plus is PAID on A)
         "zhipu":    "glm-4-plus",
-        "deepseek": "deepseek-v4-flash",
+        "deepseek": "deepseek-v4-flash",           # paid last-resort
     },
     SLOT.INSIGHTS: {
-        "aliyun_b": "qwen-flash",  # F4 same diversification logic as CHAT
-        "aliyun_a": "qwen-plus",
+        "aliyun_b": "qwen3.6-flash",               # ✅ B free 997K/1M
+        "aliyun_a": "qwen3.6-flash-2026-04-16",    # ✅ A free 972K/1M
         "zhipu":    "glm-4-plus",
         "deepseek": "deepseek-v4-flash",
     },
     SLOT.CHART: {
-        "aliyun_b": "glm-5",
-        "aliyun_a": "glm-5",
+        "aliyun_b": "glm-5",                        # ✅ B free 875K/1M
+        "aliyun_a": "glm-5",                        # ✅ A free 886K/1M (expires 2026/05/17)
         "zhipu":    "glm-4.5-air",
         "deepseek": "deepseek-v4-flash",
     },
     SLOT.MAPPER: {
-        "aliyun_b": "qwen-turbo-1101",       # 10M tokens on Account B
-        "aliyun_a": "qwen3.5-122b-a10b",
+        "aliyun_b": "qwen-turbo",                  # ✅ B free 999K/1M (was qwen-turbo-1101 — that SKU not on B)
+        "aliyun_a": "qwen3.5-122b-a10b",           # ✅ A free 576K/1M
         "zhipu":    "glm-4.5-air",
         "deepseek": "deepseek-v4-flash",
     },
     SLOT.REASONING: {
-        "aliyun_b": "deepseek-v3.2-exp",      # DeepSeek via 百炼 = free!
-        "aliyun_a": "qwen3.5-397b-a17b",
+        "aliyun_b": "deepseek-r1",                 # ✅ B free 1M/1M (was deepseek-v3.2-exp — that SKU is "不支持开启" on百炼)
+        "aliyun_a": "qwen3.5-397b-a17b",           # ✅ A free 974K/1M
         "zhipu":    "glm-4.5-air",
-        "deepseek": "deepseek-v4-pro",
+        "deepseek": "deepseek-v4-pro",             # paid reasoning-grade
     },
     SLOT.VL: {
-        "aliyun_b": "qwen3-vl-plus-2025-05-07",
-        "aliyun_a": "qwen3-vl-flash",
+        "aliyun_b": "qwen3-vl-plus-2025-05-07",    # ✅ B free 1M/1M
+        "aliyun_a": "qwen3-vl-flash",              # ✅ A free (enabled, quota TBD)
         "zhipu":    "glm-4.6v",
-        "deepseek": None,                      # DeepSeek has no VL model
+        "deepseek": None,                           # DeepSeek has no VL model
     },
     SLOT.REVIEW: {
-        "aliyun_b": "deepseek-v3.2",           # DeepSeek via 百炼 = free!
-        "aliyun_a": "deepseek-v3",
+        "aliyun_b": "deepseek-r1-distill-qwen-32b", # ✅ B free 1M/1M (was deepseek-v3.2 — not on百炼)
+        "aliyun_a": "qwen3.5-397b-a17b",            # ✅ A free 974K/1M (was deepseek-v3 — not free on A)
         "zhipu":    "glm-4.5-air",
         "deepseek": "deepseek-v4-pro",
     },
@@ -207,15 +198,17 @@ def _provider_config(account: str) -> Tuple[str, str]:
     return mapping.get(account, ("", ""))
 
 
-# Apr 27 2026 v8 quota-fix: deepseek-chat verified stable (paid API, no
-# free-tier limit). Re-ordered to deepseek-first because:
-#   - deepseek-chat: paid, stable, ~$0.14/1M input + $0.28/1M output (cheap)
-#   - aliyun_a/qwen-plus: works but DashScope sometimes hits FreeTierOnly
-#     cap mid-day even on this account
-#   - zhipu/glm-4-plus: stable backup
-#   - aliyun_b/qwen-plus: free tier exhausted today (last resort)
-# Test: direct curl to deepseek streams 60-char Chinese answer in <2s.
-DEFAULT_CHAIN: List[str] = ["deepseek", "aliyun_a", "zhipu", "aliyun_b"]
+# May 9 2026 free-first re-order: bailian.console audit confirmed aliyun_b
+# is a free-quota mine (~all SKUs have 1M tokens/month free, vector tab even
+# has 20M async-embed). Per-SLOT model picks above were also fixed to use
+# free SKUs (was: qwen-plus/qwen-turbo-1101/deepseek-v3.2-exp etc which are
+# PAID on百炼 — only version-suffixed SKUs grant free quota on A; bare
+# aliases on B happen to grant free, opposite of A).
+# Chain order: free providers first (b > a > zhipu) → paid official last.
+# Each provider's 403/AllocationQuota.FreeTierOnly + 429 still triggers
+# fallback per `_is_quota_exhausted`, so prod safety unchanged when free
+# quotas exhaust mid-month — chain naturally walks to paid tail.
+DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
 
 
 def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
