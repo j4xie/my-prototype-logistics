@@ -106,22 +106,6 @@ public interface DepartmentAnalysisService {
      */
     ChartConfig getDepartmentEfficiencyMatrix(String factoryId, LocalDate startDate, LocalDate endDate);
 
-    // ==================== 部门人员分布 ====================
-
-    /**
-     * 获取部门人员分布图配置
-     *
-     * 生成部门人数分布环形图：
-     * - 数值：人员数量 (headcount)
-     * - 分类：部门名称
-     * - 中心显示：总人数
-     *
-     * @param factoryId 工厂ID
-     * @param date      统计日期（取该日期最近的人员数据）
-     * @return 环形图配置
-     */
-    ChartConfig getDepartmentHeadcountChart(String factoryId, LocalDate date);
-
     // ==================== 部门趋势对比 ====================
 
     /**
@@ -139,21 +123,4 @@ public interface DepartmentAnalysisService {
      * @return 多折线图配置
      */
     ChartConfig getDepartmentTrendComparison(String factoryId, LocalDate startDate, LocalDate endDate, String period);
-
-    // ==================== 部门销售占比 ====================
-
-    /**
-     * 获取部门销售占比变化图配置
-     *
-     * 生成堆叠面积图，展示各部门销售额占比的变化趋势：
-     * - X轴：月份
-     * - Y轴：销售额（堆叠百分比）
-     * - 系列：各部门
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 堆叠面积图配置
-     */
-    ChartConfig getDepartmentShareTrend(String factoryId, LocalDate startDate, LocalDate endDate);
 }
