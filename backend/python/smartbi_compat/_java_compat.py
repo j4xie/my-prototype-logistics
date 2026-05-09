@@ -24,6 +24,18 @@ Helpers
     uses HALF_UP. Rule 12 candidate (PR-N-1 closer fixed procurement
     supplier concentration 46.55 → "46.6" mirror, 2026-05-06).
 
+- ``_java_string_hashcode(s)``
+    Mirror ``java.lang.String.hashCode`` — signed int32 polynomial hash
+    (``h = 31*h + c`` with int32 overflow wrap). Used as the seed source
+    for production / quality mock data generators (T6.6 Phase B).
+
+- ``_JavaRandom(seed)``
+    Mirror ``java.util.Random`` 48-bit LCG. Bit-exact reproduction of
+    ``next_int(bound)`` (power-of-2 fast path + rejection-sampling) and
+    ``next_double()`` (53-bit mantissa). Required by T6.6 production /
+    quality mock data parity — Python ``random.Random`` is Mersenne
+    Twister, not LCG, so the sequences would never line up.
+
 History
 -------
 - 2026-05-06: PR-N-1 (chat 1, commit 85cae2d22) introduced both helpers
@@ -38,6 +50,11 @@ History
   Rule 12 latent sites across analysis_inventory / analysis_drilldown /
   analysis_sales that emit ``f"{float(d):.Nf}"`` (banker's). F001 prod
   data didn't trigger; other factory data with .x5 boundary values would.
+- 2026-05-09: ``_java_string_hashcode`` + ``_JavaRandom`` added as Day-0
+  hard-gate foundation for T6.6 Phase B production / quality endpoint
+  ports (PR #199 §3 / PR #203 §8.9). Co-located with ``_java_hashmap_bucket``
+  — same Java semantic mirror family. Bit-exact reference values come from
+  ``tests/fixtures/JavaRandomReferenceDump.java`` against Azul JDK 21.0.10.
 
 Reference: ``.claude/rules/python-java-port.md`` (Rule 8 / Rule 11 / Rule 12
 family — Jackson + collection + display formatting quirks).
@@ -141,3 +158,128 @@ def _format_decimal_half_up(d, places: int = 1) -> str:
     else:
         quant = Decimal("0." + "0" * (places - 1) + "1")
     return str(d.quantize(quant, rounding=ROUND_HALF_UP))
+
+
+# ---------------------------------------------------------------------------
+# Java Random + String.hashCode bit-exact mirror (T6.6 Phase B foundation)
+# ---------------------------------------------------------------------------
+
+_INT32_MASK = 0xFFFFFFFF
+_INT32_SIGN = 0x80000000          # 2^31
+_LCG_MULTIPLIER = 0x5DEECE66D     # java.util.Random multiplier
+_LCG_ADDEND = 0xB                 # java.util.Random addend
+_LCG_MASK = (1 << 48) - 1         # 48-bit LCG state mask
+
+
+def _java_string_hashcode(s: str) -> int:
+    """Mirror ``java.lang.String.hashCode`` — signed int32 polynomial hash.
+
+    Algorithm (per JDK source ``String.hashCode``)::
+
+        int h = 0;
+        for (int i = 0; i < length; i++)
+            h = 31 * h + value[i];
+        return h;
+
+    The polynomial accumulates with int32 wrap-around. Returns a Python
+    ``int`` in the closed range ``[-2**31, 2**31 - 1]`` so callers can pass
+    it straight to ``_JavaRandom(seed)`` and reproduce ``Random(s.hashCode())``
+    semantics exactly.
+
+    Iterates over Python ``str`` characters by ``ord(c)``. For BMP code
+    points this matches Java's per-``char`` loop. For supplementary planes
+    Java uses two surrogate ``char`` values per code point — Python ``str``
+    iterates by code point. T6.6 mock data factory IDs are ASCII only, so
+    this distinction does not matter in practice; if you need surrogate-pair
+    parity for non-BMP input, encode via ``s.encode('utf-16-be')`` and
+    iterate as 16-bit units instead.
+
+    >>> _java_string_hashcode("F001")
+    2133035
+    >>> _java_string_hashcode("AaAa") == _java_string_hashcode("BBBB")
+    True
+    """
+    h = 0
+    for c in s:
+        h = (31 * h + ord(c)) & _INT32_MASK
+    if h & _INT32_SIGN:
+        h -= 1 << 32
+    return h
+
+
+class _JavaRandom:
+    """Mirror ``java.util.Random`` — 48-bit linear congruential generator.
+
+    Reproduces JDK 21 ``Random.nextInt(bound)`` and ``Random.nextDouble``
+    bit-for-bit. Construct with the same seed Java uses — typically
+    ``_java_string_hashcode(factory_id)`` — and consume in the same order
+    as the Java side to get identical mock data.
+
+    Algorithm (per ``java.util.Random`` source)::
+
+        // constructor
+        this.seed = (seed ^ 0x5DEECE66D) & ((1 << 48) - 1)
+
+        // protected int next(int bits)
+        seed = (seed * 0x5DEECE66D + 0xB) & ((1 << 48) - 1)
+        return (int) (seed >>> (48 - bits))
+
+        // public int nextInt(int bound)
+        if (bound is power of 2)
+            return (int) ((bound * (long) next(31)) >> 31)
+        do {
+            bits = next(31);
+            val  = bits % bound;
+        } while (bits - val + (bound - 1) < 0);   // overflow-detect rejection
+        return val;
+
+        // public double nextDouble()
+        return ((next(26) << 27) + next(27)) / (double)(1L << 53)
+
+    Java's rejection check ``bits - val + (bound - 1) < 0`` relies on
+    32-bit signed overflow. Python ints are arbitrary precision, so we
+    detect the same condition by testing ``>= 2**31`` instead.
+    """
+
+    __slots__ = ("seed",)
+
+    def __init__(self, seed: int) -> None:
+        # Java accepts a long seed, then scrambles it via XOR with the
+        # multiplier and masks to 48 bits. Negative seeds (e.g. negative
+        # hashcodes) work because Python's bitwise XOR matches Java long
+        # XOR after we mask to 48 bits.
+        self.seed = (seed ^ _LCG_MULTIPLIER) & _LCG_MASK
+
+    def _next(self, bits: int) -> int:
+        """Advance the LCG and return the top ``bits`` of the 48-bit state."""
+        self.seed = (self.seed * _LCG_MULTIPLIER + _LCG_ADDEND) & _LCG_MASK
+        return self.seed >> (48 - bits)
+
+    def next_int(self, bound: int) -> int:
+        """Mirror ``Random.nextInt(int bound)`` — uniform in ``[0, bound)``."""
+        if bound <= 0:
+            raise ValueError("bound must be positive")
+        # Power-of-2 fast path — Java uses (long) cast to widen, so the
+        # multiplication does not overflow. Python ints never overflow,
+        # so the formula is direct.
+        if (bound & -bound) == bound:
+            return (bound * self._next(31)) >> 31
+        # Rejection-sampling path. The Java overflow check `< 0` becomes
+        # `>= 2**31` here: when the unsigned sum would wrap into the
+        # signed-negative range, Java retries to avoid modulo bias.
+        while True:
+            bits = self._next(31)
+            val = bits % bound
+            if bits - val + bound - 1 < _INT32_SIGN:
+                return val
+
+    def next_double(self) -> float:
+        """Mirror ``Random.nextDouble`` — uniform in ``[0.0, 1.0)``.
+
+        Returns a 53-bit-precision float. The numerator
+        ``(next(26) << 27) + next(27)`` is at most ``2**53 - 1``, which
+        converts to ``float`` losslessly; division by ``2**53`` (also exact
+        as a ``float``) then yields the same IEEE-754 ``double`` Java's
+        ``(double) longValue / (double) (1L << 53)`` produces.
+        """
+        return ((self._next(26) << 27) + self._next(27)) / float(1 << 53)
