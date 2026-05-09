@@ -224,47 +224,4 @@ public interface QualityAnalysisService {
      * @return 图表配置
      */
     ChartConfig getQualityTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period);
-
-    // ==================== 产线质量分析 ====================
-
-    /**
-     * 获取各产线质量指标
-     *
-     * 返回按产线分组的质量指标，包括：
-     * - 各产线 FPY
-     * - 各产线不良率
-     * - 各产线返工率
-     * - 各产线排名
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 指标结果列表
-     */
-    List<MetricResult> getQualityByProductLine(String factoryId, LocalDate startDate, LocalDate endDate);
-
-    /**
-     * 获取产线质量排名
-     *
-     * 按 FPY 降序排列，返回各产线的质量排名。
-     * 每个排名项包含：排名、产线名称、FPY 值、不良率、预警级别。
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 产线质量排名列表
-     */
-    List<RankingItem> getProductLineQualityRanking(String factoryId, LocalDate startDate, LocalDate endDate);
-
-    /**
-     * 获取产线质量对比图表配置
-     *
-     * 返回柱状图或雷达图配置，对比各产线的质量指标。
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 图表配置
-     */
-    ChartConfig getProductLineQualityComparisonChart(String factoryId, LocalDate startDate, LocalDate endDate);
 }
