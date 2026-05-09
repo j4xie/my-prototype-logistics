@@ -7,7 +7,7 @@ guiding factories through requirement gathering for the Cretas AI Agent.
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import httpx
 from pydantic import BaseModel

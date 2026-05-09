@@ -530,7 +530,7 @@ class ChartRecommender:
                 # actual columns using dtype/role before returning, so the
                 # frontend chart builder doesn't render an empty chart.
                 remapped = self._remap_cached_recommendations(cached, data_summary)
-                logger.info(f"Using cached chart recommendations (remapped to current columns)")
+                logger.info("Using cached chart recommendations (remapped to current columns)")
                 return remapped[:max_recommendations]
 
         # 1b. Apr 25 (D2.B1): skip LLM entirely for tiny uploads. The 24s

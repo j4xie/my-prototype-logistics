@@ -24,7 +24,6 @@ if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 from backfill_silver import (  # noqa: E402
-    _ALIAS_TO_ATTR,
     _PAYMENT_COLUMNS,
     _build_canonical_row,
     _extract_discounts,

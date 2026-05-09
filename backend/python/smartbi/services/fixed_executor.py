@@ -14,14 +14,14 @@ import io
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import openpyxl
 import pandas as pd
 import numpy as np
 
-from services.structure_detector import StructureDetectionResult, ColumnInfo
-from services.semantic_mapper import SemanticMappingResult, FieldMapping
+from services.structure_detector import StructureDetectionResult
+from services.semantic_mapper import SemanticMappingResult
 from services.context_extractor import ContextExtractor, ContextInfo
 
 logger = logging.getLogger(__name__)

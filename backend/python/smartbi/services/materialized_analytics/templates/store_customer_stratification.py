@@ -14,7 +14,7 @@ Applies when 门店名称 + 客流量 both exist.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 
@@ -22,7 +22,6 @@ from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
-from ..restaurant.item_parser import parse_items
 from ..restaurant.schema_helpers import find_customer_col, find_store_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult

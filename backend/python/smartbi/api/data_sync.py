@@ -362,9 +362,9 @@ def _persist_to_db(db_url: str, factory_id: str, sales, ar_rows, dept_rows):
 
     try:
         # Clean existing data for this factory
-        session.execute(text(f"DELETE FROM smart_bi_sales_data WHERE factory_id = :fid"), {'fid': factory_id})
-        session.execute(text(f"DELETE FROM smart_bi_finance_data WHERE factory_id = :fid"), {'fid': factory_id})
-        session.execute(text(f"DELETE FROM smart_bi_department_data WHERE factory_id = :fid"), {'fid': factory_id})
+        session.execute(text("DELETE FROM smart_bi_sales_data WHERE factory_id = :fid"), {'fid': factory_id})
+        session.execute(text("DELETE FROM smart_bi_finance_data WHERE factory_id = :fid"), {'fid': factory_id})
+        session.execute(text("DELETE FROM smart_bi_department_data WHERE factory_id = :fid"), {'fid': factory_id})
 
         # Insert sales
         for row in sales:

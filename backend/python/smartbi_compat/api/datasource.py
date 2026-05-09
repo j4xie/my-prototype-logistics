@@ -42,8 +42,7 @@ Backlog (Phase 3): docs/superpowers/plans/2026-05-01-phase2a-remaining-endpoints
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timezone
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 

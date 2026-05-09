@@ -16,15 +16,14 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 # Services (from SmartBI module)
 from smartbi.services.cross_analyzer import CrossAnalyzer, DrillDownResult
 from smartbi.services.industry_benchmark import (
     IndustryBenchmark,
-    IndustryCategory,
-    BenchmarkResult
+    IndustryCategory
 )
 from smartbi.services.insight_dimensions import (
     InsightDimensionAnalyzer,

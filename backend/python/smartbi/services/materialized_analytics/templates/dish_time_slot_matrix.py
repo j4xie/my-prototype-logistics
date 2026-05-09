@@ -22,7 +22,6 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple
 from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
-from ..compute.polars_backend import PolarsBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items

@@ -151,7 +151,7 @@ def test_sheet(excel_file: str, sheet_name: str):
 
     # 2. 规则方法合并表头
     merged_headers = merge_multirow_headers_rule(df_raw, data_start)
-    print(f"\n合并后的列名 (规则方法):")
+    print("\n合并后的列名 (规则方法):")
     for i, name in enumerate(merged_headers[:10]):
         print(f"  Col {i}: {name}")
     if len(merged_headers) > 10:
@@ -162,14 +162,14 @@ def test_sheet(excel_file: str, sheet_name: str):
         df_clean = df_raw.iloc[data_start:].copy()
         df_clean.columns = merged_headers[:len(df_clean.columns)]
 
-        print(f"\n清洗后的数据预览:")
+        print("\n清洗后的数据预览:")
         print(df_clean.head(3).to_string())
 
     # 4. 评估结果
     col_x_count = sum(1 for name in merged_headers if name.startswith('Col_'))
     meaningful_count = len(merged_headers) - col_x_count
 
-    print(f"\n评估结果:")
+    print("\n评估结果:")
     print(f"  总列数: {len(merged_headers)}")
     print(f"  有意义列名: {meaningful_count}")
     print(f"  Col_X 列名: {col_x_count}")

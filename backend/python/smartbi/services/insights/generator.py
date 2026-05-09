@@ -21,7 +21,7 @@ from . import data_summarizer as ds
 from . import scenario_context as sc
 from . import prompt_builder as pb
 from . import llm_client as llm
-from .statistical import generate_statistical_insights, InsightType
+from .statistical import generate_statistical_insights
 
 logger = logging.getLogger(__name__)
 

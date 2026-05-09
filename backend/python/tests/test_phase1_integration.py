@@ -1,5 +1,4 @@
 """Phase 1 integration: verify all 4 handlers are registered and produce valid responses."""
-import pytest
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.bom_variance import BomVarianceHandler
 from smartbi.services.restaurant.sections.sales_plan_tracking import SalesPlanTrackingHandler

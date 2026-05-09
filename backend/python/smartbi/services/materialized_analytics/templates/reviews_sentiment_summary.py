@@ -15,7 +15,7 @@ Applies when schema has 评价 OR 星级 column.
 from __future__ import annotations
 
 import logging
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 
@@ -26,7 +26,7 @@ from smartbi.capability.contract import RequiresSpec
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
 from ..restaurant.action_rec_formatter import format_action_rec
-from ..schema import DataSchema, Domain
+from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 from ..restaurant import schema_helpers

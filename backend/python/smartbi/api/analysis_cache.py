@@ -30,7 +30,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from smartbi.database.connection import get_db_context, is_postgres_enabled

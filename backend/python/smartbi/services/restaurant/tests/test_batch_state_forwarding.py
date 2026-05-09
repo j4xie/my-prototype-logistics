@@ -9,10 +9,7 @@ accidentally reverted.
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock
 
-import pandas as pd
-import pytest
 
 from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
 

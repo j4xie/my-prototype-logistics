@@ -7,7 +7,7 @@ Used by ``assert_response_eq`` when ``mode="strict_byte"``.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 

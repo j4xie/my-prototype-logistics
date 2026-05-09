@@ -1,6 +1,4 @@
 """Unit tests for cross_chain_benchmark section handler (P3 Task 3.3-3.4)."""
-import pandas as pd
-import pytest
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
 from smartbi.services.restaurant.sections.cross_chain_benchmark import (

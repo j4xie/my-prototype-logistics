@@ -6,7 +6,7 @@ from typing import ClassVar
 from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
-from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register

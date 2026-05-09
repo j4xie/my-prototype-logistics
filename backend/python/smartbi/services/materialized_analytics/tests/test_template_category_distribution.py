@@ -1,5 +1,4 @@
 """test_template_category_distribution.py"""
-import pytest
 from smartbi.services.materialized_analytics.compute.polars_backend import PolarsBackend
 from smartbi.services.materialized_analytics.schema import (
     DataSchema, Domain, Field, FieldRole,

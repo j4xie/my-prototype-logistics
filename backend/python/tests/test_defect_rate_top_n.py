@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 import polars as pl
-import pytest
 
 from smartbi.services.materialized_analytics.templates.defect_rate_top_n import (
     DefectRateTopN,
 )
-from smartbi.services.materialized_analytics.compute.base import ComputeBackend
 
 
 class _MockBackend:

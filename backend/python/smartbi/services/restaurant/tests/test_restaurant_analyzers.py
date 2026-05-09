@@ -4,7 +4,7 @@ No DB or LLM calls — each analyzer is tested standalone with mock data.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pandas as pd
 import pytest

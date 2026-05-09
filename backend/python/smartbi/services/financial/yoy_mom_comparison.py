@@ -8,12 +8,11 @@ Steven's Power BI design:
 - In 综合 viewMode, MoM line is hidden for cleaner look
 """
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 import pandas as pd
 
 from .base import (
-    AbstractFinancialChartBuilder, COLORS, MONTH_LABELS,
-    _sanitize_for_json, _detect_value_scale,
+    AbstractFinancialChartBuilder, COLORS, _sanitize_for_json, _detect_value_scale,
 )
 
 logger = logging.getLogger(__name__)

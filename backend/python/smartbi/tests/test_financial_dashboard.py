@@ -11,7 +11,7 @@ import sys
 import os
 import unittest
 import logging
-from typing import Dict, List, Any
+from typing import Dict
 
 import pandas as pd
 
@@ -20,8 +20,8 @@ _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from smartbi.services.financial_data_normalizer import FinancialDataNormalizer, ColumnMapping
-from smartbi.services.financial.registry import ChartBuilderRegistry, registry
+from smartbi.services.financial_data_normalizer import FinancialDataNormalizer
+from smartbi.services.financial.registry import registry
 from smartbi.services.financial_dashboard import FinancialDashboardService
 
 from smartbi.tests.test_financial_data import (
@@ -29,9 +29,6 @@ from smartbi.tests.test_financial_data import (
     SAMPLE_CATEGORY_DATA,
     SAMPLE_PNL_DATA,
     SAMPLE_MARGIN_DATA,
-    SAMPLE_GANTT_DATA,
-    SAMPLE_FLOW_DATA,
-    SAMPLE_TREEMAP_DATA,
     SAMPLE_EMPTY_DATA,
     SAMPLE_SINGLE_ROW_DATA,
     SAMPLE_ALL_ZEROS_DATA,

@@ -1,7 +1,6 @@
 """Unit tests for monthly_ppt_export section handler (P3.5D P3)."""
 from pathlib import Path
 
-import pytest
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
 from smartbi.services.restaurant.sections.monthly_ppt_export import (

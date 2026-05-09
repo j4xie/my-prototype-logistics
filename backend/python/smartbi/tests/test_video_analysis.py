@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.video_efficiency_analyzer import VideoEfficiencyAnalyzer, analyze_videos
+from services.video_efficiency_analyzer import analyze_videos
 import json
 
 # 视频文件路径

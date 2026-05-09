@@ -1,11 +1,10 @@
 """Gross Margin Trend Chart Builder — 毛利率趋势."""
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 import pandas as pd
 
 from .base import (
-    AbstractFinancialChartBuilder, COLORS, MONTH_LABELS,
-    _sanitize_for_json, _detect_value_scale,
+    AbstractFinancialChartBuilder, _sanitize_for_json,
 )
 
 logger = logging.getLogger(__name__)

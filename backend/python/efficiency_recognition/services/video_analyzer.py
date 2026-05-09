@@ -17,7 +17,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 import httpx
 

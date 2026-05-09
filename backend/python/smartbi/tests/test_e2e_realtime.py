@@ -17,7 +17,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 
 # Fix Windows console encoding
 if sys.platform == 'win32':
@@ -328,7 +328,7 @@ async def test_single_file(
                 }
 
                 # Print quality summary
-                print(f"\n  Quality Assessment:")
+                print("\n  Quality Assessment:")
                 print(f"    Data:    {data_quality['score']:3d}/100 ({data_quality['field_count']} fields, scenario={data_quality['scenario']})")
                 print(f"    Charts:  {chart_quality['score']:3d}/100 ({chart_quality['chart_count']} charts: {chart_quality['chart_types']})")
                 print(f"    Insights:{insight_quality['score']:3d}/100 ({insight_quality['insight_count']} insights)")

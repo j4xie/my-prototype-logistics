@@ -1,5 +1,4 @@
 """Unit tests for shrinkage_analysis section handler (P3.5C B4)."""
-import pytest
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
 from smartbi.services.restaurant.sections.shrinkage_analysis import (

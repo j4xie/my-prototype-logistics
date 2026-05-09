@@ -15,24 +15,18 @@ import logging
 from io import BytesIO
 from typing import Any, Optional, Union, List, Dict
 from enum import Enum
-from datetime import datetime
 
 import pandas as pd
 import numpy as np
 import openpyxl
-from openpyxl.utils import get_column_letter
 
 from services.data_feature_analyzer import (
     DataFeatureAnalyzer,
     DataFeatureResult,
-    DataType,
-    count_time_pattern_headers,
-    is_time_pattern
+    count_time_pattern_headers
 )
 from services.field_mapping import (
-    FieldMappingService,
-    FieldMappingResult,
-    FieldMappingDictionary
+    FieldMappingService
 )
 
 logger = logging.getLogger(__name__)

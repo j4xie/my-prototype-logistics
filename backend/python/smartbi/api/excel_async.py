@@ -27,12 +27,10 @@ from __future__ import annotations
 
 import logging
 import os
-import tempfile
 import time
 import uuid
 from typing import Optional
 
-import httpx
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 

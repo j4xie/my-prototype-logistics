@@ -1,7 +1,5 @@
 """Mock-based unit tests for template_status. Run via --noconftest."""
 from __future__ import annotations
-from typing import ClassVar
-import pytest
 from unittest.mock import patch, MagicMock
 
 from smartbi.capability.contract import RequiresSpec

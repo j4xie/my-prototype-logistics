@@ -1,7 +1,6 @@
 """Unit tests for EntityResolutionOrchestrator."""
 from __future__ import annotations
 
-from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

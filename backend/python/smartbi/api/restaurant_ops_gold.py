@@ -11,10 +11,9 @@ read from Gold agg tables for sub-100ms response times.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Query, Request
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["RestaurantOpsGold"])

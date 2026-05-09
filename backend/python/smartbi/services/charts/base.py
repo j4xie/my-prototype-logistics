@@ -12,7 +12,6 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
 from .common import (
@@ -23,7 +22,6 @@ from .common import (
     detect_value_scale,
     empty_chart_config,
     get_palette,
-    make_enhanced_tooltip,
     sanitize_for_json,
 )
 

@@ -1,5 +1,4 @@
 """Unit tests for structured RxAction output (P3 Task 3.7)."""
-import pytest
 
 from smartbi.shared.diagnostics_engine import DiagnosticsEngine, RxAction
 

@@ -7,13 +7,11 @@ Designed for servers that don't have the full SmartBI stack.
 Port: 8083
 """
 import os
-import sys
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 # Configure logging
 logging.basicConfig(
@@ -34,7 +32,6 @@ async def lifespan(app: FastAPI):
     logger.info("Food KB Service starting up...")
 
     try:
-        from food_kb.api import knowledge as food_kb_api
 
         # Build DB URL
         db_host = _env("FOOD_KB_POSTGRES_HOST", "localhost")

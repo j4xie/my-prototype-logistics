@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +218,7 @@ class LongTailSkuDetector:
         )
         if top_contribution > 0.80:
             insights.append(
-                f"⚠️ 严重二八: TOP 20% 贡献 >80% 营收, 长尾过重"
+                "⚠️ 严重二八: TOP 20% 贡献 >80% 营收, 长尾过重"
             )
         if seasonal_count > 0:
             insights.append(

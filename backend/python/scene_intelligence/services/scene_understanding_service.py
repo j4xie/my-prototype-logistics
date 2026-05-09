@@ -10,7 +10,6 @@ LLM 动态场景理解服务
 
 import os
 import json
-import base64
 import uuid
 from datetime import datetime
 from dataclasses import dataclass, field

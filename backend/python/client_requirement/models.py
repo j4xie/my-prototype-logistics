@@ -6,7 +6,6 @@ Tables:
 - client_requirement_feedbacks: Individual feedback items per field
 """
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Column, String, Integer, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base

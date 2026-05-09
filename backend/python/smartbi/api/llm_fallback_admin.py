@@ -12,7 +12,7 @@ AIQuery.vue's 👍/👎 buttons and is the one non-admin write endpoint
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field

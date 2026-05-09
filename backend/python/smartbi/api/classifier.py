@@ -8,12 +8,12 @@ Intent Classifier API
 """
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from services.intent_classifier import get_classifier, IntentClassifierService
+from services.intent_classifier import get_classifier
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

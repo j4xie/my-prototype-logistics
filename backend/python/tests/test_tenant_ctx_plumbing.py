@@ -14,7 +14,6 @@ test and the cached `_pg_pool` global ends up bound to a closed loop.
 """
 from __future__ import annotations
 
-import asyncio
 import pytest
 import pytest_asyncio
 
@@ -46,7 +45,7 @@ async def pg_pool():
 @pytest.mark.asyncio
 async def test_contextvar_propagates_across_awaits():
     """ContextVar set in parent task visible in child await."""
-    from smartbi.tenant_ctx import set_factory_id, get_factory_id, reset_factory_id, INTERNAL_SENTINEL
+    from smartbi.tenant_ctx import set_factory_id, get_factory_id, reset_factory_id
 
     # Default empty → None
     assert get_factory_id() is None

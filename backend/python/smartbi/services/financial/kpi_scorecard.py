@@ -1,6 +1,6 @@
 """KPI Scorecard Chart Builder — 关键绩效指标记分卡."""
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any
 import pandas as pd
 
 from .base import (

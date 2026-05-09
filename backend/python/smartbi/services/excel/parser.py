@@ -15,24 +15,19 @@ import logging
 from io import BytesIO
 from typing import Any, Optional, Union, List, Dict
 from enum import Enum
-from datetime import datetime
 
 import pandas as pd
 import numpy as np
 import openpyxl
-from openpyxl.utils import get_column_letter
 
 from ..data.feature_analyzer import (
     DataFeatureAnalyzer,
     DataFeatureResult,
     DataType,
-    count_time_pattern_headers,
-    is_time_pattern
+    count_time_pattern_headers
 )
 from ..field.mapping import (
-    FieldMappingService,
-    FieldMappingResult,
-    FieldMappingDictionary
+    FieldMappingService
 )
 from ..structure.table_classifier import TableClassifier, TableType
 
@@ -1101,7 +1096,7 @@ class ExcelParser:
                                 logger.info(f"Merged header parse successful: {measure_count} measures found")
                                 return merged_result
                             else:
-                                logger.info(f"Merged header parse found no measures, trying other strategies")
+                                logger.info("Merged header parse found no measures, trying other strategies")
             except Exception as e:
                 logger.warning(f"parse_with_merged_headers failed: {e}")
 

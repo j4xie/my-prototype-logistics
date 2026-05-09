@@ -35,8 +35,7 @@ import time
 import json
 import shutil
 import tempfile
-from pathlib import Path
-from typing import Dict, List, Any
+from typing import List
 
 # Fix encoding for Windows console
 if sys.platform == 'win32':
@@ -51,12 +50,9 @@ os.chdir(smartbi_dir)  # Change to smartbi dir so .env can be loaded
 from services.unified_analyzer import (
     UnifiedAnalyzer,
     AnalysisOptions,
-    AnalysisDepth,
-    MultiSheetAnalysisResult,
-    UnifiedAnalysisResult,
-    analyze_all_sheets
+    AnalysisDepth
 )
-from services.analysis_cache import AnalysisCacheManager, get_cache_manager
+from services.analysis_cache import get_cache_manager
 
 
 class TestResult:
@@ -267,7 +263,7 @@ async def test_cache_hit_behavior(file_bytes: bytes, cache_dir: str) -> TestResu
 
         # Print cache stats
         stats = cache_manager.get_stats()
-        print(f"\n    Cache Stats:")
+        print("\n    Cache Stats:")
         print(f"      Total entries: {stats['totalEntries']}")
         print(f"      Valid entries: {stats['validEntries']}")
         print(f"      Total size: {stats['totalSizeMB']} MB")
@@ -374,7 +370,7 @@ async def test_cache_file_content(file_bytes: bytes, cache_dir: str) -> TestResu
 
         lines = md_content.split('\n')
         print(f"      Lines: {len(lines)}")
-        print(f"      First 3 lines:")
+        print("      First 3 lines:")
         for line in lines[:3]:
             print(f"        {line[:60]}...")
 
@@ -601,7 +597,7 @@ async def test_single_sheet_analysis(file_bytes: bytes, cache_dir: str) -> TestR
         result1 = await analyzer.analyze(file_bytes, sheet_index=1, options=options)
         time1 = int((time.time() - start1) * 1000)
 
-        result.check(result1.success, f"First analysis succeeded")
+        result.check(result1.success, "First analysis succeeded")
         result.check(not result1.from_cache, "First result is NOT from cache")
         print(f"      Time: {time1}ms")
         print(f"      Sheet: {result1.sheet_name}")
@@ -629,7 +625,7 @@ async def test_single_sheet_analysis(file_bytes: bytes, cache_dir: str) -> TestR
             speedup = time1 / max(time2, 1)
             print(f"      Speedup: {speedup:.1f}x")
         else:
-            print(f"      Note: Cache hit but LLM analysis still runs (expected behavior)")
+            print("      Note: Cache hit but LLM analysis still runs (expected behavior)")
 
     finally:
         await analyzer.close()

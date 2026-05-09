@@ -22,13 +22,11 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, time
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
 from smartbi_compat.api.analysis_finance import (
-    _strip_volatile,
-    VOLATILE_KEYS,
     _decimal_to_number,
     _to_decimal,
     _utc_now_iso,

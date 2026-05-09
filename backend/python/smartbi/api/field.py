@@ -5,7 +5,7 @@ Field Detection API
 Endpoints for field type detection and mapping.
 """
 import logging
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

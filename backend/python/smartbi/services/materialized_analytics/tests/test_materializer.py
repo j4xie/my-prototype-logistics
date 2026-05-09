@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import os
 import pytest
-import pytest_asyncio
 
 from smartbi.services.materialized_analytics.materializer import (
     build_schema, materialize_upload,

@@ -23,7 +23,7 @@ false-trigger on POS sales exports.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 
@@ -33,7 +33,7 @@ from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..restaurant.schema_helpers import find_date_col, find_store_col
-from ..schema import DataSchema, Domain
+from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 

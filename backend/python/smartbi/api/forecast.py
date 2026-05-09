@@ -5,10 +5,10 @@ Forecast API
 Endpoints for time series forecasting.
 """
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, conlist
+from pydantic import BaseModel, Field
 
 from services.forecast_service import ForecastService, ForecastAlgorithm
 

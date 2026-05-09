@@ -5,9 +5,6 @@ behavior is covered by tests/test_data_fabric_e2e.py.
 """
 from __future__ import annotations
 
-import json
-import time
-from datetime import date
 from unittest.mock import AsyncMock, patch
 
 import pytest

@@ -12,10 +12,8 @@ Calculates 30+ business metrics including:
 import logging
 from typing import Any, Optional, List, Dict
 from enum import Enum
-from decimal import Decimal, ROUND_HALF_UP
 
 import pandas as pd
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

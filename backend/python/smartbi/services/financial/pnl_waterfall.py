@@ -1,6 +1,6 @@
 """P&L Waterfall Chart Builder — 损益表瀑布图."""
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any
 import pandas as pd
 
 from .base import (

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 
 JWT_ALGORITHM = "HS256"
 PRIVILEGED_ROLES = frozenset({"platform_admin", "platform_super_admin"})

@@ -8,7 +8,7 @@ Safe operations for DataFrames with:
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Dict, List
 
 import pandas as pd
 import numpy as np

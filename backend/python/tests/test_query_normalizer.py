@@ -5,7 +5,6 @@ UX-1 fix (Apr 26 2026): synonym normalization to lift cache hit rate.
 from __future__ import annotations
 
 from smartbi.services.query_normalizer import (
-    SYNONYM_GROUPS,
     normalize_query,
     normalize_for_match,
 )

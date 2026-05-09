@@ -7,7 +7,7 @@ and segments customers into actionable groups.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Query

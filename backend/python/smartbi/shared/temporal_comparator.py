@@ -20,9 +20,8 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Literal, Optional
+from dataclasses import dataclass
+from typing import Literal, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +157,6 @@ class TemporalComparator:
         self, df, date_col: str, metric_cols: list[str], months_available: int,
     ) -> TemporalComparison:
         """同期对比: 当前月 vs 去年同月"""
-        import pandas as pd
 
         max_month = df["_year_month"].max()
         prev_year_month = max_month - 12
@@ -200,7 +198,6 @@ class TemporalComparator:
         self, df, date_col: str, metric_cols: list[str], months_available: int,
     ) -> TemporalComparison:
         """季度环比: 当前季度 vs 上季度"""
-        import pandas as pd
 
         df = df.copy()
         df["_quarter"] = df[date_col].dt.to_period("Q")
@@ -245,12 +242,11 @@ class TemporalComparator:
         self, df, date_col: str, metric_cols: list[str], months_available: int,
     ) -> TemporalComparison:
         """月度环比: 当前月 vs 上个月"""
-        import pandas as pd
 
         sorted_months = sorted(df["_year_month"].unique())
         if len(sorted_months) < 2:
             return self._insufficient(
-                f"只有 1 个月数据, 无法计算环比"
+                "只有 1 个月数据, 无法计算环比"
             )
 
         current_month = sorted_months[-1]

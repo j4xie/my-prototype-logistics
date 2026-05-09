@@ -16,7 +16,6 @@ DashScope 批量同义短语生成脚本
 import argparse
 import json
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -225,7 +224,7 @@ def main():
             print(f"   📌 {s}")
 
         if args.dry_run:
-            print(f"   ⏭️  dry-run, 跳过 API 调用")
+            print("   ⏭️  dry-run, 跳过 API 调用")
             continue
 
         synonyms = generate_synonyms(client, intent_code, seeds, args.count)
@@ -258,7 +257,7 @@ def main():
 
         print(f"\n{'=' * 60}")
         print(f"✅ 共生成 {total_generated} 个同义变体")
-        print(f"\n使用方式:")
+        print("\n使用方式:")
         print(f"  1. 将 {java_path.name} 中的代码粘贴到 IntentKnowledgeBase.initPhraseMappingsPart2()")
         print(f"  2. 或执行 {sql_path.name} 写入数据库")
 

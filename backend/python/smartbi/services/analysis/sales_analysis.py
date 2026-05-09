@@ -11,11 +11,9 @@ Provides comprehensive sales analytics including:
 - Customer analysis (new vs returning)
 """
 import logging
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from typing import List, Optional
 
 import pandas as pd
-import numpy as np
 
 from .base import BaseAnalysisService
 

@@ -7,7 +7,7 @@ animation presets, and common ECharts option helpers.
 """
 import logging
 import math
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd

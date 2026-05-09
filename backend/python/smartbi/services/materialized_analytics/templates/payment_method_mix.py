@@ -234,7 +234,7 @@ class PaymentMethodMix(AnalysisTemplate):
         elif top_bucket:
             action_rec = format_action_rec(
                 object_target=f"{top_bucket['bucket']} ({top_bucket['share_pct']:.1f}%)",
-                benefit_range=f"该渠道继续做厚, 预计带量 5-10% / 节约其他渠道运营投入",
+                benefit_range="该渠道继续做厚, 预计带量 5-10% / 节约其他渠道运营投入",
                 prerequisite="该渠道客户偏好画像 + 留存活动设计",
                 timeline="本月内",
             )

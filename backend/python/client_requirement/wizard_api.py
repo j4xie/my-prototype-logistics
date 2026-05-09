@@ -14,9 +14,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from smartbi.database.connection import get_db, is_postgres_enabled
+from smartbi.database.connection import get_db
 from .models import ClientRequirementCompany, ClientRequirementFeedback, Base
-from .ai_consultant import AIConsultant, ChatResponse, AssessmentResult
+from .ai_consultant import AIConsultant
 
 logger = logging.getLogger(__name__)
 

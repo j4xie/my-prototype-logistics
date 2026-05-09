@@ -18,8 +18,7 @@ import os
 import random
 from datetime import datetime, timedelta
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
-from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment
 
 
 def create_complex_test_excel(output_path: str):
@@ -397,7 +396,7 @@ if __name__ == "__main__":
     output_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(output_dir, "test_complex_scenarios.xlsx")
     create_complex_test_excel(output_path)
-    print(f"\nTest file created with 10 sheets covering various scenarios:")
+    print("\nTest file created with 10 sheets covering various scenarios:")
     print("  1. 利润表_合并表头 - 合并单元格")
     print("  2. 销售明细_500行 - 大数据量")
     print("  3. 预算对比_多层表头 - 多层表头")

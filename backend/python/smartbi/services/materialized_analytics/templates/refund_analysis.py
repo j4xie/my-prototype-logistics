@@ -12,7 +12,7 @@ qhj 真实数据中 订单状态 99.99% = "已结账", 无撤单/退单行.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 

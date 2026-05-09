@@ -17,7 +17,7 @@ Endpoints:
 import logging
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from ..services.knowledge_retriever import get_knowledge_retriever

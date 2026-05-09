@@ -22,7 +22,7 @@ from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import (
     find_date_col, find_gross_revenue_col, find_net_revenue_col,
-    measure_annotation, preferred_revenue_col,
+    preferred_revenue_col,
 )
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult

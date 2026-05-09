@@ -5,7 +5,6 @@ Insight Generation API
 Endpoints for AI-powered business insights.
 """
 import logging
-import json
 from typing import Any, Optional, List, Dict
 
 from fastapi import APIRouter, HTTPException, Request

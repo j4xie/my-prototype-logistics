@@ -20,7 +20,7 @@ import asyncpg
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, Request
 

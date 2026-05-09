@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional
 
 from .compute.polars_backend import PolarsBackend
 from .domain_detector import get_default_detector
-from .schema import DataSchema, Domain, Field, FieldRole
+from .schema import DataSchema, Field, FieldRole
 from .templates.base import TemplateResult
 from .templates.registry import get_registry, load_all_templates
 

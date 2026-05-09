@@ -11,15 +11,13 @@ Uses LLM (with optional vision capabilities) to detect Excel structure:
 Part of the Zero-Code SmartBI architecture.
 """
 import base64
-import hashlib
 import io
 import json
 import logging
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import openpyxl
-from openpyxl.utils import get_column_letter
 
 logger = logging.getLogger(__name__)
 

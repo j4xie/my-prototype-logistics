@@ -7,7 +7,6 @@ The backfill code path itself is exercised by test_backfill_silver.py.
 """
 from __future__ import annotations
 
-import os
 from unittest.mock import patch
 
 import pytest

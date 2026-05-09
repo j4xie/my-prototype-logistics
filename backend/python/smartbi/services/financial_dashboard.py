@@ -1,9 +1,9 @@
 """Financial Dashboard Service — Orchestrates chart generation and AI analysis."""
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List
 import pandas as pd
-from .financial.registry import registry, ChartBuilderRegistry
-from .financial_data_normalizer import FinancialDataNormalizer, ColumnMapping
+from .financial.registry import registry
+from .financial_data_normalizer import FinancialDataNormalizer
 from .financial.base import _sanitize_for_json
 
 logger = logging.getLogger(__name__)

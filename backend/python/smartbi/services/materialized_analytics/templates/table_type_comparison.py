@@ -13,7 +13,7 @@ from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
-from ..restaurant.schema_helpers import find_table_col, measure_annotation, preferred_revenue_col
+from ..restaurant.schema_helpers import find_table_col, preferred_revenue_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult

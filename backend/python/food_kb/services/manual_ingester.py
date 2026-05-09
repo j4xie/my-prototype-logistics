@@ -8,7 +8,6 @@ Usage:
 
 import asyncio
 import logging
-import os
 import re
 from pathlib import Path
 from typing import List, Dict

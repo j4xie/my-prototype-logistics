@@ -5,7 +5,6 @@ from typing import List, Optional
 import pandas as pd
 
 from ..base import BaseChartStrategy
-from ..common import empty_chart_config
 from ..registry import register_chart
 
 

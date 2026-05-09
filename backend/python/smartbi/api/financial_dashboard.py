@@ -1,13 +1,11 @@
 """Financial Dashboard API — Chart generation, batch, analysis, PPT/PDF/Excel export."""
 import logging
-import asyncio
 from typing import Optional, Dict, List, Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import pandas as pd
 import io
-import json
 
 from smartbi.services.financial_dashboard import FinancialDashboardService
 from smartbi.services.financial.base import _sanitize_for_json

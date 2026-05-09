@@ -243,7 +243,7 @@ async def test_simple_table(parser: ExcelParser) -> TestResult:
 
         if len(headers) == 4 and len(rows) == 4:
             result.passed = True
-            result.message = f"Success: 4 columns, 4 rows"
+            result.message = "Success: 4 columns, 4 rows"
         else:
             result.message = f"Unexpected result: {len(headers)} columns, {len(rows)} rows"
     except Exception as e:
@@ -515,7 +515,7 @@ async def test_multi_sheet(parser: ExcelParser) -> TestResult:
             result.details["sheet_results"] = sheet_results
 
             result.passed = True
-            result.message = f"3 sheets parsed successfully"
+            result.message = "3 sheets parsed successfully"
         else:
             result.message = f"Sheet count mismatch: {len(sheets)}"
     except Exception as e:

@@ -43,13 +43,13 @@ def main():
                 print(f"  {m.range_str}: {m.value}")
 
         # 显示统计信息
-        print(f"\n统计信息:")
+        print("\n统计信息:")
         print(f"  非空行数: {sheet_data.stats.get('non_empty_row_count', 0)}")
         print(f"  平均填充率: {sheet_data.stats.get('avg_fill_rate', 0):.2%}")
         print(f"  预估数据起始行: {sheet_data.stats.get('potential_data_start_row', 'N/A')}")
 
         # 显示前10行的概要
-        print(f"\n前10行概要:")
+        print("\n前10行概要:")
         print(f"  {'行号':>4} | {'非空':>4} | {'数值':>4} | {'填充率':>6} | 前3个值")
         print(f"  {'-'*4}-+-{'-'*4}-+-{'-'*4}-+-{'-'*6}-+-{'-'*30}")
 

@@ -215,7 +215,7 @@ class TimeSlotRevenue(AnalysisTemplate):
             else:
                 action_rec = format_action_rec(
                     object_target=f"高峰「{peak_slot}」×「{peak_area}」",
-                    benefit_range=f"高峰排班 + 备货按峰值 ×1.2 + 出餐 SOP 可降流失 5-10%",
+                    benefit_range="高峰排班 + 备货按峰值 ×1.2 + 出餐 SOP 可降流失 5-10%",
                     prerequisite="高峰人手到位 + 备货预判 + 等位提示牌",
                     timeline="本周内",
                 )

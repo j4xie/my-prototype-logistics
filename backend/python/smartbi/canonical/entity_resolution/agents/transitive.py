@@ -1,7 +1,7 @@
 """TransitiveAgent: 2-hop chain closure over entity_resolution_history."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from smartbi.canonical.entity_resolution.agents.base import BaseAgent
 from smartbi.canonical.entity_resolution.orchestrator import (

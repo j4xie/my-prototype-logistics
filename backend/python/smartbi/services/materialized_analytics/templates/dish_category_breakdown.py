@@ -16,7 +16,7 @@ Applies only when schema contains a 商品信息 field (restaurant-style data).
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, ClassVar, Dict, List, Set
+from typing import Any, ClassVar, Dict, List
 
 from smartbi.capability.contract import RequiresSpec
 
@@ -25,7 +25,7 @@ from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_classifier import classify_dish
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
-from ..schema import DataSchema, Domain
+from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 

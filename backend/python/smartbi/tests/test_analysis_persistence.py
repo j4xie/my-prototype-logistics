@@ -6,13 +6,12 @@ Tests for verifying chart configs and insights are properly saved to PostgreSQL.
 
 import sys
 import os
-import asyncio
 import logging
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.analysis_persistence import get_persistence_service, AnalysisPersistenceService
+from services.analysis_persistence import get_persistence_service
 from database.connection import is_postgres_enabled, get_db_context
 from database.models import SmartBiPgAnalysisResult
 

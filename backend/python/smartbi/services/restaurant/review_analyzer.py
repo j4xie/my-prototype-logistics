@@ -47,7 +47,7 @@ from __future__ import annotations
 import logging
 import re
 import statistics
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal, Optional

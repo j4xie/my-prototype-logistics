@@ -1,5 +1,4 @@
 """test_template_time_slot_revenue.py"""
-import pytest
 from smartbi.services.materialized_analytics.compute.polars_backend import PolarsBackend
 from smartbi.services.materialized_analytics.schema import DataSchema, Domain, Field, FieldRole
 from smartbi.services.materialized_analytics.templates.time_slot_revenue import TimeSlotRevenue

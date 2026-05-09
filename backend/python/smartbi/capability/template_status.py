@@ -4,9 +4,7 @@ Per 数据织网/02-A-能力驱动渲染.md §4.2.
 """
 from __future__ import annotations
 from collections import defaultdict
-from typing import Any
 
-from smartbi.capability.contract import RequiresSpec
 
 
 def get_registry():

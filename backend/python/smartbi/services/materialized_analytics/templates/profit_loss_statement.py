@@ -21,7 +21,7 @@ Applies when either 应收金额 OR 营业额 is in schema (has a gross-revenue 
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 

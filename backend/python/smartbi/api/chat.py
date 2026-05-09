@@ -19,19 +19,17 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from smartbi.config import coerce_numeric_columns
 
-from common.responses import ApiException, ErrorCode
 
 # Services
 from services.cross_analyzer import CrossAnalyzer, DrillDownResult, DimensionHierarchy
 from services.industry_benchmark import (
     IndustryBenchmark,
-    IndustryCategory,
-    BenchmarkResult
+    IndustryCategory
 )
 from services.insight_dimensions import (
     InsightDimensionAnalyzer,
@@ -884,7 +882,6 @@ async def general_analysis(request: GeneralAnalysisRequest, http_request: Reques
             )
 
         import pandas as pd
-        import re as _re_early
         df = coerce_numeric_columns(pd.DataFrame(data))
 
         # Filter out index/sequence columns before ANY analysis (affects both insight text and charts)
@@ -1999,7 +1996,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                 agg_lines.append("## 用户提到的具体实体聚合 (权威, 基于 DB 全量)")
                                                 for dim, lab in uniq_mentioned:
                                                     rr = await conn.fetchrow(
-                                                        f"""SELECT SUM((row_data->>$1)::numeric) AS s,
+                                                        """SELECT SUM((row_data->>$1)::numeric) AS s,
                                                                   COUNT((row_data->>$1)::numeric) AS c
                                                            FROM smart_bi_dynamic_data
                                                            WHERE upload_id = $2

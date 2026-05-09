@@ -112,7 +112,7 @@ def dim_aware_top_n_action_rec(
                 f"营销投入向「{top_label}」倾斜 + 退出/缩减「{bottom_label}」, "
                 f"渠道 ROI 提升 20-30%"
             ),
-            prerequisite=f"近 3 月渠道客单价/毛利对比 + 平台佣金/广告费明细",
+            prerequisite="近 3 月渠道客单价/毛利对比 + 平台佣金/广告费明细",
             timeline="本月内",
         )
     if any(k in dim for k in ('时段', '小时', '月份', '工作日', '周末', '节假日')):
@@ -122,7 +122,7 @@ def dim_aware_top_n_action_rec(
                 f"高峰「{top_label}」扩容 (人手/备货) + 低谷「{bottom_label}」促销引流, "
                 f"全天产能利用率 +10-15%"
             ),
-            prerequisite=f"分时人效统计 + 低谷优惠券方案设计",
+            prerequisite="分时人效统计 + 低谷优惠券方案设计",
             timeline="2 周试点",
         )
     if any(k in dim for k in ('等级', '客群', '会员', '客户', '贡献')):
@@ -132,7 +132,7 @@ def dim_aware_top_n_action_rec(
                 f"高净值「{top_label}」专属权益维系 + 低活跃「{bottom_label}」唤醒券, "
                 f"贡献度提升 5-12%"
             ),
-            prerequisite=f"客群消费频次/客单价分层 + CRM 触达策略设计",
+            prerequisite="客群消费频次/客单价分层 + CRM 触达策略设计",
             timeline="本月内",
         )
     # Default: keep the original "复制 SOP" pattern but slightly varied

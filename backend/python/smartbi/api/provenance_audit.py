@@ -66,7 +66,7 @@ def _parse_entity_id(raw: str) -> int:
     if v > 9_223_372_036_854_775_807:
         raise HTTPException(
             status_code=400,
-            detail=f"entity_id 超出 BIGINT 范围 (最大 9223372036854775807)",
+            detail="entity_id 超出 BIGINT 范围 (最大 9223372036854775807)",
         )
     return v
 

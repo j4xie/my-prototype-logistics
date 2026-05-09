@@ -20,9 +20,8 @@ import base64
 import tempfile
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from pathlib import Path
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks
 from pydantic import BaseModel, Field
 
 from ..services.video_analyzer import VideoEfficiencyAnalyzer

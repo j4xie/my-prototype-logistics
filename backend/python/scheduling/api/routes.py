@@ -8,7 +8,7 @@ import logging
 from typing import List, Optional
 
 import numpy as np
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from scheduling.services.linucb_service import LinUCBService
