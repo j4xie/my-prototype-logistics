@@ -62,9 +62,9 @@
 ### Immediate（今天执行）
 
 1. **轮换 3 套 AccessKey**
-   - `LTAI5tCChEydQf5sXWc8iRn9`（aliyun-operations/SKILL.md:107）
-   - `LTAI5tD9HGcb6Mgafs98ZYcq`（aliyun-credentials.md 账号 A）
-   - `LTAI5tGjGs6wnKDk8BZDNKFL`（aliyun-credentials.md 账号 B）
+   - `<REDACTED-AK>`（aliyun-operations/SKILL.md:107）
+   - `<REDACTED-AK>`（aliyun-credentials.md 账号 A）
+   - `<REDACTED-AK>`（aliyun-credentials.md 账号 B）
    - 在阿里云控制台创建新 Key → 更新服务器环境变量 → 删除旧 Key
 
 2. **安装 pre-commit 凭证扫描钩子**
@@ -91,7 +91,7 @@
 
 ## Open Questions
 
-1. `LTAI5tCChEydQf5sXWc8iRn9` 对应哪台服务器？（aliyun-operations 中的第三套 Key）
+1. `<REDACTED-AK>` 对应哪台服务器？（aliyun-operations 中的第三套 Key）
 2. 仓库是否为公开仓库？若是，凭证可能已被扫描器采集
 3. `deploy-backend.sh` 的 MD5 校验值来源是 GitHub 还是镜像站自报？
 4. superpowers 框架是否有包装现有 SKILL.md 的价值？（当前判断：无需）

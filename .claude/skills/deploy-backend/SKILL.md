@@ -294,7 +294,7 @@ EOF
 
 ### 关键事实
 
-**`cretas-media` bucket 属于阿里云账号 B** (LTAI5tGjGs6...), 不是账号 A. 账号 A key 报 `AccessDenied`.
+**`cretas-media` bucket 属于阿里云账号 B** (AK redacted, see local credential file), 不是账号 A. 账号 A key 报 `AccessDenied`.
 
 **Private repo 让 GitHub 镜像全失效**: ghproxy.cc / ghfast.top / cf.ghproxy.cc 等都是公共代理, curl 无 token, GitHub 对 release asset 返回 9 字节 `Not Found` 文本 (HTTP 200, 不是 404), 三个镜像 MD5 完全一致 = `9d1ead73e678fa2f51a70a933b0bf017`. v4.2 用 `gh api repos/$REPO --jq .private` 检测自动跳过.
 

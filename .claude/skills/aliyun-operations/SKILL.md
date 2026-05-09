@@ -104,8 +104,8 @@ ssh root@47.100.235.168 "systemctl restart postgresql"
 
 ```bash
 # 新服务器 AccessKey
-export ALIBABA_CLOUD_ACCESS_KEY_ID=LTAI5tCChEydQf5sXWc8iRn9
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET=1DMbLozoRdwqJHRXTTzl0eGvx64KNs
+export ALIBABA_CLOUD_ACCESS_KEY_ID=<REDACTED-AK-SEE-LOCAL-CREDENTIAL-FILE>
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET=<REDACTED-SECRET-SEE-LOCAL-CREDENTIAL-FILE>
 
 # 查看安全组规则
 aliyun ecs DescribeSecurityGroupAttribute --RegionId cn-shanghai --SecurityGroupId <sg-id>
