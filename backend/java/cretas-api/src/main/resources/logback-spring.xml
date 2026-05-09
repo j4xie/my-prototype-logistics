@@ -142,7 +142,7 @@
     <!-- ================== 环境配置 ================== -->
 
     <!-- 开发环境 -->
-    <springProfile name="dev,default">
+    <springProfile name="dev,default,pg">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE_INFO"/>
