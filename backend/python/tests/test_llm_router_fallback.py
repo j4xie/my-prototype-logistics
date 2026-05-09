@@ -231,7 +231,7 @@ def test_new_slot_models_match_free_audit():
     assert sm[SLOT.CHART]["aliyun_b"]     == "glm-5"
     assert sm[SLOT.MAPPER]["aliyun_b"]    == "qwen-turbo"
     assert sm[SLOT.REASONING]["aliyun_b"] == "deepseek-r1"
-    assert sm[SLOT.VL]["aliyun_b"]        == "qwen3-vl-plus-2025-05-07"
+    assert sm[SLOT.VL]["aliyun_b"]        == "qwen-vl-plus-2025-05-07"
     assert sm[SLOT.REVIEW]["aliyun_b"]    == "deepseek-r1-distill-qwen-32b"
 
     # aliyun_a — only version-suffixed SKUs are free

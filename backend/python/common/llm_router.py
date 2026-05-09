@@ -161,9 +161,9 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
         "deepseek": "deepseek-v4-pro",             # paid reasoning-grade
     },
     SLOT.VL: {
-        "aliyun_b": "qwen3-vl-plus-2025-05-07",    # ✅ B free 1M/1M
-        "aliyun_a": "qwen3-vl-flash",              # ✅ A free (enabled, quota TBD)
-        "zhipu":    "glm-4.6v",
+        "aliyun_b": "qwen-vl-plus-2025-05-07",     # ✅ B free 1M/1M (May 9 smoke caught typo: was qwen3-vl-plus-* which 404s)
+        "aliyun_a": "qwen3-vl-flash",              # ⚠️ A may exhaust mid-month (smoke saw 403 on May 9); chain auto-fallback handles
+        "zhipu":    "glm-4.6v",                     # ⚠️ payload format incompatible with image_url (zhipu needs different shape)
         "deepseek": None,                           # DeepSeek has no VL model
     },
     SLOT.REVIEW: {
