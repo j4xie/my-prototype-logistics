@@ -1,0 +1,579 @@
+{
+  "startedAt": "2026-05-09T15:57:45.493Z",
+  "factories": [
+    {
+      "factoryId": "F006",
+      "username": "f006_admin",
+      "label": "cohort-customer",
+      "login": {
+        "success": true,
+        "url": "http://139.196.165.140:8086/dashboard",
+        "userJson": "{\"id\":1309,\"username\":\"f006_admin\",\"email\":\"\",\"isActive\":true,\"createdAt\":\"2026-05-09T15:58:00.016Z\",\"updatedAt\":\"2026-05-09T15:58:00.018Z\",\"userType\":\"factory\",\"factoryUser\":{\"role\":\"factory_super_admin\",\"factoryId\":\"F006\",\"factoryType\":\"FACTORY\",\"permissions\":[\"*:*\"]}}",
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "flows": [
+        {
+          "flow": "dashboard",
+          "flowId": 1,
+          "verdict": "PASS",
+          "reasons": [
+            "Expected API hit /smart-bi/data-date-range not observed"
+          ],
+          "url": "http://139.196.165.140:8086/smart-bi/dashboard",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n经营驾驶舱\nf006_admin\n工厂总监\n经营驾驶舱\n智能数据分析 · 业务经营一站式洞察\n🌙\n刷新数据\nAI 问答\nGold 预览\n数据源\n系统数据\n时间范围\n至\n默认: 本月\n暂无数据\n\n当前没有可分析",
+          "pageTextLength": 706,
+          "hasGracefulMessage": true,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F006/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/dashboard/executive?period=month",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/dashboard/executive/custom?startDate=2026-02-09&endDate=2026-05-09",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/dashboard/executive/custom?startDate=2025-01-01&endDate=2025-12-31",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/dashboard/executive/custom?startDate=2024-01-01&endDate=2024-12-31",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 2,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+            "[capability] fetch failed, falling back to permissive mode: Error: capability fetch failed: 503\n    at http://139.196.165.140:8086/assets/useCapability-B79CYIpd.js:1:4523"
+          ],
+          "pageErrors": [],
+          "screenshot": "F006-flow-1-dashboard.png"
+        },
+        {
+          "flow": "sales-analysis",
+          "flowId": 2,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/sales",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n销售分析\nf006_admin\n工厂总监\n销售分析\n导出报表\n刷新\n数据源\n系统数据\n日期范围\n至\n统计维度\n按日\n按周\n按月\n产品类别\n全部类别\n重置筛选\n暂无系统销售数据\n\n系统销售数据为空，请联系管理员导",
+          "pageTextLength": 409,
+          "hasGracefulMessage": true,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F006/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=product",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=trend",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=salesperson",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&groupBy=daily",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=salesperson",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=trend",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=product",
+              "status": 410,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 7,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()"
+          ],
+          "pageErrors": [],
+          "screenshot": "F006-flow-2-sales-analysis.png"
+        },
+        {
+          "flow": "finance-analysis",
+          "flowId": 3,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/finance",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n财务分析\nf006_admin\n工厂总监\n财务分析\n刷新\n🆕 Gold 数据层预览\n\n试用基于 Silver+Gold (agg_*) 的新数据路径 — 6 个 KPI 查询并发,直连 Python。\n打开 ",
+          "pageTextLength": 725,
+          "hasGracefulMessage": false,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F006/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/finance?startDate=2025-05-09&endDate=2026-05-09&analysisType=profit",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/analysis/finance?startDate=2025-05-09&endDate=2026-05-09&analysisType=profit",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 4,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+            "[capability] fetch failed, falling back to permissive mode: Error: capability fetch failed: 503\n    at http://139.196.165.140:8086/assets/useCapability-B79CYIpd.js:1:4523"
+          ],
+          "pageErrors": [],
+          "screenshot": "F006-flow-3-finance-analysis.png"
+        },
+        {
+          "flow": "query-templates",
+          "flowId": 4,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/query-templates",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n查询模板管理\nf006_admin\n工厂总监\nSmart BI\n/\n查询模板管理\n查询模板管理\n新增模板\n财务分析\n销售分析\n生产分析\n自定义\n\n暂无模板\n\n创建第一个模板\n\n加载模板失败，请稍后重试\n\nSMA",
+          "pageTextLength": 387,
+          "hasGracefulMessage": true,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F006/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/query-templates",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 2,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "加载模板失败: ApiError: SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/query-templates (since 2026-05-09)\n    at http://139.196.165.140:8086/assets/request-BwUG3SF6.js:6:3021\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async O (http://139.196.165.140:8086/assets/QueryTemplateManager-Bycq4hy_.js:1:5137)\n    at j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:2078)\n    at async O (http://139.196.165.140:8086/assets/QueryTemplateManager-Bycq4hy_.js:1:5137)"
+          ],
+          "pageErrors": [],
+          "screenshot": "F006-flow-4-query-templates.png"
+        },
+        {
+          "flow": "nl-query",
+          "flowId": 5,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/query",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\nAI问答\nf006_admin\n工厂总监\nAI 智能问答\nAI 分析\nSQL 直查\n新话题\n清空对话\nAI 助手\n11:58\n\n您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选",
+          "pageTextLength": 701,
+          "hasGracefulMessage": false,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F006/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/uploads?page=0&size=200&status=COMPLETED",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 0,
+          "appConsoleErrorsSample": [],
+          "pageErrors": [],
+          "screenshot": "F006-flow-5-nl-query.png"
+        },
+        {
+          "flow": "analysis-page",
+          "flowId": 6,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/analysis",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n智能数据分析\nf006_admin\n工厂总监\n 智能数据分析\n拖拽 Excel 或 CSV 文件到此处或 点击上传\n支持 .xlsx、.xls、.csv 格式，文件大小不超过 50MB",
+          "pageTextLength": 287,
+          "hasGracefulMessage": false,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F006/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F006/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 0,
+          "appConsoleErrorsSample": [],
+          "pageErrors": [],
+          "screenshot": "F006-flow-6-analysis-page.png"
+        }
+      ]
+    },
+    {
+      "factoryId": "F001",
+      "username": "factory_admin1",
+      "label": "cohort-gold-pos",
+      "login": {
+        "success": true,
+        "url": "http://139.196.165.140:8086/dashboard",
+        "userJson": "{\"id\":1,\"username\":\"factory_admin1\",\"email\":\"\",\"isActive\":true,\"createdAt\":\"2026-05-09T15:58:49.909Z\",\"updatedAt\":\"2026-05-09T15:58:49.910Z\",\"userType\":\"factory\",\"factoryUser\":{\"role\":\"factory_super_admin\",\"factoryId\":\"F001\",\"factoryType\":\"FACTORY\",\"permissions\":[\"*:*\"]}}",
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "flows": [
+        {
+          "flow": "dashboard",
+          "flowId": 1,
+          "verdict": "PASS",
+          "reasons": [
+            "Expected API hit /smart-bi/data-date-range not observed"
+          ],
+          "url": "http://139.196.165.140:8086/smart-bi/dashboard",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n经营驾驶舱\nfactory_admin1\n工厂总监\n经营驾驶舱\n智能数据分析 · 业务经营一站式洞察\n🌙\n刷新数据\nAI 问答\nGold 预览\n数据源\n系统数据\n时间范围\n至\n本月无数据 · 显示 2025全",
+          "pageTextLength": 1201,
+          "hasGracefulMessage": true,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/dashboard/executive?period=month",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/dashboard/executive/custom?startDate=2024-01-01&endDate=2024-12-31",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/dashboard/executive/custom?startDate=2025-01-01&endDate=2025-12-31",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/dashboard/executive/custom?startDate=2026-02-09&endDate=2026-05-09",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 0,
+          "appConsoleErrorsSample": [],
+          "pageErrors": [],
+          "screenshot": "F001-flow-1-dashboard.png"
+        },
+        {
+          "flow": "sales-analysis",
+          "flowId": 2,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/sales",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n销售分析\nfactory_admin1\n工厂总监\n销售分析\n导出报表\n刷新\n数据源\n系统数据\n日期范围\n至\n统计维度\n按日\n按周\n按月\n产品类别\n全部类别\n重置筛选\n暂无系统销售数据\n\n系统销售数据为空，请联系",
+          "pageTextLength": 413,
+          "hasGracefulMessage": true,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&groupBy=daily",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&groupBy=daily",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=product",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=trend",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=salesperson",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=product",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=trend",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-04-09&endDate=2026-05-09&dimension=salesperson",
+              "status": 410,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 8,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()"
+          ],
+          "pageErrors": [],
+          "screenshot": "F001-flow-2-sales-analysis.png"
+        },
+        {
+          "flow": "finance-analysis",
+          "flowId": 3,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/finance",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n财务分析\nfactory_admin1\n工厂总监\n财务分析\n刷新\n🆕 Gold 数据层预览\n\n试用基于 Silver+Gold (agg_*) 的新数据路径 — 6 个 KPI 查询并发,直连 Python。",
+          "pageTextLength": 1202,
+          "hasGracefulMessage": false,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2025-05-09&endDate=2026-05-09&analysisType=profit",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2025-05-09&endDate=2026-05-09&analysisType=profit",
+              "status": 410,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 2,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "Failed to load resource: the server responded with a status of 410 ()"
+          ],
+          "pageErrors": [],
+          "screenshot": "F001-flow-3-finance-analysis.png"
+        },
+        {
+          "flow": "query-templates",
+          "flowId": 4,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/query-templates",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n查询模板管理\nfactory_admin1\n工厂总监\nSmart BI\n/\n查询模板管理\n查询模板管理\n新增模板\n财务分析\n销售分析\n生产分析\n自定义\n\n暂无模板\n\n创建第一个模板\n\n加载模板失败，请稍后重试\n",
+          "pageTextLength": 391,
+          "hasGracefulMessage": true,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/query-templates",
+              "status": 410,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 2,
+          "appConsoleErrorsSample": [
+            "Failed to load resource: the server responded with a status of 410 ()",
+            "加载模板失败: ApiError: SMARTBI_MIGRATED: endpoint moved to Python /api/smartbi/query-templates (since 2026-05-09)\n    at http://139.196.165.140:8086/assets/request-BwUG3SF6.js:6:3021\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async O (http://139.196.165.140:8086/assets/QueryTemplateManager-Bycq4hy_.js:1:5137)\n    at j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:2078)\n    at async O (http://139.196.165.140:8086/assets/QueryTemplateManager-Bycq4hy_.js:1:5137)"
+          ],
+          "pageErrors": [],
+          "screenshot": "F001-flow-4-query-templates.png"
+        },
+        {
+          "flow": "nl-query",
+          "flowId": 5,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/query",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\nAI问答\nfactory_admin1\n工厂总监\nAI 智能问答\nqhj_order_detail.csv · qhj_order_detail · 64935行\nAI 分析\nSQL 直查\n新话题\n清空对话\nA",
+          "pageTextLength": 746,
+          "hasGracefulMessage": false,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/uploads?page=0&size=200&status=COMPLETED",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 0,
+          "appConsoleErrorsSample": [],
+          "pageErrors": [],
+          "screenshot": "F001-flow-5-nl-query.png"
+        },
+        {
+          "flow": "analysis-page",
+          "flowId": 6,
+          "verdict": "PASS",
+          "reasons": [],
+          "url": "http://139.196.165.140:8086/smart-bi/analysis",
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\n智能数据分析\nfactory_admin1\n工厂总监\n 智能数据分析\nqhj_order_detail.csv (1 表)\n同比分析\n因果分析\n分享\n上传新文件\n成功处理 1 个 Sheet，共 64935 行",
+          "pageTextLength": 440,
+          "hasGracefulMessage": false,
+          "apiHits": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/uploads?page=0&size=200",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/smart-bi/uploads/4166/fields",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "appConsoleErrorCount": 0,
+          "appConsoleErrorsSample": [],
+          "pageErrors": [],
+          "screenshot": "F001-flow-6-analysis-page.png"
+        }
+      ]
+    }
+  ],
+  "finishedAt": "2026-05-09T15:59:25.550Z"
+}
