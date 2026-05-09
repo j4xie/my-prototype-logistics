@@ -204,7 +204,11 @@ public class ReferenceDataController {
                 .orElseGet(() -> ApiResponse.success(null));
     }
 
-    /** GET-by-id for product. Reviewer Issue #1 fix. */
+    /** GET-by-id for product. Reviewer Issue #1 fix.
+     * C-6 (2026-05-09): 加 boxConversionCoefficient 给 sales_order DYNAMIC 用的 P1-2 箱数自动算.
+     * spec: docs/superpowers/specs/2026-05-09-canvas-c6-sales-order-dynamic-migration.md
+     * frontend ReferenceSelector projectFields 把它写到 row._boxConversionCoefficient,
+     * boxQuantity computed 表达式 quantity / _boxConversionCoefficient 用. */
     @GetMapping("/products/{id}")
     @Operation(summary = "按 ID 查单个产品")
     public ApiResponse<Map<String, Object>> getProduct(@PathVariable String factoryId,
@@ -219,6 +223,7 @@ public class ReferenceDataController {
                     m.put("specification", p.getSpecification());
                     m.put("unit", p.getUnit());
                     m.put("unitPrice", p.getUnitPrice());
+                    m.put("boxConversionCoefficient", p.getBoxConversionCoefficient());
                     return m;
                 })
                 .map(ApiResponse::success)
@@ -311,6 +316,9 @@ public class ReferenceDataController {
                     m.put("specification", p.getSpecification());
                     m.put("unit", p.getUnit());
                     m.put("unitPrice", p.getUnitPrice());
+                    // C-6 (2026-05-09): 加 boxConversionCoefficient 给 sales_order DYNAMIC P1-2.
+                    // spec: docs/superpowers/specs/2026-05-09-canvas-c6-sales-order-dynamic-migration.md
+                    m.put("boxConversionCoefficient", p.getBoxConversionCoefficient());
                     return m;
                 })
                 .collect(Collectors.toList());
