@@ -1,6 +1,7 @@
 """Shared fixtures for smartbi_compat tests."""
 import sys
 import pathlib
+from typing import Any, Callable, FrozenSet, List, Optional
 
 import pytest
 
@@ -44,3 +45,55 @@ def comparator_mode(request):
     if request.node.get_closest_marker("strict_byte"):
         return "strict_byte"
     return "dict_eq"
+
+
+@pytest.fixture
+def assert_response_match(comparator_mode: str) -> Callable[..., None]:
+    """Marker-bound response comparator — Week 2 ergonomic wrapper.
+
+    Returns a callable ``(actual, expected, *, volatile_keys=..., volatile_byte_patterns=...)``
+    pre-bound to the test's ``comparator_mode``. Tests don't need to pass
+    ``mode=`` explicitly — the ``@pytest.mark.strict_byte`` marker selects
+    strict-byte; absent marker selects dict-eq (Phase 2A default).
+
+    This is the integration point between Chat G's marker convention
+    (``conftest.py`` markers + ``comparator_mode`` fixture) and Chat F's
+    dispatcher (``smartbi_compat._strict_byte.assert_response_eq``).
+
+    Usage::
+
+        def test_something(assert_response_match):                # dict_eq (default)
+            assert_response_match({"a": 1.0}, {"a": 1})
+
+        @pytest.mark.strict_byte
+        def test_bytes(assert_response_match):                    # strict_byte
+            assert_response_match(b'{"a":1}', b'{"a":1}')
+
+        @pytest.mark.strict_byte
+        def test_bytes_with_volatile(assert_response_match):
+            assert_response_match(
+                actual_bytes, expected_bytes,
+                volatile_byte_patterns=[rb'"timestamp":"[^"]+"'],
+            )
+    """
+    from smartbi_compat._strict_byte.dispatcher import (
+        _DEFAULT_VOLATILE_KEYS,
+        assert_response_eq,
+    )
+
+    def _do_assert(
+        actual: Any,
+        expected: Any,
+        *,
+        volatile_keys: FrozenSet[str] = _DEFAULT_VOLATILE_KEYS,
+        volatile_byte_patterns: Optional[List[bytes]] = None,
+    ) -> None:
+        assert_response_eq(
+            actual,
+            expected,
+            mode=comparator_mode,
+            volatile_keys=volatile_keys,
+            volatile_byte_patterns=volatile_byte_patterns,
+        )
+
+    return _do_assert
