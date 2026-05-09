@@ -1,5 +1,4 @@
 """test_template_dish_sales_top_n.py"""
-import polars as pl
 from smartbi.services.materialized_analytics.compute.polars_backend import PolarsBackend
 from smartbi.services.materialized_analytics.schema import DataSchema, Domain, Field, FieldRole
 from smartbi.services.materialized_analytics.templates.dish_sales_top_n import DishSalesTopN

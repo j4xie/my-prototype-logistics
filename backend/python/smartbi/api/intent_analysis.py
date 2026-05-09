@@ -10,7 +10,7 @@ PythonErrorAnalysisClient. Response shape must match
 `com.cretas.aims.dto.python.ErrorAnalysisResponse.AggregateResponse`
 and be wrapped in `{success, data, message}`.
 """
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field

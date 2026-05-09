@@ -15,10 +15,10 @@ Where:
 - b = accumulated reward-weighted feature vector
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
-from scipy.linalg import inv, solve
+from scipy.linalg import inv
 
 logger = logging.getLogger(__name__)
 

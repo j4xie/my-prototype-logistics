@@ -2,9 +2,7 @@
 创建复杂测试Excel文件 - 5个Sheet
 """
 import openpyxl
-from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
-from openpyxl.utils import get_column_letter
-from datetime import datetime
+from openpyxl.styles import Font, Alignment
 import random
 
 def create_test_excel(output_path: str):

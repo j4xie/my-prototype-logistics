@@ -7,7 +7,7 @@ via the ``@register_chart`` decorator; the subpackage ``__init__.py`` files
 import the modules so that decorators execute at import time.
 """
 import logging
-from typing import Dict, Type, Optional
+from typing import Dict, Type
 
 from .base import BaseChartStrategy
 

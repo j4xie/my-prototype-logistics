@@ -4,7 +4,6 @@ import pytest
 
 from smartbi.services.restaurant.menu_engineering import (
     MenuEngineeringAnalyzer,
-    MenuItemClassification,
     MenuQuadrant,
 )
 

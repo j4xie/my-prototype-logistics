@@ -11,7 +11,6 @@ Covers the 3 control-flow branches:
 """
 from __future__ import annotations
 
-import asyncio
 import json
 from datetime import date
 

@@ -35,18 +35,18 @@ async def main():
         print(f"Sheet {i}: {data.source_sheet}")
         print(f"数据: {data.row_count} 行, {data.column_count} 列")
 
-        print(f"\n列名:")
+        print("\n列名:")
         for col in data.columns[:10]:  # 只显示前10列
             print(f"  - {col.name} (type={col.data_type}, sub_type={col.sub_type})")
 
         if data.rows:
-            print(f"\n首行数据 (前5个字段):")
+            print("\n首行数据 (前5个字段):")
             for k, v in list(data.rows[0].items())[:5]:
                 print(f"  {k}: {v}")
 
         # 特别检查销售明细表
         if i == 1:
-            print(f"\n*** 销售明细表检测结果分析 ***")
+            print("\n*** 销售明细表检测结果分析 ***")
             expected_cols = ["序号", "日期", "客户名称", "产品名称", "规格"]
             actual_cols = [c.name for c in data.columns[:5]]
             print(f"期望列名: {expected_cols}")

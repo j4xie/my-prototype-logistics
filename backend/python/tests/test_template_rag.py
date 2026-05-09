@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from smartbi.services.template_rag import (
-    hybrid_match, HybridMatch, HIGH_CONFIDENCE, MIN_USEFUL,
+    hybrid_match, HIGH_CONFIDENCE, MIN_USEFUL,
 )
 
 

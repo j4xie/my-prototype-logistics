@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from smartbi.api.chart_heuristics import (
     filter_id_like_columns,

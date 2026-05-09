@@ -85,7 +85,7 @@ try:
         print(f"API错误: {result['error']}")
     else:
         content = result["choices"][0]["message"]["content"]
-        print(f"\nVL识别结果:")
+        print("\nVL识别结果:")
         print(content)
 
         # 尝试解析JSON
@@ -93,7 +93,7 @@ try:
         json_match = re.search(r'\{[\s\S]*\}', content)
         if json_match:
             parsed = json.loads(json_match.group())
-            print(f"\n解析后的数据:")
+            print("\n解析后的数据:")
             print(json.dumps(parsed, ensure_ascii=False, indent=2))
 
 except Exception as e:

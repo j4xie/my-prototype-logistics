@@ -17,7 +17,6 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, ClassVar, Dict, List, Optional
 
-import polars as pl
 
 from smartbi.capability.contract import RequiresSpec
 

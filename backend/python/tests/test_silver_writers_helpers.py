@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-import pytest
 
 from smartbi.canonical.aliases import ALIAS_TO_ATTR
 from smartbi.canonical.silver_writers._helpers import (

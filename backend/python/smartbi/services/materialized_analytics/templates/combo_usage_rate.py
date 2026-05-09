@@ -28,7 +28,7 @@ import polars as pl
 from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
-from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows

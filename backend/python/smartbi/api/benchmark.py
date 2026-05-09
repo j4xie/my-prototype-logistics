@@ -6,7 +6,7 @@ Exposes food processing industry benchmark data and comparison endpoints.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel

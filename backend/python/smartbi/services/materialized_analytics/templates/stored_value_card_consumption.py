@@ -260,7 +260,7 @@ class StoredValueCardConsumption(AnalysisTemplate):
         elif by_store and len(by_store) >= 2 and by_store[0]["amount"] > sum(s["amount"] for s in by_store[1:]) * 2:
             action_rec = format_action_rec(
                 object_target=f"储值卡集中在「{by_store[0]['store']}」 ({by_store[0]['amount']:,.0f} 元)",
-                benefit_range=f"复制 Top 门店储值推广 SOP 到其他门店,跨店储值率提升 8-15%",
+                benefit_range="复制 Top 门店储值推广 SOP 到其他门店,跨店储值率提升 8-15%",
                 prerequisite=f"对标走访{by_store[0]['store']} + 全店储值推广培训",
                 timeline="本月内",
             )

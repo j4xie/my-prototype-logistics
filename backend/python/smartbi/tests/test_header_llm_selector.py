@@ -11,7 +11,7 @@ import pandas as pd
 import json
 import os
 import sys
-from typing import List, Tuple, Dict, Optional, Any
+from typing import List, Tuple, Dict, Optional
 
 # 添加项目路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -480,13 +480,13 @@ def test_sheet(excel_file: str, sheet_name: str, use_llm: bool = True, verbose: 
 
     # 显示原始数据预览
     if verbose:
-        print(f"\n原始数据预览 (前10行):")
+        print("\n原始数据预览 (前10行):")
         for i in range(min(10, len(rows))):
             row_preview = [str(v)[:18] if pd.notna(v) else "(空)" for v in rows[i][:8]]
             print(f"  Row {i}: {row_preview}")
 
     # 测试所有规则
-    print(f"\n--- 所有规则测试结果 ---")
+    print("\n--- 所有规则测试结果 ---")
     all_rules_results = test_all_rules(rows, num_cols)
     best_rule = None
     best_rate = 0
@@ -503,7 +503,7 @@ def test_sheet(excel_file: str, sheet_name: str, use_llm: bool = True, verbose: 
 
     # 使用 LLM 选择
     if use_llm:
-        print(f"\n--- LLM 选择器 ---")
+        print("\n--- LLM 选择器 ---")
         rule, data_start, headers = llm_select_and_apply_rule(rows, num_cols, verbose=verbose)
         success_rate, meaningful, col_x = evaluate_headers(headers)
     else:
@@ -513,14 +513,14 @@ def test_sheet(excel_file: str, sheet_name: str, use_llm: bool = True, verbose: 
         headers = RULES[best_rule]["func"](rows, data_start, num_cols)
         success_rate, meaningful, col_x = evaluate_headers(headers)
 
-    print(f"\n--- 最终结果 ---")
+    print("\n--- 最终结果 ---")
     print(f"使用规则: {rule}")
     print(f"数据起始行: Row {data_start}")
-    print(f"\n合并后的列名 (前10列):")
+    print("\n合并后的列名 (前10列):")
     for i, name in enumerate(headers[:10]):
         print(f"  Col {i}: {name}")
 
-    print(f"\n评估:")
+    print("\n评估:")
     print(f"  总列数: {len(headers)}")
     print(f"  有意义列名: {meaningful}")
     print(f"  Col_X 列名: {col_x}")
@@ -554,7 +554,7 @@ def main():
     print("="*70)
     print("表头识别测试：规则 + LLM 选择器")
     print("="*70)
-    print(f"\n可用规则:")
+    print("\n可用规则:")
     for k, v in RULES.items():
         print(f"  {k}: {v['name']} - {v['desc']}")
 

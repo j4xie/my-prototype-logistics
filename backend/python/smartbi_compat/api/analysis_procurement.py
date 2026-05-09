@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Optional
+from typing import Optional
 
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, Query
@@ -21,11 +21,8 @@ logger = logging.getLogger(__name__)
 from smartbi_compat.api.analysis_finance import (
     _decimal_to_number,
     _fetch_all,
-    _get_period_key,
-    _strip_volatile,
     _to_decimal,
     _utc_now_iso,
-    VOLATILE_KEYS,
 )
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.schema_compat import wrap_response
@@ -33,7 +30,6 @@ from smartbi_compat.schema_compat import wrap_response
 # previously defined inline here, now reusable across all smartbi_compat
 # endpoints via single source of truth).
 from smartbi_compat._java_compat import (
-    _java_hashmap_bucket,
     _sort_entries_java_iter_then_value_desc,
 )
 

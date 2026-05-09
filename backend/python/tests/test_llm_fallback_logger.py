@@ -5,7 +5,6 @@ a mock embedding function, so they don't require DashScope or a real DB.
 """
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest

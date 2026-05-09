@@ -43,8 +43,8 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Literal, Optional
+from dataclasses import dataclass
+from typing import Literal, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -525,7 +525,7 @@ class StorePnlOnePager:
         """从 TemporalComparison 提取一句话摘要"""
         mode = tc.get("mode", "")
         if mode == "insufficient":
-            return f"历史数据不足, 无法做趋势对比"
+            return "历史数据不足, 无法做趋势对比"
 
         current = tc.get("currentPeriod", "")
         compare = tc.get("comparePeriod", "")

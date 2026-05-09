@@ -21,7 +21,7 @@ import logging
 import re
 import time
 from datetime import date
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from smartbi.canonical.provenance._writer_hook import (
     is_provenance_enabled,

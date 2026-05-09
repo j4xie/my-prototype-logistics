@@ -27,7 +27,7 @@ import pandas as pd
 
 from config import get_settings
 from ..excel.raw_exporter import RawExporter, RawSheetData
-from .table_classifier import TableClassifier, ClassificationResult as TableClassificationResult
+from .table_classifier import TableClassifier
 
 logger = logging.getLogger(__name__)
 

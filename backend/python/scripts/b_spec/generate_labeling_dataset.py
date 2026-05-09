@@ -32,7 +32,6 @@ from __future__ import annotations
 import argparse
 import csv
 import random
-import sys
 from pathlib import Path
 
 # Don't import asyncpg or smartbi here — run standalone.
@@ -231,7 +230,7 @@ async def main():
     write_csv(output_dir / "candidates_product.csv", product_pairs)
     write_csv(output_dir / "candidates_staff.csv", staff_pairs)
 
-    print(f"Generated:")
+    print("Generated:")
     print(f"  store: {len(store_pairs)} pairs → {output_dir / 'candidates_store.csv'}")
     print(f"  product: {len(product_pairs)} pairs → {output_dir / 'candidates_product.csv'}")
     print(f"  staff: {len(staff_pairs)} pairs (synthetic) → {output_dir / 'candidates_staff.csv'}")

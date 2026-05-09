@@ -13,7 +13,7 @@ Outputs:
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 
@@ -220,7 +220,7 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
             top_p = by_plan[0]
             action_rec = format_action_rec(
                 object_target=f"主力档口「{top_p['plan']}」 ({top_p['ordered']:,.0f} 份 / {top_p['ordered_share_pct']:.1f}%)",
-                benefit_range=f"该档口排班 + 出餐 SOP 优化可降出餐时间 10-20%",
+                benefit_range="该档口排班 + 出餐 SOP 优化可降出餐时间 10-20%",
                 prerequisite=f"{top_p['plan']}人手按峰值×1.2 + 标准化出餐流程 + 设备检修",
                 timeline="本月内",
             )

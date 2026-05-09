@@ -8,7 +8,7 @@ All functions are stateless (no LLM calls).
 import json
 import logging
 import re
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import pandas as pd

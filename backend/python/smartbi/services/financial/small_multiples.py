@@ -1,12 +1,10 @@
 """Small Multiples Chart Builder — 多维度对比矩阵."""
 import logging
-import math
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 import pandas as pd
 
 from .base import (
-    AbstractFinancialChartBuilder, COLORS, MONTH_LABELS,
-    _sanitize_for_json, _detect_value_scale,
+    AbstractFinancialChartBuilder, COLORS, _sanitize_for_json, _detect_value_scale,
 )
 
 logger = logging.getLogger(__name__)

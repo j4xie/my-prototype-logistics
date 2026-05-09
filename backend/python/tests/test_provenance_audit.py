@@ -21,8 +21,7 @@ full service stack.
 """
 from __future__ import annotations
 
-import os
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Optional
 
 import pytest

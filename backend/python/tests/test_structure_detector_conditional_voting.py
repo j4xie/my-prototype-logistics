@@ -19,7 +19,6 @@ modes without touching environment variables.
 from __future__ import annotations
 
 from io import BytesIO
-from typing import List
 from unittest.mock import AsyncMock, MagicMock
 
 import pandas as pd

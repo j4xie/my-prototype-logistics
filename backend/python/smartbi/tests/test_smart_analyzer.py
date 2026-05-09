@@ -8,12 +8,10 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.data_exporter import DataExporter, BatchExporter
+from services.data_exporter import DataExporter
 from services.smart_analyzer import (
     SmartAnalyzer,
-    analyze_exported_data,
-    detect_scenario,
-    DataScenario
+    detect_scenario
 )
 
 
@@ -83,7 +81,7 @@ async def test_field_mapping():
         scenario.scenario
     )
 
-    print(f"\n利润表字段映射:")
+    print("\n利润表字段映射:")
     print(f"{'原始列名':<20} {'标准字段':<15} {'角色':<10} {'置信度':<8}")
     print("-" * 60)
     for m in mappings:
@@ -124,7 +122,7 @@ async def test_analysis_recommendation():
         recommendations = recommender.recommend(scenario.scenario, mappings)
 
         print(f"\n[{name}] 场景: {scenario.scenario.value}")
-        print(f"推荐分析:")
+        print("推荐分析:")
         for rec in recommendations:
             print(f"  [{rec.priority}] {rec.description}")
             print(f"      方法: {rec.method_name}, 图表: {rec.chart_type}")
@@ -191,12 +189,12 @@ async def test_full_analysis():
 
             # 打印洞察
             if analysis.insights:
-                print(f"    洞察:")
+                print("    洞察:")
                 for insight in analysis.insights:
                     print(f"      - {insight}")
 
             if analysis.warnings:
-                print(f"    警告:")
+                print("    警告:")
                 for warning in analysis.warnings:
                     print(f"      - ⚠️ {warning}")
 

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..base import BaseChartStrategy
-from ..common import empty_chart_config, get_palette, make_enhanced_tooltip
+from ..common import empty_chart_config, make_enhanced_tooltip
 from ..registry import register_chart
 
 

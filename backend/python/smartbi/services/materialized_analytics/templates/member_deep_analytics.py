@@ -20,7 +20,7 @@ but not 卡号 as a primary identifier).
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 

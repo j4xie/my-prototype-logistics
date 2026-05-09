@@ -70,7 +70,7 @@ class EfficiencyRepository:
                     # Test connection and create tables
                     self._init_tables()
                     self._use_database = True
-                    logger.info(f"PostgreSQL connected for efficiency recognition")
+                    logger.info("PostgreSQL connected for efficiency recognition")
                 except Exception as e:
                     logger.error(f"Failed to connect to PostgreSQL: {e}")
                     self._use_database = False
@@ -123,7 +123,7 @@ class EfficiencyRepository:
         try:
             yield session
             session.commit()
-        except Exception as e:
+        except Exception:
             session.rollback()
             raise
         finally:

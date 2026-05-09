@@ -12,13 +12,13 @@ API 端点:
 - GET /streams/preprocessing-stats - 获取本地预处理统计（Phase 8 成本优化）
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ..services.multi_stream_sampler import get_sampler, AnalysisType
+from ..services.multi_stream_sampler import get_sampler
 
 router = APIRouter(tags=["多摄像头流管理"])
 

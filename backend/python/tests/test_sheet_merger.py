@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 from smartbi.canonical.sheet_merger import (
     MergeSummary,

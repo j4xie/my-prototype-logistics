@@ -14,7 +14,6 @@ context. Domain-specific terms (e.g. "客单价" stays "客单价" as it's well-
 from __future__ import annotations
 
 import logging
-import re
 from typing import Tuple
 
 logger = logging.getLogger(__name__)

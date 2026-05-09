@@ -38,7 +38,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from typing import Any, AsyncIterator, Dict, Optional, Tuple
 
 import asyncpg

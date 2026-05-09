@@ -453,7 +453,7 @@ async def lifespan(app: FastAPI):
             import asyncpg as _asyncpg
             from config import get_settings as _get_settings
             from smartbi.config import get_pg_pool as _get_pg_pool_etl
-            from smartbi.gold.restaurant_ops_etl import run_full_etl, run_full_etl_with_retry
+            from smartbi.gold.restaurant_ops_etl import run_full_etl_with_retry
 
             async def _run_restaurant_ops_etl_forever():
                 await _asyncio.sleep(30)  # post-audit P1-11: shortened for faster recovery

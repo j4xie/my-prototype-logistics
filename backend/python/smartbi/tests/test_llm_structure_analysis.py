@@ -81,12 +81,12 @@ async def test_structure_analysis():
 
             # LLM洞察
             if result.insights:
-                print(f"\n    LLM洞察:")
+                print("\n    LLM洞察:")
                 for insight in result.insights[:3]:
                     print(f"      - {insight}")
 
             if result.warnings:
-                print(f"\n    数据警告:")
+                print("\n    数据警告:")
                 for warning in result.warnings[:3]:
                     print(f"      - {warning}")
 

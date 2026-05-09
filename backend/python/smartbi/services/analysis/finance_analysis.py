@@ -12,7 +12,7 @@ Provides comprehensive financial analysis including:
 - Financial overview KPIs
 """
 import logging
-from typing import Any, Optional, List, Dict, Tuple
+from typing import Optional, List, Dict
 from datetime import datetime
 from enum import Enum
 

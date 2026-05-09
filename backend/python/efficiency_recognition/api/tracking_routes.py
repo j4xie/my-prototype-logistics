@@ -14,7 +14,7 @@ API 端点:
 
 import base64
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel, Field

@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
@@ -20,8 +20,6 @@ logger = logging.getLogger(__name__)
 
 from smartbi_compat.api.analysis_finance import (
     _get_period_key,         # post-PR #30 calendar-year fix (Rule 2 compliant)
-    _strip_volatile,         # already covers "generatedAt" key
-    VOLATILE_KEYS,
     _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
     _to_decimal,             # safe Decimal coercion
     _utc_now_iso,            # ISO timestamp for generatedAt (volatile, stripped)

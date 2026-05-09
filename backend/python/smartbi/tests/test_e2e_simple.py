@@ -103,7 +103,7 @@ async def main():
             elapsed = time.time() - start
             cache_status = "CACHE HIT" if result.from_cache else "CACHE MISS"
             print(f"  [{i+1}] {name}: {cache_status} ({elapsed*1000:.1f}ms)")
-        except Exception as e:
+        except Exception:
             elapsed = time.time() - start
             print(f"  [{i+1}] {name}: ERROR ({elapsed*1000:.1f}ms)")
 
@@ -139,7 +139,7 @@ async def main():
 
     # Cache stats
     stats = cache.get_stats()
-    print(f"\nCache stats:")
+    print("\nCache stats:")
     print(f"  Total entries: {stats['totalEntries']}")
     print(f"  With analysis: {stats['withAnalysis']}")
     print(f"  Total size: {stats['totalSizeMB']:.2f}MB")

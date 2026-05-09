@@ -1,5 +1,4 @@
 """Unit tests for restaurant_forecast section handler (P3 Task 3.5-3.6)."""
-import pytest
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
 from smartbi.services.restaurant.sections.forecast import RestaurantForecastHandler

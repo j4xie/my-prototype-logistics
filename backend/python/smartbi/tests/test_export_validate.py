@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.data_exporter import DataExporter, BatchExporter
-from services.export_validator import ExportValidator, ValidationResult
+from services.export_validator import ExportValidator
 
 
 async def test_single_sheet_export():
@@ -29,16 +29,16 @@ async def test_single_sheet_export():
     print(f"元信息: {json.dumps(data.metadata, ensure_ascii=False, indent=2)}")
     print(f"列数: {data.column_count}")
     print(f"行数: {data.row_count}")
-    print(f"\n列名:")
+    print("\n列名:")
     for col in data.columns[:10]:
         print(f"  - {col.name} ({col.data_type})")
 
-    print(f"\n前3行数据:")
+    print("\n前3行数据:")
     for i, row in enumerate(data.rows[:3]):
         print(f"  Row {i+1}: {list(row.values())[:5]}...")
 
     if data.rows:
-        print(f"\n最后一行:")
+        print("\n最后一行:")
         last_row = data.rows[-1]
         print(f"  {list(last_row.values())[:5]}...")
 
@@ -56,7 +56,7 @@ async def test_batch_export():
     result = await exporter.export_all_sheets(content, source_filename="test_complex_5sheets.xlsx")
 
     print(f"\n总Sheet数: {result.sheet_count}")
-    print(f"\n各Sheet信息:")
+    print("\n各Sheet信息:")
     for sheet in result.sheets:
         print(f"\n  [{sheet.index}] {sheet.name}")
         print(f"      行数: {sheet.row_count}, 列数: {sheet.column_count}")
@@ -127,14 +127,14 @@ async def test_export_formats():
     # JSON
     json_output = exporter.to_json(data, include_metadata=True)
     json_data = json.loads(json_output)
-    print(f"\nJSON格式:")
+    print("\nJSON格式:")
     print(f"  元信息keys: {list(json_data.get('metadata', {}).keys())}")
     print(f"  行数: {json_data.get('row_count')}")
     print(f"  列数: {json_data.get('column_count')}")
 
     # Markdown
     md_output = exporter.to_markdown(data, max_rows=5, include_metadata=True)
-    print(f"\nMarkdown格式 (前5行):")
+    print("\nMarkdown格式 (前5行):")
     print("-" * 40)
     for line in md_output.split('\n')[:15]:
         print(line)
@@ -142,7 +142,7 @@ async def test_export_formats():
 
     # CSV
     csv_output = exporter.to_csv(data, include_header_comments=True)
-    print(f"\nCSV格式 (前10行):")
+    print("\nCSV格式 (前10行):")
     print("-" * 40)
     for line in csv_output.split('\n')[:10]:
         print(line[:80] + "..." if len(line) > 80 else line)

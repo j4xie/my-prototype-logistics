@@ -1,11 +1,10 @@
 """Expense YoY & Budget Achievement Chart Builder — 费用同比及预算达成."""
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any
 import pandas as pd
 
 from .base import (
-    AbstractFinancialChartBuilder, COLORS, MONTH_LABELS,
-    _sanitize_for_json, _detect_value_scale,
+    AbstractFinancialChartBuilder, COLORS, _sanitize_for_json, _detect_value_scale,
 )
 
 logger = logging.getLogger(__name__)

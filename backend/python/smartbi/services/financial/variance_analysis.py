@@ -1,13 +1,10 @@
 """Variance Analysis Chart Builder — Zebra BI风格预算vs实际差异分析."""
 import logging
-import math
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 import pandas as pd
-import numpy as np
 
 from .base import (
-    AbstractFinancialChartBuilder, COLORS, MONTH_LABELS,
-    _sanitize_for_json, _detect_value_scale,
+    AbstractFinancialChartBuilder, COLORS, _sanitize_for_json, _detect_value_scale,
 )
 
 logger = logging.getLogger(__name__)

@@ -25,10 +25,8 @@ from config import get_settings
 
 # Import cache manager
 from services.analysis_cache import (
-    AnalysisCacheManager,
     CachedData,
     CachedAnalysis,
-    CacheMetadata,
     get_cache_manager,
     generate_markdown_content
 )
@@ -39,18 +37,12 @@ from services.data_cleaner import DataCleaner
 # Import LLM-powered services (new)
 from services.raw_exporter import RawExporter, RawSheetData
 from services.field_detector_llm import (
-    LLMFieldDetector,
-    FieldDetectionResult,
     get_field_detector
 )
 from services.scenario_detector import (
-    LLMScenarioDetector,
-    ScenarioResult as LLMScenarioResult,
     get_scenario_detector
 )
 from services.chart_recommender import (
-    ChartRecommender,
-    ChartRecommendation,
     DataSummary,
     get_chart_recommender
 )
@@ -60,7 +52,7 @@ from services.insight_generator import InsightGenerator
 from services.forecast_service import ForecastService
 from services.context_extractor import ContextExtractor, ContextInfo
 from services.utils.json_parser import robust_json_parse
-from services.utils.dataframe_utils import safe_get_column, deduplicate_columns
+from services.utils.dataframe_utils import deduplicate_columns
 
 logger = logging.getLogger(__name__)
 
@@ -853,7 +845,7 @@ class UnifiedAnalyzer:
 
                 if second_row_numeric > 0:
                     # 第一行是表头，第二行是数据
-                    logger.debug(f"检测到单行表头模式: data_start=1")
+                    logger.debug("检测到单行表头模式: data_start=1")
                     return 1
 
         # 如果没有检测到，使用 stats 中的值作为 fallback
@@ -1448,7 +1440,7 @@ class UnifiedAnalyzer:
         logger.info(f"[BudgetInjection] dept_col={dept_col}, budget_col={budget_col}, actual_col={actual_col}")
 
         if not dept_col or not budget_col or not actual_col:
-            logger.info(f"[BudgetInjection] Skipped — missing column(s)")
+            logger.info("[BudgetInjection] Skipped — missing column(s)")
             return None
 
         # Verify columns have numeric data

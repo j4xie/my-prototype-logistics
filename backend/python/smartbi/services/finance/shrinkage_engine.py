@@ -26,7 +26,6 @@ Part of P3.5C B3. Section handler wrapping comes in B4.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass

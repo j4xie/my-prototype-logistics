@@ -1,7 +1,7 @@
 """Financial Data Normalizer — Smart column role detection and data standardization."""
 import re
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np

@@ -9,12 +9,10 @@ Detects field types from sample data including:
 """
 import logging
 import re
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List
 from enum import Enum
-from datetime import datetime
 
 import pandas as pd
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

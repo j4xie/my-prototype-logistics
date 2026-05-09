@@ -12,10 +12,9 @@ Part of SmartBI Phase 5: Cross-Analysis and Advanced Charts.
 """
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +344,7 @@ class CrossAnalyzer:
             agg_funcs = {m: aggregation for m in measures if m in df.columns}
 
             if not agg_funcs:
-                result.error = f"No valid measures found"
+                result.error = "No valid measures found"
                 return result
 
             grouped = df.groupby(target_dimension).agg(agg_funcs).reset_index()

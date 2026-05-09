@@ -1,6 +1,4 @@
 """BOM Variance dual attribution: split cost delta into supply chain (price) vs management (usage)."""
-import time
-from unittest.mock import MagicMock
 from smartbi.services.restaurant.sections.base import SectionRequest
 from smartbi.services.restaurant.sections.bom_variance import BomVarianceHandler
 

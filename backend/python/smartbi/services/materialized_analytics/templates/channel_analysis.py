@@ -11,7 +11,7 @@ Chart: ECharts pie by bucket revenue share.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Tuple
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
 

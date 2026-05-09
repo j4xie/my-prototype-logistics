@@ -12,15 +12,12 @@ Features:
 4. Fallback to rule-based detection when LLM unavailable
 """
 import hashlib
-import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-import httpx
 import pandas as pd
-import numpy as np
 
 from services.utils.json_parser import robust_json_parse
 
@@ -554,7 +551,6 @@ class LLMFieldDetector:
         basic_info: Dict[str, Dict[str, Any]]
     ) -> List[FieldDetectionResult]:
         """Fallback rule-based detection."""
-        import re
 
         # Simple keyword patterns
         patterns = {

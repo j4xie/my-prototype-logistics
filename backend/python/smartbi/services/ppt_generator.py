@@ -2,7 +2,7 @@
 import base64
 import io
 import logging
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -160,7 +160,6 @@ class FinancialPPTGenerator:
                   font_size=None, color=None, bold=False,
                   alignment=None, word_wrap=True):
         from pptx.util import Pt as PtUtil
-        from pptx.enum.text import PP_ALIGN
         if font_size is None:
             font_size = PtUtil(12)
         txBox = slide.shapes.add_textbox(left, top, width, height)

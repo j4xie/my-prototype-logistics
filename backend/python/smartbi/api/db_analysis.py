@@ -9,7 +9,7 @@ while data is stored in PostgreSQL.
 import logging
 from typing import List, Dict, Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from config import get_settings

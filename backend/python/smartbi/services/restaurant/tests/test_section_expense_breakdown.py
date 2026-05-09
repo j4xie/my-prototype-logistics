@@ -1,5 +1,4 @@
 """Unit tests for expense_breakdown section handler (P3.5B F6)."""
-import pytest
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
 from smartbi.services.restaurant.sections.expense_breakdown import (

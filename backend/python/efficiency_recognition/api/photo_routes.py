@@ -10,9 +10,9 @@ API 端点:
 
 import base64
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Optional
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form
 from pydantic import BaseModel, Field
 
 from ..services.video_analyzer import VideoEfficiencyAnalyzer

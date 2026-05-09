@@ -5,7 +5,7 @@ ML API
 Endpoints for machine learning numerical computations.
 """
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field

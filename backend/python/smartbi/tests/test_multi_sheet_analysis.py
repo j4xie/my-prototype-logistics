@@ -301,7 +301,7 @@ async def test_sheet_preview(parser: ExcelParser) -> MultiSheetTestResult:
         non_empty = [p for p in preview_info if not p['is_empty']]
         if len(non_empty) == 5:
             result.passed = True
-            result.message = f"All 5 sheets have preview info"
+            result.message = "All 5 sheets have preview info"
         else:
             result.message = f"Only {len(non_empty)}/5 sheets have preview"
     except Exception as e:

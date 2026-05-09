@@ -36,10 +36,8 @@ import logging
 import os
 import re
 import statistics
-from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
 import httpx
 
@@ -47,7 +45,6 @@ from smartbi.config import get_settings
 
 from .review_analyzer import (
     DishMention,
-    PeriodRating,
     RatingTrend,
     ReviewAnalysisReport,
     ReviewAnalyzer,
@@ -492,7 +489,7 @@ class LlmReviewAnalyzer:
             f"📊 {total} 条评论, 平均 {avg_rating:.2f} 星, "
             f"识别出 {len(dish_tags)} 个菜品{llm_note}"
         )
-        insights.append(f"🤖 LLM 驱动 (qwen fast), 精度 ~90% vs 规则版 ~60%")
+        insights.append("🤖 LLM 驱动 (qwen fast), 精度 ~90% vs 规则版 ~60%")
 
         if trend:
             if trend.direction == "stable":

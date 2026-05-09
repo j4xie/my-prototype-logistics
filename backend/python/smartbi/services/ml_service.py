@@ -6,7 +6,7 @@ Machine learning utilities for numerical computation:
 - Least Squares Solver (Ridge, LSTSQ, SVD methods)
 """
 import logging
-from typing import Any, Optional, List, Dict
+from typing import Any, List, Dict
 from enum import Enum
 
 import numpy as np

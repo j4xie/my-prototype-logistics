@@ -68,7 +68,7 @@ class MenuEngineeringHandler(AbstractSectionHandler):
         if not hasattr(pos_df, "columns"):
             return self.skipped(
                 request,
-                f"pos_df 不是 DataFrame (缺 columns 属性)",
+                "pos_df 不是 DataFrame (缺 columns 属性)",
                 started,
             )
 

@@ -13,7 +13,7 @@ import io
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Dict, List, Optional, Callable
 
 
 import pandas as pd

@@ -28,7 +28,7 @@ from services.structure_detector import StructureDetector
 from services.semantic_mapper import SemanticMapper
 from services.fixed_executor import FixedExecutor
 from services.schema_cache import get_schema_cache
-from services.table_classifier import TableClassifier, TableType
+from services.table_classifier import TableClassifier
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -2372,7 +2372,7 @@ async def match_parse_rule(
     - **file**: Excel文件
     - **sheet_index**: Sheet索引
     """
-    from services.smart_parser import SmartExcelParser, RuleEngine
+    from services.smart_parser import RuleEngine
     import io
     import openpyxl
 

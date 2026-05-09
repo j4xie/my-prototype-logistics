@@ -7,7 +7,6 @@ Prevents data loss on service restart and avoids redundant LLM calls.
 
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 
 from database.connection import get_db_context, is_postgres_enabled
 from database.models import SmartBiPgAnalysisResult, SmartBiPgExcelUpload

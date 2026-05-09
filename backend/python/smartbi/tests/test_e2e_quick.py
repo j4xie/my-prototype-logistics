@@ -4,11 +4,9 @@ Quick E2E Test - Only tests first 2 sheets of each file with caching enabled.
 Optimized for fast verification of core functionality.
 """
 import asyncio
-import json
 import os
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
 

@@ -14,7 +14,7 @@ from datetime import date, timedelta
 import pytest
 import pytest_asyncio
 
-from smartbi.agent import AgentBudgetTracker, BudgetCheckResult, DEFAULT_TIER_CAPS
+from smartbi.agent import AgentBudgetTracker, DEFAULT_TIER_CAPS
 
 
 _TENANT = "TEST_BUDGET_A"

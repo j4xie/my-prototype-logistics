@@ -484,7 +484,7 @@ class KnowledgeRetriever:
         param_idx = 1
 
         # Base query with cosine similarity
-        sql = f"""
+        sql = """
             SELECT id, title, content, category, source, version, metadata,
                    1 - (embedding <=> $1::vector) as similarity
             FROM food_knowledge_documents

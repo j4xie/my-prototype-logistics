@@ -4,9 +4,8 @@ from __future__ import annotations
 import csv
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-import pytest
 
 from scripts.b_spec.arbitrate import _auto_promote_agreed
 from scripts.b_spec.assign_split import assign_split_for

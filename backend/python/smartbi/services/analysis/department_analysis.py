@@ -11,11 +11,9 @@ Provides comprehensive department performance analysis including:
 - Department share trends for stacked area charts
 """
 import logging
-from typing import List, Optional, Dict, Any
-from datetime import datetime
+from typing import List, Optional, Dict
 
 import pandas as pd
-import numpy as np
 
 from .base import BaseAnalysisService
 

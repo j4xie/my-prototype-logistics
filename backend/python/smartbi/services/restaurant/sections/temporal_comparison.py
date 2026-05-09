@@ -74,11 +74,11 @@ class TemporalComparisonHandler(AbstractSectionHandler):
                                   [self.DEFAULT_GROUP_COL, "门店名称", "店铺名称", "门店", "店铺", "store_name"])
 
         if datetime_col not in pos_df.columns:
-            return self.skipped(request, f"POS 缺时间列 (尝试: 开单时间/营业日期/订单时间)", started)
+            return self.skipped(request, "POS 缺时间列 (尝试: 开单时间/营业日期/订单时间)", started)
         if revenue_col not in pos_df.columns:
-            return self.skipped(request, f"POS 缺收入列 (尝试: 实收/营业额/应收金额)", started)
+            return self.skipped(request, "POS 缺收入列 (尝试: 实收/营业额/应收金额)", started)
         if group_col not in pos_df.columns:
-            return self.skipped(request, f"POS 缺分组列 (尝试: 门店名称/store_name)", started)
+            return self.skipped(request, "POS 缺分组列 (尝试: 门店名称/store_name)", started)
 
         try:
             comparator = self._get_comparator(group_col)

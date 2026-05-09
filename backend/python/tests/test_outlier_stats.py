@@ -4,7 +4,7 @@ import pytest
 
 from smartbi.utils.outlier_stats import (
     iqr_fence, find_outliers_iqr, zscore_outliers,
-    OutlierAlgorithm, IQRFence, Outlier,
+    OutlierAlgorithm,
 )
 
 

@@ -20,11 +20,9 @@ import io
 import time
 import json
 import shutil
-from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from functools import wraps
 
 # Fix encoding for Windows console
 if sys.platform == 'win32':
@@ -345,7 +343,7 @@ class PerformanceMonitor:
                     scenario.scenario if scenario else "general",
                     fields
                 )
-            except Exception as e:
+            except Exception:
                 pass
             t3a = TimingRecord(name="metric_calculation", phase="Phase 3a: Metrics", start_time=t3a_start)
             t3a.finish(success=True, metric_count=len(metrics_raw) if metrics_raw else 0)

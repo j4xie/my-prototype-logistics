@@ -33,7 +33,7 @@ import logging
 import statistics
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Any, Literal, Optional
 
 logger = logging.getLogger(__name__)

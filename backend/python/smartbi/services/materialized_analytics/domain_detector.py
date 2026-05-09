@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import List, Protocol, runtime_checkable
 
-from .schema import DataSchema, Domain, Field, FieldRole
+from .schema import Domain, Field, FieldRole
 
 logger = logging.getLogger(__name__)
 

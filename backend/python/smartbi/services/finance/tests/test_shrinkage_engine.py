@@ -3,7 +3,7 @@
 import pytest
 
 from smartbi.services.finance.shrinkage_engine import (
-    ActionItem, ShrinkageEngine, ShrinkageReport, ShrinkageRow,
+    ShrinkageEngine, ShrinkageRow,
 )
 
 

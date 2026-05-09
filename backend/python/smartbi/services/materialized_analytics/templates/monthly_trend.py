@@ -103,8 +103,8 @@ class MonthlyTrend(AnalysisTemplate):
         else:
             action_rec = format_action_rec(
                 object_target=f"峰值 {peak['period']} ({peak['total']:,.0f}) 与谷值 {trough['period']}",
-                benefit_range=f"复刻峰值期运营手段到平日,可缩小波动 10-15%",
-                prerequisite=f"对标峰值时段促销 / 排班 / 物料 + 复盘可复用方案",
+                benefit_range="复刻峰值期运营手段到平日,可缩小波动 10-15%",
+                prerequisite="对标峰值时段促销 / 排班 / 物料 + 复盘可复用方案",
                 timeline="本月内",
             )
         return TemplateResult(

@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from smartbi.services.outlier_service import (
-    OutlierService, DetectedOutlier, DEFAULT_KPI_KINDS,
+    OutlierService,
 )
 
 

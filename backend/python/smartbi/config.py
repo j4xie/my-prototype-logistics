@@ -2,7 +2,6 @@ from __future__ import annotations
 """
 SmartBI Service Configuration
 """
-import os
 from functools import lru_cache
 from typing import List, Optional
 from urllib.parse import quote

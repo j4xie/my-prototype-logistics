@@ -24,8 +24,8 @@ from __future__ import annotations
 import json
 import os
 import time
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
-from unittest.mock import AsyncMock, MagicMock
+from typing import Any, AsyncIterator, Dict, List, Optional
+from unittest.mock import MagicMock
 
 import pytest
 

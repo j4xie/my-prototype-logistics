@@ -6,7 +6,7 @@ Pure-function tests only — no DB required.
 """
 from __future__ import annotations
 
-from smartbi.gold.shadow_compare import DiffReport, FieldDiff, diff_results
+from smartbi.gold.shadow_compare import diff_results
 
 
 # ── Match cases ──────────────────────────────────────────────

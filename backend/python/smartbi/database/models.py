@@ -6,9 +6,9 @@ Uses PostgreSQL JSONB for flexible schema storage.
 """
 
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 
-from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, Enum as SAEnum, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Numeric, UniqueConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 

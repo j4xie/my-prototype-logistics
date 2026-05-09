@@ -9,7 +9,7 @@ Reviewer R5: KPI_KINDS 配置驱动, 后续加信号是 append list.
 from __future__ import annotations
 import logging
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Literal, Optional, Tuple
 from datetime import date
 

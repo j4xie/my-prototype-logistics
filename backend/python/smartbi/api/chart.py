@@ -363,7 +363,6 @@ _ACTUAL_KEYWORDS = [
 
 def _find_col(df, keywords):
     """Find a column matching any keyword (exact then partial)."""
-    import pandas as pd
     cols_lower = {c: c.lower().strip() for c in df.columns}
     for col, cl in cols_lower.items():
         for kw in keywords:

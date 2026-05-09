@@ -269,7 +269,7 @@ def should_short_circuit(query_domain: Optional[str], caps: DatasetCapabilities)
     domain_label = _CAPABILITY_LABELS.get(required_cap, required_cap)
     present = caps.present_caps()
     msg_parts = [
-        f"## 数据范围说明\n",
+        "## 数据范围说明\n",
         f"本数据集**不含 {domain_label}** 字段，无法回答关于「{query_domain}」的分析。",
     ]
     if present:

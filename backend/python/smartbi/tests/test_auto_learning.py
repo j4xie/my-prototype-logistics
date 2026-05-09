@@ -39,7 +39,7 @@ async def test_auto_learning():
     print(f"   Rule exists: {exists}")
 
     if not exists:
-        print(f"\n2. Generating new rule...")
+        print("\n2. Generating new rule...")
 
         # Call auto-learning
         issue_type = "currency_format"
@@ -51,11 +51,11 @@ async def test_auto_learning():
         )
 
         if rule_func:
-            print(f"   [OK] Rule generated successfully!")
+            print("   [OK] Rule generated successfully!")
             print(f"   Function: {rule_func}")
 
             # Test the new rule
-            print(f"\n3. Testing new rule...")
+            print("\n3. Testing new rule...")
             print(f"   Original data: {test_data}")
 
             changes = rule_func(test_data, ["value"])
@@ -63,15 +63,15 @@ async def test_auto_learning():
             print(f"   Cleaned data: {test_data}")
 
             # Check if rule is registered
-            print(f"\n4. Check if rule is registered...")
+            print("\n4. Check if rule is registered...")
             print(f"   '{rule_name}' in rules: {rule_name in cleaner.rules}")
 
             return True
         else:
-            print(f"   [FAIL] Rule generation failed!")
+            print("   [FAIL] Rule generation failed!")
             return False
     else:
-        print(f"   Rule already exists, skipping generation test")
+        print("   Rule already exists, skipping generation test")
         return True
 
 
@@ -128,12 +128,12 @@ def rule_test_valid(data, cols):
     return changes
 '''
 
-    print(f"   Validating code safety...")
+    print("   Validating code safety...")
     is_safe = cleaner._validate_rule_code(valid_code)
     print(f"   Safety check: {'[OK] Passed' if is_safe else '[FAIL] Failed'}")
 
     if is_safe:
-        print(f"   Executing rule code...")
+        print("   Executing rule code...")
         rule_func = cleaner._parse_and_execute_rule("test_valid", valid_code)
 
         if rule_func:
@@ -146,7 +146,7 @@ def rule_test_valid(data, cols):
             print(f"   Data: {test_data}")
             return True
         else:
-            print(f"   [FAIL] Rule parsing failed")
+            print("   [FAIL] Rule parsing failed")
             return False
 
     return False

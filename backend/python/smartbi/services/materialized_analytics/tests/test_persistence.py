@@ -1,7 +1,6 @@
 """test_persistence.py — in-memory + integration tests for persistence layer."""
 from __future__ import annotations
 
-import json
 import os
 import pytest
 

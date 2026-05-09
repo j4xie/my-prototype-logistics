@@ -11,7 +11,7 @@ Tables:
 """
 
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Text, Boolean, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB

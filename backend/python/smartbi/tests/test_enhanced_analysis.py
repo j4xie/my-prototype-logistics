@@ -6,7 +6,7 @@ sys.path.insert(0, '..')
 
 import pandas as pd
 from services.statistical_analyzer import StatisticalAnalyzer
-from services.chart_generator import ChartGenerator, ChartRecommendationEngine
+from services.chart_generator import ChartGenerator
 from services.drilldown_renderer import DrillDownRenderer, EnhancedInsightGenerator
 
 
@@ -42,7 +42,7 @@ def test_statistical_analyzer():
 
     # Test basic statistics
     report = analyzer.analyze(data, 'sales')
-    print(f"\nBasic Statistics for 'sales':")
+    print("\nBasic Statistics for 'sales':")
     print(f"  Count: {report.count}")
     print(f"  Sum: {report.sum:.2f}")
     print(f"  Mean: {report.mean:.2f}")
@@ -54,7 +54,7 @@ def test_statistical_analyzer():
 
     # Test comparison
     comparison = analyzer.compare_dimensions(data, 'region', 'sales')
-    print(f"\nComparison by 'region':")
+    print("\nComparison by 'region':")
     print(f"  Top 3: {comparison.top_3}")
     print(f"  CR3: {comparison.cr3:.1f}%")
     print(f"  Pareto count: {comparison.pareto_count}")
@@ -62,7 +62,7 @@ def test_statistical_analyzer():
 
     # Test correlation
     corr = analyzer.analyze_correlations(data, ['sales', 'quantity', 'profit'])
-    print(f"\nCorrelation Analysis:")
+    print("\nCorrelation Analysis:")
     print(f"  Strong positive: {len(corr.strong_positive)}")
     if corr.top_correlation:
         print(f"  Top: {corr.top_correlation['var1']} vs {corr.top_correlation['var2']} = {corr.top_correlation['correlation']:.3f}")

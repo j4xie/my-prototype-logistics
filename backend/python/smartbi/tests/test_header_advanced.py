@@ -407,7 +407,7 @@ def test_sheet(excel_file: str, sheet_name: str):
         best = 'scheme2'
         best_rate = rate2
 
-    print(f"\n--- Summary ---")
+    print("\n--- Summary ---")
     print(f"Baseline:  {base_rate*100:.1f}%")
     print(f"Scheme 1:  {rate1*100:.1f}% (LLM)")
     print(f"Scheme 2:  {rate2*100:.1f}% (Smart)")

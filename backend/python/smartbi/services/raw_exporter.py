@@ -290,11 +290,11 @@ class RawExporter:
 
         # 标题
         lines.append(f"# Sheet: {data.sheet_name}")
-        lines.append(f"")
+        lines.append("")
         lines.append(f"- 总行数: {data.total_rows}")
         lines.append(f"- 总列数: {data.total_cols}")
         lines.append(f"- 合并单元格: {len(data.merged_cells)} 个")
-        lines.append(f"")
+        lines.append("")
 
         # 合并单元格信息
         if data.merged_cells:
@@ -339,7 +339,7 @@ class RawExporter:
                 lines.append(f"| {row.row_number} | " + " | ".join(values) + " |")
 
         if len(data.rows) > max_rows:
-            lines.append(f"")
+            lines.append("")
             lines.append(f"*（显示前 {max_rows} 行，共 {len(data.rows)} 行）*")
 
         return "\n".join(lines)

@@ -7,9 +7,8 @@ Uses SQLAlchemy with native JSONB queries for efficient aggregation.
 
 import logging
 from typing import List, Dict, Any, Optional, Tuple
-from decimal import Decimal
 
-from sqlalchemy import text, func
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .models import SmartBiDynamicData, SmartBiPgFieldDefinition, SmartBiPgExcelUpload

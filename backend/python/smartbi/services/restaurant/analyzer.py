@@ -45,7 +45,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -959,7 +959,6 @@ class RestaurantAnalyzerV2:
         revenue_col: str,
     ) -> list[dict]:
         """Week 4.3b: 把 POS DF 聚合为 menu_items list 供 LongTailSkuDetector"""
-        import pandas as pd
 
         if quantity_col not in pos_df.columns:
             # 没有 quantity 列, 用 count 代替

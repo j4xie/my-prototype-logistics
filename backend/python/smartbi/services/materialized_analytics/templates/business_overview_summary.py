@@ -263,7 +263,7 @@ class BusinessOverviewSummary(AnalysisTemplate):
                 if top_s["revenue"] > 0 else 0
             action_rec = format_action_rec(
                 object_target=f"末位「{bottom_s['store']}」 (与 Top「{top_s['store']}」差距 {gap_pct:.0f}%)",
-                benefit_range=f"复制 Top 门店 SOP + 客流引导可拉高末位营业额 10-25%",
+                benefit_range="复制 Top 门店 SOP + 客流引导可拉高末位营业额 10-25%",
                 prerequisite=f"对标走访{top_s['store']} + 末位店店长 KPI 重设 + 公司层面调度支持",
                 timeline="本季度内",
             )
