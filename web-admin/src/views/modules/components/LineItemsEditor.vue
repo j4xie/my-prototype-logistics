@@ -155,6 +155,9 @@ function isColumnVisible(field: ItemField): boolean {
   if (!field.visibleWhen) return true
   return rows.value.some(row => isCellVisible(field, row))
 }
+
+// C-6 unit-test surface (parallel to ReferenceSelector). Internals only used by tests.
+defineExpose({ recomputeRow, onReferenceProject, updateField })
 </script>
 
 <template>

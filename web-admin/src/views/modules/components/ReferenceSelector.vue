@@ -297,6 +297,10 @@ watch(() => props.modelValue, (val) => {
     fetchById(val)  // fetchById 完成后内部会调 emitProjectFields
   }
 })
+
+// C-6 unit-test surface (expose internals so vitest can call without UI driver).
+// Intentionally minimal — only what tests need, no production caller relies on these.
+defineExpose({ search, handleChange, fetchById, emitProjectFields })
 </script>
 
 <template>
