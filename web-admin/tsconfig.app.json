@@ -17,13 +17,13 @@
     "noImplicitThis": true,
     "alwaysStrict": true,
     "strictBindCallApply": true,
-    /* Phase B (enabled): function type safety + property init checks */
+    /* Phase B (enabled): function type safety */
     "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
     /* Phase C (enabled): no implicit any — explicit types required */
     "noImplicitAny": true,
-    /* Phase D (future): strictNullChecks — highest impact, needs extensive changes */
+    /* Phase D (future): strictNullChecks — required to also enable strictPropertyInitialization */
     // "strictNullChecks": true,
+    // "strictPropertyInitialization": true,
 
     "noUnusedLocals": false,
     "noUnusedParameters": false,

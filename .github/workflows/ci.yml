@@ -54,7 +54,8 @@ jobs:
           cache: 'pip'
           cache-dependency-path: backend/python/requirements.txt
       - name: Install dependencies
-        continue-on-error: true  # resolution-too-deep on transitive deps — pre-existing infra debt
+        # NOTE: legacy-resolver fallback chain handles resolution-too-deep failures.
+        # Recent CI runs (2026-05-09) show step exits 0 cleanly — continue-on-error removed.
         run: |
           pip install --upgrade pip
           pip install --use-deprecated=legacy-resolver -r requirements.txt || pip install -r requirements.txt
