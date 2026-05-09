@@ -885,18 +885,22 @@ deploy_jar() {
             fi
 
             # [BG 3/4] 切换 139 nginx upstream
+            # Issue #209: 同时重写 inline `# ACTIVE=<port>` 注释, 防止 comment-vs-config drift
+            # (历史上 comment 永远不变, 操作员看不到当前 active port). sed 一次性匹配整行
+            # `server 47.100.235.168:<active>;[<comment tail>]` 然后 emit 新 port + 新 comment.
             echo "   [BG 3/4] 切换 139 nginx upstream: $ACTIVE_PORT → $IDLE_PORT..."
+            SWITCH_DATE=$(date +%Y-%m-%d)
             if ! ssh $GATEWAY "
-                sed -i 's|server 47\\.100\\.235\\.168:$ACTIVE_PORT;|server 47.100.235.168:$IDLE_PORT;|' $NGINX_UPSTREAM_FILE &&
+                sed -i 's|server 47\\.100\\.235\\.168:$ACTIVE_PORT;.*\$|server 47.100.235.168:$IDLE_PORT;  # ACTIVE=$IDLE_PORT (switched $SWITCH_DATE) — auto-synced by deploy-backend.sh|' $NGINX_UPSTREAM_FILE &&
                 nginx -t >/dev/null 2>&1 &&
                 nginx -s reload
             "; then
                 echo "   ❌ nginx upstream 切换失败, 回滚 upstream 并停 idle"
-                ssh $GATEWAY "sed -i 's|server 47\\.100\\.235\\.168:$IDLE_PORT;|server 47.100.235.168:$ACTIVE_PORT;|' $NGINX_UPSTREAM_FILE && nginx -s reload" 2>/dev/null || true
+                ssh $GATEWAY "sed -i 's|server 47\\.100\\.235\\.168:$IDLE_PORT;.*\$|server 47.100.235.168:$ACTIVE_PORT;  # ACTIVE=$ACTIVE_PORT (rolled back $SWITCH_DATE) — auto-synced by deploy-backend.sh|' $NGINX_UPSTREAM_FILE && nginx -s reload" 2>/dev/null || true
                 ssh $SERVER "systemctl stop $IDLE_SERVICE" 2>/dev/null || true
                 exit 1
             fi
-            echo "   ✓ upstream 切换完成"
+            echo "   ✓ upstream 切换完成 (含 ACTIVE 注释自动同步)"
 
             # 切换后验证 — v5.3: 多次健康 check + auto-rollback
             # 历史事故: 2026-04-24 by47kihv7 部署 corrupt jar (logback ClassNotFound),
@@ -921,7 +925,7 @@ deploy_jar() {
             if [ "$POST_SWITCH_HEALTHY" != "true" ]; then
                 echo "   🔄 auto-rollback: 切回旧 upstream ($ACTIVE_COLOR $ACTIVE_PORT) + 重启旧 active"
                 ssh $GATEWAY "
-                    sed -i 's|server 47.100.235.168:$IDLE_PORT;|server 47.100.235.168:$ACTIVE_PORT;|' $NGINX_UPSTREAM_FILE &&
+                    sed -i 's|server 47\\.100\\.235\\.168:$IDLE_PORT;.*\$|server 47.100.235.168:$ACTIVE_PORT;  # ACTIVE=$ACTIVE_PORT (rolled back $SWITCH_DATE) — auto-synced by deploy-backend.sh|' $NGINX_UPSTREAM_FILE &&
                     nginx -t >/dev/null 2>&1 &&
                     nginx -s reload
                 " 2>/dev/null || echo "   ⚠️  rollback nginx 失败, 需手动: vi $NGINX_UPSTREAM_FILE && nginx -s reload"
