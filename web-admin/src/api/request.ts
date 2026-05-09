@@ -307,6 +307,26 @@ request.interceptors.response.use(
       return Promise.reject(new ApiError(friendly, 'NOT_FOUND', 404));
     }
 
+    // 410 Gone — Phase 2A SmartBI 端 Java→Python 迁移完成,后端 stub 应该只有 nginx
+    // 漏配 / F999 / 直连后端 时触发. 友好提示 + dev console 日志便于排查 nginx 路由 gap.
+    // Per chat 8 audit PR #214 §5.1 (2026-05-09).
+    if (status === 410) {
+      const rawMsg410 = error.response?.data?.message as string | undefined;
+      const isMigrated = typeof rawMsg410 === 'string' && rawMsg410.startsWith('SMARTBI_MIGRATED:');
+      if (isMigrated) {
+        console.warn('[SMARTBI_MIGRATED] backend returned 410 — nginx may not be routing this path to Python:', rawMsg410);
+      }
+      if (!originalRequest._silent) {
+        showMessage(
+          isMigrated
+            ? '该功能已迁移升级，请刷新页面重试。如反复出现请联系运维。'
+            : (rawMsg410 || '该资源已下线 (410)'),
+          'warning'
+        );
+      }
+      return Promise.reject(new ApiError(rawMsg410 || '410 Gone', error.response?.data?.code, 410));
+    }
+
     // 其他错误 — Apr 19 2026 Bug #58: 5xx/网络断开时 axios 默认 error.message 是英文
     // "Request failed with status code 502",用户看不懂。映射为中文 friendly 文案,
     // 特别对 502/503/504 (nginx 网关 / upstream 未就绪 / 超时) 给出具体指引。

@@ -84,6 +84,21 @@ class ApiClient {
           // 触发登出事件
           this.onAuthenticationFailed?.();
         }
+
+        // 410 Gone — SmartBI Java→Python migration Phase 2A. Should be nginx-routed
+        // to Python in normal flow; 410 only on dev / F999 / nginx misconfig regression.
+        // Don't show Alert here — let consumer screens catch and decide UI.
+        // Per chat 8 audit PR #214 §5.2 (2026-05-09).
+        if (error.response?.status === 410) {
+          const rawMsg = error.response?.data?.message as string | undefined;
+          if (typeof rawMsg === 'string' && rawMsg.startsWith('SMARTBI_MIGRATED:')) {
+            apiLogger.warn('[SMARTBI_MIGRATED] backend 410 — nginx routing gap?', {
+              url: originalRequest?.url,
+              message: rawMsg,
+            });
+          }
+        }
+
         return Promise.reject(error);
       }
     );
