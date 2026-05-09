@@ -462,8 +462,10 @@ class SyntheticDataServiceTest {
         @Test
         @DisplayName("validateStructure - returns true when TIME slot present")
         void testValidateStructure_passesWithTimeSlot() {
-            // Arrange
+            // Arrange — production validateStructure now requires intentCode set
+            // (was added 2026 to gate structure validation; test was written before).
             SyntheticSample sample = new SyntheticSample();
+            sample.setIntentCode(TEST_INTENT_CODE);
             Map<String, String> params = new HashMap<>();
             params.put("TIME", "今天");
             sample.setParams(params);
@@ -478,8 +480,9 @@ class SyntheticDataServiceTest {
         @Test
         @DisplayName("validateStructure - returns true when METRIC slot present")
         void testValidateStructure_passesWithMetricSlot() {
-            // Arrange
+            // Arrange — production validateStructure now requires intentCode set.
             SyntheticSample sample = new SyntheticSample();
+            sample.setIntentCode(TEST_INTENT_CODE);
             Map<String, String> params = new HashMap<>();
             params.put("METRIC", "销售额");
             sample.setParams(params);

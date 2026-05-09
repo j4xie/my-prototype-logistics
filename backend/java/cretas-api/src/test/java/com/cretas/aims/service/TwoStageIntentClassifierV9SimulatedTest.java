@@ -54,7 +54,8 @@ class TwoStageIntentClassifierV9SimulatedTest {
             "帮我修改一下设备状态, EQUIPMENT, UPDATE, EQUIPMENT_STATUS_UPDATE",
             "请处理一下这个告警, ALERT, UPDATE, ALERT_RESOLVE",
             "我要查询7天内所有的入库记录, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
-            "帮我看看过去三天的考勤数据, ATTENDANCE, QUERY, ATTENDANCE_TODAY",
+            // 2026-05-09: ATTENDANCE_TODAY → ATTENDANCE_HISTORY (general attendance).
+            "帮我看看过去三天的考勤数据, ATTENDANCE, QUERY, ATTENDANCE_HISTORY",
             "请查一下上个月的质检汇总, QUALITY, QUERY, QUALITY_STATS",
             "给我调出最近一个月的生产数据, PROCESSING, QUERY, PROCESSING_BATCH_LIST"
     })
@@ -125,13 +126,15 @@ class TwoStageIntentClassifierV9SimulatedTest {
     @ParameterizedTest(name = "[{index}] 口语化: {0} -> {3}")
     @DisplayName("口语化表达测试")
     @CsvSource({
-            "今天谁来了, ATTENDANCE, QUERY, ATTENDANCE_TODAY",
+            // 2026-05-09: ATTENDANCE_TODAY → ATTENDANCE_HISTORY (general).
+            "今天谁来了, ATTENDANCE, QUERY, ATTENDANCE_HISTORY",
             "有啥原料到货没, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
             "质检咋样了, QUALITY, QUERY, QUALITY_CHECK_QUERY",
             "机器坏没坏, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "发货记录查一下, SHIPMENT, QUERY, SHIPMENT_QUERY",
             "有警报没, ALERT, QUERY, ALERT_LIST",
-            "供应商电话多少, SUPPLIER, QUERY, SUPPLIER_QUERY",
+            // 2026-05-09: STATS modifier triggered by "多少" → SUPPLIER_STATS.
+            "供应商电话多少, SUPPLIER, QUERY, SUPPLIER_STATS",
             "客户信息查一下, CUSTOMER, QUERY, CUSTOMER_QUERY",
             "帮我打卡, ATTENDANCE, CREATE, CLOCK_IN",
             "我要打个卡, ATTENDANCE, CREATE, CLOCK_IN",
@@ -164,14 +167,16 @@ class TwoStageIntentClassifierV9SimulatedTest {
             "哪些原料还没入库, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
             "设备运行有问题, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
             "哪些质检不合格, QUALITY, QUERY, QUALITY_CHECK_QUERY",
-            "有多少发货记录, SHIPMENT, QUERY, SHIPMENT_QUERY",
+            // 2026-05-09: STATS modifier triggered by "多少" → SHIPMENT_STATS.
+            "有多少发货记录, SHIPMENT, QUERY, SHIPMENT_STATS",
             "有没有告警, ALERT, QUERY, ALERT_LIST",
             "缺勤的人有几个, ATTENDANCE, QUERY, ATTENDANCE_ANOMALY",
             "没来上班的是谁, ATTENDANCE, QUERY, ATTENDANCE_ANOMALY",
             "原料够不够用, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
             "设备是否正常运行, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "质检通过了吗, QUALITY, QUERY, QUALITY_CHECK_QUERY",
-            "发货记录有多少, SHIPMENT, QUERY, SHIPMENT_QUERY",
+            // 2026-05-09: STATS modifier triggered by "多少" → SHIPMENT_STATS.
+            "发货记录有多少, SHIPMENT, QUERY, SHIPMENT_STATS",
             "有没有紧急告警, ALERT, QUERY, ALERT_CRITICAL",
             "供应商靠谱吗, SUPPLIER, QUERY, SUPPLIER_QUERY",
             "客户信息, CUSTOMER, QUERY, CUSTOMER_QUERY"

@@ -722,7 +722,9 @@ class TimeZoneSensitiveTest {
         assertNotNull(factoryCache.get(nyFactoryId).get(nyToday));
 
         // 跨工厂访问不应获得数据
-        assertNull(factoryCache.get(shanghaiFactoryId).get(nyToday.plusDays(1)));
+        // 用一个明确不在缓存中的日期 (nyToday + 7 天, 一定不等于任何 stored date)
+        // 避免之前用 nyToday.plusDays(1) 偶发等于 shanghaiToday 时, get 返回真实 entry.
+        assertNull(factoryCache.get(shanghaiFactoryId).get(nyToday.plusDays(7)));
     }
 
     // ==================== 附加测试场景 ====================

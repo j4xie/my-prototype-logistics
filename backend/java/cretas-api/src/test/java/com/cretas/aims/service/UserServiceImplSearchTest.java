@@ -23,6 +23,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -64,8 +65,10 @@ class UserServiceImplSearchTest {
 
         pageRequest = PageRequest.of(1, 50);
 
-        when(userMapper.toDTO(salesperson)).thenReturn(salespersonDto);
-        when(userMapper.toDTO(warehouseManager)).thenReturn(warehouseManagerDto);
+        // lenient() — different tests exercise different role filters, so not
+        // every test consumes both stubs. Strict mode would flag the unused one.
+        lenient().when(userMapper.toDTO(salesperson)).thenReturn(salespersonDto);
+        lenient().when(userMapper.toDTO(warehouseManager)).thenReturn(warehouseManagerDto);
     }
 
     @Test

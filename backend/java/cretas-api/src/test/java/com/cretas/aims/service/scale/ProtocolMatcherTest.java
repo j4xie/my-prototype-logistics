@@ -612,7 +612,9 @@ class ProtocolMatcherTest {
         @DisplayName("所有匹配失败时返回 null")
         void testNoMatchReturnsNull() {
             // Given - no brand, no raw data
-            when(protocolRepository.findByIsActiveTrue())
+            // lenient() — production short-circuits when both brand and rawData
+            // are null, never reaching findByIsActiveTrue.
+            lenient().when(protocolRepository.findByIsActiveTrue())
                     .thenReturn(Collections.emptyList());
 
             // When

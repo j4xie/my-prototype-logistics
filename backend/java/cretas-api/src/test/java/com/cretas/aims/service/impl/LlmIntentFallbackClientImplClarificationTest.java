@@ -44,8 +44,8 @@ class LlmIntentFallbackClientImplClarificationTest {
         // 测试未知参数（应返回原值）
         assertEquals("unknownParam", method.invoke(client, "unknownParam"));
 
-        // 测试 null
-        assertEquals("信息", method.invoke(client, null));
+        // 测试 null —— 显式 (Object) null 转型避免被解析为 varargs Object[]{}
+        assertEquals("信息", method.invoke(client, new Object[]{ null }));
     }
 
     /**
