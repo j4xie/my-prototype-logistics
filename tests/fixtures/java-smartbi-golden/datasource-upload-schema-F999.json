@@ -1,18 +1,29 @@
 {
-  "verb": "POST",
-  "path": "/api/mobile/{factory_id}/smart-bi/datasource/upload",
-  "factory": "F999",
-  "response": {
-    "_skipped": true,
-    "reason": "Multipart schema-detection upload requires live file; skip to avoid creating test datasources"
+  "code": 200,
+  "message": "Schema detection complete",
+  "data": {
+    "changes": {
+      "datasourceName": "test_datasource_F999_recording",
+      "currentVersion": 0,
+      "newVersion": 1,
+      "addedFields": [],
+      "removedFields": [],
+      "modifiedFields": [],
+      "hasChanges": false,
+      "detectedAt": null,
+      "totalChanges": 0
+    },
+    "suggestedMappings": [],
+    "warningMessage": null,
+    "requiresApproval": false,
+    "affectedReportsCount": 0,
+    "affectedReportNames": null,
+    "estimatedMigrationTime": null,
+    "confirmationRequiredCount": 0
   },
-  "_meta": {
-    "name": "datasource-upload-schema",
-    "verb": "POST",
-    "path": "/api/mobile/{factory_id}/smart-bi/datasource/upload",
-    "query": null,
-    "factory": "F999",
-    "recordedAt": "2026-04-29T22:34:45.619Z",
-    "javaPort": 10011
-  }
+  "timestamp": "2026-05-09T10:00:35.062253922",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
 }
