@@ -1,41 +1,29 @@
 {
-  "verb": "GET",
-  "path": "/api/mobile/F999/smart-bi/datasource/1/preview",
-  "factory": "F999",
-  "response": {
-    "httpStatus": 200,
-    "code": 200,
-    "success": true,
-    "message": "操作成功",
-    "timestamp": "2026-04-30T06:34:45.73453676",
-    "data": {
-      "changes": {
-        "datasourceName": "IL TEATRO（西餐厅）2月_商品销量报表.xlsx",
-        "currentVersion": 1,
-        "newVersion": 1,
-        "addedFields": [],
-        "removedFields": [],
-        "modifiedFields": [],
-        "hasChanges": false,
-        "detectedAt": "2026-04-30T06:34:45.734508959",
-        "totalChanges": 0
-      },
-      "suggestedMappings": [],
-      "warningMessage": null,
-      "requiresApproval": false,
-      "affectedReportsCount": 0,
-      "affectedReportNames": null,
-      "estimatedMigrationTime": null,
-      "confirmationRequiredCount": 0
-    }
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "changes": {
+      "datasourceName": "IL TEATRO（西餐厅）2月_商品销量报表.xlsx",
+      "currentVersion": 1,
+      "newVersion": 1,
+      "addedFields": [],
+      "removedFields": [],
+      "modifiedFields": [],
+      "hasChanges": false,
+      "detectedAt": "2026-05-09T09:59:46.473638047",
+      "totalChanges": 0
+    },
+    "suggestedMappings": [],
+    "warningMessage": null,
+    "requiresApproval": false,
+    "affectedReportsCount": 0,
+    "affectedReportNames": null,
+    "estimatedMigrationTime": null,
+    "confirmationRequiredCount": 0
   },
-  "_meta": {
-    "name": "datasource-preview",
-    "verb": "GET",
-    "path": "/api/mobile/F999/smart-bi/datasource/1/preview",
-    "query": null,
-    "factory": "F999",
-    "recordedAt": "2026-04-29T22:34:46.109Z",
-    "javaPort": 10011
-  }
+  "timestamp": "2026-05-09T09:59:46.473648948",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
 }

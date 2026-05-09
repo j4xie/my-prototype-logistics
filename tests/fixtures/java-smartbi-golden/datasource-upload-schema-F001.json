@@ -1,18 +1,29 @@
 {
-  "verb": "POST",
-  "path": "/api/mobile/{factory_id}/smart-bi/datasource/upload",
-  "factory": "F001",
-  "response": {
-    "_skipped": true,
-    "reason": "Multipart schema-detection upload requires live file; skip to avoid creating test datasources"
+  "code": 200,
+  "message": "Schema detection complete",
+  "data": {
+    "changes": {
+      "datasourceName": "IL TEATRO（西餐厅）2月_商品销量报表.xlsx",
+      "currentVersion": 1,
+      "newVersion": 1,
+      "addedFields": [],
+      "removedFields": [],
+      "modifiedFields": [],
+      "hasChanges": false,
+      "detectedAt": "2026-05-09T10:00:51.311563236",
+      "totalChanges": 0
+    },
+    "suggestedMappings": [],
+    "warningMessage": null,
+    "requiresApproval": false,
+    "affectedReportsCount": 0,
+    "affectedReportNames": null,
+    "estimatedMigrationTime": null,
+    "confirmationRequiredCount": 0
   },
-  "_meta": {
-    "name": "datasource-upload-schema",
-    "verb": "POST",
-    "path": "/api/mobile/{factory_id}/smart-bi/datasource/upload",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:28.569Z",
-    "javaPort": 10011
-  }
+  "timestamp": "2026-05-09T10:00:51.311854135",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
 }
