@@ -1,0 +1,92 @@
+{
+  "run": "EX5604",
+  "startedAt": "2026-05-10T17:48:00.897Z",
+  "tests": [
+    {
+      "id": "T1-sync-upload",
+      "name": "sync upload happy path: synth valid xlsx → setInputFiles → backend parse + analysis",
+      "verdict": "PASS",
+      "uploadAndAnalyzeHits": [
+        {
+          "url": "/api/mobile/F001/smart-bi/upload-and-analyze",
+          "status": 200,
+          "method": "POST"
+        }
+      ],
+      "detectRegionsHits": [],
+      "otherHits": [],
+      "successToast": "文件解析成功",
+      "allToasts": [
+        {
+          "cls": "el-message el-message--success is-center",
+          "text": "文件解析成功"
+        },
+        {
+          "cls": "el-message el-message--warning is-center",
+          "text": "字段映射信心较低,请在下方确认后再查看分析结果"
+        }
+      ],
+      "pageState": {
+        "parsedRowCount": null
+      },
+      "depth": "deep",
+      "reason": null
+    },
+    {
+      "id": "T2-rule11-roundtrip",
+      "name": "Rule 11 roundtrip: re-GET /uploads list + /uploads/{id}/data + /uploads/{id}/fields",
+      "verdict": "BLOCKED",
+      "listStatus": 200,
+      "uploadsCount": 0,
+      "ourUpload": null,
+      "fieldsCount": null,
+      "depth": "deep"
+    },
+    {
+      "id": "T3-rule9-sample",
+      "name": "Rule 9 business semantic on persisted rows",
+      "verdict": "BLOCKED",
+      "reason": "no persisted row sample (T2 blocked)",
+      "depth": "deep"
+    },
+    {
+      "id": "T4-backend-invalid-content",
+      "name": "backend invalid-content path: garbage xlsx → expect Rule 8 four-axis",
+      "verdict": "WARN",
+      "reason": "backend accepted garbage with 200 — may indicate weak schema validation",
+      "fourAxis": {
+        "backendStatus": 200,
+        "hits": [
+          {
+            "url": "/api/mobile/F001/smart-bi/upload-and-analyze",
+            "status": 200,
+            "method": "POST"
+          }
+        ],
+        "toasts": [
+          {
+            "cls": "el-message el-message--success is-center",
+            "text": "文件解析成功",
+            "sticky": false
+          },
+          {
+            "cls": "el-message el-message--warning is-center",
+            "text": "字段映射信心较低,请在下方确认后再查看分析结果",
+            "sticky": false
+          }
+        ]
+      },
+      "depth": "error-deep"
+    }
+  ],
+  "consoleErrorsTotal": 0,
+  "consoleErrorsSample": [],
+  "pageErrors": [],
+  "finishedAt": "2026-05-10T17:48:56.183Z",
+  "verdictCounts": {
+    "PASS": 1,
+    "FAIL": 0,
+    "WARN": 1,
+    "BLOCKED": 2
+  }
+}

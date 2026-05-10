@@ -1,0 +1,124 @@
+{
+  "run": "EFD063",
+  "tests": [
+    {
+      "id": "F1-uploads-list-shape",
+      "listStatus": 200,
+      "bodyDataType": "object",
+      "contentLen": "n/a",
+      "rawBodyKeys": [
+        "code",
+        "message",
+        "data",
+        "timestamp",
+        "success",
+        "actionHint",
+        "severity",
+        "hintTarget"
+      ],
+      "rawDataKeys": null
+    },
+    {
+      "id": "F2-datasource-list",
+      "status": 404,
+      "bodyType": "object",
+      "sampleKeys": null,
+      "rowCount": "n/a"
+    },
+    {
+      "id": "F3-wizard-confirm",
+      "btnTextsObserved": [
+        {
+          "text": "下载模板",
+          "disabled": false,
+          "classes": "el-button"
+        },
+        {
+          "text": "重新开始",
+          "disabled": false,
+          "classes": "el-button"
+        },
+        {
+          "text": "重新检测",
+          "disabled": false,
+          "classes": "el-button el-button--small"
+        },
+        {
+          "text": "全部确认",
+          "disabled": false,
+          "classes": "el-button el-button--primary el-button--small"
+        },
+        {
+          "text": "重新上传",
+          "disabled": false,
+          "classes": "el-button"
+        },
+        {
+          "text": "查看分析结果",
+          "disabled": true,
+          "classes": "el-button el-button--primary is-disabled"
+        },
+        {
+          "text": "返回预览",
+          "disabled": false,
+          "classes": "el-button"
+        },
+        {
+          "text": "继续提问",
+          "disabled": false,
+          "classes": "el-button"
+        },
+        {
+          "text": "保存分析结果",
+          "disabled": false,
+          "classes": "el-button el-button--primary"
+        },
+        {
+          "text": "继续提问分析",
+          "disabled": false,
+          "classes": "el-button el-button--primary"
+        },
+        {
+          "text": "上传新文件",
+          "disabled": false,
+          "classes": "el-button"
+        },
+        {
+          "text": "返回驾驶舱",
+          "disabled": false,
+          "classes": "el-button"
+        }
+      ],
+      "advance1": "err: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    58 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "advance2": "clicked-save",
+      "apiHitsAfterUpload": [
+        {
+          "url": "/api/mobile/F001/smart-bi/upload-and-analyze",
+          "status": 200,
+          "method": "POST"
+        },
+        {
+          "url": "/api/mobile/F001/smart-bi/uploads?page=0&size=20",
+          "status": 200,
+          "method": "GET"
+        },
+        {
+          "url": "/api/mobile/F001/smart-bi/datasource/list?page=0&size=20",
+          "status": 404,
+          "method": "GET"
+        }
+      ],
+      "uploadsListAfter": {
+        "status": 200,
+        "count": 0,
+        "ourFound": false
+      },
+      "datasourceListAfter": {
+        "status": 404,
+        "count": 0,
+        "ourFound": false
+      }
+    }
+  ],
+  "finishedAt": "2026-05-10T17:51:30.247Z"
+}
