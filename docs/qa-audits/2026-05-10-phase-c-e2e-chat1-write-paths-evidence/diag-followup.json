@@ -1,0 +1,184 @@
+{
+  "run": "DFB34",
+  "startedAt": "2026-05-10T05:26:59.448Z",
+  "tests": [
+    {
+      "id": "T1",
+      "name": "POST data-sources?factoryId=F001 (query param fix)",
+      "result": {
+        "status": 200,
+        "body": {
+          "code": 200,
+          "message": "创建成功",
+          "data": {
+            "id": 33,
+            "factoryId": "F001",
+            "name": "diag-1",
+            "code": "DIAG_DFB34",
+            "type": "DATABASE",
+            "description": "diag",
+            "connectionConfig": null,
+            "refreshInterval": 60,
+            "isActive": true,
+            "linkedUploadId": null,
+            "createdAt": "2026-05-10T13:26:59.491602691",
+            "updatedAt": "2026-05-10T13:26:59.491602691"
+          },
+          "timestamp": "2026-05-10T13:26:59.510482607",
+          "success": true,
+          "actionHint": null,
+          "severity": null,
+          "hintTarget": null
+        }
+      }
+    },
+    {
+      "id": "T1b",
+      "name": "POST data-sources with factoryId IN BODY",
+      "result": {
+        "status": 200,
+        "body": {
+          "code": 200,
+          "message": "创建成功",
+          "data": {
+            "id": 34,
+            "factoryId": "F001",
+            "name": "diag-1b",
+            "code": "DIAG_DFB34_B",
+            "type": "DATABASE",
+            "description": "diag-body",
+            "connectionConfig": null,
+            "refreshInterval": 60,
+            "isActive": true,
+            "linkedUploadId": null,
+            "createdAt": "2026-05-10T13:26:59.745563016",
+            "updatedAt": "2026-05-10T13:26:59.745563016"
+          },
+          "timestamp": "2026-05-10T13:26:59.747011272",
+          "success": true,
+          "actionHint": null,
+          "severity": null,
+          "hintTarget": null
+        }
+      }
+    },
+    {
+      "id": "T2-list-shape",
+      "name": "thresholds list raw shape sample",
+      "sample": [
+        {
+          "createdAt": "2026-01-22T00:22:34",
+          "updatedAt": "2026-02-11T12:25:33.759038",
+          "deletedAt": null,
+          "id": "64b3b98f-f6e5-11f0-955b-00163e35af14",
+          "thresholdType": "FINANCE",
+          "metricCode": "quick_ratio",
+          "warningValue": null,
+          "criticalValue": null,
+          "comparisonOperator": "LESS_THAN",
+          "unit": null,
+          "description": null,
+          "factoryId": null,
+          "isActive": true,
+          "deleted": false
+        },
+        {
+          "createdAt": "2026-01-22T00:22:34",
+          "updatedAt": "2026-02-11T12:25:33.759038",
+          "deletedAt": null,
+          "id": "64b4faba-f6e5-11f0-955b-00163e35af14",
+          "thresholdType": "FINANCE",
+          "metricCode": "debt_ratio",
+          "warningValue": null,
+          "criticalValue": null,
+          "comparisonOperator": "GREATER_THAN",
+          "unit": null,
+          "description": null,
+          "factoryId": null,
+          "isActive": true,
+          "deleted": false
+        }
+      ],
+      "totalRows": 7
+    },
+    {
+      "id": "T2-full-body-put",
+      "name": "PUT threshold FULL body (sent warningThreshold=99) + roundtrip",
+      "target": {
+        "id": "64b3b98f-f6e5-11f0-955b-00163e35af14",
+        "code": "quick_ratio"
+      },
+      "putStatus": 200,
+      "putRespMessage": "更新成功",
+      "persistedAfter": {
+        "createdAt": "2026-01-22T00:22:34",
+        "updatedAt": "2026-02-11T12:25:33.759038",
+        "deletedAt": null,
+        "id": "64b3b98f-f6e5-11f0-955b-00163e35af14",
+        "thresholdType": "FINANCE",
+        "metricCode": "quick_ratio",
+        "warningValue": null,
+        "criticalValue": null,
+        "comparisonOperator": "LESS_THAN",
+        "unit": null,
+        "description": null,
+        "factoryId": null,
+        "isActive": true,
+        "deleted": false
+      },
+      "sendVsPersisted": "DIFF",
+      "restoreStatus": 200
+    },
+    {
+      "id": "T2-partial-body-put",
+      "name": "PUT threshold PARTIAL body (warningThreshold=88, isActive=true) + roundtrip",
+      "target": {
+        "id": "64b3b98f-f6e5-11f0-955b-00163e35af14",
+        "code": "quick_ratio"
+      },
+      "putStatus": 200,
+      "putRespMessage": "更新成功",
+      "persistedAfter": {
+        "createdAt": "2026-01-22T00:22:34",
+        "updatedAt": "2026-05-10T13:27:01.283125",
+        "deletedAt": null,
+        "id": "64b3b98f-f6e5-11f0-955b-00163e35af14",
+        "thresholdType": "FINANCE",
+        "metricCode": "quick_ratio",
+        "warningValue": null,
+        "criticalValue": null,
+        "comparisonOperator": "GT",
+        "unit": null,
+        "description": null,
+        "factoryId": null,
+        "isActive": true,
+        "deleted": false
+      },
+      "sendVsPersisted": "DIFF"
+    },
+    {
+      "id": "T2-single-vs-list",
+      "name": "single-row GET shape vs list",
+      "singleStatus": 405,
+      "singleData": null
+    },
+    {
+      "id": "cleanup",
+      "name": "cleanup created diag-1 row",
+      "result": {
+        "status": 200,
+        "body": {
+          "code": 200,
+          "message": "删除成功",
+          "data": null,
+          "timestamp": "2026-05-10T13:27:02.249299504",
+          "success": true,
+          "actionHint": null,
+          "severity": null,
+          "hintTarget": null
+        }
+      }
+    }
+  ],
+  "finishedAt": "2026-05-10T05:27:02.531Z"
+}
