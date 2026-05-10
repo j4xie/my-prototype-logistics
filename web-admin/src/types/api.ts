@@ -2,8 +2,24 @@
  * API 响应类型定义
  */
 
+/**
+ * Default response payload type for API helpers (get/post/put/del).
+ *
+ * Tier 1 vue-tsc cleanup (2026-05-09): legacy call sites that don't supply a
+ * `<ResponseType>` parameter to get/post/put/del default to `ApiData`. This is
+ * intentionally `any` — using `unknown` would force ~800 call sites to add
+ * type assertions in the same PR, which is impractical. Callers writing NEW
+ * code should still supply explicit type parameters.
+ *
+ * Roadmap: as Tier 2/3 cleanup proceeds, individual modules can replace
+ * `ApiData` defaults with concrete types (e.g. via per-module `apiClient.ts`
+ * wrappers).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ApiData = any;
+
 // 统一API响应格式
-export interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = ApiData> {
   success: boolean;
   data: T;
   message: string;

@@ -154,8 +154,13 @@ export function transformKeys(obj: unknown): unknown {
  *
  * For FormData uploads, pass `headers: {}` to remove the default Content-Type
  * so the browser sets multipart/form-data automatically.
+ *
+ * Tier 1 vue-tsc cleanup (2026-05-09): default T = ApiData (alias for any) so
+ * untyped calls don't poison call sites with `unknown`. Callers writing NEW
+ * code should still supply explicit `<ResponseType>`. See @/types/api.
  */
-export async function pythonFetch<T = unknown>(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function pythonFetch<T = any>(path: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<T> {
   const { timeoutMs, ...fetchOptions } = options;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs || PYTHON_TIMEOUT_MS);
