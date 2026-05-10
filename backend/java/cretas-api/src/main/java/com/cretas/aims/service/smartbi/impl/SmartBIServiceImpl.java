@@ -1019,27 +1019,6 @@ public class SmartBIServiceImpl implements SmartBIService {
     // ==================== 缓存管理 ====================
 
     @Override
-    @Transactional
-    public void invalidateCache(String factoryId, String analysisType) {
-        log.info("清除缓存: factoryId={}, analysisType={}", factoryId, analysisType);
-
-        if (CACHE_TYPE_ALL.equalsIgnoreCase(analysisType)) {
-            // 清除所有缓存
-            List<SmartBiAnalysisCache> caches = new ArrayList<>(cacheRepository.findByFactoryIdAndAnalysisType(
-                    factoryId, CACHE_TYPE_DASHBOARD));
-            caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_SALES));
-            caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_DEPARTMENT));
-            caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_REGION));
-            caches.addAll(cacheRepository.findByFactoryIdAndAnalysisType(factoryId, CACHE_TYPE_FINANCE));
-            cacheRepository.deleteAll(caches);
-        } else {
-            List<SmartBiAnalysisCache> caches = cacheRepository.findByFactoryIdAndAnalysisType(
-                    factoryId, analysisType.toUpperCase());
-            cacheRepository.deleteAll(caches);
-        }
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Optional<Object> getFromCache(String factoryId, String cacheKey) {
         Optional<SmartBiAnalysisCache> cacheOpt = cacheRepository.findByFactoryIdAndCacheKey(factoryId, cacheKey);
@@ -1184,41 +1163,6 @@ public class SmartBIServiceImpl implements SmartBIService {
         }
 
         return false;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int getRemainingQuota(String factoryId) {
-        Optional<SmartBiBillingConfig> configOpt = billingRepository.findByFactoryId(factoryId);
-
-        if (configOpt.isEmpty()) {
-            Long todayUsage = usageRepository.countTodayUsage(factoryId, LocalDate.now());
-            return Math.max(0, DEFAULT_DAILY_QUOTA - todayUsage.intValue());
-        }
-
-        SmartBiBillingConfig config = configOpt.get();
-
-        if (config.isUnlimitedMode()) {
-            return Integer.MAX_VALUE;
-        }
-
-        if (config.isQuotaMode()) {
-            Long todayUsage = usageRepository.countTodayUsage(factoryId, LocalDate.now());
-            return Math.max(0, config.getDailyQuota() - todayUsage.intValue());
-        }
-
-        // PAY_AS_YOU_GO 模式返回预估剩余查询数
-        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime monthEnd = LocalDateTime.now();
-        BigDecimal monthCost = usageRepository.sumCostByPeriod(factoryId, monthStart, monthEnd);
-        if (monthCost == null) {
-            monthCost = BigDecimal.ZERO;
-        }
-        BigDecimal remaining = config.getMonthlyLimit().subtract(monthCost);
-        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
-            return 0;
-        }
-        return remaining.divide(config.getPricePerQuery(), 0, BigDecimal.ROUND_DOWN).intValue();
     }
 
     // ==================== AI 洞察生成 ====================
