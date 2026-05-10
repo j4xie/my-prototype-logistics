@@ -139,7 +139,9 @@ onMounted(async () => {
 
 async function loadUploads() {
   try {
-    const response = await getUploadHistory(factoryId.value || 'F001');
+    // Note: factoryId-scoped via auth store; pass no positional factoryId here.
+    void (factoryId.value || 'F001');
+    const response = await getUploadHistory();
     uploads.value = response.data || [];
     if (uploads.value.length > 0) {
       selectedUploadId.value = uploads.value[0].id;
@@ -720,7 +722,7 @@ function formatCurrency(v?: number): string {
               <el-option
                 v-for="u in uploads"
                 :key="u.id"
-                :label="`${u.fileName || u.originalName || 'upload'} (${u.id})`"
+                :label="`${u.fileName || u.originalFileName || 'upload'} (${u.id})`"
                 :value="u.id"
               />
             </el-select>

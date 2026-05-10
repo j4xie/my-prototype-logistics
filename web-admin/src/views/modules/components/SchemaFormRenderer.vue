@@ -339,9 +339,9 @@ watch(
                 style="width: 240px"
               />
 
-              <!-- Round 4 Fix P1-11: textarea for long-form notes -->
+              <!-- Round 4 Fix P1-11: textarea for long-form notes (longtext alias for textarea) -->
               <el-input
-                v-else-if="field.type === 'textarea' || field.type === 'longtext'"
+                v-else-if="field.type === 'longtext'"
                 v-model="formData[field.code]"
                 type="textarea"
                 :rows="3"

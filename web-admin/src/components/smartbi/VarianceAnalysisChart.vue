@@ -252,7 +252,7 @@ const chartOptions = computed<EChartsOption>(() => {
           ]
         : []),
     ],
-    series: [
+    series: ([
       // Budget reference bars (gray, thin)
       {
         name: '预算',
@@ -319,7 +319,7 @@ const chartOptions = computed<EChartsOption>(() => {
             },
           ]
         : []),
-    ],
+    ] as unknown) as echarts.SeriesOption[],
   };
 
   return options;
@@ -327,7 +327,7 @@ const chartOptions = computed<EChartsOption>(() => {
 
 function initChart() {
   if (!chartRef.value) return;
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   chartInstance.value.on('click', (params: Record<string, unknown>) => {

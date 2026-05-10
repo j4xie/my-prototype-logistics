@@ -38,7 +38,7 @@ async function loadBudgetVsActual() {
       ElMessage.warning(res.message || '加载预算数据失败');
     }
   } catch (e: unknown) {
-    if (!e?.actionHint) ElMessage.error('加载预算 vs 实际数据失败');
+    if (!(e as { actionHint?: unknown })?.actionHint) ElMessage.error('加载预算 vs 实际数据失败');
     console.error(e);
   } finally {
     budgetLoading.value = false;
@@ -85,7 +85,7 @@ async function loadData() {
       ElMessage.warning(res.message || '加载失败');
     }
   } catch (e: unknown) {
-    if (!e?.actionHint) ElMessage.error('加载人效分析数据失败');
+    if (!(e as { actionHint?: unknown })?.actionHint) ElMessage.error('加载人效分析数据失败');
     console.error(e);
   } finally {
     loading.value = false;

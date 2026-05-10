@@ -149,9 +149,9 @@ const chartOptions = computed<EChartsOption>(() => {
         color: '#606266',
         fontSize: 11
       },
-      formatter: (value: number) => {
-        return `${value.toFixed(0)}${props.valueUnit}`;
-      }
+      formatter: ((value: number | string) => {
+        return `${Number(value).toFixed(0)}${props.valueUnit}`;
+      }) as never
     },
     series: [
       {
@@ -246,7 +246,7 @@ async function loadChinaMap() {
   try {
     if (props.geoJson) {
       // Use provided geoJson
-      echarts.registerMap('china', props.geoJson as object);
+      echarts.registerMap('china', props.geoJson as never);
       isMapRegistered.value = true;
     } else {
       // Try to load from CDN or local file
@@ -273,7 +273,7 @@ async function loadChinaMap() {
 function initChart() {
   if (!chartRef.value || !isMapRegistered.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

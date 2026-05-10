@@ -78,7 +78,7 @@ let isMapRegistered = false;
 export function registerChinaMap(): void {
   if (isMapRegistered) return;
 
-  echarts.registerMap('china', CHINA_GEO_JSON as unknown as GeoJSON.GeoJSON);
+  echarts.registerMap('china', CHINA_GEO_JSON as never);
   isMapRegistered = true;
 }
 

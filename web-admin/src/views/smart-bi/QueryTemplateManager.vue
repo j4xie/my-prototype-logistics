@@ -98,7 +98,7 @@ const paramValues = reactive<Record<string, unknown>>({});
 // 分类配置
 const categoryOptions = [
   { value: '财务分析', icon: Money, color: '#67C23A', tagType: 'success' as const },
-  { value: '销售分析', icon: TrendCharts, color: '#2D8B57', tagType: 'primary' as const },
+  { value: '销售分析', icon: TrendCharts, color: '#2D8B57', tagType: 'success' as const },
   { value: '生产分析', icon: Histogram, color: '#E6A23C', tagType: 'warning' as const },
   { value: '自定义', icon: DataAnalysis, color: '#909399', tagType: 'info' as const }
 ];

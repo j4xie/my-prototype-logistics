@@ -511,7 +511,8 @@ const buildPieChartOptions = (): EChartsOption => {
       borderColor: '#ebeef5',
       borderWidth: 1,
       textStyle: { color: '#303133' },
-      formatter: (params: { name: string; value: number; percent: number; seriesName: string }) => {
+      formatter: ((rawParams: unknown) => {
+        const params = rawParams as { name: string; value: number; percent: number; seriesName: string };
         const item = props.data.find(d => d.category === params.name);
         if (!item) return '';
 
@@ -529,7 +530,7 @@ const buildPieChartOptions = (): EChartsOption => {
             <span style="font-weight: 600;">${ratio.toFixed(1)}%</span>
           </div>
         `;
-      }
+      }) as never
     },
     legend: {
       bottom: 0,
@@ -638,7 +639,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

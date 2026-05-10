@@ -87,7 +87,7 @@ const kpiList = computed(() => {
       title: '同比变化',
       value: (yoyChange.value > 0 ? '+' : '') + yoyChange.value.toFixed(1),
       unit: '%',
-      status: yoyChange.value > 10 ? 'danger' : yoyChange.value > 0 ? 'warning' : 'success',
+      status: (yoyChange.value > 10 ? 'danger' : yoyChange.value > 0 ? 'warning' : 'success') as StatusType,
       trend: yoyTrend,
     },
     {
@@ -239,7 +239,7 @@ function initChart() {
   if (chartInstance.value) {
     chartInstance.value.dispose();
   }
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value) as unknown as ECharts;
   chartInstance.value.setOption(buildOption());
 }
 

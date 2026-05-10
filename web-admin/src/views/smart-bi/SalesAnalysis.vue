@@ -253,6 +253,22 @@ const pieDynamicConfig = ref<SmartBIChartConfig | null>(null);
 const useDynamicTrend = ref(false);
 const useDynamicPie = ref(false);
 
+// Phase 6: Legacy ChartConfig narrowing helpers — pieDynamicConfig is a union of
+// LegacyChartConfig | DynamicChartConfig | DashboardChartConfig; only LegacyChartConfig
+// has top-level `data` and `xAxisField`. Compute typed views the template can safely use.
+const pieLegacyData = computed<Array<Record<string, unknown>>>(() => {
+  const cfg = pieDynamicConfig.value;
+  if (!cfg) return [];
+  if ('data' in cfg && Array.isArray(cfg.data)) return cfg.data;
+  return [];
+});
+const pieXAxisField = computed<string>(() => {
+  const cfg = pieDynamicConfig.value;
+  if (!cfg) return 'name';
+  if ('xAxisField' in cfg && typeof cfg.xAxisField === 'string') return cfg.xAxisField;
+  return 'name';
+});
+
 // Data source selection (uploaded data)
 const dataSources = ref<UploadHistoryItem[]>([]);
 const selectedDataSource = ref<string>('system');
@@ -497,7 +513,7 @@ async function buildExplorationCharts(data: TableRow[]) {
             id: `explore-${idx}`,
             chartType: c.chartType,
             title: plans[idx]?.title || c.chartType,
-            config: c.config as SmartBIChartConfig,
+            config: c.config as unknown as SmartBIChartConfig,
             xField: plans[idx]?.xField,
             yFields: plans[idx]?.yFields,
           }));
@@ -529,7 +545,7 @@ async function handleChartTypeSwitch(chartId: string, newType: string) {
         explorationCharts.value[idx] = {
           ...chart,
           chartType: newType,
-          config: result.option as SmartBIChartConfig,
+          config: result.option as unknown as SmartBIChartConfig,
         };
       }
     } else {
@@ -1650,15 +1666,15 @@ onUnmounted(() => {
           </template>
           <!-- Phase 6: DynamicChartRenderer when config available (skip for single category) -->
           <DynamicChartRenderer
-            v-if="useDynamicPie && pieDynamicConfig && (pieDynamicConfig.data?.length ?? 0) > 1"
+            v-if="useDynamicPie && pieDynamicConfig && pieLegacyData.length > 1"
             :config="pieDynamicConfig"
             :height="350"
           />
           <!-- Single category: show stat instead of useless full-circle pie -->
-          <div v-else-if="useDynamicPie && pieDynamicConfig && pieDynamicConfig.data?.length === 1" class="single-category-stat">
+          <div v-else-if="useDynamicPie && pieDynamicConfig && pieLegacyData.length === 1" class="single-category-stat">
             <el-icon :size="40" color="#2D8B57"><TrendCharts /></el-icon>
             <div class="stat-info">
-              <div class="stat-label">{{ pieDynamicConfig.data[0]?.[pieDynamicConfig.xAxisField || 'name'] || '产品类别' }}</div>
+              <div class="stat-label">{{ pieLegacyData[0]?.[pieXAxisField] || '产品类别' }}</div>
               <div class="stat-value">100%</div>
               <div class="stat-hint">仅1个产品类别，无需占比分析</div>
             </div>

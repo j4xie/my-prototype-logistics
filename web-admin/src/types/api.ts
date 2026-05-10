@@ -296,6 +296,10 @@ export interface QualityStats {
   failRate: number;
   conditionalRate: number;
   totalInspections: number;
+  /** Inspections recorded today (subset of totalInspections). */
+  todayInspections?: number;
+  /** Number of batches with failed quality outcomes. */
+  failedBatches?: number;
   byType: {
     incoming: { pass: number; fail: number };
     process: { pass: number; fail: number };

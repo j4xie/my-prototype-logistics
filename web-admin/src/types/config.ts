@@ -19,6 +19,9 @@ export interface EffectiveModuleConfig {
 
 export interface EffectiveField {
   code: string
+  /** Backend alias for `code`; some endpoints (canvas-editor effective config) emit
+   *  this as the primary identifier. Keep both for compatibility. */
+  fieldCode?: string
   label: string
   type: FieldType
   required: boolean
@@ -38,10 +41,12 @@ export type FieldType =
   | 'string'
   | 'text'
   | 'textarea'
+  | 'longtext'
   | 'decimal'
   | 'integer'
   | 'boolean'
   | 'date'
+  | 'datetime'
   | 'select'
   | 'reference'
   | 'json_array'

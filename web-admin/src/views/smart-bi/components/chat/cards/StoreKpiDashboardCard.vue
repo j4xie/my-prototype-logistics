@@ -33,8 +33,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+
+interface KpiMetric {
+  label: string;
+  value: string | number;
+  status?: string;
+}
+interface KpiDimension {
+  name: string;
+  health?: string;
+  metrics?: KpiMetric[];
+}
+
 const props = defineProps<{ data: Record<string, unknown> }>();
-const dimensions = computed(() => (props.data?.dimensions as Array<Record<string, unknown>>) ?? []);
+const dimensions = computed<KpiDimension[]>(() => (props.data?.dimensions as KpiDimension[]) ?? []);
 const alerts = computed(() => (props.data?.alerts as string[]) ?? []);
 const overallTagType = computed(() => healthTagType(props.data?.overall_health as string));
 function healthTagType(h: string): string {

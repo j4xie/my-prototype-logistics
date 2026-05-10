@@ -15,6 +15,9 @@ import {
   type BatchBackfillResult,
 } from './common';
 
+// Re-export UploadHistoryItem so consumers (RestaurantV2Dashboard etc.) can import it from this module
+export type { UploadHistoryItem };
+
 // ==================== Upload Functions ====================
 
 /**

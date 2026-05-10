@@ -72,7 +72,7 @@ const showAddField = ref(false)
 
 const filteredFields = computed(() =>
   fields.value.filter(f =>
-    f.fieldCode.includes(search.value) || (f.label || '').includes(search.value)
+    (f.fieldCode || f.code || '').includes(search.value) || (f.label || '').includes(search.value)
   )
 )
 
@@ -85,12 +85,12 @@ async function loadFields() {
 }
 
 function markDirty(row: EffectiveField) {
-  dirtyFields.value.add(row.fieldCode)
+  dirtyFields.value.add(row.fieldCode || row.code)
 }
 
 function editField(row: EffectiveField) {
   // Opens FieldPropertyDrawer — implemented in Task 5
-  ElMessage.info(`编辑字段: ${row.fieldCode}`)
+  ElMessage.info(`编辑字段: ${row.fieldCode || row.code}`)
 }
 
 async function saveChanges() {

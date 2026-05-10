@@ -4,6 +4,10 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client", "node"],
     "verbatimModuleSyntax": false,
+    /* Tier 3 vue-tsc cleanup (2026-05-10): @vue/tsconfig defaults lib to ES2020 which
+     * lacks Array.prototype.at, structured clone, etc. Enable ES2022 to match
+     * tsconfig.node.json target. Vite already targets ES2022 in builds. */
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
 
     /* Path Aliases */
     "baseUrl": ".",

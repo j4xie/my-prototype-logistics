@@ -312,7 +312,7 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     ...(quarterRedMarkAreas ? { markArea: quarterRedMarkAreas } : markAreaConfig ? { markArea: markAreaConfig } : {}),
     ...(viewMode.value === 'yoy' && markPointConfig ? { markPoint: markPointConfig } : {})
-  } as echarts.BarSeriesOption);
+  } as unknown as echarts.BarSeriesOption);
 
   series.push({
     name: `去年同期${props.metric}`,
@@ -329,7 +329,7 @@ const chartOptions = computed<EChartsOption>(() => {
         shadowColor: 'rgba(0, 0, 0, 0.2)'
       }
     }
-  } as echarts.BarSeriesOption);
+  } as unknown as echarts.BarSeriesOption);
 
   // Add growth rate lines based on view mode
   if (viewMode.value === 'yoy' || viewMode.value === 'both') {
@@ -400,7 +400,7 @@ const chartOptions = computed<EChartsOption>(() => {
         focus: 'series'
       },
       ...(quarterStarMarkPoints ? { markPoint: quarterStarMarkPoints } : {})
-    } as echarts.LineSeriesOption);
+    } as unknown as echarts.LineSeriesOption);
   }
 
   if (viewMode.value === 'mom' || viewMode.value === 'both') {
@@ -422,7 +422,7 @@ const chartOptions = computed<EChartsOption>(() => {
       emphasis: {
         focus: 'series'
       }
-    } as echarts.LineSeriesOption);
+    } as unknown as echarts.LineSeriesOption);
   }
 
   // Build quarter graphic red-border rect annotations
@@ -639,7 +639,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

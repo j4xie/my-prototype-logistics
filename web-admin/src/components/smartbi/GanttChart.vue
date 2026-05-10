@@ -238,7 +238,8 @@ const chartOptions = computed<EChartsOption>(() => {
       borderColor: '#ebeef5',
       borderWidth: 1,
       textStyle: { color: '#303133', fontSize: 13 },
-      formatter: (params: Record<string, unknown>) => {
+      formatter: ((rawParams: unknown) => {
+        const params = rawParams as Record<string, unknown>;
         const p = params as { value?: unknown[]; name?: string; seriesType?: string };
         if (p.seriesType !== 'custom') return '';
         const [idx, startTs, endTs, progress] = (p.value as number[]) || [];
@@ -256,7 +257,7 @@ const chartOptions = computed<EChartsOption>(() => {
             <span style="color:#909399;">进度：</span><b>${progress ?? 0}%</b><br/>
             <span style="color:#909399;">状态：</span><span style="background:${statusColor};color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">${statusLabel}</span>
           </div>`;
-      },
+      }) as never,
     },
     xAxis: {
       type: 'time',
@@ -319,23 +320,30 @@ const chartOptions = computed<EChartsOption>(() => {
           ]
         : []),
     ],
-    series: [
+    series: ([
       // Custom bars series
       {
         type: 'custom',
-        renderItem: (params, api) => {
-          const taskIdx = api.value(0) as number;
-          const startTs = api.value(1) as number;
-          const endTs = api.value(2) as number;
-          const progress = api.value(3) as number;
+        renderItem: (params: unknown, api: unknown) => {
+          const a = api as {
+            value: (idx: number) => number;
+            coord: (xy: [number, number]) => [number, number];
+            size: (xy: [number, number]) => number[];
+            style: () => unknown;
+          };
+          void params;
+          const taskIdx = a.value(0);
+          const startTs = a.value(1);
+          const endTs = a.value(2);
+          const progress = a.value(3);
           const task = tasks[taskIdx];
-          if (!task) return { type: 'group', children: [] };
+          if (!task) return { type: 'group', children: [] as echarts.CustomSeriesRenderItemReturn[] };
 
           const statusColor = task.color || STATUS_COLORS[task.status || 'planned'] || STATUS_COLORS.planned;
 
-          const startCoord = api.coord([startTs, taskIdx]);
-          const endCoord = api.coord([endTs, taskIdx]);
-          const barHeight = Math.max(8, (api.size([0, 1]) as number[])[1] * 0.55);
+          const startCoord = a.coord([startTs, taskIdx]);
+          const endCoord = a.coord([endTs, taskIdx]);
+          const barHeight = Math.max(8, a.size([0, 1])[1] * 0.55);
           const barWidth = Math.max(2, endCoord[0] - startCoord[0]);
           const progressWidth = barWidth * Math.min(1, progress / 100);
           const barY = startCoord[1] - barHeight / 2;
@@ -466,7 +474,7 @@ const chartOptions = computed<EChartsOption>(() => {
             },
           ]
         : []),
-    ],
+    ] as unknown) as echarts.SeriesOption[],
   };
 
   return options;
@@ -478,26 +486,28 @@ function setZoom(zoom: ZoomLevel) {
 
 function initChart() {
   if (!chartRef.value) return;
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
-  chartInstance.value.on('click', (params: Record<string, unknown>) => {
+  chartInstance.value.on('click', ((rawParams: unknown) => {
+    const params = rawParams as Record<string, unknown>;
     const p = params as { value?: unknown[]; seriesType?: string };
     if (p.seriesType === 'custom' && Array.isArray(p.value)) {
       const taskIdx = p.value[0] as number;
       const task = sortedTasks.value[taskIdx];
       if (task) emit('taskClick', task);
     }
-  });
+  }) as never);
 
-  chartInstance.value.on('mouseover', (params: Record<string, unknown>) => {
+  chartInstance.value.on('mouseover', ((rawParams: unknown) => {
+    const params = rawParams as Record<string, unknown>;
     const p = params as { value?: unknown[]; seriesType?: string };
     if (p.seriesType === 'custom' && Array.isArray(p.value)) {
       const taskIdx = p.value[0] as number;
       const task = sortedTasks.value[taskIdx];
       if (task) emit('taskHover', task);
     }
-  });
+  }) as never);
 }
 
 function updateChart() {

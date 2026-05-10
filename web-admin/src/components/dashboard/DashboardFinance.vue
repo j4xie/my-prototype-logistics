@@ -90,10 +90,10 @@ async function loadFinanceData() {
     if (response.success && response.data) {
       const data = response.data;
       financeStats.value = {
-        totalRevenue: (data.totalRevenue ?? data.revenue ?? 0) / 10000,
-        totalCost: (data.totalCost ?? data.cost ?? 0) / 10000,
-        grossProfit: (data.grossProfit ?? data.profit ?? 0) / 10000,
-        profitMargin: data.profitMargin ?? data.profitRate ?? 0
+        totalRevenue: Number(data.totalRevenue ?? data.revenue ?? 0) / 10000,
+        totalCost: Number(data.totalCost ?? data.cost ?? 0) / 10000,
+        grossProfit: Number(data.grossProfit ?? data.profit ?? 0) / 10000,
+        profitMargin: Number(data.profitMargin ?? data.profitRate ?? 0)
       };
     } else {
       loadError.value = response.message || '暂无财务数据';

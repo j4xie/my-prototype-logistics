@@ -404,6 +404,8 @@ export interface AnalysisResult {
 export interface UploadHistoryItem {
   id: number;
   fileName: string;
+  /** Some endpoints return originalFileName as user-facing label; optional. */
+  originalFileName?: string;
   sheetName: string;
   tableType: string;
   rowCount: number;
@@ -635,6 +637,33 @@ export interface DrillDownResult {
 }
 
 /**
+ * Per-sheet enrichment result (used by SmartBIAnalysis page composables / dialogs).
+ * Mirrors the runtime payload returned by the upload-batch SSE flow.
+ */
+export interface SheetResult {
+  sheetIndex: number;
+  sheetName: string;
+  success: boolean;
+  message: string;
+  detectedDataType?: string;
+  savedRows?: number;
+  uploadId?: number;
+  tableType?: 'index' | 'data' | 'summary' | 'metadata' | 'unknown';
+  flowResult?: {
+    recommendedChartType?: string;
+    chartConfig?: Record<string, unknown>;
+    aiAnalysis?: string;
+    recommendedTemplates?: Record<string, unknown>[];
+    charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }>;
+    kpiSummary?: { rowCount: number; columnCount: number; columns: ColumnSummary[] };
+    structuredAI?: StructuredAIData;
+    displayNameMap?: Record<string, string>;
+    financialMetrics?: FinancialMetrics;
+    _streamingAIText?: string;
+  };
+}
+
+/**
  * Cross-sheet result
  */
 export interface CrossSheetResult {
@@ -681,6 +710,7 @@ export interface DynamicAnalysisResponse {
     formatPattern?: string;
     min?: number;
     max?: number;
+    changeRate?: number | null;
   }>;
   charts: Array<{
     type: string;

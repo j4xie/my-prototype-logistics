@@ -404,7 +404,7 @@ const chartOptions = computed<EChartsOption>(() => {
   }
 
   const options: EChartsOption = {
-    graphic: props.showTrendAnnotation && trendInfo.value
+    graphic: (props.showTrendAnnotation && trendInfo.value
       ? [
           {
             type: 'group',
@@ -433,7 +433,7 @@ const chartOptions = computed<EChartsOption>(() => {
             ]
           }
         ]
-      : undefined,
+      : undefined) as echarts.GraphicComponentOption[] | undefined,
     tooltip: {
       trigger: 'axis',
       confine: true,
@@ -561,7 +561,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

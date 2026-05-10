@@ -285,7 +285,7 @@ async function triggerDetection() {
 
 async function acknowledgeAlert(alert: AlertRecord) {
   try {
-    const userId = authStore.user?.id || authStore.user?.userId
+    const userId = authStore.user?.id || (authStore.user as { userId?: number | string } | null)?.userId
     if (!userId) {
       ElMessage.error('无法获取当前用户信息')
       return
@@ -319,7 +319,7 @@ async function resolveAlert() {
   if (!selectedAlert.value) return
   resolving.value = true
   try {
-    const userId = authStore.user?.id || authStore.user?.userId
+    const userId = authStore.user?.id || (authStore.user as { userId?: number | string } | null)?.userId
     if (!userId) {
       ElMessage.error('无法获取当前用户信息')
       resolving.value = false

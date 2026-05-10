@@ -114,7 +114,7 @@ const kpiData = computed(() => {
       unit: '%',
       trend: trend,
       trendValue: Math.abs(averageYoyGrowth.value),
-      status: trend === 'up' ? 'success' : trend === 'down' ? 'danger' : 'info'
+      status: (trend === 'up' ? 'success' : trend === 'down' ? 'danger' : 'info') as 'success' | 'danger' | 'info'
     }
   };
 });
@@ -394,7 +394,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

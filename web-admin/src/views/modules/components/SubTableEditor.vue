@@ -39,7 +39,7 @@ onMounted(async () => {
   loading.value = true
   try {
     const result = await getSubTableRows(props.factoryId, props.moduleCode, props.recordId, props.fieldCode)
-    rows.value = (result as SubTableRow[]) || []
+    rows.value = (result as unknown as SubTableRow[]) || []
   } catch (e) {
     console.warn('Failed to load sub-table rows:', e)
   } finally {
@@ -113,7 +113,7 @@ async function saveAll() {
         // Update the row with the returned id
         const idx = rows.value.indexOf(row)
         if (idx !== -1 && saved) {
-          rows.value[idx] = { ...(saved as SubTableRow), _dirty: false }
+          rows.value[idx] = { ...(saved as unknown as SubTableRow), _dirty: false }
         }
       }
     } catch (e) {

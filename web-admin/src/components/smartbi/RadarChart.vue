@@ -194,7 +194,8 @@ const chartOptions = computed<EChartsOption>(() => {
           }
         }
       },
-      nameGap: props.nameGap,
+      // nameGap is supported at runtime but missing from echarts type defs
+      ...{ nameGap: props.nameGap },
       indicator: radarIndicators,
       splitLine: {
         lineStyle: {
@@ -236,7 +237,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Hover highlight: dim other series

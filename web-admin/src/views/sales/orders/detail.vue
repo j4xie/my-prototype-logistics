@@ -1085,7 +1085,7 @@ async function handleCreatePayment() {
               </el-table-column>
               <el-table-column prop="paymentMethod" label="收款方式" width="120" align="center">
                 <template #default="{ row }">
-                  {{ ({ BANK_TRANSFER: '银行转账', CASH: '现金', CHECK: '支票', WECHAT: '微信', ALIPAY: '支付宝', OTHER: '其他' })[row.paymentMethod] || row.paymentMethod }}
+                  {{ ({ BANK_TRANSFER: '银行转账', CASH: '现金', CHECK: '支票', WECHAT: '微信', ALIPAY: '支付宝', OTHER: '其他' } as Record<string, string>)[row.paymentMethod] || row.paymentMethod }}
                 </template>
               </el-table-column>
               <el-table-column prop="paymentReference" label="参考号/凭证" width="180" />

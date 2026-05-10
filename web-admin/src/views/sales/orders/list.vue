@@ -115,6 +115,16 @@ function tabCount(key: string): number {
   }).length;
 }
 
+interface OrderItem {
+  productTypeId: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  taxRate: number;
+  specification?: string;
+  boxQuantity?: number | null;
+}
+
 const form = ref({
   customerId: '',
   requiredDeliveryDate: '',
@@ -124,7 +134,7 @@ const form = ref({
   shippingIncluded: false,
   shippingFee: 0,
   extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
-  items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
+  items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }] as OrderItem[],
   contractFileUrl: '' as string | null,
   contractFileName: '' as string | null,
   customFields: {} as TableRow,
@@ -408,6 +418,8 @@ function handleEdit(row: TableRow) {
           taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
         }))
       : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }],
+    contractFileUrl: (row.contractFileUrl ? String(row.contractFileUrl) : null) as string | null,
+    contractFileName: (row.contractFileName ? String(row.contractFileName) : null) as string | null,
     customFields: {} as TableRow,
     version: typeof row.version === 'number' ? row.version : null,
   };
@@ -454,9 +466,12 @@ async function openCreateDialog() {
     salesperson: '',
     shippingIncluded: false,
     shippingFee: 0,
-    extraFees: [],
-    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
+    extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
+    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }] as OrderItem[],
     customFields: {} as TableRow,
+    contractFileUrl: null,
+    contractFileName: null,
+    version: null,
   };
   // 张权 Apr 28 反馈: 新建对话框 dropdown 显示 onMounted 时的旧 cache.
   // 强制刷新让用户刚建的客户/产品立即可选.
@@ -769,7 +784,7 @@ async function submitQuickPayment() {
         </el-form-item>
         <el-form-item label="发货明细">
           <div v-for="(item, idx) in deliveryForm.items" :key="idx" style="margin-bottom: 4px">
-            {{ idx + 1 }}. 数量: <el-input-number v-model="item.deliveredQuantity" :min="1" size="small" style="width: 120px" /> {{ item.unit }}
+            {{ Number(idx) + 1 }}. 数量: <el-input-number v-model="item.deliveredQuantity" :min="1" size="small" style="width: 120px" /> {{ item.unit }}
           </div>
         </el-form-item>
         <el-form-item label="备注">

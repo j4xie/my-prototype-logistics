@@ -7,14 +7,19 @@
 export interface KPICard {
   key: string;
   title: string;
-  value: string;
+  /** Pre-formatted display value (e.g. "1,234.56"). */
+  value?: string;
+  /** Alias of value used by some dynamic-analysis flows. */
+  displayValue?: string;
   rawValue: number;
   unit?: string;
   change?: number;
-  changeRate?: number;
-  trend: 'up' | 'down' | 'flat';
-  status: 'green' | 'yellow' | 'red' | string;
+  changeRate?: number | null;
+  trend: 'up' | 'down' | 'flat' | 'stable';
+  status?: 'green' | 'yellow' | 'red' | string;
   compareText?: string;
+  /** Optional sparkline data points for mini chart inside KPI card. */
+  sparklineData?: number[];
 }
 
 /** 后端返回的排行项 */

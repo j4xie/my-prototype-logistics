@@ -8,7 +8,7 @@ import echarts from '@/utils/echarts';
 import { chartDrillDown, getUploadTableData, renameMeaninglessColumns } from '@/api/smartbi';
 import type { DrillDownResult } from '@/api/smartbi';
 
-interface SheetRef {
+export interface SheetRef {
   uploadId?: number;
   sheetName: string;
   sheetIndex: number;
@@ -92,7 +92,7 @@ export function useSmartBIDrillDown(deps: {
 
           const availDims = drillDownResult.value?.availableDimensions;
           const nextDim = availDims?.length ? availDims[0] : drillDownContext.value.dimension;
-          const clickValue = params.name;
+          const clickValue = String(params.name ?? '');
 
           drillDownContext.value = {
             dimension: nextDim,
@@ -117,7 +117,7 @@ export function useSmartBIDrillDown(deps: {
                 filterValue: clickValue,
                 measures: measures.length > 0 ? measures : ['amount', 'revenue', 'profit'],
                 data: rawData,
-                hierarchyType: hierarchy,
+                hierarchyType: typeof hierarchy === 'string' ? hierarchy : undefined,
                 breadcrumb,
               });
 
@@ -149,20 +149,19 @@ export function useSmartBIDrillDown(deps: {
     const chartItem = charts[chartIndex];
     if (!chartItem) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let dimension = (chartItem as Record<string, string>).xField || '';
+    let dimension = chartItem.xField || '';
     if (!dimension) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config = chartItem.config as Record<string, unknown>;
-      if (config?.xAxis?.name) {
-        dimension = config.xAxis.name;
+      const xAxis = config?.xAxis as { name?: string; type?: string; data?: unknown[] } | undefined;
+      if (xAxis?.name) {
+        dimension = xAxis.name;
       }
     }
     if (!dimension) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config = chartItem.config as Record<string, unknown>;
-      if (config?.xAxis?.type === 'category' && Array.isArray(config.xAxis.data) && config.xAxis.data.length > 0) {
-        const firstCat = config.xAxis.data[0];
+      const xAxis = config?.xAxis as { type?: string; data?: unknown[] } | undefined;
+      if (xAxis?.type === 'category' && Array.isArray(xAxis.data) && xAxis.data.length > 0) {
+        const firstCat = xAxis.data[0];
         if (typeof firstCat === 'string' && isNaN(Number(firstCat))) {
           dimension = '分类';
         }
@@ -172,13 +171,14 @@ export function useSmartBIDrillDown(deps: {
       const flowCharts = sheet.flowResult?.charts;
       if (flowCharts?.length) {
         for (const fc of flowCharts) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((fc as Record<string, string>).xField) { dimension = (fc as Record<string, string>).xField; break; }
+          const fcXField = (fc as { xField?: string }).xField;
+          if (fcXField) { dimension = fcXField; break; }
         }
       }
     }
 
-    const filterValue = params.name || params.seriesName || '';
+    const filterValueRaw = params.name ?? params.seriesName ?? '';
+    const filterValue = String(filterValueRaw);
     if (!filterValue) return;
 
     drillDownContext.value = {

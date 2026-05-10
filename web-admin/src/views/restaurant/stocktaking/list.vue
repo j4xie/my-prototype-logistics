@@ -287,7 +287,7 @@ async function loadData() {
     if (res.success && res.data) {
       const d = res.data as { content?: unknown[]; totalElements?: number } | unknown[];
       const items = Array.isArray(d) ? d : (d as { content?: unknown[]; totalElements?: number }).content || [];
-      tableData.value = items;
+      tableData.value = items as StocktakingRecord[];
       pagination.value.total = Array.isArray(d) ? items.length : ((d as { content?: unknown[]; totalElements?: number }).totalElements ?? items.length);
     } else {
       tableData.value = [];
@@ -403,15 +403,15 @@ async function handleExport() {
       }
     } catch { /* fall back to current page */ }
   }
-  await exportTableToExcel(exportData, [
+  await exportTableToExcel(exportData as unknown as Record<string, unknown>[], [
     { label: '盘点单号', field: 'stocktakingNumber' },
     { label: '盘点日期', field: 'stocktakingDate' },
-    { label: '状态', field: 'status', formatter: (val: string) => stkStatusText(val) },
-    { label: '食材', field: 'rawMaterialTypeId', formatter: (val: string) => materialNameMap.value[val] || val },
+    { label: '状态', field: 'status', formatter: (val) => stkStatusText(String(val)) },
+    { label: '食材', field: 'rawMaterialTypeId', formatter: (val) => materialNameMap.value[String(val)] || String(val) },
     { label: '账面库存', field: 'systemQuantity' },
     { label: '实盘数量', field: 'actualQuantity' },
     { label: '差异', field: 'differenceQuantity' },
-    { label: '差异类型', field: 'differenceType', formatter: (val: string) => diffText(val) || '-' },
+    { label: '差异类型', field: 'differenceType', formatter: (val) => diffText(String(val)) || '-' },
     { label: '差异原因', field: 'adjustmentReason' },
   ], '盘点记录');
 }

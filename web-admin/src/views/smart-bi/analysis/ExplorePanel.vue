@@ -29,7 +29,7 @@
               </div>
             </div>
             <div class="dim-values">
-              <el-checkbox-group :model-value="filters[dim] || []" @update:model-value="(v) => onFilterChange(dim, v as string[])" size="small">
+              <el-checkbox-group :model-value="filters[dim] || []" @update:model-value="(v: unknown) => onFilterChange(dim, v as string[])" size="small">
                 <el-checkbox v-for="val in getDimensionValuesPreview(dim)" :key="val" :label="val" :value="val" />
               </el-checkbox-group>
               <span v-if="getDimensionValueCount(dim) > 20" class="dim-more">

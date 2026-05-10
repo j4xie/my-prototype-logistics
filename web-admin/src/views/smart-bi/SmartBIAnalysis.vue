@@ -395,6 +395,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { useAppStore } from '@/store/modules/app';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
+import { getErrorMessage } from '@/utils/errorToast';
 import { getUploadTableData, getUploadHistory, deduplicateUploads, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload, smartRecommendChart, buildChart, checkPythonHealth, humanizeColumnName, FOOD_TEMPLATES, mapColumnsToTemplate, detectFoodIndustryLocal } from '@/api/smartbi';
 import type { FoodTemplate } from '@/api/smartbi';
 import type { UploadHistoryItem, EnrichResult, EnrichProgress, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult, PythonHealthStatus } from '@/api/smartbi';
@@ -454,7 +455,7 @@ import { saveDemoCache, loadDemoCache } from '@/utils/demo-cache';
 import type { DemoCacheData } from '@/utils/demo-cache';
 import { useSmartBIShortcuts } from '@/composables/useSmartBIShortcuts';
 import { compactAxisFormatter, compactTooltipFormatter, compactLabelFormatter } from '@/composables/useChartEnhancer';
-import { useSmartBIDrillDown } from './composables/useSmartBIDrillDown';
+import { useSmartBIDrillDown, type SheetRef } from './composables/useSmartBIDrillDown';
 import { useSmartBIStatistical } from './composables/useSmartBIStatistical';
 import { useSmartBICrossSheet } from './composables/useSmartBICrossSheet';
 import { useSmartBIDashboardLayout } from './composables/useSmartBIDashboardLayout';
@@ -554,10 +555,13 @@ interface SheetResult {
     chartConfig?: Record<string, unknown>;
     aiAnalysis?: string;
     recommendedTemplates?: Record<string, unknown>[];
-    charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; totalItems?: number }>;
+    charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }>;
     kpiSummary?: { rowCount: number; columnCount: number; columns: ColumnSummary[] };
     structuredAI?: StructuredAIData;
     displayNameMap?: Record<string, string>;
+    financialMetrics?: FinancialMetrics;
+    /** Internal streaming buffer used during SSE AI text accumulation. */
+    _streamingAIText?: string;
   };
 }
 
@@ -738,9 +742,9 @@ const buildDemoCacheData = (): DemoCacheData | null => {
         charts: s.flowResult.charts,
         kpiSummary: s.flowResult.kpiSummary,
         structuredAI: s.flowResult.structuredAI,
-        financialMetrics: ((s.flowResult as Record<string, unknown>)).financialMetrics,
+        financialMetrics: s.flowResult.financialMetrics,
       } : undefined,
-    })),
+    })) as DemoCacheData['sheets'],
     uploadResult: {
       totalSheets: uploadResult.value.totalSheets,
       successCount: uploadResult.value.successCount,
@@ -1007,7 +1011,10 @@ const getExecutiveSummary = (sheet: SheetResult): string => {
 // 构建 AIInsightPanel 所需的结构化数据
 const getStructuredInsight = (sheet: SheetResult): AIInsight | null => {
   const structured = sheet.flowResult?.structuredAI;
-  const aiText = sheet.flowResult?.aiAnalysis || sheet.flowResult?.chartConfig?.aiAnalysis || '';
+  const chartConfigAi = sheet.flowResult?.chartConfig?.aiAnalysis;
+  const aiText: string = sheet.flowResult?.aiAnalysis
+    || (typeof chartConfigAi === 'string' ? chartConfigAi : '')
+    || '';
 
   // 必须有结构化数据或 AI 文本
   if (!structured && !aiText) return null;
@@ -1145,7 +1152,7 @@ const previewSheets = async (file: File) => {
   formData.append('file', file);
 
   try {
-    const response = await post<{ data: SheetInfo[] }>(
+    const response = await post<SheetInfo[]>(
       `/${factoryId.value}/smart-bi/sheets`,
       formData,
       { timeout: 120000 } // 2分钟超时，LLM分析需要较长时间
@@ -1161,7 +1168,7 @@ const previewSheets = async (file: File) => {
     }
     return false;
   } catch (error: unknown) {
-    ElMessage.error(`预览失败: ${error.message || '未知错误'}`);
+    ElMessage.error(`预览失败: ${getErrorMessage(error)}`);
     return false;
   }
 };
@@ -1293,16 +1300,32 @@ const uploadFile = async () => {
     }
 
   } catch (error: unknown) {
-    if (error.name === 'AbortError') return; // Component unmounted or new upload started
+    if (error instanceof Error && error.name === 'AbortError') return; // Component unmounted or new upload started
     uploadStatus.value = 'exception';
     progressText.value = '上传失败';
-    ElMessage.error(`上传失败: ${error.message || '未知错误'}`);
+    ElMessage.error(`上传失败: ${getErrorMessage(error)}`);
     uploading.value = false; // 错误时立即停止上传状态
   }
 };
 
+// SSE 事件类型 (Tier 3 vue-tsc cleanup 2026-05-10)
+interface SSEUploadEvent {
+  type?: string;
+  progress?: number;
+  sheetIndex?: number;
+  sheetName?: string;
+  stage?: string;
+  message?: string;
+  completedSheets?: number;
+  totalSheets?: number;
+  dictionaryHits?: number;
+  llmAnalyzedFields?: number;
+  result?: BatchUploadResult;
+  error?: string;
+}
+
 // 处理 SSE 事件
-const handleSSEEvent = (event: Record<string, unknown>) => {
+const handleSSEEvent = (event: SSEUploadEvent) => {
   const { type, progress, sheetIndex, sheetName, stage, message, completedSheets, totalSheets, dictionaryHits: dictHits, llmAnalyzedFields: llmFields, result } = event;
 
   // 更新总体进度
@@ -1479,9 +1502,9 @@ const resolveEChartsOptions = (config: Record<string, unknown>): Record<string, 
   if (((config as SmartBIChartOption)).series || ((config as SmartBIChartOption)).xAxis || ((config as SmartBIChartOption)).yAxis) {
     return config;
   } else if (typeof ((config as SmartBIChartOption)).chartOptions === 'string') {
-    try { return JSON.parse(((config as SmartBIChartOption)).chartOptions); } catch { return null; }
+    try { return JSON.parse((config as SmartBIChartOption).chartOptions as string) as Record<string, unknown>; } catch { return null; }
   } else if (((config as SmartBIChartOption)).options) {
-    return ((config as SmartBIChartOption)).options;
+    return (config as SmartBIChartOption).options as Record<string, unknown>;
   }
   return null;
 };
@@ -1521,7 +1544,7 @@ const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<st
         data: anomalyData.outliers.map((o: Record<string, unknown>) => ({
           xAxis: o.index,
           yAxis: o.value,
-          value: `${o.deviation > 0 ? '+' : ''}${o.deviation}σ`
+          value: `${Number(o.deviation) > 0 ? '+' : ''}${o.deviation}σ`
         }))
       };
     }
@@ -1593,7 +1616,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
       const data = s?.data;
       if (!Array.isArray(data)) continue;
       for (const d of data) {
-        const v = typeof d === 'number' ? d : (Array.isArray(d) ? Number(d[1]) || 0 : Number(d?.value) || 0);
+        const v = typeof d === 'number' ? d : (Array.isArray(d) ? Number(d[1]) || 0 : Number((d as Record<string, unknown>)?.value) || 0);
         const abs = Math.abs(v);
         allValues.push(abs);
         if (abs > maxVal) maxVal = abs;
@@ -1626,8 +1649,9 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   // Legend data humanization
   const legend = ((opts as SmartBIChartOption)).legend;
   if (legend && Array.isArray(legend.data)) {
-    legend.data = legend.data.map((item: Record<string, unknown>) => {
-      if (typeof item === 'string') return nameOf(item);
+    legend.data = legend.data.map((rawItem: unknown) => {
+      if (typeof rawItem === 'string') return nameOf(rawItem);
+      const item = rawItem as Record<string, unknown>;
       if (item && typeof item.name === 'string') {
         item.name = nameOf(item.name);
         return item;
@@ -1767,10 +1791,12 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   }
 
   // === Y轴 category 标签（横向柱状图如排行）截断 ===
-  if (yAxis && yAxis.type === 'category' && Array.isArray(yAxis.data)) {
-    yAxis.axisLabel = yAxis.axisLabel || {};
-    if (!yAxis.axisLabel.formatter) {
-      yAxis.axisLabel.formatter = (val: string) => {
+  // Narrow: yAxis can be EChartsAxis | EChartsAxis[]; use single-axis branch only
+  const yAxisSingle = !Array.isArray(yAxis) ? yAxis : undefined;
+  if (yAxisSingle && yAxisSingle.type === 'category' && Array.isArray(yAxisSingle.data)) {
+    yAxisSingle.axisLabel = yAxisSingle.axisLabel || {};
+    if (!yAxisSingle.axisLabel.formatter) {
+      yAxisSingle.axisLabel.formatter = (val: string) => {
         const str = String(val);
         return str.length > 10 ? str.slice(0, 9) + '…' : str;
       };
@@ -1794,8 +1820,9 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
       if ((s.type === 'bar' || s.type === 'line') && s.label && s.label.show) {
         const origFormatter = s.label.formatter;
         s.label.formatter = (params: unknown) => {
-          const val = typeof params.value === 'number' ? params.value :
-                      (Array.isArray(params.value) ? Number(params.value[1]) : Number(params.value));
+          const p = params as { value?: unknown; seriesName?: string; name?: string; percent?: unknown };
+          const val = typeof p.value === 'number' ? p.value :
+                      (Array.isArray(p.value) ? Number(p.value[1]) : Number(p.value));
           // Hide zero or near-zero labels
           if (val === 0 || (Math.abs(val) < 0.01 && Math.abs(val) > 0)) return '';
           // If there was an original formatter, apply it
@@ -1803,10 +1830,10 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
           // ECharts template strings like "{c}万" — substitute placeholders
           if (typeof origFormatter === 'string') {
             return origFormatter
-              .replace(/\{a\}/g, params.seriesName || '')
-              .replace(/\{b\}/g, params.name || '')
+              .replace(/\{a\}/g, p.seriesName || '')
+              .replace(/\{b\}/g, p.name || '')
               .replace(/\{c\}/g, String(val))
-              .replace(/\{d\}/g, String(params.percent ?? ''));
+              .replace(/\{d\}/g, String(p.percent ?? ''));
           }
           // Default: smart number formatting
           const abs = Math.abs(val);
@@ -1928,12 +1955,12 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   }
 
   // === 近零值智能处理 ===
-  if (yAxis && chartType !== 'pie' && stats.max > 0 && stats.nonZeroMin < Infinity) {
+  if (yAxisSingle && chartType !== 'pie' && stats.max > 0 && stats.nonZeroMin < Infinity) {
     const ratio = stats.max / stats.nonZeroMin;
     // Case 1: Extreme range → enable scale for better resolution
     if (ratio > 100 && stats.nonZeroMin < stats.max * 0.01) {
-      yAxis.scale = true;
-      if (!yAxis.splitNumber) yAxis.splitNumber = 8;
+      yAxisSingle.scale = true;
+      if (!yAxisSingle.splitNumber) yAxisSingle.splitNumber = 8;
     }
     // Case 2: Value concentration — 80% of values in 10% of range
     if (stats.count > 5 && Array.isArray(series)) {
@@ -1941,7 +1968,7 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
       for (const s of series) {
         if (!Array.isArray(s?.data)) continue;
         for (const d of s.data) {
-          const v = typeof d === 'number' ? d : (Array.isArray(d) ? Number(d[1]) || 0 : Number(d?.value) || 0);
+          const v = typeof d === 'number' ? d : (Array.isArray(d) ? Number(d[1]) || 0 : Number((d as Record<string, unknown>)?.value) || 0);
           if (v !== 0) allValues.push(Math.abs(v));
         }
       }
@@ -1954,8 +1981,8 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
           const p90 = allValues[Math.floor(allValues.length * 0.9)];
           const innerRange = p90 - p10;
           if (innerRange < rangeTotal * 0.1) {
-            yAxis.scale = true;
-            if (!yAxis.splitNumber) yAxis.splitNumber = 6;
+            yAxisSingle.scale = true;
+            if (!yAxisSingle.splitNumber) yAxisSingle.splitNumber = 6;
           }
         }
       }
@@ -1963,19 +1990,19 @@ const enhanceChartOption = (opts: Record<string, unknown>, displayNameMap?: Reco
   }
 
   // === 万/亿 axis formatter ===
-  if (yAxis && typeof yAxis.name === 'string') {
-    const match = yAxis.name.match(/\(([万亿])\)/);
+  if (yAxisSingle && typeof yAxisSingle.name === 'string') {
+    const match = yAxisSingle.name.match(/\(([万亿])\)/);
     if (match) {
       const suffix = match[1];
       const divisor = suffix === '亿' ? 1e8 : 1e4;
       const minThreshold = suffix === '亿' ? 1e8 : 1e4;
 
       if (stats.max < minThreshold) {
-        yAxis.name = yAxis.name.replace(/\s*\([万亿]\)/, '');
+        yAxisSingle.name = yAxisSingle.name.replace(/\s*\([万亿]\)/, '');
       } else {
-        yAxis.axisLabel = yAxis.axisLabel || {};
-        if (!yAxis.axisLabel.formatter) {
-          yAxis.axisLabel.formatter = (value: number) => {
+        yAxisSingle.axisLabel = yAxisSingle.axisLabel || {};
+        if (!yAxisSingle.axisLabel.formatter) {
+          yAxisSingle.axisLabel.formatter = (value: number) => {
             if (value === 0) return '0';
             const scaled = value / divisor;
             return Number.isInteger(scaled) ? `${scaled}${suffix}` : `${scaled.toFixed(1)}${suffix}`;
@@ -2123,11 +2150,11 @@ const renderActiveCharts = () => {
 
 /** Render a single chart into its DOM container */
 function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx: number, activeSheet: Record<string, unknown>) {
-    const config = chart.config;
+    const config = chart.config as Record<string, unknown> | undefined;
     if (!config || isChartDataEmpty(config)) return;
 
     // Get all charts for cross-chart hover interactions
-    const charts = getSheetCharts(activeSheet);
+    const charts = getSheetCharts(activeSheet as unknown as SheetResult);
 
     // Deep-copy config before resolving so enhanceChartOption does NOT mutate
     // the original chart.config (whose series names must stay as raw column names
@@ -2137,7 +2164,7 @@ function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx
 
     // Process __ANIM__/__FMT__ named references from Python
     echartsOptions = processEChartsOptions(echartsOptions);
-    enhanceChartOption(echartsOptions, activeSheet?.flowResult?.displayNameMap);
+    enhanceChartOption(echartsOptions, (activeSheet?.flowResult as { displayNameMap?: Record<string, string> } | undefined)?.displayNameMap);
     // H3: ARIA accessibility for screen readers (parity with DynamicChartRenderer)
     (echartsOptions as SmartBIChartOption).aria = { enabled: true, decal: { show: true } };
     // Strip ECharts-internal title — Vue card header already displays it
@@ -2151,7 +2178,8 @@ function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx
         if (!Array.isArray(s?.data)) continue;
         for (const d of s.data) {
           totalVals++;
-          const v = typeof d === 'number' ? d : Number(d?.value ?? d?.[1] ?? 0);
+          const dRec = d as Record<string, unknown> | unknown[];
+          const v = typeof d === 'number' ? d : Number((dRec as Record<string, unknown>)?.value ?? (Array.isArray(d) ? d[1] : undefined) ?? 0);
           if (v === 0) zeroVals++;
         }
       }
@@ -2186,7 +2214,7 @@ function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx
     }
 
     // Apply anomaly overlay if available
-    const anomalies = ((config as SmartBIChartOption)).anomalies || ((chart as SmartBIChartItem)).anomalies;
+    const anomalies = ((config as unknown as SmartBIChartOption)).anomalies || ((chart as unknown as SmartBIChartItem)).anomalies;
     if (anomalies) {
       applyAnomalyOverlay(echartsOptions, anomalies);
     }
@@ -2251,18 +2279,20 @@ function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx
 
       // Click events: Ctrl+Click = filter, normal Click = drill-down
       instance.off('click');
-      instance.on('click', (params: unknown) => {
+      instance.on('click', (rawParams: unknown) => {
+        const params = rawParams as { event?: { event?: { ctrlKey?: boolean; metaKey?: boolean } } } & Record<string, unknown>;
         if (params.event?.event?.ctrlKey || params.event?.event?.metaKey) {
-          applyChartFilter(activeSheet, params);
+          applyChartFilter(activeSheet as unknown as SheetResult, params as Record<string, unknown>);
         } else {
-          handleChartDrillDown(activeSheet, idx, params);
+          handleChartDrillDown(activeSheet as unknown as SheetRef, idx, params as Record<string, unknown>);
         }
       });
 
       // P0-B: Throttled hover cross-filtering with dispatchAction (100ms throttle)
       const chartKey = `chart-${activeSheet.sheetIndex}-${idx}`;
       instance.off('mouseover');
-      instance.on('mouseover', (params: unknown) => {
+      instance.on('mouseover', (rawParams: unknown) => {
+        const params = rawParams as { name?: string; seriesName?: string };
         const hoverValue = params.name || params.seriesName;
         if (!hoverValue) return;
         if (hoverThrottleTimers.has(chartKey)) return; // throttle: skip if pending
@@ -2276,7 +2306,7 @@ function renderSingleChart(dom: HTMLElement, chart: Record<string, unknown>, idx
           if (!sibInstance) return;
           const sibOpt = sibInstance.getOption() as Record<string, unknown>;
           // Bar/line: match xAxis by name (not index — safe with DataZoom)
-          const xData = sibOpt?.xAxis?.[0]?.data;
+          const xData = (sibOpt?.xAxis as Array<{ data?: unknown[] }> | undefined)?.[0]?.data;
           if (Array.isArray(xData)) {
             const matchIdx = xData.indexOf(hoverValue);
             if (matchIdx >= 0) {
@@ -2469,11 +2499,11 @@ const renderChart = (sheet: SheetResult) => {
   }
   // Case 3: Java 返回的 { options: {...} } 格式
   else if (chartConfig.options) {
-    echartsOptions = chartConfig.options;
+    echartsOptions = chartConfig.options as Record<string, unknown>;
   }
   // Case 4: 有 data 但没有 options，尝试构建基础图表
   else if (chartConfig.data) {
-    echartsOptions = buildBasicOptions(chartConfig.chartType || 'line', chartConfig.data);
+    echartsOptions = buildBasicOptions(String(chartConfig.chartType || 'line'), chartConfig.data as Record<string, unknown>);
   }
 
   if (!echartsOptions) {
@@ -2586,8 +2616,9 @@ const getChartMiniInsight = (chart: { chartType: string; title: string; config: 
 
 // 获取 AI 分析
 const getAIAnalysis = (sheet: SheetResult): string => {
+  const chartConfigAi = sheet.flowResult?.chartConfig?.aiAnalysis;
   return sheet.flowResult?.aiAnalysis ||
-         sheet.flowResult?.chartConfig?.aiAnalysis ||
+         (typeof chartConfigAi === 'string' ? chartConfigAi : '') ||
          '暂无 AI 分析';
 };
 
@@ -3632,13 +3663,19 @@ const rebuildChartsWithData = async (sheet: SheetResult, data: Record<string, un
     }
 
     const results = await Promise.allSettled(chartPromises);
+    type BuildChartResult = { success: boolean; option?: Record<string, unknown>; error?: string };
     const newCharts = results
-      .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> => r.status === 'fulfilled' && (r as PromiseFulfilledResult<Record<string, unknown>>).value?.success !== undefined)
-      .map(r => ({
-        chartType: r.value.option?.series?.[0]?.type || 'bar',
-        title: r.value.option?.title?.text || '筛选分析',
-        config: r.value.option,
-      }));
+      .filter((r): r is PromiseFulfilledResult<BuildChartResult> => r.status === 'fulfilled' && r.value?.success === true)
+      .map(r => {
+        const opt = r.value.option as Record<string, unknown> | undefined;
+        const series = opt?.series as Array<{ type?: string }> | undefined;
+        const title = opt?.title as { text?: string } | undefined;
+        return {
+          chartType: series?.[0]?.type || 'bar',
+          title: title?.text || '筛选分析',
+          config: opt || {},
+        };
+      });
 
     if (newCharts.length > 0) {
       // Update flowResult with new charts
@@ -3762,7 +3799,8 @@ const clearExploreFilter = (sheet: SheetResult) => {
 
 // ========== Cross-chart linked filter (Phase 3.4 — Power BI + Superset + Tableau) ==========
 const applyChartFilter = (sheet: SheetResult, params: Record<string, unknown>) => {
-  const filterValue = params.name || params.seriesName || '';
+  const filterValueRaw = params.name ?? params.seriesName ?? '';
+  const filterValue = String(filterValueRaw);
   if (!filterValue) return;
 
   // Determine dimension from xAxis
@@ -3776,7 +3814,8 @@ const applyChartFilter = (sheet: SheetResult, params: Record<string, unknown>) =
   }
 
   // Q1: Ctrl+click triggers global filter data filtering
-  if (params.event?.event?.ctrlKey || params.event?.event?.metaKey) {
+  const ev = params.event as { event?: { ctrlKey?: boolean; metaKey?: boolean } } | undefined;
+  if (ev?.event?.ctrlKey || ev?.event?.metaKey) {
     globalFilterDimension.value = dimension || '项目';
     globalFilterValues.value = [filterValue];
     handleGlobalFilterApply(sheet);

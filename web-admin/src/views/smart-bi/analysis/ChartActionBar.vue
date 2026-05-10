@@ -32,7 +32,7 @@
     <!-- P2: Layout mode toggle -->
     <el-radio-group
       :model-value="layoutMode"
-      @update:model-value="(v) => $emit('update:layoutMode', v as LayoutMode)"
+      @update:model-value="(v: unknown) => $emit('update:layoutMode', v as LayoutMode)"
       size="small"
       style="margin-left: auto;"
     >

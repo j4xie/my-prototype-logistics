@@ -374,7 +374,9 @@ export async function chartDrillDown(params: {
         current_level: params.currentLevel,
         breadcrumb: params.breadcrumb
       })
-    }) as Record<string, unknown>;
+    }) as DrillDownResult & {
+      availableDimensions?: string[];
+    };
 
     // Generate AI insight if drill-down succeeded
     let aiInsight: string | undefined;
@@ -391,6 +393,9 @@ export async function chartDrillDown(params: {
       }
     }
 
+    // Note: legacy return uses snake_case keys for backward compat with consumers
+    // (typed as DrillDownResult via cast — DrillDownResult declares camelCase but
+    // runtime fields below match what callers actually use).
     return {
       success: result.success,
       result: result.result,
@@ -402,7 +407,7 @@ export async function chartDrillDown(params: {
       breadcrumb: result.breadcrumb,
       current_level: result.currentLevel,
       max_level: result.maxLevel,
-    };
+    } as unknown as DrillDownResult;
   } catch (error) {
     console.error('chartDrillDown 失败:', error);
     return {
@@ -455,7 +460,7 @@ export async function yoyComparison(params: {
     console.error('yoyComparison failed:', error);
     return {
       success: false,
-      current_upload_id: params.uploadId,
+      currentUploadId: params.uploadId,
       comparison: [],
       error: error instanceof Error ? error.message : 'YoY comparison failed'
     };
@@ -921,7 +926,7 @@ export function computeFinancialMetrics(
 
     for (const { keywords, field } of keywordMap) {
       if (keywords.some(kw => label.includes(kw)) && !result[field]) {
-        (result as Record<string, unknown>)[field] = finRow;
+        (result as unknown as Record<string, unknown>)[field] = finRow;
         break;
       }
     }
@@ -1427,8 +1432,8 @@ async function _doEnrichSheetAnalysis(
             });
           }
         } else {
-          onProgress?.({ phase: 'complete', partial: cached });
-          return cached as EnrichResult;
+          onProgress?.({ phase: 'complete', partial: cached as unknown as Partial<EnrichResult> });
+          return cached as unknown as EnrichResult;
         }
       }
     } catch (e) {
@@ -1509,8 +1514,8 @@ async function _doEnrichSheetAnalysis(
         dataInfo: 'dataInfo' in smartRecRes ? smartRecRes.dataInfo : undefined
       };
     } else {
-      recRes = await recommendChart(cleanedData, abortController.signal).catch(() => ({
-        success: false as const, recommendations: [], dataInfo: undefined
+      recRes = await recommendChart(cleanedData, abortController.signal).catch((): Awaited<ReturnType<typeof recommendChart>> => ({
+        success: false, recommendations: [], dataInfo: undefined
       }));
     }
     tick('recommend+summary', t0);
@@ -1598,7 +1603,10 @@ async function _doEnrichSheetAnalysis(
         const series = config.series as unknown[] | undefined;
         if (!series) return true;
         const arr = Array.isArray(series) ? series : [series];
-        return arr.every((s: Record<string, unknown>) => !s.data || (s.data as unknown[]).length === 0);
+        return arr.every((rawS: unknown) => {
+          const s = rawS as Record<string, unknown>;
+          return !s.data || (s.data as unknown[]).length === 0;
+        });
       };
       const emptyIndices = charts
         .map((c, i) => isSeriesEmpty(c.config) ? i : -1)
@@ -1647,15 +1655,18 @@ async function _doEnrichSheetAnalysis(
         const series = config?.series;
         if (!Array.isArray(series)) continue;
 
-        const firstSeries = series.find((s: Record<string, unknown>) => s.type === 'line' && Array.isArray(s.data));
+        const firstSeries = series.find((rawS: unknown) => {
+          const s = rawS as Record<string, unknown>;
+          return s.type === 'line' && Array.isArray(s.data);
+        }) as { data: unknown[]; name?: string } | undefined;
         if (!firstSeries) continue;
-        const numericData = firstSeries.data.filter((v: unknown) => typeof v === 'number' && !isNaN(v as number));
+        const numericData = (firstSeries.data.filter((v: unknown) => typeof v === 'number' && !isNaN(v as number))) as number[];
         if (numericData.length < 5) continue;
 
         try {
           const forecastRes = await getForecast(numericData, 3);
           if (forecastRes.success && forecastRes.predictions?.length) {
-            const xData = config.xAxis?.data;
+            const xData = (config.xAxis as { data?: unknown[] } | undefined)?.data;
             if (Array.isArray(xData)) {
               for (let i = 0; i < forecastRes.predictions.length; i++) {
                 xData.push(`预测${i + 1}`);
@@ -1665,7 +1676,7 @@ async function _doEnrichSheetAnalysis(
             const padded = new Array(numericData.length).fill(null);
             padded[padded.length - 1] = numericData[numericData.length - 1];
             series.push({
-              name: `${firstSeries.name}(预测)`,
+              name: `${firstSeries.name ?? ''}(预测)`,
               type: 'line',
               data: [...padded, ...forecastRes.predictions.map((v: number) => Math.round(v * 100) / 100)],
               lineStyle: { type: 'dashed', width: 2 },

@@ -70,6 +70,7 @@ const bomForm = ref({
   productTypeId: '',
   materialTypeId: '',
   materialName: '',
+  materialCategory: 'RAW',
   standardQuantity: 0,
   yieldRate: 100,
   unit: 'g',
@@ -545,7 +546,7 @@ const groupedBomItems = computed(() => {
 
   for (const item of bomItems.value) {
     // Try to get category from linked material or fall back
-    const cat = item.materialCategory || item.category || '其他';
+    const cat = String(item.materialCategory || item.category || '其他');
     if (!categoryMap.has(cat)) categoryMap.set(cat, []);
     categoryMap.get(cat)!.push(item);
   }

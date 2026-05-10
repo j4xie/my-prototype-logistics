@@ -274,10 +274,10 @@ export async function statisticalAnalysis(params: {
     return {
       success: false,
       distributions: {},
-      correlations: { matrix: {}, strong_positive: [], strong_negative: [] },
+      correlations: { matrix: {}, strongPositive: [], strongNegative: [] },
       comparisons: {},
-      outlier_summary: {},
-      processing_time_ms: 0,
+      outlierSummary: {},
+      processingTimeMs: 0,
       error: error instanceof Error ? error.message : 'Statistical analysis failed'
     };
   }
@@ -296,10 +296,10 @@ export async function correlationAnalysis(params: {
     console.error('correlationAnalysis failed:', error);
     return {
       success: false,
-      correlation_matrix: {},
-      strong_positive: [],
-      strong_negative: [],
-      processing_time_ms: 0,
+      correlationMatrix: {},
+      strongPositive: [],
+      strongNegative: [],
+      processingTimeMs: 0,
       error: error instanceof Error ? error.message : 'Correlation analysis failed'
     };
   }

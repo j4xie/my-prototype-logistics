@@ -26,3 +26,23 @@ export function handleCatchError(e: unknown, fallbackMsg: string): void {
   }
   // 否则 interceptor 已显示 err.message, 不再 toast
 }
+
+/**
+ * Extract error message from unknown catch value (Tier 3 vue-tsc cleanup 2026-05-10).
+ *
+ * Replaces the common `error?.message` pattern in `catch (error: unknown)` blocks
+ * which fails TS2339 (`Property 'message' does not exist on type 'unknown'`).
+ *
+ * @param e catch 块捕获的 error
+ * @param fallback fallback message when error has no .message
+ * @returns the error message or fallback
+ */
+export function getErrorMessage(e: unknown, fallback = '未知错误'): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  if (e && typeof e === 'object' && 'message' in e) {
+    const msg = (e as { message: unknown }).message;
+    if (typeof msg === 'string') return msg;
+  }
+  return fallback;
+}

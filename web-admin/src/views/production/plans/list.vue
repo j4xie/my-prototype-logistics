@@ -528,7 +528,7 @@ async function handleImportFile(uploadFile: { raw?: File }) {
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '请检查文件格式';
-    if (!e?.actionHint) ElMessage.error('导入失败: ' + msg);
+    if (!(e as { actionHint?: unknown })?.actionHint) ElMessage.error('导入失败: ' + msg);
   }
 }
 
