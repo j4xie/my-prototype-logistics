@@ -13,7 +13,6 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -50,14 +49,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * in a pure unit-test environment. The service under test is instantiated
  * manually with the real repositories injected.</p>
  *
- * <p><b>Skipped in CI</b> ({@code CI=true}): GitHub Actions runners do not
- * have PostgreSQL available on {@code localhost:5432}, so {@code @DataJpaTest}
- * falls back to embedded H2 — which then fails to apply the entity DDL
- * because {@code TrainingSample.embedding_blob} declares {@code BLOB}
- * (PG-specific, not recognized by H2 v2.x). Run this IT locally where the
- * {@code cretas_r10_it_test} PG database is provisioned. The
- * {@code FactoryConfigServiceImplReorderTest} Mockito unit-test counterpart
- * remains in the CI suite and exercises the same service logic.</p>
+ * <p><b>CI:</b> the {@code java-build-test} job in {@code .github/workflows/ci.yml}
+ * provisions a {@code pgvector/pgvector:pg17} service container and bootstraps
+ * the {@code cretas_r10_it_test} database, so this IT runs in CI against real
+ * PostgreSQL — no H2 fallback. (Previously skipped via
+ * {@code @DisabledIfEnvironmentVariable("CI")} in PR #275; that workaround
+ * was removed once the PG service container landed.)</p>
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -65,12 +62,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @EntityScan(basePackages = "com.cretas.aims.entity")
 @EnableJpaRepositories(basePackages = "com.cretas.aims.repository.config")
 @DisplayName("FactoryConfigServiceImpl#reorderFields — JPA slice integration")
-@DisabledIfEnvironmentVariable(
-        named = "CI",
-        matches = "true",
-        disabledReason = "Requires local PostgreSQL on localhost:5432 (cretas_r10_it_test). "
-                + "Not available on GitHub Actions runners — H2 fallback fails on BLOB column type."
-)
 class FactoryConfigServiceImplReorderIT {
 
     private static final String TEST_FACTORY = "FIT_R10_REORDER";
