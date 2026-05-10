@@ -1,0 +1,259 @@
+{
+  "startedAt": "2026-05-10T05:22:08.559Z",
+  "runTag": "C15832",
+  "target": "http://139.196.165.140:8097",
+  "factory": {
+    "factoryId": "F001",
+    "username": "factory_admin1",
+    "password": "123456"
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Excel Upload page + invalid 400",
+      "steps": [
+        {
+          "id": "1.1",
+          "name": "mount /smart-bi/upload",
+          "verdict": "PASS",
+          "pageTextLen": 502,
+          "pageTextSample": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n设备管理\n财务管理\n系统管理\n经营报表\n智能调度\n智能分析\n分析入口\n经营驾驶舱\n财务 PBI 看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\nAI 追问日志\n生产分析\n生产数据分析\n人效分析\n智能BI\n/\nExcel上传\nfactory_admin1\n工厂总监\nSmart BI\n/\n数据导入\nExcel 数据导入\n下载模板\n重新开始\n1\n上传文件\n选择 Excel 文件\n2\n解析结果\n预览解析数据\n3\n分析结果\n",
+          "apiHitsSinceNav": [
+            {
+              "url": "/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "method": "GET"
+            },
+            {
+              "url": "/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "has5xx": false,
+          "depth": "medium"
+        },
+        {
+          "id": "1.2",
+          "name": "invalid upload (.txt) → expect 400 + Rule 8 four-axis",
+          "verdict": "BLOCKED",
+          "reason": "no upload API hit observed (UI may not have triggered upload)",
+          "fourAxis": {
+            "toastCount": 1,
+            "toastSample": [
+              {
+                "time": 1778390546790,
+                "cls": "el-message el-message--error is-closable is-center el-message-fade-enter-from el-message-fade-enter-active",
+                "text": "请上传 Excel 或 CSV 文件 (.xlsx, .xls, .csv)",
+                "isClosable": true
+              }
+            ],
+            "wireReqBody": null
+          },
+          "depth": "error-deep"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Threshold inline edit + roundtrip",
+      "steps": [
+        {
+          "id": "2.1",
+          "name": "mount /system/smartbi-config (threshold list GET)",
+          "verdict": "PASS",
+          "listApi": {
+            "url": "/api/mobile/smartbi-config/thresholds",
+            "status": 200,
+            "method": "GET"
+          },
+          "apiHitsCount": 3,
+          "depth": "medium"
+        },
+        {
+          "id": "2.2",
+          "name": "threshold list sample (Rule 9: top + middle + last)",
+          "verdict": "PASS",
+          "totalRows": 7,
+          "listStatus": 200,
+          "sample": {
+            "top3": [
+              {
+                "id": "64b1edd6-f6e5-11f0-955b-00163e35af14",
+                "code": "current_ratio"
+              },
+              {
+                "id": "64b3b98f-f6e5-11f0-955b-00163e35af14",
+                "code": "quick_ratio"
+              },
+              {
+                "id": "64b4faba-f6e5-11f0-955b-00163e35af14",
+                "code": "debt_ratio"
+              }
+            ],
+            "middle": {
+              "id": "64b5bbd8-f6e5-11f0-955b-00163e35af14",
+              "code": "interest_coverage"
+            },
+            "last3": [
+              {
+                "id": "64b696df-f6e5-11f0-955b-00163e35af14",
+                "code": "roa"
+              },
+              {
+                "id": "64b7654d-f6e5-11f0-955b-00163e35af14",
+                "code": "roe"
+              },
+              {
+                "id": "64b8a058-f6e5-11f0-955b-00163e35af14",
+                "code": "safety_margin_rate"
+              }
+            ]
+          },
+          "depth": "deep"
+        },
+        {
+          "id": "2.3",
+          "name": "inline-edit threshold + Rule 11 roundtrip",
+          "depth": "deep",
+          "verdict": "FAIL",
+          "reason": "silent-drop: PUT 200 but re-GET shows warn=undefined (sent 1)",
+          "targetMetric": {
+            "id": "64b1edd6-f6e5-11f0-955b-00163e35af14",
+            "code": "current_ratio"
+          },
+          "newWarn": 1,
+          "putStatus": 200,
+          "putRespMessage": "更新成功",
+          "putBodyChars": 38,
+          "putBodyPreview": "{\"warningThreshold\":1,\"isActive\":true}",
+          "cleanupRestore": null
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "DataSource CRUD (Rule 16 + Rule 11)",
+      "steps": [
+        {
+          "id": "3.0",
+          "name": "mount /system/smartbi-config/data-sources",
+          "verdict": "PASS",
+          "listApi": {
+            "url": "/api/mobile/smartbi-config/data-sources?page=0&size=10",
+            "status": 200,
+            "method": "GET"
+          },
+          "depth": "medium"
+        },
+        {
+          "id": "3.1",
+          "name": "handleAdd: open dialog → fill → submit → roundtrip",
+          "depth": "deep",
+          "verdict": "FAIL",
+          "postHit": {
+            "url": "/api/mobile/smartbi-config/data-sources",
+            "status": 200,
+            "method": "POST"
+          },
+          "wireUrl": "/api/mobile/smartbi-config/data-sources",
+          "wireBodyChars": 183,
+          "wireShapeAudit": {
+            "checked": true,
+            "sentKeys": [
+              "name",
+              "code",
+              "type",
+              "description",
+              "connectionConfig",
+              "refreshInterval",
+              "isActive"
+            ],
+            "phantom": [],
+            "missingRequired": []
+          },
+          "createdRow": null,
+          "roundtripDiff": null,
+          "reason": "row not found in re-GET (silent failure)"
+        },
+        {
+          "id": "3.2",
+          "name": "handleEdit: re-open created row → change description → roundtrip diff (Rule 11)",
+          "depth": "deep",
+          "verdict": "BLOCKED",
+          "reason": "cannot edit — phase 3.1 did not produce a created row"
+        },
+        {
+          "id": "3.3",
+          "name": "handleTestConnection: click 测试 → graceful response",
+          "depth": "medium",
+          "verdict": "BLOCKED",
+          "reason": "no row to test — 3.1 blocked"
+        },
+        {
+          "id": "3.4",
+          "name": "handleDelete: confirm box → delete → list -1",
+          "depth": "deep",
+          "verdict": "BLOCKED",
+          "reason": "no row to delete"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Error path: empty + duplicate (Rule 8 four-axis)",
+      "steps": [
+        {
+          "id": "4.1",
+          "name": "submit empty form → FE validation blocks (no API hit)",
+          "verdict": "PASS",
+          "inlineErrors": [
+            "请输入数据源名称",
+            "请输入数据源代码"
+          ],
+          "apiHits": [
+            {
+              "url": "/api/mobile/smartbi-config/data-sources?page=0&size=10",
+              "status": 200,
+              "method": "GET"
+            }
+          ],
+          "depth": "error-deep",
+          "reason": null
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Cross-entry state isolation (Rule 16b)",
+      "steps": [
+        {
+          "id": "5.1",
+          "name": "reopen Add after cancel — form must be empty (Rule 16b smoke)",
+          "verdict": "PASS",
+          "noteRule16Prereq": "DataSourceConfigView dialog uses destroy-on-close (line 378); per Rule 16 prereq, state isolation is structurally guaranteed, this test is informational",
+          "reopenNameValue": "",
+          "depth": "medium",
+          "reason": null
+        }
+      ]
+    }
+  ],
+  "login": {
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiZmFjdG9yeV9zdXBlcl9hZG1pbiIsImZhY3RvcnlJZCI6IkYwMDEiLCJ1c2VySWQiOjEsInVzZXJuYW1lIjoiZmFjdG9yeV9hZG1pbjEiLCJzdWIiOiJmYWN0b3J5X2FkbWluMSIsImlhdCI6MTc3ODM5MDU0MSwiZXhwIjoxNzc4NDc2OTQxfQ.ELxLs_t8obhbSimgwSb0CKlupUW5Q25kW2jaAt3y6ZA",
+    "url": "http://139.196.165.140:8097/dashboard"
+  },
+  "consoleErrorsTotal": 1,
+  "consoleErrorsSample": [
+    "保存失败: ApiError: factoryId 必填\n    at c.interceptors.response.use.e (http://139.196.165.140:8097/assets/request-DNQO26ox.js:6:1202)\n    at async j.request (http://139.196.165.140:8097/assets/index-B9ygI19o.js:5:1982)\n    at async j (http://139.196.165.140:8097/assets/DataSourceConfigView-BBvulrXg.js:1:2774)\n    at j.request (http://139.196.165.140:8097/assets/index-B9ygI19o.js:5:2078)\n    at async j (http://139.196.165.140:8097/assets/DataSourceConfigView-BBvulrXg.js:1:2774)"
+  ],
+  "pageErrors": [],
+  "finishedAt": "2026-05-10T05:22:57.937Z",
+  "verdictCounts": {
+    "PASS": 6,
+    "FAIL": 2,
+    "WARN": 0,
+    "BLOCKED": 4,
+    "OTHER": 0
+  }
+}
