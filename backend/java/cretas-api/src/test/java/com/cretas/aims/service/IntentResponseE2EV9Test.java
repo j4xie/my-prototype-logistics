@@ -408,8 +408,10 @@ class IntentResponseE2EV9Test {
                 "原料保质期怎么算, MATERIAL",
                 "质检不合格怎么处理, QUALITY",
                 "设备维护周期是多久, EQUIPMENT",
-                // 2026-05-09: full-suite — "异常" keyword routes to ALERT domain (was ATTENDANCE).
-                "考勤异常怎么处理, ALERT",
+                // 2026-05-09 (issue #250 prod fix): "考勤" 在 ATTENDANCE 关键词中且
+                // ATTENDANCE 优先于 ALERT (LinkedHashMap insertion order),所以
+                // "考勤异常" 路由到 ATTENDANCE (PR #247 Type C 编辑已撤销)。
+                "考勤异常怎么处理, ATTENDANCE",
                 "告警等级有几种, ALERT"
         })
         void testDomainKnowledgeQuery(String input, String expectedDomain) {
@@ -563,8 +565,12 @@ class IntentResponseE2EV9Test {
             String input = "原料批次的质检情况";
             TwoStageIntentClassifier.TwoStageResult result = classifier.classify(input);
 
-            // "批次" 优先匹配 PROCESSING，或识别为 QUALITY
-            assertTrue(result.getDomain() == TwoStageIntentClassifier.ClassifiedDomain.QUALITY
+            // 2026-05-09 (issue #250 prod fix): "原料" 是 MATERIAL 关键词且 MATERIAL
+            // 优先于 PROCESSING/QUALITY (LinkedHashMap insertion order). 所以
+            // "原料批次的质检情况" 路由到 MATERIAL — 语义正确 ("原料" 是最具体的名词)。
+            // QUALITY/PROCESSING 也是合法的次优结果 (input 含有这些 domain 的 keywords)。
+            assertTrue(result.getDomain() == TwoStageIntentClassifier.ClassifiedDomain.MATERIAL
+                            || result.getDomain() == TwoStageIntentClassifier.ClassifiedDomain.QUALITY
                             || result.getDomain() == TwoStageIntentClassifier.ClassifiedDomain.PROCESSING,
                     "多领域交叉应识别主要领域: " + result.getDomain());
         }
