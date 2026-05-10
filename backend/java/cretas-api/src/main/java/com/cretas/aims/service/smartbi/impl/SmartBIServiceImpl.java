@@ -563,58 +563,6 @@ public class SmartBIServiceImpl implements SmartBIService {
         }
     }
 
-    // ==================== 综合分析 ====================
-
-    @Override
-    @Transactional(readOnly = true)
-    public Map<String, Object> getComprehensiveAnalysis(String factoryId, LocalDate startDate,
-                                                          LocalDate endDate, String analysisType) {
-        log.info("获取综合分析: factoryId={}, type={}, startDate={}, endDate={}",
-                factoryId, analysisType, startDate, endDate);
-
-        Map<String, Object> result = new HashMap<>();
-
-        switch (analysisType.toLowerCase()) {
-            case "sales":
-                result.put("overview", salesService.getSalesOverview(factoryId, startDate, endDate));
-                result.put("salespersonRanking", salesService.getSalespersonRanking(factoryId, startDate, endDate));
-                result.put("productRanking", salesService.getProductRanking(factoryId, startDate, endDate));
-                result.put("customerRanking", salesService.getCustomerRanking(factoryId, startDate, endDate));
-                result.put("trendChart", salesService.getSalesTrendChart(factoryId, startDate, endDate, "DAY"));
-                break;
-
-            case "department":
-                result.put("ranking", deptService.getDepartmentRanking(factoryId, startDate, endDate));
-                result.put("completionRates", deptService.getDepartmentCompletionRates(factoryId, startDate, endDate));
-                result.put("efficiencyMatrix", deptService.getDepartmentEfficiencyMatrix(factoryId, startDate, endDate));
-                result.put("trendComparison", deptService.getDepartmentTrendComparison(factoryId, startDate, endDate, "WEEK"));
-                break;
-
-            case "region":
-                result.put("ranking", regionService.getRegionRanking(factoryId, startDate, endDate));
-                result.put("targetCompletion", regionService.getRegionTargetCompletion(factoryId, startDate, endDate));
-                result.put("heatmap", regionService.getGeographicHeatmapData(factoryId, startDate, endDate));
-                result.put("opportunityScores", regionService.getRegionOpportunityScores(factoryId, startDate, endDate));
-                break;
-
-            case "finance":
-                result.put("overview", financeService.getFinanceOverview(factoryId, startDate, endDate));
-                result.put("profitMetrics", financeService.getProfitMetrics(factoryId, startDate, endDate));
-                result.put("costStructure", financeService.getCostStructureChart(factoryId, startDate, endDate));
-                result.put("receivableAging", financeService.getReceivableAgingChart(factoryId, endDate));
-                break;
-
-            default:
-                throw new BusinessException(400, "不支持的分析类型: " + analysisType)
-                        .withHint("请选择支持的分析类型: production / inventory / sales / finance").withHintTarget("analysisType");
-        }
-
-        result.put("dateRange", DateRange.custom(startDate, endDate));
-        result.put("generatedAt", LocalDateTime.now());
-
-        return result;
-    }
-
     // ==================== 自然语言问答 ====================
 
     @Override
