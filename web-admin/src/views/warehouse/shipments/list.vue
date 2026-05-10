@@ -8,6 +8,7 @@ import { Plus, Search, Refresh, Ship, Check, Close } from '@element-plus/icons-v
 import { formatDateTime } from '@/utils/dateFormat';
 import { emptyCell } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -20,7 +21,7 @@ const isWarehouseOnly = computed(() => {
 });
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -40,8 +41,8 @@ const shipmentForm = ref({
   driverPhone: '',
   notes: ''
 });
-const customers = ref<Record<string, unknown>[]>([]);
-const productBatches = ref<Record<string, unknown>[]>([]);
+const customers = ref<TableRow[]>([]);
+const productBatches = ref<TableRow[]>([]);
 const customerMap = computed(() => {
   const map: Record<string, string> = {};
   customers.value.forEach((c) => { if (c.id && c.name) map[String(c.id)] = String(c.name); });
@@ -165,7 +166,7 @@ async function submitShipment() {
   // Reviewer I-4: productBatchId has no column on ShipmentRecord entity, Jackson drops it silently —
   // strip it from the wire payload to reduce log noise and stay compatible if FAIL_ON_UNKNOWN_PROPERTIES
   // is ever enabled.
-  const batch = productBatches.value.find((b) => String(b.id) === String(shipmentForm.value.productBatchId)) as Record<string, unknown> | undefined;
+  const batch = productBatches.value.find((b) => String(b.id) === String(shipmentForm.value.productBatchId)) as TableRow | undefined;
   // Reviewer S-1: ProductionBatch entity exposes productName + unit (not productTypeName / quantityUnit),
   // but defensive fallback chain keeps the dropdown label shape compatible with any older batch DTO.
   const productName = String(batch?.productTypeName || batch?.productName || `批次-${batch?.batchNumber || shipmentForm.value.productBatchId}`);
@@ -198,7 +199,7 @@ async function submitShipment() {
   }
 }
 
-async function handleShip(row: Record<string, unknown>) {
+async function handleShip(row: TableRow) {
   try {
     await ElMessageBox.confirm('确定发货?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
@@ -217,7 +218,7 @@ async function handleShip(row: Record<string, unknown>) {
   }
 }
 
-async function handleDelivered(row: Record<string, unknown>) {
+async function handleDelivered(row: TableRow) {
   try {
     await ElMessageBox.confirm('确认已送达?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
@@ -236,7 +237,7 @@ async function handleDelivered(row: Record<string, unknown>) {
   }
 }
 
-async function handleCancel(row: Record<string, unknown>) {
+async function handleCancel(row: TableRow) {
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消出货', {
       inputPattern: /.+/,
@@ -261,9 +262,9 @@ async function handleCancel(row: Record<string, unknown>) {
 
 // 详情抽屉
 const detailVisible = ref(false);
-const detailRow = ref<Record<string, unknown> | null>(null);
+const detailRow = ref<TableRow | null>(null);
 
-function showDetail(row: Record<string, unknown>) {
+function showDetail(row: TableRow) {
   detailRow.value = row;
   detailVisible.value = true;
 }

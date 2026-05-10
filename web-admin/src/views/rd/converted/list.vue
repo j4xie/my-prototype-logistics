@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 // V3 P1-3 / v1 §2.1 — "已转样品库" 专用视图
 // 客户要求 (1007s): "只保留 2 个页面: 研发样品管理 + 转样品库"
@@ -13,7 +14,7 @@ const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchForm = ref({ customerName: '', name: '' });
 
@@ -21,7 +22,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = {
+    const params: TableRow = {
       page: pagination.value.page,
       size: pagination.value.size,
       productStatus: '已转报模',
@@ -32,18 +33,18 @@ async function loadData() {
     if (res.success) {
       let items = res.data.content || [];
       // 后端不一定支持 productStatus 参数, 前端兜底过滤
-      items = items.filter((r: Record<string, unknown>) =>
+      items = items.filter((r: TableRow) =>
         String(r.productStatus || '') === '已转报模'
       );
       if (searchForm.value.name) {
         const kw = searchForm.value.name.toLowerCase();
-        items = items.filter((r: Record<string, unknown>) =>
+        items = items.filter((r: TableRow) =>
           String(r.name || '').toLowerCase().includes(kw)
         );
       }
       if (searchForm.value.customerName) {
         const kw = searchForm.value.customerName.toLowerCase();
-        items = items.filter((r: Record<string, unknown>) =>
+        items = items.filter((r: TableRow) =>
           String(r.customerName || '').toLowerCase().includes(kw)
         );
       }

@@ -6,6 +6,7 @@ import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -29,8 +30,8 @@ const conversionForm = ref({
   wastageRate: 0,
   notes: ''
 });
-const materialTypes = ref<Record<string, unknown>[]>([]);
-const productTypes = ref<Record<string, unknown>[]>([]);
+const materialTypes = ref<TableRow[]>([]);
+const productTypes = ref<TableRow[]>([]);
 
 onMounted(() => {
   loadData();
@@ -121,7 +122,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   isEdit.value = true;
   conversionForm.value = {
     id: row.id,
@@ -163,7 +164,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm('确定删除此转换率配置?', '提示', { type: 'warning' });
     const response = await del(`/${factoryId.value}/conversions/${row.id}`);

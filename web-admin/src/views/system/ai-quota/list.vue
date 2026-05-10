@@ -10,6 +10,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete as DeleteIcon, Refresh } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -17,7 +18,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 
 onMounted(loadData);
 
@@ -33,7 +34,7 @@ async function loadData() {
       const global = Array.isArray(d.globalConfigs) ? d.globalConfigs : [];
       // 兼容多种格式: factoryConfigs / content / 直接 array
       tableData.value = factory.length || global.length
-        ? [...factory, ...global.map((g: Record<string, unknown>) => ({ ...g, _isGlobal: true }))]
+        ? [...factory, ...global.map((g: TableRow) => ({ ...g, _isGlobal: true }))]
         : (Array.isArray(d) ? d : (d.content || []));
     }
   } catch (e) { console.error(e); }
@@ -59,7 +60,7 @@ function openCreate() {
   dialogVisible.value = true;
 }
 
-function openEdit(row: Record<string, unknown>) {
+function openEdit(row: TableRow) {
   editingId.value = String(row.id || '');
   form.value = {
     questionType: String(row.questionType || ''),
@@ -89,7 +90,7 @@ async function handleSave() {
   finally { submitting.value = false; }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(`确定删除配额规则「${row.questionType}」?`, '删除确认', { type: 'warning' });
     const res = await del(`/${factoryId.value}/ai-quota-configs/${row.id}`);

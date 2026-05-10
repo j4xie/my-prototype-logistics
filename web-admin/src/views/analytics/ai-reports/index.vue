@@ -5,6 +5,7 @@ import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Document, Refresh, View, Warning } from '@element-plus/icons-vue';
 import DOMPurify from 'dompurify';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -12,12 +13,12 @@ const factoryId = computed(() => authStore.factoryId);
 const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 const loading = ref(false);
-const reports = ref<Record<string, unknown>[]>([]);
-const selectedReport = ref<Record<string, unknown> | null>(null);
+const reports = ref<TableRow[]>([]);
+const selectedReport = ref<TableRow | null>(null);
 const detailDialogVisible = ref(false);
 
 // 异常检测结果
-const anomalies = ref<Record<string, unknown>[]>([]);
+const anomalies = ref<TableRow[]>([]);
 const anomalyLoading = ref(false);
 
 onMounted(() => {
@@ -67,7 +68,7 @@ async function loadAnomalies() {
   }
 }
 
-async function viewReport(report: Record<string, unknown>) {
+async function viewReport(report: TableRow) {
   try {
     const response = await get(`/${factoryId.value}/ai/reports/${report.id}`);
     if (response.success && response.data) {

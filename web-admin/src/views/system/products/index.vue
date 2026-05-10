@@ -37,6 +37,7 @@ import {
   type WorkProcessItem,
   type ProductWorkProcessItem,
 } from '@/api/processProduction';
+import type { TableRow } from '@/types/api';
 
 // 产品分类定义
 const PRODUCT_CATEGORIES = [
@@ -96,9 +97,9 @@ const skuForm = ref({
   customerId: '',
   recipeVersion: 'default',
 });
-const templateOptions = ref<Record<string, unknown>[]>([]);
-const customerOptions = ref<Record<string, unknown>[]>([]);
-const templateRecipes = ref<Record<string, unknown>[]>([]);
+const templateOptions = ref<TableRow[]>([]);
+const customerOptions = ref<TableRow[]>([]);
+const templateRecipes = ref<TableRow[]>([]);
 
 async function loadSkuOptions() {
   try {
@@ -326,7 +327,7 @@ async function handleSubmit() {
     await formRef.value.validate();
     submitting.value = true;
 
-    const payload: Record<string, unknown> = {
+    const payload: TableRow = {
       code: formData.code,
       name: formData.name,
       productCategory: formData.productCategory,
@@ -493,7 +494,7 @@ async function refreshLinkedProcesses() {
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
 
-function handleAiFill(params: Record<string, unknown>) {
+function handleAiFill(params: TableRow) {
   formData.name = String(params.name || '');
   formData.productCategory = (String(params.productCategory || activeTab.value)) as ProductCategory;
   formData.unit = String(params.unit || '');
@@ -741,7 +742,7 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-divider content-position="left">扩展信息</el-divider>
         <DynamicEntityForm
           :fields="visibleExtendedFields"
-          :model-value="formData as Record<string, unknown>"
+          :model-value="formData as TableRow"
           @update:model-value="Object.assign(formData, $event)"
           :columns="2"
           label-width="120px"

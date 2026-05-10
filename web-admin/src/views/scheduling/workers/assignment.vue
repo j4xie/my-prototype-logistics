@@ -28,6 +28,7 @@ import {
   Check,
   Close
 } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -36,7 +37,7 @@ const loading = ref(false);
 const plans = ref<SchedulingPlan[]>([]);
 const selectedPlanId = ref<string | null>(null);
 const selectedPlan = ref<SchedulingPlan | null>(null);
-const availableWorkers = ref<Record<string, unknown>[]>([]);
+const availableWorkers = ref<TableRow[]>([]);
 
 // 分配对话框
 const assignDialogVisible = ref(false);

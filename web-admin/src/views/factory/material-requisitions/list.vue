@@ -18,6 +18,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, View } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -26,7 +27,7 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
 const submitting = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref<string>('');
 
@@ -44,7 +45,7 @@ const createDialogVisible = ref(false);
 const createForm = ref({ productionPlanId: '' });
 
 const detailDialogVisible = ref(false);
-const detailData = ref<Record<string, unknown> | null>(null);
+const detailData = ref<TableRow | null>(null);
 
 onMounted(() => { loadData(); });
 
@@ -52,7 +53,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = {
+    const params: TableRow = {
       page: pagination.value.page - 1,
       size: pagination.value.size,
     };
@@ -99,7 +100,7 @@ async function handleCreate() {
   }
 }
 
-async function openDetail(row: Record<string, unknown>) {
+async function openDetail(row: TableRow) {
   try {
     const res = await get(`/${factoryId.value}/material-requisitions/${row.id}`);
     if (res.success) {
@@ -112,7 +113,7 @@ async function openDetail(row: Record<string, unknown>) {
   }
 }
 
-async function handleAction(row: Record<string, unknown>, action: string, confirmMsg: string, successMsg: string) {
+async function handleAction(row: TableRow, action: string, confirmMsg: string, successMsg: string) {
   if (submitting.value) return;
   try {
     await ElMessageBox.confirm(confirmMsg, '确认', { type: 'warning' });
@@ -128,16 +129,16 @@ async function handleAction(row: Record<string, unknown>, action: string, confir
   finally { submitting.value = false; }
 }
 
-const handleStartPicking = (row: Record<string, unknown>) =>
+const handleStartPicking = (row: TableRow) =>
   handleAction(row, 'start-picking', `开始备料 ${row.requisitionNo}?`, '已进入备料状态');
-const handleTransfer = (row: Record<string, unknown>) =>
+const handleTransfer = (row: TableRow) =>
   handleAction(row, 'transfer', `将 ${row.requisitionNo} 从物流仓调拨到工厂?`, '已调拨');
-const handleReceive = (row: Record<string, unknown>) =>
+const handleReceive = (row: TableRow) =>
   handleAction(row, 'receive', `工厂签收 ${row.requisitionNo}?`, '已签收');
-const handleClose = (row: Record<string, unknown>) =>
+const handleClose = (row: TableRow) =>
   handleAction(row, 'close', `关单 ${row.requisitionNo}? 退料将按 issued - consumed 自动计算`, '已关单');
 
-async function handleCancel(row: Record<string, unknown>) {
+async function handleCancel(row: TableRow) {
   if (submitting.value) return;
   try {
     const { value: reason } = await ElMessageBox.prompt('填写取消原因', '取消物料需求单', {
@@ -276,7 +277,7 @@ async function handleCancel(row: Record<string, unknown>) {
         </el-descriptions>
 
         <h4 style="margin: 16px 0 8px">物料明细 (BOM 展开)</h4>
-        <el-table :data="(detailData.items as Record<string, unknown>[]) || []" border size="small" max-height="360">
+        <el-table :data="(detailData.items as TableRow[]) || []" border size="small" max-height="360">
           <el-table-column prop="materialName" label="物料" min-width="140" show-overflow-tooltip />
           <el-table-column prop="materialCategory" label="类别" width="90" align="center">
             <template #default="{ row }">

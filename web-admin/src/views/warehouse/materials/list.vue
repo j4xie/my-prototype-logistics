@@ -10,6 +10,7 @@ import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguatio
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { FormInstance } from 'element-plus';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -18,12 +19,12 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
-const materialTypes = ref<Record<string, unknown>[]>([]);
-const suppliers = ref<Record<string, unknown>[]>([]);
+const materialTypes = ref<TableRow[]>([]);
+const suppliers = ref<TableRow[]>([]);
 
 onMounted(() => {
   loadData();
@@ -118,9 +119,9 @@ function getStatusText(status: string) {
 
 // ==================== View Dialog ====================
 const viewDialogVisible = ref(false);
-const viewRecord = ref<Record<string, unknown> | null>(null);
+const viewRecord = ref<TableRow | null>(null);
 
-function handleView(row: Record<string, unknown>) {
+function handleView(row: TableRow) {
   viewRecord.value = row;
   viewDialogVisible.value = true;
 }
@@ -162,7 +163,7 @@ let w02HintShown = false;
 function autoCalcWeightAndValue() {
   const qty = formData.receiptQuantity;
   if (!formData.materialTypeId || qty == null || qty <= 0) return;
-  const mat = materialTypes.value.find((m: Record<string, unknown>) => m.id === formData.materialTypeId) as Record<string, unknown> | undefined;
+  const mat = materialTypes.value.find((m: TableRow) => m.id === formData.materialTypeId) as TableRow | undefined;
   if (!mat) return;
   // totalWeight = quantity (unit is typically kg; use quantity directly as weight)
   formData.totalWeight = Number((qty).toFixed(3));
@@ -189,7 +190,7 @@ function handleCreate() {
   formDialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   editingId.value = String(row.id || '');
   formDialogTitle.value = '编辑批次';
   w02HintShown = false;

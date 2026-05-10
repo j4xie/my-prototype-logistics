@@ -6,6 +6,7 @@ import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue';
 import { formatDateTime } from '@/utils/dateFormat';
+import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -14,8 +15,8 @@ const factoryId = computed(() => authStore.factoryId);
 const batchId = computed(() => route.params.id as string);
 
 const loading = ref(false);
-const batch = ref<Record<string, unknown> | null>(null);
-const timeline = ref<Record<string, unknown>[]>([]);
+const batch = ref<TableRow | null>(null);
+const timeline = ref<TableRow[]>([]);
 
 onMounted(() => {
   loadData();

@@ -10,6 +10,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete as DeleteIcon, Refresh } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -17,7 +18,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 
 onMounted(loadData);
 
@@ -53,7 +54,7 @@ function openCreate() {
   dialogVisible.value = true;
 }
 
-function openEdit(row: Record<string, unknown>) {
+function openEdit(row: TableRow) {
   editingId.value = String(row.id || '');
   form.value = {
     plateNumber: String(row.plateNumber || ''),
@@ -84,7 +85,7 @@ async function handleSave() {
   finally { submitting.value = false; }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(`确定删除车辆「${row.plateNumber}」?`, '删除确认', { type: 'warning' });
     const res = await del(`/${factoryId.value}/vehicles/${row.id}`);

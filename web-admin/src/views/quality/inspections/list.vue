@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -15,7 +16,7 @@ const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
 const submitting = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 const filterResult = ref('');
@@ -29,11 +30,11 @@ const dialogForm = ref({
   failCount: null as number | null,
   result: '' as string,
   notes: '',
-  customFields: {} as Record<string, unknown>,
+  customFields: {} as TableRow,
 });
 
 // 生产批次列表（用于下拉选择）
-const productionBatches = ref<Record<string, unknown>[]>([]);
+const productionBatches = ref<TableRow[]>([]);
 
 async function loadProductionBatches() {
   if (!factoryId.value) return;
@@ -47,7 +48,7 @@ async function loadProductionBatches() {
 
 // 详情抽屉
 const detailVisible = ref(false);
-const detailData = ref<Record<string, unknown> | null>(null);
+const detailData = ref<TableRow | null>(null);
 
 function isPassResult(result: unknown): boolean {
   return result === 'PASS' || result === 'PASSED';
@@ -116,7 +117,7 @@ function handleSizeChange(size: number) {
 }
 
 function handleCreate() {
-  dialogForm.value = { batchId: '', sampleSize: null, passCount: null, failCount: null, result: '', notes: '', customFields: {} as Record<string, unknown> };
+  dialogForm.value = { batchId: '', sampleSize: null, passCount: null, failCount: null, result: '', notes: '', customFields: {} as TableRow };
   dialogVisible.value = true;
   loadProductionBatches();
 }
@@ -136,7 +137,7 @@ async function submitCreateForm() {
   }
   submitting.value = true;
   try {
-    const body: Record<string, unknown> = {
+    const body: TableRow = {
       sampleSize: dialogForm.value.sampleSize,
       passCount: dialogForm.value.passCount,
       failCount: dialogForm.value.failCount,
@@ -169,7 +170,7 @@ async function submitCreateForm() {
   }
 }
 
-function showDetail(row: Record<string, unknown>) {
+function showDetail(row: TableRow) {
   detailData.value = row;
   detailVisible.value = true;
 }

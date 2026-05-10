@@ -4,6 +4,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useAuthStore } from '@/store/modules/auth';
 import { get, put } from '@/api/request';
 import { ElMessage } from 'element-plus';
+import type { TableRow } from '@/types/api';
 
 const permissionStore = usePermissionStore();
 const authStore = useAuthStore();
@@ -28,13 +29,13 @@ const allPermissionModules = [
 
 // View permissions dialog
 const viewDialogVisible = ref(false);
-const viewingRole = ref<Record<string, unknown> | null>(null);
-const rolePermissions = ref<Record<string, unknown>[]>([]);
+const viewingRole = ref<TableRow | null>(null);
+const rolePermissions = ref<TableRow[]>([]);
 const permissionsLoading = ref(false);
 
 // Edit dialog
 const editDialogVisible = ref(false);
-const editingRole = ref<Record<string, unknown> | null>(null);
+const editingRole = ref<TableRow | null>(null);
 const editForm = reactive({
   displayName: '',
   description: '',
@@ -42,7 +43,7 @@ const editForm = reactive({
 });
 const editSubmitting = ref(false);
 
-async function handleViewPermissions(row: Record<string, unknown>) {
+async function handleViewPermissions(row: TableRow) {
   viewingRole.value = row;
   viewDialogVisible.value = true;
   permissionsLoading.value = true;
@@ -62,7 +63,7 @@ async function handleViewPermissions(row: Record<string, unknown>) {
   }
 }
 
-function derivePermissions(role: Record<string, unknown>) {
+function derivePermissions(role: TableRow) {
   // Sensible defaults based on level
   return allPermissionModules.map(m => {
     let access = '-';
@@ -83,7 +84,7 @@ function getAccessTag(access: string) {
   return map[access] || map['-'];
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   editingRole.value = row;
   editForm.displayName = row.displayName;
   editForm.description = row.description;

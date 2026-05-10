@@ -12,6 +12,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete as DeleteIcon, Search, Refresh } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -19,7 +20,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchKeyword = ref('');
 
@@ -77,7 +78,7 @@ function openCreate() {
   dialogVisible.value = true;
 }
 
-function openEdit(row: Record<string, unknown>) {
+function openEdit(row: TableRow) {
   editingId.value = String(row.id || '');
   form.value = {
     code: String(row.code || ''),
@@ -113,7 +114,7 @@ async function handleSave() {
   finally { submitting.value = false; }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(
       `确定删除工种「${row.name}」? 已分配此工种的员工的历史记录仍保留, 但无法新分配.`,
@@ -128,7 +129,7 @@ async function handleDelete(row: Record<string, unknown>) {
   } catch { /* user cancelled */ }
 }
 
-async function handleToggleStatus(row: Record<string, unknown>) {
+async function handleToggleStatus(row: TableRow) {
   try {
     const res = await put(`/${factoryId.value}/work-types/${row.id}/toggle-status`, {});
     if (res.success) {

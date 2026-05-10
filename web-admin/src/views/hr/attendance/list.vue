@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh, Download } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 // 默认查询最近30天
 const getDefaultDateRange = (): [Date, Date] => {
@@ -151,7 +152,7 @@ function handleExport() {
     return;
   }
   const headers = ['员工姓名', '工号', '部门', '日期', '上班打卡', '下班打卡', '工时(h)', '状态', '备注'];
-  const rows = tableData.value.map((row: Record<string, unknown>) => [
+  const rows = tableData.value.map((row: TableRow) => [
     getEmployeeName(row),
     getEmployeeNumber(row),
     getDepartmentName(row),
@@ -224,17 +225,17 @@ function formatWorkHours(minutes: number | null) {
 }
 
 // 获取员工姓名 (从 user 对象中提取)
-function getEmployeeName(row: Record<string, unknown>) {
+function getEmployeeName(row: TableRow) {
   return row.user?.fullName || row.username || '-';
 }
 
 // 获取工号 (使用 username)
-function getEmployeeNumber(row: Record<string, unknown>) {
+function getEmployeeNumber(row: TableRow) {
   return row.username || '-';
 }
 
 // 获取部门名称
-function getDepartmentName(row: Record<string, unknown>) {
+function getDepartmentName(row: TableRow) {
   const dept = row.user?.department;
   if (!dept) return '-';
   // 部门名称映射
@@ -259,15 +260,15 @@ function formatDateDisplay(date: string | null) {
 }
 
 // 获取考勤状态 (优先使用 attendanceStatus，否则用 status)
-function getAttendanceStatus(row: Record<string, unknown>) {
+function getAttendanceStatus(row: TableRow) {
   return row.attendanceStatus || row.status || '-';
 }
 
 // 考勤详情弹窗
 const detailVisible = ref(false);
-const detailRow = ref<Record<string, unknown>>({});
+const detailRow = ref<TableRow>({});
 
-function handleDetail(row: Record<string, unknown>) {
+function handleDetail(row: TableRow) {
   detailRow.value = row;
   detailVisible.value = true;
 }

@@ -17,6 +17,7 @@ import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -25,7 +26,7 @@ const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
 const submitting = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref<string>('');
 
@@ -73,7 +74,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = {
+    const params: TableRow = {
       page: pagination.value.page,
       size: pagination.value.size,
     };
@@ -145,7 +146,7 @@ async function handleCreate() {
 // ──────────────────────────────────────────────
 // 录价 (PENDING_QUOTE → PENDING_APPROVAL)
 // ──────────────────────────────────────────────
-function openSubmitPriceDialog(row: Record<string, unknown>) {
+function openSubmitPriceDialog(row: TableRow) {
   submitPriceForm.value = {
     id: String(row.id),
     quoteNo: String(row.quoteNo),
@@ -188,7 +189,7 @@ async function handleSubmitPrice() {
 // ──────────────────────────────────────────────
 // 审批 / 驳回 / 修订
 // ──────────────────────────────────────────────
-async function handleApprove(row: Record<string, unknown>) {
+async function handleApprove(row: TableRow) {
   if (submitting.value) return;
   try {
     const { value: comment } = await ElMessageBox.prompt(
@@ -211,7 +212,7 @@ async function handleApprove(row: Record<string, unknown>) {
   finally { submitting.value = false; }
 }
 
-async function handleReject(row: Record<string, unknown>) {
+async function handleReject(row: TableRow) {
   if (submitting.value) return;
   try {
     const { value: reason } = await ElMessageBox.prompt('请填写驳回原因', '主管驳回', {
@@ -234,7 +235,7 @@ async function handleReject(row: Record<string, unknown>) {
   finally { submitting.value = false; }
 }
 
-async function handleRevise(row: Record<string, unknown>) {
+async function handleRevise(row: TableRow) {
   if (submitting.value) return;
   try {
     const { value: reason } = await ElMessageBox.prompt(

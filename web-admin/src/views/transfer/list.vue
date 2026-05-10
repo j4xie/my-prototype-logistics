@@ -9,6 +9,7 @@ import { ElMessage } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -18,7 +19,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 
 const statusMap: Record<string, { text: string; type: string }> = {
@@ -220,7 +221,7 @@ function goDetail(id: string) { router.push(`/transfer/${id}`); }
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 
-function isOutbound(row: Record<string, unknown>) { return row.sourceFactoryId === factoryId.value; }
+function isOutbound(row: TableRow) { return row.sourceFactoryId === factoryId.value; }
 </script>
 
 <template>

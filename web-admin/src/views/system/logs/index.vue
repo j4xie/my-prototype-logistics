@@ -3,12 +3,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 
 onMounted(() => loadData());

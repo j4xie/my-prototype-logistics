@@ -21,6 +21,7 @@ import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete as DeleteIcon, Search, Refresh, Lock } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -28,7 +29,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchKeyword = ref('');
 
@@ -90,7 +91,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const res = await get<{ content: Record<string, unknown>[]; totalElements: number }>(
+    const res = await get<{ content: TableRow[]; totalElements: number }>(
       `/${factoryId.value}/raw-material-types`,
       {
         params: {
@@ -147,7 +148,7 @@ function openCreate() {
   dialogVisible.value = true;
 }
 
-async function openEdit(row: Record<string, unknown>) {
+async function openEdit(row: TableRow) {
   editingId.value = String(row.id || '');
   form.value = {
     code: String(row.code || ''),
@@ -256,7 +257,7 @@ async function handleSave() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(
       `确定删除原料类型「${row.name}」? 该原料关联的批次仍保留, 但无法新建新批次.`,

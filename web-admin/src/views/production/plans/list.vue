@@ -18,6 +18,7 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -27,7 +28,7 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
 const actionLoading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -50,12 +51,12 @@ const planForm = ref({
   sourceType: 'MANUAL' as 'MANUAL' | 'CUSTOMER_ORDER' | 'AI_FORECAST',
   sourceOrderId: '' as string | undefined,
   sourceOrderItemId: '' as string | undefined,
-  customFields: {} as Record<string, unknown>,
+  customFields: {} as TableRow,
 });
-const productTypes = ref<Record<string, unknown>[]>([]);
+const productTypes = ref<TableRow[]>([]);
 const bomProcesses = ref<string[]>([]);
-const customers = ref<Record<string, unknown>[]>([]);
-const selectableSalesOrders = ref<Record<string, unknown>[]>([]);
+const customers = ref<TableRow[]>([]);
+const selectableSalesOrders = ref<TableRow[]>([]);
 const salesOrdersLoading = ref(false);
 
 async function loadSelectableSalesOrders() {
@@ -85,11 +86,11 @@ function handleSourceTypeChange(val: string) {
 }
 
 // P0-12: 当前选中订单的可选产品行
-const selectedOrderItems = computed<Record<string, unknown>[]>(() => {
+const selectedOrderItems = computed<TableRow[]>(() => {
   const oid = planForm.value.sourceOrderId;
   if (!oid) return [];
   const so = selectableSalesOrders.value.find((o) => String(o.id) === String(oid));
-  return so && Array.isArray(so.items) ? (so.items as Record<string, unknown>[]) : [];
+  return so && Array.isArray(so.items) ? (so.items as TableRow[]) : [];
 });
 
 function handleSalesOrderSelect(orderId: string) {
@@ -117,7 +118,7 @@ function handleSalesOrderItemSelect(itemId: string) {
 }
 
 // Import/Export & reference data
-const supervisors = ref<Record<string, unknown>[]>([]);
+const supervisors = ref<TableRow[]>([]);
 
 // AI Entry Drawer
 const aiEntryVisible = ref(false);
@@ -192,7 +193,7 @@ async function loadBomProcesses(productTypeId: string) {
     // Ref: docs/qa-audits/2026-05-10-customer-meeting-9bug-audit.md §B1
     const res = await get(`/${factoryId.value}/product-work-processes`, { params: { productTypeId } });
     if (res.success && res.data && Array.isArray(res.data)) {
-      const names = res.data.map((item: Record<string, unknown>) => String(item.processName || '')).filter(Boolean);
+      const names = res.data.map((item: TableRow) => String(item.processName || '')).filter(Boolean);
       bomProcesses.value = [...new Set(names)];
     } else {
       bomProcesses.value = [];
@@ -204,13 +205,13 @@ async function loadBomProcesses(productTypeId: string) {
 
 function handleProductChange(productTypeId: string) {
   if (!productTypeId) return;
-  const product = productTypes.value.find((p: Record<string, unknown>) => p.id === productTypeId);
+  const product = productTypes.value.find((p: TableRow) => p.id === productTypeId);
   if (product) {
     // Auto-fill customer name from product's relatedCustomer or customerId
     if (product.relatedCustomer) {
       planForm.value.sourceCustomerName = String(product.relatedCustomer);
     } else if (product.customerId) {
-      const customer = customers.value.find((c: Record<string, unknown>) => c.id === product.customerId);
+      const customer = customers.value.find((c: TableRow) => c.id === product.customerId);
       if (customer) {
         planForm.value.sourceCustomerName = String(customer.name || customer.companyName || '');
       }
@@ -256,7 +257,7 @@ function handleCreate() {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
-    customFields: {} as Record<string, unknown>,
+    customFields: {} as TableRow,
   };
   dialogVisible.value = true;
 }
@@ -290,7 +291,7 @@ async function submitPlan() {
   }
 }
 
-async function handleStart(row: Record<string, unknown>) {
+async function handleStart(row: TableRow) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm('确定开始此生产计划?', '提示', { type: 'warning' });
@@ -311,7 +312,7 @@ async function handleStart(row: Record<string, unknown>) {
   }
 }
 
-async function handleComplete(row: Record<string, unknown>) {
+async function handleComplete(row: TableRow) {
   if (actionLoading.value) return;
   try {
     const { value } = await ElMessageBox.prompt('请输入实际产量', '完成生产', {
@@ -337,7 +338,7 @@ async function handleComplete(row: Record<string, unknown>) {
   }
 }
 
-async function handleCancel(row: Record<string, unknown>) {
+async function handleCancel(row: TableRow) {
   if (actionLoading.value) return;
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消计划', {
@@ -361,7 +362,7 @@ async function handleCancel(row: Record<string, unknown>) {
   }
 }
 
-async function handleCreateBatch(row: Record<string, unknown>) {
+async function handleCreateBatch(row: TableRow) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm(
@@ -387,7 +388,7 @@ async function handleCreateBatch(row: Record<string, unknown>) {
   }
 }
 
-async function handleGenerateTransfer(row: Record<string, unknown>) {
+async function handleGenerateTransfer(row: TableRow) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm(
@@ -453,9 +454,9 @@ function getStatusText(status: string) {
 
 // ==================== View Plan ====================
 const viewDialogVisible = ref(false);
-const viewPlan = ref<Record<string, unknown> | null>(null);
+const viewPlan = ref<TableRow | null>(null);
 
-function handleViewPlan(row: Record<string, unknown>) {
+function handleViewPlan(row: TableRow) {
   viewPlan.value = row;
   viewDialogVisible.value = true;
 }
@@ -467,7 +468,7 @@ async function loadReferenceData() {
   try {
     const supsRes = await getSupervisors(factoryId.value);
     if (supsRes?.data) {
-      supervisors.value = Array.isArray(supsRes.data) ? supsRes.data : (supsRes.data as Record<string, unknown>).content || [];
+      supervisors.value = Array.isArray(supsRes.data) ? supsRes.data : (supsRes.data as TableRow).content || [];
     } else if (supsRes && !supsRes.success) {
       ElMessage.error(supsRes.message || '加载主管数据失败');
     }
@@ -557,11 +558,11 @@ async function handleExport() {
 
 // ==================== AI Entry ====================
 
-function handleAiFill(params: Record<string, unknown>) {
+function handleAiFill(params: TableRow) {
   // Match productTypeName to productTypeId
   const name = String(params.productTypeName || '');
   const matched = productTypes.value.find(
-    (pt: Record<string, unknown>) => String(pt.name || '').includes(name) || name.includes(String(pt.name || ''))
+    (pt: TableRow) => String(pt.name || '').includes(name) || name.includes(String(pt.name || ''))
   );
 
   planForm.value = {
@@ -577,7 +578,7 @@ function handleAiFill(params: Record<string, unknown>) {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
-    customFields: {} as Record<string, unknown>,
+    customFields: {} as TableRow,
   };
   dialogVisible.value = true;
 }

@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -28,8 +29,8 @@ const departmentForm = ref({
   managerId: '',
   description: ''
 });
-const users = ref<Record<string, unknown>[]>([]);
-const parentDepartments = ref<Record<string, unknown>[]>([]);
+const users = ref<TableRow[]>([]);
+const parentDepartments = ref<TableRow[]>([]);
 
 onMounted(() => {
   loadData();
@@ -114,7 +115,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   isEdit.value = true;
   departmentForm.value = {
     id: row.id,
@@ -156,7 +157,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm('确定删除此部门? 请确保部门下没有员工。', '提示', { type: 'warning' });
     const response = await del(`/${factoryId.value}/departments/${row.id}`);

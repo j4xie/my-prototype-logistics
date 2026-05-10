@@ -8,6 +8,7 @@ import { Plus, Edit, Delete, Download, Refresh } from '@element-plus/icons-vue';
 import BomChangeLog from './BomChangeLog.vue'
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue'
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue'
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -18,8 +19,8 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 const loading = ref(false);
 const changeLogVisible = ref(false)
 const selectedProductTypeId = ref<string>('');
-const productTypes = ref<Record<string, unknown>[]>([]);
-const costSummary = ref<Record<string, unknown> | null>(null);
+const productTypes = ref<TableRow[]>([]);
+const costSummary = ref<TableRow | null>(null);
 
 // BOM Items (原辅料)
 interface BomItemRow {
@@ -121,7 +122,7 @@ const overheadForm = ref({
 });
 
 // Raw material types for dropdown
-const materialTypes = ref<Record<string, unknown>[]>([]);
+const materialTypes = ref<TableRow[]>([]);
 
 // Per-serving cost calculation
 const standardServingWeight = ref<number>(0.5); // kg per serving, user-adjustable
@@ -158,8 +159,8 @@ async function loadProductTypes() {
     const response = await get(`/${factoryId.value}/product-types/active`);
     if (response.success && response.data) {
       // Issue 7: Only show finished products in BOM dropdown
-      productTypes.value = (response.data as Record<string, unknown>[]).filter(
-        (p: Record<string, unknown>) => p.productCategory === 'FINISHED_PRODUCT' || p.category === '成品' || !p.productCategory
+      productTypes.value = (response.data as TableRow[]).filter(
+        (p: TableRow) => p.productCategory === 'FINISHED_PRODUCT' || p.category === '成品' || !p.productCategory
       );
       // Select first product if available
       if (productTypes.value.length > 0 && !selectedProductTypeId.value) {
@@ -234,7 +235,7 @@ function handleAddBomItem() {
   bomDialogVisible.value = true;
 }
 
-function handleEditBomItem(row: Record<string, unknown>) {
+function handleEditBomItem(row: TableRow) {
   isBomEdit.value = true;
   bomForm.value = {
     id: row.id,
@@ -281,7 +282,7 @@ async function submitBomForm() {
   }
 }
 
-async function handleDeleteBomItem(row: Record<string, unknown>) {
+async function handleDeleteBomItem(row: TableRow) {
   try {
     await ElMessageBox.confirm('Are you sure you want to delete this item?', 'Confirm', { type: 'warning' });
     const response = await del(`/${factoryId.value}/bom/items/${row.id}`);
@@ -344,7 +345,7 @@ function handleAddLaborCost() {
   laborDialogVisible.value = true;
 }
 
-function handleEditLaborCost(row: Record<string, unknown>) {
+function handleEditLaborCost(row: TableRow) {
   isLaborEdit.value = true;
   laborForm.value = {
     id: row.id,
@@ -388,7 +389,7 @@ async function submitLaborForm() {
   }
 }
 
-async function handleDeleteLaborCost(row: Record<string, unknown>) {
+async function handleDeleteLaborCost(row: TableRow) {
   try {
     await ElMessageBox.confirm('Are you sure you want to delete this item?', 'Confirm', { type: 'warning' });
     const response = await del(`/${factoryId.value}/bom/labor/${row.id}`);
@@ -435,7 +436,7 @@ function handleAddOverheadCost() {
   overheadDialogVisible.value = true;
 }
 
-function handleEditOverheadCost(row: Record<string, unknown>) {
+function handleEditOverheadCost(row: TableRow) {
   isOverheadEdit.value = true;
   overheadForm.value = {
     id: row.id,
@@ -478,7 +479,7 @@ async function submitOverheadForm() {
   }
 }
 
-async function handleDeleteOverheadCost(row: Record<string, unknown>) {
+async function handleDeleteOverheadCost(row: TableRow) {
   try {
     await ElMessageBox.confirm('Are you sure you want to delete this item?', 'Confirm', { type: 'warning' });
     const response = await del(`/${factoryId.value}/bom/overhead/${row.id}`);
@@ -538,8 +539,8 @@ const totalCost = computed(() => {
 
 // Issue 12: Group BOM items by material category
 const groupedBomItems = computed(() => {
-  const groups: { category: string; items: Record<string, unknown>[] }[] = [];
-  const categoryMap = new Map<string, Record<string, unknown>[]>();
+  const groups: { category: string; items: TableRow[] }[] = [];
+  const categoryMap = new Map<string, TableRow[]>();
   const categoryOrder = ['原材料', '辅料', '包材', '调味料', '其他'];
 
   for (const item of bomItems.value) {
@@ -568,16 +569,16 @@ const hasMultipleCategories = computed(() => groupedBomItems.value.length > 1);
 
 // P0-14: Tab filtering by materialCategory (RAW/AUXILIARY/PACKAGING)
 const activeCategoryTab = ref<'RAW' | 'AUXILIARY' | 'PACKAGING'>('RAW');
-function matchCategory(row: Record<string, unknown>, code: 'RAW' | 'AUXILIARY' | 'PACKAGING') {
+function matchCategory(row: TableRow, code: 'RAW' | 'AUXILIARY' | 'PACKAGING') {
   const c = String(row.materialCategory || row.category || '').toUpperCase();
   if (code === 'RAW') return c === 'RAW' || c === '原材料' || c === '' || c === '其他';
   if (code === 'AUXILIARY') return c === 'AUXILIARY' || c === '辅料' || c === '调味料';
   if (code === 'PACKAGING') return c === 'PACKAGING' || c === '包材';
   return false;
 }
-const rawItems = computed(() => bomItems.value.filter((i: Record<string, unknown>) => matchCategory(i, 'RAW')));
-const auxiliaryItems = computed(() => bomItems.value.filter((i: Record<string, unknown>) => matchCategory(i, 'AUXILIARY')));
-const packagingItems = computed(() => bomItems.value.filter((i: Record<string, unknown>) => matchCategory(i, 'PACKAGING')));
+const rawItems = computed(() => bomItems.value.filter((i: TableRow) => matchCategory(i, 'RAW')));
+const auxiliaryItems = computed(() => bomItems.value.filter((i: TableRow) => matchCategory(i, 'AUXILIARY')));
+const packagingItems = computed(() => bomItems.value.filter((i: TableRow) => matchCategory(i, 'PACKAGING')));
 const currentTabItems = computed(() => {
   if (activeCategoryTab.value === 'RAW') return rawItems.value;
   if (activeCategoryTab.value === 'AUXILIARY') return auxiliaryItems.value;
@@ -597,7 +598,7 @@ function exportToExcel(type: string) {
   if (type === 'material') {
     if (bomItems.value.length === 0) { ElMessage.warning('暂无BOM数据可导出'); return; }
     headers = ['物料名称', '物料编号', '数量', '单位', '单价(元)', '小计(元)', '备注'];
-    rows = bomItems.value.map((item: Record<string, unknown>) => [
+    rows = bomItems.value.map((item: TableRow) => [
       item.materialName || '', item.materialCode || '', String(item.quantity ?? ''),
       item.unit || '', String(item.unitPrice ?? ''),
       String(((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)), item.notes || ''
@@ -605,14 +606,14 @@ function exportToExcel(type: string) {
   } else if (type === 'labor') {
     if (laborCosts.value.length === 0) { ElMessage.warning('暂无人工成本数据'); return; }
     headers = ['工序名称', '工时(分钟)', '单价(元/时)', '费用(元)'];
-    rows = laborCosts.value.map((item: Record<string, unknown>) => [
+    rows = laborCosts.value.map((item: TableRow) => [
       item.processName || '', String(item.duration ?? ''), String(item.unitPrice ?? ''),
       String(((item.duration || 0) / 60 * (item.unitPrice || 0)).toFixed(2))
     ]);
   } else {
     if (overheadCosts.value.length === 0) { ElMessage.warning('暂无制造费用数据'); return; }
     headers = ['费用名称', '金额(元)', '分摊率', '分摊金额(元)'];
-    rows = overheadCosts.value.map((item: Record<string, unknown>) => [
+    rows = overheadCosts.value.map((item: TableRow) => [
       item.name || '', String(item.unitPrice ?? ''), String(item.allocationRate ?? 1),
       String(((item.unitPrice || 0) * (item.allocationRate || 1)).toFixed(2))
     ]);
@@ -742,7 +743,7 @@ function refreshData() {
           <el-tab-pane name="PACKAGING" :label="`包材 (${packagingItems.length})`" />
         </el-tabs>
         <el-table empty-text="暂无数据" :data="currentTabItems" v-loading="loading" stripe border size="small" style="width: 100%"
-          :row-class-name="({ row }: { row: Record<string, unknown> }) => row._isCategoryHeader ? 'category-header-row' : ''">
+          :row-class-name="({ row }: { row: TableRow }) => row._isCategoryHeader ? 'category-header-row' : ''">
           <!-- Issue 12: Show material category column -->
           <el-table-column prop="materialCategory" label="类型" width="70" align="center">
             <template #default="{ row }">

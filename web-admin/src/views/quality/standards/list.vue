@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Check, Close } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchForm = ref({
   category: '',
@@ -158,7 +159,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   editingId.value = row.id;
   dialogTitle.value = '编辑质检标准';
   itemForm.value = {
@@ -209,7 +210,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(`确定要删除质检项「${row.itemName}」吗？`, '删除确认', { type: 'warning' });
   } catch { return; }
@@ -229,7 +230,7 @@ async function handleDelete(row: Record<string, unknown>) {
   }
 }
 
-async function handleToggleEnabled(row: Record<string, unknown>) {
+async function handleToggleEnabled(row: TableRow) {
   const newEnabled = !row.enabled;
   const action = newEnabled ? 'enable' : 'disable';
   try {
@@ -287,7 +288,7 @@ function getSeverityText(severity: string) {
   return map[severity] || severity || '-';
 }
 
-function formatStandard(row: Record<string, unknown>) {
+function formatStandard(row: TableRow) {
   if (row.minValue !== null && row.maxValue !== null) {
     return `${row.minValue} - ${row.maxValue} ${row.unit || ''}`;
   }
