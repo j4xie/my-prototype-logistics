@@ -278,3 +278,74 @@ def test_quota_exhausted_detection():
     assert not is_q(500, "FreeTierOnly")
     assert not is_q(401, "AllocationQuota")
     assert not is_q(200, "FreeTierOnly")
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Test 9: DeepSeek monthly USD cap removes it from chain when over budget
+# ────────────────────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_deepseek_skipped_when_over_budget(monkeypatch):
+    """When MTD spend exceeds LLM_DEEPSEEK_MAX_USD_PER_MONTH, deepseek is
+    skipped exactly like a circuit-breaker open state — the chain still
+    succeeds via earlier providers, fails cleanly only if every other
+    provider also exhausts."""
+    from common import llm_budget
+
+    _patch_provider_keys(monkeypatch)
+    monkeypatch.setenv("LLM_DEEPSEEK_MAX_USD_PER_MONTH", "0.50")
+    llm_budget.reset_for_tests()
+    # Push MTD past cap and pin the cache so over_budget skips DB
+    import time
+    llm_budget._cached_cost_usd = 1.0
+    llm_budget._cached_at = time.time()
+
+    # Every free provider exhausts so we'd normally fall to deepseek.
+    client = _ScriptedClient({
+        "aliyun_b": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
+        "aliyun_a": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
+        "zhipu":    _fake_response(429),
+        # deepseek would respond 200 if asked, but budget gate prevents the call.
+        "deepseek": _fake_response(200, json_payload={"choices": [{"message": {"content": "x"}}]}),
+    })
+    monkeypatch.setattr(llm_router, "get_llm_http_client", lambda: client)
+
+    with pytest.raises(RuntimeError) as exc:
+        await call_chain(SLOT.CHAT, {"messages": []})
+
+    # deepseek should NOT have been called — gate skipped it
+    accounts_tried = [a for a, _ in client.call_log]
+    assert "deepseek" not in accounts_tried
+    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu"]
+    # Error message records the budget reason
+    assert "budget_exceeded" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_deepseek_used_when_under_budget(monkeypatch):
+    """Sanity: under-budget MTD doesn't accidentally skip deepseek."""
+    from common import llm_budget
+
+    _patch_provider_keys(monkeypatch)
+    monkeypatch.setenv("LLM_DEEPSEEK_MAX_USD_PER_MONTH", "10.00")
+    llm_budget.reset_for_tests()
+    import time
+    llm_budget._cached_cost_usd = 0.05  # well under $10 cap
+    llm_budget._cached_at = time.time()
+
+    deepseek_payload = {
+        "choices": [{"message": {"content": "ds"}}],
+        "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+    }
+    client = _ScriptedClient({
+        "aliyun_b": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
+        "aliyun_a": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
+        "zhipu":    _fake_response(429),
+        "deepseek": _fake_response(200, json_payload=deepseek_payload),
+    })
+    monkeypatch.setattr(llm_router, "get_llm_http_client", lambda: client)
+
+    result = await call_chain(SLOT.CHAT, {"messages": []})
+
+    assert result == deepseek_payload
+    accounts_tried = [a for a, _ in client.call_log]
+    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
