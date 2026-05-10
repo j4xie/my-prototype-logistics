@@ -18,6 +18,8 @@ import com.cretas.aims.service.StateMachineService.StateMachineConfig;
 import com.cretas.aims.service.StateMachineService.StateInfo;
 import com.cretas.aims.service.StateMachineService.TransitionDef;
 import com.cretas.aims.service.WorkProcessService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -80,6 +82,9 @@ class ProcessModeFlowTest {
 
     @Autowired(required = false)
     private StateMachineRepository stateMachineRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private static final String TEST_FACTORY_ID = "F001";
     private static final String TEST_FACTORY_ID_2 = "F002";
@@ -466,6 +471,10 @@ class ProcessModeFlowTest {
         String runId = UUID.randomUUID().toString();
         ProcessTaskDTO task = createTestProcessTask(TEST_FACTORY_ID, wp.getId(), new BigDecimal("100.00"), runId);
 
+        // Force initial INSERT to flush and detach so we read a fresh version (not first-level cache)
+        entityManager.flush();
+        entityManager.clear();
+
         // Verify version field exists on the entity
         ProcessTask entity = processTaskRepository.findById(task.getId()).orElseThrow();
         assertThat(entity.getVersion()).isNotNull();
@@ -473,6 +482,13 @@ class ProcessModeFlowTest {
 
         // Perform an update (status transition)
         transitionToInProgress(TEST_FACTORY_ID, task.getId());
+
+        // Force flush so Hibernate's @Version increment hits the DB, then clear so refetch
+        // bypasses the persistence context and returns a fresh row (otherwise the cached
+        // pre-update entity would be returned and version would appear unchanged inside
+        // a single @Transactional test method).
+        entityManager.flush();
+        entityManager.clear();
 
         // Verify version was incremented by Hibernate's @Version
         ProcessTask updatedEntity = processTaskRepository.findById(task.getId()).orElseThrow();
@@ -592,7 +608,10 @@ class ProcessModeFlowTest {
                 .build();
         stateMachineRepository.save(initialPublished);
 
-        // Step 2: Save a draft version
+        // Step 2: Save a draft version. Migration V20260312_07__statemachine_versioning.sql
+        // enforces UNIQUE(factory_id, entity_type, version), so draft must have a different
+        // version than the existing published row. Real flow: a draft is the candidate for
+        // the next version; publishDraft() then re-stamps it via findMaxVersion()+1.
         StateMachine draft = StateMachine.builder()
                 .id(UUID.randomUUID().toString())
                 .factoryId(TEST_FACTORY_ID)
@@ -602,7 +621,7 @@ class ProcessModeFlowTest {
                 .initialState("PENDING")
                 .statesJson("[{\"code\":\"PENDING\",\"name\":\"待开始\",\"isFinal\":false},{\"code\":\"IN_PROGRESS\",\"name\":\"进行中\",\"isFinal\":false},{\"code\":\"COMPLETED\",\"name\":\"已完成\",\"isFinal\":true}]")
                 .transitionsJson("[{\"from\":\"PENDING\",\"to\":\"IN_PROGRESS\",\"event\":\"start\"},{\"from\":\"IN_PROGRESS\",\"to\":\"COMPLETED\",\"event\":\"complete\"}]")
-                .version(1)
+                .version(2)
                 .publishStatus("draft")
                 .enabled(true)
                 .createdBy(TEST_APPROVER_ID)
