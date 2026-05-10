@@ -37,9 +37,40 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import httpx
 
+from common.llm_budget import deepseek_over_budget, record_local
 from common.llm_client import get_llm_http_client
 
 logger = logging.getLogger(__name__)
+
+
+def _log_cache_and_record_budget(slot_value: str, account: str, model: str, body: Dict[str, Any]) -> None:
+    """Parse usage from a successful response: log cache-hit ratio + record
+    DeepSeek MTD spend. Mirrors the streaming path's [cache] log line so
+    observability is uniform across both paths.
+
+    DeepSeek emits both `prompt_tokens_details.cached_tokens` and the legacy
+    `prompt_cache_hit_tokens`; DashScope emits the former only. Read both.
+    """
+    try:
+        usage = (body or {}).get("usage") or {}
+        prompt_total = int(usage.get("prompt_tokens") or 0)
+        completion = int(usage.get("completion_tokens") or 0)
+        details = usage.get("prompt_tokens_details") or {}
+        cached = int(
+            details.get("cached_tokens")
+            or usage.get("prompt_cache_hit_tokens")
+            or 0
+        )
+        if prompt_total > 0:
+            pct = 100 * cached // prompt_total if cached else 0
+            logger.info(
+                f"[cache] slot={slot_value} via {account}/{model}: "
+                f"prompt={prompt_total} cached={cached} ({pct}%) completion={completion}"
+            )
+        if account == "deepseek":
+            record_local(model, prompt_total, completion, cached)
+    except Exception as e:
+        logger.debug(f"[cache] parse failed (non-fatal): {e}")
 
 
 # ─── Per-account circuit breaker (J1 — Apr 24 2026) ───
@@ -282,6 +313,11 @@ async def call_chain(
             errors.append(f"{account}: cb_open")
             continue
 
+        # Monthly USD budget gate — defense-in-depth for paid deepseek slot
+        if account == "deepseek" and await deepseek_over_budget():
+            errors.append(f"{account}: budget_exceeded")
+            continue
+
         base_url, api_key = _provider_config(account)
         if not api_key:
             logger.debug(f"[llm_router] {account}: no API key, skip")
@@ -313,8 +349,10 @@ async def call_chain(
 
             if 200 <= resp.status_code < 300:
                 _cb_record_success(account)
+                body_json = resp.json()
+                _log_cache_and_record_budget(slot.value, account, model, body_json)
                 logger.info(f"[llm_router] slot={slot.value} OK via {account}/{model}")
-                return resp.json()
+                return body_json
 
             if _is_quota_exhausted(resp.status_code, body_text):
                 _cb_record_failure(account)
@@ -424,6 +462,11 @@ async def call_chain_stream(
             errors.append(f"{account}: cb_open")
             continue
 
+        # Monthly USD budget gate — defense-in-depth for paid deepseek slot
+        if account == "deepseek" and await deepseek_over_budget():
+            errors.append(f"{account}: budget_exceeded")
+            continue
+
         base_url, api_key = _provider_config(account)
         if not api_key:
             logger.debug(f"[llm_router_stream] {account}: no API key, skip")
@@ -510,13 +553,16 @@ async def call_chain_stream(
                             or usage.get("prompt_cache_hit_tokens")
                             or 0
                         )
+                        completion = int(usage.get("completion_tokens") or 0)
                         if prompt_total > 0:
                             pct = 100 * cached // prompt_total if cached else 0
                             logger.info(
                                 f"[cache] slot={slot.value} via {account}/{model}: "
                                 f"prompt={prompt_total} cached={cached} ({pct}%) "
-                                f"completion={int(usage.get('completion_tokens') or 0)}"
+                                f"completion={completion}"
                             )
+                        if account == "deepseek":
+                            record_local(model, prompt_total, completion, cached)
                         if total:
                             yield {"type": "usage", "tokens": total}
                 # Successful stream — record CB success and return
