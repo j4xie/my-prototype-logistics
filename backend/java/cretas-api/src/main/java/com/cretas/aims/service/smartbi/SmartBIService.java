@@ -101,18 +101,6 @@ public interface SmartBIService {
     // ==================== 缓存管理 ====================
 
     /**
-     * 使指定类型的缓存失效
-     *
-     * 当数据更新时调用，清除相关缓存：
-     * - 数据上传后清除对应分析类型的缓存
-     * - 配置变更后清除全部缓存
-     *
-     * @param factoryId    工厂ID
-     * @param analysisType 分析类型：DASHBOARD, SALES, DEPARTMENT, REGION, FINANCE, ALL
-     */
-    void invalidateCache(String factoryId, String analysisType);
-
-    /**
      * 从缓存获取数据
      *
      * @param factoryId 工厂ID
@@ -163,14 +151,6 @@ public interface SmartBIService {
      * @return 配额是否充足
      */
     boolean checkQuota(String factoryId);
-
-    /**
-     * 获取剩余配额
-     *
-     * @param factoryId 工厂ID
-     * @return 剩余配额数量，UNLIMITED 模式返回 Integer.MAX_VALUE
-     */
-    int getRemainingQuota(String factoryId);
 
     // ==================== AI 洞察生成 ====================
 
