@@ -24,8 +24,13 @@ import org.hibernate.annotations.Where;
            @Index(name = "idx_state_machines_entity", columnList = "factory_id, entity_type")
        },
        uniqueConstraints = {
-           @UniqueConstraint(name = "uk_state_machines",
-                            columnNames = {"factory_id", "entity_type"})
+           // V20260312_07__statemachine_versioning.sql dropped (factory_id, entity_type) and
+           // replaced with (factory_id, entity_type, version) so multiple versions can coexist
+           // (one published + N archived + ≤1 draft). The "only one published per pair" rule is
+           // enforced via a partial unique index `uk_sm_published WHERE publish_status='published'`,
+           // which JPA's @UniqueConstraint cannot express; production schema is governed by Flyway.
+           @UniqueConstraint(name = "uk_sm_factory_entity_version",
+                            columnNames = {"factory_id", "entity_type", "version"})
        })
 @Data
 @SuperBuilder
