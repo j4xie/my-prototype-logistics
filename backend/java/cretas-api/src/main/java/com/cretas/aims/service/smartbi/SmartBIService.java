@@ -58,26 +58,6 @@ public interface SmartBIService {
      */
     DashboardResponse getExecutiveDashboard(String factoryId, String period);
 
-    // ==================== 综合分析 ====================
-
-    /**
-     * 获取综合分析数据
-     *
-     * 根据分析类型返回相应的综合分析结果：
-     * - sales：销售综合分析（销售员、产品、客户维度）
-     * - department：部门综合分析（业绩、效率、人员）
-     * - region：区域综合分析（排名、趋势、机会评分）
-     * - finance：财务综合分析（利润、成本、应收）
-     *
-     * @param factoryId    工厂ID
-     * @param startDate    开始日期
-     * @param endDate      结束日期
-     * @param analysisType 分析类型：sales, department, region, finance
-     * @return 分析结果映射
-     */
-    Map<String, Object> getComprehensiveAnalysis(String factoryId, LocalDate startDate,
-                                                   LocalDate endDate, String analysisType);
-
     // ==================== 自然语言问答 ====================
 
     /**
