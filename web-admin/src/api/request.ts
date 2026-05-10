@@ -5,6 +5,7 @@
  */
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse, ApiError } from '@/types/api';
+import type { ApiData } from '@/types/api';
 
 // 动态导入 ElMessage，避免循环依赖
 // Apr 18 2026 UX 优化: error 类 toast 默认 3s 闪过对业务流程错误 (库存不足/并发冲突/
@@ -392,34 +393,46 @@ request.interceptors.response.use(
 export default request;
 
 // 便捷方法
-export const get = <T>(url: string, config?: object): Promise<ApiResponse<T>> => {
+//
+// Tier 1 vue-tsc cleanup (2026-05-09): default T = ApiData (alias for `any`) so
+// untyped calls don't poison call sites with `unknown`. Callers should still
+// supply explicit `<ResponseType>` for new code; default exists ONLY as the
+// historical baseline for ~800 legacy call sites that never typed their
+// responses. Continues PR #240 cleanup. See also PageData / ListData type
+// helpers in @/types/api for paginated responses.
+//
+// IMPORTANT: This is NOT a license to skip typing — new call sites should pass
+// explicit type parameters. The default exists to unblock vue-tsc CI rollout
+// without 800+ targeted edits in one PR.
+
+export const get = <T = ApiData>(url: string, config?: object): Promise<ApiResponse<T>> => {
   return request.get(url, config);
 };
 
-export const post = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
+export const post = <T = ApiData>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
   return request.post(url, data, config);
 };
 
-export const put = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
+export const put = <T = ApiData>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
   return request.put(url, data, config);
 };
 
-export const del = <T>(url: string, config?: object): Promise<ApiResponse<T>> => {
+export const del = <T = ApiData>(url: string, config?: object): Promise<ApiResponse<T>> => {
   return request.delete(url, config);
 };
 
 // Admin API 便捷方法 — 绕过 /api/mobile baseURL，直接使用绝对路径
 // 用于 /api/admin/* 等非 /api/mobile 前缀的后端接口
 const adminBaseURL = import.meta.env.VITE_API_BASE_URL ? '' : '';
-export const adminGet = <T>(url: string, config?: object): Promise<ApiResponse<T>> => {
+export const adminGet = <T = ApiData>(url: string, config?: object): Promise<ApiResponse<T>> => {
   return request.get(url, { ...config, baseURL: adminBaseURL });
 };
-export const adminPost = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
+export const adminPost = <T = ApiData>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
   return request.post(url, data, { ...config, baseURL: adminBaseURL });
 };
-export const adminPut = <T>(url: string, data?: object): Promise<ApiResponse<T>> => {
+export const adminPut = <T = ApiData>(url: string, data?: object): Promise<ApiResponse<T>> => {
   return request.put(url, data, { baseURL: adminBaseURL });
 };
-export const adminDel = <T>(url: string): Promise<ApiResponse<T>> => {
+export const adminDel = <T = ApiData>(url: string): Promise<ApiResponse<T>> => {
   return request.delete(url, { baseURL: adminBaseURL });
 };
