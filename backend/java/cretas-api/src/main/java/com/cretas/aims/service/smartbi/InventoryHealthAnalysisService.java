@@ -113,27 +113,6 @@ public interface InventoryHealthAnalysisService {
      */
     List<MetricResult> getTurnoverAnalysis(String factoryId, LocalDate startDate, LocalDate endDate);
 
-    /**
-     * 获取周转率趋势图表
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @param period    聚合周期: DAY, WEEK, MONTH
-     * @return 图表配置
-     */
-    ChartConfig getTurnoverTrendChart(String factoryId, LocalDate startDate, LocalDate endDate, String period);
-
-    /**
-     * 按材料类别获取周转分析排名
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 材料类别周转排名列表
-     */
-    List<RankingItem> getTurnoverByCategory(String factoryId, LocalDate startDate, LocalDate endDate);
-
     // ==================== 临期风险分析 ====================
 
     /**
@@ -196,26 +175,6 @@ public interface InventoryHealthAnalysisService {
      */
     List<MetricResult> getLossAnalysis(String factoryId, LocalDate startDate, LocalDate endDate);
 
-    /**
-     * 获取损耗原因分布图表
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 图表配置（饼图）
-     */
-    ChartConfig getLossReasonChart(String factoryId, LocalDate startDate, LocalDate endDate);
-
-    /**
-     * 获取损耗趋势图表
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 图表配置（折线图）
-     */
-    ChartConfig getLossTrendChart(String factoryId, LocalDate startDate, LocalDate endDate);
-
     // ==================== 库龄分析 ====================
 
     /**
@@ -266,14 +225,4 @@ public interface InventoryHealthAnalysisService {
      * @return 健康评分指标（0-100分）
      */
     MetricResult getHealthScore(String factoryId, LocalDate startDate, LocalDate endDate);
-
-    /**
-     * 获取库存健康雷达图
-     *
-     * @param factoryId 工厂ID
-     * @param startDate 开始日期
-     * @param endDate   结束日期
-     * @return 图表配置（雷达图）
-     */
-    ChartConfig getHealthRadarChart(String factoryId, LocalDate startDate, LocalDate endDate);
 }
