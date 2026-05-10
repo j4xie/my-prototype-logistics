@@ -40,9 +40,11 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
     @DisplayName("多修饰语组合测试")
     @CsvSource({
             // 同时包含多个修饰语的场景 - 测试修饰语优先级
-            // 2026-05-09: full-suite — "异常" + STATS keyword combination routes
-            // to ALERT_STATS (was ATTENDANCE_ANOMALY).
-            "统计一下本月异常考勤数据, ALERT_STATS",
+            // 2026-05-09 (issue #250 prod fix): "考勤" 在 ATTENDANCE 关键词中且
+            // ATTENDANCE 优先于 ALERT (LinkedHashMap insertion order),所以
+            // "异常考勤" 输入路由到 ATTENDANCE + ANOMALY modifier → ATTENDANCE_ANOMALY.
+            // 这是正确的 (PR #247 Type C 编辑已撤销)。
+            "统计一下本月异常考勤数据, ATTENDANCE_ANOMALY",
             "汇总这个月没来的人数, ATTENDANCE_ANOMALY",
             "统计最近缺勤的员工数量, ATTENDANCE_ANOMALY",
             // 2026-05-09 round 2: full-suite — MATERIAL wins over PROCESSING here.

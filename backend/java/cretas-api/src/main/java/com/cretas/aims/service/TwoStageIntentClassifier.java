@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -132,9 +133,29 @@ public class TwoStageIntentClassifier {
     // ==================== Domain Keywords ====================
 
     /**
-     * Domain keyword mappings (noun-first approach)
+     * Domain keyword mappings (noun-first approach).
+     *
+     * <p><b>LinkedHashMap (insertion order = priority)</b> — see issue #250.
+     * The previous {@code HashMap} implementation produced non-deterministic
+     * iteration order in {@link #classifyDomainWithKeyword}, causing flaky
+     * domain classification when an input matched keywords from multiple
+     * domains (e.g. "原料批次" matches both MATERIAL and PROCESSING).</p>
+     *
+     * <p>The static initializer below establishes the priority order:
+     * MATERIAL → SHIPMENT → ORDER → ATTENDANCE → EQUIPMENT → QUALITY →
+     * PROCESSING → ALERT → SUPPLIER → CUSTOMER → FOOD. ALERT is intentionally
+     * placed AFTER EQUIPMENT/ATTENDANCE so generic anomaly keywords ("故障",
+     * "异常") do not steal "设备故障" / "考勤异常" from their canonical domains.
+     * MATERIAL precedes PROCESSING so "原料批次" pins to MATERIAL (the noun
+     * "原料" is more specific than the noun "批次"). PROCESSING precedes ALERT
+     * for "车间设备故障" type inputs.</p>
+     *
+     * <p>FOOD is checked first via the explicit v15 hoist in
+     * {@link #classifyDomainWithKeyword} (line ~574) — its position in this
+     * map is irrelevant for runtime priority but kept consistent for
+     * documentation / config dumps.</p>
      */
-    private static final Map<ClassifiedDomain, List<String>> DOMAIN_KEYWORDS = new HashMap<>();
+    private static final Map<ClassifiedDomain, List<String>> DOMAIN_KEYWORDS = new LinkedHashMap<>();
 
     static {
         // v10.0: 扩充 Material 领域关键词覆盖
