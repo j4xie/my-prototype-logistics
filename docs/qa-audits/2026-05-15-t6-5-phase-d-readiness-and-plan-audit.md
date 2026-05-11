@@ -143,14 +143,21 @@ The Sub-P marching order presented 4 options:
 | C | Phase D = **post-cutover 30-day soak + final close-out audit + rollback contingency expire** | LOW-MEDIUM — execution of spec §D.1-§D.4 + close-out doc | LOW | ✅ Matches spec §2.4 + §3.1 rollback table; preserves option to revert during contingency window |
 | D | Phase D = **Java SmartBI build profile isolated** (compile but exclude from prod jar) | MEDIUM — Maven profile + CI changes | MEDIUM (build pipeline complexity, marginal benefit since Phase C already removed bodies) | ❌ Solves a problem Phase C already solved — dead bodies removed, remaining code is alive |
 
-### §4.1 Recommendation: Option C
+### §4.1 Recommendation: Option C — compressed via active-E2E shortcut (Steve sign-off 2026-05-12)
 
 **Phase D scope (recommendation, mirrors spec §2.4 + adds close-out)**:
 
-1. **30-day rollback contingency window** post-Phase-C-prod-deploy (matches spec §3.1: "Phase C is irreversible after 30 days post-deploy"). During this window:
-   - Daily journalctl `cretas-backend.service` startup log inspection (Sub-P delivers automation script in execution plan §7.1).
-   - Weekly Blue-Green deploy rehearsal (verify `aims-0.0.1-SNAPSHOT.jar` rollback to pre-Phase-C JAR works in test env).
-   - On-call escalation path for any 5xx spike on `/api/mobile/*/smart-bi/*` paths.
+**⚡ 2026-05-12 AMENDMENT — Steve verbal sign-off compresses 30-day → ~1-day via active-E2E HARD rule.**
+
+Per HARD rule `feedback_active_e2e_replaces_passive_soak.md` + Day 0 296/296 PASS baseline (PR #302 chat4 2026-05-11) + Day 1 reprobe sustained verification (task #38 chat3 trigger 2026-05-12 18:00 CST):
+
+- **Original**: 30-day passive soak post-Phase-C-prod-deploy
+- **Amended (Steve sign-off)**: **~1-day active-E2E shortcut** — Day 0 baseline + Day 1 sustained reprobe + 4 new bug-fix-specific probe paths (per reviewer audit IF-5) = sufficient active verification to compress 30d → 1d. Rollback contingency window REMAINS 30 days (no compression on rollback safety, only on positive-verification gate).
+
+1. **~1-day active-E2E verification** post-Phase-C-prod-deploy (compressed from 30-day passive soak):
+   - **Day 0 baseline**: chat4 PR #302 296/296 PASS (74 factories × 4 endpoints, 100% HTTP 200, 0 regression). Already shipped 2026-05-11.
+   - **Day 1 reprobe** (chat3 task #38, 2026-05-12 18:00 CST): 75 × 8 = 600 calls (4 baseline + 4 bug-fix-specific paths covering D1/A3/B1/B2/D5/E2E). Sustained → compression GO.
+   - **30-day rollback contingency window** stays open (active-E2E shortcut only compresses positive-verification gate, not safety net): daily journalctl `cretas-backend.service` startup log inspection (Sub-P delivers automation script in execution plan §7.1), weekly Blue-Green deploy rehearsal, on-call escalation path for any 5xx spike on `/api/mobile/*/smart-bi/*` paths.
 
 2. **Schema-level audit** (spec §D.1) — quarterly `pg_stat_user_tables` snapshot showing recent_writes by writer process. Expect: Python = canonical writer; Java = readers only (modulo §6 KEEP'd `@Modifying` writes from Upload/Config controllers).
 
