@@ -74,6 +74,8 @@ def run_single(
     python_fixture: Optional[Any] = None,
     java_token: Optional[str] = None,
     timeout: int = 20,
+    tolerate_all: bool = False,
+    tolerate_patterns: Optional[set] = None,
 ) -> Dict[str, Any]:
     """Fetch one endpoint pair, run dict_eq_match, return assembled entry.
 
@@ -128,6 +130,12 @@ def run_single(
     de: Optional[Dict[str, Any]] = None
     if java_r["data"] is not None and python_r["data"] is not None:
         de = dict_eq.dict_eq_match(java_r["data"], python_r["data"])
+        if tolerate_all or tolerate_patterns:
+            de = dict_eq.apply_tolerance(
+                de,
+                tolerate_all=tolerate_all,
+                tolerate_patterns=tolerate_patterns,
+            )
 
     return {
         "endpoint": path,
@@ -145,6 +153,8 @@ def run_batch(
     python_base: Optional[str],
     java_token: Optional[str] = None,
     timeout: int = 20,
+    tolerate_all: bool = False,
+    tolerate_patterns: Optional[set] = None,
 ) -> Dict[str, Any]:
     """Run parity gate over multiple endpoints, build aggregate report."""
     if java_token is None and java_base:
@@ -161,6 +171,8 @@ def run_batch(
             python_base=python_base,
             java_token=java_token,
             timeout=timeout,
+            tolerate_all=tolerate_all,
+            tolerate_patterns=tolerate_patterns,
         )
         results.append(entry)
 
@@ -217,6 +229,26 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=99.945,
         help="Exit non-zero if match_rate < this (default 99.945, Phase 2A bar)",
     )
+    p.add_argument(
+        "--tolerate-divergence",
+        action="store_true",
+        help=(
+            "Tolerate ALL classified divergence patterns (move them from "
+            "diverges into tolerated_byte_diffs). REAL_BUG still fails. "
+            "Per Sub-A spec §6.1 informational-only factory parity mode."
+        ),
+    )
+    p.add_argument(
+        "--tolerate-divergence-patterns",
+        default="",
+        help=(
+            "Comma-separated pattern letters to tolerate (e.g. 'B' or 'A,B'). "
+            "Valid: A (int-collapse), A2 (trailing-zero, post-parse invisible), "
+            "B (structural Java mock vs Python tenant envelope), "
+            "C (value placeholder, not auto-detected). "
+            "Overrides --tolerate-divergence when set."
+        ),
+    )
     args = p.parse_args(argv)
 
     if not args.endpoint and not args.endpoint_list:
@@ -247,6 +279,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     java_fixture = _load_fixture(args.fixtures_java)
     python_fixture = _load_fixture(args.fixtures_python)
 
+    # Parse tolerance config (fail loudly on unknown pattern letters).
+    try:
+        tolerate_patterns = dict_eq.parse_patterns_arg(args.tolerate_divergence_patterns)
+    except ValueError as e:
+        p.error(str(e))
+
+    tolerate_all = bool(args.tolerate_divergence) and tolerate_patterns is None
+
     # Run.
     if java_fixture is not None:
         method, path, params = endpoints[0]
@@ -259,6 +299,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             python_base=None,
             java_fixture=java_fixture,
             python_fixture=python_fixture,
+            tolerate_all=tolerate_all,
+            tolerate_patterns=tolerate_patterns,
         )
         result = report.build_report(
             factory=args.factory,
@@ -273,6 +315,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             java_base=args.java_base,
             python_base=args.python_base,
             timeout=args.timeout,
+            tolerate_all=tolerate_all,
+            tolerate_patterns=tolerate_patterns,
         )
 
     # Write output.

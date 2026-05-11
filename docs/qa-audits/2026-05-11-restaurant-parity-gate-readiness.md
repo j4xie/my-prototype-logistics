@@ -319,4 +319,92 @@ Exit code 0 if all 16 reports clear the 99.945% gate; 1 otherwise. Inspect faili
 
 ---
 
-**End of readiness audit.** Awaiting organizer decision on §8 step 1 (P0 tenant.py fix). Once unblocked, harness will be triggered immediately against the actual restaurant factory_ids in §4.
+## 10. Addendum — Pattern B classifier + `--tolerate-divergence` flag (2026-05-12 ship)
+
+§7 marked all 8 endpoint rows 🟧 because of "Java mock vs Python restaurant envelope = Pattern B structural divergence" — strict dict-eq would always fail for restaurant tenants since Java backend has no tenant-aware dispatch (Sub-A spec §6.1 explicitly: "Java stays mock per Q1 §1... informational dict-eq, not regression gate"). The PR adding this addendum surfaces Pattern B as a first-class classification so the harness can opt-in tolerate it.
+
+### 10.1 New classification: `PATTERN_B_STRUCTURAL`
+
+Detected via `dict_eq._detect_pattern_b_context(java, python)` heuristic in `scripts/parity-gate/dict_eq.py`:
+
+1. `tenantType` differs at top-level data envelope (one side `"RESTAURANT"` / `"BRANCH"`, other absent or `"FACTORY"`)
+2. Top-level restaurant-signal keys (`metrics` / `dataAvailability` / `proxyMetric` / `trendChart` / `downtimeChart`) present on one side but not the other
+
+When `pattern_b_context=True`, every diverge gets `classification: PATTERN_B_STRUCTURAL` instead of `REAL_BUG`. Per-leaf classification is suppressed in favor of the global context — preventing false-positive REAL_BUGs when the envelope shapes are fundamentally different.
+
+### 10.2 New CLI flags
+
+```bash
+# Tolerate ALL classified divergence patterns (move them to tolerated bucket).
+# REAL_BUG still fails the gate.
+--tolerate-divergence
+
+# Tolerate specific patterns only (comma-separated letters).
+# Valid: A (int-collapse), A2 (trailing-zero, post-parse invisible),
+#        B (structural Java mock vs Python tenant envelope),
+#        C (value placeholder, not auto-detected)
+--tolerate-divergence-patterns B
+--tolerate-divergence-patterns A,B
+```
+
+Per Sub-A spec §6.1: factory branch parity is **informational only**, restaurant branch is **Python-vs-Python regression**. Operator uses `-patterns B` for restaurant runs where Java mock shape vs Python envelope is expected.
+
+### 10.3 Empirical validation results (synthetic Java mock + Python restaurant fixtures)
+
+Realistic fixtures generated for `R_GML_DEMO` production endpoint mirroring:
+- Java factory mock (4-metric OEE/Availability/Performance/Quality + LinkedHashMap charts/rankings/aiInsights/suggestions/metricCards/chartList/alerts/recommendations + lastUpdated/cacheExpireAt/fromCache/period)
+- Python restaurant envelope (3-metric KITCHEN_STATION_UTILIZATION / AVG_PREP_TIME / TABLE_TURNOVER_RATE with `dataAvailability` markers + trendChart)
+
+3 scenarios run via `--fixtures` mode:
+
+| Scenario | Flag | match_rate | REAL_BUG | Pattern B | endpoints_in_pattern_b_context | Gate |
+|---|---|---|---|---|---|---|
+| Strict (default) | (none) | **0.0%** | 0 | 0 (still in diverges, classified PB) | 1 | **FAIL** (exit 1) |
+| Tolerate B only | `--tolerate-divergence-patterns B` | **100.0%** | 0 | 15 (moved to tolerated) | 1 | **PASS** (exit 0) |
+| Tolerate all | `--tolerate-divergence` | **100.0%** | 0 | 15 (moved to tolerated) | 1 | **PASS** (exit 0) |
+
+Pattern B context detector correctly fires in all 3 scenarios. The 15 structural diverges are exactly the key-set asymmetry: Java side has 13 factory-mock-only keys (`kpiCards` / `rankings` / `charts` / `aiInsights` / `suggestions` / `metricCards` / `chartList` / `alerts` / `recommendations` / `lastUpdated` / `cacheExpireAt` / `fromCache` / `period`), Python side has 2 envelope-only keys (`tenantType` and `metrics` separately not present on Java side beyond `kpiCards` analog), and `trendChart` Python-only.
+
+### 10.4 Updated GO criteria for restaurant runs
+
+§8 step 1 (P0 tenant.py fix) — DONE in PR #368 (verified via PR #369 smoke).
+
+Add to §8: when invoking the harness against restaurant factory_ids, **always pass `--tolerate-divergence-patterns B`** until Phase 3+ when Java side gets tenant-aware dispatch. Otherwise the gate fails for structural-only reasons and masks any REAL_BUG that might also be present.
+
+Recommended trigger command (updated):
+
+```bash
+export JWT_SECRET='...'  # from /www/wwwroot/cretas/.env.prod
+# Direct compare.py invocation (until record-restaurant-goldens.sh is updated to pass through the flag):
+for factory in RES_3101_009 R_GML_DEMO; do
+  for atype in oee efficiency equipment overview; do
+    python scripts/parity-gate/compare.py \
+      --factory "$factory" \
+      --endpoint "/api/mobile/{factory_id}/smart-bi/analysis/production" \
+      --params "analysisType=${atype}&startDate=2026-01-01&endDate=2026-01-31" \
+      --java-base http://47.100.235.168:10010 \
+      --python-base http://47.100.235.168:8083 \
+      --output "reports/production_${factory}_${atype}.json" \
+      --tolerate-divergence-patterns B
+  done
+done
+```
+
+(`record-restaurant-goldens.sh` to be updated separately to honor `TOLERATE_PATTERNS` env var and pass through to `compare.py`. Small follow-up not in this PR's scope.)
+
+### 10.5 Test coverage
+
+`backend/python/tests/test_parity_gate.py` extends from 58 to **81 tests** (+23 new). New coverage:
+
+- `_detect_pattern_b_context` heuristic (6 tests): tenant mismatch only Python side / tenant value differs / restaurant-signal asymmetric / same-shape false / scalar/non-dict false / envelope unwrap
+- `dict_eq_match` Pattern B context flagging (2 tests): diverges classified PB when context true; stay REAL_BUG when false
+- `apply_tolerance` bucket movement (4 tests): tolerate-all moves all PB to tolerated, patterns-B preserves REAL_BUG, no-op without flags, A doesn't affect B
+- `parse_patterns_arg` parsing (5 tests): single letter, comma list, case + whitespace, empty/None, unknown raises
+- `compare.py` CLI integration (5 tests): flag enables tolerance, patterns-B alone works, default strict fails on PB, unknown letter rejected, A flag doesn't cover B
+- `summarize()` (1 test): includes `b_context=true` marker
+
+Existing 58 tests unaffected (no regressions).
+
+---
+
+**End of readiness audit + Pattern B addendum.** Restaurant parity-gate runs now executable with `--tolerate-divergence-patterns B` once Steve approves the trigger.
