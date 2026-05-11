@@ -170,7 +170,47 @@ public class TransferServiceImpl implements TransferService {
         // Force-initialize items within transaction to prevent LazyInitializationException
         // and ensure clean serialization without duplicates
         transfer.getItems().size();
+        // PR #289 §B4 — populate 调出方 currentStock for detail-page "现有库存" column.
+        populateCurrentStock(transfer);
         return transfer;
+    }
+
+    /**
+     * Populate each item's transient {@code currentStock} field with the source-side
+     * available inventory total. Failure of any single item lookup is logged and skipped
+     * (left as null) — never block the read path.
+     *
+     * <p>PR #289 §B4 客户对接 2026-05-10 — gives 调拨 detail page a quick reference of
+     * "how much stock is at the source warehouse right now" without forcing the user to
+     * navigate to the warehouse module.
+     */
+    private void populateCurrentStock(InternalTransfer transfer) {
+        if (transfer == null || transfer.getItems() == null || transfer.getItems().isEmpty()) {
+            return;
+        }
+        String sourceFactoryId = transfer.getSourceFactoryId();
+        if (sourceFactoryId == null) return;
+        for (InternalTransferItem item : transfer.getItems()) {
+            try {
+                BigDecimal stock = null;
+                if (item.getItemType() == TransferItemType.RAW_MATERIAL
+                        || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
+                    if (item.getMaterialTypeId() != null) {
+                        stock = materialBatchRepository.sumAvailableQuantityByMaterialType(
+                                sourceFactoryId, item.getMaterialTypeId());
+                    }
+                } else if (item.getItemType() == TransferItemType.FINISHED_GOODS) {
+                    if (item.getProductTypeId() != null) {
+                        stock = finishedGoodsBatchRepository.sumAvailableQuantityByProductType(
+                                sourceFactoryId, item.getProductTypeId());
+                    }
+                }
+                item.setCurrentStock(stock != null ? stock : BigDecimal.ZERO);
+            } catch (Exception e) {
+                log.warn("populateCurrentStock failed for item {} on transfer {}: {}",
+                        item.getId(), transfer.getId(), e.getMessage());
+            }
+        }
     }
 
     /**

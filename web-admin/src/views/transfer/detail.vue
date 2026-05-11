@@ -6,7 +6,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { ArrowLeft } from '@element-plus/icons-vue';
+import { ArrowLeft, InfoFilled } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
 import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
@@ -100,6 +100,26 @@ async function handleAction(action: string) {
   } catch (e) { handleCatchError(e, `${a.label}失败，请检查网络`); }
   finally { submitting.value = false; }
 }
+
+// PR #289 §B4 — display source-warehouse current stock per transfer item.
+// Backend returns `currentStock` populated on each item via TransferServiceImpl.populateCurrentStock.
+function formatStock(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '-';
+  const n = typeof v === 'number' ? v : Number(v);
+  if (Number.isNaN(n)) return '-';
+  return n.toLocaleString('zh-CN', { maximumFractionDigits: 4 });
+}
+
+function isStockShortage(row: Record<string, unknown>): boolean {
+  const stock = row.currentStock as number | string | null | undefined;
+  const qty = row.quantity as number | string | null | undefined;
+  if (stock === null || stock === undefined) return false;
+  if (qty === null || qty === undefined) return false;
+  const sn = typeof stock === 'number' ? stock : Number(stock);
+  const qn = typeof qty === 'number' ? qty : Number(qty);
+  if (Number.isNaN(sn) || Number.isNaN(qn)) return false;
+  return sn < qn;
+}
 </script>
 
 <template>
@@ -171,6 +191,18 @@ async function handleAction(action: string) {
             </template>
           </el-table-column>
           <el-table-column prop="quantity" label="调拨数量" width="120" align="right" />
+          <el-table-column label="现有库存" width="130" align="right">
+            <template #header>
+              <el-tooltip content="调出方当前可用库存 (实时查询)" placement="top">
+                <span>现有库存 <el-icon style="vertical-align: -2px"><InfoFilled /></el-icon></span>
+              </el-tooltip>
+            </template>
+            <template #default="{ row }">
+              <span :class="{ 'stock-shortage': isStockShortage(row) }">
+                {{ formatStock(row.currentStock) }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="已收数量" width="120" align="right">
             <template #default="{ row }">{{ row.receivedQuantity || 0 }}</template>
           </el-table-column>
@@ -199,4 +231,6 @@ async function handleAction(action: string) {
   }
   .header-right { display: flex; gap: 8px; }
 }
+// PR #289 §B4 — stock shortage marker for "现有库存" column
+.stock-shortage { color: #f56c6c; font-weight: 600; }
 </style>
