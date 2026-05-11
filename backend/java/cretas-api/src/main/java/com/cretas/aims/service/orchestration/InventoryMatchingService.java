@@ -11,6 +11,7 @@ import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,23 @@ public class InventoryMatchingService {
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
 
     /**
+     * A5 集团联销 feature flag (PR #309 A5=C, 2026-05-10).
+     *
+     * <p>默认 {@code false} — 销售订单仅匹配 SO.factoryId 所在工厂的成品批次（单厂语义）。
+     *
+     * <p>设为 {@code true} 时进入"集团联销"模式：当前实现跳过 factoryId 过滤
+     * （允许所有工厂的成品参与匹配 / 预留 — 等价于"集团池"语义）。
+     * 未来引入 {@code factory_network} 表后，此处可替换为按销售组织受控的子集。
+     *
+     * <p>启用方式：在对应环境的 properties 文件中设置
+     * {@code cretas.sales.cross-factory.enabled=true}，重启 JVM 即可。
+     *
+     * <p>详见 {@code docs/architecture/2026-05-10-feature-flag-cross-factory-sales.md}。
+     */
+    @Value("${cretas.sales.cross-factory.enabled:false}")
+    private boolean crossFactoryEnabled;
+
+    /**
      * 检查已确认销售订单的成品库存可用性。
      * 对每个行项目，比较待发货数量与当前可用库存的差值。
      *
@@ -64,8 +82,11 @@ public class InventoryMatchingService {
                 continue;
             }
 
-            BigDecimal available = finishedGoodsBatchRepository
-                    .sumAvailableQuantityByProductType(factoryId, item.getProductTypeId());
+            BigDecimal available = crossFactoryEnabled
+                    ? finishedGoodsBatchRepository
+                            .sumAvailableQuantityByProductTypeAllFactories(item.getProductTypeId())
+                    : finishedGoodsBatchRepository
+                            .sumAvailableQuantityByProductType(factoryId, item.getProductTypeId());
 
             // 缺口 = max(待发 - 可用, 0)；若可用充足则缺口为负（富余），isFullySatisfied() 返回 true
             BigDecimal shortfall = pending.subtract(available).max(BigDecimal.ZERO);
@@ -104,8 +125,9 @@ public class InventoryMatchingService {
      */
     @Transactional
     public void reserveStock(String factoryId, String productTypeId, BigDecimal quantity) {
-        List<FinishedGoodsBatch> batches = finishedGoodsBatchRepository
-                .findAvailableBatches(factoryId, productTypeId);
+        List<FinishedGoodsBatch> batches = crossFactoryEnabled
+                ? finishedGoodsBatchRepository.findAvailableBatchesAllFactories(productTypeId)
+                : finishedGoodsBatchRepository.findAvailableBatches(factoryId, productTypeId);
 
         BigDecimal remaining = quantity;
         for (FinishedGoodsBatch batch : batches) {
