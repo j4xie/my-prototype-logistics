@@ -29,6 +29,12 @@ pydantic>=2.5,<3
 # JWT Authentication
 PyJWT>=2.6.0,<3.0.0
 
+# RSA + X.509 — required by ota.services.signing for Expo Updates v1 manifest
+# code-signing. Server hot-fixed via `pip install cryptography` after Phase 1
+# deploy crashed (2026-05-12 P0 incident); this line + the import smoke
+# test below prevent recurrence.
+cryptography>=42.0.0
+
 # YAML for knowledge base
 PyYAML>=6.0,<7.0.0
 

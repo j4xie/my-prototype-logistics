@@ -200,6 +200,21 @@ if [ ! -f ".env" ]; then
     cp .env.example .env 2>/dev/null || true
     echo "已创建 .env 文件，请配置 LLM API Key"
 fi
+
+# Import smoke test — catch missing deps BEFORE we restart the service.
+# History: 2026-05-12 P0 outage when ota.services.signing added a new
+# `cryptography` dependency that wasn't in requirements.txt. pip install
+# succeeded silently, then uvicorn workers crashed on first import after
+# restart, Python service DOWN ~5 min until manual hot-fix. This gate
+# makes the deploy ABORT here instead of restarting a broken process.
+echo
+echo "[Import smoke] checking that main.py imports cleanly..."
+if ! python -c 'import sys; sys.path.insert(0, "."); import main' 2>&1; then
+    echo "[ERROR] main.py import smoke FAILED — aborting deploy BEFORE restart"
+    echo "[ERROR] Service is still on the OLD code; fix requirements.txt or imports, then re-deploy"
+    exit 1
+fi
+echo "[Import smoke] OK — main.py + all routers import successfully"
 ENDSSH
 
 # 重启对应环境的 Python 服务 (通过 restart 脚本，保证环境变量一致)

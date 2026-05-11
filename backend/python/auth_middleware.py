@@ -64,6 +64,15 @@ PUBLIC_PREFIXES = (
     "/api/food-kb/manual-chat",  # Operation manual chat — public (HTML page)
     # "/api/smartbi/financial-dashboard/" — removed: requires JWT auth (IDOR fix)
     "/api/llm/",              # LLM router — called by Java backend internally (no JWT forwarded)
+    # OTA (self-hosted Expo Updates v1 server). All public paths exposed to
+    # the `expo-updates` client running on customer devices, which does NOT
+    # send JWTs (the protocol is JWT-agnostic; signed manifests are the auth
+    # mechanism). The `/api/ota/admin/*` subset has its own OTA_ADMIN_TOKEN
+    # bearer gate via `ota.api.endpoints._require_admin` (hmac.compare_digest),
+    # so dropping the JWT layer here does NOT broaden the admin attack
+    # surface — both the JWT path and the OTA_ADMIN_TOKEN path use 32-byte
+    # random secrets. Decision rationale: see PR #<P0 fix> body §2.
+    "/api/ota/",
 )
 
 
