@@ -80,6 +80,10 @@ from smartbi.api import intent_analysis  # noqa: E402
 from smartbi.api.materialized_analytics import router as materialized_analytics_router  # noqa: E402
 from smartbi.capability.api import router as capability_router  # noqa: E402
 
+# OTA (self-hosted Expo Updates v1 server) — see docs/superpowers/specs/
+# 2026-05-11-self-hosted-ota-spec.md and PR #363.
+from ota.api import endpoints as ota_endpoints  # noqa: E402
+
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
     from efficiency_recognition.api import (
@@ -978,6 +982,7 @@ app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
 app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["MaterializedAnalytics"])
 app.include_router(capability_router)
+app.include_router(ota_endpoints.router, prefix="/api/ota", tags=["OTA"])
 
 # Gold layer reads — v1 Phase B pilot (§5). Finance-summary from agg_daily.
 from smartbi.api import gold_reads  # noqa: E402
