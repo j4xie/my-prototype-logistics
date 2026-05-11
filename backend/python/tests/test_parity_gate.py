@@ -569,26 +569,29 @@ def test_report_build_aggregates_counts():
         "total_leaves": 10,
         "matched_leaves": 10,
         "diverges": [],
-        "tolerated_byte_diffs": [{"path": "x", "classification": "PATTERN_A_INT_COLLAPSE",
-                                   "java": 1.0, "python": 1}],
+        "tolerated_byte_diffs": [
+            {"path": "x", "classification": "PATTERN_A_INT_COLLAPSE", "java": 1.0, "python": 1},
+        ],
     }
     fake_de_diverge = {
         "match": False,
         "total_leaves": 10,
         "matched_leaves": 8,
-        "diverges": [{"path": "y", "classification": "REAL_BUG", "java": 1, "python": 2},
-                     {"path": "z", "classification": "REAL_BUG", "java": "a", "python": "b"}],
+        "diverges": [
+            {"path": "y", "classification": "REAL_BUG", "java": 1, "python": 2},
+            {"path": "z", "classification": "REAL_BUG", "java": "a", "python": "b"},
+        ],
         "tolerated_byte_diffs": [],
     }
-    fake_fetch_ok = {"verdict": "ok", "http": 200, "size": 100, "lat_s": 0.1, "error": None}
+    ok = {"verdict": "ok", "http": 200, "size": 100, "lat_s": 0.1, "error": None}
 
     rep = report.build_report(
         factory="R_TEST_MOCK",
         java_base="java",
         python_base="python",
         results=[
-            {"endpoint": "/a", "params": "", "java": fake_fetch_ok, "python": fake_fetch_ok, "dict_eq": fake_de_match},
-            {"endpoint": "/b", "params": "", "java": fake_fetch_ok, "python": fake_fetch_ok, "dict_eq": fake_de_diverge},
+            {"endpoint": "/a", "params": "", "java": ok, "python": ok, "dict_eq": fake_de_match},
+            {"endpoint": "/b", "params": "", "java": ok, "python": ok, "dict_eq": fake_de_diverge},
         ],
     )
     assert rep["endpoints_tested"] == 2
