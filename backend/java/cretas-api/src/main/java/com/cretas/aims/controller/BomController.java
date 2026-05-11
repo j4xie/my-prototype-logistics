@@ -6,8 +6,10 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
 import com.cretas.aims.dto.bom.CreateBomItemRequest;
 import com.cretas.aims.dto.bom.CreateLaborCostRequest;
+import com.cretas.aims.dto.bom.CreateOverheadCostRequest;
 import com.cretas.aims.dto.bom.UpdateBomItemRequest;
 import com.cretas.aims.dto.bom.UpdateLaborCostRequest;
+import com.cretas.aims.dto.bom.UpdateOverheadCostRequest;
 import com.cretas.aims.entity.bom.BomChangeLog;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
@@ -196,8 +198,9 @@ public class BomController {
     @Operation(summary = "添加均摊费用")
     public ApiResponse<OverheadCostConfig> addOverheadCost(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody OverheadCostConfig config) {
-        log.info("Adding overhead cost: factoryId={}, name={}", factoryId, config.getName());
+            @Valid @RequestBody CreateOverheadCostRequest request) {
+        log.info("Adding overhead cost: factoryId={}, name={}", factoryId, request.getName());
+        OverheadCostConfig config = toOverheadCostConfig(request);
         config.setFactoryId(factoryId);
         return ApiResponse.success(bomService.saveOverheadCost(config));
     }
@@ -208,8 +211,9 @@ public class BomController {
     public ApiResponse<OverheadCostConfig> updateOverheadCost(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @PathVariable @Parameter(description = "均摊费用ID") Long id,
-            @RequestBody OverheadCostConfig config) {
+            @Valid @RequestBody UpdateOverheadCostRequest request) {
         log.info("Updating overhead cost: factoryId={}, id={}", factoryId, id);
+        OverheadCostConfig config = toOverheadCostConfig(request);
         config.setId(id);
         config.setFactoryId(factoryId);
         return ApiResponse.success(bomService.saveOverheadCost(config));
@@ -327,6 +331,41 @@ public class BomController {
         c.setUnitPrice(r.getUnitPrice());
         c.setPriceUnit(r.getPriceUnit());
         c.setDefaultQuantity(r.getDefaultQuantity() != null ? r.getDefaultQuantity() : BigDecimal.ONE);
+        c.setIsActive(r.getIsActive() != null ? r.getIsActive() : Boolean.TRUE);
+        c.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
+        c.setRemark(r.getRemark());
+        return c;
+    }
+
+    /**
+     * Map CreateOverheadCostRequest → OverheadCostConfig entity. Defaults
+     * align with @Builder.Default on OverheadCostConfig
+     * (allocationMethod="PER_UNIT", allocationRate=1, isActive=true,
+     * sortOrder=0) so wire callers may omit these.
+     */
+    private static OverheadCostConfig toOverheadCostConfig(CreateOverheadCostRequest r) {
+        OverheadCostConfig c = new OverheadCostConfig();
+        c.setName(r.getName());
+        c.setCategory(r.getCategory());
+        c.setUnitPrice(r.getUnitPrice());
+        c.setPriceUnit(r.getPriceUnit());
+        c.setAllocationMethod(r.getAllocationMethod() != null ? r.getAllocationMethod() : "PER_UNIT");
+        c.setAllocationRate(r.getAllocationRate() != null ? r.getAllocationRate() : BigDecimal.ONE);
+        c.setIsActive(r.getIsActive() != null ? r.getIsActive() : Boolean.TRUE);
+        c.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
+        c.setRemark(r.getRemark());
+        return c;
+    }
+
+    /** Update variant — same shape as create (PUT is full-replace). */
+    private static OverheadCostConfig toOverheadCostConfig(UpdateOverheadCostRequest r) {
+        OverheadCostConfig c = new OverheadCostConfig();
+        c.setName(r.getName());
+        c.setCategory(r.getCategory());
+        c.setUnitPrice(r.getUnitPrice());
+        c.setPriceUnit(r.getPriceUnit());
+        c.setAllocationMethod(r.getAllocationMethod() != null ? r.getAllocationMethod() : "PER_UNIT");
+        c.setAllocationRate(r.getAllocationRate() != null ? r.getAllocationRate() : BigDecimal.ONE);
         c.setIsActive(r.getIsActive() != null ? r.getIsActive() : Boolean.TRUE);
         c.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
         c.setRemark(r.getRemark());

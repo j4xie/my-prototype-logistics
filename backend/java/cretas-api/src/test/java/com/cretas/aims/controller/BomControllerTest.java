@@ -2,11 +2,14 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.bom.CreateBomItemRequest;
 import com.cretas.aims.dto.bom.CreateLaborCostRequest;
+import com.cretas.aims.dto.bom.CreateOverheadCostRequest;
 import com.cretas.aims.dto.bom.UpdateBomItemRequest;
 import com.cretas.aims.dto.bom.UpdateLaborCostRequest;
+import com.cretas.aims.dto.bom.UpdateOverheadCostRequest;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
+import com.cretas.aims.entity.bom.OverheadCostConfig;
 import com.cretas.aims.service.BomService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -212,5 +215,120 @@ class BomControllerTest {
         assertEquals(7L, persisted.getId());
         assertEquals("F001", persisted.getFactoryId());
         assertEquals(new BigDecimal("6.0000"), persisted.getUnitPrice());
+    }
+
+    // ===== OverheadCostConfig: minimum body (Rule 10) =====
+
+    @Test
+    void addOverheadCost_minimumBody_filledFactoryIdAndDefaults() {
+        // Minimum wire body: only name + unitPrice (the two @NotBlank/@NotNull fields).
+        // No factoryId / id / allocationMethod / allocationRate / isActive / sortOrder.
+        CreateOverheadCostRequest req = new CreateOverheadCostRequest();
+        req.setName("设备折旧");
+        req.setUnitPrice(new BigDecimal("100.0000"));
+
+        when(bomService.saveOverheadCost(any(OverheadCostConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ApiResponse<OverheadCostConfig> resp = controller.addOverheadCost("F001", req);
+
+        ArgumentCaptor<OverheadCostConfig> captor = ArgumentCaptor.forClass(OverheadCostConfig.class);
+        org.mockito.Mockito.verify(bomService).saveOverheadCost(captor.capture());
+        OverheadCostConfig persisted = captor.getValue();
+
+        assertNotNull(resp);
+        assertEquals("F001", persisted.getFactoryId(), "factoryId must be auto-filled from path");
+        assertEquals("设备折旧", persisted.getName());
+        assertEquals(new BigDecimal("100.0000"), persisted.getUnitPrice());
+        // Defaults applied at mapper level (mirror @Builder.Default on OverheadCostConfig)
+        assertEquals("PER_UNIT", persisted.getAllocationMethod(), "allocationMethod default");
+        assertEquals(BigDecimal.ONE, persisted.getAllocationRate(), "allocationRate default");
+        assertTrue(persisted.getIsActive(), "isActive default true");
+        assertEquals(0, persisted.getSortOrder(), "sortOrder default");
+        assertNull(persisted.getId(), "id must remain null on create — DB IDENTITY assigns");
+    }
+
+    // ===== OverheadCostConfig: happy path with all fields =====
+
+    @Test
+    void addOverheadCost_happyPath_allFieldsPropagated() {
+        CreateOverheadCostRequest req = new CreateOverheadCostRequest();
+        req.setName("水电费");
+        req.setCategory("能源");
+        req.setUnitPrice(new BigDecimal("2.5000"));
+        req.setPriceUnit("元/kg");
+        req.setAllocationMethod("PER_BATCH");
+        req.setAllocationRate(new BigDecimal("1.500000"));
+        req.setIsActive(true);
+        req.setSortOrder(3);
+        req.setRemark("夏季高峰电价");
+
+        when(bomService.saveOverheadCost(any(OverheadCostConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        controller.addOverheadCost("F006", req);
+
+        ArgumentCaptor<OverheadCostConfig> captor = ArgumentCaptor.forClass(OverheadCostConfig.class);
+        org.mockito.Mockito.verify(bomService).saveOverheadCost(captor.capture());
+        OverheadCostConfig persisted = captor.getValue();
+
+        assertEquals("F006", persisted.getFactoryId());
+        assertEquals("水电费", persisted.getName());
+        assertEquals("能源", persisted.getCategory());
+        assertEquals(new BigDecimal("2.5000"), persisted.getUnitPrice());
+        assertEquals("元/kg", persisted.getPriceUnit());
+        assertEquals("PER_BATCH", persisted.getAllocationMethod(), "explicit allocationMethod preserved");
+        assertEquals(new BigDecimal("1.500000"), persisted.getAllocationRate(), "explicit allocationRate preserved");
+        assertEquals(3, persisted.getSortOrder());
+        assertEquals("夏季高峰电价", persisted.getRemark());
+    }
+
+    @Test
+    void updateOverheadCost_setsIdAndFactoryIdFromPath() {
+        UpdateOverheadCostRequest req = new UpdateOverheadCostRequest();
+        req.setName("设备折旧");
+        req.setUnitPrice(new BigDecimal("120.0000"));
+
+        when(bomService.saveOverheadCost(any(OverheadCostConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        controller.updateOverheadCost("F001", 9L, req);
+
+        ArgumentCaptor<OverheadCostConfig> captor = ArgumentCaptor.forClass(OverheadCostConfig.class);
+        org.mockito.Mockito.verify(bomService).saveOverheadCost(captor.capture());
+        OverheadCostConfig persisted = captor.getValue();
+
+        assertEquals(9L, persisted.getId(), "id must be set from path on update");
+        assertEquals("F001", persisted.getFactoryId(), "factoryId must be auto-filled from path");
+        assertEquals(new BigDecimal("120.0000"), persisted.getUnitPrice());
+    }
+
+    @Test
+    void updateOverheadCost_fullReplaceWithAllFields() {
+        UpdateOverheadCostRequest req = new UpdateOverheadCostRequest();
+        req.setName("管理费用");
+        req.setCategory("管理");
+        req.setUnitPrice(new BigDecimal("50.0000"));
+        req.setPriceUnit("元/月");
+        req.setAllocationMethod("FIXED");
+        req.setAllocationRate(new BigDecimal("1.000000"));
+        req.setIsActive(false);
+        req.setSortOrder(20);
+        req.setRemark("月度均摊");
+
+        when(bomService.saveOverheadCost(any(OverheadCostConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        controller.updateOverheadCost("F006", 11L, req);
+
+        ArgumentCaptor<OverheadCostConfig> captor = ArgumentCaptor.forClass(OverheadCostConfig.class);
+        org.mockito.Mockito.verify(bomService).saveOverheadCost(captor.capture());
+        OverheadCostConfig persisted = captor.getValue();
+
+        assertEquals(11L, persisted.getId());
+        assertEquals("F006", persisted.getFactoryId());
+        assertEquals("管理费用", persisted.getName());
+        assertEquals("管理", persisted.getCategory());
+        assertEquals("FIXED", persisted.getAllocationMethod());
+        assertEquals(20, persisted.getSortOrder());
+        assertEquals("月度均摊", persisted.getRemark());
+        // isActive false (explicitly set, not default)
+        org.junit.jupiter.api.Assertions.assertFalse(persisted.getIsActive(), "explicit isActive=false preserved");
     }
 }
