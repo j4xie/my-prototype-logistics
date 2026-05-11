@@ -1,15 +1,19 @@
 """Skeleton tests for ``/analysis/quality`` shared contracts.
 
 chat-B1 Wave 1 (PR #354) shipped this set. chat-B2 Wave 2 ships the
-restaurant branch impl (see ``test_analysis_quality_restaurant.py``),
-so the restaurant-raises-NotImplementedError tests are removed here.
-The factory branch still raises and that assertion stays.
+restaurant branch impl (see ``test_analysis_quality_restaurant.py``).
+Phase 2D Subagent B rewires the factory branch from a raising stub into
+an empty-envelope placeholder marked ``FACTORY_SILVER_PHASE_2D_PENDING``;
+the assertions below now lock the new envelope contract instead of a
+``NotImplementedError`` raise.
 
 Surviving contracts (chat-B2 + Phase 2D must preserve):
 
-* Factory dispatcher still raises ``NotImplementedError`` with the
-  canonical Phase 2D message so future dispatch can grep for it (every
-  Silver-table name remains listed for grep-readiness).
+* Factory dispatcher returns the Phase 2D empty envelope tagged with
+  the canonical ``FACTORY_SILVER_PHASE_2D_PENDING`` marker on every
+  analysisType branch (future Silver-layer impl must keep the marker).
+* ``_FACTORY_BRANCH_DEFERRED_MSG`` documentation constant still keeps
+  every Silver-table name + ``"Phase 2D"`` substring for grep-readiness.
 * Dispatcher signatures ``(factory_id, start_date, end_date,
   analysis_type)`` stable for chat-B2 + Phase 2D follow-ups.
 * Router declares the polymorphic endpoint path
@@ -33,6 +37,7 @@ import pytest
 from smartbi_compat import tenant as tenant_module
 from smartbi_compat.api import analysis_quality
 from smartbi_compat.api.analysis_quality import (
+    FACTORY_PHASE_2D_PENDING_MARKER,
     _factory_quality_dispatch,
     _restaurant_quality_dispatch,
     _FACTORY_BRANCH_DEFERRED_MSG,
@@ -46,21 +51,17 @@ from smartbi_compat.api.analysis_quality import (
 # ============================================================
 
 
-def test_factory_msg_canonical_string():
-    """Lock the exact factory-branch deferred message.
+def test_factory_msg_contains_phase_2d_grep_substring():
+    """``_FACTORY_BRANCH_DEFERRED_MSG`` still references Phase 2D.
 
-    Covers in one assertion: "Phase 2D", "chat-B1 dispatch 2026-05-12
-    Option B", Q1 amendment §1 reference, chat-A1 PR #350 precedent.
-    Parametrized table-name tests below guarantee every Silver table
-    is listed.
+    Subagent B rewrote the message body ("raises" → "empty envelope
+    marked …") but kept the canonical Phase-2D marker token
+    ``PHASE_2D`` (carried by ``FACTORY_SILVER_PHASE_2D_PENDING``) +
+    every Silver table name (asserted by the parametrized sibling test)
+    so grep audits and log searches keep working.
     """
-    assert _FACTORY_BRANCH_DEFERRED_MSG == (
-        "Factory quality analysis is deferred to Phase 2D pending the factory "
-        "Silver schema migration (fact_quality_inspection / fact_quality_defect / "
-        "fact_rework_record / fact_disposal_record / fact_customer_complaint). "
-        "chat-B1 dispatch 2026-05-12 Option B: _JavaRandom mock-mirror fallback "
-        "rejected (Q1 amendment §1; mirrors chat-A1 PR #350 production precedent)."
-    )
+    assert "PHASE_2D" in _FACTORY_BRANCH_DEFERRED_MSG
+    assert "FACTORY_SILVER_PHASE_2D_PENDING" in _FACTORY_BRANCH_DEFERRED_MSG
 
 
 @pytest.mark.parametrize(
@@ -79,33 +80,46 @@ def test_factory_msg_lists_silver_table(table):
 
 
 # ============================================================
-# Factory dispatcher NotImplementedError contracts
+# Factory dispatcher Phase 2D empty-envelope contracts
 # ============================================================
 
 
 @pytest.mark.asyncio
-async def test_factory_dispatch_raises_canonical_msg():
-    """Factory branch must raise the canonical deferred message verbatim."""
-    with pytest.raises(NotImplementedError) as exc_info:
-        await _factory_quality_dispatch(
-            "F001", date(2026, 5, 1), date(2026, 5, 31), "fpy"
-        )
-    assert str(exc_info.value) == _FACTORY_BRANCH_DEFERRED_MSG
+async def test_factory_dispatch_returns_phase_2d_envelope():
+    """Factory branch must return the Phase 2D empty-envelope marker.
+
+    Subagent B rewired the factory dispatcher from a raising stub into an
+    empty-envelope response. The top-level
+    ``dataAvailability = FACTORY_SILVER_PHASE_2D_PENDING`` is the
+    canonical marker frontends key off to render a "data pending" chip
+    instead of a 500 error.
+    """
+    result = await _factory_quality_dispatch(
+        "F001", date(2026, 5, 1), date(2026, 5, 31), "fpy"
+    )
+    assert isinstance(result, dict)
+    assert result["dataAvailability"] == FACTORY_PHASE_2D_PENDING_MARKER
+    assert result["dataAvailability"] == "FACTORY_SILVER_PHASE_2D_PENDING"
 
 
 @pytest.mark.parametrize("analysis_type", ["fpy", "defect", "rework", None])
 @pytest.mark.asyncio
-async def test_factory_dispatch_raises_for_every_analysis_type(analysis_type):
-    """All 4 analysisType branches (fpy/defect/rework/overview=None) defer.
+async def test_factory_dispatch_returns_envelope_for_every_analysis_type(
+    analysis_type,
+):
+    """All 4 analysisType branches (fpy/defect/rework/overview=None) emit marker.
 
     Per Sub-B spec §1.1 + §3.6 the 4 valid analysisType values are
-    fpy / defect / rework / None (None → overview). chat-B1 stub MUST
-    raise for every one — Phase 2D fill respects the same signature.
+    fpy / defect / rework / None (None → overview). Phase 2D Subagent B
+    rewired each branch to return an empty envelope with the canonical
+    ``FACTORY_SILVER_PHASE_2D_PENDING`` marker. The Silver-layer impl
+    must preserve the marker key.
     """
-    with pytest.raises(NotImplementedError):
-        await _factory_quality_dispatch(
-            "F001", date(2026, 5, 1), date(2026, 5, 31), analysis_type
-        )
+    result = await _factory_quality_dispatch(
+        "F001", date(2026, 5, 1), date(2026, 5, 31), analysis_type
+    )
+    assert isinstance(result, dict)
+    assert result["dataAvailability"] == FACTORY_PHASE_2D_PENDING_MARKER
 
 
 # ============================================================

@@ -37,7 +37,7 @@ Specs:
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Optional
 
@@ -45,7 +45,7 @@ from fastapi import APIRouter, Depends, Query
 
 from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
-from smartbi_compat.schema_compat import wrap_response
+from smartbi_compat.schema_compat import _java_isoformat, wrap_response
 from smartbi_compat.tenant import TenantType, get_tenant_type
 
 logger = logging.getLogger(__name__)
@@ -67,15 +67,36 @@ _AVAILABILITY_PROXY_BILLS = "PROXY_AS_BILLS_PER_STORE"
 
 
 # ============================================================
-# Stub marker (Phase 2D consumes this string in messages)
+# Stub marker (Phase 2D consumes these strings in messages)
 # ============================================================
+#
+# AGGRESSIVE-REVISED scope (Phase 2D Sub-A impl spec
+# docs/superpowers/specs/2026-05-11-phase-2d-silver-migration-and-factory-impl-spec.md §3.1):
+# ``_factory_production_dispatch`` no longer raises NotImplementedError — it
+# now returns an empty envelope mirroring the Java factory shape with the
+# top-level ``dataAvailability = FACTORY_SILVER_PHASE_2D_PENDING`` marker so
+# the frontend can render a "data pending" state instead of hitting a 500.
+# The Silver-layer port (real-DB implementation) is the next chain
+# Phase 2D PR-A/B/C/D.
+#
+# ``_FACTORY_BRANCH_DEFERRED_MSG`` is kept as a documentation constant —
+# other modules / log messages still reference the string. The dispatch
+# function no longer raises with it.
 
 _FACTORY_BRANCH_DEFERRED_MSG = (
-    "Factory production analysis is deferred to Phase 2D pending the factory "
-    "Silver schema migration (fact_production_batch / fact_equipment_event / "
+    "Factory production analysis returns an empty envelope marked "
+    "FACTORY_SILVER_PHASE_2D_PENDING pending the factory Silver schema "
+    "migration (fact_production_batch / fact_equipment_event / "
     "fact_quality_inspection). chat-A1 dispatch 2026-05-12 Option B: "
     "_JavaRandom mock-mirror fallback rejected (Q1 amendment §1)."
 )
+
+
+# Top-level envelope marker emitted by ``_factory_production_dispatch`` so the
+# frontend can distinguish "Phase 2D placeholder, no real data" from a normal
+# data-bearing factory response. Tests import this constant to assert every
+# stub response carries the exact marker string.
+FACTORY_PHASE_2D_PENDING_MARKER = "FACTORY_SILVER_PHASE_2D_PENDING"
 
 
 # ============================================================
@@ -257,20 +278,85 @@ async def _factory_production_dispatch(
     end_date: date,
     analysis_type: Optional[str],
 ) -> dict:
-    """Factory-tenant production analysis dispatcher (DEFERRED to Phase 2D).
+    """Factory-tenant production analysis dispatcher (Phase 2D placeholder).
 
-    Phase 2D scope (per spec §2): 1:1 port of Java
+    AGGRESSIVE-REVISED scope (Phase 2D Sub-A impl spec §3.1): returns a
+    per-``analysisType`` empty envelope mirroring the Java factory response
+    shape, with the top-level ``dataAvailability`` marker
+    ``FACTORY_SILVER_PHASE_2D_PENDING`` to communicate "Phase 2D
+    placeholder, not real data". This unblocks frontend rendering while
+    the Silver-layer real-DB impl is pending the Phase 2D PR-A/B/C/D
+    chain (factory ``fact_production_batch`` / ``fact_equipment_event`` /
+    ``fact_quality_inspection`` migrations).
+
+    Phase 2D scope (per Sub-A spec §2): 1:1 port of Java
     ``ProductionAnalysisServiceImpl`` mock — 4-metric OEE family
     (OEE/AVAILABILITY/PERFORMANCE/QUALITY) + 8 method entry points +
-    LinkedHashMap charts/rankings. Requires factory Silver schema
-    migration (V20260XYZ__t6_6_factory_production_silver.sql) before
-    real-DB implementation per Q1 amendment §1.
+    LinkedHashMap charts/rankings. The signature
+    ``(factory_id, start_date, end_date, analysis_type)`` is locked so
+    the Silver-layer port can drop in without router-level churn.
 
-    Phase 2D must keep the ``(factory_id, start_date, end_date,
-    analysis_type)`` signature stable — the router-level dispatcher
-    depends on it.
+    Envelope shape per Subagent A audit of Java
+    ``SmartBIAnalysisController.getProductionAnalysis`` lines 80-115:
+
+    * ``overview`` (or None): ``DashboardResponse`` empty envelope
+      (period/dates/kpiCards/rankings/charts/aiInsights/recommendations/
+      suggestions/generatedAt/lastUpdated/fromCache/cacheExpireAt).
+    * ``oee``: ``{startDate, endDate, metrics: [], trendChart: {}}``.
+    * ``efficiency``: ``{startDate, endDate, metrics: [], ranking: []}``.
+    * ``equipment``: ``{startDate, endDate, metrics: [], ranking: [],
+      downtimeChart: {}}``.
+
+    Phase-2D-specific deviation from Java parity: a top-level
+    ``dataAvailability = FACTORY_SILVER_PHASE_2D_PENDING`` is added to
+    every variant. The Java factory branch today emits no such field —
+    this stub explicitly signals placeholder state. The empty
+    ``aiInsights`` / ``suggestions`` lists in the overview variant also
+    deviate from Java's empty-data path (which populates a "暂无生产数据"
+    warning); the ``dataAvailability`` marker is the unambiguous signal
+    here.
     """
-    raise NotImplementedError(_FACTORY_BRANCH_DEFERRED_MSG)
+    now_iso = _java_isoformat(datetime.now())
+    base: dict[str, Any] = {
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "dataAvailability": FACTORY_PHASE_2D_PENDING_MARKER,
+    }
+
+    if analysis_type == "oee":
+        return {**base, "metrics": [], "trendChart": {}}
+
+    if analysis_type == "efficiency":
+        return {**base, "metrics": [], "ranking": []}
+
+    if analysis_type == "equipment":
+        return {
+            **base,
+            "metrics": [],
+            "ranking": [],
+            "downtimeChart": {},
+        }
+
+    # overview (analysis_type == "overview" OR None OR any unknown value):
+    # mirror Java buildEmptyDashboard() shape sans aiInsights/suggestions
+    # warning copy (the FACTORY_SILVER_PHASE_2D_PENDING marker is the
+    # unambiguous Phase 2D placeholder signal).
+    return {
+        "period": "CUSTOM",
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "kpiCards": [],
+        "rankings": {},
+        "charts": {},
+        "aiInsights": [],
+        "recommendations": [],
+        "suggestions": [],
+        "generatedAt": now_iso,
+        "lastUpdated": now_iso,
+        "fromCache": False,
+        "cacheExpireAt": None,
+        "dataAvailability": FACTORY_PHASE_2D_PENDING_MARKER,
+    }
 
 
 async def _restaurant_production_dispatch(
@@ -373,8 +459,9 @@ async def get_production_analysis(
     lookup mirroring Java ``SmartBIServiceImpl.isRestaurantTenant``.
 
     Per chat-A1 + chat-A2 ship 2026-05-12: restaurant branch is live;
-    factory branch still raises ``NotImplementedError`` pending Phase 2D
-    factory Silver schema migration.
+    factory branch now returns an empty envelope marked
+    ``FACTORY_SILVER_PHASE_2D_PENDING`` pending the Phase 2D Silver-layer
+    real-DB impl (PR-A/B/C/D chain).
     """
     pool = None
     try:
@@ -390,9 +477,9 @@ async def get_production_analysis(
 
     if pool is None:
         # Defensive: when pool is missing, mirror Java predicate's
-        # repository-failure path (return false → factory branch). We
-        # still raise NotImplementedError below because factory branch
-        # is deferred.
+        # repository-failure path (return false → factory branch). The
+        # factory dispatcher now returns the Phase 2D empty envelope
+        # rather than raising.
         tenant = TenantType.FACTORY
     else:
         async with pool.acquire() as conn:

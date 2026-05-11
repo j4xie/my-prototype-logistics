@@ -896,18 +896,26 @@ async def test_all_emitted_dataAvailability_strings_are_in_vocab(monkeypatch):
 
 
 # ============================================================
-# Factory branch preservation
+# Factory branch preservation (Phase 2D Subagent B empty-envelope rewire)
 # ============================================================
 
 
 @pytest.mark.asyncio
-async def test_factory_branch_still_raises_not_implemented():
-    """Phase 2D guard: factory dispatch must continue to raise."""
-    with pytest.raises(NotImplementedError) as exc_info:
-        await _factory_quality_dispatch(
-            "F001", date(2026, 5, 1), date(2026, 5, 31), "fpy"
-        )
-    assert "Factory quality analysis is deferred to Phase 2D" in str(exc_info.value)
+async def test_factory_branch_returns_phase_2d_envelope():
+    """Phase 2D guard: factory dispatch returns the empty-envelope marker.
+
+    Subagent B rewired the factory branch from a raising stub into an
+    empty-envelope response carrying ``FACTORY_SILVER_PHASE_2D_PENDING``.
+    Restaurant impl tests must keep verifying that FACTORY tenants don't
+    leak into the restaurant code path.
+    """
+    from smartbi_compat.api.analysis_quality import FACTORY_PHASE_2D_PENDING_MARKER
+
+    result = await _factory_quality_dispatch(
+        "F001", date(2026, 5, 1), date(2026, 5, 31), "fpy"
+    )
+    assert isinstance(result, dict)
+    assert result["dataAvailability"] == FACTORY_PHASE_2D_PENDING_MARKER
 
 
 # ============================================================
@@ -920,10 +928,15 @@ async def test_factory_msg_does_not_misroute_to_chat_b1(monkeypatch):
     """Sister-chat guard: a FACTORY tenant must hit ``_factory_quality_dispatch``.
 
     Mirrors chat-A1/A2's symmetric guard in test_analysis_production_restaurant.py.
-    If the router incorrectly delegated all traffic to restaurant we would not
-    see the Phase 2D deferral message.
+    Phase 2D Subagent B rewired the factory branch to return an empty
+    envelope (no longer raises). The router must still route FACTORY tenants
+    into the factory dispatcher — proven by the Phase 2D marker appearing
+    on the returned response.
     """
-    from smartbi_compat.api.analysis_quality import get_quality_analysis
+    from smartbi_compat.api.analysis_quality import (
+        FACTORY_PHASE_2D_PENDING_MARKER,
+        get_quality_analysis,
+    )
 
     class _FactoryConn:
         async def fetchrow(self, sql, *args):
@@ -950,12 +963,19 @@ async def test_factory_msg_does_not_misroute_to_chat_b1(monkeypatch):
     class _AuthStub:
         factory_id = "F001"
 
-    with pytest.raises(NotImplementedError) as exc_info:
-        await get_quality_analysis(
-            factory_id="F001",
-            startDate=date(2026, 5, 1),
-            endDate=date(2026, 5, 31),
-            analysisType="fpy",
-            auth=_AuthStub(),
-        )
-    assert "Factory quality analysis" in str(exc_info.value)
+    result = await get_quality_analysis(
+        factory_id="F001",
+        startDate=date(2026, 5, 1),
+        endDate=date(2026, 5, 31),
+        analysisType="fpy",
+        auth=_AuthStub(),
+    )
+    # FastAPI / wrap_response semantics: pluck the dataAvailability marker
+    # whether the response is a raw dict or wrapped in {"data": {...}}.
+    payload = result
+    if isinstance(payload, dict) and "data" in payload and isinstance(
+        payload["data"], dict
+    ):
+        payload = payload["data"]
+    assert isinstance(payload, dict)
+    assert payload.get("dataAvailability") == FACTORY_PHASE_2D_PENDING_MARKER

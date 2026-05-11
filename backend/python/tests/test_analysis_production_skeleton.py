@@ -1,11 +1,13 @@
 """Skeleton tests for ``/analysis/production`` shared contracts.
 
 chat-A1 Wave 1 (PR #350) shipped this set. chat-A2 Wave 2 ships the
-restaurant branch impl (see ``test_analysis_production_restaurant.py``),
-so the restaurant-raises-NotImplementedError test is removed here. The
-factory branch still raises and that assertion stays.
+restaurant branch impl (see ``test_analysis_production_restaurant.py``).
+Phase 2D Subagent B rewires the factory branch from a raising stub into
+an empty-envelope placeholder marked ``FACTORY_SILVER_PHASE_2D_PENDING``;
+the assertion below now locks the new envelope contract instead of a
+``NotImplementedError`` raise.
 
-Surviving contracts (chat-A2 must preserve):
+Surviving contracts (chat-A2 + Phase 2D must preserve):
 
 * ``TenantType`` enum mirrors Java ``FactoryType`` exactly (5 values).
 * ``is_restaurant_tenant`` matches Java
@@ -15,8 +17,12 @@ Surviving contracts (chat-A2 must preserve):
   ``"RESTAURANT"`` per Q-DEC-8 Option A envelope discriminator.
 * ``get_tenant_type`` defaults to FACTORY on missing rows (preserves
   Java repository-failure fallback).
-* Factory dispatcher still raises ``NotImplementedError`` with the
-  canonical Phase 2D message so future dispatch can grep for it.
+* Factory dispatcher returns the Phase 2D empty envelope tagged with the
+  canonical ``FACTORY_SILVER_PHASE_2D_PENDING`` marker — future Silver-
+  layer impl (PR-A/B/C/D) must keep the same marker so frontend chip
+  rendering doesn't churn.
+* ``_FACTORY_BRANCH_DEFERRED_MSG`` documentation constant still contains
+  the ``"Phase 2D"`` + Silver-table substrings for grep-readiness.
 * Router declares the polymorphic endpoint path.
 
 Spec: docs/superpowers/specs/2026-05-12-t6-6-sub-a-production-impl-spec.md
@@ -28,6 +34,7 @@ import pytest
 from smartbi_compat.tenant import TenantType, get_tenant_type
 from smartbi_compat.api import analysis_production
 from smartbi_compat.api.analysis_production import (
+    FACTORY_PHASE_2D_PENDING_MARKER,
     _factory_production_dispatch,
     _FACTORY_BRANCH_DEFERRED_MSG,
     router,
@@ -160,21 +167,45 @@ async def test_get_tenant_type_null_type_column_defaults_to_factory():
 
 
 # ============================================================
-# Dispatcher NotImplementedError contracts (chat-A2 + Phase 2D handoff)
+# Dispatcher Phase 2D empty-envelope contracts (chat-A2 + Phase 2D handoff)
 # ============================================================
 
 
 @pytest.mark.asyncio
-async def test_factory_dispatch_raises_with_phase_2d_message():
-    """Phase 2D blocker is grep-able for follow-up dispatch."""
+async def test_factory_dispatch_returns_phase_2d_envelope():
+    """Phase 2D placeholder: factory dispatch returns empty envelope marker.
+
+    Subagent B rewired the factory branch from a raising stub into an
+    empty-envelope response carrying the top-level marker
+    ``FACTORY_SILVER_PHASE_2D_PENDING``. Future Silver-layer impl
+    (PR-A/B/C/D) must keep the same marker key so frontend chip rendering
+    doesn't churn.
+    """
     from datetime import date
 
-    with pytest.raises(NotImplementedError) as exc_info:
-        await _factory_production_dispatch("F001", date(2026, 5, 1), date(2026, 5, 31), "oee")
-    msg = str(exc_info.value)
-    assert "Phase 2D" in msg
-    assert "fact_production_batch" in msg
-    assert msg == _FACTORY_BRANCH_DEFERRED_MSG
+    result = await _factory_production_dispatch(
+        "F001", date(2026, 5, 1), date(2026, 5, 31), "oee"
+    )
+    assert isinstance(result, dict)
+    assert result["dataAvailability"] == FACTORY_PHASE_2D_PENDING_MARKER
+    assert result["dataAvailability"] == "FACTORY_SILVER_PHASE_2D_PENDING"
+
+
+def test_factory_deferred_msg_keeps_phase_2d_grep_substrings():
+    """``_FACTORY_BRANCH_DEFERRED_MSG`` still grep-able for Phase 2D dispatch.
+
+    Body was rewritten ("raises" → "empty envelope marked …") but every
+    grep target documented in the chat-A1 PR #350 contract is preserved
+    so log searches + grep audits keep working. The Phase-2D reference
+    is carried by the canonical marker token ``PHASE_2D`` (within
+    ``FACTORY_SILVER_PHASE_2D_PENDING``); the Silver-table grep targets
+    (e.g. ``fact_production_batch``) remain individually listed.
+    """
+    assert "PHASE_2D" in _FACTORY_BRANCH_DEFERRED_MSG
+    assert "FACTORY_SILVER_PHASE_2D_PENDING" in _FACTORY_BRANCH_DEFERRED_MSG
+    assert "fact_production_batch" in _FACTORY_BRANCH_DEFERRED_MSG
+    assert "fact_equipment_event" in _FACTORY_BRANCH_DEFERRED_MSG
+    assert "fact_quality_inspection" in _FACTORY_BRANCH_DEFERRED_MSG
 
 
 # ============================================================
