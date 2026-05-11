@@ -616,6 +616,27 @@ function refreshData() {
 <template>
   <CanvasAwareWrapper module-code="bom">
   <div class="bom-page">
+    <!-- D4 Path A (2026-05-10 customer meeting): BomExpansionService 当前读 RPF (MaterialProductConversion), -->
+    <!-- 不读 bom_items. 在 Path B reconciliation 落地前, BOM 数据必须手动同步到「转换率配置」才会被生产计划使用. -->
+    <!-- 详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md -->
+    <el-alert
+      type="warning"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 12px;"
+    >
+      <template #title>
+        当前生产计划基于「转换率配置 (RPF)」展开, BOM 编辑不会立即生效
+      </template>
+      <template #default>
+        客户提示: 在本页编辑 BOM 后, 请同步前往
+        <router-link to="/production/conversions" style="color: #e6a23c; text-decoration: underline;">
+          生产管理 → 转换率配置
+        </router-link>
+        更新对应的「原料 → 成品」转换率, 否则生产计划展开仍使用旧值。
+        详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md。
+      </template>
+    </el-alert>
     <ConceptDisambiguationAlert
       here-name="BOM 成本管理"
       here="一个成品需要哪些原料、各多少量、成本如何拆分（多对多结构 + 成本核算）"
