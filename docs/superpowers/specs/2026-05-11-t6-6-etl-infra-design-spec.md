@@ -657,9 +657,9 @@ This spec is the third in the T6.6 Phase B planning chain (after #223 + #298). I
 
 Before Sub-ETL-3 dispatches:
 
-- [ ] Steve — Q-ETL-1 (tenant abstraction) decision recorded
-- [ ] Steve — Q-ETL-2 (catalog table ship) decision recorded
-- [ ] Steve — Q-ETL-3 (factory_id naming) decision recorded
+- [x] Steve — Q-ETL-1 (tenant abstraction) decision recorded — **factory_id (VARCHAR(50)) as sole tenant ID** (reject `restaurant_tenant_id` new abstraction, save ~5pd). Verbal AskUserQuestion 2026-05-12. Evidence: PR #325 body §3 + V20260511_01 applied prod.
+- [x] Steve — Q-ETL-2 (catalog table ship) decision recorded — **Ship `restaurant_chain_catalog`** (thin metadata table). Verbal AskUserQuestion 2026-05-12. Evidence: PR #325 body §3 + V20260511_01 table created prod 2026-05-11 14:31:59.
+- [x] Steve — Q-ETL-3 (factory_id naming) decision recorded — **`R_<CHAIN_ROMAN>_REAL` verbatim Q1 §4.3**. Verbal AskUserQuestion 2026-05-12. Evidence: PR #325 body §3 + 14 rows in `smartbi_prod_db.restaurant_chain_catalog WHERE source_kind='REAL'`.
 - [ ] Engineering organizer (timing acceptable; ~6.5pd ETL chats can dispatch parallel with T6.5 Phase C close per Q1 §5)
 - [ ] T6.5 Phase C lead (no scope-creep into T6.5; Sub-ETL-* worktrees do not collide with T6.5 worktrees)
 - [ ] Reviewer audit cycle (per `feedback_subagent_driven_audit_pattern.md`) — 4 cycles recommended on this spec before impl-dispatch

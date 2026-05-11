@@ -342,6 +342,23 @@ Updates to PR #180 §4 risk table:
 
 ---
 
+## 8.1 Resolution Status (Updated 2026-05-12 — Steve verbal sign-off)
+
+Steve resolved key open questions via AskUserQuestion conversations 2026-05-11 / 2026-05-12. Resolutions ratified in canonical spec docs:
+
+| # | Question | Resolution | Evidence |
+|---|---|---|---|
+| Q1 | factory_id naming convention | ✅ `R_<CHAIN_ROMAN>_REAL` per §4.3 (Q-ETL-3 sign-off) | PR #316 §10 + PR #325 V20260511_02 (14 rows live prod) |
+| **Q4** | `/analysis/production` for restaurant tenant | ✅ **Option B 餐饮重定义** — 厨房工位利用率 / 备菜时间 / 翻台率 (NOT tenant-type-gate to FACTORY; supersedes recommended default) | PR #326 Q4/Q5 decision spec §1 |
+| **Q5** | Defect / FPY / rework redefinition | ✅ **Option B 餐饮重定义** — 食安事故率 / 投诉率 / 退菜率 / 损耗率 | PR #326 Q4/Q5 decision spec §2 |
+| Q7 (related) | Customer review data — fact_restaurant_review separate table? | ⏳ Deferred to Sub-A/B impl spec (per PR #326 §5 ETL backfill deps) | PR #326 §5 Q-DEC-6 (related ETL extension) |
+
+**Q2/Q3/Q6/Q8/Q9/Q10 remain at recommended defaults** — no Steve action required for those, defaults are operational and don't block T6.6 Phase B execution.
+
+**Resolution discovery pattern**: Per HARD rule (`feedback_organizer_dispatch_must_grep_canonical_HOLD.md` + reviewer audit Section E.2 2026-05-11), verbal AskUserQuestion sign-offs MUST be ratified into source-of-truth spec doc to be greppable. This §8.1 closes that gap for Q4 + Q5.
+
+---
+
 ## 9. Cross-references
 
 - **PR #180** (T6.6 main spec) — T6.6 base spec; this amendment supersedes PR #180 §2.1 + §2.2 effort estimate (production + quality).
