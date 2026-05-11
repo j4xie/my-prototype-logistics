@@ -638,25 +638,22 @@ function refreshData() {
 <template>
   <CanvasAwareWrapper module-code="bom">
   <div class="bom-page">
-    <!-- D4 Path A (2026-05-10 customer meeting): BomExpansionService 当前读 RPF (MaterialProductConversion), -->
-    <!-- 不读 bom_items. 在 Path B reconciliation 落地前, BOM 数据必须手动同步到「转换率配置」才会被生产计划使用. -->
-    <!-- 详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md -->
+    <!-- D4 Path B (2026-05-10 customer meeting, PR #309 A2=B): BomExpansionService 现已优先读 bom_items 表. -->
+    <!-- BOM 编辑保存后立即对生产计划生效, 无需再手动同步到转换率配置. -->
+    <!-- RPF (MaterialProductConversion) 仅作 fallback (老工厂数据无 BOM 配置时沿用). -->
+    <!-- 详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md §7 -->
     <el-alert
-      type="warning"
+      type="success"
       :closable="false"
       show-icon
       style="margin-bottom: 12px;"
     >
       <template #title>
-        当前生产计划基于「转换率配置 (RPF)」展开, BOM 编辑不会立即生效
+        BOM 已对接生产计划, 录入即生效
       </template>
       <template #default>
-        客户提示: 在本页编辑 BOM 后, 请同步前往
-        <router-link to="/production/conversions" style="color: #e6a23c; text-decoration: underline;">
-          生产管理 → 转换率配置
-        </router-link>
-        更新对应的「原料 → 成品」转换率, 否则生产计划展开仍使用旧值。
-        详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md。
+        本页录入的 BOM 配方 (含成品含量 + 出成率% + 单位) 保存后立即被生产计划自动展开使用,
+        无需再同步「转换率配置」(RPF)。RPF 表保留作为老工厂数据的 fallback。
       </template>
     </el-alert>
     <ConceptDisambiguationAlert

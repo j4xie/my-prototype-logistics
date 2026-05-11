@@ -7,9 +7,11 @@ import com.cretas.aims.dto.orchestration.MaterialShortfall;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.MaterialProductConversion;
 import com.cretas.aims.entity.ProductionPlan;
+import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.repository.ConversionRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.service.BomService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +29,13 @@ import java.util.List;
  * <p>负责根据生产计划中的产品类型和生产数量，展开所需原辅料清单（BOM展开），
  * 并校验当前库存是否满足需求，同时按FEFO策略输出批次分配方案。</p>
  *
+ * <p><b>D4 Path B (2026-05-10 customer meeting, PR #309 A2=B):</b>
+ * 优先读 {@link BomItem} (新 BOM 多原料配方表), 当 BomItem 不存在时
+ * fallback 到 {@link MaterialProductConversion} (RPF, 旧出成率表) 保持向后兼容。
+ * BomItem 路径会传递 {@code sourceUnit} (e.g. "g") 给 MaterialRequirement,
+ * 激活 ProductionWorkflowOrchestrator 的 D3 g↔kg 1:1000 单位换算。
+ * 详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md §7</p>
+ *
  * @author Cretas Team
  * @since 2026-02-19
  */
@@ -34,13 +44,26 @@ import java.util.List;
 public class BomExpansionService {
 
     private static final Logger log = LoggerFactory.getLogger(BomExpansionService.class);
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     private final ConversionRepository conversionRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final ProductionPlanRepository productionPlanRepository;
+    private final BomService bomService;
 
     /**
      * BOM展开：根据产品类型和生产数量，计算所有需要的原辅料（含损耗）。
+     *
+     * <p>查询优先级：</p>
+     * <ol>
+     *   <li><b>BomItem (新 BOM 配方表)</b>：客户在「BOM 成本管理」页录入的多原料配方。
+     *       使用 {@code standardQuantity / (yieldRate/100) * productionQuantity}
+     *       计算每种原料的实际用量，并把 {@code unit} 传到 MaterialRequirement.sourceUnit
+     *       供后续 D3 g↔kg 单位换算使用。</li>
+     *   <li><b>MaterialProductConversion (RPF, fallback)</b>：旧出成率表，
+     *       当产品无 BomItem 配置时沿用，保持向后兼容（F001 等老工厂数据）。
+     *       RPF 路径不设置 sourceUnit (null)，调拨流程沿用原 1:1 透传逻辑。</li>
+     * </ol>
      *
      * @param factoryId         工厂ID
      * @param productTypeId     产品类型ID
@@ -51,6 +74,63 @@ public class BomExpansionService {
     public List<MaterialRequirement> expandBOM(String factoryId,
                                                String productTypeId,
                                                BigDecimal productionQuantity) {
+        // D4 Path B (2026-05-10): 优先读 BomItem (新配方表)
+        List<BomItem> bomItems = bomService.getBomItemsByProduct(factoryId, productTypeId);
+
+        if (bomItems != null && !bomItems.isEmpty()) {
+            log.info("[BOM-EXPANSION] using BomItem for factoryId={}, productTypeId={}, items={}",
+                    factoryId, productTypeId, bomItems.size());
+            return expandFromBomItems(bomItems, productionQuantity);
+        }
+
+        // Fallback: 旧出成率表 (MaterialProductConversion)
+        log.info("[BOM-EXPANSION] using RPF (MaterialProductConversion) fallback for factoryId={}, productTypeId={}",
+                factoryId, productTypeId);
+        return expandFromConversions(factoryId, productTypeId, productionQuantity);
+    }
+
+    /**
+     * D4 Path B: 从 BomItem 配方表构建 MaterialRequirement 清单。
+     *
+     * <p>计算公式：required = (standardQuantity / (yieldRate/100)) * productionQuantity</p>
+     * <p>等价于 {@code bomItem.getActualQuantity() * productionQuantity}，
+     * 这里直接调 entity 的 @Transient method 复用同一公式，避免 drift。</p>
+     *
+     * <p>关键：传递 {@code bomItem.getUnit()} 到 MaterialRequirement.sourceUnit，
+     * 激活 D3 g↔kg 单位换算（ProductionWorkflowOrchestrator.buildTransferRequest）。</p>
+     */
+    private List<MaterialRequirement> expandFromBomItems(List<BomItem> bomItems,
+                                                         BigDecimal productionQuantity) {
+        List<MaterialRequirement> requirements = new ArrayList<>();
+        for (BomItem item : bomItems) {
+            BigDecimal actualPerUnit = item.getActualQuantity();
+            BigDecimal required = actualPerUnit != null && productionQuantity != null
+                    ? actualPerUnit.multiply(productionQuantity).setScale(6, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            MaterialRequirement req = new MaterialRequirement();
+            req.setMaterialTypeId(item.getMaterialTypeId());
+            req.setMaterialTypeName(
+                    item.getMaterialName() != null ? item.getMaterialName() : item.getMaterialTypeId()
+            );
+            req.setRequiredQuantity(required);
+            // BomItem 的"损耗率"概念来自 yieldRate (出成率% → 100-yieldRate = 损耗%)
+            // 仅用于展示 (BomExpansionTool / ProductionPlanServiceImpl)，不参与 checkMaterialAvailability 算术
+            req.setWastageRate(deriveWastageFromYield(item.getYieldRate()));
+            // D3 激活点 (PR #297 handoff): sourceUnit 触发 ProductionWorkflowOrchestrator 的 g↔kg 1:1000 换算
+            req.setSourceUnit(item.getUnit());
+            requirements.add(req);
+        }
+        return requirements;
+    }
+
+    /**
+     * Legacy fallback: 从 MaterialProductConversion (RPF) 构建 MaterialRequirement。
+     * 保持向后兼容 — F001 等老工厂数据仍依赖此路径。
+     */
+    private List<MaterialRequirement> expandFromConversions(String factoryId,
+                                                            String productTypeId,
+                                                            BigDecimal productionQuantity) {
         List<MaterialProductConversion> conversions =
                 conversionRepository.findByFactoryIdAndProductTypeId(factoryId, productTypeId);
 
@@ -71,12 +151,22 @@ public class BomExpansionService {
             );
             req.setRequiredQuantity(required);
             req.setWastageRate(conv.getWastageRate());
+            // RPF 路径 sourceUnit 留 null → ProductionWorkflowOrchestrator 沿用原 1:1 透传逻辑 (向后兼容)
             requirements.add(req);
         }
 
-        log.info("BOM展开: factoryId={}, productType={}, quantity={}, 需要原料种类={}",
+        log.info("BOM展开 (RPF fallback): factoryId={}, productType={}, quantity={}, 需要原料种类={}",
                 factoryId, productTypeId, productionQuantity, requirements.size());
         return requirements;
+    }
+
+    /**
+     * 从 BomItem 的出成率 (yieldRate, 0-100%) 推导损耗率 (wastageRate, 0-100%)。
+     * 100 - yieldRate = wastageRate (近似)，仅供展示用，不参与库存检查算术。
+     */
+    private BigDecimal deriveWastageFromYield(BigDecimal yieldRate) {
+        if (yieldRate == null) return null;
+        return HUNDRED.subtract(yieldRate).max(BigDecimal.ZERO);
     }
 
     /**
