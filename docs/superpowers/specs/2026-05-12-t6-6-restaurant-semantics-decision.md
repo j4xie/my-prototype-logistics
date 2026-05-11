@@ -641,8 +641,9 @@ Before Sub-A / Sub-B dispatch:
 
 - [x] Steve — Q4 = Option B (餐饮重定义) directive recorded 2026-05-11 via AskUserQuestion ✅ (this spec encodes the decision per §1)
 - [x] Steve — Q5 = Option B (餐饮重定义) directive recorded 2026-05-11 via AskUserQuestion ✅ (this spec encodes per §2)
-- [ ] Steve — Q-DEC-6 decision (N3 F1 ETL extension vs F3 null) — recommended **F1**
-- [ ] Steve — Q-DEC-8 decision (endpoint shape Option A vs B) — recommended **Option A**
+- [x] Steve — Q-DEC-6 decision = **F1 (extend `fact_pos_item.return_qty` + Sub-ETL-1c extraction +2.5pd)**. Verbal AskUserQuestion 2026-05-12. Evidence: organizer dispatches Sub-ETL-1c with return-qty mapping in §5 ETL backfill plan.
+- [x] Steve — Q-DEC-8 decision = **Option A (single URL tenant-typed envelope, save +4pd)**. Verbal AskUserQuestion 2026-05-12. Evidence: Sub-A/B Phase B impl spec will use single endpoint per §3.1 Option A contract.
+- [x] Steve — `data/imports/restaurant-chains/` raw Excel **gitignore** (餐饮客户数据不提交仓). Verbal AskUserQuestion 2026-05-12. Evidence: organizer adds `.gitignore` entry in Sub-ETL-1 follow-up dispatch.
 - [ ] Steve — Q-DEC-1..5 + Q-DEC-7 + Q-DEC-9 + Q-DEC-10 defaults accepted (or per-item alternative chosen)
 - [ ] Engineering organizer — effort revision +4 to +6pd Sub-A/Sub-B acknowledged (vs Q1 §4.4 ~10pd combined)
 - [ ] PR #316 ETL infra chat author — ack scope extension if Q-DEC-6 = F1 (+2.5pd Sub-ETL-1c/1a/2b)
