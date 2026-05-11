@@ -126,20 +126,25 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     }
 
     @Test
-    @DisplayName("flag=true: checkAvailability 跳过 factoryId 过滤 (集团池)")
+    @DisplayName("flag=true: checkAvailability 跨工厂查询仍仅 WH-LOG (D5 集团池 + 总仓过滤)")
     void checkAvailability_flagTrue_skipsFactoryFilter() throws Exception {
         setFlag(true);
 
         SalesOrder so = buildSalesOrderWithOneItem(new BigDecimal("100"));
         when(salesOrderRepository.findById(SALES_ORDER_ID)).thenReturn(Optional.of(so));
-        when(finishedGoodsBatchRepository.sumAvailableQuantityByProductTypeAllFactories(PRODUCT_TYPE))
-                .thenReturn(new BigDecimal("500"));  // 跨工厂总量比单厂多
+        // D5 2026-05-11: 跨工厂分支也强制 WH-LOG 过滤
+        when(finishedGoodsBatchRepository.sumAvailableQuantityByProductTypeAllFactoriesAndWarehouseCode(
+                PRODUCT_TYPE, WarehouseCodes.WH_LOG))
+                .thenReturn(new BigDecimal("500"));  // 跨工厂 WH-LOG 总量
 
         StockCheckResult result = service.checkAvailability(FACTORY_A, SALES_ORDER_ID);
 
-        // all-factories 查询被调用 1 次, factory-filtered 永远不调用
+        // D5: cross-factory + WH-LOG 查询被调用 1 次, 不再调用 unfiltered all-factories
         verify(finishedGoodsBatchRepository, times(1))
-                .sumAvailableQuantityByProductTypeAllFactories(PRODUCT_TYPE);
+                .sumAvailableQuantityByProductTypeAllFactoriesAndWarehouseCode(
+                        PRODUCT_TYPE, WarehouseCodes.WH_LOG);
+        verify(finishedGoodsBatchRepository, never())
+                .sumAvailableQuantityByProductTypeAllFactories(anyString());
         verify(finishedGoodsBatchRepository, never())
                 .sumAvailableQuantityByProductType(anyString(), anyString());
 
@@ -168,16 +173,21 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     }
 
     @Test
-    @DisplayName("flag=true: reserveStock 跨工厂 FEFO 预留 (集团池)")
+    @DisplayName("flag=true: reserveStock 跨工厂 FEFO 预留 + WH-LOG 过滤 (D5 集团池仍仅总仓)")
     void reserveStock_flagTrue_skipsFactoryFilter() throws Exception {
         setFlag(true);
-        when(finishedGoodsBatchRepository.findAvailableBatchesAllFactories(PRODUCT_TYPE))
+        // D5 2026-05-11: cross-factory branch 也 WH-LOG 过滤
+        when(finishedGoodsBatchRepository.findAvailableBatchesAllFactoriesByWarehouseCode(
+                PRODUCT_TYPE, WarehouseCodes.WH_LOG))
                 .thenReturn(Collections.emptyList());
 
         service.reserveStock(FACTORY_A, PRODUCT_TYPE, new BigDecimal("10"));
 
         verify(finishedGoodsBatchRepository, times(1))
-                .findAvailableBatchesAllFactories(PRODUCT_TYPE);
+                .findAvailableBatchesAllFactoriesByWarehouseCode(
+                        PRODUCT_TYPE, WarehouseCodes.WH_LOG);
+        verify(finishedGoodsBatchRepository, never())
+                .findAvailableBatchesAllFactories(anyString());
         verify(finishedGoodsBatchRepository, never())
                 .findAvailableBatches(anyString(), anyString());
     }
@@ -187,11 +197,11 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     // ============================================================
 
     @Test
-    @DisplayName("flag=true: FEFO 从跨工厂批次池中按返回顺序预留")
+    @DisplayName("flag=true: FEFO 从跨工厂 WH-LOG 批次池中按返回顺序预留 (D5)")
     void reserveStock_flagTrue_reservesAcrossFactoryBatches() throws Exception {
         setFlag(true);
 
-        // 模拟跨工厂池: 两个不同 factory 的批次, repository 已按 FEFO 排好序
+        // 模拟跨工厂 WH-LOG 池: 两个不同 factory 的批次, repository 已按 FEFO 排好序
         FinishedGoodsBatch batchFromFactoryB = new FinishedGoodsBatch();
         batchFromFactoryB.setFactoryId("F002");
         batchFromFactoryB.setBatchNumber("B-F002-001");
@@ -210,10 +220,12 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
         batchFromFactoryC.setShippedQuantity(BigDecimal.ZERO);
         batchFromFactoryC.setReservedQuantity(BigDecimal.ZERO);
 
-        when(finishedGoodsBatchRepository.findAvailableBatchesAllFactories(PRODUCT_TYPE))
+        // D5 2026-05-11: query 用 cross-factory + WH-LOG 过滤
+        when(finishedGoodsBatchRepository.findAvailableBatchesAllFactoriesByWarehouseCode(
+                PRODUCT_TYPE, WarehouseCodes.WH_LOG))
                 .thenReturn(List.of(batchFromFactoryB, batchFromFactoryC));
 
-        // 调用 SO.factoryId=F001 但跨工厂取了 F002 + F003 的批次
+        // 调用 SO.factoryId=F001 但跨工厂取了 F002 + F003 的 WH-LOG 批次
         service.reserveStock(FACTORY_A, PRODUCT_TYPE, new BigDecimal("60"));
 
         // 首批 30 全用 (F002), 第二批用 30/50 (F003)
@@ -223,7 +235,8 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
                 "second batch partial-reserved 30/50 from F003");
 
         verify(finishedGoodsBatchRepository, times(1))
-                .findAvailableBatchesAllFactories(PRODUCT_TYPE);
+                .findAvailableBatchesAllFactoriesByWarehouseCode(
+                        PRODUCT_TYPE, WarehouseCodes.WH_LOG);
         // 两批各 save 一次 (依次 iteration)
         verify(finishedGoodsBatchRepository, times(1)).save(eq(batchFromFactoryB));
         verify(finishedGoodsBatchRepository, times(1)).save(eq(batchFromFactoryC));

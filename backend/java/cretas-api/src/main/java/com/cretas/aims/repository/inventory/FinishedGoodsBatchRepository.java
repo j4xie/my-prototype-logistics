@@ -128,4 +128,46 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
             "ORDER BY b.expireDate ASC NULLS LAST, b.productionDate ASC")
     List<FinishedGoodsBatch> findAvailableBatchesAllFactories(
             @Param("productTypeId") String productTypeId);
+
+    /**
+     * D5 (cross-factory sales + WH-LOG filter) — 跨工厂的 WH-LOG 可用成品库存汇总。
+     *
+     * <p>当 A5 feature flag {@code cretas.sales.cross-factory.enabled=true} 时使用：
+     * 销售订单跨工厂匹配,但**仅**从各工厂总仓 (WH-LOG) 出货 (per D5 spec, 2026-05-11)。
+     * 排除 WH-WKS 鲜棉仓（当天清仓,不参与销售）。
+     *
+     * <p>实现：JOIN {@code factory_warehouses} 表用 code='WH-LOG' 过滤,每个 factory
+     * 都有 WH-LOG seed (V20260411_03 保证)。
+     *
+     * @see com.cretas.aims.service.orchestration.InventoryMatchingService
+     * @since 2026-05-11 PR #316 D5 (sales from WH-LOG)
+     */
+    @Query("SELECT COALESCE(SUM(b.producedQuantity - b.shippedQuantity - b.reservedQuantity), 0) " +
+            "FROM FinishedGoodsBatch b, com.cretas.aims.entity.factory.FactoryWarehouse w " +
+            "WHERE b.warehouseId = w.id AND w.code = :warehouseCode " +
+            "AND b.productTypeId = :productTypeId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0")
+    BigDecimal sumAvailableQuantityByProductTypeAllFactoriesAndWarehouseCode(
+            @Param("productTypeId") String productTypeId,
+            @Param("warehouseCode") String warehouseCode);
+
+    /**
+     * D5 (cross-factory sales + WH-LOG filter) — 跨工厂的 WH-LOG 可用成品批次（FEFO）。
+     *
+     * <p>当 A5 feature flag {@code cretas.sales.cross-factory.enabled=true} 时使用：
+     * 销售订单 FEFO 预留时跨工厂池但**仅**取各工厂总仓 (WH-LOG) 批次。
+     *
+     * @see com.cretas.aims.service.orchestration.InventoryMatchingService
+     * @since 2026-05-11 PR #316 D5 (sales from WH-LOG)
+     */
+    @Query("SELECT b FROM FinishedGoodsBatch b, com.cretas.aims.entity.factory.FactoryWarehouse w " +
+            "WHERE b.warehouseId = w.id AND w.code = :warehouseCode " +
+            "AND b.productTypeId = :productTypeId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0 " +
+            "ORDER BY b.expireDate ASC NULLS LAST, b.productionDate ASC")
+    List<FinishedGoodsBatch> findAvailableBatchesAllFactoriesByWarehouseCode(
+            @Param("productTypeId") String productTypeId,
+            @Param("warehouseCode") String warehouseCode);
 }

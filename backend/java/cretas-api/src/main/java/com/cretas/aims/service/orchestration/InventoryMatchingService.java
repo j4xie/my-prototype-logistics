@@ -2,6 +2,7 @@ package com.cretas.aims.service.orchestration;
 
 import com.cretas.aims.dto.orchestration.LineItemMatch;
 import com.cretas.aims.dto.orchestration.StockCheckResult;
+import com.cretas.aims.entity.factory.WarehouseCodes;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.entity.inventory.SalesOrderItem;
@@ -85,11 +86,15 @@ public class InventoryMatchingService {
             }
 
             // D1: warehouse strategy per PR #310 §5 — sales from WH-LOG fixed (D5 销售从总仓出货).
-            // crossFactoryEnabled 分支保留 all-factories 语义 (A5 集团联销, 跨工厂总池).
+            // D5 (2026-05-11 PR #316): cross-factory branch also enforces WH-LOG filter.
+            //   - flag=false (default): SO.factoryId + WH-LOG (single-factory + total warehouse).
+            //   - flag=true (A5):       all factories + WH-LOG (group pool, still total warehouse only).
+            //   WH-WKS (鲜棉仓, 当天清仓) 从不参与销售匹配.
             BigDecimal available;
             if (crossFactoryEnabled) {
                 available = finishedGoodsBatchRepository
-                        .sumAvailableQuantityByProductTypeAllFactories(item.getProductTypeId());
+                        .sumAvailableQuantityByProductTypeAllFactoriesAndWarehouseCode(
+                                item.getProductTypeId(), WarehouseCodes.WH_LOG);
             } else {
                 String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
                 available = finishedGoodsBatchRepository
@@ -135,9 +140,12 @@ public class InventoryMatchingService {
     @Transactional
     public void reserveStock(String factoryId, String productTypeId, BigDecimal quantity) {
         // D1: warehouse strategy per PR #310 §5 — sales reserve from WH-LOG fixed (D5).
+        // D5 (2026-05-11 PR #316): cross-factory FEFO 预留也只取 WH-LOG 批次.
         List<FinishedGoodsBatch> batches;
         if (crossFactoryEnabled) {
-            batches = finishedGoodsBatchRepository.findAvailableBatchesAllFactories(productTypeId);
+            batches = finishedGoodsBatchRepository
+                    .findAvailableBatchesAllFactoriesByWarehouseCode(
+                            productTypeId, WarehouseCodes.WH_LOG);
         } else {
             String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
             batches = finishedGoodsBatchRepository
