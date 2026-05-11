@@ -3,7 +3,10 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.smartbi.ConfigOperationResult;
+import com.cretas.aims.dto.smartbi.CreateAlertThresholdRequest;
+import com.cretas.aims.dto.smartbi.CreateIncentiveRuleRequest;
 import com.cretas.aims.dto.smartbi.DataSourceDTO;
+import com.cretas.aims.dto.smartbi.UpdateIncentiveRuleRequest;
 import com.cretas.aims.entity.smartbi.*;
 import com.cretas.aims.service.smartbi.DataSourceRegistryService;
 import com.cretas.aims.service.smartbi.SmartBIConfigService;
@@ -167,12 +170,12 @@ public class SmartBIConfigController {
     @PostMapping("/thresholds")
     @Operation(summary = "创建告警阈值", description = "创建新的告警阈值配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createThreshold(
-            @RequestBody @Valid SmartBiAlertThreshold threshold) {
+            @RequestBody @Valid CreateAlertThresholdRequest request) {
 
         log.info("创建告警阈值: type={}, metricCode={}",
-                threshold.getThresholdType(), threshold.getMetricCode());
+                request.getThresholdType(), request.getMetricCode());
         try {
-            ConfigOperationResult result = configService.createThreshold(threshold);
+            ConfigOperationResult result = configService.createThreshold(request);
             if (result.isSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success("创建成功", result));
             } else {
@@ -262,12 +265,12 @@ public class SmartBIConfigController {
     @PostMapping("/incentive-rules")
     @Operation(summary = "创建激励规则", description = "创建新的激励规则配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createIncentiveRule(
-            @RequestBody @Valid SmartBiIncentiveRule rule) {
+            @RequestBody @Valid CreateIncentiveRuleRequest request) {
 
         log.info("创建激励规则: ruleCode={}, levelName={}",
-                rule.getRuleCode(), rule.getLevelName());
+                request.getRuleCode(), request.getLevelName());
         try {
-            ConfigOperationResult result = configService.createIncentiveRule(rule);
+            ConfigOperationResult result = configService.createIncentiveRule(request);
             if (result.isSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success("创建成功", result));
             } else {
@@ -284,11 +287,11 @@ public class SmartBIConfigController {
     @Operation(summary = "更新激励规则", description = "更新指定的激励规则配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateIncentiveRule(
             @Parameter(description = "配置ID") @PathVariable Long id,
-            @RequestBody @Valid SmartBiIncentiveRule rule) {
+            @RequestBody @Valid UpdateIncentiveRuleRequest request) {
 
         log.info("更新激励规则: id={}", id);
         try {
-            ConfigOperationResult result = configService.updateIncentiveRule(id, rule);
+            ConfigOperationResult result = configService.updateIncentiveRule(id, request);
             if (result.isSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success("更新成功", result));
             } else {
