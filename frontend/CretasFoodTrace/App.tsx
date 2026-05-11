@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import Toast from 'react-native-toast-message';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useLanguageStore } from './src/store/languageStore';
+import { checkAppMinVersion } from './src/services/appVersionCheck';
 
 // 初始化 i18n（必须在 App 组件之前导入）
 import './src/i18n';
@@ -25,6 +26,8 @@ export default function App() {
   useEffect(() => {
     // 初始化语言设置
     initializeLanguage();
+    // 检查 App 最低版本 (PR #309 B5) — 失败时静默忽略, 不阻塞启动
+    checkAppMinVersion();
   }, [initializeLanguage]);
 
   return (
