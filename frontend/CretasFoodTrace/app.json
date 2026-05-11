@@ -11,9 +11,17 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/PLACEHOLDER-EAS-PROJECT-ID",
+      "url": "https://ota.cretaceousfuture.com/api/ota/manifest",
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 5000
+      "fallbackToCacheTimeout": 5000,
+      "codeSigningCertificate": "./ota_cert.pem",
+      "codeSigningMetadata": {
+        "keyid": "main",
+        "alg": "rsa-v1_5-sha256"
+      },
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     },
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -100,9 +108,7 @@
       ]
     ],
     "extra": {
-      "eas": {
-        "projectId": "com.cretas.foodtrace"
-      }
+      "router": {}
     }
   }
 }
