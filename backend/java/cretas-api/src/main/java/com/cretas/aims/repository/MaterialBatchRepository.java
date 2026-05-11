@@ -205,6 +205,20 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
     List<Object[]> sumQuantityByMaterialType(@Param("factoryId") String factoryId);
 
     /**
+     * 汇总指定原料类型在指定工厂的可用库存总量。
+     * 用于调拨单 detail 页 "现有库存" 列 (PR #289 §B4 客户对接 2026-05-10)。
+     * 与 {@link com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository#sumAvailableQuantityByProductType}
+     * 对称。
+     */
+    @Query("SELECT COALESCE(SUM(m.receiptQuantity - m.usedQuantity - m.reservedQuantity), 0) " +
+           "FROM MaterialBatch m WHERE m.factoryId = :factoryId " +
+           "AND m.materialTypeId = :materialTypeId AND m.status = 'AVAILABLE' " +
+           "AND (m.receiptQuantity - m.usedQuantity - m.reservedQuantity) > 0")
+    BigDecimal sumAvailableQuantityByMaterialType(
+            @Param("factoryId") String factoryId,
+            @Param("materialTypeId") String materialTypeId);
+
+    /**
      * 获取低库存的原材料类型
      */
     @Query("SELECT m.materialTypeId FROM MaterialBatch m " +

@@ -83,6 +83,15 @@ public class InternalTransferItem extends BaseEntity {
     @Column(name = "remark", length = 500)
     private String remark;
 
+    /**
+     * 调出方现有库存 (调拨创建时刻的快照, 用 @Transient 不持久化).
+     * 由 TransferServiceImpl 在 fetch 时按 sourceFactoryId+materialTypeId/productTypeId
+     * 汇总 MaterialBatch / FinishedGoodsBatch 可用库存填充.
+     * PR #289 §B4 客户对接 2026-05-10 — 调拨单 detail 页"现有库存"列.
+     */
+    @Transient
+    private BigDecimal currentStock;
+
     // ==================== 关联 ====================
 
     @JsonIgnore
