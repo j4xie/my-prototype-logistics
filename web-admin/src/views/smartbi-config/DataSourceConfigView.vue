@@ -95,7 +95,11 @@ async function loadData() {
     if (searchForm.value.type) params.type = searchForm.value.type;
     if (searchForm.value.isActive !== '') params.isActive = searchForm.value.isActive === 'true';
 
-    const response = await getDataSources(params);
+    if (!factoryId.value) {
+      ElMessage.warning('未登录或缺少工厂上下文，请重新登录');
+      return;
+    }
+    const response = await getDataSources(factoryId.value, params);
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
@@ -154,13 +158,18 @@ async function handleSubmit() {
     return;
   }
 
+  if (!factoryId.value) {
+    ElMessage.warning('未登录或缺少工厂上下文，请重新登录');
+    return;
+  }
+
   dialogLoading.value = true;
   try {
     let response;
     if (editForm.value.id) {
-      response = await updateDataSource(editForm.value.id, editForm.value);
+      response = await updateDataSource(factoryId.value, editForm.value.id, editForm.value);
     } else {
-      response = await createDataSource(editForm.value);
+      response = await createDataSource(factoryId.value, editForm.value);
     }
 
     if (response.success) {
@@ -192,7 +201,11 @@ async function handleDelete(row: DataSource) {
       }
     );
 
-    const response = await deleteDataSource(row.id);
+    if (!factoryId.value) {
+      ElMessage.warning('未登录或缺少工厂上下文，请重新登录');
+      return;
+    }
+    const response = await deleteDataSource(factoryId.value, row.id);
     if (response.success) {
       ElMessage.success('删除成功');
       loadData();
@@ -208,8 +221,12 @@ async function handleDelete(row: DataSource) {
 // ============ 测试连接 ============
 async function handleTestConnection(row: DataSource) {
   try {
+    if (!factoryId.value) {
+      ElMessage.warning('未登录或缺少工厂上下文，请重新登录');
+      return;
+    }
     ElMessage.info('正在测试连接...');
-    const response = await testDataSourceConnection(row.id);
+    const response = await testDataSourceConnection(factoryId.value, row.id);
     if (response.success && response.data?.success) {
       ElMessage.success('连接测试成功');
     } else {

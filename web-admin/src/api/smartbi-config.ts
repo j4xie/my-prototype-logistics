@@ -88,53 +88,73 @@ export interface PageResponse<T> {
 }
 
 // ==================== 数据源 API ====================
+//
+// Issue #280: BE controller (SmartBIConfigController data-sources endpoints)
+// requires factoryId either as query param OR in body. FE previously sent
+// neither, so create/update returned 200 envelope with success=false
+// "factoryId 必填". All 6 endpoints below now accept factoryId as a required
+// parameter and forward it as a query param (matches chat1 diag T1 success
+// path).
 
 /**
  * 获取数据源列表
  */
-export function getDataSources(params?: {
-  page?: number;
-  size?: number;
-  keyword?: string;
-  type?: string;
-  isActive?: boolean;
-}): Promise<ApiResponse<PageResponse<DataSource>>> {
-  return get('/smartbi-config/data-sources', { params });
+export function getDataSources(
+  factoryId: string,
+  params?: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    type?: string;
+    isActive?: boolean;
+  }
+): Promise<ApiResponse<PageResponse<DataSource>>> {
+  return get('/smartbi-config/data-sources', { params: { ...params, factoryId } });
 }
 
 /**
  * 获取单个数据源
  */
-export function getDataSource(id: number): Promise<ApiResponse<DataSource>> {
-  return get(`/smartbi-config/data-sources/${id}`);
+export function getDataSource(factoryId: string, id: number): Promise<ApiResponse<DataSource>> {
+  return get(`/smartbi-config/data-sources/${id}`, { params: { factoryId } });
 }
 
 /**
  * 创建数据源
  */
-export function createDataSource(data: Partial<DataSource>): Promise<ApiResponse<DataSource>> {
-  return post('/smartbi-config/data-sources', data);
+export function createDataSource(
+  factoryId: string,
+  data: Partial<DataSource>
+): Promise<ApiResponse<DataSource>> {
+  return post(`/smartbi-config/data-sources?factoryId=${encodeURIComponent(factoryId)}`, data);
 }
 
 /**
  * 更新数据源
  */
-export function updateDataSource(id: number, data: Partial<DataSource>): Promise<ApiResponse<DataSource>> {
-  return put(`/smartbi-config/data-sources/${id}`, data);
+export function updateDataSource(
+  factoryId: string,
+  id: number,
+  data: Partial<DataSource>
+): Promise<ApiResponse<DataSource>> {
+  return put(`/smartbi-config/data-sources/${id}?factoryId=${encodeURIComponent(factoryId)}`, data);
 }
 
 /**
  * 删除数据源
  */
-export function deleteDataSource(id: number): Promise<ApiResponse<void>> {
-  return del(`/smartbi-config/data-sources/${id}`);
+export function deleteDataSource(factoryId: string, id: number): Promise<ApiResponse<void>> {
+  return del(`/smartbi-config/data-sources/${id}?factoryId=${encodeURIComponent(factoryId)}`);
 }
 
 /**
  * 测试数据源连接
  */
-export function testDataSourceConnection(id: number): Promise<ApiResponse<{ success: boolean; message: string }>> {
-  return post(`/smartbi-config/data-sources/${id}/test`);
+export function testDataSourceConnection(
+  factoryId: string,
+  id: number
+): Promise<ApiResponse<{ success: boolean; message: string }>> {
+  return post(`/smartbi-config/data-sources/${id}/test?factoryId=${encodeURIComponent(factoryId)}`);
 }
 
 // ==================== 图表模板 API ====================
