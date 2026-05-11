@@ -233,10 +233,15 @@ class FakeConn:
 
         if "INSERT INTO FACT_POS_TRANSACTION" in s:
             # args order per FACT_POS_TXN_UPSERT_SQL:
-            # (factory_id, upload_id, source_type, source_bill_no, store_id, ...)
+            # (factory_id, upload_id, source_type, source_bill_no, store_id, ...,
+            #  item_count $19, has_discount $20)
             factory_id, _upload_id, source_type, source_bill_no, store_id = args[0:5]
             key = (factory_id, source_type, store_id, source_bill_no)
+            # item_count is the 19th SQL param → args index 18.
+            item_count = args[18] if len(args) > 18 else None
             if key in self.fact_pos_transaction:
+                # UPSERT path: update item_count to reflect latest write.
+                self.fact_pos_transaction[key]["item_count"] = item_count
                 return FakeRow({"id": self.fact_pos_transaction[key]["id"]})
             txn_id = self._next_txn_id
             self._next_txn_id += 1
@@ -247,6 +252,7 @@ class FakeConn:
                 "source_bill_no": source_bill_no,
                 "store_id": store_id,
                 "date": args[6],  # date is arg index 6
+                "item_count": item_count,
             }
             return FakeRow({"id": txn_id})
 
@@ -667,6 +673,98 @@ def test_load_product_sales_csv_missing_store_raises(
         stats = H.LoaderStats(factory_id="R_X")
         with pytest.raises(ValueError, match="store_name required"):
             await L.load_product_sales_csv(conn, "R_X", "2024-02", p, stats)
+    asyncio.run(_run())
+
+
+def test_load_product_sales_csv_qty_total_falls_back_to_qty_single(
+    conn: FakeConn, tmp_path: Path,
+) -> None:
+    """L3 fix (PR #357 audit): when source Excel omits 数量(含套餐子商品) and only
+    exposes 单卖数量, the loader uses qty_single for both item_count and
+    fact_pos_item.qty so downstream Gold aggregates aren't NULL.
+
+    Reproduces IL TEATRO 2月 shape: 17 source cols → canonical has qty_single
+    populated but qty_total empty.
+    """
+    p = tmp_path / "qty_single_only.csv"
+    with p.open("w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow([
+            "store_name", "product_name", "product_category", "revenue_group",
+            "product_code", "spec", "product_type", "order_method",
+            "qty_single", "qty_total", "qty_refund", "qty_combo_child",
+            "unit", "unit_price", "gross_amount", "net_after_discount",
+            "discount_allocated", "refund_amount", "actual_receive",
+        ])
+        # qty_total intentionally empty; qty_single = 7.
+        w.writerow([
+            "IL TEATRO", "黑松露披萨", "Pizza披萨", "",
+            "", "", "餐饮商品", "单品",
+            "7", "", "0", "",
+            "份", "158", "1106", "1106", "0", "0", "1106",
+        ])
+        # Both populated → qty_total wins (sanity row).
+        w.writerow([
+            "IL TEATRO", "意式甜品", "Open", "",
+            "", "", "餐饮商品", "单品",
+            "10", "12", "0", "",
+            "份", "58", "696", "696", "0", "0", "696",
+        ])
+
+    async def _run():
+        await H.set_factory_scope(conn, "R_ILTEATRO_REAL")
+        stats = H.LoaderStats(factory_id="R_ILTEATRO_REAL")
+        await L.load_product_sales_csv(
+            conn, "R_ILTEATRO_REAL", "2024-02", p, stats,
+        )
+        # 2 txn rows written.
+        assert stats.fact_pos_transaction_upserts == 2
+        # Fallback verification: item_count + qty come from qty_single
+        # when qty_total is None.
+        item_counts = sorted(
+            row["item_count"] for row in conn.fact_pos_transaction.values()
+        )
+        # Row 1: qty_total missing → use qty_single=7. Row 2: qty_total=12 wins.
+        assert item_counts == [7, 12]
+        qtys = sorted(it["qty"] for it in conn.fact_pos_item)
+        assert qtys == [7.0, 12.0]
+    asyncio.run(_run())
+
+
+def test_load_product_sales_csv_qty_both_missing_yields_null(
+    conn: FakeConn, tmp_path: Path,
+) -> None:
+    """L3 fallback: when BOTH qty_total and qty_single are missing, item_count
+    and fact_pos_item.qty stay None (no silent zero, no fabricated data).
+    """
+    p = tmp_path / "qty_both_missing.csv"
+    with p.open("w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow([
+            "store_name", "product_name", "product_category", "revenue_group",
+            "product_code", "spec", "product_type", "order_method",
+            "qty_single", "qty_total", "qty_refund", "qty_combo_child",
+            "unit", "unit_price", "gross_amount", "net_after_discount",
+            "discount_allocated", "refund_amount", "actual_receive",
+        ])
+        w.writerow([
+            "IL TEATRO", "无量产品", "Open", "",
+            "", "", "餐饮商品", "单品",
+            "", "", "", "",
+            "份", "58", "0", "0", "0", "0", "0",
+        ])
+
+    async def _run():
+        await H.set_factory_scope(conn, "R_ILTEATRO_REAL")
+        stats = H.LoaderStats(factory_id="R_ILTEATRO_REAL")
+        await L.load_product_sales_csv(
+            conn, "R_ILTEATRO_REAL", "2024-02", p, stats,
+        )
+        # Both quantities missing → item_count is None (NULL in DB).
+        for row in conn.fact_pos_transaction.values():
+            assert row["item_count"] is None
+        for it in conn.fact_pos_item:
+            assert it["qty"] is None
     asyncio.run(_run())
 
 
