@@ -11,6 +11,7 @@ Layout (see spec §1):
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 
@@ -19,7 +20,31 @@ class BundleNotFoundError(Exception):
 
 
 class UnsafePathError(Exception):
-    """Raised when an asset path would resolve outside the OTA filesystem root."""
+    """Raised when an asset path / path component would escape the OTA root."""
+
+
+_VALID_PATH_COMPONENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _validate_path_component(value: str, kind: str) -> None:
+    """Validate a single filesystem path segment before it's joined into a Path.
+
+    Per chat2 audit Critical 1: headers (`expo-runtime-version`, `expo-channel-name`)
+    and admin request body fields are user-controlled and flow into filesystem paths.
+    Reject anything that could enable traversal / hidden-file probing / NUL injection.
+
+    Allowed: `^[A-Za-z0-9][A-Za-z0-9._-]*$` — must start with alphanumeric, then any
+    of alphanumerics + dot + underscore + hyphen. Explicitly disallows: `.`, `..`,
+    leading dots, slashes/backslashes, NUL, shell metacharacters, whitespace.
+    """
+    if not isinstance(value, str) or not value:
+        raise UnsafePathError(f"Empty {kind} component")
+    if value in (".", ".."):
+        raise UnsafePathError(f"Invalid {kind} {value!r}: . and .. are reserved")
+    if not _VALID_PATH_COMPONENT.fullmatch(value):
+        raise UnsafePathError(
+            f"Invalid {kind} {value!r}: must match ^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        )
 
 
 def list_timestamps_descending(rv_channel_dir: Path) -> list[str]:
@@ -39,8 +64,12 @@ def find_latest_bundle(
 ) -> Path:
     """Return the latest <timestamp>/ Path for (runtime_version, channel).
 
+    Raises UnsafePathError if either component is malicious (path traversal,
+    leading dot, NUL, etc).
     Raises BundleNotFoundError if no matching directory exists.
     """
+    _validate_path_component(runtime_version, "runtime_version")
+    _validate_path_component(channel, "channel")
     rv_channel = ota_root / "updates" / runtime_version / channel
     timestamps = list_timestamps_descending(rv_channel)
     if not timestamps:

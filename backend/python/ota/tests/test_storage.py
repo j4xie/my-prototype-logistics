@@ -64,3 +64,48 @@ def test_path_traversal_rejected(ota_root: Path):
     """resolve_asset_path must reject paths escaping the ota_root via ../../."""
     with pytest.raises(storage.UnsafePathError):
         storage.resolve_asset_path(ota_root, "../../etc/passwd")
+
+
+# --- chat2 audit Critical 1: header-driven path component validation ---
+
+
+@pytest.mark.parametrize(
+    "bad_value",
+    [
+        "..",                     # parent traversal
+        ".",                      # self-reference
+        "../etc",                 # relative traversal
+        "..\\etc",                # backslash variant (Windows)
+        "/etc/passwd",            # absolute path
+        "1.0.0/../../etc",        # embedded traversal
+        ".env",                   # leading dot (hidden file)
+        ".git",                   # leading dot (vcs)
+        "a/b",                    # path separator
+        "a\\b",                   # path separator (Windows)
+        "a\x00b",                 # NUL injection
+        "",                       # empty
+        "a;b",                    # shell metacharacter
+        "a b",                    # whitespace
+    ],
+)
+def test_validate_path_component_rejects_malicious(bad_value: str):
+    with pytest.raises(storage.UnsafePathError):
+        storage._validate_path_component(bad_value, "runtime_version")
+
+
+@pytest.mark.parametrize(
+    "good_value",
+    ["1.0.0", "1", "production", "staging", "a", "v2-rc1", "2.1.0-beta.3"],
+)
+def test_validate_path_component_allows_safe(good_value: str):
+    storage._validate_path_component(good_value, "runtime_version")  # no raise
+
+
+def test_find_latest_bundle_rejects_traversal_in_runtime_version(ota_root: Path):
+    with pytest.raises(storage.UnsafePathError):
+        storage.find_latest_bundle(ota_root, runtime_version="../etc", channel="production")
+
+
+def test_find_latest_bundle_rejects_traversal_in_channel(ota_root: Path):
+    with pytest.raises(storage.UnsafePathError):
+        storage.find_latest_bundle(ota_root, runtime_version="1.0.0", channel="..\\..\\windows")

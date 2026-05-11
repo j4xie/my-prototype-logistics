@@ -93,3 +93,46 @@ def test_build_signature_header_uses_sfv_dictionary_format():
     header = signing.build_signature_header(sig_b64="ABC+/=", keyid="main")
 
     assert header == 'sig="ABC+/=", keyid="main"'
+
+
+# --- chat2 audit Important B: cached private-key loader ---
+
+
+def test_load_private_key_cached_reuses_parsed_key(tmp_path, test_rsa_keypair):
+    """Repeated calls with the same path must hit the lru_cache (no re-read)."""
+    private_pem, _ = test_rsa_keypair
+    key_path = tmp_path / "key.pem"
+    key_path.write_bytes(private_pem)
+
+    # Reset cache so we're not seeing leftovers from other tests.
+    signing.load_private_key_cached.cache_clear()
+    info_before = signing.load_private_key_cached.cache_info()
+    assert info_before.hits == 0 and info_before.misses == 0
+
+    k1 = signing.load_private_key_cached(str(key_path))
+    k2 = signing.load_private_key_cached(str(key_path))
+    k3 = signing.load_private_key_cached(str(key_path))
+
+    info_after = signing.load_private_key_cached.cache_info()
+    assert k1 is k2 is k3  # same object — proves cached
+    assert info_after.misses == 1, "PEM should be parsed exactly once"
+    assert info_after.hits == 2
+
+
+def test_sign_with_loaded_key_matches_sign_rsa_sha256(test_rsa_keypair):
+    """The cached-key signing path produces signatures the pem path would verify."""
+    private_pem, public_pem = test_rsa_keypair
+    data = b'{"id":"x"}'
+
+    from cryptography.hazmat.primitives import serialization
+    parsed = serialization.load_pem_private_key(private_pem, password=None)
+
+    sig_b64 = signing.sign_with_loaded_key(data, parsed)
+
+    # Verify with the public key.
+    import base64
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
+
+    pub = serialization.load_pem_public_key(public_pem)
+    pub.verify(base64.b64decode(sig_b64), data, padding.PKCS1v15(), hashes.SHA256())

@@ -116,3 +116,64 @@ def test_no_expect_signature_omits_expo_signature_part_header(
     r = client.get("/api/ota/manifest", headers=_default_headers())
     assert r.status_code == 200
     assert "expo-signature" not in r.text
+
+
+# --- chat2 audit Critical 1: path-traversal via header inputs ---
+
+
+def test_manifest_with_path_traversal_runtime_version_returns_400(
+    client, populated_bundle_dir: Path
+):
+    r = client.get(
+        "/api/ota/manifest",
+        headers=_default_headers(**{"expo-runtime-version": "../../etc"}),
+    )
+    assert r.status_code == 400
+    assert "etc" not in r.json().get("error", "")  # don't echo the malicious value
+
+
+def test_manifest_with_path_traversal_channel_returns_400(
+    client, populated_bundle_dir: Path
+):
+    r = client.get(
+        "/api/ota/manifest",
+        headers=_default_headers(**{"expo-channel-name": "..\\..\\windows"}),
+    )
+    assert r.status_code == 400
+
+
+def test_manifest_with_leading_dot_runtime_version_returns_400(
+    client, populated_bundle_dir: Path
+):
+    """Hidden-file probing: `expo-runtime-version: .ssh` must be rejected."""
+    r = client.get(
+        "/api/ota/manifest", headers=_default_headers(**{"expo-runtime-version": ".ssh"})
+    )
+    assert r.status_code == 400
+
+
+# --- chat2 audit Important C: corrupt metadata handling ---
+
+
+def test_corrupt_metadata_json_returns_500_not_crash(
+    client, populated_bundle_dir: Path
+):
+    """If metadata.json is non-JSON garbage, return 500 with a generic message
+    (not a 200-with-stacktrace, not a 500-with-stacktrace exposing paths)."""
+    (populated_bundle_dir / "metadata.json").write_bytes(b"this is not json {{{")
+
+    r = client.get("/api/ota/manifest", headers=_default_headers())
+
+    assert r.status_code == 500
+    assert "Bundle metadata corrupted" in r.json().get("error", "")
+    # Don't leak filesystem paths in the error message.
+    assert str(populated_bundle_dir) not in r.text
+
+
+def test_missing_expo_config_json_returns_500(client, populated_bundle_dir: Path):
+    """If expoConfig.json is missing, manifest_builder raises; endpoint catches → 500."""
+    (populated_bundle_dir / "expoConfig.json").unlink()
+
+    r = client.get("/api/ota/manifest", headers=_default_headers())
+
+    assert r.status_code == 500

@@ -13,6 +13,9 @@ Admin endpoints require Bearer-token auth via `_require_admin` dependency.
 from __future__ import annotations
 
 import datetime
+import hmac
+import json
+import logging
 import mimetypes
 import os
 from typing import Optional
@@ -23,6 +26,8 @@ from fastapi.responses import JSONResponse, Response
 from ota.config import OTASettings, get_settings
 from ota.models import BundleRef
 from ota.services import directives, manifest_builder, multipart, signing, storage
+
+_logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -78,6 +83,9 @@ def manifest(
         bundle_dir = storage.find_latest_bundle(
             settings.base_path, expo_runtime_version, channel
         )
+    except storage.UnsafePathError:
+        # Don't echo the malicious value back — generic message only (chat2 audit C1).
+        return _bad_request("Invalid runtime-version or channel header")
     except storage.BundleNotFoundError as e:
         return JSONResponse(status_code=404, content={"error": str(e)})
 
@@ -95,8 +103,10 @@ def manifest(
             or not settings.private_key_path.is_file()
         ):
             return None
-        private_pem = settings.private_key_path.read_bytes()
-        sig_b64 = signing.sign_rsa_sha256(content_str.encode("utf-8"), private_pem)
+        # Per chat2 audit Important B: load_private_key_cached avoids re-parsing
+        # the PEM on every request.
+        private_key = signing.load_private_key_cached(str(settings.private_key_path))
+        sig_b64 = signing.sign_with_loaded_key(content_str.encode("utf-8"), private_key)
         return signing.build_signature_header(sig_b64)
 
     if storage.is_rollback(bundle_dir):
@@ -117,13 +127,22 @@ def manifest(
         )
         return Response(content=body, media_type=ct, headers=common_headers)
 
-    manifest_dict = manifest_builder.build_manifest(
-        bundle_dir=bundle_dir,
-        ota_root=settings.base_path,
-        runtime_version=expo_runtime_version,
-        platform=expo_platform,
-        hostname=settings.hostname,
-    )
+    try:
+        manifest_dict = manifest_builder.build_manifest(
+            bundle_dir=bundle_dir,
+            ota_root=settings.base_path,
+            runtime_version=expo_runtime_version,
+            platform=expo_platform,
+            hostname=settings.hostname,
+        )
+    except (json.JSONDecodeError, KeyError, ValueError, FileNotFoundError, OSError):
+        # Per chat2 audit Important C: a corrupt / missing metadata.json /
+        # expoConfig.json would bubble a stack trace; serve a generic 500 and
+        # log details server-side only (filesystem paths NOT echoed to client).
+        _logger.exception("OTA bundle metadata corrupted at %s", bundle_dir)
+        return JSONResponse(
+            status_code=500, content={"error": "Bundle metadata corrupted on server"}
+        )
 
     if expo_current_update_id == manifest_dict["id"]:
         directive = directives.no_update_available()
@@ -160,6 +179,13 @@ def assets(
         resolved = storage.resolve_asset_path(settings.base_path, asset)
     except storage.UnsafePathError:
         return _bad_request("Asset path is outside the OTA root")
+    # Defensive: client-supplied asset paths must live under updates/ —
+    # rejects ../keys/, ../logs/, etc. even though commonpath stayed inside root.
+    updates_root = (settings.base_path / "updates").resolve()
+    try:
+        resolved.resolve().relative_to(updates_root)
+    except ValueError:
+        return _bad_request("Asset path must live under updates/")
     if not resolved.is_file():
         return JSONResponse(status_code=404, content={"error": "Asset not found"})
 
@@ -178,7 +204,10 @@ def _require_admin(
 ) -> None:
     if not settings.admin_token:
         raise HTTPException(status_code=500, detail="Admin token not configured")
-    if authorization != f"Bearer {settings.admin_token}":
+    expected = f"Bearer {settings.admin_token}"
+    # Per chat2 audit Important A: hmac.compare_digest is timing-safe; plain `!=`
+    # is vulnerable to side-channel timing attacks against the admin token.
+    if authorization is None or not hmac.compare_digest(authorization, expected):
         raise HTTPException(status_code=401, detail="Invalid admin token")
 
 

@@ -52,6 +52,30 @@ def test_launch_asset_content_type_is_application_javascript(
     assert r.headers["content-type"].startswith("application/javascript")
 
 
+# --- defensive: asset path must live under updates/ (chat2 audit) ---
+
+
+def test_asset_outside_updates_dir_returns_400(client, ota_root: Path):
+    """An asset path that resolves inside ota_root but OUTSIDE updates/
+    (e.g. into keys/) must be rejected even though resolve_asset_path's
+    commonpath check would allow it."""
+    # Create a file inside ota_root/keys (which exists per the ota_root fixture).
+    (ota_root / "keys" / "ota_private.pem").write_bytes(b"FAKE PRIVATE KEY")
+
+    r = client.get(
+        "/api/ota/assets",
+        params={
+            "asset": "keys/ota_private.pem",
+            "runtimeVersion": "1.0.0",
+            "platform": "android",
+        },
+    )
+    assert r.status_code in (400, 404)
+    # Either rejection is acceptable; the critical property is that the
+    # private key bytes do NOT appear in the response body.
+    assert b"FAKE PRIVATE KEY" not in r.content
+
+
 def test_regular_asset_content_type_from_mime_lookup(
     client, populated_bundle_dir: Path
 ):

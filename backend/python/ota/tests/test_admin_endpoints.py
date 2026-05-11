@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 
 def _auth(token: str = "test-admin-token-secret") -> dict:
     return {"Authorization": f"Bearer {token}"}
@@ -74,6 +76,42 @@ def test_list_returns_newest_first(client, ota_root: Path):
     assert r.status_code == 200
     items = r.json()["bundles"]
     assert [b["timestamp"] for b in items] == ["300", "200", "100"]
+
+
+# --- chat2 audit Critical 2: BundleRef must reject malicious path components ---
+
+
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("runtimeVersion", "../../etc"),
+        ("runtimeVersion", ".."),
+        ("runtimeVersion", "."),
+        ("runtimeVersion", ".ssh"),
+        ("runtimeVersion", "1.0.0/../../etc"),
+        ("channel", "..\\windows"),
+        ("channel", ""),
+        ("channel", "a;rm -rf /"),
+        ("timestamp", "../../etc/pwn"),
+        ("timestamp", "/etc/passwd"),
+        ("timestamp", "200\x00.txt"),
+    ],
+)
+def test_register_rejects_malicious_bundle_ref(client, field: str, bad_value: str):
+    body = {"runtimeVersion": "1.0.0", "channel": "production", "timestamp": "200"}
+    body[field] = bad_value
+    r = client.post("/api/ota/admin/register", json=body, headers=_auth())
+    # Pydantic returns 422 for pattern/validator failures, regardless of admin auth.
+    assert r.status_code == 422, f"expected 422 for {field}={bad_value!r}, got {r.status_code}"
+
+
+def test_rollback_rejects_malicious_timestamp(client):
+    r = client.post(
+        "/api/ota/admin/rollback",
+        json={"runtimeVersion": "1.0.0", "channel": "production", "timestamp": "../../etc/pwn"},
+        headers=_auth(),
+    )
+    assert r.status_code == 422
 
 
 def test_list_includes_rollback_status(client, ota_root: Path):
