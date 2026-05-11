@@ -1,0 +1,14 @@
+# Phase C Day 0 - 4-endpoint customer-perspective probe (2026-05-11)
+# Per marching order: 75-factory (actual 74 DB-active) x 4 endpoints = 296 calls.
+# Probe target: https://api.cretaceousfuture.com (customer-facing HTTPS gateway, 139 nginx).
+# Routing post-T6.4 cascade:
+#   - /smart-bi/dashboard           -> Java prod 10010 (location / fallthrough)
+#   - /smart-bi/analysis/inventory  -> Python prod 8083 (nginx regex cohort)
+#   - /smart-bi/analysis/finance    -> Python prod 8083 (nginx regex cohort)
+#   - /smart-bi/analysis/procurement -> Python prod 8083 (nginx regex cohort)
+# Assertion: --expect-status 200 (Day 0 baseline: all healthy endpoints return 200)
+
+GET /api/mobile/{factoryId}/smart-bi/dashboard?period=month
+GET /api/mobile/{factoryId}/smart-bi/analysis/inventory?startDate=2026-01-01&endDate=2026-05-10
+GET /api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-05-10
+GET /api/mobile/{factoryId}/smart-bi/analysis/procurement?startDate=2026-01-01&endDate=2026-05-10
