@@ -49,6 +49,7 @@ interface ManualTransferItem {
   remark?: string;
 }
 interface MaterialTypeOption { id: string; name: string; code: string; unit: string }
+interface FactoryNetworkEntry { factoryId: string; factoryName: string }
 
 const createVisible = ref(false);
 const submitting = ref(false);
@@ -66,10 +67,12 @@ const form = ref({
 });
 const formRules = {
   transferType: [{ required: true, message: '请选择调拨类型', trigger: 'change' }],
-  targetFactoryId: [{ required: true, message: '请填写调入方ID', trigger: 'blur' }],
+  targetFactoryId: [{ required: true, message: '请选择调入方', trigger: 'change' }],
   transferDate: [{ required: true, message: '请选择调拨日期', trigger: 'change' }],
 };
 const materialOptions = ref<MaterialTypeOption[]>([]);
+const factoryNetworkOptions = ref<FactoryNetworkEntry[]>([]);
+const factoryNetworkLoading = ref(false);
 
 onMounted(() => loadData());
 
@@ -102,6 +105,26 @@ async function loadMaterialOptions() {
   } catch { /* interceptor */ }
 }
 
+// PR #309 C2 — load visible factory network for 调入方 dropdown
+async function loadFactoryNetwork() {
+  if (!factoryId.value) return;
+  factoryNetworkLoading.value = true;
+  try {
+    const res = await get<FactoryNetworkEntry[]>(`/${factoryId.value}/factories/network`);
+    const entries = (res?.data ?? []) as FactoryNetworkEntry[];
+    factoryNetworkOptions.value = Array.isArray(entries) ? entries : [];
+    // Default to own factory if only one entry visible (and form not yet filled)
+    if (factoryNetworkOptions.value.length === 1 && !form.value.targetFactoryId) {
+      form.value.targetFactoryId = factoryNetworkOptions.value[0].factoryId;
+    }
+  } catch {
+    // Fallback: at minimum let user fill in manually (so we keep filterable allow-create on the select)
+    factoryNetworkOptions.value = [];
+  } finally {
+    factoryNetworkLoading.value = false;
+  }
+}
+
 function openCreateDialog() {
   form.value = {
     transferType: 'BRANCH_TO_HQ',
@@ -114,6 +137,7 @@ function openCreateDialog() {
     items: [],
   };
   loadMaterialOptions();
+  loadFactoryNetwork();
   createVisible.value = true;
 }
 
@@ -303,8 +327,24 @@ function isOutbound(row: Record<string, unknown>) { return row.sourceFactoryId =
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="调入方ID" prop="targetFactoryId">
-              <el-input v-model="form.targetFactoryId" placeholder="目标工厂/门店 ID (如 F001 / RES_3101_001)" clearable />
+            <el-form-item label="调入方" prop="targetFactoryId">
+              <el-select
+                v-model="form.targetFactoryId"
+                :loading="factoryNetworkLoading"
+                filterable
+                allow-create
+                default-first-option
+                placeholder="选择目标工厂/门店 (无可选项时可输入 ID)"
+                clearable
+                style="width:100%"
+              >
+                <el-option
+                  v-for="opt in factoryNetworkOptions"
+                  :key="opt.factoryId"
+                  :label="`${opt.factoryName} (${opt.factoryId})`"
+                  :value="opt.factoryId"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">

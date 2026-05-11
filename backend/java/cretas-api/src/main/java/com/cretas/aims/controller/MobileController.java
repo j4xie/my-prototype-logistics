@@ -25,6 +25,7 @@ import com.cretas.aims.annotation.RateLimit.LimitType;
 import com.cretas.aims.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -48,14 +49,18 @@ public class MobileController {
     private final EquipmentAlertRepository equipmentAlertRepository;
     private final CookieAuthHelper cookieAuthHelper;
 
+    @Value("${cretas.app.min-version:1.0.0}")
+    private String appMinVersion;
+
     // ==================== 健康检查 ====================
 
     @GetMapping("/health")
-    @Operation(summary = "健康检查", description = "公开端点，无需认证")
+    @Operation(summary = "健康检查", description = "公开端点，无需认证。返回 appMinVersion 用于 App 强制升级提示。")
     public Map<String, Object> health() {
         Map<String, Object> result = new HashMap<>();
         result.put("status", "UP");
         result.put("timestamp", System.currentTimeMillis());
+        result.put("appMinVersion", appMinVersion);
         return result;
     }
 
