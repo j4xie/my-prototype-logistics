@@ -19,8 +19,10 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderItemRepository;
+import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.entity.inventory.SalesOrderItem;
+import com.cretas.aims.service.BomService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.SchedulingService;
 import com.cretas.aims.utils.ExcelUtil;
@@ -66,6 +68,11 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private final ExcelUtil excelUtil;
     private final SalesOrderRepository salesOrderRepository;
     private final SalesOrderItemRepository salesOrderItemRepository;
+    /**
+     * PR #289 §B3 (2026-05-10 客户对接): 开始生产前的原料库存校验.
+     * Optional 注入: 单测时可以省略 (无 BOM 配置即跳过校验, 不破坏现有行为).
+     */
+    private final BomService bomService;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
@@ -83,7 +90,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             UserRepository userRepository,
             ExcelUtil excelUtil,
             SalesOrderRepository salesOrderRepository,
-            SalesOrderItemRepository salesOrderItemRepository) {
+            SalesOrderItemRepository salesOrderItemRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) BomService bomService) {
         this.productionPlanRepository = productionPlanRepository;
         this.productionBatchRepository = productionBatchRepository;
         this.processTaskRepository = processTaskRepository;
@@ -99,6 +107,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         this.excelUtil = excelUtil;
         this.salesOrderRepository = salesOrderRepository;
         this.salesOrderItemRepository = salesOrderItemRepository;
+        this.bomService = bomService;
     }
 
     /** Canvas V2: DB-driven validation rules */
@@ -121,6 +130,99 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         } catch (Exception e) {
             log.warn("Canvas validation non-blocking error: {}", e.getMessage());
         }
+    }
+
+    /**
+     * PR #289 §B3 (2026-05-10 客户对接): 开始生产前的原料库存校验.
+     *
+     * <p>客户原话 (line 35): "那这个开始的话点的时候会有一个判断吗就是我的库存够不够…加一个我觉得还是
+     * 加一个不然万一是不就得合对一下是吧"
+     *
+     * <p>校验逻辑:
+     * <ol>
+     *   <li>拉取 BOM items (按 productTypeId)</li>
+     *   <li>对每个 BOM item 计算需求量: bomItem.getActualQuantity() (已含出成率) × plan.plannedQuantity</li>
+     *   <li>查询该 materialType 在该 factory 的可用库存合计 (AVAILABLE 状态, receipt - used - reserved)</li>
+     *   <li>若任一原料 available &lt; required → 抛 BusinessException 列出所有缺口</li>
+     * </ol>
+     *
+     * <p>边界:
+     * <ul>
+     *   <li>无 BOM 配置 (BOM 空 list) → skip 校验, 仍允许开始 (生产可能不需要原料, 或客户尚未配置)</li>
+     *   <li>plan.plannedQuantity == null → skip (历史数据兼容)</li>
+     *   <li>BomService 未注入 (单测场景) → skip</li>
+     *   <li>stock 恰好等于 required → 通过 (边界严格不阻断)</li>
+     * </ul>
+     */
+    private void validateMaterialStockSufficient(String factoryId, ProductionPlan plan) {
+        if (bomService == null) {
+            log.debug("BomService 未注入, 跳过 B3 库存校验");
+            return;
+        }
+        if (plan.getProductTypeId() == null || plan.getProductTypeId().isBlank()) {
+            log.debug("生产计划无 productTypeId, 跳过 B3 库存校验: planId={}", plan.getId());
+            return;
+        }
+        if (plan.getPlannedQuantity() == null
+                || plan.getPlannedQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+            log.debug("生产计划 plannedQuantity 为空或非正, 跳过 B3 库存校验: planId={}", plan.getId());
+            return;
+        }
+
+        List<BomItem> bomItems;
+        try {
+            bomItems = bomService.getBomItemsByProduct(factoryId, plan.getProductTypeId());
+        } catch (Exception e) {
+            log.warn("加载 BOM 失败, 跳过 B3 库存校验: planId={}, err={}", plan.getId(), e.getMessage());
+            return;
+        }
+        if (bomItems == null || bomItems.isEmpty()) {
+            log.debug("产品无 BOM 配置, 跳过 B3 库存校验: productTypeId={}", plan.getProductTypeId());
+            return;
+        }
+
+        BigDecimal plannedQty = plan.getPlannedQuantity();
+        List<String> shortages = new ArrayList<>();
+
+        for (BomItem item : bomItems) {
+            if (item.getMaterialTypeId() == null || item.getStandardQuantity() == null) {
+                continue;
+            }
+            // 单位需求 (已含出成率: standardQuantity / (yieldRate/100))
+            BigDecimal perUnitRequired = item.getActualQuantity();
+            BigDecimal totalRequired = perUnitRequired.multiply(plannedQty);
+
+            BigDecimal available = materialBatchRepository.sumAvailableQuantityByMaterialType(
+                    factoryId, item.getMaterialTypeId());
+            if (available == null) {
+                available = BigDecimal.ZERO;
+            }
+
+            if (available.compareTo(totalRequired) < 0) {
+                BigDecimal shortageQty = totalRequired.subtract(available);
+                String materialName = item.getMaterialName() != null && !item.getMaterialName().isBlank()
+                        ? item.getMaterialName()
+                        : ("原料 " + item.getMaterialTypeId());
+                String unit = item.getUnit() != null ? item.getUnit() : "";
+                shortages.add(String.format(
+                        "%s: 需要 %s%s, 可用 %s%s, 缺口 %s%s",
+                        materialName,
+                        totalRequired.stripTrailingZeros().toPlainString(), unit,
+                        available.stripTrailingZeros().toPlainString(), unit,
+                        shortageQty.stripTrailingZeros().toPlainString(), unit));
+            }
+        }
+
+        if (!shortages.isEmpty()) {
+            String message = "原料库存不足, 无法开始生产: " + String.join("; ", shortages);
+            log.warn("B3 库存校验失败: planId={}, shortages={}", plan.getId(), shortages);
+            throw new BusinessException(409, message)
+                    .withHint("请先采购或调拨原料后再开始生产")
+                    .withSeverity("BLOCKING");
+        }
+
+        log.debug("B3 库存校验通过: planId={}, productTypeId={}, plannedQuantity={}, bomItems={}",
+                plan.getId(), plan.getProductTypeId(), plannedQty, bomItems.size());
     }
 
     /**
@@ -433,6 +535,11 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         }
 
         runConfiguredValidation(factoryId, "START", java.util.Map.of("planId", planId));
+
+        // PR #289 §B3 (2026-05-10 客户对接): 开始生产前硬校验原料库存
+        // 客户原话: "那这个开始的话点的时候会有一个判断吗就是我的库存够不够"
+        // 不足时阻断开始, 提示具体原料/需求/可用/缺口, 客户去采购或调拨.
+        validateMaterialStockSufficient(factoryId, plan);
 
         plan.setStatus(ProductionPlanStatus.IN_PROGRESS);
         plan.setStartTime(LocalDateTime.now());
