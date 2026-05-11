@@ -7,7 +7,7 @@
 **Branch:** `feat/ota-self-hosted`
 **Worktree:** `.worktrees/ota-self-hosted`
 
-**Goal:** Stand up a self-hosted Expo Updates v1 protocol-compatible server inside `backend/python/` so the existing `expo-updates@~0.28.18` client in `frontend/CretasFoodTrace` can fetch JS/asset OTA updates from `https://api.cretaceousfuture.com/api/ota/manifest`, with zero EAS / Expo cloud dependency.
+**Goal:** Stand up a self-hosted Expo Updates v1 protocol-compatible server inside `backend/python/` so the existing `expo-updates@~0.28.18` client in `frontend/CretasFoodTrace` can fetch JS/asset OTA updates from `https://ota.cretaceousfuture.com/api/ota/manifest`, with zero EAS / Expo cloud dependency.
 
 **Architecture:** Python FastAPI module exposes manifest + asset endpoints implementing the [Expo Updates v1 protocol](https://docs.expo.dev/technical-specs/expo-updates-1/) byte-for-byte. Bundles are produced by `npx expo export` locally and uploaded to `/www/wwwroot/ota/updates/<runtimeVersion>/<channel>/<timestamp>/` on server 47. RSA-2048 keypair signs every manifest/directive; the public PEM is embedded in the APK and verified client-side by `expo-updates`. Android APKs are built locally with `./gradlew assembleRelease` — no EAS Build.
 
@@ -218,7 +218,7 @@ Returns `{"status":"ok","privateKeyLoaded":true,"basePath":"/www/wwwroot/ota","w
   "contentType": "application/javascript" if is_launch else mime_from_ext(ext),
   "url": f"{OTA_HOSTNAME}/api/ota/assets?asset={url_encode(rel_path)}&runtimeVersion={rv}&platform={p}",
   # Phase 1-3: OTA_HOSTNAME = "http://47.100.235.168:8083" (IP direct, HTTP)
-  # Phase 4+:  OTA_HOSTNAME = "https://api.cretaceousfuture.com" (nginx 139 + Let's Encrypt)
+  # Phase 4+:  OTA_HOSTNAME = "https://ota.cretaceousfuture.com" (nginx 139 + Let's Encrypt)
 }
 ```
 
@@ -506,7 +506,7 @@ ssh root@47.100.235.168 "
 rm /tmp/ota-bundle-${TIMESTAMP}.tar.gz
 
 # 4. Register via admin API
-curl -sf -X POST https://api.cretaceousfuture.com/api/ota/admin/register \
+curl -sf -X POST https://ota.cretaceousfuture.com/api/ota/admin/register \
   -H "Authorization: Bearer ${OTA_ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"runtimeVersion\":\"${RUNTIME_VERSION}\",\"channel\":\"${CHANNEL}\",\"timestamp\":\"${TIMESTAMP}\"}"
@@ -531,7 +531,7 @@ Bundle upload is non-atomic (tar extract takes time). During the brief window, a
 
 ```bash
 # scripts/ota/rollback.sh <runtimeVersion> <channel> <timestamp>
-curl -sf -X POST https://api.cretaceousfuture.com/api/ota/admin/rollback \
+curl -sf -X POST https://ota.cretaceousfuture.com/api/ota/admin/rollback \
   -H "Authorization: Bearer ${OTA_ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"runtimeVersion\":\"$1\",\"channel\":\"$2\",\"timestamp\":\"$3\"}"
@@ -652,7 +652,7 @@ After build, inspect `app/src/main/AndroidManifest.xml`:
 <meta-data android:name="expo.modules.updates.ENABLED" android:value="true" />
 <meta-data android:name="expo.modules.updates.EXPO_RUNTIME_VERSION" android:value="1.0.0" />
 <meta-data android:name="expo.modules.updates.EXPO_UPDATE_URL"
-    android:value="https://api.cretaceousfuture.com/api/ota/manifest" />
+    android:value="https://ota.cretaceousfuture.com/api/ota/manifest" />
 <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CODE_SIGNING_CERTIFICATE"
     android:value="@string/cretas_ota_cert" />
 ```
@@ -666,7 +666,7 @@ If `ENABLED=false`, prebuild didn't flip the flag — investigate `app.json` con
 ```diff
    "updates": {
 -    "url": "https://u.expo.dev/PLACEHOLDER-EAS-PROJECT-ID",
-+    "url": "https://api.cretaceousfuture.com/api/ota/manifest",
++    "url": "https://ota.cretaceousfuture.com/api/ota/manifest",
      "checkAutomatically": "ON_LOAD",
 -    "fallbackToCacheTimeout": 5000
 +    "fallbackToCacheTimeout": 5000,
@@ -740,7 +740,7 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 | Cert expires in 2031 | Calendar reminder; rotation requires new APK build |
 | `expo export` doesn't emit `expoConfig.json` | §7.1 fallback: explicit `expo config --json` call in push script |
 | Windows path-length kills Gradle | §9 — `buildStagingDirectory` override |
-| Public IPv4 of server 47 changes | Customer APKs hit `api.cretaceousfuture.com` (DNS abstraction), nginx on 139 forwards — IP change just needs 139 nginx update |
+| Public IPv4 of server 47 changes | Customer APKs hit `ota.cretaceousfuture.com` (DNS abstraction), nginx on 139 forwards — IP change just needs 139 nginx update |
 | Concurrent /clear loses chat5 worktree commits | Per memory `feedback_chat_must_push_before_clear.md` — push before any `/clear` |
 | chat1 main.py concurrent edits | Per Q5 resolution: Phase 1 PR does NOT touch main.py. Separate post-chat1-merge 1-line micro-PR registers the router. |
 
@@ -764,7 +764,7 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 - [ ] **Phase 1 (server):** `pytest backend/python/ota/tests/` 45/45 PASS; `/api/ota/health` returns 200; manifest endpoint serves valid multipart/mixed per protocol
 - [ ] **Phase 2 (keys):** `ota_public_cert.pem` committed; private key on 47 (`ls -la /www/wwwroot/ota/keys/`) shows mode 600
 - [ ] **Phase 3 (push script):** `./scripts/ota/push-bundle.sh production android` exits 0; `/api/ota/admin/list` shows the registered bundle
-- [ ] **Phase 4 (nginx):** `curl https://api.cretaceousfuture.com/api/ota/health` returns 200 from external network
+- [ ] **Phase 4 (nginx):** `curl https://ota.cretaceousfuture.com/api/ota/health` returns 200 from external network
 - [ ] **Phase 5 (build):** Local `./gradlew assembleRelease` produces signed APK; `aapt dump xmltree` confirms `ENABLED=true`
 - [ ] **Phase 6 (E2E):** Fresh APK on emulator → push a bundle with visible UI change (e.g. button color) → close + reopen app → new UI visible without reinstall
 
