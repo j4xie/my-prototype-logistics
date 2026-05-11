@@ -820,7 +820,7 @@ async function submitQuickPayment() {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="dialogVisible" :title="editingOrderId ? `编辑${label('salesOrder')}` : `新建${label('salesOrder')}`" width="720px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="editingOrderId ? `编辑${label('salesOrder')}` : `新建${label('salesOrder')}`" width="80%" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item :label="label('customer')">
           <el-select v-model="form.customerId" placeholder="请选择" filterable style="width: 100%">
