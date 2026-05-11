@@ -135,18 +135,18 @@ Per Q1 amendment §4.3 table (verbatim — Steve confirms in Open Question Q-ETL
 
 ### 1.5 Existing schema audit (Step 2 prerequisites)
 
-**Verify in Sub-ETL-2 Day 0**:
+**Verified 2026-05-12 via Sub-ETL-2a Day 0 audit (PR #332)** — 3/4 ⚠️ rows mis-described originally; corrected below:
 
-| Table | Existing UPSERT key needed for ETL | Verified? |
+| Table | Existing UPSERT key (VERIFIED) | Status |
 |---|---|---|
 | `dim_store` | `UNIQUE (factory_id, name)` | ✅ Confirmed `2026_04_28_silver_dimensions.sql` line 56 |
 | `dim_product` | `UNIQUE (factory_id, normalized_name)` | ✅ Confirmed `2026_04_28_silver_dimensions.sql` line 84 |
-| `dim_ingredient` | `UNIQUE (factory_id, name)` | ⚠️ Verify in Sub-ETL-2 Day 0 |
-| `fact_pos_item` | `UNIQUE (factory_id, source_type, store_id, source_bill_no, line_no)` or similar | ⚠️ Verify; if missing, add migration |
-| `fact_pos_transaction` | `UNIQUE (factory_id, source_type, store_id, source_bill_no)` | ⚠️ Verify |
-| `fact_restaurant_requisition` | `UNIQUE (factory_id, source_bill_no)` | ⚠️ Verify |
+| `dim_ingredient` | `UNIQUE (source_pk)` + `UNIQUE (normalized_name)` (NOT raw `name`) | ✅ VERIFIED — two uniques on different keys; ON CONFLICT works on either |
+| `fact_pos_item` | **NO natural-key UNIQUE** — dedup-by-CASCADE by design | ✅ VERIFIED — Steve sign-off 2026-05-12 Option A: keep schema, DELETE-then-INSERT pattern in Sub-ETL-2b/2c (no ALTER ADD UNIQUE) |
+| `fact_pos_transaction` | `UNIQUE (factory_id, source_type, store_id, source_bill_no)` | ✅ VERIFIED — exact match `2026_04_29_silver_facts.sql:54` |
+| `fact_restaurant_requisition` | `UNIQUE (factory_id, source_pk)` (NOT `source_bill_no` — column doesn't exist) | ✅ VERIFIED |
 
-If any UPSERT key is missing, add it in `V20260815_03__t6_6_etl_constraint_fixups.sql` (Sub-ETL-2 deliverable).
+**No ALTER migrations needed.** Existing constraints support ETL UPSERT for 5 of 6 tables. `fact_pos_item` uses DELETE-INSERT pattern (Steve verbal sign-off Option A 2026-05-12). `V20260815_03__t6_6_etl_constraint_fixups.sql` is **removed from Sub-ETL-2 batch** — would have been an empty migration per audit findings.
 
 ### 1.6 Wastage / recipe / stocktaking — INTENTIONALLY DEFERRED
 
