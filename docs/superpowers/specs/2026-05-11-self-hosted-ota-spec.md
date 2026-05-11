@@ -216,7 +216,9 @@ Returns `{"status":"ok","privateKeyLoaded":true,"basePath":"/www/wwwroot/ota","w
   "key": md5_hex(asset_bytes),                # NOT sha256 — this is the client cache key
   "fileExtension": f".{ext}" if not is_launch else ".bundle",
   "contentType": "application/javascript" if is_launch else mime_from_ext(ext),
-  "url": f"https://api.cretaceousfuture.com/api/ota/assets?asset={url_encode(rel_path)}&runtimeVersion={rv}&platform={p}",
+  "url": f"{OTA_HOSTNAME}/api/ota/assets?asset={url_encode(rel_path)}&runtimeVersion={rv}&platform={p}",
+  # Phase 1-3: OTA_HOSTNAME = "http://47.100.235.168:8083" (IP direct, HTTP)
+  # Phase 4+:  OTA_HOSTNAME = "https://api.cretaceousfuture.com" (nginx 139 + Let's Encrypt)
 }
 ```
 
@@ -365,8 +367,19 @@ Append at the end of the existing `app.include_router(...)` block (current line 
 | `OTA_BASE_PATH` | `/www/wwwroot/ota` | `/www/wwwroot/ota-test` |
 | `OTA_PRIVATE_KEY_PATH` | `/www/wwwroot/ota/keys/ota_private.pem` | `/www/wwwroot/ota-test/keys/ota_private.pem` |
 | `OTA_ADMIN_TOKEN` | (32-byte hex from `openssl rand -hex 32`, in `.env.prod` not committed) | separate token |
-| `OTA_HOSTNAME` | `https://api.cretaceousfuture.com` | `https://api.cretaceousfuture.com` (test path via Host header? — TBD Phase 4) |
+| `OTA_HOSTNAME` (Phase 1-3) | `http://47.100.235.168:8083` (IP direct, HTTP) | `http://47.100.235.168:8084` |
+| `OTA_HOSTNAME` (Phase 4+) | `https://api.cretaceousfuture.com` (after nginx 139 + Let's Encrypt) | same |
 | `OTA_DEFAULT_CHANNEL` | `production` | `staging` |
+
+**Channel set** (per Q2 resolution 2026-05-11): only `{production, staging}` — `development` dropped, Metro bundler covers dev iteration.
+
+**systemd integration** (per Q3 resolution 2026-05-11): admin token lives in a **separate** `/www/wwwroot/cretas/.env.ota` file (chmod 600, owner `cretas-python:cretas-python`). Add to `cretas-python.service`:
+```ini
+[Service]
+EnvironmentFile=/www/wwwroot/cretas/.env.prod
+EnvironmentFile=/www/wwwroot/cretas/.env.ota   # ← new, separate from .env.prod for independent rotation
+```
+Then `systemctl daemon-reload && systemctl restart cretas-python`.
 
 ---
 
@@ -708,14 +721,14 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 | Byte-exact signing fails due to JSON whitespace | Parity test against reference impl in §6.8 catches this in unit tests |
 | Cert/keypair mismatch in APK | Phase 5 includes verification step — inspect AndroidManifest.xml meta-data |
 | Path traversal on `/api/ota/assets?asset=...` | §2.2 hardening + `test_path_traversal_returns_400` |
-| Admin token leakage | Token only in `.env.prod` (chmod 600), never logged, rotated annually |
+| Admin token leakage | Token only in `.env.ota` (chmod 600, separate from `.env.prod` per Q3), never logged, rotate annually |
 | Bundle upload races with client poll | §7.2 atomic rename mitigation (Phase 3 hardening) |
 | Cert expires in 2031 | Calendar reminder; rotation requires new APK build |
 | `expo export` doesn't emit `expoConfig.json` | §7.1 fallback: explicit `expo config --json` call in push script |
 | Windows path-length kills Gradle | §9 — `buildStagingDirectory` override |
 | Public IPv4 of server 47 changes | Customer APKs hit `api.cretaceousfuture.com` (DNS abstraction), nginx on 139 forwards — IP change just needs 139 nginx update |
 | Concurrent /clear loses chat5 worktree commits | Per memory `feedback_chat_must_push_before_clear.md` — push before any `/clear` |
-| chat1 main.py concurrent edits | Coordinate router registration via small append + rebase after chat1 ships first |
+| chat1 main.py concurrent edits | Per Q5 resolution: Phase 1 PR does NOT touch main.py. Separate post-chat1-merge 1-line micro-PR registers the router. |
 
 ---
 
@@ -758,15 +771,19 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 
 ---
 
-## 16. Open questions for organizer review
+## 16. Open questions for organizer review — RESOLVED 2026-05-11
 
-1. **HTTPS cert for `api.cretaceousfuture.com`** — does it exist on server 139 already? If not, do we provision Let's Encrypt now or temporarily use `http://47.100.235.168:8083` for v1?
-2. **`channel` semantics** — confirmed `production` / `staging` / `development` triple is right, or do we drop `development` for self-hosted?
-3. **Storage location of admin token** — `.env.prod` in `/www/wwwroot/cretas/` (existing pattern), or a separate `.env.ota`?
-4. **Bundle retention policy** — keep all historical bundles forever (disk cheap, easier rollback), or prune to last N=10? Spec defaults to keep-forever, easy to add prune script later.
-5. **chat1 main.py coord** — should I prepare a separate tiny PR with just the `app.include_router(...)` line and merge it AFTER chat1's main.py PR lands, OR include in Phase 1 PR with explicit rebase warning?
-6. **Customer rollout phase ownership** — this spec stops at "first emulator E2E demo". Who owns the F006 customer cutover (separate chat / separate dispatch)?
+All 6 questions answered by Steve via dispatch reply 2026-05-11; spec amended inline elsewhere.
+
+1. [x] **HTTPS cert for `api.cretaceousfuture.com`** — Domain DNS is on aliyun account C (per `.claude/rules/aliyun-credentials.md`). **Phase 1-3 use IP direct over HTTP** (`http://47.100.235.168:8083` as `OTA_HOSTNAME`); `expo-updates` accepts HTTP in dev. Provision Let's Encrypt at Phase 4 (nginx on 139) before prod customer rollout.
+2. [x] **Channel set** — `{production, staging}` only. **Drop `development`** (Metro bundler covers dev). `app.json:updates.requestHeaders.expo-channel-name` defaults to `"production"`.
+3. [x] **`OTA_ADMIN_TOKEN` location** — `/www/wwwroot/cretas/.env.ota` (separate from `.env.prod` for independent rotation), chmod 600, owner `cretas-python:cretas-python`. systemd `cretas-python.service` adds `EnvironmentFile=/www/wwwroot/cretas/.env.ota`.
+4. [x] **Bundle retention** — keep last N=10 per `(runtimeVersion, channel)` **AND** always preserve the latest (rolling-window prune). Add `scripts/ota/prune-bundles.sh` (Phase 3 extension, NOT a Phase 1 blocker).
+5. [x] **main.py router coord** — chat1 owns main.py (PR #360 in flight). Phase 1 PR ships **only** `backend/python/ota/` module + tests; **does NOT touch main.py**. After chat1's main.py PR merges, ship a separate 1-line micro-PR registering `app.include_router(ota_endpoints.router, prefix="/api/ota", tags=["OTA"])`. Avoids rebase conflicts.
+6. [x] **Customer rollout (F006)** — out of chat5 scope. Steve + organizer own the F006 cutover (WeChat APK distribution + customer feedback monitoring). Chat5 deliverable terminates at Phase 6 emulator E2E demo.
+
+**GO Phase 1** confirmed 2026-05-11.
 
 ---
 
-**Status:** spec drafted, awaiting organizer review. Phase 1 implementation will NOT begin until this is approved.
+**Status:** spec approved, Phase 1 implementation IN PROGRESS.
