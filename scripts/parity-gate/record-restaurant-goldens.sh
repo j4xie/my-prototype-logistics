@@ -35,7 +35,23 @@ set -u
 set -o pipefail
 
 # ── Configuration ───────────────────────────────────────────────────
-FACTORIES_DEFAULT="R_QINGHUAJIAO_REAL R_ILTEATRO_REAL"
+# Default factory_ids are restaurant rows that exist in BOTH registries:
+#   - cretas_prod_db.factories (tenant + JWT auth + RBAC) — required for tenant
+#     detector to return RESTAURANT (else falls through to FACTORY → Phase 2D
+#     defer NotImplementedError)
+#   - smartbi_prod_db (fact_pos_transaction / restaurant_reviews / etc.) — at
+#     least one has Silver data so M3 / N2 / N3 / N4 emit non-trivial values
+#
+# R_GML_DEMO  — 桂满陇 江浙菜, 16213 fact_pos_transaction rows (verified
+#               PR #365 §3.2 audit). Restaurant type confirmed.
+# RES_3101_009 — QHJ_PROD (青花椒 prod), RESTAURANT type, zero Silver data
+#                today but matches the brief intent for "real QHJ".
+#
+# The 14 R_*_REAL chain catalog seeds (Sub-ETL-3 V20260511_02) only exist in
+# smartbi_prod_db.restaurant_chain_catalog, not in cretas_prod_db.factories,
+# so they currently fall through to FACTORY tenant. Onboarding decision
+# pending Steve — flagged in PR #365 audit doc §4.
+FACTORIES_DEFAULT="RES_3101_009 R_GML_DEMO"
 TYPES_PRODUCTION=("oee" "efficiency" "equipment" "overview")
 TYPES_QUALITY=("fpy" "defect" "rework" "overview")
 DATE_RANGE_DEFAULT="startDate=2026-01-01&endDate=2026-01-31"
