@@ -18,6 +18,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue';
+import { warehouseDisplayLabel, warehouseDisplayName } from '@/utils/warehouse';
 
 const authStore = useAuthStore();
 const ownFactoryId = computed(() => authStore.factoryId);
@@ -82,7 +83,7 @@ async function loadWarehouses() {
     const resp = await get<FactoryWarehouse[]>(url);
     if (resp.success && Array.isArray(resp.data)) {
       warehouseOptions.value = resp.data.filter((w) => w.isActive !== false);
-      // Default: WH-LOG if available, else first
+      // Default: WH-LOG (总仓) if available, else first
       const defaultWh =
         warehouseOptions.value.find((w) => w.code === 'WH-LOG') ||
         warehouseOptions.value[0];
@@ -323,7 +324,7 @@ onMounted(async () => {
             <el-option
               v-for="w in warehouseOptions"
               :key="w.id"
-              :label="`${w.name} (${w.code})`"
+              :label="`${warehouseDisplayName(w.name, w.code)} (${w.code})`"
               :value="w.id"
             />
           </el-select>
@@ -351,7 +352,7 @@ onMounted(async () => {
           <div class="summary-value">
             <strong>{{ data.factoryId }}</strong>
             <span class="separator">/</span>
-            <strong>{{ data.warehouseName }}</strong>
+            <strong>{{ warehouseDisplayName(data.warehouseName, data.warehouseCode) }}</strong>
             <span class="badge">{{ data.warehouseCode }}</span>
           </div>
         </div>
@@ -396,7 +397,7 @@ onMounted(async () => {
             </el-table-column>
             <el-table-column label="仓库" width="150">
               <template #default="{ row }">
-                {{ row.warehouseName || '-' }}
+                {{ warehouseDisplayName(row.warehouseName, row.warehouseCode) }}
                 <span class="muted" v-if="row.warehouseCode">({{ row.warehouseCode }})</span>
               </template>
             </el-table-column>
@@ -482,7 +483,7 @@ onMounted(async () => {
             <div class="overview-block">
               <div class="overview-title">仓库信息</div>
               <div class="overview-row"><span class="overview-label">工厂ID</span><span>{{ data.factoryId }}</span></div>
-              <div class="overview-row"><span class="overview-label">仓库</span><span>{{ data.warehouseName }} ({{ data.warehouseCode }})</span></div>
+              <div class="overview-row"><span class="overview-label">仓库</span><span>{{ warehouseDisplayName(data.warehouseName, data.warehouseCode) }} ({{ data.warehouseCode }})</span></div>
               <div class="overview-row" v-if="data.warehouseType"><span class="overview-label">类型</span><span>{{ data.warehouseType }}</span></div>
               <div class="overview-row"><span class="overview-label">仓库UUID</span><span class="muted small">{{ data.warehouseId }}</span></div>
             </div>
