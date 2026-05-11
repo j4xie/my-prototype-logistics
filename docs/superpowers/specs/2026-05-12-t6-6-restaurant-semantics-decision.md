@@ -519,9 +519,9 @@ Per PR #316 ETL infra spec §0:
 
 If Steve approves Q-DEC-6 = F1 (extend `fact_pos_item` for return_qty):
 
-- **+1 migration**: `V20260815_04__t6_6_etl_return_qty_columns.sql` — ALTER TABLE fact_pos_item ADD COLUMN return_qty NUMERIC(18,3) DEFAULT 0, ADD COLUMN return_amount NUMERIC(18,2) DEFAULT 0; (~10 LOC)
-- **+canonical column mapping** in `_lib/column_mapping.py` (Sub-ETL-1a deliverable): map `销售数量` → `qty`, `退货数量` → `return_qty`, `销售金额` → `amount`, `实退金额` → `return_amount`.
-- **+UPSERT helper update** in `_lib/upsert_helpers.py` (Sub-ETL-2b deliverable): include new columns in INSERT statement.
+- **+1 migration**: `V20260511_03__fact_pos_item_add_return_qty.sql` — ALTER TABLE fact_pos_item ADD COLUMN return_qty NUMERIC(18,3) DEFAULT NULL; (~10 LOC). **Narrower scope per Q-DEC-6 F1 verbal sign-off (PR #330)**: `return_qty` only (not `return_amount`); `DEFAULT NULL` (not `0`) for data semantic distinction between "no return data" vs "explicit 0 returns". Shipped via PR #331 chat1 Sub-ETL-1 follow-up + auto-applied next Python deploy via Step 3.5 runner.
+- **+canonical column mapping** in `_lib/column_mapping.py` (PR #331 shipped): map `销售数量` → `qty`, `退货数量` → `return_qty`, `销售金额` → `amount`. (`实退金额` → `return_amount` deferred — not in Q-DEC-6 F1 narrower scope; if needed later, separate Sub-ETL extension.)
+- **+UPSERT helper update** in `_lib/upsert_helpers.py` (Sub-ETL-2b deliverable): include `return_qty` column in INSERT statement.
 
 **Net ETL extension**: ~2.5pd added to Sub-ETL-1a + Sub-ETL-1c + Sub-ETL-2c. Reasonable scope creep — surface as Q-DEC-6 sign-off, then organizer extends Sub-ETL-1c marching order to include return-qty mapping.
 
