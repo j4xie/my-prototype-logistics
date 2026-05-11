@@ -258,6 +258,17 @@ public class PythonSmartBIConfig {
     private String analysisQualityEndpoint = "/api/mobile/{factoryId}/smart-bi/analysis/quality";
 
     /**
+     * Tier 1 Config — 阈值 CRUD endpoints (Phase 2C Tier 1 pilot).
+     *
+     * Mirrors {@code SmartBIConfigController} threshold sub-controller
+     * (Java lines 150-229) → Python {@code smartbi_compat.api.config_thresholds}.
+     * No {@code factoryId} in path — Tier 1 endpoints are admin-scoped per
+     * design spec §5.1. Used during Phase 2C-Tier-1-C cutover; currently
+     * zero Java-side callers (URL constants reserved for the cutover wave).
+     */
+    private String configThresholdsEndpoint = "/api/mobile/smartbi-config/thresholds";
+
+    /**
      * 财务数据提取端点
      */
     private String extractFinanceEndpoint = "/api/finance/extract";
@@ -512,6 +523,39 @@ public class PythonSmartBIConfig {
      */
     public String getAnalysisQualityUrl(String factoryId) {
         return getFullUrl(analysisQualityEndpoint.replace("{factoryId}", factoryId));
+    }
+
+    /**
+     * 获取阈值配置列表 / 创建 URL (Phase 2C Tier 1 pilot).
+     *
+     * @return Fully qualified URL for GET (list) + POST (create) on
+     *         the thresholds collection. Optional {@code ?type=} query
+     *         parameter appended by the caller.
+     */
+    public String getConfigThresholdsUrl() {
+        return getFullUrl(configThresholdsEndpoint);
+    }
+
+    /**
+     * 获取阈值配置单项 URL (Phase 2C Tier 1 pilot).
+     *
+     * @param id 阈值配置 UUID
+     * @return Fully qualified URL for PUT (update) + DELETE (soft-delete)
+     *         on the specific threshold
+     */
+    public String getConfigThresholdByIdUrl(String id) {
+        return getFullUrl(configThresholdsEndpoint + "/" + id);
+    }
+
+    /**
+     * 获取阈值缓存重载 URL (Phase 2C Tier 1 pilot).
+     *
+     * @return Fully qualified URL for POST reload endpoint. Pilot is no-op
+     *         per design spec §4 Option C fallback; sister chats activate
+     *         Redis pub/sub cache infrastructure when second sub-module ships.
+     */
+    public String getConfigThresholdsReloadUrl() {
+        return getFullUrl(configThresholdsEndpoint + "/reload");
     }
 
     /**
