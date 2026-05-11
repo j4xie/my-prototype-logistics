@@ -578,8 +578,15 @@ class SemanticMapper:
             r'实收|实退|实付|应收|应付|分摊|折扣|优惠)(\(|（|\s|$)',
             col
         ):
-            # Use Chinese keyword as standard — Java isMeasure's zh regex will catch it
-            return ('amount', '数量金额', 0.92)
+            # Issue #291: preserve original col name — returning a single fixed
+            # '数量金额' standard caused [数量, 金额] adjacent columns to collide
+            # into [数量金额, 数量金额_2], conflating quantity with revenue in
+            # downstream analytics. Python field_classifier picks up isMeasure
+            # from NUMERIC dtype + the regex keywords here without needing a
+            # rename to a Java-Latin standard name (mirrors rating branch
+            # below, which uses the same `col` preservation pattern since
+            # Apr 24 2026).
+            return ('amount', col, 0.92)
 
         # Measure — rate patterns (率/占比/系数)
         if re.search(r'(率|比例|占比|系数|百分比|比率)(\(|（|\s|$)', col):
