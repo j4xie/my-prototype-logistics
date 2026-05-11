@@ -47,4 +47,41 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
     BigDecimal sumAvailableQuantityByProductType(
             @Param("factoryId") String factoryId,
             @Param("productTypeId") String productTypeId);
+
+    /**
+     * A5 集团联销 (cross-factory sales) — 跨工厂可用成品库存汇总。
+     *
+     * <p>当 feature flag {@code cretas.sales.cross-factory.enabled=true} 时启用。
+     * 当前实现：去掉 factoryId 过滤，允许所有工厂的批次参与库存匹配
+     * （等价于"集团池"语义）。
+     *
+     * <p>未来当 {@code factory_network} 表落地后，此方法可以替换为
+     * {@code WHERE b.factoryId IN (SELECT f.factoryId FROM FactoryNetwork f WHERE f.parent = :soFactoryId)}
+     * 实现按销售组织受控的跨工厂汇总。
+     *
+     * @see com.cretas.aims.service.orchestration.InventoryMatchingService
+     * @since 2026-05-10 PR #309 A5=C feature flag introduction
+     */
+    @Query("SELECT COALESCE(SUM(b.producedQuantity - b.shippedQuantity - b.reservedQuantity), 0) " +
+            "FROM FinishedGoodsBatch b WHERE b.productTypeId = :productTypeId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0")
+    BigDecimal sumAvailableQuantityByProductTypeAllFactories(
+            @Param("productTypeId") String productTypeId);
+
+    /**
+     * A5 集团联销 (cross-factory sales) — 跨工厂可用成品批次（FEFO）。
+     *
+     * <p>当 feature flag {@code cretas.sales.cross-factory.enabled=true} 时启用，
+     * 跳过 factoryId 过滤。订单 FEFO 预留时跨工厂池中按到期日最早依次取。
+     *
+     * @see com.cretas.aims.service.orchestration.InventoryMatchingService
+     * @since 2026-05-10 PR #309 A5=C feature flag introduction
+     */
+    @Query("SELECT b FROM FinishedGoodsBatch b WHERE b.productTypeId = :productTypeId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0 " +
+            "ORDER BY b.expireDate ASC NULLS LAST, b.productionDate ASC")
+    List<FinishedGoodsBatch> findAvailableBatchesAllFactories(
+            @Param("productTypeId") String productTypeId);
 }
