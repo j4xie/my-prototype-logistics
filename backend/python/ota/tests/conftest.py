@@ -77,6 +77,38 @@ def sample_expo_config() -> dict:
 
 
 @pytest.fixture
+def ota_settings(ota_root: Path, test_rsa_keypair):
+    """OTASettings pointed at the test ota_root with a real RSA keypair on disk."""
+    from ota.config import OTASettings
+
+    private_pem, _public_pem = test_rsa_keypair
+    key_path = ota_root / "keys" / "ota_private.pem"
+    key_path.write_bytes(private_pem)
+    return OTASettings(
+        base_path=ota_root,
+        private_key_path=key_path,
+        admin_token="test-admin-token-secret",
+        hostname="http://test.local",
+        default_channel="production",
+    )
+
+
+@pytest.fixture
+def client(ota_settings):
+    """FastAPI TestClient with our router mounted and settings dependency overridden."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from ota.api.endpoints import router
+    from ota.config import get_settings
+
+    app = FastAPI()
+    app.include_router(router, prefix="/api/ota")
+    app.dependency_overrides[get_settings] = lambda: ota_settings
+    return TestClient(app)
+
+
+@pytest.fixture
 def populated_bundle_dir(
     ota_root: Path, sample_metadata: dict, sample_expo_config: dict
 ) -> Path:
