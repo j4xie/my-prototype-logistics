@@ -99,6 +99,60 @@ class TestA2RevenueGroup:
         assert result[0] == "amount"
 
 
+# -------------------- Issue #291 amount column distinctness --------------------
+
+
+class TestIssue291AmountColumnDistinctness:
+    """
+    Regression for #291: classifier previously returned a single fixed
+    standard '数量金额' for every amount-pattern column, so [日期, 客户,
+    产品, 数量, 金额] collapsed to [time_period, 客户, 产品, 数量金额,
+    数量金额_2] after dedupe — conflating quantity with revenue downstream.
+
+    Fix: return the original col name (mirrors rating branch since Apr 24
+    2026). Dedupe should not need to fire for distinct amount columns.
+    """
+
+    def setup_method(self):
+        self.svc = SemanticMapper.__new__(SemanticMapper)
+
+    def test_数量_keeps_original_name(self):
+        result = self.svc._classify_by_priority_regex("数量")
+        assert result is not None
+        category, std, _ = result
+        assert category == "amount"
+        assert std == "数量"
+
+    def test_金额_keeps_original_name(self):
+        result = self.svc._classify_by_priority_regex("金额")
+        assert result is not None
+        category, std, _ = result
+        assert category == "amount"
+        assert std == "金额"
+
+    def test_数量_and_金额_get_distinct_standards(self):
+        # The actual #291 reproduction shape: adjacent NUMERIC columns must
+        # not collide on the same standard name.
+        r1 = self.svc._classify_by_priority_regex("数量")
+        r2 = self.svc._classify_by_priority_regex("金额")
+        assert r1 is not None and r2 is not None
+        assert r1[1] != r2[1], (
+            f"数量 and 金额 must get distinct standard names, got "
+            f"{r1[1]!r} vs {r2[1]!r}"
+        )
+
+    def test_销量_产量_销售额_收入_all_distinct(self):
+        # Sister-sweep: any pair of the amount-regex keyword family must not
+        # collide on the standard name.
+        cols = ["销量", "产量", "销售额", "收入", "成本", "利润"]
+        results = [self.svc._classify_by_priority_regex(c) for c in cols]
+        standards = [r[1] for r in results if r is not None]
+        assert len(standards) == len(cols)
+        assert len(set(standards)) == len(standards), (
+            f"Expected {len(cols)} distinct standards, got {standards}"
+        )
+
+
 # -------------------- A3 data_type inference --------------------
 
 
