@@ -242,6 +242,22 @@ public class PythonSmartBIConfig {
     private String regionDistributionEndpoint = "/api/analysis/sales/region-distribution";
 
     /**
+     * 生产分析端点 (T6.6 Phase B Sub-A — polymorphic Option A per Q-DEC-8).
+     * Path template: {factoryId} is substituted at call time. Single URL serves
+     * both factory and restaurant tenants; Python side dispatches via
+     * cretas_db.factories.type lookup.
+     */
+    private String analysisProductionEndpoint = "/api/mobile/{factoryId}/smart-bi/analysis/production";
+
+    /**
+     * 质量分析端点 (T6.6 Phase B Sub-B — polymorphic Option A per Q-DEC-8).
+     * Path template: {factoryId} is substituted at call time. Single URL serves
+     * both factory and restaurant tenants; Python side dispatches via
+     * cretas_db.factories.type lookup.
+     */
+    private String analysisQualityEndpoint = "/api/mobile/{factoryId}/smart-bi/analysis/quality";
+
+    /**
      * 财务数据提取端点
      */
     private String extractFinanceEndpoint = "/api/finance/extract";
@@ -474,6 +490,28 @@ public class PythonSmartBIConfig {
      */
     public String getRegionDistributionUrl() {
         return getFullUrl(regionDistributionEndpoint);
+    }
+
+    /**
+     * 获取生产分析 URL with factoryId substituted into the path template.
+     * Query parameters (startDate/endDate/analysisType) are appended by the
+     * client method.
+     *
+     * @param factoryId 工厂 / 门店 ID (e.g. "F001", "R_ILTEATRO_REAL")
+     * @return Fully qualified URL with path parameter substituted
+     */
+    public String getAnalysisProductionUrl(String factoryId) {
+        return getFullUrl(analysisProductionEndpoint.replace("{factoryId}", factoryId));
+    }
+
+    /**
+     * 获取质量分析 URL with factoryId substituted into the path template.
+     *
+     * @param factoryId 工厂 / 门店 ID
+     * @return Fully qualified URL with path parameter substituted
+     */
+    public String getAnalysisQualityUrl(String factoryId) {
+        return getFullUrl(analysisQualityEndpoint.replace("{factoryId}", factoryId));
     }
 
     /**
