@@ -38,6 +38,39 @@ const typeMap: Record<string, string> = {
   BRANCH_TO_HQ: '分部→总部',
 };
 
+// PR #289 §B9 — manual transfer create dialog state
+interface ManualTransferItem {
+  itemType: 'RAW_MATERIAL' | 'FINISHED_GOODS' | 'PACKAGING_MATERIAL';
+  materialTypeId: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  unitPrice?: number;
+  remark?: string;
+}
+interface MaterialTypeOption { id: string; name: string; code: string; unit: string }
+
+const createVisible = ref(false);
+const submitting = ref(false);
+const formRef = ref();
+const today = () => new Date().toISOString().slice(0, 10);
+const form = ref({
+  transferType: 'BRANCH_TO_HQ' as 'HQ_TO_BRANCH' | 'BRANCH_TO_BRANCH' | 'BRANCH_TO_HQ',
+  targetFactoryId: '',
+  sourceWarehouseId: '',
+  targetWarehouseId: '',
+  transferDate: today(),
+  expectedArrivalDate: '',
+  remark: '',
+  items: [] as ManualTransferItem[],
+});
+const formRules = {
+  transferType: [{ required: true, message: '请选择调拨类型', trigger: 'change' }],
+  targetFactoryId: [{ required: true, message: '请填写调入方ID', trigger: 'blur' }],
+  transferDate: [{ required: true, message: '请选择调拨日期', trigger: 'change' }],
+};
+const materialOptions = ref<MaterialTypeOption[]>([]);
+
 onMounted(() => loadData());
 
 async function loadData() {
@@ -55,6 +88,108 @@ async function loadData() {
     }
   } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
+}
+
+async function loadMaterialOptions() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get<{ content: MaterialTypeOption[] } | MaterialTypeOption[]>(
+      `/${factoryId.value}/reference-data/materials`,
+      { params: { page: 1, size: 200 } }
+    );
+    const ext = <T,>(r: any): T[] => (r?.data?.content || r?.data?.list || r?.data || []) as T[];
+    materialOptions.value = ext<MaterialTypeOption>(res);
+  } catch { /* interceptor */ }
+}
+
+function openCreateDialog() {
+  form.value = {
+    transferType: 'BRANCH_TO_HQ',
+    targetFactoryId: '',
+    sourceWarehouseId: '',
+    targetWarehouseId: '',
+    transferDate: today(),
+    expectedArrivalDate: '',
+    remark: '',
+    items: [],
+  };
+  loadMaterialOptions();
+  createVisible.value = true;
+}
+
+function addItem() {
+  form.value.items.push({
+    itemType: 'RAW_MATERIAL',
+    materialTypeId: '',
+    itemName: '',
+    quantity: 0,
+    unit: 'kg',
+    unitPrice: undefined,
+    remark: '',
+  });
+}
+
+function removeItem(idx: number) {
+  form.value.items.splice(idx, 1);
+}
+
+function handleMaterialChange(idx: number, materialId: string) {
+  const m = materialOptions.value.find(o => o.id === materialId);
+  if (m) {
+    form.value.items[idx].itemName = m.name;
+    if (m.unit) form.value.items[idx].unit = m.unit;
+  }
+}
+
+async function submitCreate() {
+  if (!formRef.value) return;
+  const valid = await formRef.value.validate().catch(() => false);
+  if (!valid) return;
+  if (form.value.items.length === 0) {
+    ElMessage.warning('请至少添加一行调拨物料');
+    return;
+  }
+  for (const it of form.value.items) {
+    if (!it.materialTypeId) { ElMessage.warning('请为每行选择物料'); return; }
+    if (!it.quantity || it.quantity <= 0) { ElMessage.warning('每行数量必须大于 0'); return; }
+    if (!it.unit) { ElMessage.warning('每行必须有单位'); return; }
+  }
+  submitting.value = true;
+  try {
+    const payload: Record<string, unknown> = {
+      transferType: form.value.transferType,
+      targetFactoryId: form.value.targetFactoryId.trim(),
+      transferDate: form.value.transferDate,
+      remark: form.value.remark || undefined,
+      items: form.value.items.map(it => ({
+        itemType: it.itemType,
+        materialTypeId: it.materialTypeId,
+        itemName: it.itemName,
+        quantity: it.quantity,
+        unit: it.unit,
+        unitPrice: it.unitPrice,
+        remark: it.remark || undefined,
+      })),
+    };
+    if (form.value.sourceWarehouseId) payload.sourceWarehouseId = form.value.sourceWarehouseId.trim();
+    if (form.value.targetWarehouseId) payload.targetWarehouseId = form.value.targetWarehouseId.trim();
+    if (form.value.expectedArrivalDate) payload.expectedArrivalDate = form.value.expectedArrivalDate;
+
+    const res = await post(`/${factoryId.value}/transfers`, payload);
+    if (res.success && res.data) {
+      ElMessage.success('调拨单已创建 (DRAFT)，可在详情页继续走 申请→审批→发货→签收 流程');
+      createVisible.value = false;
+      loadData();
+    }
+  } catch (e) {
+    if (e === 'cancel') return;
+    const err = e as { status?: number; message?: string; actionHint?: string | null } | undefined;
+    if (!err || (err.status !== 409 && !err.actionHint)) {
+      ElMessage.error(err?.message || '创建调拨单失败');
+    }
+  } finally {
+    submitting.value = false;
+  }
 }
 
 function goDetail(id: string) { router.push(`/transfer/${id}`); }
@@ -82,6 +217,11 @@ function isOutbound(row: Record<string, unknown>) { return row.sourceFactoryId =
           </div>
           <div class="header-right">
             <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+            <el-button
+              v-if="canWrite"
+              type="primary" :icon="Plus"
+              @click="openCreateDialog"
+            >手动新建调拨单</el-button>
           </div>
         </div>
       </template>
@@ -129,6 +269,148 @@ function isOutbound(row: Record<string, unknown>) { return row.sourceFactoryId =
           @current-change="handlePageChange" @size-change="handleSizeChange" />
       </div>
     </el-card>
+
+    <!-- PR #289 §B9 — Manual create dialog -->
+    <el-dialog
+      v-model="createVisible"
+      title="手动新建调拨单"
+      width="960px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <el-alert
+        type="info" show-icon :closable="false"
+        style="margin-bottom:12px"
+        title="使用场景"
+        description="无生产计划时手动创建（领用 / 研发 / 互调 / 分部退总仓 等）。创建后为 DRAFT 状态,需走 申请→审批→发货→签收 流程。"
+      />
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="110px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="调拨类型" prop="transferType">
+              <el-select v-model="form.transferType" style="width:100%">
+                <el-option label="总部→分部 (HQ_TO_BRANCH)" value="HQ_TO_BRANCH" />
+                <el-option label="分部→分部 (BRANCH_TO_BRANCH)" value="BRANCH_TO_BRANCH" />
+                <el-option label="分部→总部 (BRANCH_TO_HQ)" value="BRANCH_TO_HQ" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="调出方" prop="sourceFactoryId">
+              <el-input :value="factoryId" disabled placeholder="当前工厂 (自动填充)" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="调入方ID" prop="targetFactoryId">
+              <el-input v-model="form.targetFactoryId" placeholder="目标工厂/门店 ID (如 F001 / RES_3101_001)" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="调拨日期" prop="transferDate">
+              <el-date-picker
+                v-model="form.transferDate" type="date" value-format="YYYY-MM-DD"
+                style="width:100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="调出仓库" prop="sourceWarehouseId">
+              <el-input v-model="form.sourceWarehouseId" placeholder="(可选) 跨仓调拨时填,本厂总仓不填" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="调入仓库" prop="targetWarehouseId">
+              <el-input v-model="form.targetWarehouseId" placeholder="(可选) 跨仓调拨时填" clearable />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="预计到货">
+              <el-date-picker
+                v-model="form.expectedArrivalDate" type="date" value-format="YYYY-MM-DD"
+                style="width:100%" clearable
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="备注 / 原因">
+          <el-input
+            v-model="form.remark" type="textarea" :rows="2"
+            placeholder="如: 领用 / 研发样品 / 余料退总仓 等"
+            maxlength="5000" show-word-limit
+          />
+        </el-form-item>
+
+        <el-divider content-position="left">调拨物料</el-divider>
+        <el-button size="small" :icon="Plus" @click="addItem" style="margin-bottom:8px">添加物料</el-button>
+        <el-table :data="form.items" border empty-text="点击「添加物料」开始">
+          <el-table-column label="类型" width="140">
+            <template #default="{ row }">
+              <el-select v-model="row.itemType" size="small" style="width:100%">
+                <el-option label="原料/食材" value="RAW_MATERIAL" />
+                <el-option label="成品/菜品" value="FINISHED_GOODS" />
+                <el-option label="包材" value="PACKAGING_MATERIAL" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="物料" min-width="220">
+            <template #default="{ row, $index }">
+              <el-select
+                v-model="row.materialTypeId" placeholder="选择物料"
+                filterable size="small" style="width:100%"
+                @change="(val: string) => handleMaterialChange($index, val)"
+              >
+                <el-option
+                  v-for="m in materialOptions" :key="m.id"
+                  :label="`${m.name}${m.code ? ' (' + m.code + ')' : ''}`"
+                  :value="m.id"
+                />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="数量" width="130">
+            <template #default="{ row }">
+              <el-input-number
+                v-model="row.quantity" :min="0.001" :precision="3"
+                :controls="false" size="small" style="width:100%"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="单位" width="90">
+            <template #default="{ row }">
+              <el-input v-model="row.unit" size="small" maxlength="20" />
+            </template>
+          </el-table-column>
+          <el-table-column label="单价" width="120">
+            <template #default="{ row }">
+              <el-input-number
+                v-model="row.unitPrice" :min="0" :precision="2"
+                :controls="false" size="small" style="width:100%"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="行备注" min-width="140">
+            <template #default="{ row }">
+              <el-input v-model="row.remark" size="small" placeholder="(可选)" maxlength="5000" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" align="center">
+            <template #default="{ $index }">
+              <el-button type="danger" link size="small" @click="removeItem($index)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitCreate">创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -143,6 +425,7 @@ function isOutbound(row: Record<string, unknown>) { return row.sourceFactoryId =
     .page-title { font-size: 16px; font-weight: 600; color: #303133; }
     .data-count { font-size: 13px; color: #909399; }
   }
+  .header-right { display: flex; gap: 8px; }
 }
 .pagination-wrapper { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #ebeef5; margin-top: 16px; }
 </style>
