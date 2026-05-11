@@ -1,8 +1,11 @@
-"""chat-A1 Wave 1 skeleton tests for ``/analysis/production`` port.
+"""Skeleton tests for ``/analysis/production`` shared contracts.
 
-Per chat-A1 dispatch 2026-05-12 Option B, both factory and restaurant
-branches are deferred. These tests lock down the contracts that chat-A2
-(restaurant) and Phase 2D (factory) must preserve:
+chat-A1 Wave 1 (PR #350) shipped this set. chat-A2 Wave 2 ships the
+restaurant branch impl (see ``test_analysis_production_restaurant.py``),
+so the restaurant-raises-NotImplementedError test is removed here. The
+factory branch still raises and that assertion stays.
+
+Surviving contracts (chat-A2 must preserve):
 
 * ``TenantType`` enum mirrors Java ``FactoryType`` exactly (5 values).
 * ``is_restaurant_tenant`` matches Java
@@ -12,8 +15,8 @@ branches are deferred. These tests lock down the contracts that chat-A2
   ``"RESTAURANT"`` per Q-DEC-8 Option A envelope discriminator.
 * ``get_tenant_type`` defaults to FACTORY on missing rows (preserves
   Java repository-failure fallback).
-* Dispatcher shells raise ``NotImplementedError`` with the canonical
-  messages so chat-A2 / Phase 2D can grep for them.
+* Factory dispatcher still raises ``NotImplementedError`` with the
+  canonical Phase 2D message so future dispatch can grep for it.
 * Router declares the polymorphic endpoint path.
 
 Spec: docs/superpowers/specs/2026-05-12-t6-6-sub-a-production-impl-spec.md
@@ -26,9 +29,7 @@ from smartbi_compat.tenant import TenantType, get_tenant_type
 from smartbi_compat.api import analysis_production
 from smartbi_compat.api.analysis_production import (
     _factory_production_dispatch,
-    _restaurant_production_dispatch,
     _FACTORY_BRANCH_DEFERRED_MSG,
-    _RESTAURANT_BRANCH_DEFERRED_MSG,
     router,
 )
 
@@ -174,20 +175,6 @@ async def test_factory_dispatch_raises_with_phase_2d_message():
     assert "Phase 2D" in msg
     assert "fact_production_batch" in msg
     assert msg == _FACTORY_BRANCH_DEFERRED_MSG
-
-
-@pytest.mark.asyncio
-async def test_restaurant_dispatch_raises_with_chat_a2_message():
-    """chat-A2 Wave 2 handoff is grep-able for follow-up dispatch."""
-    from datetime import date
-
-    with pytest.raises(NotImplementedError) as exc_info:
-        await _restaurant_production_dispatch(
-            "R_ILTEATRO_REAL", date(2026, 5, 1), date(2026, 5, 31), None
-        )
-    msg = str(exc_info.value)
-    assert "chat-A2" in msg
-    assert msg == _RESTAURANT_BRANCH_DEFERRED_MSG
 
 
 # ============================================================
