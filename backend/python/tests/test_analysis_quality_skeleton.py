@@ -1,26 +1,27 @@
-"""chat-B1 Wave 1 skeleton tests for ``/analysis/quality`` port.
+"""Skeleton tests for ``/analysis/quality`` shared contracts.
 
-Per chat-B1 dispatch 2026-05-12 Option B (mirrors chat-A1 PR #350
-production precedent), both factory and restaurant branches are
-deferred. These tests lock down the contracts that chat-B2 (restaurant
-Wave 2) and Phase 2D (factory) must preserve:
+chat-B1 Wave 1 (PR #354) shipped this set. chat-B2 Wave 2 ships the
+restaurant branch impl (see ``test_analysis_quality_restaurant.py``),
+so the restaurant-raises-NotImplementedError tests are removed here.
+The factory branch still raises and that assertion stays.
 
-* Factory dispatch raises with grep-able Phase 2D message naming all
-  5 missing Silver tables.
-* Restaurant dispatch raises with grep-able chat-B2 handoff message
-  (regression guard against copy-paste of the chat-A2 sibling msg).
-* Router declares the polymorphic endpoint path
-  ``/api/mobile/{factory_id}/smart-bi/analysis/quality`` (GET only).
+Surviving contracts (chat-B2 + Phase 2D must preserve):
+
+* Factory dispatcher still raises ``NotImplementedError`` with the
+  canonical Phase 2D message so future dispatch can grep for it (every
+  Silver-table name remains listed for grep-readiness).
 * Dispatcher signatures ``(factory_id, start_date, end_date,
   analysis_type)`` stable for chat-B2 + Phase 2D follow-ups.
+* Router declares the polymorphic endpoint path
+  ``/api/mobile/{factory_id}/smart-bi/analysis/quality`` (GET only).
 * Module re-uses chat-A1's shared ``smartbi_compat.tenant`` (no
   duplicate enum).
 * ``_RESTAURANT_DATA_AVAILABILITY_VOCAB`` controlled vocabulary
-  exported for chat-B2 to import — frontend chip-badge rendering
-  depends on these exact strings (Sub-B spec §4.2).
+  exported with exactly 5 markers (Sub-B spec §4.2) — frontend
+  chip-badge rendering depends on these exact strings.
 
 Spec: docs/superpowers/specs/2026-05-12-t6-6-sub-b-quality-impl-spec.md
-Sibling: backend/python/smartbi_compat/api/analysis_production.py (chat-A1 PR #350)
+Sibling: backend/python/tests/test_analysis_production_skeleton.py
 """
 from __future__ import annotations
 
@@ -35,7 +36,6 @@ from smartbi_compat.api.analysis_quality import (
     _factory_quality_dispatch,
     _restaurant_quality_dispatch,
     _FACTORY_BRANCH_DEFERRED_MSG,
-    _RESTAURANT_BRANCH_DEFERRED_MSG,
     _RESTAURANT_DATA_AVAILABILITY_VOCAB,
     router,
 )
@@ -79,30 +79,7 @@ def test_factory_msg_lists_silver_table(table):
 
 
 # ============================================================
-# Restaurant deferred-message content (chat-B2 Wave 2 handoff)
-# ============================================================
-
-
-def test_restaurant_msg_canonical_string():
-    """Lock the exact restaurant-branch deferred message."""
-    assert _RESTAURANT_BRANCH_DEFERRED_MSG == (
-        "Restaurant quality analysis is deferred to chat-B2 Wave 2 implementation. "
-        "See docs/superpowers/specs/2026-05-12-t6-6-sub-b-quality-impl-spec.md §3 "
-        "and docs/superpowers/specs/2026-05-11-q4-q5-restaurant-analysis-impl-spec.md §4."
-    )
-
-
-def test_restaurant_msg_does_not_misroute_to_chat_a2():
-    """Regression guard: chat-A2 owns production Wave 2, NOT quality.
-
-    Easy copy-paste bug from analysis_production._RESTAURANT_BRANCH_DEFERRED_MSG.
-    """
-    assert "chat-A2" not in _RESTAURANT_BRANCH_DEFERRED_MSG
-    assert "chat-B2" in _RESTAURANT_BRANCH_DEFERRED_MSG
-
-
-# ============================================================
-# Dispatcher NotImplementedError contracts
+# Factory dispatcher NotImplementedError contracts
 # ============================================================
 
 
@@ -131,26 +108,6 @@ async def test_factory_dispatch_raises_for_every_analysis_type(analysis_type):
         )
 
 
-@pytest.mark.asyncio
-async def test_restaurant_dispatch_raises_canonical_msg():
-    """Restaurant branch must raise the canonical chat-B2 handoff message."""
-    with pytest.raises(NotImplementedError) as exc_info:
-        await _restaurant_quality_dispatch(
-            "R_QINGHUAJIAO_REAL", date(2026, 5, 1), date(2026, 5, 31), None
-        )
-    assert str(exc_info.value) == _RESTAURANT_BRANCH_DEFERRED_MSG
-
-
-@pytest.mark.parametrize("analysis_type", ["fpy", "defect", "rework", None])
-@pytest.mark.asyncio
-async def test_restaurant_dispatch_raises_for_every_analysis_type(analysis_type):
-    """Both pilots (with-review / without-review) + all 4 analysisType defer."""
-    with pytest.raises(NotImplementedError):
-        await _restaurant_quality_dispatch(
-            "R_ILTEATRO_REAL", date(2026, 5, 1), date(2026, 5, 31), analysis_type
-        )
-
-
 # ============================================================
 # Dispatcher signature stability for chat-B2 + Phase 2D
 # ============================================================
@@ -169,7 +126,13 @@ def test_factory_dispatch_signature_stable():
 
 
 def test_restaurant_dispatch_signature_stable():
-    """4-arg async signature — chat-B2 MUST preserve."""
+    """4-arg async signature — chat-B3 + Phase 2D MUST preserve.
+
+    chat-B2 (this PR) implements the restaurant body but the dispatcher
+    signature was the chat-B1 contract — locking it here so chat-B3
+    envelope wiring + future restaurant additions (e.g. trend chart)
+    don't introduce kwargs that break the router contract.
+    """
     sig = inspect.signature(_restaurant_quality_dispatch)
     assert list(sig.parameters.keys()) == [
         "factory_id",
@@ -199,23 +162,22 @@ def test_router_endpoint_methods_are_get_only():
 
 
 # ============================================================
-# Module-level advertisement (stable boundaries for chat-B2 + chat-B3)
+# Module-level advertisement (stable boundaries for chat-B3)
 # ============================================================
 
 
 def test_module_advertises_dispatch_helpers():
-    """Stable function names for chat-B2 (restaurant) + Phase 2D (factory)."""
+    """Stable function names for chat-B3 wiring + Phase 2D (factory)."""
     assert hasattr(analysis_quality, "_factory_quality_dispatch")
     assert hasattr(analysis_quality, "_restaurant_quality_dispatch")
     assert hasattr(analysis_quality, "get_quality_analysis")
 
 
-def test_module_advertises_router_and_deferred_constants():
-    """Router + deferred-msg constants for chat-B3 envelope wiring."""
+def test_module_advertises_router_and_factory_deferred_constant():
+    """Router + factory-deferred constant for chat-B3 envelope wiring."""
     assert hasattr(analysis_quality, "router")
     assert analysis_quality.router is router
     assert hasattr(analysis_quality, "_FACTORY_BRANCH_DEFERRED_MSG")
-    assert hasattr(analysis_quality, "_RESTAURANT_BRANCH_DEFERRED_MSG")
 
 
 # ============================================================

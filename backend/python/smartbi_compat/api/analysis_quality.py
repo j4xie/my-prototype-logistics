@@ -1,67 +1,58 @@
-"""Phase 2B T6.6 ``/analysis/quality`` endpoint port — skeleton.
+"""Phase 2B T6.6 ``/analysis/quality`` endpoint port.
 
-This module is the chat-B1 Wave 1 deliverable per T6.6 Phase B Sub-B
-dispatch. Per organizer decision 2026-05-12 (Option B — defer factory
-impl) mirroring chat-A1 PR #350 production-port precedent, BOTH
-branches are intentionally ``raise NotImplementedError`` placeholders:
+chat-B1 Wave 1 shipped the skeleton + factory deferral (PR #354). chat-B2
+Wave 2 (this commit) implements the restaurant branch per T6.6 Phase B
+Sub-B spec §3 + Q4/Q5 impl spec §4 + Q-DEC-8 Option A envelope.
 
-* **Factory branch** is blocked by missing Silver-layer tables
-  (``fact_quality_inspection`` / ``fact_quality_defect`` /
-  ``fact_rework_record`` / ``fact_disposal_record`` /
-  ``fact_customer_complaint``). Sub-B spec §2.3 fallback to a
-  ``_JavaRandom`` shim was rejected in favor of cleanly waiting on
-  the factory Silver migration scheduled for Phase 2D — same
-  decision as chat-A1 ``analysis_production`` per Q1 amendment §1.
-* **Restaurant branch** is the chat-B2 Wave 2 scope (4-metric
-  envelope: FOOD_SAFETY_INCIDENT_RATE / COMPLAINT_RATE /
-  DISH_RETURN_RATE / WASTAGE_RATE per PR #330 §2 + Sub-B spec §3).
-  Stubbed here so chat-B2 can drop in the real implementation
-  without changing the dispatcher contract.
+Per organizer 2026-05-12 Option B decision the **factory branch remains
+deferred to Phase 2D** (factory Silver schema migration pending — same
+rationale as chat-A1 PR #350 production precedent).
 
-What this module DOES ship:
+Restaurant branch returns a 4-metric envelope (N1 FOOD_SAFETY_INCIDENT_RATE,
+N2 COMPLAINT_RATE, N3 DISH_RETURN_RATE, N4 WASTAGE_RATE) per
+``2026-05-12-t6-6-restaurant-semantics-decision.md`` §2.
 
-* Tenant-typed dispatcher wired to
-  ``smartbi_compat.tenant.get_tenant_type`` (imports chat-A1's shared
-  module — does NOT duplicate the enum).
-* JWT + cross-factory enforcement (existing ``verify_jwt_and_factory``).
-* Stable function boundaries for chat-B2 / Phase 2D follow-ups.
-* Controlled dataAvailability vocabulary constant
-  (``_RESTAURANT_DATA_AVAILABILITY_VOCAB``) for chat-B2 grep-ability.
+* N1 (Q-DEC-4 = D1): always-null + ``MISSING_FOOD_SAFETY_INCIDENT_LOG``
+  — no food-safety incident log schema exists.
+* N2 (Q-DEC-5 = E1): rating-based proxy from ``restaurant_reviews``
+  (count of rating < 3.0 / total reviews × 100). Real value for
+  ``R_QINGHUAJIAO_REAL`` (青花椒, has 大众点评 data); null for the other
+  13 chains. Marker ``NO_REVIEW_DATA_FOR_CHAIN`` when ``total_reviews == 0``.
+* N3 (Q-DEC-6 = F1, ✅ LIVE prod V20260511_03): real value from
+  ``fact_pos_item.return_qty`` aggregate. All 14 REAL chains have data
+  post-Sub-ETL-2c ship. Marker ``NO_POS_DATA_FOR_PERIOD`` when zero rows.
+* N4 (Q-DEC-7 = G1): wastage-cost / requisition-cost × 100. Null + marker
+  ``WASTAGE_NOT_TRACKED`` for the 14 REAL chains (Excel source lacks
+  wastage column); demo chain ``RES_3101_009`` may emit real value.
 
-What this module does NOT ship (intentionally):
-
-* The factory ``DashboardResponse`` envelope builder (Sub-B spec §1.3) —
-  needs golden recording vs Java which Option B obviates for now.
-* Restaurant 4-metric envelope (chat-B2 scope per Sub-B spec §3).
-* Router registration in ``backend/python/main.py`` — deferred to
-  chat-B3 envelope wiring (Sub-B spec §7.3) to avoid exposing a 501
-  surface before at least one branch returns real output.
-
-Java reference (kept for chat-B2 / Phase 2D):
+Java reference (kept for Phase 2D factory port):
 
 * Controller: ``SmartBIAnalysisController.getQualityAnalysis`` lines 119-152
-* Service (factory branch only — mock; KEEP forever per Dashboard
-  composite binds): ``QualityAnalysisServiceImpl``
+* Service (factory branch only — mock; KEEP forever per Dashboard composite binds):
+  ``QualityAnalysisServiceImpl``
 * Tenant predicate: ``SmartBIServiceImpl.isRestaurantTenant`` lines 432-441
 
 Specs:
 
-* Sub-B impl: docs/superpowers/specs/2026-05-12-t6-6-sub-b-quality-impl-spec.md
-* Q4/Q5 decisions: docs/superpowers/specs/2026-05-12-t6-6-restaurant-semantics-decision.md (PR #330)
-* Q5 module shape: docs/superpowers/specs/2026-05-11-q4-q5-restaurant-analysis-impl-spec.md
+* Sub-B impl: docs/superpowers/specs/2026-05-12-t6-6-sub-b-quality-impl-spec.md §3
+* Q5 decisions: docs/superpowers/specs/2026-05-12-t6-6-restaurant-semantics-decision.md (PR #330)
+* Q5 module shape: docs/superpowers/specs/2026-05-11-q4-q5-restaurant-analysis-impl-spec.md §4
 * Factory port detail (Phase 2D): docs/superpowers/specs/2026-05-09-t6-6-quality-port-detail.md
-* Sibling skeleton (chat-A1, MERGED PR #350):
+* Sibling shipped (chat-A2 restaurant production):
   backend/python/smartbi_compat/api/analysis_production.py
 """
 from __future__ import annotations
 
 import logging
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 
+from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
+from smartbi_compat.schema_compat import wrap_response
 from smartbi_compat.tenant import TenantType, get_tenant_type
 
 logger = logging.getLogger(__name__)
@@ -80,27 +71,430 @@ _FACTORY_BRANCH_DEFERRED_MSG = (
     "rejected (Q1 amendment §1; mirrors chat-A1 PR #350 production precedent)."
 )
 
-_RESTAURANT_BRANCH_DEFERRED_MSG = (
-    "Restaurant quality analysis is deferred to chat-B2 Wave 2 implementation. "
-    "See docs/superpowers/specs/2026-05-12-t6-6-sub-b-quality-impl-spec.md §3 "
-    "and docs/superpowers/specs/2026-05-11-q4-q5-restaurant-analysis-impl-spec.md §4."
-)
 
+# ============================================================
+# Controlled ``dataAvailability`` vocabulary (Sub-B spec §4 / PR #330 §3.4)
+# ============================================================
+#
+# NO additional markers may be introduced without organizer sign-off
+# (would require spec §4.2 amendment). Grep-target for chat-B3 wiring audit
+# + frontend chip-badge rendering depends on these exact strings.
+#
+# Tuple kept as the chat-B1 skeleton contract — vocabulary discipline test
+# imports this constant and asserts every emitted dataAvailability ∈ tuple.
 
-# Restaurant tenant dataAvailability controlled vocabulary (Sub-B spec §4).
-# chat-B2 MUST use these exact strings — frontend chip-badge rendering
-# depends on them. New markers require organizer sign-off (spec §4.2).
+_AVAILABILITY_MISSING_FOOD_SAFETY = "MISSING_FOOD_SAFETY_INCIDENT_LOG"  # N1 — Q-DEC-4 D1
+_AVAILABILITY_NO_REVIEW_DATA = "NO_REVIEW_DATA_FOR_CHAIN"               # N2 — Q-DEC-5 E1
+_AVAILABILITY_RETURN_QTY_NOT_INGESTED = "RETURN_QTY_NOT_INGESTED"       # N3 fallback Q-DEC-6 F3
+_AVAILABILITY_NO_POS_DATA = "NO_POS_DATA_FOR_PERIOD"                    # N3 — zero rows
+_AVAILABILITY_WASTAGE_NOT_TRACKED = "WASTAGE_NOT_TRACKED"               # N4 — Q-DEC-7 G1
+
 _RESTAURANT_DATA_AVAILABILITY_VOCAB = (
-    "MISSING_FOOD_SAFETY_INCIDENT_LOG",  # N1 — Q-DEC-4 = D1 (always emit)
-    "NO_REVIEW_DATA_FOR_CHAIN",           # N2 — Q-DEC-5 = E1 (13 of 14 chains)
-    "RETURN_QTY_NOT_INGESTED",            # N3 fallback — Q-DEC-6 F3 (post V20260511_03 should not occur)
-    "NO_POS_DATA_FOR_PERIOD",             # N3 — column present but zero rows for period
-    "WASTAGE_NOT_TRACKED",                # N4 — Q-DEC-7 = G1 (14 chains, Excel source lacks column)
+    _AVAILABILITY_MISSING_FOOD_SAFETY,
+    _AVAILABILITY_NO_REVIEW_DATA,
+    _AVAILABILITY_RETURN_QTY_NOT_INGESTED,
+    _AVAILABILITY_NO_POS_DATA,
+    _AVAILABILITY_WASTAGE_NOT_TRACKED,
 )
 
 
 # ============================================================
-# Dispatch shells — both branches raise; chat-B2 / Phase 2D fill bodies.
+# Restaurant metric builders (N1-N4)
+# ============================================================
+
+
+def _build_food_safety_incident_metric() -> dict:
+    """N1 — Food Safety Incident Rate. Always null per Q-DEC-4 = D1.
+
+    Spec §3.1: no food-safety incident log table or schema exists in the
+    Silver layer for any of the 14 REAL chains. Honest null emission with
+    controlled vocabulary marker.
+    """
+    return {
+        "metricCode": "FOOD_SAFETY_INCIDENT_RATE",
+        "value": None,
+        "unit": "incidents_per_period",
+        "trend": None,
+        "alertLevel": None,
+        "dataAvailability": _AVAILABILITY_MISSING_FOOD_SAFETY,
+    }
+
+
+def _empty_complaint_rate_metric() -> dict:
+    """N2 empty envelope — emitted for chains without review data."""
+    return {
+        "metricCode": "COMPLAINT_RATE",
+        "value": None,
+        "unit": "%",
+        "trend": None,
+        "alertLevel": None,
+        "dataAvailability": _AVAILABILITY_NO_REVIEW_DATA,
+    }
+
+
+def _empty_dish_return_rate_metric(
+    *, availability: str = _AVAILABILITY_NO_POS_DATA
+) -> dict:
+    """N3 empty envelope — zero POS rows OR pool unavailable.
+
+    Per Q-DEC-9 default: omit ``dataAvailability`` when ``value`` is present
+    (the happy-path builder does so). When value is null we must emit a
+    marker explaining the absence — default to ``NO_POS_DATA_FOR_PERIOD``
+    since V20260511_03 is LIVE prod and the column should always be
+    ingested (the ``RETURN_QTY_NOT_INGESTED`` fallback exists only for
+    defensive pre-migration paths).
+    """
+    return {
+        "metricCode": "DISH_RETURN_RATE",
+        "value": None,
+        "unit": "%",
+        "trend": None,
+        "alertLevel": None,
+        "dataAvailability": availability,
+    }
+
+
+def _empty_wastage_rate_metric() -> dict:
+    """N4 empty envelope — wastage not tracked (14 REAL chains)."""
+    return {
+        "metricCode": "WASTAGE_RATE",
+        "value": None,
+        "unit": "%",
+        "trend": None,
+        "alertLevel": None,
+        "dataAvailability": _AVAILABILITY_WASTAGE_NOT_TRACKED,
+    }
+
+
+# ============================================================
+# SQL helpers — Rule 6 preconditions on every entry point
+# ============================================================
+
+
+async def _query_complaint_rate(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> Optional[dict]:
+    """N2 — aggregate total_reviews + complaint_count from ``restaurant_reviews``.
+
+    Rule 6 precondition: start_date / end_date required. asyncpg would
+    silently bind None → NULL → ``BETWEEN NULL AND NULL`` always false
+    → zero rows → caller sees "no data" when the real bug is a null param.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_query_complaint_rate: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    return await conn.fetchrow(
+        """
+        SELECT
+            COUNT(*) AS total_reviews,
+            SUM(CASE WHEN rating < 3.0 THEN 1 ELSE 0 END) AS complaint_count
+        FROM restaurant_reviews
+        WHERE factory_id = $1
+          AND review_time::date BETWEEN $2 AND $3
+        """,
+        factory_id,
+        start_date,
+        end_date,
+    )
+
+
+async def _query_dish_return_rate(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> Optional[dict]:
+    """N3 — aggregate total_sales_qty + total_return_qty from ``fact_pos_item``.
+
+    Rule 6 precondition + ``COALESCE(... , 0)`` semantics: legacy pre-ETL
+    rows have ``return_qty IS NULL`` which we treat as "did not contribute
+    a return" (the rows still contribute ``qty`` to the denominator). This
+    is the documented Sub-B spec §3.3 narrower-scope semantic per PR #335
+    §5.2 amendment.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_query_dish_return_rate: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    return await conn.fetchrow(
+        """
+        SELECT
+            COALESCE(SUM(qty), 0)        AS total_sales_qty,
+            COALESCE(SUM(return_qty), 0) AS total_return_qty
+        FROM fact_pos_item fpi
+        INNER JOIN fact_pos_transaction fpt
+            ON fpi.transaction_id = fpt.id
+        WHERE fpi.factory_id = $1
+          AND fpt.date BETWEEN $2 AND $3
+        """,
+        factory_id,
+        start_date,
+        end_date,
+    )
+
+
+async def _query_wastage_rate(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> Optional[dict]:
+    """N4 — 3-aggregate single-row from wastage + requisition fact tables.
+
+    Per spec §3.4. Subquery composite returns three columns:
+
+    * ``total_wastage_cost`` — SUM(estimated_cost) FROM fact_restaurant_wastage
+    * ``total_requisition_cost`` — SUM(est_cost) FROM fact_restaurant_requisition
+    * ``wastage_row_count`` — COUNT(*) FROM fact_restaurant_wastage
+
+    Rule 6 precondition + ``COALESCE(... , 0)`` semantics consistent with N3.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_query_wastage_rate: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    return await conn.fetchrow(
+        """
+        SELECT
+            (SELECT COALESCE(SUM(estimated_cost), 0)
+               FROM fact_restaurant_wastage
+              WHERE factory_id = $1
+                AND date BETWEEN $2 AND $3) AS total_wastage_cost,
+            (SELECT COALESCE(SUM(est_cost), 0)
+               FROM fact_restaurant_requisition
+              WHERE factory_id = $1
+                AND date BETWEEN $2 AND $3) AS total_requisition_cost,
+            (SELECT COUNT(*)
+               FROM fact_restaurant_wastage
+              WHERE factory_id = $1
+                AND date BETWEEN $2 AND $3) AS wastage_row_count
+        """,
+        factory_id,
+        start_date,
+        end_date,
+    )
+
+
+async def _query_return_rate_ranking(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> list:
+    """Per-product return rate ranking TOP 10 desc (analysisType=defect).
+
+    Per spec §3.5. ``HAVING SUM(qty) > 0`` excludes products with zero
+    sales (a return without a sale is ETL noise). ``NULLIF(..., 0)`` in the
+    sort guards against division-by-zero in the same edge.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_query_return_rate_ranking: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    return await conn.fetch(
+        """
+        SELECT
+            dp.product_id,
+            dp.name AS product_name,
+            COALESCE(SUM(fpi.qty), 0)        AS total_sales_qty,
+            COALESCE(SUM(fpi.return_qty), 0) AS total_return_qty
+        FROM fact_pos_item fpi
+        INNER JOIN fact_pos_transaction fpt ON fpi.transaction_id = fpt.id
+        INNER JOIN dim_product dp ON fpi.product_id = dp.product_id
+        WHERE fpi.factory_id = $1
+          AND fpt.date BETWEEN $2 AND $3
+        GROUP BY dp.product_id, dp.name
+        HAVING SUM(fpi.qty) > 0
+        ORDER BY (SUM(fpi.return_qty)::numeric / NULLIF(SUM(fpi.qty), 0)) DESC NULLS LAST
+        LIMIT 10
+        """,
+        factory_id,
+        start_date,
+        end_date,
+    )
+
+
+# ============================================================
+# Rate computation — Rule 10 intermediate-quantize discipline
+# ============================================================
+
+
+def _compute_rate_pct(numerator: Decimal, denominator: Decimal) -> Decimal:
+    """Compute ``numerator / denominator * 100`` mirroring Java
+    ``BigDecimal.divide(divisor, 4, HALF_UP).multiply(100)`` chain.
+
+    Rule 10 — intermediate quantize at scale 4 BEFORE multiply, then final
+    scale-2 HALF_UP. Caller is responsible for the ``denominator > 0`` guard
+    (we still defensively return ``Decimal("0")`` to avoid raising).
+    """
+    if denominator is None or denominator == 0:
+        return Decimal("0")
+    intermediate = (numerator / denominator).quantize(
+        Decimal("0.0001"), rounding=ROUND_HALF_UP
+    )
+    result = intermediate * Decimal("100")
+    return result.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _to_decimal_or_zero(v: Any) -> Decimal:
+    """Coerce asyncpg numeric / None to Decimal, defaulting None → zero.
+
+    Distinct from Rule 1 ``is not None`` discipline: here ``None`` is the
+    asyncpg ``COALESCE`` fallback for an aggregate with zero matching rows,
+    which we treat as zero. ``Decimal(0)`` is also acceptable upstream.
+    """
+    if v is None:
+        return Decimal("0")
+    if isinstance(v, Decimal):
+        return v
+    return Decimal(str(v))
+
+
+# ============================================================
+# Metric builders — wrap SQL + Rule 10 compute into envelope dicts
+# ============================================================
+
+
+async def _build_complaint_rate_metric(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """N2 — restaurant complaint rate from ``restaurant_reviews`` rating proxy.
+
+    * Real value emitted when ``total_reviews > 0`` (currently
+      ``R_QINGHUAJIAO_REAL`` 青花椒 only).
+    * Null + ``NO_REVIEW_DATA_FOR_CHAIN`` marker otherwise.
+    * Per Q-DEC-9 default: omit ``dataAvailability`` field when value present.
+    """
+    row = await _query_complaint_rate(factory_id, start_date, end_date, conn)
+    if row is None:
+        return _empty_complaint_rate_metric()
+
+    total_reviews = _to_decimal_or_zero(row["total_reviews"])
+    if total_reviews == 0:
+        return _empty_complaint_rate_metric()
+
+    complaint_count = _to_decimal_or_zero(row["complaint_count"])
+    rate_pct = _compute_rate_pct(complaint_count, total_reviews)
+    return {
+        "metricCode": "COMPLAINT_RATE",
+        "value": _decimal_to_number(rate_pct),
+        "unit": "%",
+        "trend": None,
+        "alertLevel": None,
+    }
+
+
+async def _build_dish_return_rate_metric(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """N3 — dish return rate from ``fact_pos_item.return_qty`` aggregate.
+
+    Per Q-DEC-6 F1 (✅ V20260511_03 LIVE prod): all 14 REAL chains have
+    real return data post-Sub-ETL-2c. Empty branch handles "no POS rows
+    for this period" — distinct from "column missing entirely" which is
+    a pre-migration drift path that should not occur post-PR #331.
+    """
+    row = await _query_dish_return_rate(factory_id, start_date, end_date, conn)
+    if row is None:
+        return _empty_dish_return_rate_metric()
+
+    total_sales_qty = _to_decimal_or_zero(row["total_sales_qty"])
+    if total_sales_qty == 0:
+        return _empty_dish_return_rate_metric()
+
+    total_return_qty = _to_decimal_or_zero(row["total_return_qty"])
+    rate_pct = _compute_rate_pct(total_return_qty, total_sales_qty)
+    return {
+        "metricCode": "DISH_RETURN_RATE",
+        "value": _decimal_to_number(rate_pct),
+        "unit": "%",
+        "trend": None,
+        "alertLevel": None,
+    }
+
+
+async def _build_wastage_rate_metric(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """N4 — wastage cost / requisition cost rate.
+
+    Per Q-DEC-7 G1: null + ``WASTAGE_NOT_TRACKED`` for the 14 REAL chains
+    (Excel source lacks wastage column → ``wastage_row_count == 0``).
+
+    Rule 1 explicit ``is not None`` for ``total_requisition_cost``:
+    ``COALESCE(SUM(est_cost), 0)`` collapses missing rows to literal 0,
+    so we additionally guard ``total_requisition_cost == 0`` to avoid
+    emitting a meaningless ``0%`` when there's no denominator activity.
+    """
+    row = await _query_wastage_rate(factory_id, start_date, end_date, conn)
+    if row is None:
+        return _empty_wastage_rate_metric()
+
+    wastage_row_count = row["wastage_row_count"]
+    if wastage_row_count is None or wastage_row_count == 0:
+        return _empty_wastage_rate_metric()
+
+    total_requisition_cost = _to_decimal_or_zero(row["total_requisition_cost"])
+    if total_requisition_cost == 0:
+        return _empty_wastage_rate_metric()
+
+    total_wastage_cost = _to_decimal_or_zero(row["total_wastage_cost"])
+    rate_pct = _compute_rate_pct(total_wastage_cost, total_requisition_cost)
+    return {
+        "metricCode": "WASTAGE_RATE",
+        "value": _decimal_to_number(rate_pct),
+        "unit": "%",
+        "trend": None,
+        "alertLevel": None,
+    }
+
+
+async def _build_return_rate_ranking(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> list:
+    """Per-product return-rate ranking envelope (analysisType=defect).
+
+    Each row contains ``rank`` (1-based), ``productId``, ``productName``,
+    ``returnRate`` (Rule 10 quantize), ``totalSalesQty``, ``totalReturnQty``.
+    Empty list when no products qualify.
+    """
+    rows = await _query_return_rate_ranking(
+        factory_id, start_date, end_date, conn
+    )
+    ranking = []
+    for idx, row in enumerate(rows, start=1):
+        total_sales = _to_decimal_or_zero(row["total_sales_qty"])
+        total_returns = _to_decimal_or_zero(row["total_return_qty"])
+        rate_pct = _compute_rate_pct(total_returns, total_sales)
+        ranking.append({
+            "rank": idx,
+            "productId": row["product_id"],
+            "productName": row["product_name"],
+            "returnRate": _decimal_to_number(rate_pct),
+            "totalSalesQty": _decimal_to_number(total_sales),
+            "totalReturnQty": _decimal_to_number(total_returns),
+        })
+    return ranking
+
+
+def _restaurant_quality_overview(
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+    metrics: list,
+) -> dict:
+    """analysisType=overview body per spec §1.4 — {summary, kpis, recentChanges}.
+
+    ``recentChanges`` stays empty: trend computation requires a prior
+    period comparison and is explicitly deferred. N1/N4 are always null
+    for the 14 REAL chains so trend is irrelevant there; N2/N3 trend
+    computation is a Phase 2D scope extension.
+    """
+    return {
+        "summary": f"Restaurant quality analytics ({factory_id})",
+        "kpis": metrics,
+        "recentChanges": [],
+    }
+
+
+# ============================================================
+# Dispatch shells — factory branch still raises; restaurant branch live.
 # ============================================================
 
 
@@ -115,26 +509,12 @@ async def _factory_quality_dispatch(
     Phase 2D scope (per Sub-B spec §2): 1:1 port of Java
     ``QualityAnalysisServiceImpl`` mock — 4-metric quality family
     (FPY / DEFECT_RATE / REWORK_RATE / QUALITY_COST_RATE) + 7 method
-    entry points (spec §2.1) + LinkedHashMap charts/rankings. Requires
-    factory Silver schema migration
-    (V20260XYZ__t6_6_factory_quality_silver.sql) before real-DB
-    implementation per Q1 amendment §1.
+    entry points + LinkedHashMap charts/rankings. Requires factory Silver
+    schema migration before real-DB implementation per Q1 amendment §1.
 
-    Rule-sensitive sites flagged for Phase 2D reviewer audit (spec §2.2):
-
-    * **Pareto cumulative-percentage stateful loop** (Java line 587-595):
-      Python translation correctness gate — Rule 7 (threshold 80 integer
-      → Decimal compare for parity) + Rule 10 (intermediate quantize).
-    * **Defect/rework rate formulas** (lines 152-155 / 275-278): Rule 10
-      divide-multiply chain with scale-4 intermediate quantize.
-    * **LinkedHashMap key order** in ``charts`` + ``rankings``: Rule 8
-      byte-shape parity from F999 golden recording.
-    * **ChartConfig Lombok decapitalize**: Rule 9 (``xAxisField`` →
-      ``"xaxisField"`` etc.).
-
-    chat-B2 and Phase 2D MUST keep the ``(factory_id, start_date,
-    end_date, analysis_type)`` signature stable — the router-level
-    dispatcher depends on it.
+    Phase 2D MUST keep the ``(factory_id, start_date, end_date,
+    analysis_type)`` signature stable — the router-level dispatcher
+    depends on it.
     """
     raise NotImplementedError(_FACTORY_BRANCH_DEFERRED_MSG)
 
@@ -144,32 +524,86 @@ async def _restaurant_quality_dispatch(
     start_date: date,
     end_date: date,
     analysis_type: Optional[str],
-) -> dict:
-    """Restaurant-tenant quality analysis dispatcher (DEFERRED to chat-B2).
+) -> Any:
+    """Restaurant-tenant quality analysis (N1+N2+N3+N4 per spec §3).
 
-    chat-B2 fills in the 4-metric envelope per Sub-B spec §3:
+    analysisType branches (spec §3.6 — mirror Java controller line 119-152
+    dispatch but reduced to restaurant 4-metric envelope per PR #330 §2.2):
 
-    * **N1** FOOD_SAFETY_INCIDENT_RATE — always null + marker (Q-DEC-4 D1)
-    * **N2** COMPLAINT_RATE — rating-based per chain (Q-DEC-5 E1);
-      13 of 14 chains null + ``NO_REVIEW_DATA_FOR_CHAIN``
-    * **N3** DISH_RETURN_RATE — all 14 chains have real data post-Sub-ETL-2c
-      ship (V20260511_03 ``fact_pos_item.return_qty`` LIVE per Q-DEC-6 F1)
-    * **N4** WASTAGE_RATE — null for 14 chains + ``WASTAGE_NOT_TRACKED``
-      (Q-DEC-7 G1)
+    * ``fpy`` / omitted (None): metrics + ``trendChart: None`` (per-metric
+      trend deferred to Phase 2D — N1/N4 always null anyway).
+    * ``defect``: per-product return-rate ranking + ``paretoChart: None``
+      (restaurants have no defect Pareto chart).
+    * ``rework``: metrics + ``costChart: None`` (wastage distribution
+      chart deferred to Phase 2D).
+    * Anything else (e.g. ``overview``): ``{summary, kpis, recentChanges}``.
 
-    Controlled vocabulary for ``dataAvailability`` is exposed as
-    ``_RESTAURANT_DATA_AVAILABILITY_VOCAB`` for chat-B2 import. No
-    additional markers without organizer sign-off (spec §4.2).
-
-    Per-analysisType dispatch (spec §3.6): ``fpy`` (default) /
-    ``defect`` / ``rework`` / ``overview`` (None) — 4 branches.
-
-    Regression goldens required from chat-B2 (spec §3.7): 2 pilots ×
-    4 analysisTypes = 8 goldens covering both
-    ``R_QINGHUAJIAO_REAL`` (with-review N2) and ``R_ILTEATRO_REAL``
-    (without-review N2) code paths.
+    Pool acquisition is internal: the router contract is the 4-arg
+    signature ``(factory_id, start_date, end_date, analysis_type)``. The
+    SmartBI pool is acquired via ``get_pg_pool`` because the source
+    tables live in ``smartbi_db``. The cretas_db pool was already used by
+    the router for tenant detection and is unrelated to these queries.
     """
-    raise NotImplementedError(_RESTAURANT_BRANCH_DEFERRED_MSG)
+    n1 = _build_food_safety_incident_metric()
+
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[analysis_quality] smartbi pool acquisition failed factory=%s: %s",
+            factory_id,
+            e,
+        )
+
+    if pool is None:
+        n2 = _empty_complaint_rate_metric()
+        n3 = _empty_dish_return_rate_metric()
+        n4 = _empty_wastage_rate_metric()
+        ranking: list = []
+    else:
+        async with pool.acquire() as conn:
+            n2 = await _build_complaint_rate_metric(
+                factory_id, start_date, end_date, conn
+            )
+            n3 = await _build_dish_return_rate_metric(
+                factory_id, start_date, end_date, conn
+            )
+            n4 = await _build_wastage_rate_metric(
+                factory_id, start_date, end_date, conn
+            )
+            if analysis_type == "defect":
+                ranking = await _build_return_rate_ranking(
+                    factory_id, start_date, end_date, conn
+                )
+            else:
+                ranking = []
+
+    metrics = [n1, n2, n3, n4]
+
+    result: dict[str, Any] = {
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "tenantType": "RESTAURANT",
+    }
+
+    if analysis_type == "fpy" or analysis_type is None:
+        result["metrics"] = metrics
+        result["trendChart"] = None
+    elif analysis_type == "defect":
+        result["ranking"] = ranking
+        result["paretoChart"] = None
+    elif analysis_type == "rework":
+        result["metrics"] = metrics
+        result["costChart"] = None
+    else:
+        result["overview"] = _restaurant_quality_overview(
+            factory_id, start_date, end_date, metrics
+        )
+
+    return wrap_response(result)
 
 
 # ============================================================
@@ -192,13 +626,12 @@ async def get_quality_analysis(
     """Quality analysis polymorphic endpoint (Q-DEC-8 Option A).
 
     Single URL serves both factory and restaurant tenants. Tenant-type
-    discrimination happens server-side via
-    ``cretas_db.factories.type`` lookup mirroring Java
-    ``SmartBIServiceImpl.isRestaurantTenant``.
+    discrimination happens server-side via ``cretas_db.factories.type``
+    lookup mirroring Java ``SmartBIServiceImpl.isRestaurantTenant``.
 
-    Per chat-B1 dispatch 2026-05-12 (Option B + chat-A1 PR #350
-    precedent) both branches currently raise ``NotImplementedError`` —
-    see the module docstring.
+    Per chat-B1 + chat-B2 ship 2026-05-12: restaurant branch is live;
+    factory branch still raises ``NotImplementedError`` pending Phase 2D
+    factory Silver schema migration.
     """
     pool = None
     try:
