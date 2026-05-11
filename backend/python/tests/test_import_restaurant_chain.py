@@ -118,7 +118,10 @@ class FakeConn:
         self.executed.append((sql, args))
         s = sql.strip().upper()
 
-        if s.startswith("SET APP.FACTORY_ID"):
+        # After P1 fix (audit 2026-05-11): set_factory_scope / connect_factory_scoped
+        # now use `SELECT set_config('app.factory_id', $1, <bool>)` because PostgreSQL
+        # `SET` does not accept bind params. Match both old + new shapes defensively.
+        if s.startswith("SET APP.FACTORY_ID") or "SET_CONFIG('APP.FACTORY_ID'" in s:
             self.factory_id = args[0]
             return "SET"
 
@@ -760,10 +763,13 @@ def test_rls_scope_set_before_inserts(
         await L.load_product_sales_csv(
             conn, "R_ILTEATRO_REAL", "2024-02", product_sales_csv, stats,
         )
-        # Find SET position.
+        # Find SET position. After P1 fix (audit 2026-05-11) the helper uses
+        # `SELECT set_config('app.factory_id', $1, true)` instead of the literal
+        # `SET app.factory_id = $1` (which PostgreSQL rejects with bind params).
         set_idx = next(
             (i for i, (sql, _) in enumerate(conn.executed)
-             if sql.strip().upper().startswith("SET APP.FACTORY_ID")),
+             if sql.strip().upper().startswith("SET APP.FACTORY_ID")
+             or "SET_CONFIG('APP.FACTORY_ID'" in sql.strip().upper()),
             None,
         )
         assert set_idx is not None, "factory_id scope was never set"

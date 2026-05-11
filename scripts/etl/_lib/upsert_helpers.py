@@ -89,9 +89,15 @@ async def set_factory_scope(conn: Any, factory_id: str) -> None:
     """
     if not factory_id:
         raise ValueError("set_factory_scope: factory_id required (got empty/None)")
-    # SET LOCAL only takes effect inside a transaction; use plain SET when no txn,
-    # but in practice loaders always wrap a per-chain transaction.
-    await conn.execute("SET app.factory_id = $1", factory_id)
+    # PostgreSQL's `SET` statement is parser-level and does NOT accept bind
+    # parameters (would raise PostgresSyntaxError on `$1`). Use `set_config(...)`
+    # function form instead — `is_local=true` mirrors `SET LOCAL` semantics
+    # (transaction-scoped GUC). Precedent: backend/python/smartbi/services/
+    # llm_answer_cache.py:80,147,190. Caller (import_chain) opens a txn before
+    # this call, so the GUC stays scoped to that txn as docstring intends.
+    await conn.execute(
+        "SELECT set_config('app.factory_id', $1, true)", factory_id
+    )
 
 
 async def connect_factory_scoped(asyncpg_module: Any, db_dsn: str, factory_id: str) -> Any:
@@ -114,8 +120,12 @@ async def connect_factory_scoped(asyncpg_module: Any, db_dsn: str, factory_id: s
     if not db_dsn:
         raise ValueError("connect_factory_scoped: db_dsn required")
     conn = await asyncpg_module.connect(db_dsn)
-    # Outside a transaction: regular SET (session-scoped).
-    await conn.execute("SET app.factory_id = $1", factory_id)
+    # Outside a transaction: session-scoped set_config (is_local=false).
+    # PostgreSQL's `SET` does NOT accept bind params, so use set_config()
+    # function form. Same precedent as set_factory_scope() above.
+    await conn.execute(
+        "SELECT set_config('app.factory_id', $1, false)", factory_id
+    )
     return conn
 
 
@@ -591,17 +601,24 @@ async def upsert_fact_restaurant_requisition(
 # Aggregator SQL — UPSERT into agg_restaurant_daily_totals from fact_pos_transaction.
 # Per spec §3.3 line 471: "Refresh agg_restaurant_* materialized views for this factory".
 # These are tables (not MVs) so we use INSERT ... ON CONFLICT DO UPDATE.
+#
+# NOTE: `$1` appears in both the SELECT list (INSERT target column is `varchar`)
+# and the WHERE clause (`factory_id` column is `varchar`). asyncpg sends `str`
+# Python params without an explicit type, so PostgreSQL deduces conflicting
+# types (`text` vs `character varying`) → AmbiguousParameterError. Explicit
+# `$1::text` casts in BOTH places resolve the ambiguity (PG cleanly coerces
+# `text` ↔ `varchar` at insert/comparison time).
 REFRESH_AGG_RESTAURANT_DAILY_TOTALS_SQL = """
     INSERT INTO agg_restaurant_daily_totals
         (factory_id, date, requisition_count, requisition_qty_total, requisition_cost_total,
          version, computed_at)
-    SELECT $1, date::DATE,
+    SELECT $1::text, date::DATE,
            COUNT(*)::INT,
            SUM(COALESCE(actual_qty, requested_qty))::NUMERIC(14,4),
            SUM(est_cost)::NUMERIC(14,2),
            1, NOW()
       FROM fact_restaurant_requisition
-     WHERE factory_id = $1
+     WHERE factory_id = $1::text
        AND date BETWEEN $2 AND $3
      GROUP BY date::DATE
     ON CONFLICT (factory_id, date) DO UPDATE
