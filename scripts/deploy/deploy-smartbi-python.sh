@@ -75,6 +75,39 @@ echo "Python Services 部署 (SmartBI + Modules)"
 echo "部署环境: $DEPLOY_ENV"
 echo "=========================================="
 
+# Pre-flight: git sync check (May 11 2026 stale-local-deploy bug fix)
+# Stale local working tree → deploy ships stale code → prod gets pre-PR fixes.
+# Per HARD rule feedback_organizer_must_git_pull_before_deploy.md.
+cd "$PROJECT_ROOT"
+log "INFO" "[0/5] Git sync pre-check..."
+git fetch origin main 2>/dev/null || log "WARN" "git fetch origin main failed (offline?), continue with caution"
+LOCAL_SHA=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+ORIGIN_SHA=$(git rev-parse origin/main 2>/dev/null || echo "unknown")
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+
+if [ "$LOCAL_SHA" != "$ORIGIN_SHA" ] && [ "$LOCAL_SHA" != "unknown" ] && [ "$ORIGIN_SHA" != "unknown" ]; then
+    if [ "$CURRENT_BRANCH" = "main" ]; then
+        log "ERROR" "Local main HEAD != origin/main HEAD"
+        log "ERROR" "  local : $LOCAL_SHA"
+        log "ERROR" "  origin: $ORIGIN_SHA"
+        log "ERROR" "Run: cd $PROJECT_ROOT && git pull origin main"
+        log "ERROR" "Override: SKIP_GIT_CHECK=1 $0 ..."
+        if [ "${SKIP_GIT_CHECK:-}" != "1" ]; then
+            exit 1
+        fi
+        log "WARN" "SKIP_GIT_CHECK=1 set, continuing deploy with stale local"
+    else
+        log "WARN" "Current branch is '$CURRENT_BRANCH' (not main). Verify intended deploy source."
+    fi
+else
+    log "INFO" "  Git: local HEAD matches origin/main ✓"
+fi
+
+# Dirty tree warning (non-fatal)
+if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+    log "WARN" "Working tree has uncommitted changes — deploy will use local working tree state"
+fi
+
 # 1. 检查本地文件
 log "INFO" "[1/5] 检查本地文件..."
 if [ ! -d "$LOCAL_DIR" ]; then
