@@ -104,9 +104,12 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
         PaymentRecord saved = paymentRecordRepository.save(record);
 
         // 同步创建 ArApTransaction (AR_PAYMENT)
+        // Issue #317 fix: thread salesOrderId so SO 收款记录 tab finds the row +
+        // SO.paidAmount can be derived. Was orphan-receipt without this.
         arApService.recordArPayment(
                 record.getFactoryId(),
                 record.getCustomerId(),
+                record.getSalesOrderId(),
                 record.getAmount(),
                 record.getPaymentMethod() != null ? record.getPaymentMethod() : PaymentMethod.BANK_TRANSFER,
                 record.getPaymentReference(),

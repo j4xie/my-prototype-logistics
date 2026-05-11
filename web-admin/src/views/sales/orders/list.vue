@@ -40,7 +40,7 @@ const invoiceDialogVisible = ref(false);
 const invoiceForm = ref({ orderId: '', counterpartyId: '', amount: 0, notes: '' });
 
 const paymentDialogVisible = ref(false);
-const paymentForm = ref({ counterpartyId: '', amount: 0, paymentMethod: 'BANK_TRANSFER', notes: '' });
+const paymentForm = ref({ orderId: '', counterpartyId: '', amount: 0, paymentMethod: 'BANK_TRANSFER', notes: '' });
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -595,7 +595,10 @@ async function submitQuickInvoice() {
 }
 
 async function handleQuickPayment(row: TableRow) {
+  // Issue #317 fix: include orderId so AR_PAYMENT persists salesOrderId. Was
+  // orphan-receipt: SO.paidAmount stayed null + SO 收款记录 tab '暂无数据'.
   paymentForm.value = {
+    orderId: row.id,
     counterpartyId: row.customerId || row.customer?.id || '',
     amount: row.totalAmount || 0,
     paymentMethod: 'BANK_TRANSFER',

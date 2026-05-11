@@ -28,18 +28,26 @@ export interface DataSource {
 
 /**
  * 图表模板配置
+ *
+ * Issue #336 fix: align FE field names with BE entity (SmartBiChartTemplate).
+ * Pre-fix mismatch: name→templateName, code→templateCode, type→chartType,
+ * configJson→chartOptions. dataSourceId/dataSourceName not on entity (dropped).
+ * Jackson silent-dropped all 4 → CRUD entirely broken.
  */
 export interface ChartTemplate {
   id: number;
-  name: string;
-  code: string;
-  type: 'LINE' | 'BAR' | 'PIE' | 'GAUGE' | 'HEATMAP' | 'MAP' | 'RANKING' | 'KPI' | 'COMBINED';
+  templateName: string;
+  templateCode: string;
+  chartType: 'LINE' | 'BAR' | 'PIE' | 'GAUGE' | 'HEATMAP' | 'MAP' | 'RANKING' | 'KPI' | 'COMBINED' | 'RADAR' | 'SCATTER' | 'FUNNEL' | 'AREA' | 'STACKED_BAR' | 'DOUGHNUT' | 'COMBO';
   category: string;
   description?: string;
-  configJson?: string;
-  dataSourceId?: number;
-  dataSourceName?: string;
+  chartOptions?: string;
+  applicableMetrics?: string;
+  dataMapping?: string;
+  layoutConfig?: string;
+  factoryId?: string;
   isActive: boolean;
+  sortOrder?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -166,54 +174,56 @@ export function testDataSourceConnection(
 }
 
 // ==================== 图表模板 API ====================
+//
+// Issue #336 fix: URL was `/charts` (dead, BE 404) — corrected to `/chart-templates`.
+// BE controller endpoints: GET /chart-templates (list, no pagination),
+// GET /chart-templates/{code}, POST /chart-templates, PUT /chart-templates/{id},
+// DELETE /chart-templates/{id}. BE list only accepts {category, chartType} query
+// params (no keyword/isActive/page/size). BE returns List<>, NOT PageResponse<>.
+// Preview endpoint does not exist on BE.
 
 /**
  * 获取图表模板列表
+ *
+ * BE GET /chart-templates accepts only `category` + `chartType` query params and
+ * returns `List<SmartBiChartTemplate>` (no pagination). Frontend pagination /
+ * keyword filtering must be done client-side or via separate audit ticket.
  */
 export function getChartTemplates(params?: {
-  page?: number;
-  size?: number;
-  keyword?: string;
-  type?: string;
   category?: string;
-  isActive?: boolean;
-}): Promise<ApiResponse<PageResponse<ChartTemplate>>> {
-  return get('/smartbi-config/charts', { params });
+  chartType?: string;
+}): Promise<ApiResponse<ChartTemplate[]>> {
+  return get('/smartbi-config/chart-templates', { params });
 }
 
 /**
- * 获取单个图表模板
+ * 获取单个图表模板（按 code 而非 id — BE 路径参数是 templateCode）
  */
-export function getChartTemplate(id: number): Promise<ApiResponse<ChartTemplate>> {
-  return get(`/smartbi-config/charts/${id}`);
+export function getChartTemplate(code: string, factoryId?: string): Promise<ApiResponse<ChartTemplate>> {
+  return get(`/smartbi-config/chart-templates/${encodeURIComponent(code)}`, {
+    params: factoryId ? { factoryId } : undefined,
+  });
 }
 
 /**
  * 创建图表模板
  */
 export function createChartTemplate(data: Partial<ChartTemplate>): Promise<ApiResponse<ChartTemplate>> {
-  return post('/smartbi-config/charts', data);
+  return post('/smartbi-config/chart-templates', data);
 }
 
 /**
- * 更新图表模板
+ * 更新图表模板（BE PUT /chart-templates/{id} — id 是 Long entity PK）
  */
 export function updateChartTemplate(id: number, data: Partial<ChartTemplate>): Promise<ApiResponse<ChartTemplate>> {
-  return put(`/smartbi-config/charts/${id}`, data);
+  return put(`/smartbi-config/chart-templates/${id}`, data);
 }
 
 /**
- * 删除图表模板
+ * 删除图表模板（BE DELETE /chart-templates/{id} — id 是 Long entity PK）
  */
 export function deleteChartTemplate(id: number): Promise<ApiResponse<void>> {
-  return del(`/smartbi-config/charts/${id}`);
-}
-
-/**
- * 预览图表
- */
-export function previewChart(id: number): Promise<ApiResponse<unknown>> {
-  return get(`/smartbi-config/charts/${id}/preview`);
+  return del(`/smartbi-config/chart-templates/${id}`);
 }
 
 // ==================== 公式 API ====================
