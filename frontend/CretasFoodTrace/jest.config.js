@@ -38,9 +38,30 @@ module.exports = {
   // untested screens/components), so the threshold immediately blocked CI with
   // exit code 1 even though every test passes. The 70% gate has been masked by
   // continue-on-error since the file was created and was never enforceable.
-  // Drop the threshold so CI gates on "all tests pass" (PR #224's stated intent).
-  // Coverage data is still collected and uploaded as the rn-coverage artifact —
-  // a follow-up sweep can ratchet a realistic baseline + per-directory thresholds.
+  // PR #276 dropped the 70% gate to unblock CI on green tests.
+  //
+  // PR #276 follow-up (May 10 2026): restore a REALISTIC baseline so further
+  // regressions are blocked AND the gate can be ratcheted up over time as new
+  // tests land. Current actual: stmts 4.04 / branches 1.86 / lines 4.01 /
+  // funcs 5.02. Baseline below sits ~0.5-1pp under each axis as a defensive
+  // margin (single test deletion shouldn't tip CI red). Coverage data is
+  // still collected and uploaded as the rn-coverage artifact (retention 14d).
+  //
+  // Ratchet plan (see docs/qa-audits/2026-05-10-rn-coverage-ratchet-plan.md):
+  //   Quarter 1 (~3mo)  target: stmts 10  / branches 5   / lines 10  / funcs 12
+  //   Quarter 2 (~6mo)  target: stmts 20  / branches 10  / lines 20  / funcs 25
+  //   Long-term (12mo+) target: stmts 60  / branches 50  / lines 60  / funcs 65
+  // Each new test PR can ratchet the baseline up by 1-2 percentage points
+  // when it covers new ground. Do NOT raise targets aggressively (test churn);
+  // do NOT set baseline ABOVE current actual (PR #224's mistake repeated).
+  coverageThreshold: {
+    global: {
+      statements: 4,
+      branches: 1.5,
+      lines: 4,
+      functions: 5
+    }
+  },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
