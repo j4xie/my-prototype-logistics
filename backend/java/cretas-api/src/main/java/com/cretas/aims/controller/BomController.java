@@ -4,6 +4,10 @@ import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
+import com.cretas.aims.dto.bom.CreateBomItemRequest;
+import com.cretas.aims.dto.bom.CreateLaborCostRequest;
+import com.cretas.aims.dto.bom.UpdateBomItemRequest;
+import com.cretas.aims.dto.bom.UpdateLaborCostRequest;
 import com.cretas.aims.entity.bom.BomChangeLog;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
@@ -13,10 +17,12 @@ import com.cretas.aims.service.BomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -84,8 +90,9 @@ public class BomController {
     @Operation(summary = "添加BOM物料")
     public ApiResponse<BomItem> addBomItem(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody BomItem bomItem) {
-        log.info("Adding BOM item: factoryId={}, materialName={}", factoryId, bomItem.getMaterialName());
+            @Valid @RequestBody CreateBomItemRequest request) {
+        log.info("Adding BOM item: factoryId={}, materialName={}", factoryId, request.getMaterialName());
+        BomItem bomItem = toBomItem(request);
         bomItem.setFactoryId(factoryId);
         return ApiResponse.success(bomService.saveBomItem(bomItem));
     }
@@ -96,8 +103,9 @@ public class BomController {
     public ApiResponse<BomItem> updateBomItem(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @PathVariable @Parameter(description = "BOM物料ID") Long id,
-            @RequestBody BomItem bomItem) {
+            @Valid @RequestBody UpdateBomItemRequest request) {
         log.info("Updating BOM item: factoryId={}, id={}", factoryId, id);
+        BomItem bomItem = toBomItem(request);
         bomItem.setId(id);
         bomItem.setFactoryId(factoryId);
         return ApiResponse.success(bomService.saveBomItem(bomItem));
@@ -141,8 +149,9 @@ public class BomController {
     @Operation(summary = "添加人工费用")
     public ApiResponse<LaborCostConfig> addLaborCost(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody LaborCostConfig config) {
-        log.info("Adding labor cost: factoryId={}, processName={}", factoryId, config.getProcessName());
+            @Valid @RequestBody CreateLaborCostRequest request) {
+        log.info("Adding labor cost: factoryId={}, processName={}", factoryId, request.getProcessName());
+        LaborCostConfig config = toLaborCostConfig(request);
         config.setFactoryId(factoryId);
         return ApiResponse.success(bomService.saveLaborCost(config));
     }
@@ -153,8 +162,9 @@ public class BomController {
     public ApiResponse<LaborCostConfig> updateLaborCost(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @PathVariable @Parameter(description = "人工费用ID") Long id,
-            @RequestBody LaborCostConfig config) {
+            @Valid @RequestBody UpdateLaborCostRequest request) {
         log.info("Updating labor cost: factoryId={}, id={}", factoryId, id);
+        LaborCostConfig config = toLaborCostConfig(request);
         config.setId(id);
         config.setFactoryId(factoryId);
         return ApiResponse.success(bomService.saveLaborCost(config));
@@ -243,5 +253,83 @@ public class BomController {
             @PathVariable @Parameter(description = "工厂ID") String factoryId) {
         log.info("Getting product types with BOM: factoryId={}", factoryId);
         return ApiResponse.success(bomService.getProductTypesWithBom(factoryId));
+    }
+
+    // ========== Request DTO → Entity mappers (Rule 17.1 cleanup, PR #370) ==========
+
+    /**
+     * Map CreateBomItemRequest → BomItem entity. Defaults align with the
+     * legacy @Builder.Default values on BomItem (yieldRate=100.00, taxRate=0,
+     * materialCategory="RAW", sortOrder=0) so the wire contract stays
+     * permissive: callers may omit these and persistence sees the same
+     * defaults as before the refactor.
+     */
+    private static BomItem toBomItem(CreateBomItemRequest r) {
+        BomItem b = new BomItem();
+        b.setProductTypeId(r.getProductTypeId());
+        b.setProductName(r.getProductName());
+        b.setMaterialTypeId(r.getMaterialTypeId());
+        b.setMaterialName(r.getMaterialName());
+        b.setStandardQuantity(r.getStandardQuantity());
+        b.setYieldRate(r.getYieldRate() != null ? r.getYieldRate() : new BigDecimal("100.00"));
+        b.setUnit(r.getUnit());
+        b.setUnitPrice(r.getUnitPrice());
+        b.setTaxRate(r.getTaxRate() != null ? r.getTaxRate() : BigDecimal.ZERO);
+        b.setMaterialCategory(r.getMaterialCategory() != null ? r.getMaterialCategory() : "RAW");
+        b.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
+        b.setRemark(r.getRemark());
+        return b;
+    }
+
+    /** Update variant — same shape as create (PUT is full-replace). */
+    private static BomItem toBomItem(UpdateBomItemRequest r) {
+        BomItem b = new BomItem();
+        b.setProductTypeId(r.getProductTypeId());
+        b.setProductName(r.getProductName());
+        b.setMaterialTypeId(r.getMaterialTypeId());
+        b.setMaterialName(r.getMaterialName());
+        b.setStandardQuantity(r.getStandardQuantity());
+        b.setYieldRate(r.getYieldRate() != null ? r.getYieldRate() : new BigDecimal("100.00"));
+        b.setUnit(r.getUnit());
+        b.setUnitPrice(r.getUnitPrice());
+        b.setTaxRate(r.getTaxRate() != null ? r.getTaxRate() : BigDecimal.ZERO);
+        b.setMaterialCategory(r.getMaterialCategory() != null ? r.getMaterialCategory() : "RAW");
+        b.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
+        b.setRemark(r.getRemark());
+        return b;
+    }
+
+    /**
+     * Map CreateLaborCostRequest → LaborCostConfig entity. Defaults align with
+     * @Builder.Default on LaborCostConfig (defaultQuantity=1, isActive=true,
+     * sortOrder=0).
+     */
+    private static LaborCostConfig toLaborCostConfig(CreateLaborCostRequest r) {
+        LaborCostConfig c = new LaborCostConfig();
+        c.setProductTypeId(r.getProductTypeId());
+        c.setProcessName(r.getProcessName());
+        c.setProcessCategory(r.getProcessCategory());
+        c.setUnitPrice(r.getUnitPrice());
+        c.setPriceUnit(r.getPriceUnit());
+        c.setDefaultQuantity(r.getDefaultQuantity() != null ? r.getDefaultQuantity() : BigDecimal.ONE);
+        c.setIsActive(r.getIsActive() != null ? r.getIsActive() : Boolean.TRUE);
+        c.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
+        c.setRemark(r.getRemark());
+        return c;
+    }
+
+    /** Update variant — same shape as create (PUT is full-replace). */
+    private static LaborCostConfig toLaborCostConfig(UpdateLaborCostRequest r) {
+        LaborCostConfig c = new LaborCostConfig();
+        c.setProductTypeId(r.getProductTypeId());
+        c.setProcessName(r.getProcessName());
+        c.setProcessCategory(r.getProcessCategory());
+        c.setUnitPrice(r.getUnitPrice());
+        c.setPriceUnit(r.getPriceUnit());
+        c.setDefaultQuantity(r.getDefaultQuantity() != null ? r.getDefaultQuantity() : BigDecimal.ONE);
+        c.setIsActive(r.getIsActive() != null ? r.getIsActive() : Boolean.TRUE);
+        c.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
+        c.setRemark(r.getRemark());
+        return c;
     }
 }
