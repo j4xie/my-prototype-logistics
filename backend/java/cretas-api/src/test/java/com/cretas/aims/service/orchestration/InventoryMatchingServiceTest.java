@@ -38,7 +38,7 @@ import static org.mockito.Mockito.*;
  * <ol>
  *   <li>checkAvailability 调用 sumAvailableQuantityByProductTypeAndWarehouse with WH-LOG id</li>
  *   <li>reserveStock 调用 findAvailableBatchesByWarehouse with WH-LOG id</li>
- *   <li>crossFactoryEnabled=true 时绕过 warehouse filter (集团联销旧语义)</li>
+ *   <li>crossFactoryEnabled=true 仍仅 WH-LOG (D5 2026-05-11: 集团池但只总仓出货)</li>
  * </ol>
  */
 @ExtendWith(MockitoExtension.class)
@@ -113,7 +113,7 @@ class InventoryMatchingServiceTest {
     }
 
     @Test
-    @DisplayName("checkAvailability: crossFactoryEnabled=true 绕过 warehouse filter (集团联销)")
+    @DisplayName("checkAvailability: crossFactoryEnabled=true 跨工厂仍仅 WH-LOG (D5 集团池+总仓过滤)")
     void checkAvailability_crossFactoryEnabled_skipsWarehouseFilter() {
         ReflectionTestUtils.setField(service, "crossFactoryEnabled", true);
 
@@ -129,15 +129,21 @@ class InventoryMatchingServiceTest {
         so.setItems(List.of(item));
 
         when(salesOrderRepository.findById("SO-002")).thenReturn(Optional.of(so));
+        // D5 (2026-05-11): cross-factory 分支也强制 WH-LOG 过滤
         when(finishedGoodsBatchRepository
-                .sumAvailableQuantityByProductTypeAllFactories(PRODUCT_TYPE_ID))
+                .sumAvailableQuantityByProductTypeAllFactoriesAndWarehouseCode(
+                        PRODUCT_TYPE_ID, WarehouseCodes.WH_LOG))
                 .thenReturn(new BigDecimal("200"));
 
         StockCheckResult result = service.checkAvailability(FACTORY_ID, "SO-002");
 
         assertTrue(result.isAllSatisfied());
-        verify(finishedGoodsBatchRepository).sumAvailableQuantityByProductTypeAllFactories(PRODUCT_TYPE_ID);
-        // 验证 cross-factory 不调 warehouse filter
+        // D5: cross-factory + WH-LOG 查询被调用 1 次, 不再调用 unfiltered all-factories
+        verify(finishedGoodsBatchRepository)
+                .sumAvailableQuantityByProductTypeAllFactoriesAndWarehouseCode(
+                        PRODUCT_TYPE_ID, WarehouseCodes.WH_LOG);
+        verify(finishedGoodsBatchRepository, never())
+                .sumAvailableQuantityByProductTypeAllFactories(anyString());
         verify(finishedGoodsBatchRepository, never())
                 .sumAvailableQuantityByProductTypeAndWarehouse(anyString(), anyString(), anyString());
     }
