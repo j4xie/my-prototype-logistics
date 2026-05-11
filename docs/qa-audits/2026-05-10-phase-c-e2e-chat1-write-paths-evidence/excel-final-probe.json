@@ -1,0 +1,141 @@
+{
+  "run": "EP9722",
+  "uploadAndAnalyzeCaptured": {
+    "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/upload-and-analyze",
+    "success": true,
+    "message": "字段映射需要用户确认",
+    "dataKeys": [
+      "success",
+      "message",
+      "parseResult",
+      "persistResult",
+      "recommendedChartType",
+      "recommendedTemplates",
+      "chartConfig",
+      "aiAnalysis",
+      "requiresConfirmation",
+      "detectedDataType",
+      "uploadId"
+    ],
+    "uploadIdFound": 4174,
+    "analysisHasInsights": false,
+    "requiresConfirmation": true,
+    "parseResultHeaders": [
+      "time_period",
+      "客户名称",
+      "产品名称",
+      "数量金额",
+      "数量金额_2"
+    ]
+  },
+  "uploadsListAfter": {
+    "status": 200,
+    "bodyShape": [
+      "code",
+      "message",
+      "data",
+      "timestamp",
+      "success",
+      "actionHint",
+      "severity",
+      "hintTarget"
+    ],
+    "dataIsNull": true,
+    "dataIsArray": false,
+    "dataIsObject": null,
+    "dataKeys": null,
+    "contentLen": null
+  },
+  "uploadDataFetch": {
+    "status": 200,
+    "bodyKeys": [
+      "code",
+      "message",
+      "data",
+      "timestamp",
+      "success",
+      "actionHint",
+      "severity",
+      "hintTarget"
+    ],
+    "dataShape": [
+      "headers",
+      "data",
+      "total",
+      "page",
+      "size",
+      "totalPages"
+    ]
+  },
+  "fieldsFetch": {
+    "status": 200,
+    "bodyKeys": [
+      "code",
+      "message",
+      "data",
+      "timestamp",
+      "success",
+      "actionHint",
+      "severity",
+      "hintTarget"
+    ],
+    "fieldsCount": 5,
+    "sampleFields": [
+      {
+        "originalName": "客户名称",
+        "standardName": "客户名称",
+        "fieldType": "TEXT",
+        "semanticType": "customer",
+        "chartRole": null,
+        "isDimension": true,
+        "isMeasure": false,
+        "isTime": false,
+        "formatPattern": null
+      },
+      {
+        "originalName": "产品名称",
+        "standardName": "产品名称",
+        "fieldType": "TEXT",
+        "semanticType": null,
+        "chartRole": null,
+        "isDimension": true,
+        "isMeasure": false,
+        "isTime": false,
+        "formatPattern": null
+      },
+      {
+        "originalName": "time_period",
+        "standardName": "time_period",
+        "fieldType": "DATE",
+        "semanticType": "date",
+        "chartRole": null,
+        "isDimension": false,
+        "isMeasure": false,
+        "isTime": true,
+        "formatPattern": null
+      },
+      {
+        "originalName": "数量金额",
+        "standardName": "数量金额",
+        "fieldType": "NUMERIC",
+        "semanticType": null,
+        "chartRole": null,
+        "isDimension": false,
+        "isMeasure": true,
+        "isTime": false,
+        "formatPattern": null
+      },
+      {
+        "originalName": "数量金额_2",
+        "standardName": "数量金额_2",
+        "fieldType": "NUMERIC",
+        "semanticType": null,
+        "chartRole": null,
+        "isDimension": false,
+        "isMeasure": true,
+        "isTime": false,
+        "formatPattern": null
+      }
+    ]
+  }
+}
