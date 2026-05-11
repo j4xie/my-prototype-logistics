@@ -325,7 +325,8 @@ async def all_status_etl(request: Request):
     list of {factoryId, lastSuccessRun} derived from agg_restaurant_daily_ops.
 
     Phase A simplification: factory name not yet joined (factoryName = null
-    until A-2 adds the dim_factory lookup).
+    until A-2 adds the restaurant_chain_catalog lookup — see migration
+    V20260511_01__t6_6_etl_chain_catalog.sql for chain metadata schema).
     """
     # First gate via generic admin check, then tighten to platform_admin
     require_admin(request, action_name="餐饮 ETL 全工厂状态")

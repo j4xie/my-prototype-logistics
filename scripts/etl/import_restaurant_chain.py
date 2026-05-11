@@ -253,6 +253,11 @@ async def load_product_sales_csv(
     - product_sales report is product-grain aggregate (not bill-grain), so this
       mapping is lossy compared to "real" POS data — acceptable per Q1 §4.2
       (the only data source for restaurant chains is this aggregate level).
+    - L3 qty_total fallback (PR #357 audit, follow-up to PR #361): some source
+      Excels (e.g. IL TEATRO 2月) expose 单卖数量 (qty_single) but NOT
+      数量(含套餐子商品) (qty_total). When qty_total is missing, the loader uses
+      qty_single for both item_count and fact_pos_item.qty so downstream Gold
+      aggregates are populated. qty_total is preferred when present (套餐 cases).
 
     Args:
         conn:       asyncpg connection (RLS scope set).
@@ -319,6 +324,11 @@ async def load_product_sales_csv(
         # fact_pos_transaction at period+store+product grain.
         # period stem like '2024-02' → first-of-month as canonical date.
         bill_date = _period_to_date(period)
+        # L3 fallback (PR #357 audit): some source Excels expose 单卖数量 (qty_single)
+        # but NOT 数量(含套餐子商品) (qty_total). When qty_total is missing, fall back
+        # to qty_single so item_count / qty are populated rather than NULL. Per Rule 1
+        # (python-java-port.md) — explicit `is not None` precedence, not Python `or`.
+        effective_qty = line.qty_total if line.qty_total is not None else line.qty_single
         txn_id = await upsert_fact_pos_transaction(
             conn,
             factory_id=factory_id,
@@ -331,15 +341,16 @@ async def load_product_sales_csv(
             net_amount=line.net_after_discount,
             actual_receive=line.actual_receive,
             order_type=line.order_method,
-            item_count=int(line.qty_total) if line.qty_total is not None else None,
+            item_count=int(effective_qty) if effective_qty is not None else None,
         )
         stats.fact_pos_transaction_upserts += 1
 
         # fact_pos_item: one synthetic line for this product-grain txn.
         # DELETE-by-parent-txn-then-INSERT pattern (Steve Option A).
+        # qty falls back to qty_single when source 不含套餐 (see L3 note above).
         items = [{
             "product_id": product_id,
-            "qty": line.qty_total,
+            "qty": effective_qty,
             "unit_price": line.unit_price,
             "amount": line.gross_amount,
             "source_item_raw": (
