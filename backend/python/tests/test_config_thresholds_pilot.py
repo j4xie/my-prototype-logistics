@@ -37,7 +37,6 @@ from smartbi_compat.api.config_thresholds import (  # noqa: E402
     _operation_result,
     _row_to_dict,
     router,
-    verify_jwt_admin,
 )
 from smartbi_compat.auth import JWT_ALGORITHM, PRIVILEGED_ROLES  # noqa: E402
 
