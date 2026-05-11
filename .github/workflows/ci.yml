@@ -20,6 +20,27 @@ jobs:
   # ---- Java Backend: Build + Test ----
   java-build-test:
     runs-on: ubuntu-latest
+
+    # PostgreSQL service container — enables PG-required IT classes (e.g.
+    # FactoryConfigServiceImplReorderIT) to run against real PostgreSQL
+    # instead of being skipped due to H2 fallback failing on PG-specific
+    # types (BLOB / JSONB / vector). Image matches e2e-pr.yml for consistency
+    # (pgvector pre-installed for any future entity that uses vector(N)).
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: cretas_user
+          POSTGRES_PASSWORD: cretas_pass
+          POSTGRES_DB: cretas_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -28,6 +49,22 @@ jobs:
           java-version: '21'
           cache: 'maven'
           cache-dependency-path: backend/java/cretas-api/pom.xml
+
+      # Bootstrap IT database matching application-r10-it.properties:
+      # cretas_r10_it_test owned by cretas_user. Schema is auto-applied
+      # by Spring Boot via spring.sql.init.schema-locations=r10-it-schema.sql
+      # at @DataJpaTest startup, so we only need to provision the empty DB.
+      # pgvector ext is enabled defensively — TrainingSample.embedding_blob
+      # is BLOB (not vector), but other entities scanned via @EntityScan
+      # may declare vector columns and Hibernate can't validate without ext.
+      - name: Bootstrap cretas_r10_it_test DB + pgvector ext
+        env:
+          PGPASSWORD: cretas_pass
+        run: |
+          psql -h localhost -U cretas_user -d cretas_db -c "CREATE DATABASE cretas_r10_it_test OWNER cretas_user;"
+          psql -h localhost -U cretas_user -d cretas_db             -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -h localhost -U cretas_user -d cretas_r10_it_test    -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
       - name: Maven compile and test
         working-directory: backend/java/cretas-api
         run: mvn -B clean verify -Dspring.profiles.active=test -pl .
