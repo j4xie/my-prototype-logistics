@@ -196,6 +196,22 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
                                                             @Param("warehouseId") String warehouseId);
 
     /**
+     * 查找 warehouse 内所有可用批次（不限 materialType）。D1 反向调拨触发 (PR #309 A3=A, 2026-05-10 spec)。
+     *
+     * <p>用途：报工完成后, 反向调拨编排查询 WH-WKS 内的所有余料 (剩余原料),
+     * 聚合后作为 BRANCH_TO_HQ 调拨单 items 候选。
+     *
+     * <p>排序按 materialTypeId 升序方便按类型聚合 (同 materialTypeId 多批次合并成 1 行 item)。
+     */
+    @Query("SELECT m FROM MaterialBatch m WHERE m.factoryId = :factoryId " +
+           "AND m.warehouseId = :warehouseId " +
+           "AND m.status = 'AVAILABLE' " +
+           "AND (m.receiptQuantity - m.usedQuantity - m.reservedQuantity) > 0 " +
+           "ORDER BY m.materialTypeId ASC, m.expireDate ASC NULLS LAST, m.receiptDate ASC")
+    List<MaterialBatch> findAllAvailableInWarehouse(@Param("factoryId") String factoryId,
+                                                     @Param("warehouseId") String warehouseId);
+
+    /**
      * 查找即将过期的批次
      */
     @Query("SELECT m FROM MaterialBatch m WHERE m.factoryId = :factoryId " +

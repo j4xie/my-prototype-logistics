@@ -372,9 +372,11 @@ public class SupplyChainOrchestrator {
         long incompleteBatches = productionBatchRepository
                 .countByProductionPlanIdAndStatusNot(batch.getProductionPlanId(), ProductionBatchStatus.COMPLETED);
 
+        boolean planJustCompleted = false;
         if (incompleteBatches == 0) {
             plan.setStatus(ProductionPlanStatus.COMPLETED);
             plan.setEndTime(java.time.LocalDateTime.now());
+            planJustCompleted = true;
             log.info("生产计划全部完成: PP={}, actualQty={}", plan.getPlanNumber(), plan.getActualQuantity());
         }
 
@@ -389,6 +391,20 @@ public class SupplyChainOrchestrator {
                     batch.getProductTypeId(),
                     batch.getGoodQuantity(),
                     null  // batchId: 由下游模块通过sourceOrderId查询
+            ));
+        }
+
+        // D1 反向调拨自动触发 (PR #309 A3=A, 2026-05-10 spec):
+        // 生产计划整体完成 → 发布 ProductionCompletedEvent → ReverseTransferService
+        // 创建 DRAFT BRANCH_TO_HQ 调拨单 (WH-WKS → WH-LOG, items = WH-WKS 余料 + plan 在 WH-WKS 的成品批次)
+        if (planJustCompleted) {
+            applicationEventPublisher.publishEvent(new ProductionCompletedEvent(
+                    this,
+                    plan.getFactoryId(),
+                    plan.getId(),
+                    plan.getPlanNumber(),
+                    plan.getProductTypeId(),
+                    plan.getActualQuantity()
             ));
         }
     }
