@@ -19,7 +19,6 @@ synthetic data used here per chat-A2 MO).
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
 
 import pytest
 
