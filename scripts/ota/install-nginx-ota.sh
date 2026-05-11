@@ -75,6 +75,20 @@ if [[ "$HTTP_CODE" == "200" ]]; then
     echo "[install-nginx-ota] ✓ https://${PUBLIC_HOST}/api/ota/health returned 200:"
     cat /tmp/ota-health-probe.json
     echo
+    echo
+    echo "===================================================================="
+    echo "  ⚠ REMAINING OPS STEP — update OTA_HOSTNAME on server 47:"
+    echo
+    echo "  ssh root@47.100.235.168 \"sed -i \\"
+    echo "    's|^OTA_HOSTNAME=.*|OTA_HOSTNAME=https://${PUBLIC_HOST}|' \\"
+    echo "    /www/wwwroot/cretas/.env.ota && systemctl restart cretas-python\""
+    echo
+    echo "  Without this, manifest-emitted asset URLs still point at the"
+    echo "  IP-direct path (47:8083) which is SG-blocked from the internet,"
+    echo "  so customer Expo clients won't be able to fetch assets even"
+    echo "  though /manifest itself works."
+    echo "===================================================================="
+    echo
 else
     echo "WARN: external health probe got HTTP $HTTP_CODE (expected 200)" >&2
     echo "WARN: response body:" >&2
