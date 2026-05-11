@@ -1,5 +1,7 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.ai.CreateAiAgentRuleRequest;
+import com.cretas.aims.dto.ai.UpdateAiAgentRuleRequest;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.smartbi.AiAgentRule;
@@ -8,6 +10,7 @@ import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -116,13 +119,15 @@ public class AiAgentRuleController {
     @Operation(summary = "创建规则", description = "创建新的 AI Agent 规则（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AiAgentRule>> createRule(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @RequestBody AiAgentRule rule) {
+            @Valid @RequestBody CreateAiAgentRuleRequest request) {
 
-        // 设置工厂ID
+        AiAgentRule rule = toAiAgentRule(request);
+        // 设置工厂ID (always overrides any wire value — defense vs cross-tenant write)
         rule.setFactoryId(factoryId);
         rule.setId(null); // 确保是新建
 
-        // 设置默认值
+        // Apply controller-owned defaults when caller omits (Rule 17.1: defaults live
+        // here, NOT @Builder.Default leaking through Jackson @NoArgsConstructor).
         if (rule.getPriority() == null) {
             rule.setPriority(100);
         }
@@ -147,7 +152,7 @@ public class AiAgentRuleController {
     public ResponseEntity<ApiResponse<AiAgentRule>> updateRule(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "规则ID") @PathVariable String ruleId,
-            @RequestBody AiAgentRule rule) {
+            @Valid @RequestBody UpdateAiAgentRuleRequest request) {
 
         Optional<AiAgentRule> existing = aiAgentRuleRepository.findById(ruleId);
         if (existing.isEmpty()) {
@@ -164,16 +169,17 @@ public class AiAgentRuleController {
             throw new BusinessException(403, "无权修改该规则").withSeverity("error");
         }
 
-        // 更新字段
-        existingRule.setRuleName(rule.getRuleName());
-        existingRule.setRuleDescription(rule.getRuleDescription());
-        existingRule.setTriggerType(rule.getTriggerType());
-        existingRule.setTriggerEntity(rule.getTriggerEntity());
-        existingRule.setToolChainConfig(rule.getToolChainConfig());
-        existingRule.setUseLlmSelection(rule.getUseLlmSelection());
-        existingRule.setLlmSelectionPrompt(rule.getLlmSelectionPrompt());
-        existingRule.setConditionExpression(rule.getConditionExpression());
-        existingRule.setPriority(rule.getPriority());
+        // 更新字段 (preserves prior behaviour: each setter unconditionally applied —
+        // null wire value clears existing field, mirroring the pre-DTO contract).
+        existingRule.setRuleName(request.getRuleName());
+        existingRule.setRuleDescription(request.getRuleDescription());
+        existingRule.setTriggerType(request.getTriggerType());
+        existingRule.setTriggerEntity(request.getTriggerEntity());
+        existingRule.setToolChainConfig(request.getToolChainConfig());
+        existingRule.setUseLlmSelection(request.getUseLlmSelection());
+        existingRule.setLlmSelectionPrompt(request.getLlmSelectionPrompt());
+        existingRule.setConditionExpression(request.getConditionExpression());
+        existingRule.setPriority(request.getPriority());
 
         AiAgentRule saved = aiAgentRuleRepository.save(existingRule);
         log.info("更新 AI Agent 规则: id={}, name={}", ruleId, saved.getRuleName());
@@ -336,6 +342,38 @@ public class AiAgentRuleController {
         );
 
         return ResponseEntity.ok(ApiResponse.success(tools));
+    }
+
+    // ===================================================================
+    // Rule 17.1 — wire→entity mappers (Issue #384 batch 6 final).
+    // Mapper deliberately does NOT replicate controller-owned defaults:
+    //   - factoryId from @PathVariable (overridden after mapping)
+    //   - id forced null after mapping (always new on POST)
+    //   - priority default 100, isActive default true, useLlmSelection default false
+    //     all applied by controller create-path after mapping
+    // ===================================================================
+
+    /**
+     * Map {@link CreateAiAgentRuleRequest} → {@link AiAgentRule}.
+     *
+     * <p>Auto-managed by controller after mapping: {@code factoryId} (path var),
+     * {@code id} (forced null), {@code priority} (100-fallback), {@code isActive}
+     * (true-fallback), {@code useLlmSelection} (false-fallback). Auto-managed by
+     * JPA / BaseEntity: {@code createdAt}, {@code updatedAt}, {@code deletedAt}.
+     */
+    private static AiAgentRule toAiAgentRule(CreateAiAgentRuleRequest r) {
+        AiAgentRule rule = new AiAgentRule();
+        rule.setTriggerType(r.getTriggerType());
+        rule.setTriggerEntity(r.getTriggerEntity());
+        rule.setRuleName(r.getRuleName());
+        rule.setRuleDescription(r.getRuleDescription());
+        rule.setToolChainConfig(r.getToolChainConfig());
+        rule.setUseLlmSelection(r.getUseLlmSelection());
+        rule.setLlmSelectionPrompt(r.getLlmSelectionPrompt());
+        rule.setConditionExpression(r.getConditionExpression());
+        rule.setPriority(r.getPriority());
+        rule.setIsActive(r.getIsActive());
+        return rule;
     }
 
     // ==================== DTO Classes ====================

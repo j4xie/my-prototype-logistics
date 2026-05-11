@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequirePermission;
+import com.cretas.aims.dto.approval.CreateApprovalChainConfigRequest;
+import com.cretas.aims.dto.approval.UpdateApprovalChainConfigRequest;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.ApprovalChainConfig;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
@@ -10,6 +12,7 @@ import com.cretas.aims.service.ApprovalChainService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -90,8 +93,9 @@ public class ApprovalChainController {
     @Operation(summary = "创建审批链配置")
     public ApiResponse<ApprovalChainConfig> createConfig(
             @PathVariable String factoryId,
-            @RequestBody ApprovalChainConfig config) {
-        log.info("创建审批链配置 - factoryId={}, name={}", factoryId, config.getName());
+            @Valid @RequestBody CreateApprovalChainConfigRequest request) {
+        log.info("创建审批链配置 - factoryId={}, name={}", factoryId, request.getName());
+        ApprovalChainConfig config = toApprovalChainConfig(request);
         // 业务层 throw BusinessException(409 dup / 400 validation) by R67-FIX-3
         ApprovalChainConfig created = approvalChainService.createConfig(factoryId, config);
         return ApiResponse.success("审批链配置创建成功", created);
@@ -103,9 +107,10 @@ public class ApprovalChainController {
     public ApiResponse<ApprovalChainConfig> updateConfig(
             @PathVariable String factoryId,
             @PathVariable String configId,
-            @RequestBody ApprovalChainConfig config) {
+            @Valid @RequestBody UpdateApprovalChainConfigRequest request) {
         log.info("更新审批链配置 - factoryId={}, configId={}", factoryId, configId);
-        ApprovalChainConfig updated = approvalChainService.updateConfig(factoryId, configId, config);
+        ApprovalChainConfig partial = toPartialApprovalChainConfig(request);
+        ApprovalChainConfig updated = approvalChainService.updateConfig(factoryId, configId, partial);
         return ApiResponse.success("审批链配置更新成功", updated);
     }
 
@@ -193,8 +198,9 @@ public class ApprovalChainController {
     @Operation(summary = "验证审批链配置")
     public ApiResponse<Map<String, Object>> validateConfig(
             @PathVariable String factoryId,
-            @RequestBody ApprovalChainConfig config) {
+            @Valid @RequestBody CreateApprovalChainConfigRequest request) {
         log.info("验证审批链配置 - factoryId={}", factoryId);
+        ApprovalChainConfig config = toApprovalChainConfig(request);
         return ApiResponse.success(approvalChainService.validateConfig(config));
     }
 
@@ -204,5 +210,67 @@ public class ApprovalChainController {
             @PathVariable String factoryId) {
         log.info("获取所有决策类型 - factoryId={}", factoryId);
         return ApiResponse.success(DecisionType.values());
+    }
+
+    // ===================================================================
+    // Rule 17.1 — wire→entity mappers (Issue #384 batch 6 final).
+    // Mapper deliberately does NOT replicate service-owned defaults:
+    //   - factoryId from @PathVariable (set by service createConfig)
+    //   - id Hibernate UUID2 generated (never accepted from wire)
+    //   - requiredApprovers default 1 (service-owned)
+    //   - priority default 0 (service-owned)
+    //   - enabled default true (service-owned)
+    //   - version default 1 (service-owned)
+    //   - audit timestamps BaseEntity-managed
+    // ===================================================================
+
+    /**
+     * Map {@link CreateApprovalChainConfigRequest} → {@link ApprovalChainConfig}.
+     *
+     * <p>Used for both {@code POST /approval-chains} (create) and
+     * {@code POST /approval-chains/validate} (validation-only dry run).
+     */
+    private static ApprovalChainConfig toApprovalChainConfig(CreateApprovalChainConfigRequest r) {
+        ApprovalChainConfig c = new ApprovalChainConfig();
+        c.setDecisionType(r.getDecisionType());
+        c.setName(r.getName());
+        c.setDescription(r.getDescription());
+        c.setTriggerCondition(r.getTriggerCondition());
+        c.setApprovalLevel(r.getApprovalLevel());
+        c.setRequiredApprovers(r.getRequiredApprovers());
+        c.setApproverRoles(r.getApproverRoles());
+        c.setApproverUserIds(r.getApproverUserIds());
+        c.setTimeoutMinutes(r.getTimeoutMinutes());
+        c.setEscalationConfigId(r.getEscalationConfigId());
+        c.setAutoApproveCondition(r.getAutoApproveCondition());
+        c.setAutoRejectCondition(r.getAutoRejectCondition());
+        c.setPriority(r.getPriority());
+        c.setEnabled(r.getEnabled());
+        return c;
+    }
+
+    /**
+     * Map {@link UpdateApprovalChainConfigRequest} → partial {@link ApprovalChainConfig}.
+     *
+     * <p>The resulting entity carries only the mutable fields. Service iterates
+     * each field with an {@code if (... != null)} guard, so leaving a wire
+     * field absent preserves the existing DB value.
+     */
+    private static ApprovalChainConfig toPartialApprovalChainConfig(
+            UpdateApprovalChainConfigRequest r) {
+        ApprovalChainConfig c = new ApprovalChainConfig();
+        c.setName(r.getName());
+        c.setDescription(r.getDescription());
+        c.setTriggerCondition(r.getTriggerCondition());
+        c.setApprovalLevel(r.getApprovalLevel());
+        c.setRequiredApprovers(r.getRequiredApprovers());
+        c.setApproverRoles(r.getApproverRoles());
+        c.setApproverUserIds(r.getApproverUserIds());
+        c.setTimeoutMinutes(r.getTimeoutMinutes());
+        c.setEscalationConfigId(r.getEscalationConfigId());
+        c.setAutoApproveCondition(r.getAutoApproveCondition());
+        c.setAutoRejectCondition(r.getAutoRejectCondition());
+        c.setPriority(r.getPriority());
+        return c;
     }
 }
