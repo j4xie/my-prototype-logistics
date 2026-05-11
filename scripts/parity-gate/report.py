@@ -63,6 +63,8 @@ def build_report(
     diverged = 0
     total_real_bugs = 0
     total_pattern_a = 0
+    total_pattern_b = 0
+    total_pattern_b_contexts = 0
     entries: List[Dict[str, Any]] = []
 
     for r in results:
@@ -87,8 +89,19 @@ def build_report(
             diverged += 1
 
         if de is not None:
-            total_real_bugs += len(de["diverges"])
-            total_pattern_a += len(de["tolerated_byte_diffs"])
+            total_real_bugs += sum(
+                1 for d in de["diverges"] if d.get("classification") == "REAL_BUG"
+            )
+            # tolerated entries may include Pattern A (auto) + Pattern B (opt-in).
+            # Bucket per classification so the aggregate is honest.
+            for d in de["tolerated_byte_diffs"]:
+                c = d.get("classification")
+                if c == "PATTERN_A_INT_COLLAPSE":
+                    total_pattern_a += 1
+                elif c == "PATTERN_B_STRUCTURAL":
+                    total_pattern_b += 1
+            if de.get("pattern_b_context"):
+                total_pattern_b_contexts += 1
 
         entries.append(
             {
@@ -118,6 +131,8 @@ def build_report(
         "match_rate": round(rate, 3),
         "total_real_bugs": total_real_bugs,
         "total_pattern_a": total_pattern_a,
+        "total_pattern_b": total_pattern_b,
+        "endpoints_in_pattern_b_context": total_pattern_b_contexts,
         "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
         "results": entries,
     }

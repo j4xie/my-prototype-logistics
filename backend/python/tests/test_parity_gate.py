@@ -644,3 +644,336 @@ def test_report_html_render_smoke(tmp_path):
     assert "R_TEST_MOCK" in txt
     assert "100.0%" in txt
     assert "verdict-match" in txt
+
+
+# ============================================================
+# Pattern B classifier + --tolerate-divergence (PR follow-up)
+# ============================================================
+
+
+def _factory_mock_body():
+    """Java factory mock shape — no tenantType, factory-flavored keys."""
+    return {
+        "code": 200, "message": "ok", "success": True,
+        "data": {
+            "startDate": "2026-01-01", "endDate": "2026-01-31",
+            "period": "CUSTOM",
+            "kpiCards": [
+                {"metricCode": "OEE", "value": 85.5, "unit": "%"},
+                {"metricCode": "AVAILABILITY", "value": 92.1, "unit": "%"},
+            ],
+            "rankings": {"equipment": [], "production_line": []},
+            "charts": {"oee_trend": None, "downtime_distribution": None},
+            "aiInsights": [], "suggestions": [],
+            "fromCache": False,
+        },
+    }
+
+
+def _restaurant_envelope_body():
+    """Python restaurant 3-metric envelope (PR #352 chat-A2 shape)."""
+    return {
+        "code": 200, "message": "操作成功", "success": True,
+        "data": {
+            "startDate": "2026-01-01", "endDate": "2026-01-31",
+            "tenantType": "RESTAURANT",
+            "metrics": [
+                {"metricCode": "KITCHEN_STATION_UTILIZATION", "value": None,
+                 "unit": "%", "dataAvailability": "MISSING_KITCHEN_STATION_DATA"},
+                {"metricCode": "AVG_PREP_TIME", "value": None,
+                 "unit": "minutes", "dataAvailability": "MISSING_ORDER_TIMESTAMP_SPLIT"},
+                {"metricCode": "TABLE_TURNOVER_RATE", "value": None,
+                 "unit": "turns_per_day", "dataAvailability": "PROXY_AS_BILLS_PER_STORE",
+                 "proxyMetric": {"metricCode": "BILLS_PER_STORE_PER_DAY",
+                                 "value": 47.33, "unit": "bills_per_store_per_day"}},
+            ],
+            "trendChart": None,
+        },
+    }
+
+
+# ── Pattern B detector ──
+
+
+def test_pattern_b_detected_tenant_type_only_python_side():
+    """Java factory mock (no tenantType) vs Python restaurant envelope → Pattern B."""
+    java = _factory_mock_body()
+    py = _restaurant_envelope_body()
+    assert dict_eq._detect_pattern_b_context(java, py) is True
+
+
+def test_pattern_b_detected_tenant_type_value_differs():
+    """Both have tenantType but values differ → Pattern B."""
+    java = {"data": {"tenantType": "FACTORY", "kpiCards": []}}
+    py = {"data": {"tenantType": "RESTAURANT", "metrics": []}}
+    assert dict_eq._detect_pattern_b_context(java, py) is True
+
+
+def test_pattern_b_detected_restaurant_signal_keys_asymmetric():
+    """Same tenantType (None on both) but restaurant-signal keys asymmetric → Pattern B."""
+    java = {"data": {"kpiCards": []}}
+    py = {"data": {"metrics": [], "dataAvailability": "OK"}}
+    assert dict_eq._detect_pattern_b_context(java, py) is True
+
+
+def test_pattern_b_not_detected_same_shape():
+    """Same-shape responses (no restaurant signals, no tenantType differ) → False."""
+    java = {"data": {"value": 100, "name": "x"}}
+    py = {"data": {"value": 100, "name": "x"}}
+    assert dict_eq._detect_pattern_b_context(java, py) is False
+
+
+def test_pattern_b_not_detected_when_no_envelope():
+    """Top-level scalars / non-dicts → False (no envelope to inspect)."""
+    assert dict_eq._detect_pattern_b_context("a", "b") is False
+    assert dict_eq._detect_pattern_b_context([1, 2], [1, 2]) is False
+
+
+def test_pattern_b_unwraps_envelope():
+    """Detector drills past {code, message, data, ...} wrapper to inspect data."""
+    java = {"code": 200, "data": {"tenantType": "FACTORY"}}
+    py = {"code": 200, "data": {"tenantType": "RESTAURANT"}}
+    assert dict_eq._detect_pattern_b_context(java, py) is True
+
+
+# ── dict_eq_match classifies diverges as PATTERN_B_STRUCTURAL ──
+
+
+def test_dict_eq_pattern_b_context_flags_diverges_as_structural():
+    """When Pattern B context detected, all diverges are PATTERN_B_STRUCTURAL not REAL_BUG."""
+    java = _factory_mock_body()
+    py = _restaurant_envelope_body()
+    r = dict_eq.dict_eq_match(java, py)
+    assert r["match"] is False
+    assert r["pattern_b_context"] is True
+    # Every diverge should be Pattern B, not REAL_BUG.
+    for d in r["diverges"]:
+        assert d["classification"] == dict_eq.PATTERN_B_STRUCTURAL
+
+
+def test_dict_eq_pattern_b_context_false_keeps_real_bug():
+    """Without Pattern B context, diverges remain REAL_BUG."""
+    java = {"data": {"value": 100}}
+    py = {"data": {"value": 200}}
+    r = dict_eq.dict_eq_match(java, py)
+    assert r["pattern_b_context"] is False
+    assert r["diverges"][0]["classification"] == dict_eq.REAL_BUG
+
+
+# ── apply_tolerance — bucket moving + match recompute ──
+
+
+def test_apply_tolerance_all_moves_pattern_b_to_tolerated():
+    """tolerate_all=True moves Pattern B diverges to tolerated_byte_diffs and flips match."""
+    java = _factory_mock_body()
+    py = _restaurant_envelope_body()
+    r = dict_eq.dict_eq_match(java, py)
+    before_diverges = len(r["diverges"])
+    assert before_diverges > 0
+    dict_eq.apply_tolerance(r, tolerate_all=True)
+    assert r["match"] is True
+    assert r["diverges"] == []
+    # All moved to tolerated.
+    tolerated_b = [d for d in r["tolerated_byte_diffs"]
+                   if d["classification"] == dict_eq.PATTERN_B_STRUCTURAL]
+    assert len(tolerated_b) == before_diverges
+
+
+def test_apply_tolerance_patterns_B_only_keeps_real_bug():
+    """tolerate_patterns={B} tolerates Pattern B but REAL_BUG stays in diverges."""
+    # Mix: top-level Pattern B context + a deliberate REAL_BUG injection.
+    java = _factory_mock_body()
+    py = _restaurant_envelope_body()
+    r = dict_eq.dict_eq_match(java, py)
+    # Manually inject a REAL_BUG entry to verify it survives tolerance.
+    r["diverges"].append({
+        "path": "manually_injected", "java": 1, "python": 2,
+        "classification": dict_eq.REAL_BUG,
+    })
+    dict_eq.apply_tolerance(r, tolerate_patterns={"B"})
+    # REAL_BUG survived; Pattern Bs moved.
+    assert any(d["classification"] == dict_eq.REAL_BUG for d in r["diverges"])
+    assert not any(d["classification"] == dict_eq.PATTERN_B_STRUCTURAL for d in r["diverges"])
+    assert r["match"] is False  # REAL_BUG keeps match=False
+
+
+def test_apply_tolerance_noop_when_no_config():
+    """No tolerance flags → report untouched."""
+    java = {"data": {"value": 100}}
+    py = {"data": {"value": 200}}
+    r = dict_eq.dict_eq_match(java, py)
+    before_div = list(r["diverges"])
+    before_tol = list(r["tolerated_byte_diffs"])
+    dict_eq.apply_tolerance(r)  # no kwargs
+    assert r["diverges"] == before_div
+    assert r["tolerated_byte_diffs"] == before_tol
+
+
+def test_apply_tolerance_patterns_A_does_not_affect_pattern_b():
+    """tolerate_patterns={A} alone does NOT tolerate Pattern B diverges."""
+    java = _factory_mock_body()
+    py = _restaurant_envelope_body()
+    r = dict_eq.dict_eq_match(java, py)
+    before_diverges = len(r["diverges"])
+    dict_eq.apply_tolerance(r, tolerate_patterns={"A"})
+    # Pattern B diverges all stay (no A entries exist in this fixture).
+    assert len(r["diverges"]) == before_diverges
+    assert r["match"] is False
+
+
+# ── parse_patterns_arg CLI helper ──
+
+
+def test_parse_patterns_arg_single_letter():
+    assert dict_eq.parse_patterns_arg("B") == {"B"}
+
+
+def test_parse_patterns_arg_comma_list():
+    assert dict_eq.parse_patterns_arg("A,B") == {"A", "B"}
+
+
+def test_parse_patterns_arg_case_insensitive_with_spaces():
+    assert dict_eq.parse_patterns_arg(" a , b , a2 ") == {"A", "B", "A2"}
+
+
+def test_parse_patterns_arg_empty_returns_none():
+    assert dict_eq.parse_patterns_arg("") is None
+    assert dict_eq.parse_patterns_arg(None) is None
+
+
+def test_parse_patterns_arg_unknown_raises():
+    with pytest.raises(ValueError, match="Unknown tolerate-divergence pattern 'Z'"):
+        dict_eq.parse_patterns_arg("Z")
+
+
+# ── compare.py CLI integration ──
+
+
+def test_compare_cli_tolerate_divergence_flag(tmp_path):
+    """--tolerate-divergence flips Pattern B diverges into tolerated → match_rate=100%."""
+    import compare
+
+    java_fix = tmp_path / "java.json"
+    py_fix = tmp_path / "python.json"
+    _write_fixture(java_fix, _factory_mock_body())
+    _write_fixture(py_fix, _restaurant_envelope_body())
+
+    out_json = tmp_path / "report.json"
+    rc = compare.main([
+        "--factory", "R_GML_DEMO",
+        "--endpoint", "/api/test",
+        "--fixtures-java", str(java_fix),
+        "--fixtures-python", str(py_fix),
+        "--output", str(out_json),
+        "--tolerate-divergence",
+    ])
+    assert rc == 0
+    data = json.loads(out_json.read_text(encoding="utf-8"))
+    assert data["match_rate"] == 100.0
+    assert data["total_real_bugs"] == 0
+    assert data["total_pattern_b"] > 0   # Pattern B count surfaced
+
+
+def test_compare_cli_tolerate_patterns_B_only(tmp_path):
+    """--tolerate-divergence-patterns B works (subset of --tolerate-divergence)."""
+    import compare
+
+    java_fix = tmp_path / "java.json"
+    py_fix = tmp_path / "python.json"
+    _write_fixture(java_fix, _factory_mock_body())
+    _write_fixture(py_fix, _restaurant_envelope_body())
+
+    out_json = tmp_path / "report.json"
+    rc = compare.main([
+        "--factory", "R_GML_DEMO",
+        "--endpoint", "/api/test",
+        "--fixtures-java", str(java_fix),
+        "--fixtures-python", str(py_fix),
+        "--output", str(out_json),
+        "--tolerate-divergence-patterns", "B",
+    ])
+    assert rc == 0
+    data = json.loads(out_json.read_text(encoding="utf-8"))
+    assert data["match_rate"] == 100.0
+
+
+def test_compare_cli_default_strict_fails_on_pattern_b(tmp_path):
+    """Without --tolerate-divergence, Pattern B diverges fail the gate."""
+    import compare
+
+    java_fix = tmp_path / "java.json"
+    py_fix = tmp_path / "python.json"
+    _write_fixture(java_fix, _factory_mock_body())
+    _write_fixture(py_fix, _restaurant_envelope_body())
+
+    out_json = tmp_path / "report.json"
+    rc = compare.main([
+        "--factory", "R_GML_DEMO",
+        "--endpoint", "/api/test",
+        "--fixtures-java", str(java_fix),
+        "--fixtures-python", str(py_fix),
+        "--output", str(out_json),
+    ])
+    assert rc == 1   # GATE FAIL
+    data = json.loads(out_json.read_text(encoding="utf-8"))
+    assert data["match_rate"] < 99.945
+    # In strict mode total_real_bugs counts ONLY REAL_BUG entries; Pattern B
+    # diverges have classification PATTERN_B_STRUCTURAL so total_real_bugs is 0
+    # but match_rate is still 0% (endpoint diverged).
+    assert data["endpoints_diverged"] == 1
+
+
+def test_compare_cli_unknown_pattern_letter_rejected(tmp_path):
+    """--tolerate-divergence-patterns Z (unknown) → argparse error."""
+    import compare
+
+    java_fix = tmp_path / "java.json"
+    py_fix = tmp_path / "python.json"
+    _write_fixture(java_fix, {"a": 1})
+    _write_fixture(py_fix, {"a": 1})
+
+    with pytest.raises(SystemExit):
+        compare.main([
+            "--factory", "R_TEST",
+            "--endpoint", "/api/x",
+            "--fixtures-java", str(java_fix),
+            "--fixtures-python", str(py_fix),
+            "--tolerate-divergence-patterns", "Z",
+        ])
+
+
+def test_compare_cli_patterns_overrides_tolerate_all(tmp_path):
+    """--tolerate-divergence-patterns A should NOT tolerate Pattern B even with
+    --tolerate-divergence also set (patterns is the more specific override)."""
+    import compare
+
+    java_fix = tmp_path / "java.json"
+    py_fix = tmp_path / "python.json"
+    _write_fixture(java_fix, _factory_mock_body())
+    _write_fixture(py_fix, _restaurant_envelope_body())
+
+    out_json = tmp_path / "report.json"
+    rc = compare.main([
+        "--factory", "R_GML_DEMO",
+        "--endpoint", "/api/test",
+        "--fixtures-java", str(java_fix),
+        "--fixtures-python", str(py_fix),
+        "--output", str(out_json),
+        "--tolerate-divergence",
+        "--tolerate-divergence-patterns", "A",
+    ])
+    # A alone does NOT cover Pattern B → gate still fails.
+    assert rc == 1
+    data = json.loads(out_json.read_text(encoding="utf-8"))
+    assert data["match_rate"] < 99.945
+
+
+# ── summarize() reflects pattern_b_context ──
+
+
+def test_summarize_includes_b_context_marker():
+    java = _factory_mock_body()
+    py = _restaurant_envelope_body()
+    r = dict_eq.dict_eq_match(java, py)
+    s = dict_eq.summarize(r)
+    assert "b_context=true" in s

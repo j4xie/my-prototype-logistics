@@ -7,19 +7,36 @@ acceptance bar.
 
 What this module tolerates as MATCH (Pattern A / A2 per Rule 4):
 
-* Integer-valued Decimal int-collapse: Java emits ``100.00`` (float in
-  parsed JSON), Python emits ``100`` (int). ``int(100) == float(100.0)``
-  → MATCH. Tracked as ``PATTERN_A_INT_COLLAPSE`` for transparency.
-* Scale-4 trailing-zero collapse to float: Java emits ``99.9900`` and
-  Python emits ``99.99``. After ``json.loads``, both parse to
-  ``float(99.99)`` — invisible at this layer (Pattern A2 is detectable
-  only by raw-byte comparison). Documented limitation.
+* **Pattern A** — integer-valued Decimal int-collapse: Java emits
+  ``100.00`` (float in parsed JSON), Python emits ``100`` (int).
+  ``int(100) == float(100.0)`` → MATCH. Tracked as
+  ``PATTERN_A_INT_COLLAPSE`` for transparency.
+* **Pattern A2** — scale-4 trailing-zero collapse to float: Java emits
+  ``99.9900`` and Python emits ``99.99``. After ``json.loads``, both
+  parse to ``float(99.99)`` — **invisible at this layer** (Pattern A2
+  is only detectable by raw-byte comparison; constant kept for future).
+
+What this module CLASSIFIES (but does not auto-tolerate without opt-in):
+
+* **Pattern B** — Java legacy fallback structural divergence. The Java
+  side emits a different envelope shape (factory mock) while Python
+  emits a new tenant-typed envelope (e.g. restaurant 3-metric). Detected
+  via ``_detect_pattern_b_context`` heuristics (``tenantType`` mismatch
+  / restaurant-signal keys missing on one side). All diverges within a
+  Pattern B context are classified ``PATTERN_B_STRUCTURAL`` so callers
+  can opt in to tolerate them via ``--tolerate-divergence-patterns B``
+  in ``compare.py``.
+* **Pattern C** — value-level placeholder vs real (e.g. Java mock
+  emits ``0``, Python emits real ``47.33``). Constant kept for future
+  manual classification; not currently auto-detected (too easy to
+  misclassify a real bug as Pattern C).
 
 What is classified ``REAL_BUG``:
 
-* Type mismatch that isn't numeric (e.g. str vs int, dict vs list).
+* Type mismatch that isn't numeric (e.g. str vs int, dict vs list)
+  when NOT inside a Pattern B context.
 * Numeric values that aren't equal under exact-Decimal comparison.
-* Missing keys on either side.
+* Missing keys on either side outside the Pattern B vocabulary.
 * List length mismatch.
 * Boolean vs numeric (treat ``True != 1`` per JSON semantics).
 
@@ -34,6 +51,9 @@ that's a separate strict-byte concern. dict-eq ignores key insertion
 order via dict comparison semantics.
 
 Spec: scripts/parity-gate/README.md
+Predecessor: ``.claude/rules/python-java-port.md`` Rule 4 — Pattern B
+explicitly listed as "NOT dict-eq scope" in the acceptance table; this
+module surfaces the classification so callers can decide.
 """
 from __future__ import annotations
 
@@ -61,8 +81,35 @@ VOLATILE_KEYS = frozenset(
 # ============================================================
 
 PATTERN_A_INT_COLLAPSE = "PATTERN_A_INT_COLLAPSE"
-PATTERN_A2_SCALE_LOSS = "PATTERN_A2_SCALE_LOSS"
+PATTERN_A2_TRAILING_ZERO = "PATTERN_A2_TRAILING_ZERO"  # invisible post-parse; constant kept for raw-byte mode
+PATTERN_A2_SCALE_LOSS = PATTERN_A2_TRAILING_ZERO  # legacy alias retained for backwards compat
+PATTERN_B_STRUCTURAL = "PATTERN_B_STRUCTURAL"
+PATTERN_C_VALUE_PLACEHOLDER = "PATTERN_C_VALUE_PLACEHOLDER"  # not currently auto-detected
 REAL_BUG = "REAL_BUG"
+
+# All known pattern letters (CLI accepts these via --tolerate-divergence-patterns).
+KNOWN_PATTERNS = {
+    "A": PATTERN_A_INT_COLLAPSE,
+    "A2": PATTERN_A2_TRAILING_ZERO,
+    "B": PATTERN_B_STRUCTURAL,
+    "C": PATTERN_C_VALUE_PLACEHOLDER,
+}
+
+
+# Keys that strongly indicate the restaurant tenant envelope shape (per
+# T6.6 Sub-A spec §1.4 + Sub-B chat4 PR #358). When one side has these
+# and the other doesn't, Pattern B applies — Java factory mock vs
+# Python tenant-typed dispatch.
+_RESTAURANT_SIGNAL_KEYS = frozenset(
+    {
+        "tenantType",
+        "metrics",
+        "dataAvailability",
+        "proxyMetric",
+        "trendChart",
+        "downtimeChart",
+    }
+)
 
 
 def strip_volatile(obj: Any) -> Any:
@@ -136,6 +183,55 @@ def _scalar_repr(x: Any) -> Any:
     return x
 
 
+def _unwrap_envelope(obj: Any) -> Any:
+    """Drill past the standard ApiResponse envelope ``{code, message, data, ...}``
+    to the actual payload. Returns ``obj`` unchanged if not enveloped.
+    """
+    if isinstance(obj, dict) and "data" in obj and isinstance(obj["data"], (dict, list)):
+        return obj["data"]
+    return obj
+
+
+def _detect_pattern_b_context(java_response: Any, python_response: Any) -> bool:
+    """Heuristic: are the two responses representing fundamentally different
+    envelope shapes (Java factory mock vs Python tenant-typed dispatch)?
+
+    Returns True when any of:
+      1. ``tenantType`` differs (one is ``"RESTAURANT"`` / ``"BRANCH"``,
+         the other absent or ``"FACTORY"``).
+      2. One side has restaurant-signal keys (``metrics``,
+         ``dataAvailability``, ``proxyMetric``, ``trendChart``,
+         ``downtimeChart``) that the other lacks.
+      3. The top-level key sets symmetrically differ by ≥2 restaurant
+         signal keys (one side has them, other doesn't).
+
+    Returns False otherwise — same-shape responses fall through to per-leaf
+    classification.
+    """
+    java_data = _unwrap_envelope(java_response)
+    python_data = _unwrap_envelope(python_response)
+
+    if not isinstance(java_data, dict) or not isinstance(python_data, dict):
+        return False
+
+    # Strong signal: tenantType mismatch.
+    j_tenant = java_data.get("tenantType")
+    p_tenant = python_data.get("tenantType")
+    if j_tenant != p_tenant:
+        # Genuine mismatch — one side surfaced tenant type, other didn't,
+        # or values differ.
+        return True
+
+    # Top-level restaurant-signal key asymmetry.
+    j_keys = set(java_data.keys()) if isinstance(java_data, dict) else set()
+    p_keys = set(python_data.keys()) if isinstance(python_data, dict) else set()
+    signal_diff = (j_keys ^ p_keys) & _RESTAURANT_SIGNAL_KEYS
+    if signal_diff:
+        return True
+
+    return False
+
+
 def dict_eq_match(java_response: Any, python_response: Any) -> dict:
     """Compare two parsed-JSON values via Rule 4 dict-eq semantics.
 
@@ -148,12 +244,13 @@ def dict_eq_match(java_response: Any, python_response: Any) -> dict:
             "match": bool,                # overall dict-eq match
             "total_leaves": int,          # leaf-level value comparisons performed
             "matched_leaves": int,
+            "pattern_b_context": bool,    # True if top-level structural shape mismatch detected
             "diverges": [
                 {
                     "path": "data.metrics[0].value",
                     "java": <repr>,
                     "python": <repr>,
-                    "classification": REAL_BUG,
+                    "classification": REAL_BUG | PATTERN_B_STRUCTURAL,
                 },
                 ...
             ],
@@ -167,15 +264,26 @@ def dict_eq_match(java_response: Any, python_response: Any) -> dict:
                 ...
             ],
         }
+
+    Note on ``match`` semantics: when ``pattern_b_context`` is True the
+    raw ``diverges`` list will be heavily populated with
+    ``PATTERN_B_STRUCTURAL`` entries; ``match`` stays ``False`` here
+    (it's still a dict-eq mismatch). Use ``compare.py
+    --tolerate-divergence-patterns B`` to re-bucket those into
+    ``tolerated_byte_diffs`` and recompute the gate. This module stays
+    pure / no opinions; tolerance is the caller's policy.
     """
     java_stripped = strip_volatile(java_response)
     python_stripped = strip_volatile(python_response)
+
+    b_context = _detect_pattern_b_context(java_stripped, python_stripped)
 
     state = {
         "total_leaves": 0,
         "matched_leaves": 0,
         "diverges": [],
         "tolerated_byte_diffs": [],
+        "_b_context": b_context,
     }
     _walk_compare(java_stripped, python_stripped, "", state)
 
@@ -183,9 +291,15 @@ def dict_eq_match(java_response: Any, python_response: Any) -> dict:
         "match": len(state["diverges"]) == 0,
         "total_leaves": state["total_leaves"],
         "matched_leaves": state["matched_leaves"],
+        "pattern_b_context": b_context,
         "diverges": state["diverges"],
         "tolerated_byte_diffs": state["tolerated_byte_diffs"],
     }
+
+
+def _diverge_class(state: dict) -> str:
+    """Resolve diverge classification using the carried Pattern B context."""
+    return PATTERN_B_STRUCTURAL if state.get("_b_context") else REAL_BUG
 
 
 def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
@@ -201,7 +315,7 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
                     "path": f"{path}.{k}" if path else k,
                     "java": _scalar_repr(a[k]),
                     "python": "<missing>",
-                    "classification": REAL_BUG,
+                    "classification": _diverge_class(state),
                 }
             )
         for k in sorted(b_keys - a_keys):
@@ -210,7 +324,7 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
                     "path": f"{path}.{k}" if path else k,
                     "java": "<missing>",
                     "python": _scalar_repr(b[k]),
-                    "classification": REAL_BUG,
+                    "classification": _diverge_class(state),
                 }
             )
         for k in sorted(a_keys & b_keys):
@@ -226,7 +340,7 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
                     "path": path or "<root>",
                     "java": f"<list len={len(a)}>",
                     "python": f"<list len={len(b)}>",
-                    "classification": REAL_BUG,
+                    "classification": _diverge_class(state),
                 }
             )
             return
@@ -242,7 +356,7 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
                 "path": path or "<root>",
                 "java": _scalar_repr(a) if not isinstance(a, (dict, list)) else f"<{type(a).__name__}>",
                 "python": _scalar_repr(b) if not isinstance(b, (dict, list)) else f"<{type(b).__name__}>",
-                "classification": REAL_BUG,
+                "classification": _diverge_class(state),
             }
         )
         return
@@ -272,7 +386,7 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
                 "path": path or "<root>",
                 "java": _scalar_repr(a),
                 "python": _scalar_repr(b),
-                "classification": REAL_BUG,
+                "classification": _diverge_class(state),
             }
         )
         return
@@ -284,7 +398,7 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
                 "path": path or "<root>",
                 "java": _scalar_repr(a),
                 "python": _scalar_repr(b),
-                "classification": REAL_BUG,
+                "classification": _diverge_class(state),
             }
         )
         return
@@ -299,9 +413,69 @@ def _walk_compare(a: Any, b: Any, path: str, state: dict) -> None:
             "path": path or "<root>",
             "java": _scalar_repr(a),
             "python": _scalar_repr(b),
-            "classification": REAL_BUG,
+            "classification": _diverge_class(state),
         }
     )
+
+
+def apply_tolerance(report: dict, tolerate_all: bool = False,
+                    tolerate_patterns: Optional[set] = None) -> dict:
+    """Re-bucket ``diverges`` per tolerance config; recompute ``match``.
+
+    Args:
+        report: a ``dict_eq_match`` output dict (mutated and returned).
+        tolerate_all: if True, every diverge with a non-REAL_BUG
+            classification moves to ``tolerated_byte_diffs``. REAL_BUG
+            entries stay in ``diverges``.
+        tolerate_patterns: explicit set of pattern letters (e.g.
+            ``{"A", "B"}``). Overrides ``tolerate_all`` when supplied.
+
+    Returns:
+        The same report dict with adjusted lists and ``match`` flag.
+    """
+    if not tolerate_all and not tolerate_patterns:
+        return report
+
+    if tolerate_patterns is not None:
+        accepted_classes = {KNOWN_PATTERNS[p] for p in tolerate_patterns if p in KNOWN_PATTERNS}
+    else:
+        # tolerate_all: every named pattern except REAL_BUG
+        accepted_classes = set(KNOWN_PATTERNS.values())
+
+    kept = []
+    moved = list(report.get("tolerated_byte_diffs", []))
+    for d in report.get("diverges", []):
+        if d["classification"] in accepted_classes:
+            moved.append(d)
+        else:
+            kept.append(d)
+
+    report["diverges"] = kept
+    report["tolerated_byte_diffs"] = moved
+    report["match"] = len(kept) == 0
+    return report
+
+
+def parse_patterns_arg(arg: Optional[str]) -> Optional[set]:
+    """Parse ``--tolerate-divergence-patterns`` CLI value into a set of
+    pattern letters. Returns None on empty / falsy. Raises ValueError on
+    unknown letters so the CLI fails loudly.
+    """
+    if not arg:
+        return None
+    out = set()
+    for part in arg.split(","):
+        letter = part.strip().upper()
+        if not letter:
+            continue
+        if letter not in KNOWN_PATTERNS:
+            valid = ", ".join(sorted(KNOWN_PATTERNS.keys()))
+            raise ValueError(
+                f"Unknown tolerate-divergence pattern '{letter}'. "
+                f"Valid: {valid}"
+            )
+        out.add(letter)
+    return out or None
 
 
 def summarize(report: dict) -> str:
@@ -311,8 +485,10 @@ def summarize(report: dict) -> str:
     rate = (matched / total * 100) if total else 100.0
     real_bugs = len(report["diverges"])
     pattern_a = len(report["tolerated_byte_diffs"])
+    b_ctx = report.get("pattern_b_context", False)
+    b_note = " b_context=true" if b_ctx else ""
     return (
         f"match={report['match']} "
         f"rate={rate:.3f}% ({matched}/{total}) "
-        f"diverges={real_bugs} pattern_a={pattern_a}"
+        f"diverges={real_bugs} pattern_a={pattern_a}{b_note}"
     )
