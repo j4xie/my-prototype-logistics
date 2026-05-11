@@ -1,6 +1,9 @@
 package com.cretas.aims.service.smartbi.impl;
 
 import com.cretas.aims.dto.smartbi.ConfigOperationResult;
+import com.cretas.aims.dto.smartbi.CreateAlertThresholdRequest;
+import com.cretas.aims.dto.smartbi.CreateIncentiveRuleRequest;
+import com.cretas.aims.dto.smartbi.UpdateIncentiveRuleRequest;
 import com.cretas.aims.entity.smartbi.*;
 import com.cretas.aims.repository.smartbi.*;
 import com.cretas.aims.service.smartbi.ChartTemplateService;
@@ -214,17 +217,32 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult createThreshold(SmartBiAlertThreshold threshold) {
+    public ConfigOperationResult createThreshold(CreateAlertThresholdRequest request) {
         try {
             // 验证唯一性
             if (alertThresholdRepository.existsByThresholdTypeAndMetricCodeAndFactoryId(
-                    threshold.getThresholdType(), threshold.getMetricCode(), threshold.getFactoryId())) {
+                    request.getThresholdType(), request.getMetricCode(), request.getFactoryId())) {
                 return ConfigOperationResult.error(
                         ConfigOperationResult.CONFIG_TYPE_THRESHOLD,
-                        "阈值配置已存在: " + threshold.getThresholdType() + "/" + threshold.getMetricCode());
+                        "阈值配置已存在: " + request.getThresholdType() + "/" + request.getMetricCode());
             }
 
+            // Rule 17.1 fix: 显式构造 entity，不走 Builder/@Builder.Default 链路。
+            // 业务默认值在此处显式应用，与原行为保持一致：
+            //   - comparisonOperator 缺省 "GT"（对应 entity @Builder.Default = "GT"）
+            //   - isActive 强制 true（保持原有 createThreshold 业务约定）
+            SmartBiAlertThreshold threshold = new SmartBiAlertThreshold();
+            threshold.setThresholdType(request.getThresholdType());
+            threshold.setMetricCode(request.getMetricCode());
+            threshold.setWarningValue(request.getWarningValue());
+            threshold.setCriticalValue(request.getCriticalValue());
+            threshold.setComparisonOperator(
+                    request.getComparisonOperator() != null ? request.getComparisonOperator() : "GT");
+            threshold.setUnit(request.getUnit());
+            threshold.setDescription(request.getDescription());
+            threshold.setFactoryId(request.getFactoryId());
             threshold.setIsActive(true);
+
             alertThresholdRepository.save(threshold);
             log.info("创建告警阈值: type={}, metricCode={}",
                     threshold.getThresholdType(), threshold.getMetricCode());
@@ -336,9 +354,25 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult createIncentiveRule(SmartBiIncentiveRule rule) {
+    public ConfigOperationResult createIncentiveRule(CreateIncentiveRuleRequest request) {
         try {
+            // Rule 17.1 fix: 显式构造 entity，不走 Builder/@Builder.Default 链路。
+            // 业务默认值在此处显式应用：
+            //   - isActive 强制 true（保持原有 createIncentiveRule 业务约定）
+            //   - sortOrder 缺省 0（对应 entity @Builder.Default = 0）
+            SmartBiIncentiveRule rule = new SmartBiIncentiveRule();
+            rule.setRuleCode(request.getRuleCode());
+            rule.setRuleName(request.getRuleName());
+            rule.setLevelName(request.getLevelName());
+            rule.setMinValue(request.getMinValue());
+            rule.setMaxValue(request.getMaxValue());
+            rule.setRewardRate(request.getRewardRate());
+            rule.setRewardAmount(request.getRewardAmount());
+            rule.setDescription(request.getDescription());
+            rule.setFactoryId(request.getFactoryId());
+            rule.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0);
             rule.setIsActive(true);
+
             incentiveRuleRepository.save(rule);
             log.info("创建激励规则: ruleCode={}, levelName={}",
                     rule.getRuleCode(), rule.getLevelName());
@@ -360,7 +394,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult updateIncentiveRule(Long id, SmartBiIncentiveRule rule) {
+    public ConfigOperationResult updateIncentiveRule(Long id, UpdateIncentiveRuleRequest request) {
         try {
             Optional<SmartBiIncentiveRule> existingOpt = incentiveRuleRepository.findById(id);
             if (existingOpt.isEmpty()) {
@@ -370,7 +404,9 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
             }
 
             SmartBiIncentiveRule existing = existingOpt.get();
-            updateIncentiveRuleFields(existing, rule);
+            // Rule 17.1 fix: null-aware copy from DTO. 缺失字段保留原值，
+            // 阻止 @Builder.Default (isActive=true, sortOrder=0) 静默覆盖。
+            applyUpdateIncentiveRule(existing, request);
             incentiveRuleRepository.save(existing);
             log.info("更新激励规则: id={}, ruleCode={}", id, existing.getRuleCode());
 
@@ -1096,16 +1132,25 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         if (updated.getIsActive() != null) existing.setIsActive(updated.getIsActive());
     }
 
-    private void updateIncentiveRuleFields(SmartBiIncentiveRule existing, SmartBiIncentiveRule updated) {
-        if (updated.getRuleName() != null) existing.setRuleName(updated.getRuleName());
-        if (updated.getLevelName() != null) existing.setLevelName(updated.getLevelName());
-        if (updated.getMinValue() != null) existing.setMinValue(updated.getMinValue());
-        if (updated.getMaxValue() != null) existing.setMaxValue(updated.getMaxValue());
-        if (updated.getRewardRate() != null) existing.setRewardRate(updated.getRewardRate());
-        if (updated.getRewardAmount() != null) existing.setRewardAmount(updated.getRewardAmount());
-        if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
-        if (updated.getSortOrder() != null) existing.setSortOrder(updated.getSortOrder());
-        if (updated.getIsActive() != null) existing.setIsActive(updated.getIsActive());
+    /**
+     * Null-aware copy from {@link UpdateIncentiveRuleRequest} into existing entity.
+     *
+     * <p>Rule 17.1 fix: 接受 DTO 而非实体。DTO 字段为 null = 客户端未提供，保留原值。
+     * 阻止 {@code @Builder.Default}（{@code isActive=true}、{@code sortOrder=0}）通过
+     * Jackson {@code @NoArgsConstructor} 字段初始化器静默写回。
+     *
+     * <p>不可变字段 {@code ruleCode} 和 {@code factoryId} 不在 DTO 中暴露，无需复制。
+     */
+    private void applyUpdateIncentiveRule(SmartBiIncentiveRule existing, UpdateIncentiveRuleRequest req) {
+        if (req.getRuleName() != null) existing.setRuleName(req.getRuleName());
+        if (req.getLevelName() != null) existing.setLevelName(req.getLevelName());
+        if (req.getMinValue() != null) existing.setMinValue(req.getMinValue());
+        if (req.getMaxValue() != null) existing.setMaxValue(req.getMaxValue());
+        if (req.getRewardRate() != null) existing.setRewardRate(req.getRewardRate());
+        if (req.getRewardAmount() != null) existing.setRewardAmount(req.getRewardAmount());
+        if (req.getDescription() != null) existing.setDescription(req.getDescription());
+        if (req.getSortOrder() != null) existing.setSortOrder(req.getSortOrder());
+        if (req.getIsActive() != null) existing.setIsActive(req.getIsActive());
     }
 
     private void updateDictionaryFields(SmartBiDictionary existing, SmartBiDictionary updated) {

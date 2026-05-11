@@ -1,6 +1,9 @@
 package com.cretas.aims.service.smartbi;
 
 import com.cretas.aims.dto.smartbi.ConfigOperationResult;
+import com.cretas.aims.dto.smartbi.CreateAlertThresholdRequest;
+import com.cretas.aims.dto.smartbi.CreateIncentiveRuleRequest;
+import com.cretas.aims.dto.smartbi.UpdateIncentiveRuleRequest;
 import com.cretas.aims.entity.smartbi.*;
 
 import java.util.List;
@@ -81,10 +84,15 @@ public interface SmartBIConfigService {
     /**
      * 创建告警阈值
      *
-     * @param threshold 阈值配置
+     * <p>Rule 17.1 anti-pattern fix（Issue #320）：
+     * 接收 {@link CreateAlertThresholdRequest} 而非实体直绑，避免 {@code @Builder.Default}
+     * 字段（{@code comparisonOperator="GT"}、{@code isActive=true}）通过 Jackson
+     * 默认构造器静默写入。业务默认值由 service 层显式应用。
+     *
+     * @param request 阈值创建请求
      * @return 创建结果
      */
-    ConfigOperationResult createThreshold(SmartBiAlertThreshold threshold);
+    ConfigOperationResult createThreshold(CreateAlertThresholdRequest request);
 
     /**
      * 更新告警阈值
@@ -123,19 +131,27 @@ public interface SmartBIConfigService {
     /**
      * 创建激励规则
      *
-     * @param rule 激励规则
+     * <p>Rule 17.1 anti-pattern fix（Issue #320）：接收 DTO 而非实体直绑。
+     *
+     * @param request 激励规则创建请求
      * @return 创建结果
      */
-    ConfigOperationResult createIncentiveRule(SmartBiIncentiveRule rule);
+    ConfigOperationResult createIncentiveRule(CreateIncentiveRuleRequest request);
 
     /**
      * 更新激励规则
      *
-     * @param id   配置ID
-     * @param rule 激励规则
+     * <p>Rule 17.1 anti-pattern fix（Issue #320）：接收 DTO 而非实体直绑，
+     * service 层使用 null-aware copy 阻止 {@code @Builder.Default} 静默覆盖
+     * （{@code isActive=true}、{@code sortOrder=0}）。
+     *
+     * <p>不可变字段：{@code ruleCode}、{@code factoryId}（业务约束，DTO 不暴露）。
+     *
+     * @param id      配置ID
+     * @param request 激励规则更新请求
      * @return 更新结果
      */
-    ConfigOperationResult updateIncentiveRule(Long id, SmartBiIncentiveRule rule);
+    ConfigOperationResult updateIncentiveRule(Long id, UpdateIncentiveRuleRequest request);
 
     /**
      * 删除激励规则（软删除）
