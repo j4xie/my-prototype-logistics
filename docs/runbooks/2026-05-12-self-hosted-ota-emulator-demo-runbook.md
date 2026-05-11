@@ -15,8 +15,8 @@ APK to F006 / customers. ~15 minutes if all prerequisites are met.
 - [ ] **All OTA PRs merged**: #363 (server), #364 (router register), #373 (scripts), #375 (P0 fix + JWT exempt), #380 (nginx), #381 (build runbook + app.json), and this PR (#382-ish)
 - [ ] **Server-side cutover done** (per Phase 5 runbook merge ordering §)
   - cretas-python redeployed with `cryptography` in requirements
-  - nginx `/api/ota/` location LIVE on 139 — `curl https://api.cretaceousfuture.com/api/ota/health` → 200
-  - `OTA_HOSTNAME=https://api.cretaceousfuture.com` in `/www/wwwroot/cretas/.env.ota`
+  - nginx `/api/ota/` location LIVE on 139 — `curl https://ota.cretaceousfuture.com/api/ota/health` → 200
+  - `OTA_HOSTNAME=https://ota.cretaceousfuture.com` in `/www/wwwroot/cretas/.env.ota`
 - [ ] **Local toolchain ready** per Phase 5 runbook §0 (Android Studio, JDK 21, SDK 34, keytool)
 - [ ] **Signing keystore generated** per Phase 5 runbook §1 (one-time, with backups)
 - [ ] **OTA_ADMIN_TOKEN sourced** in your shell (from `~/.ota-env`)
@@ -68,7 +68,7 @@ cd android
 Verify expo-updates wired in (per Phase 5 §4):
 ```bash
 aapt dump xmltree android/app/build/outputs/apk/release/app-release.apk AndroidManifest.xml | grep expo.modules.updates
-# Must see ENABLED=true + URL = https://api.cretaceousfuture.com/api/ota/manifest
+# Must see ENABLED=true + URL = https://ota.cretaceousfuture.com/api/ota/manifest
 ```
 
 ---
@@ -96,7 +96,7 @@ adb logcat -v time -s expo-updates:V expo-modules:V
 
 Expected first-launch trace:
 ```
-expo-updates: Checking for update at https://api.cretaceousfuture.com/api/ota/manifest
+expo-updates: Checking for update at https://ota.cretaceousfuture.com/api/ota/manifest
 expo-updates: Verifying response signature with keyid=main alg=rsa-v1_5-sha256
 expo-updates: No update available (server returned noUpdateAvailable directive)
 ```
@@ -153,7 +153,7 @@ Validate the rollback path too — important before customer cutover:
 ```bash
 # Get the timestamp of the bundle we just pushed:
 curl -s -H "Authorization: Bearer $OTA_ADMIN_TOKEN" \
-     "https://api.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=1.0.0&channel=production" | jq
+     "https://ota.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=1.0.0&channel=production" | jq
 
 # Roll back the newest entry:
 ./scripts/ota/rollback.sh 1.0.0 production <newest-timestamp>
@@ -199,8 +199,8 @@ the build runbook) can proceed.
 | `curl /api/ota/health` returns 401 | JWT middleware not exempted | PR #375 not merged or Python not redeployed |
 | `curl /api/ota/health` returns 404 | nginx location not installed | run `./scripts/ota/install-nginx-ota.sh` |
 | `signature verification failed` on device | cert in APK ≠ key on server | re-build APK with current `frontend/CretasFoodTrace/ota_cert.pem` |
-| `expo-updates: Manifest fetch error` (DNS) | `api.cretaceousfuture.com` not resolving | confirm DNS A record on aliyun account C points at 139.196.165.140 |
-| `unable to verify the first certificate` | TLS cert chain broken on 139 | `openssl s_client -connect api.cretaceousfuture.com:443 -showcerts` |
+| `expo-updates: Manifest fetch error` (DNS) | `ota.cretaceousfuture.com` not resolving | confirm DNS A record on aliyun account C points at 139.196.165.140 |
+| `unable to verify the first certificate` | TLS cert chain broken on 139 | `openssl s_client -connect ota.cretaceousfuture.com:443 -showcerts` |
 | device sees old JS after push + relaunch | runtimeVersion mismatch | check app.json `expo.version` vs the runtimeVersion in `push-bundle.sh` output |
 | smoke-e2e.sh fails step 5 (asset fetch) | URL-encoding drift | run `pytest backend/python/ota/tests/test_full_cycle_e2e.py` — that catches the drift in CI |
 
