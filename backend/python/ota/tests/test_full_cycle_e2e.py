@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from urllib.parse import unquote
 
 
 def _expo_headers(**overrides) -> dict:
