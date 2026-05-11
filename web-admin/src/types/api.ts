@@ -18,6 +18,26 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ApiData = any;
 
+/**
+ * Generic row type for table/list data whose schema is dynamic, comes from
+ * an API call without a strongly-typed contract, or is a heterogeneous union
+ * of related shapes (e.g., a "view detail" dialog that displays multiple
+ * record types).
+ *
+ * Tier 2 vue-tsc cleanup (2026-05-10): replaces ~90 sites of
+ * `ref<Record<string, unknown>>[]` and `ref<Record<string, unknown>>` that
+ * triggered TS2339 on every `row.field` access. `Record<string, unknown>`
+ * required casts at every read site; `Record<string, any>` matches the
+ * pragmatic ApiData philosophy from Tier 1.
+ *
+ * Per project rules: prefer a typed interface (`User`, `Order`, etc.) when
+ * the row shape is known and stable. Use `TableRow` only when the shape is
+ * genuinely dynamic or when a quick cleanup is more valuable than designing
+ * a new interface. New strongly-typed code should NOT default to `TableRow`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type TableRow = Record<string, any>;
+
 // 统一API响应格式
 export interface ApiResponse<T = ApiData> {
   success: boolean;

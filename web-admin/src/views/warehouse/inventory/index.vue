@@ -6,6 +6,7 @@ import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -18,7 +19,7 @@ const isWarehouseOnly = computed(() => {
 });
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchKeyword = ref('');
 const statusFilter = ref('');
@@ -44,9 +45,9 @@ const adjustForm = ref({
 
 // 批次详情对话框
 const detailDialogVisible = ref(false);
-const detailData = ref<Record<string, unknown> | null>(null);
+const detailData = ref<TableRow | null>(null);
 const detailLoading = ref(false);
-const adjustHistory = ref<Record<string, unknown>[]>([]);
+const adjustHistory = ref<TableRow[]>([]);
 
 // 状态选项
 const statusOptions = [
@@ -132,7 +133,7 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function handleAdjust(row: Record<string, unknown>) {
+function handleAdjust(row: TableRow) {
   adjustForm.value = {
     batchId: row.id,
     batchNumber: row.batchNumber,
@@ -184,7 +185,7 @@ async function submitAdjust() {
   }
 }
 
-async function handleViewDetail(row: Record<string, unknown>) {
+async function handleViewDetail(row: TableRow) {
   detailData.value = row;
   detailDialogVisible.value = true;
   adjustHistory.value = [];
@@ -210,7 +211,7 @@ async function handleExport() {
     const response = await get(`/${factoryId.value}/material-batches/export`, {
       responseType: 'blob'
     });
-    const raw = (response as Record<string, unknown>).data ?? response;
+    const raw = (response as TableRow).data ?? response;
     const blob = raw instanceof Blob
       ? raw
       : new Blob([raw], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -230,7 +231,7 @@ async function handleExport() {
 }
 
 // 过期日期高亮
-function getExpireDateClass(row: Record<string, unknown>): string {
+function getExpireDateClass(row: TableRow): string {
   if (!row.expirationDate && !row.expireDate) return '';
   const dateStr = row.expirationDate || row.expireDate;
   const expDate = new Date(dateStr);

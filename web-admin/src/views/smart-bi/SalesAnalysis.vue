@@ -38,6 +38,7 @@ import {
   batchBuildCharts,
   buildChart,
 } from '@/api/smartbi/python-service';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -175,8 +176,8 @@ interface ChartConfig {
   xAxisField: string;
   yAxisField: string;
   seriesField?: string;
-  data: Array<Record<string, unknown>>;
-  options?: Record<string, unknown>;
+  data: Array<TableRow>;
+  options?: TableRow;
 }
 const trendChartConfig = ref<ChartConfig | null>(null);
 const pieChartConfig = ref<ChartConfig | null>(null);
@@ -188,8 +189,8 @@ const kpiSparklineMap = computed<Record<number, number[]>>(() => {
   const config = trendChartConfig.value;
   if (!config || !config.data || config.data.length < 2) return {};
 
-  const xAxisField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'date';
-  const yAxisField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xAxisField = config.xAxisField || (config as TableRow).xaxisField as string || 'date';
+  const yAxisField = config.yAxisField || (config as TableRow).yaxisField as string || 'value';
 
   // Primary series: y-axis values from trend chart → assign to first KPI card
   const salesData = config.data.map(item => Number(item[yAxisField]) || 0);
@@ -299,7 +300,7 @@ const dataInfo = ref<{
 });
 
 // Raw dynamic data for chart rebuilding
-const dynamicRawData = ref<Record<string, unknown>[]>([]);
+const dynamicRawData = ref<TableRow[]>([]);
 
 // ==================== Data Source Functions ====================
 
@@ -384,7 +385,7 @@ async function loadDynamicSalesData(uploadId: number) {
       try {
         const tableRes = await getUploadTableData(uploadId, 0, 200);
         if (tableRes.success && tableRes.data && tableRes.data.data.length > 0) {
-          buildExplorationCharts(tableRes.data.data as Record<string, unknown>[]);
+          buildExplorationCharts(tableRes.data.data as TableRow[]);
         }
       } catch (e) {
         console.warn('加载探索图表数据失败:', e);
@@ -457,7 +458,7 @@ function updateChartsFromDynamicData(charts: DynamicAnalysisResponse['charts']) 
 
 // ==================== Exploration Charts ====================
 
-async function buildExplorationCharts(data: Record<string, unknown>[]) {
+async function buildExplorationCharts(data: TableRow[]) {
   if (!data || data.length === 0) return;
 
   explorationLoading.value = true;
@@ -712,9 +713,9 @@ async function loadSalesData() {
  *   1. Unified format: { overview: { kpiCards, rankings, charts } }
  *   2. Direct format: { kpiCards, rankings, charts }  (from getComprehensiveAnalysis)
  */
-function parseUnifiedResponse(data: Record<string, unknown>) {
+function parseUnifiedResponse(data: TableRow) {
   // Extract KPI cards from various response shapes
-  const overview = data.overview as Record<string, unknown> | undefined;
+  const overview = data.overview as TableRow | undefined;
   const kpiSource = overview?.kpiCards || data.kpiCards;
   if (Array.isArray(kpiSource) && kpiSource.length > 0) {
     kpiCards.value = (kpiSource as KPICard[]).map(card => ({
@@ -737,7 +738,7 @@ function parseUnifiedResponse(data: Record<string, unknown>) {
   if (rankingsSource) {
     const spRanking = rankingsSource.salesperson || rankingsSource.sales_person;
     if (Array.isArray(spRanking) && spRanking.length > 0) {
-      salesPersonRanking.value = spRanking.map((item: Record<string, unknown>) => ({
+      salesPersonRanking.value = spRanking.map((item: TableRow) => ({
         name: String(item.name || ''),
         sales: Number(item.value || item.sales || 0),
         orderCount: Number(item.orderCount || item.count || 0),
@@ -797,9 +798,9 @@ async function loadOverviewData(signal?: AbortSignal) {
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, signal, _silent: true } as never);
     if (response.success && response.data) {
       // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
-      const raw = response.data as Record<string, unknown>;
+      const raw = response.data as TableRow;
       const actualData = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
-        ? raw.data as Record<string, unknown>
+        ? raw.data as TableRow
         : raw;
       parseUnifiedResponse(actualData);
     } else {
@@ -836,10 +837,10 @@ async function loadRankingData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
-      const data = response.data as Record<string, unknown>;
+      const data = response.data as TableRow;
       // May return { ranking: [...] } or unified response with overview.rankings
       if (Array.isArray(data.ranking)) {
-        salesPersonRanking.value = (data.ranking as Record<string, unknown>[]).map(item => ({
+        salesPersonRanking.value = (data.ranking as TableRow[]).map(item => ({
           name: String(item.name || ''),
           sales: Number(item.value || item.sales || 0),
           orderCount: Number(item.orderCount || item.count || 0),
@@ -871,7 +872,7 @@ async function loadTrendData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
-      const data = response.data as Record<string, unknown>;
+      const data = response.data as TableRow;
       if (data.chart) {
         trendChartConfig.value = data.chart as ChartConfig;
         updateTrendChart();
@@ -901,7 +902,7 @@ async function loadProductData() {
     };
     const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params, _silent: true } as never);
     if (response.success && response.data) {
-      const data = response.data as Record<string, unknown>;
+      const data = response.data as TableRow;
       if (data.chart) {
         pieChartConfig.value = data.chart as ChartConfig;
         updatePieChart();
@@ -981,8 +982,8 @@ function updateTrendChart() {
 
   // 从 API 数据中提取 X 轴和 Y 轴数据
   // Note: Jackson serializes xAxisField as xaxisField (lowercase), handle both
-  const xAxisField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'date';
-  const yAxisField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xAxisField = config.xAxisField || (config as TableRow).xaxisField as string || 'date';
+  const yAxisField = config.yAxisField || (config as TableRow).yaxisField as string || 'value';
 
   const xAxisData = config.data.map(item => String(item[xAxisField] || ''));
   const salesData = config.data.map(item => Number(item[yAxisField]) || 0);
@@ -1146,7 +1147,7 @@ function updatePieChart() {
   }
 
   // Phase 6: Auto-detect field names if xAxisField/yAxisField don't match data
-  const sample = config.data[0] as Record<string, unknown> | undefined;
+  const sample = config.data[0] as TableRow | undefined;
   let xField = config.xAxisField || 'name';
   let yField = config.yAxisField || 'value';
   if (sample) {
@@ -1333,13 +1334,13 @@ async function handleExport() {
 
     // 3. Trend data sheet (if available)
     if (trendChartConfig.value?.data?.length) {
-      const trendWs = XLSX.utils.json_to_sheet(trendChartConfig.value.data as Record<string, unknown>[]);
+      const trendWs = XLSX.utils.json_to_sheet(trendChartConfig.value.data as TableRow[]);
       XLSX.utils.book_append_sheet(wb, trendWs, '趋势数据');
     }
 
     // 4. Product distribution data (if available)
     if (pieChartConfig.value?.data?.length) {
-      const pieWs = XLSX.utils.json_to_sheet(pieChartConfig.value.data as Record<string, unknown>[]);
+      const pieWs = XLSX.utils.json_to_sheet(pieChartConfig.value.data as TableRow[]);
       XLSX.utils.book_append_sheet(wb, pieWs, '产品分布');
     }
 

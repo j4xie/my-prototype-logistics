@@ -8,6 +8,7 @@ import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 
@@ -17,7 +18,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   batchNumber: '',
@@ -27,7 +28,7 @@ const searchForm = ref({
 // 创建批次
 const createDialogVisible = ref(false);
 const creating = ref(false);
-const productTypes = ref<Record<string, unknown>[]>([]);
+const productTypes = ref<TableRow[]>([]);
 const createForm = ref({
   productTypeId: '',
   plannedQuantity: null as number | null,

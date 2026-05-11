@@ -15,6 +15,7 @@ import { MODULE_API_PATHS } from '@/types/config'
 import SchemaFormRenderer from './components/SchemaFormRenderer.vue'
 import SchemaTableRenderer from './components/SchemaTableRenderer.vue'
 import TabLayoutRenderer from './components/TabLayoutRenderer.vue'
+import type { TableRow } from '@/types/api';
 
 // R22 Fix Bug 2: accept moduleCode as prop (from CanvasAwareWrapper)
 // AND from route.params (from /modules/:moduleCode route). Prop takes priority.
@@ -49,8 +50,8 @@ const canWrite = computed(() => {
 // 状态
 const config = ref<EffectiveModuleConfig | null>(null)
 const currentView = ref<'list' | 'create' | 'edit' | 'detail'>('list')
-const tableData = ref<Record<string, unknown>[]>([])
-const selectedRow = ref<Record<string, unknown> | null>(null)
+const tableData = ref<TableRow[]>([])
+const selectedRow = ref<TableRow | null>(null)
 
 // R28: push browser history on view change so back button works
 import { watch as vueWatch, onMounted as onMountedHook } from 'vue'
@@ -106,7 +107,7 @@ async function loadTableData() {
   loading.value = true
   try {
     // Bug G: include keyword for search-supporting endpoints
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size }
+    const params: TableRow = { page: pagination.value.page, size: pagination.value.size }
     if (searchKeyword.value) params.keyword = searchKeyword.value
     const res = await request.get(`/${factoryId.value}/${apiPath.value}`, { params })
     const data = res.data
@@ -128,7 +129,7 @@ async function loadTableData() {
 }
 
 // 创建
-async function handleCreate(formData: Record<string, unknown>) {
+async function handleCreate(formData: TableRow) {
   try {
     await request.post(`/${factoryId.value}/${apiPath.value}`, formData)
     ElMessage.success('创建成功')
@@ -140,14 +141,14 @@ async function handleCreate(formData: Record<string, unknown>) {
 }
 
 // 更新
-async function handleUpdate(formData: Record<string, unknown>) {
+async function handleUpdate(formData: TableRow) {
   if (!selectedRow.value) return
   const id = selectedRow.value.id
   // Optimistic lock: forward the version snapshot from the row FE loaded.
   // Backend compares req.version vs db.version → 409 if stale (Customer/Supplier/SO/PO/Equipment).
-  const version = (selectedRow.value as Record<string, unknown>).version
-  if (version !== undefined && version !== null && (formData as Record<string, unknown>).version === undefined) {
-    (formData as Record<string, unknown>).version = version
+  const version = (selectedRow.value as TableRow).version
+  if (version !== undefined && version !== null && (formData as TableRow).version === undefined) {
+    (formData as TableRow).version = version
   }
   try {
     await request.put(`/${factoryId.value}/${apiPath.value}/${id}`, formData)
@@ -180,7 +181,7 @@ async function handleUpdate(formData: Record<string, unknown>) {
 }
 
 // 工作流操作
-async function handleAction(row: Record<string, unknown>, transition: WorkflowTransition) {
+async function handleAction(row: TableRow, transition: WorkflowTransition) {
   try {
     await ElMessageBox.confirm(
       `确定执行"${transition.label}"操作？`,
@@ -201,7 +202,7 @@ async function handleAction(row: Record<string, unknown>, transition: WorkflowTr
 }
 
 // 行点击 → 详情
-function handleRowClick(row: Record<string, unknown>) {
+function handleRowClick(row: TableRow) {
   selectedRow.value = row
   currentView.value = 'detail'
 }

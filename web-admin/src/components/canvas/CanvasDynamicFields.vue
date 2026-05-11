@@ -13,12 +13,13 @@ import { useAuthStore } from '@/store/modules/auth'
 import { getDynamicFields } from '@/api/canvasApi'
 import { get } from '@/api/request'
 import { evaluateSpelBoolean, evaluateSpelValue } from '@/utils/spelEvaluator'
+import type { TableRow } from '@/types/api';
 
 interface DynField {
   fieldCode: string
   fieldType: string
   label: string
-  config?: Record<string, unknown>
+  config?: TableRow
   sortOrder?: number
   visibleWhen?: string
   computedWhen?: string
@@ -26,17 +27,17 @@ interface DynField {
 
 const props = defineProps<{
   moduleCode: string
-  modelValue?: Record<string, unknown>
+  modelValue?: TableRow
   disabled?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [val: Record<string, unknown>]
+  'update:modelValue': [val: TableRow]
 }>()
 
 const authStore = useAuthStore()
 const fields = ref<DynField[]>([])
-const localValues = ref<Record<string, unknown>>({})
+const localValues = ref<TableRow>({})
 
 onMounted(async () => {
   if (!authStore.factoryId) return
@@ -54,7 +55,7 @@ onMounted(async () => {
     try {
       const defRes = await get(`/${authStore.factoryId}/config/modules/${props.moduleCode}/defaults`)
       if (defRes.success && defRes.data && typeof defRes.data === 'object') {
-        localValues.value = { ...defRes.data as Record<string, unknown> }
+        localValues.value = { ...defRes.data as TableRow }
         emit('update:modelValue', { ...localValues.value })
       }
     } catch { /* defaults not configured */ }

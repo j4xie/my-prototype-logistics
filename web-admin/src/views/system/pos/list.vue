@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Connection, Delete } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
 
 const loading = ref(false);
-const connections = ref<Record<string, unknown>[]>([]);
+const connections = ref<TableRow[]>([]);
 const dialogVisible = ref(false);
 const testLoading = ref<Record<string, boolean>>({});
 const syncLoading = ref<Record<string, boolean>>({});
@@ -77,7 +78,7 @@ async function handleDelete(id: string) {
 
 async function handleToggle(id: string, active: boolean) {
   try {
-    const res = await post(`/${factoryId.value}/pos/connections/${id}/toggle`, undefined, { params: { active } } as Record<string, unknown>);
+    const res = await post(`/${factoryId.value}/pos/connections/${id}/toggle`, undefined, { params: { active } } as TableRow);
     if (res.success) { ElMessage.success(active ? '已启用' : '已停用'); loadConnections(); }
     else { ElMessage.error(res.message || '操作失败'); }
   } catch { /* axios interceptor already displayed error toast */ }

@@ -52,6 +52,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -69,7 +70,7 @@ const shareData = ref<{
 } | null>(null);
 
 // Chart data loaded from the upload
-const sheetData = ref<Record<string, unknown>[]>([]);
+const sheetData = ref<TableRow[]>([]);
 
 const dataColumns = computed(() => {
   if (!sheetData.value.length) return [];

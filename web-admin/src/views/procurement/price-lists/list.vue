@@ -6,6 +6,7 @@ import { get, post, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const dialogVisible = ref(false);
 const searchKeyword = ref('');
@@ -38,7 +39,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const params: TableRow = { page: pagination.value.page, size: pagination.value.size };
     const kw = searchKeyword.value.trim();
     if (kw) params.keyword = kw;
     const res = await get(`/${factoryId.value}/price-lists`, { params });

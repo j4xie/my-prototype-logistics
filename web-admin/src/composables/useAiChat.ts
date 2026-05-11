@@ -1,11 +1,12 @@
 import { ref } from 'vue';
 import { sendAiChat } from '@/api/aiChat';
 import type { AiEntryConfig, ChatMessage } from '@/components/ai-entry/types';
+import type { TableRow } from '@/types/api';
 
 const FILL_FORM_REGEX = /```json\s*(\{[\s\S]*?"action"\s*:\s*"FILL_FORM"[\s\S]*?\})\s*```/;
 const FILL_FORM_INLINE_REGEX = /(\{"action"\s*:\s*"FILL_FORM"[\s\S]*?\})\s*$/;
 
-function extractFillForm(content: string): Record<string, unknown> | null {
+function extractFillForm(content: string): TableRow | null {
   const match = content.match(FILL_FORM_REGEX) || content.match(FILL_FORM_INLINE_REGEX);
   if (!match) return null;
   try {
@@ -22,7 +23,7 @@ function extractFillForm(content: string): Record<string, unknown> | null {
 export function useAiChat(config: AiEntryConfig) {
   const messages = ref<ChatMessage[]>([]);
   const loading = ref(false);
-  const previewParams = ref<Record<string, unknown> | null>(null);
+  const previewParams = ref<TableRow | null>(null);
 
   function buildApiMessages(userText: string) {
     const apiMessages: { role: string; content: string }[] = [
@@ -61,7 +62,7 @@ export function useAiChat(config: AiEntryConfig) {
       const assistantContent = typeof rawData === 'string'
         ? rawData
         : (rawData && typeof rawData === 'object' && 'content' in rawData)
-          ? String((rawData as Record<string, unknown>).content || '处理中...')
+          ? String((rawData as TableRow).content || '处理中...')
           : String(rawData || '处理中...');
 
       messages.value.push({ role: 'assistant', content: assistantContent });
@@ -82,7 +83,7 @@ export function useAiChat(config: AiEntryConfig) {
     previewParams.value = null;
   }
 
-  function confirmParams(): Record<string, unknown> {
+  function confirmParams(): TableRow {
     const params = previewParams.value || {};
     return { ...params };
   }

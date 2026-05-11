@@ -7,6 +7,7 @@ import { createUser, activateUser, deactivateUser } from '@/api/factory';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, View, Edit, Key } from '@element-plus/icons-vue';
 import type { FormInstance, FormRules } from 'element-plus';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -14,7 +15,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({ username: '', roleCode: '' });
 
@@ -171,9 +172,9 @@ async function handleCreateUser() {
 
 // View/Edit/Reset handlers
 const viewDialogVisible = ref(false);
-const viewUser = ref<Record<string, unknown>>({});
+const viewUser = ref<TableRow>({});
 
-function handleViewUser(row: Record<string, unknown>) {
+function handleViewUser(row: TableRow) {
   viewUser.value = row;
   viewDialogVisible.value = true;
 }
@@ -190,7 +191,7 @@ const editForm = reactive({
   roleCode: ''
 });
 
-function handleEditUser(row: Record<string, unknown>) {
+function handleEditUser(row: TableRow) {
   editForm.id = row.id;
   editForm.username = row.username;
   editForm.email = row.email || '';
@@ -228,7 +229,7 @@ async function handleSaveEdit() {
   }
 }
 
-async function handleResetPassword(row: Record<string, unknown>) {
+async function handleResetPassword(row: TableRow) {
   if (!factoryId.value) return;
   try {
     const { value: newPassword } = await ElMessageBox.prompt(
@@ -259,7 +260,7 @@ async function handleResetPassword(row: Record<string, unknown>) {
   }
 }
 
-async function handleToggleActive(row: Record<string, unknown>) {
+async function handleToggleActive(row: TableRow) {
   if (!factoryId.value) return;
   try {
     await ElMessageBox.confirm(

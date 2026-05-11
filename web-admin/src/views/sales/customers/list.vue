@@ -9,6 +9,7 @@ import type { FormInstance } from 'element-plus';
 import DynamicEntityForm from '@/components/DynamicEntityForm.vue';
 import type { FieldConfig } from '@/config/entityFieldConfigs';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 // 客户扩展字段 — 添加新字段只需在此数组加一行
 const customerExtendedFields: FieldConfig[] = [
@@ -26,7 +27,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -126,7 +127,7 @@ function handleAdd() {
   dialogVisible.value = true;
 }
 
-function handleView(row: Record<string, unknown>) {
+function handleView(row: TableRow) {
   dialogMode.value = 'view';
   Object.assign(formData, {
     id: row.id,
@@ -143,7 +144,7 @@ function handleView(row: Record<string, unknown>) {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   dialogMode.value = 'edit';
   Object.assign(formData, {
     id: row.id,
@@ -166,7 +167,7 @@ async function handleSubmit() {
   await formRef.value.validate();
   submitting.value = true;
   try {
-    const payload: Record<string, unknown> = {
+    const payload: TableRow = {
       name: formData.name,
       contactPerson: formData.contactPerson,
       phone: formData.phone,
@@ -178,7 +179,7 @@ async function handleSubmit() {
       status: formData.status,  // T10: P2.2 状态可编辑
       // 扩展字段自动收集
       ...Object.fromEntries(
-        customerExtendedFields.map(f => [f.key, (formData as Record<string, unknown>)[f.key] ?? null])
+        customerExtendedFields.map(f => [f.key, (formData as TableRow)[f.key] ?? null])
       ),
     };
     let res;
@@ -223,7 +224,7 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(`确定删除客户「${row.name}」吗？`, '删除确认', {
       type: 'warning',
@@ -359,7 +360,7 @@ async function handleDelete(row: Record<string, unknown>) {
         <el-divider content-position="left">扩展信息</el-divider>
         <DynamicEntityForm
           :fields="customerExtendedFields"
-          :model-value="formData as Record<string, unknown>"
+          :model-value="formData as TableRow"
           @update:model-value="Object.assign(formData, $event)"
           :readonly="isViewMode"
           :columns="2"

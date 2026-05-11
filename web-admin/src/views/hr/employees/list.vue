@@ -6,6 +6,7 @@ import { get, post, put } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 
 // Apr 20 Bug BR-10 fix: 员工管理之前无检索, 用户报告"未见检索功能"
@@ -33,17 +34,17 @@ async function loadData() {
     const basePath = searchForm.keyword.trim()
       ? `/${factoryId.value}/users/search`
       : `/${factoryId.value}/users`;
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const params: TableRow = { page: pagination.value.page, size: pagination.value.size };
     if (searchForm.keyword.trim()) params.keyword = searchForm.keyword.trim();
     const response = await get(basePath, { params });
     if (response.success && response.data) {
       let rows = response.data.content || [];
       // Apr 20 BR-10: 前端 filter roleCode + isActive (后端无参数)
       if (searchForm.roleCode) {
-        rows = rows.filter((u: Record<string, unknown>) => (u.roleCode || u.role) === searchForm.roleCode);
+        rows = rows.filter((u: TableRow) => (u.roleCode || u.role) === searchForm.roleCode);
       }
       if (searchForm.isActive !== null) {
-        rows = rows.filter((u: Record<string, unknown>) => {
+        rows = rows.filter((u: TableRow) => {
           const active = u.isActive === true || u.status === 'ACTIVE';
           return active === searchForm.isActive;
         });
@@ -132,7 +133,7 @@ function handleAdd() {
   dialogVisible.value = true;
 }
 
-function handleView(row: Record<string, unknown>) {
+function handleView(row: TableRow) {
   dialogMode.value = 'view';
   Object.assign(formData, {
     id: row.id,
@@ -147,7 +148,7 @@ function handleView(row: Record<string, unknown>) {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   dialogMode.value = 'edit';
   Object.assign(formData, {
     id: row.id,

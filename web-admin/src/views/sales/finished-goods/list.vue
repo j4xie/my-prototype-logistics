@@ -6,13 +6,14 @@ import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -22,7 +23,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = {
+    const params: TableRow = {
       page: pagination.value.page,
       size: pagination.value.size,
     };
@@ -44,11 +45,11 @@ function handleSizeChange(size: number) { pagination.value.size = size; paginati
 function handleSearch() { pagination.value.page = 1; loadData(); }
 function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
 
-function availableQty(row: Record<string, unknown>) {
+function availableQty(row: TableRow) {
   return (row.producedQuantity || 0) - (row.shippedQuantity || 0) - (row.reservedQuantity || 0);
 }
 
-function statusType(row: Record<string, unknown>) {
+function statusType(row: TableRow) {
   const avail = availableQty(row);
   if (avail <= 0) return 'danger';
   if (avail < (row.producedQuantity || 1) * 0.2) return 'warning';

@@ -6,6 +6,7 @@ import { get, post } from '@/api/request';
 import { ElMessage, type FormInstance } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const customerMap = ref<Record<string, string>>({});
 const searchKeyword = ref('');
@@ -32,7 +33,7 @@ async function loadCustomers() {
     if (res.success && res.data) {
       const list = res.data.content || [];
       const map: Record<string, string> = {};
-      list.forEach((c: Record<string, unknown>) => { if (c.id && c.name) map[String(c.id)] = String(c.name); });
+      list.forEach((c: TableRow) => { if (c.id && c.name) map[String(c.id)] = String(c.name); });
       customerMap.value = map;
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载客户数据失败');
@@ -45,7 +46,7 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const params: Record<string, unknown> = {
+    const params: TableRow = {
       page: pagination.value.page - 1,
       size: pagination.value.size,
     };
@@ -60,7 +61,7 @@ async function loadData() {
       // accepts startDate/endDate params.
       if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
         const [from, to] = dateRange.value;
-        rows = rows.filter((r: Record<string, unknown>) => {
+        rows = rows.filter((r: TableRow) => {
           const d = String(r.shipmentDate || r.createdAt || '').slice(0, 10);
           return d && d >= from && d <= to;
         });
@@ -94,9 +95,9 @@ function handleReset() {
 
 // ==================== View ====================
 const viewDialogVisible = ref(false);
-const viewRecord = ref<Record<string, unknown> | null>(null);
+const viewRecord = ref<TableRow | null>(null);
 
-function handleView(row: Record<string, unknown>) {
+function handleView(row: TableRow) {
   viewRecord.value = row;
   viewDialogVisible.value = true;
 }
@@ -151,7 +152,7 @@ async function loadCustomerOptions() {
   try {
     const res = await get(`/${factoryId.value}/customers`, { params: { page: 1, size: 200 } });
     if (res.success && res.data) {
-      const list = (res.data.content || []) as Array<Record<string, unknown>>;
+      const list = (res.data.content || []) as Array<TableRow>;
       customerOptions.value = list
         .filter(c => c.id && c.name)
         .map(c => ({ id: String(c.id), name: String(c.name) }));
@@ -173,7 +174,7 @@ async function submitCreateForm() {
   }
   submitting.value = true;
   try {
-    const payload: Record<string, unknown> = { ...createForm.value };
+    const payload: TableRow = { ...createForm.value };
     if (!payload.unitPrice) delete payload.unitPrice;
     const res = await post(`/${factoryId.value}/shipments`, payload);
     if (res.success) {

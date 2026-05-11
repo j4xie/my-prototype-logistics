@@ -6,6 +6,7 @@ import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -104,15 +105,15 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function isActive(row: Record<string, unknown>) {
+function isActive(row: TableRow) {
   return row.status === 'ACTIVE' || row.isActive === true;
 }
 
-function getStatusType(row: Record<string, unknown>) {
+function getStatusType(row: TableRow) {
   return isActive(row) ? 'success' : 'info';
 }
 
-function getStatusText(row: Record<string, unknown>) {
+function getStatusText(row: TableRow) {
   return isActive(row) ? '合作中' : '已停用';
 }
 
@@ -126,7 +127,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleView(row: Record<string, unknown>) {
+function handleView(row: TableRow) {
   Object.assign(form, {
     id: row.id || '',
     name: row.name || '',
@@ -142,7 +143,7 @@ function handleView(row: Record<string, unknown>) {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   Object.assign(form, {
     id: row.id || '',
     name: row.name || '',
@@ -165,7 +166,7 @@ async function handleSubmit() {
 
   submitting.value = true;
   try {
-    const payload: Record<string, unknown> = {
+    const payload: TableRow = {
       name: form.name,
       contactPerson: form.contactPerson,
       phone: form.phone,
@@ -219,7 +220,7 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(`确定删除供应商「${row.name}」吗？`, '删除确认', {
       type: 'warning',

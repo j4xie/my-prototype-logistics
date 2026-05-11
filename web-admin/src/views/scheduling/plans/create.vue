@@ -19,14 +19,15 @@ import {
   Plus,
   Delete
 } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const batches = ref<Record<string, unknown>[]>([]);
-const productionLines = ref<Record<string, unknown>[]>([]);
+const batches = ref<TableRow[]>([]);
+const productionLines = ref<TableRow[]>([]);
 
 // 表单数据
 const form = ref({

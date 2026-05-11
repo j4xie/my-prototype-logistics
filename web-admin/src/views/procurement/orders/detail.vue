@@ -10,6 +10,7 @@ import { ArrowLeft } from '@element-plus/icons-vue';
 import { handleCatchError } from '@/utils/errorToast';
 import { formatAmount } from '@/utils/tableFormatters';
 import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
+import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,10 +23,10 @@ const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
-const order = ref<Record<string, unknown> | null>(null);
+const order = ref<TableRow | null>(null);
 const notFound = ref(false);
 const notFoundMessage = ref('');
-const receives = ref<Record<string, unknown>[]>([]);
+const receives = ref<TableRow[]>([]);
 const receiveDialogVisible = ref(false);
 const receiveForm = ref<{ supplierId: string; receiveDate: string; items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ supplierId: '', receiveDate: '', items: [] });
 
@@ -123,7 +124,7 @@ function openReceiveDialog() {
   // Auto-populate supplierId from PO and default receiveDate to today
   receiveForm.value.supplierId = (order.value.supplierId as string) || '';
   receiveForm.value.receiveDate = new Date().toISOString().slice(0, 10);
-  receiveForm.value.items = (order.value.items as Record<string, unknown>[]).map((it) => ({
+  receiveForm.value.items = (order.value.items as TableRow[]).map((it) => ({
     materialTypeId: it.materialTypeId,
     materialName: it.materialName,
     receivedQuantity: it.quantity - (it.receivedQuantity || 0),

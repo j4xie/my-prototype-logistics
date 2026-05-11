@@ -52,6 +52,7 @@ import type { ChartConfig } from '@/types/smartbi';
 import { useCapability } from '@/composables/useCapability';
 import CapabilityGate from '@/components/CapabilityGate.vue';
 import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
+import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -175,11 +176,11 @@ const noChartForTab = computed(() => {
   if (!chartConfig.value && !mainDynamicConfig.value) return true;
   // Also treat charts with empty or all-zero data as "no chart"
   if (chartConfig.value && 'data' in chartConfig.value) {
-    const data = (chartConfig.value as Record<string, unknown>).data;
+    const data = (chartConfig.value as TableRow).data;
     if (Array.isArray(data)) {
       if (data.length === 0) return true;
       // All-zero data: every numeric value in every item is 0
-      const allZero = data.every((item: Record<string, unknown>) =>
+      const allZero = data.every((item: TableRow) =>
         Object.values(item).every(v => typeof v === 'string' || v === 0 || v === null)
       );
       if (allZero) return true;
@@ -339,8 +340,8 @@ interface ChartConfig_Local {
   xAxisField?: string;
   yAxisField?: string;
   seriesField?: string;
-  data?: Array<Record<string, unknown>>;
-  options?: Record<string, unknown>;
+  data?: Array<TableRow>;
+  options?: TableRow;
 }
 
 interface DynamicChartConfig {
@@ -358,7 +359,7 @@ interface DynamicChartConfig {
     position?: string;
     min?: number;
     max?: number;
-    axisLabel?: Record<string, unknown>;
+    axisLabel?: TableRow;
   }>;
   legend?: {
     show?: boolean;
@@ -374,15 +375,15 @@ interface DynamicChartConfig {
     stack?: string;
     smooth?: boolean;
     areaStyle?: boolean;
-    itemStyle?: Record<string, unknown>;
-    label?: Record<string, unknown>;
+    itemStyle?: TableRow;
+    label?: TableRow;
   }>;
   tooltip?: {
     trigger?: string;
-    axisPointer?: Record<string, unknown>;
+    axisPointer?: TableRow;
     formatter?: string;
   };
-  options?: Record<string, unknown>;
+  options?: TableRow;
 }
 
 const chartConfig = ref<ChartConfig_Local | DynamicChartConfig | null>(null);
@@ -420,13 +421,13 @@ const dataInfo = ref<{
 });
 
 // Raw dynamic data for chart rebuilding
-const dynamicRawData = ref<Record<string, unknown>[]>([]);
+const dynamicRawData = ref<TableRow[]>([]);
 
 /**
  * Build exploration charts from uploaded dynamic data
  * Uses Python recommend + batch build for multi-chart views
  */
-async function buildExplorationCharts(data: Record<string, unknown>[]) {
+async function buildExplorationCharts(data: TableRow[]) {
   if (!data || data.length === 0) return;
 
   explorationLoading.value = true;
@@ -725,7 +726,7 @@ async function loadDynamicData(uploadId: number) {
       try {
         const tableRes = await getUploadTableData(uploadId, 0, 2000);
         if (tableRes.success && tableRes.data && tableRes.data.data.length > 0) {
-          const rawRows = tableRes.data.data as Record<string, unknown>[];
+          const rawRows = tableRes.data.data as TableRow[];
           buildExplorationCharts(rawRows);
 
           // P1-1 fallback: if backend returned no/empty KPIs, compute from raw data
@@ -820,7 +821,7 @@ function updateKpiFromDynamicData(kpiCards: DynamicAnalysisResponse['kpiCards'])
 //   A) Column-oriented: column names contain financial keywords (e.g. "营业收入" column)
 //   B) Row-oriented (profit tables): a text column contains row labels like "营业收入"
 //      These labels may have encoding issues but partial Chinese text survives
-function computeKpiFromRawData(rows: Record<string, unknown>[]) {
+function computeKpiFromRawData(rows: TableRow[]) {
   if (!rows.length) return;
   const columns = Object.keys(rows[0]);
 
@@ -1080,9 +1081,9 @@ async function loadFinanceData() {
 
     if (response.success && response.data) {
       // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
-      const raw = response.data as Record<string, unknown>;
+      const raw = response.data as TableRow;
       const data = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
-        ? raw.data as Record<string, unknown>
+        ? raw.data as TableRow
         : raw;
 
       // 提取 metrics 数据到 kpiData
@@ -1110,8 +1111,8 @@ async function loadFinanceData() {
             'NET_MARGIN': 'netProfitMargin',
             'TOTAL_COST': 'totalCost',
           };
-          const flat: Record<string, unknown> = {};
-          for (const m of data.metrics as Array<Record<string, unknown>>) {
+          const flat: TableRow = {};
+          for (const m of data.metrics as Array<TableRow>) {
             const code = String(m.metricCode || '');
             const mappedKey = metricCodeMap[code];
             if (mappedKey) flat[mappedKey] = m.value;
@@ -1137,16 +1138,16 @@ async function loadFinanceData() {
           }
           updateKpiDataFromMetrics(flat);
         } else {
-          updateKpiDataFromMetrics(data.metrics as Record<string, unknown>);
+          updateKpiDataFromMetrics(data.metrics as TableRow);
         }
       }
 
       // Extract aging bucket AMOUNTS from agingChart.data into KPI cards
       if (data.agingChart && typeof data.agingChart === 'object') {
-        const agingData = (data.agingChart as Record<string, unknown>).data;
+        const agingData = (data.agingChart as TableRow).data;
         if (Array.isArray(agingData)) {
           const isPayable = analysisType.value === 'payable';
-          for (const bucket of agingData as Array<Record<string, unknown>>) {
+          for (const bucket of agingData as Array<TableRow>) {
             const label = String(bucket.agingBucket || '');
             const amount = Number(bucket.amount || 0);
             if (isPayable) {
@@ -1164,13 +1165,13 @@ async function loadFinanceData() {
 
       // 提取 overview 数据 (当没有 analysisType 时)
       if (data.overview) {
-        const overview = data.overview as Record<string, unknown>;
+        const overview = data.overview as TableRow;
         if (overview.kpiCards) {
-          updateKpiDataFromKpiCards(overview.kpiCards as Array<Record<string, unknown>>);
+          updateKpiDataFromKpiCards(overview.kpiCards as Array<TableRow>);
         }
         // Extract chart from overview.charts map — pick chart matching current analysisType
         if (overview.charts && typeof overview.charts === 'object') {
-          const charts = overview.charts as Record<string, unknown>;
+          const charts = overview.charts as TableRow;
           const chartKeys = Object.keys(charts);
           // Map analysis type to chart keyword priorities
           const keywordMap: Record<string, string[]> = {
@@ -1198,7 +1199,7 @@ async function loadFinanceData() {
             budget: ['预算', '达成', '偏差', 'budget', 'variance'],
           };
           const keywords = typeKeywords[analysisType.value] || [];
-          const allInsights = (overview.aiInsights as Array<Record<string, unknown>>).map(insight => ({
+          const allInsights = (overview.aiInsights as Array<TableRow>).map(insight => ({
             level: String(insight.level || 'info').toLowerCase() === 'red' ? 'danger' as const : 'warning' as const,
             title: String(insight.category || ''),
             description: String(insight.message || ''),
@@ -1215,7 +1216,7 @@ async function loadFinanceData() {
 
       // Also try profitMetrics for KPI data
       if (data.profitMetrics && Array.isArray(data.profitMetrics)) {
-        updateKpiDataFromKpiCards(data.profitMetrics as Array<Record<string, unknown>>);
+        updateKpiDataFromKpiCards(data.profitMetrics as Array<TableRow>);
       }
 
       // 提取图表配置 (按analysisType优先匹配, 避免budget显示profit趋势)
@@ -1244,7 +1245,7 @@ async function loadFinanceData() {
         if (data.warnings) {
           warnings.value = data.warnings as WarningItem[];
         } else if (data.overdueRanking) {
-          const ranking = data.overdueRanking as Array<Record<string, unknown>>;
+          const ranking = data.overdueRanking as Array<TableRow>;
           warnings.value = ranking.slice(0, 5).map((item, index) => ({
             level: index < 2 ? 'danger' : 'warning',
             title: String(item.customerName || '未知客户'),
@@ -1293,7 +1294,7 @@ async function loadFinanceData() {
   }
 }
 
-function updateKpiDataFromMetrics(metrics: Record<string, unknown>) {
+function updateKpiDataFromMetrics(metrics: TableRow) {
   // 利润相关
   if (metrics.grossProfit !== undefined) kpiData.value.grossProfit = Number(metrics.grossProfit);
   if (metrics.netProfit !== undefined) kpiData.value.netProfit = Number(metrics.netProfit);
@@ -1343,7 +1344,7 @@ function updateKpiDataFromMetrics(metrics: Record<string, unknown>) {
   if (metrics.usageRate !== undefined) kpiData.value.budgetUsageRate = Number(metrics.usageRate);
 }
 
-function updateKpiDataFromKpiCards(kpiCards: Array<Record<string, unknown>>) {
+function updateKpiDataFromKpiCards(kpiCards: Array<TableRow>) {
   for (const card of kpiCards) {
     const label = String(card.title || card.metricName || card.label || '');
     const rawVal = card.rawValue ?? card.value ?? 0;
@@ -1488,9 +1489,9 @@ function initChart() {
 function updateChart() {
   // Skip rendering if chart data is all zeros (e.g. empty budget/payable)
   if (chartConfig.value && 'data' in chartConfig.value) {
-    const data = (chartConfig.value as Record<string, unknown>).data;
+    const data = (chartConfig.value as TableRow).data;
     if (Array.isArray(data) && data.length > 0) {
-      const allZero = data.every((item: Record<string, unknown>) =>
+      const allZero = data.every((item: TableRow) =>
         Object.values(item).every(v => typeof v === 'string' || v === 0 || v === null)
       );
       if (allZero) {
@@ -1552,8 +1553,8 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
       formatter: (params: unknown) => {
         const items = Array.isArray(params) ? params : [params];
         if (items.length === 0) return '';
-        const title = (items[0] as Record<string, unknown>).axisValueLabel || (items[0] as Record<string, unknown>).name || '';
-        const lines = items.map((p: Record<string, unknown>) => {
+        const title = (items[0] as TableRow).axisValueLabel || (items[0] as TableRow).name || '';
+        const lines = items.map((p: TableRow) => {
           const val = Number(p.value ?? 0);
           const name = String(p.seriesName || '');
           const color = String((p.color as string) || '#333');
@@ -1609,7 +1610,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         { type: 'inside', start: 0, end: Math.min(100, Math.round(12 / xData.length * 100)) },
         { type: 'slider', start: 0, end: Math.min(100, Math.round(12 / xData.length * 100)), bottom: 5 }
       ];
-      (option.grid as Record<string, unknown>).bottom = '20%';
+      (option.grid as TableRow).bottom = '20%';
     }
   }
 
@@ -1659,8 +1660,8 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
 }
 
 function buildPieChart(config: ChartConfig_Local): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = config.xAxisField || (config as TableRow).xaxisField as string || 'name';
+  const yField = config.yAxisField || (config as TableRow).yaxisField as string || 'value';
 
   const pieData = config.data?.map(item => ({
     name: String(item[xField] || ''),
@@ -1697,8 +1698,8 @@ function buildPieChart(config: ChartConfig_Local): echarts.EChartsOption {
 }
 
 function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
-  const xField = config.xAxisField || (config as Record<string, unknown>).xaxisField as string || 'name';
-  const yField = config.yAxisField || (config as Record<string, unknown>).yaxisField as string || 'value';
+  const xField = config.xAxisField || (config as TableRow).xaxisField as string || 'name';
+  const yField = config.yAxisField || (config as TableRow).yaxisField as string || 'value';
   const chartType = config.chartType?.toLowerCase() || 'bar';
 
   const xData = config.data?.map(item => String(item[xField] || '')) || [];
@@ -1715,13 +1716,13 @@ function buildAxisChart(config: ChartConfig_Local): echarts.EChartsOption {
       axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' },
       formatter: (params: unknown) => {
         const items = Array.isArray(params) ? params : [params];
-        const lines = items.map((p: Record<string, unknown>) => {
+        const lines = items.map((p: TableRow) => {
           const val = Number(p.value || 0);
           const formatted = formatAxisValue(val);
           return `${p.seriesName || ''}: ${formatted}`;
         });
         // Use original label (not truncated) in tooltip
-        const idx = (items[0] as Record<string, unknown>)?.dataIndex as number;
+        const idx = (items[0] as TableRow)?.dataIndex as number;
         return `<strong>${xData[idx] || ''}</strong><br/>${lines.join('<br/>')}`;
       }
     },

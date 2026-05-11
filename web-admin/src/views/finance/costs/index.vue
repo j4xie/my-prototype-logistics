@@ -5,16 +5,17 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh, Search } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const overview = ref<Record<string, unknown> | null>(null);
-const transactions = ref<Record<string, unknown>[]>([]);
+const overview = ref<TableRow | null>(null);
+const transactions = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
-const agingData = ref<Record<string, unknown>[]>([]);
+const agingData = ref<TableRow[]>([]);
 const searchType = ref('');
 
 onMounted(() => {
@@ -51,7 +52,7 @@ async function loadTransactions() {
   if (!factoryId.value) return;
 
   try {
-    const params: Record<string, unknown> = {
+    const params: TableRow = {
       page: pagination.value.page,
       size: pagination.value.size
     };

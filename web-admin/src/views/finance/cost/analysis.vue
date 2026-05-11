@@ -5,13 +5,14 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { TrendCharts, Money, Document } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
-const costData = ref<Record<string, unknown> | null>(null);
+const costData = ref<TableRow | null>(null);
 const dateRange = ref<[Date, Date] | null>(null);
 
 onMounted(() => {

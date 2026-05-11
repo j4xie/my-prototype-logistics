@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,11 +13,11 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('rd'));
 const currentUser = computed(() => {
   const u = authStore.user.value || authStore.user;
-  return (u as Record<string, unknown>)?.fullName || (u as Record<string, unknown>)?.username || '';
+  return (u as TableRow)?.fullName || (u as TableRow)?.username || '';
 });
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const activeTab = ref('samples');
 
@@ -45,7 +46,7 @@ async function loadData() {
   loading.value = true;
   try {
     const endpoint = activeTab.value === 'requests' ? 'requests' : activeTab.value === 'quotations' ? 'quotations' : 'samples';
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const params: TableRow = { page: pagination.value.page, size: pagination.value.size };
     if (activeTab.value === 'samples') {
       if (searchForm.value.status) params.status = searchForm.value.status;
       if (searchForm.value.customerName) params.customerName = searchForm.value.customerName;
@@ -58,11 +59,11 @@ async function loadData() {
       if (activeTab.value === 'samples') {
         if (searchForm.value.customerName) {
           const kw = searchForm.value.customerName.toLowerCase();
-          items = items.filter((r: Record<string, unknown>) => String(r.customerName || '').toLowerCase().includes(kw));
+          items = items.filter((r: TableRow) => String(r.customerName || '').toLowerCase().includes(kw));
         }
         if (searchForm.value.name) {
           const kw = searchForm.value.name.toLowerCase();
-          items = items.filter((r: Record<string, unknown>) => String(r.name || '').toLowerCase().includes(kw));
+          items = items.filter((r: TableRow) => String(r.name || '').toLowerCase().includes(kw));
         }
       }
       tableData.value = items;
@@ -146,7 +147,7 @@ const sampleForm = ref({
 });
 
 // 业务员列表
-const salespersonList = ref<Record<string, unknown>[]>([]);
+const salespersonList = ref<TableRow[]>([]);
 
 async function loadSalespersons() {
   if (!factoryId.value) return;
@@ -190,7 +191,7 @@ const trackingSampleId = ref('');
 const trackingRecords = ref<{ date: string; content: string; attachment: string; recorder: string }[]>([]);
 const newTracking = ref({ date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' });
 
-async function openTrackingDialog(row: Record<string, unknown>) {
+async function openTrackingDialog(row: TableRow) {
   trackingSampleId.value = String(row.id);
   trackingRecords.value = [];
   newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: String(currentUser.value) };
@@ -200,7 +201,7 @@ async function openTrackingDialog(row: Record<string, unknown>) {
   try {
     const res = await get(`/${factoryId.value}/rd/samples/${row.id}/tracking-records`);
     if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-      trackingRecords.value = (res.data as Record<string, unknown>[]).map((r) => ({
+      trackingRecords.value = (res.data as TableRow[]).map((r) => ({
         date: r.recordedAt ? String(r.recordedAt).slice(0, 10) : '',
         content: String(r.content || ''),
         attachment: String(r.attachmentUrl || ''),

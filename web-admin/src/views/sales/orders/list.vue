@@ -15,13 +15,14 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
+import type { TableRow } from '@/types/api';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
 const taxGroupInvoiceOrder = ref<{ id: string; orderNumber: string; customerName: string; totalAmount: number | string }>({
   id: '', orderNumber: '', customerName: '', totalAmount: 0,
 });
-function openTaxGroupInvoice(row: Record<string, unknown>) {
+function openTaxGroupInvoice(row: TableRow) {
   taxGroupInvoiceOrder.value = {
     id: String(row.id || ''),
     orderNumber: String(row.orderNumber || ''),
@@ -51,7 +52,7 @@ const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT'
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
 // Apr 20 Bug BR-07 fix: 客户报告"未见检索功能", 补 keyword 搜索 (订单号/客户名)
@@ -126,7 +127,7 @@ const form = ref({
   items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
   contractFileUrl: '' as string | null,
   contractFileName: '' as string | null,
-  customFields: {} as Record<string, unknown>,
+  customFields: {} as TableRow,
   version: null as number | null,  // optimistic lock — server returns 409 on stale
 });
 
@@ -157,9 +158,9 @@ function clearContract() {
   form.value.contractFileUrl = '';
   form.value.contractFileName = '';
 }
-const customers = ref<Record<string, unknown>[]>([]);
-const products = ref<Record<string, unknown>[]>([]);
-const salesEmployees = ref<Record<string, unknown>[]>([]);
+const customers = ref<TableRow[]>([]);
+const products = ref<TableRow[]>([]);
+const salesEmployees = ref<TableRow[]>([]);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -223,7 +224,7 @@ async function loadData() {
       : `/${factoryId.value}/sales/orders`;
     // P1-6 smart tabs do client-side filter → load larger batch
     const effectiveSize = activeViewTab.value === 'all' ? pagination.value.size : 200;
-    const params: Record<string, unknown> = { page: pagination.value.page, size: effectiveSize };
+    const params: TableRow = { page: pagination.value.page, size: effectiveSize };
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(url, { params });
     if (res.success && res.data) {
@@ -232,7 +233,7 @@ async function loadData() {
       const kw = searchKeyword.value.trim();
       if (kw) {
         const lower = kw.toLowerCase();
-        rows = rows.filter((r: Record<string, unknown>) =>
+        rows = rows.filter((r: TableRow) =>
           String(r.orderNumber || '').toLowerCase().includes(lower) ||
           String(r.customerName || '').toLowerCase().includes(lower)
         );
@@ -281,12 +282,12 @@ async function loadSalesEmployees() {
     if (res.success && res.data) {
       const allUsers = res.data.content || [];
       salesEmployees.value = allUsers.filter(
-        (u: Record<string, unknown>) => salesRoles.includes(String(u.roleCode || u.role || ''))
+        (u: TableRow) => salesRoles.includes(String(u.roleCode || u.role || ''))
           || String(u.departmentName || u.department || '').includes('销售')
       );
       // If no employees matched the filter, show all active employees as fallback
       if (salesEmployees.value.length === 0) {
-        salesEmployees.value = allUsers.filter((u: Record<string, unknown>) => u.isActive !== false);
+        salesEmployees.value = allUsers.filter((u: TableRow) => u.isActive !== false);
       }
     }
   } catch { /* silently fail — user can still type manually */ }
@@ -295,8 +296,8 @@ async function loadSalesEmployees() {
 function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }); }
 function removeItem(idx: number) { if (form.value.items.length > 1) form.value.items.splice(idx, 1); }
 
-function onProductSelect(item: Record<string, unknown>, productId: string) {
-  const p = products.value.find((x: Record<string, unknown>) => x.id === productId);
+function onProductSelect(item: TableRow, productId: string) {
+  const p = products.value.find((x: TableRow) => x.id === productId);
   if (p) {
     item.specification = p.specification || p.packageSpec || '';
     item.unit = p.unit || item.unit || 'kg';
@@ -318,16 +319,16 @@ function onProductSelect(item: Record<string, unknown>, productId: string) {
  * R2 fix #3: 精确匹配 trim() === '抄码', 不用 includes (避免误报).
  * 与 procurement/orders/list.vue isAbacaItem 同模式 (M-1 follow-up 抽 composable).
  */
-function isAbacaItem(item: Record<string, unknown>): boolean {
+function isAbacaItem(item: TableRow): boolean {
   return String(item.specification || '').trim() === '抄码';
 }
 
-function calcBox(item: Record<string, unknown>) {
+function calcBox(item: TableRow) {
   if (isAbacaItem(item)) {
     item.boxQuantity = null;  // 抄码品: 不算箱数
     return;
   }
-  const p = products.value.find((x: Record<string, unknown>) => x.id === item.productTypeId);
+  const p = products.value.find((x: TableRow) => x.id === item.productTypeId);
   if (p?.boxConversionCoefficient && Number(p.boxConversionCoefficient) > 0 && Number(item.quantity) > 0) {
     item.boxQuantity = Math.round((Number(item.quantity) / Number(p.boxConversionCoefficient)) * 100) / 100;
   }
@@ -338,15 +339,15 @@ async function handleCreate() {
   if (!form.value.items || form.value.items.length === 0) return ElMessage.warning('请至少添加一个订单明细');
   // Apr 18 2026 bug #54: 用户报告"信息填写完整 无法提交 显示不为空" — 实际是前端
   // 缺 productTypeId 空值校验, 漏到后端才 reject, 用户看文案困惑。
-  if (form.value.items.some((i: Record<string, unknown>) => !i.productTypeId)) return ElMessage.warning('请为所有明细选择产品');
+  if (form.value.items.some((i: TableRow) => !i.productTypeId)) return ElMessage.warning('请为所有明细选择产品');
   // 数量校验: 不允许0或负数
-  if (form.value.items.some((i: Record<string, unknown>) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
+  if (form.value.items.some((i: TableRow) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
   // 单位校验
-  if (form.value.items.some((i: Record<string, unknown>) => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
+  if (form.value.items.some((i: TableRow) => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
   // 销售单价校验
-  if (form.value.items.some((i: Record<string, unknown>) => i.unitPrice == null || Number(i.unitPrice) < 0)) return ElMessage.warning('请填写所有明细的销售单价');
+  if (form.value.items.some((i: TableRow) => i.unitPrice == null || Number(i.unitPrice) < 0)) return ElMessage.warning('请填写所有明细的销售单价');
   // SKU 重复校验
-  const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
+  const productIds = form.value.items.map((i: TableRow) => i.productTypeId).filter(Boolean);
   if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');
   try {
     const res = await post(`/${factoryId.value}/sales/orders`, form.value);
@@ -375,7 +376,7 @@ async function handleAction(orderId: string, action: string) {
 
 const editingOrderId = ref<string | null>(null);
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   editingOrderId.value = String(row.id);
   form.value = {
     customerId: String(row.customerId || row.customer?.id || ''),
@@ -386,14 +387,14 @@ function handleEdit(row: Record<string, unknown>) {
     shippingIncluded: !!row.shippingIncluded,
     shippingFee: Number(row.shippingFee || 0),
     extraFees: Array.isArray(row.extraFees)
-      ? (row.extraFees as Array<Record<string, unknown>>).map((f) => ({
+      ? (row.extraFees as Array<TableRow>).map((f) => ({
           name: String(f.name || ''),
           amount: Number(f.amount || 0),
           remark: String(f.remark || ''),
         }))
       : [],
     items: Array.isArray(row.items) && row.items.length > 0
-      ? row.items.map((item: Record<string, unknown>) => ({
+      ? row.items.map((item: TableRow) => ({
           productTypeId: String(item.productTypeId || item.productType?.id || ''),
           quantity: Number(item.quantity || 0),
           unit: String(item.unit || 'kg'),
@@ -407,7 +408,7 @@ function handleEdit(row: Record<string, unknown>) {
           taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
         }))
       : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }],
-    customFields: {} as Record<string, unknown>,
+    customFields: {} as TableRow,
     version: typeof row.version === 'number' ? row.version : null,
   };
   dialogVisible.value = true;
@@ -455,7 +456,7 @@ async function openCreateDialog() {
     shippingFee: 0,
     extraFees: [],
     items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
-    customFields: {} as Record<string, unknown>,
+    customFields: {} as TableRow,
   };
   // 张权 Apr 28 反馈: 新建对话框 dropdown 显示 onMounted 时的旧 cache.
   // 强制刷新让用户刚建的客户/产品立即可选.
@@ -479,11 +480,11 @@ function handleRefresh() { statusFilter.value = ''; searchKeyword.value = ''; pa
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
 
-function handleAiFill(params: Record<string, unknown>) {
+function handleAiFill(params: TableRow) {
   // Match customerName to customerId
   const customerName = String(params.customerName || '');
   const matched = customers.value.find(
-    (c: Record<string, unknown>) => String(c.name || '').includes(customerName) || customerName.includes(String(c.name || ''))
+    (c: TableRow) => String(c.name || '').includes(customerName) || customerName.includes(String(c.name || ''))
   );
 
   form.value.customerId = matched ? String(matched.id) : '';
@@ -492,10 +493,10 @@ function handleAiFill(params: Record<string, unknown>) {
   form.value.remark = String(params.remark || '');
 
   if (Array.isArray(params.items) && params.items.length > 0) {
-    form.value.items = (params.items as Record<string, unknown>[]).map((item) => {
+    form.value.items = (params.items as TableRow[]).map((item) => {
       const prodName = String(item.productName || '');
       const prodMatch = products.value.find(
-        (p: Record<string, unknown>) => String(p.name || '').includes(prodName) || prodName.includes(String(p.name || ''))
+        (p: TableRow) => String(p.name || '').includes(prodName) || prodName.includes(String(p.name || ''))
       );
       return {
         productTypeId: prodMatch ? String(prodMatch.id) : '',
@@ -510,14 +511,14 @@ function handleAiFill(params: Record<string, unknown>) {
   dialogVisible.value = true;
 }
 
-async function handleQuickDelivery(row: Record<string, unknown>) {
+async function handleQuickDelivery(row: TableRow) {
   const today = new Date().toISOString().slice(0, 10);
   // Build items from order items (each with productTypeId, deliveredQuantity, unit)
-  let items: Record<string, unknown>[] = [];
+  let items: TableRow[] = [];
   if (row.items && row.items.length > 0) {
     items = row.items
-      .filter((item: Record<string, unknown>) => item.productTypeId || item.productType?.id)
-      .map((item: Record<string, unknown>) => ({
+      .filter((item: TableRow) => item.productTypeId || item.productType?.id)
+      .map((item: TableRow) => ({
         productTypeId: item.productTypeId || item.productType?.id,
         productName: item.productName || item.productType?.name,
         deliveredQuantity: item.quantity || 0,
@@ -554,7 +555,7 @@ async function submitQuickDelivery() {
   } catch { /* axios interceptor already displayed error toast */ }
 }
 
-async function handleQuickInvoice(row: Record<string, unknown>) {
+async function handleQuickInvoice(row: TableRow) {
   invoiceForm.value = {
     orderId: row.id,
     counterpartyId: row.customerId || row.customer?.id || '',
@@ -578,7 +579,7 @@ async function submitQuickInvoice() {
   } catch { /* axios interceptor already displayed error toast */ }
 }
 
-async function handleQuickPayment(row: Record<string, unknown>) {
+async function handleQuickPayment(row: TableRow) {
   paymentForm.value = {
     counterpartyId: row.customerId || row.customer?.id || '',
     amount: row.totalAmount || 0,

@@ -14,24 +14,25 @@ import DynamicArrayEditor from './DynamicArrayEditor.vue'
 import LineItemsEditor from './LineItemsEditor.vue'
 import SubTableEditor from './SubTableEditor.vue'
 import AttachmentUploader from './AttachmentUploader.vue'
+import type { TableRow } from '@/types/api';
 
 const props = defineProps<{
   moduleCode: string
   mode: 'create' | 'edit' | 'view'
-  initialData?: Record<string, unknown>
+  initialData?: TableRow
   factoryId?: string
   recordId?: string
 }>()
 
 const emit = defineEmits<{
-  submit: [data: Record<string, unknown>]
+  submit: [data: TableRow]
   cancel: []
 }>()
 
 const authStore = useAuthStore()
 const configStore = useConfigStore()
 const config = ref<EffectiveModuleConfig | null>(null)
-const formData = ref<Record<string, unknown>>({})
+const formData = ref<TableRow>({})
 const loading = ref(false)
 
 // 加载配置
@@ -75,7 +76,7 @@ function resolveDefault(field: EffectiveField): unknown {
 
 function initFormData() {
   if (!config.value) return
-  const data: Record<string, unknown> = {}
+  const data: TableRow = {}
 
   config.value.fields.forEach((field) => {
     const resolvedDefault = resolveDefault(field)
@@ -103,7 +104,7 @@ function initFormData() {
  * dropping the FK link and re-introducing the collision the dual-field migration was meant
  * to solve.
  */
-function readInitialForField(field: { code: string; type?: string; extra?: { referenceConfig?: { valueField?: string } } }, initial: Record<string, unknown>): unknown {
+function readInitialForField(field: { code: string; type?: string; extra?: { referenceConfig?: { valueField?: string } } }, initial: TableRow): unknown {
   if (field.type === 'reference' && field.extra?.referenceConfig?.valueField === 'id') {
     const idKey = `${field.code}Id`
     if (initial[idKey] !== undefined && initial[idKey] !== null) {
@@ -154,7 +155,7 @@ function isReadonly(field: EffectiveField): boolean {
 
 // computedWhen 动态计算值
 const computedValues = computed(() => {
-  const result: Record<string, unknown> = {}
+  const result: TableRow = {}
   if (!config.value) return result
   for (const field of config.value.fields) {
     if (field.computedWhen) {
@@ -177,7 +178,7 @@ function getLabel(field: EffectiveField): string {
  * shadowKey 已在 ReferenceSelector.emitProjectFields (SHADOW_KEY_RE) 校验,
  * 单一 emit 来源, 此处直接 spread 不重复 validate.
  */
-function onTopLevelProject(projected: Record<string, unknown>) {
+function onTopLevelProject(projected: TableRow) {
   for (const [k, v] of Object.entries(projected)) {
     formData.value[k] = v
   }
@@ -201,7 +202,7 @@ function handleSubmit() {
 
   // Canvas V3: Apply computedWhen values into payload (write-back)
   // computedValues are calculated by SpEL at render time; persist them on submit.
-  const payload: Record<string, unknown> = { ...formData.value }
+  const payload: TableRow = { ...formData.value }
   for (const field of config.value.fields) {
     if (field.computedWhen && computedValues.value[field.code] != null) {
       payload[field.code] = computedValues.value[field.code]
@@ -214,8 +215,8 @@ function handleSubmit() {
   // C-6 Task 6 注: 顶层 shadow 字段 (`_` 前缀) 自然被此循环过滤 — 因为我们仅迭代
   // config.value.fields 中声明的字段, shadow 字段不在 schema 中. line_items 字段
   // 内部 row 的 shadow 字段需在下方显式过滤 (单独 helper).
-  const customFields: Record<string, unknown> = {}
-  const jpaPayload: Record<string, unknown> = {}
+  const customFields: TableRow = {}
+  const jpaPayload: TableRow = {}
   for (const field of config.value.fields) {
     let val = payload[field.code]
     if (val === undefined) continue
@@ -223,7 +224,7 @@ function handleSubmit() {
     // C-6 Task 6: line_items 行里的 shadow 字段 (_ 前缀) 在 submit 前过滤,
     // 避免发到后端 (后端不识别这些虚拟字段, 可能 400 reject 或忽略).
     if (field.type === 'line_items' && Array.isArray(val)) {
-      val = (val as Record<string, unknown>[]).map((row) =>
+      val = (val as TableRow[]).map((row) =>
         Object.fromEntries(Object.entries(row).filter(([k]) => !k.startsWith('_')))
       )
     }
@@ -379,7 +380,7 @@ watch(
               <!-- json_array -->
               <DynamicArrayEditor
                 v-else-if="field.type === 'json_array'"
-                v-model="(formData[field.code] as Record<string, unknown>[])"
+                v-model="(formData[field.code] as TableRow[])"
                 :item-schema="(field.extra?.itemSchema as any)"
                 :disabled="isReadonly(field)"
               />
@@ -387,7 +388,7 @@ watch(
               <!-- line_items -->
               <LineItemsEditor
                 v-else-if="field.type === 'line_items'"
-                v-model="(formData[field.code] as Record<string, unknown>[])"
+                v-model="(formData[field.code] as TableRow[])"
                 :item-schema="(field.extra?.itemSchema as any)"
                 :disabled="isReadonly(field)"
               />

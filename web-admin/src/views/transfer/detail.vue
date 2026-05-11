@@ -10,6 +10,7 @@ import { ArrowLeft, InfoFilled } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
 import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
+import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,7 +23,7 @@ const transferId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
-const transfer = ref<Record<string, unknown> | null>(null);
+const transfer = ref<TableRow | null>(null);
 const notFound = ref(false);
 const notFoundMessage = ref('');
 

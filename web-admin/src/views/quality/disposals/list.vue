@@ -6,6 +6,7 @@ import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Check, Close } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('quality'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -31,7 +32,7 @@ const disposalForm = ref({
   notes: ''
 });
 const actionLoading = ref(false);
-const batches = ref<Record<string, unknown>[]>([]);
+const batches = ref<TableRow[]>([]);
 
 onMounted(() => {
   loadData();
@@ -137,7 +138,7 @@ async function submitDisposal() {
   }
 }
 
-async function handleApprove(row: Record<string, unknown>) {
+async function handleApprove(row: TableRow) {
   if (actionLoading.value) return;
   try {
     await ElMessageBox.confirm('确定批准此废弃申请?', '审批确认', { type: 'warning' });
@@ -161,7 +162,7 @@ async function handleApprove(row: Record<string, unknown>) {
   }
 }
 
-async function handleReject(row: Record<string, unknown>) {
+async function handleReject(row: TableRow) {
   if (actionLoading.value) return;
   let reason: string;
   try {
@@ -213,9 +214,9 @@ function getStatusText(status: string) {
 
 // ==================== View ====================
 const viewDialogVisible = ref(false);
-const viewRecord = ref<Record<string, unknown> | null>(null);
+const viewRecord = ref<TableRow | null>(null);
 
-function handleView(row: Record<string, unknown>) {
+function handleView(row: TableRow) {
   viewRecord.value = row;
   viewDialogVisible.value = true;
 }

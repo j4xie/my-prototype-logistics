@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, Refresh, Check, Bell } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('equipment'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchForm = ref({
   keyword: '',
@@ -99,7 +100,7 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-async function handleResolve(row: Record<string, unknown>) {
+async function handleResolve(row: TableRow) {
   try {
     const { value } = await ElMessageBox.prompt('请输入处理说明', '处理告警', {
       inputPattern: /.+/,
@@ -121,7 +122,7 @@ async function handleResolve(row: Record<string, unknown>) {
   }
 }
 
-async function handleAcknowledge(row: Record<string, unknown>) {
+async function handleAcknowledge(row: TableRow) {
   try {
     await ElMessageBox.confirm('确定确认此告警?', '提示', { type: 'warning' });
     const response = await put(`/${factoryId.value}/equipment-alerts/${row.id}/acknowledge`);
@@ -197,9 +198,9 @@ function getAlertTypeText(type: string) {
 
 // 告警详情弹窗
 const detailVisible = ref(false);
-const detailRow = ref<Record<string, unknown>>({});
+const detailRow = ref<TableRow>({});
 
-function handleDetail(row: Record<string, unknown>) {
+function handleDetail(row: TableRow) {
   detailRow.value = row;
   detailVisible.value = true;
 }

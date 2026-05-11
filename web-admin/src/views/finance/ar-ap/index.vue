@@ -6,6 +6,7 @@ import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -15,13 +16,13 @@ const activeTab = ref('overview');
 const loading = ref(false);
 
 // 概览数据
-const overview = ref<Record<string, unknown> | null>(null);
+const overview = ref<TableRow | null>(null);
 // 交易记录
-const transactions = ref<Record<string, unknown>[]>([]);
+const transactions = ref<TableRow[]>([]);
 const txPagination = ref({ page: 1, size: 10, total: 0 });
 const txTypeFilter = ref('');
 // 账龄
-const agingData = ref<Record<string, unknown>[]>([]);
+const agingData = ref<TableRow[]>([]);
 const agingType = ref('CUSTOMER');
 
 const txTypeMap: Record<string, { text: string; type: string }> = {
@@ -72,7 +73,7 @@ async function loadTransactions() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = { page: txPagination.value.page, size: txPagination.value.size };
+    const params: TableRow = { page: txPagination.value.page, size: txPagination.value.size };
     if (txTypeFilter.value) params.counterpartyType = txTypeFilter.value;
     const res = await get(`/${factoryId.value}/finance/transactions`, { params });
     if (res.success && res.data) {

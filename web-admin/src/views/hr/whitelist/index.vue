@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -12,7 +13,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('hr'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -29,7 +30,7 @@ const whitelistForm = ref({
   expirationDate: '',
   notes: ''
 });
-const departments = ref<Record<string, unknown>[]>([]);
+const departments = ref<TableRow[]>([]);
 
 // 统计数据
 const statistics = ref({
@@ -137,7 +138,7 @@ function handleCreate() {
   dialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   isEdit.value = true;
   whitelistForm.value = {
     id: row.id,
@@ -187,7 +188,7 @@ async function submitForm() {
   }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm('确定删除此白名单记录?', '提示', { type: 'warning' });
     const response = await del(`/${factoryId.value}/whitelist/${row.id}`);
@@ -204,13 +205,13 @@ async function handleDelete(row: Record<string, unknown>) {
   }
 }
 
-function getStatusType(row: Record<string, unknown>) {
+function getStatusType(row: TableRow) {
   if (row.isUsed) return 'success';
   if (row.isExpired) return 'danger';
   return 'info';
 }
 
-function getStatusText(row: Record<string, unknown>) {
+function getStatusText(row: TableRow) {
   if (row.isUsed) return '已使用';
   if (row.isExpired) return '已过期';
   return '待使用';

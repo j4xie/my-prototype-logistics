@@ -12,6 +12,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { formatNumber } from '@/utils/format-number'
 import { ElMessage } from 'element-plus'
+import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore()
 const factoryId = computed(() => authStore.factoryId)
@@ -21,11 +22,11 @@ const period = ref('month')
 const dimension = ref('date')
 const loading = ref(false)
 const kpiData = ref<Array<{ label: string; value: string; gradient: string; change?: string; changeType?: string }>>([])
-const charts = ref<Array<{ title: string; option: Record<string, unknown> }>>([])
+const charts = ref<Array<{ title: string; option: TableRow }>>([])
 const chartRefs = shallowRef<Array<HTMLDivElement | null>>([])
 const chartInstances = shallowRef<echarts.ECharts[]>([])
 const aiAnalysis = ref('')
-const tableData = ref<Record<string, unknown>[]>([])
+const tableData = ref<TableRow[]>([])
 const tableColumns = ref<string[]>([])
 const renderedAnalysis = computed(() => aiAnalysis.value ? DOMPurify.sanitize(marked(aiAnalysis.value) as string) : '')
 
@@ -42,12 +43,12 @@ async function loadData() {
   loadingInProgress = true
   loading.value = true
   try {
-    const res = await get<Record<string, unknown>>(`/${factoryId.value}/smart-bi/production-analysis/dashboard`, {
+    const res = await get<TableRow>(`/${factoryId.value}/smart-bi/production-analysis/dashboard`, {
       params: { period: period.value }
     })
     if (res?.success !== false) {
-      const data = (res.data || res) as Record<string, unknown>
-      processKPIs((data.dailySummary as Record<string, unknown>[]) || [])
+      const data = (res.data || res) as TableRow
+      processKPIs((data.dailySummary as TableRow[]) || [])
       buildCharts(data)
       await loadDimensionData()
     }
@@ -67,11 +68,11 @@ async function loadData() {
 
 async function loadDimensionData() {
   try {
-    const res = await get<Record<string, unknown>[]>(`/${factoryId.value}/smart-bi/production-analysis/data`, {
+    const res = await get<TableRow[]>(`/${factoryId.value}/smart-bi/production-analysis/data`, {
       params: { dimension: dimension.value, period: period.value }
     })
     if (res?.success !== false) {
-      const rows = (res.data || res || []) as Record<string, unknown>[]
+      const rows = (res.data || res || []) as TableRow[]
       tableData.value = rows
       tableColumns.value = rows.length > 0 ? Object.keys(rows[0]) : []
     }
@@ -83,7 +84,7 @@ async function loadDimensionData() {
   }
 }
 
-function processKPIs(dailySummary: Record<string, unknown>[]) {
+function processKPIs(dailySummary: TableRow[]) {
   if (!dailySummary || dailySummary.length === 0) {
     kpiData.value = []
     return
@@ -110,12 +111,12 @@ function processKPIs(dailySummary: Record<string, unknown>[]) {
 
 // formatNumber imported from @/utils/format-number
 
-function buildCharts(data: Record<string, unknown>) {
-  const chartConfigs: Array<{ title: string; option: Record<string, unknown> }> = []
-  const dailySummary = (data.dailySummary || []) as Record<string, unknown>[]
-  const byProduct = (data.byProduct || []) as Record<string, unknown>[]
-  const byEquipment = (data.byEquipment || []) as Record<string, unknown>[]
-  const byPersonnel = (data.byPersonnel || []) as Record<string, unknown>[]
+function buildCharts(data: TableRow) {
+  const chartConfigs: Array<{ title: string; option: TableRow }> = []
+  const dailySummary = (data.dailySummary || []) as TableRow[]
+  const byProduct = (data.byProduct || []) as TableRow[]
+  const byEquipment = (data.byEquipment || []) as TableRow[]
+  const byPersonnel = (data.byPersonnel || []) as TableRow[]
 
   // Chart 1: Daily output trend (line)
   if (dailySummary.length > 0) {

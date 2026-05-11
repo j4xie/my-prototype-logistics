@@ -9,6 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
+import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,15 +23,15 @@ const orderId = computed(() => route.params.id as string);
 const loading = ref(false);
 const submitting = ref(false);
 const notFound = ref(false);
-const order = ref<Record<string, unknown> | null>(null);
-const deliveries = ref<Record<string, unknown>[]>([]);
-const invoices = ref<Record<string, unknown>[]>([]);
-const payments = ref<Record<string, unknown>[]>([]);
-const purchaseOrders = ref<Record<string, unknown>[]>([]);
+const order = ref<TableRow | null>(null);
+const deliveries = ref<TableRow[]>([]);
+const invoices = ref<TableRow[]>([]);
+const payments = ref<TableRow[]>([]);
+const purchaseOrders = ref<TableRow[]>([]);
 const activeTab = ref('detail');
 
 const deliveryDialogVisible = ref(false);
-const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; items: Record<string, unknown>[] }>({
+const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; items: TableRow[] }>({
   deliveryAddress: '', logisticsCompany: '', items: [],
 });
 
@@ -112,7 +113,7 @@ const orderTransportStatusMap: Record<string, { text: string; type: string }> = 
   DELIVERED: { text: '已发货', type: 'success' },
 };
 
-const orderFormulas = ref<Record<string, unknown>>({});
+const orderFormulas = ref<TableRow>({});
 
 onMounted(() => {
   loadOrder();
@@ -157,7 +158,7 @@ async function loadFormulas() {
 const taxGroupData = computed(() => {
   const raw = orderFormulas.value?.tax_group_sum;
   if (!Array.isArray(raw) || raw.length === 0) return null;
-  return raw.map((row: Record<string, unknown>) => ({
+  return raw.map((row: TableRow) => ({
     taxRate: row.tax_rate != null ? Number(row.tax_rate) : 0,
     amount: row.agg_value != null ? Number(row.agg_value) : 0,
   })).sort((a: { taxRate: number }, b: { taxRate: number }) => a.taxRate - b.taxRate);
@@ -196,7 +197,7 @@ async function loadPurchaseOrders() {
     });
     if (res.success && res.data) {
       const list = Array.isArray(res.data) ? res.data : (res.data.content || res.data.records || []);
-      purchaseOrders.value = list.filter((po: Record<string, unknown>) => po.salesOrderId === orderId.value);
+      purchaseOrders.value = list.filter((po: TableRow) => po.salesOrderId === orderId.value);
     }
   } catch { /* ignore — 后端可能尚未实现按销售订单查询采购单 */ }
 }
@@ -279,7 +280,7 @@ async function submitFinanceReview() {
   submitting.value = true;
   try {
     const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
-    const body: Record<string, unknown> = { notes: notes || '' };
+    const body: TableRow = { notes: notes || '' };
     // P2-3 R2 fix: 双重防御 — 即使 form 状态被脏化 (e.g. 直接 devtools 改),
     // ESTIMATED_COST_ENABLED=false 时也不发送, 防止静默降级.
     if (ESTIMATED_COST_ENABLED && isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
@@ -306,7 +307,7 @@ function openDeliveryDialog() {
   deliveryForm.value = {
     deliveryAddress: order.value.deliveryAddress || '',
     logisticsCompany: '',
-    items: (order.value.items as Record<string, unknown>[]).map((it) => ({
+    items: (order.value.items as TableRow[]).map((it) => ({
       productTypeId: it.productTypeId,
       productName: it.productName,
       deliveredQuantity: it.quantity - (it.deliveredQuantity || 0),
@@ -373,21 +374,21 @@ async function handleDelivered(deliveryId: string) {
 async function openBatchAllocDialog(deliveryId: string, deliveryNumber: string) {
   batchAllocLoading.value = true;
   try {
-    const detailRes = await get<Record<string, unknown>>(`/${factoryId.value}/sales/deliveries/${deliveryId}`);
+    const detailRes = await get<TableRow>(`/${factoryId.value}/sales/deliveries/${deliveryId}`);
     if (!detailRes.success || !detailRes.data) { ElMessage.error('加载发货单明细失败'); return; }
-    const rawItems = (detailRes.data.items as Record<string, unknown>[]) || [];
+    const rawItems = (detailRes.data.items as TableRow[]) || [];
     if (!rawItems.length) { ElMessage.warning('发货单无明细'); return; }
 
     const items: AllocItem[] = [];
     for (const it of rawItems) {
-      const productTypeId = (it.productTypeId || (it.productType as Record<string, unknown>)?.id) as string;
+      const productTypeId = (it.productTypeId || (it.productType as TableRow)?.id) as string;
       const deliveredQuantity = Number(it.deliveredQuantity || 0);
-      const productName = (it.productName as string) || ((it.productType as Record<string, unknown>)?.name as string) || '未命名产品';
+      const productName = (it.productName as string) || ((it.productType as TableRow)?.name as string) || '未命名产品';
       const deliveryItemId = it.id as string;
 
       let allocations: AllocRow[] = [];
       if (productTypeId && deliveredQuantity > 0) {
-        const recRes = await get<Array<Record<string, unknown>>>(
+        const recRes = await get<Array<TableRow>>(
           `/${factoryId.value}/sales-deliveries/items/${deliveryItemId}/batch-allocations/recommend-fifo?productTypeId=${productTypeId}&requiredQty=${deliveredQuantity}`
         );
         if (recRes.success && Array.isArray(recRes.data)) {
@@ -624,7 +625,7 @@ const approvalTimeline = computed<Array<{
   notes?: string;
 }>>(() => {
   if (!order.value) return [];
-  const o = order.value as Record<string, unknown>;
+  const o = order.value as TableRow;
   const nodes: Array<{ type: 'success' | 'warning' | 'danger' | 'primary' | 'info'; title: string; user: string; time: string; notes?: string }> = [];
 
   // 节点 1: 创建

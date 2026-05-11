@@ -6,6 +6,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete as DeleteIcon, Search, Refresh } from '@element-plus/icons-vue';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 
@@ -15,7 +16,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('equipment'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
 
@@ -108,9 +109,9 @@ function getStatusText(status: string) {
 }
 
 const detailVisible = ref(false);
-const detailData = ref<Record<string, unknown>>({});
+const detailData = ref<TableRow>({});
 
-async function handleView(row: Record<string, unknown>) {
+async function handleView(row: TableRow) {
   if (!factoryId.value) return;
   try {
     const response = await get(`/${factoryId.value}/equipment/${row.id}`);
@@ -126,7 +127,7 @@ async function handleView(row: Record<string, unknown>) {
   }
 }
 
-function handleMaintenance(row: Record<string, unknown>) {
+function handleMaintenance(row: TableRow) {
   router.push({ path: '/equipment/maintenance', query: { equipmentId: row.id as string } });
 }
 
@@ -161,7 +162,7 @@ function handleAdd() {
   formDialogVisible.value = true;
 }
 
-function handleEdit(row: Record<string, unknown>) {
+function handleEdit(row: TableRow) {
   editingId.value = String(row.id || '');
   form.value = {
     equipmentCode: String(row.equipmentCode || ''),
@@ -193,7 +194,7 @@ async function handleSave() {
   finally { submitting.value = false; }
 }
 
-async function handleDelete(row: Record<string, unknown>) {
+async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(
       `确定删除设备「${row.name}」? 该设备的维护记录、告警历史仍保留, 但无法新分配工单.`,

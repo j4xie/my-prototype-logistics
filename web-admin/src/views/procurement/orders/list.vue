@@ -13,6 +13,7 @@ import { formatAmount } from '@/utils/tableFormatters';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import type { TableRow } from '@/types/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -22,7 +23,7 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const loading = ref(false);
-const tableData = ref<Record<string, unknown>[]>([]);
+const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
 const searchKeyword = ref('');
@@ -36,11 +37,11 @@ const form = ref({
   remark: '',
   relatedSalesOrderId: '',
   items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
-  customFields: {} as Record<string, unknown>,
+  customFields: {} as TableRow,
 });
-const suppliers = ref<Record<string, unknown>[]>([]);
-const materials = ref<Record<string, unknown>[]>([]);
-const salesOrders = ref<Record<string, unknown>[]>([]);
+const suppliers = ref<TableRow[]>([]);
+const materials = ref<TableRow[]>([]);
+const salesOrders = ref<TableRow[]>([]);
 
 // 包装层级缓存: materialTypeId → { level1Unit, level2Unit, level3Unit, level1PerLevel2 }
 // 选原料后调 /material-packaging/by-material/{id} 拉取, 用于单位下拉 + 自动算箱数 (P1-2)
@@ -68,7 +69,7 @@ async function ensurePackagingLoaded(materialId: string) {
   }
 }
 
-function getUnitOptionsForItem(item: Record<string, unknown>): { value: string; label: string }[] {
+function getUnitOptionsForItem(item: TableRow): { value: string; label: string }[] {
   const matId = String(item.materialTypeId || '');
   const set = new Set<string>();
   // 优先该原料的 1/2/3 级单位
@@ -87,7 +88,7 @@ function getUnitOptionsForItem(item: Record<string, unknown>): { value: string; 
   return Array.from(set).map((u) => ({ value: u, label: u }));
 }
 
-function onItemMaterialChange(item: Record<string, unknown>) {
+function onItemMaterialChange(item: TableRow) {
   const matId = String(item.materialTypeId || '');
   if (!matId) return;
   ensurePackagingLoaded(matId).then(() => {
@@ -115,11 +116,11 @@ function onItemMaterialChange(item: Record<string, unknown>) {
  * 客户原话 "規格寫是抄码" 暗示 spec 字面值就是 "抄码", 而非含 "抄码" 子串.
  * 后续如客户报漏匹配 (繁体 "抄碼" / 含空格), 改加 normalize: trim + lower + 简繁同义.
  */
-function isAbacaItem(item: Record<string, unknown>): boolean {
+function isAbacaItem(item: TableRow): boolean {
   return String(item.specification || '').trim() === '抄码';
 }
 
-function recalcBoxQuantity(item: Record<string, unknown>) {
+function recalcBoxQuantity(item: TableRow) {
   if (isAbacaItem(item)) {
     item.boxQuantity = null;  // 抄码品: 不算箱数
     return;
@@ -175,7 +176,7 @@ async function loadData() {
     const url = statusFilter.value
       ? `/${factoryId.value}/purchase/orders/by-status`
       : `/${factoryId.value}/purchase/orders`;
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const params: TableRow = { page: pagination.value.page, size: pagination.value.size };
     if (statusFilter.value) params.status = statusFilter.value;
     const response = await get(url, { params });
     if (response.success && response.data) {
@@ -184,14 +185,14 @@ async function loadData() {
       // keyword param on purchase/orders; filter locally on current page.
       const kw = searchKeyword.value.trim().toLowerCase();
       if (kw) {
-        rows = rows.filter((r: Record<string, unknown>) =>
+        rows = rows.filter((r: TableRow) =>
           String(r.orderNumber || '').toLowerCase().includes(kw) ||
-          String(r.supplierName || (r.supplier as Record<string, unknown>)?.name || '').toLowerCase().includes(kw)
+          String(r.supplierName || (r.supplier as TableRow)?.name || '').toLowerCase().includes(kw)
         );
       }
       if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
         const [from, to] = dateRange.value;
-        rows = rows.filter((r: Record<string, unknown>) => {
+        rows = rows.filter((r: TableRow) => {
           const d = String(r.orderDate || '').slice(0, 10);
           return d && d >= from && d <= to;
         });
@@ -259,7 +260,7 @@ async function handleCreate() {
     let remark = form.value.remark || '';
     const salesOrderId = form.value.relatedSalesOrderId || null;
     if (form.value.relatedSalesOrderId) {
-      const so = salesOrders.value.find((o: Record<string, unknown>) => o.id === form.value.relatedSalesOrderId);
+      const so = salesOrders.value.find((o: TableRow) => o.id === form.value.relatedSalesOrderId);
       const soRef = so ? `[关联销售订单: ${so.orderNumber}]` : '';
       remark = soRef ? (remark ? `${soRef} ${remark}` : soRef) : remark;
     }
@@ -288,7 +289,7 @@ async function handleCreate() {
 }
 
 function resetForm() {
-  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }], customFields: {} as Record<string, unknown> };
+  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }], customFields: {} as TableRow };
 }
 
 // 张权 Apr 28 反馈: "基础数据已经新建了 但是采购订单 下拉没有选项"
@@ -340,11 +341,11 @@ function handleRefresh() {
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
 
-function handleAiFill(params: Record<string, unknown>) {
+function handleAiFill(params: TableRow) {
   // Match supplierName to supplierId
   const supplierName = String(params.supplierName || '');
   const matched = suppliers.value.find(
-    (s: Record<string, unknown>) => String(s.name || '').includes(supplierName) || supplierName.includes(String(s.name || ''))
+    (s: TableRow) => String(s.name || '').includes(supplierName) || supplierName.includes(String(s.name || ''))
   );
 
   form.value.supplierId = matched ? String(matched.id) : '';
@@ -353,11 +354,11 @@ function handleAiFill(params: Record<string, unknown>) {
   form.value.remark = String(params.remark || '');
 
   if (Array.isArray(params.items) && params.items.length > 0) {
-    form.value.items = (params.items as Record<string, unknown>[]).map((item) => {
+    form.value.items = (params.items as TableRow[]).map((item) => {
       // Try to match materialName to materialTypeId
       const matName = String(item.materialName || '');
       const matMatch = materials.value.find(
-        (m: Record<string, unknown>) => String(m.name || '').includes(matName) || matName.includes(String(m.name || ''))
+        (m: TableRow) => String(m.name || '').includes(matName) || matName.includes(String(m.name || ''))
       );
       return {
         materialTypeId: matMatch ? String(matMatch.id) : '',
