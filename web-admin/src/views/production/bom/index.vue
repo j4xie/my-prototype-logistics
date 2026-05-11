@@ -176,6 +176,17 @@ async function loadMaterialTypes() {
   }
 }
 
+// B8 fix (2026-05-10): 关联原料下拉 @change handler, 自动回填名称/单位.
+// Ref: docs/qa-audits/2026-05-10-customer-meeting-9bug-audit.md §B8
+function onMaterialLink(materialTypeId: string) {
+  if (!materialTypeId) return;
+  const material = materialTypes.value.find((m: Record<string, unknown>) => m.id === materialTypeId);
+  if (material) {
+    if (material.name) bomForm.value.materialName = String(material.name);
+    if (material.unit) bomForm.value.unit = String(material.unit);
+  }
+}
+
 // ========== BOM Items ==========
 async function loadBomItems() {
   if (!factoryId.value || !selectedProductTypeId.value) return;
@@ -869,7 +880,7 @@ function refreshData() {
           </el-select>
         </el-form-item>
         <el-form-item label="关联原料">
-          <el-select v-model="bomForm.materialTypeId" placeholder="选择原料类型(可选)" clearable style="width: 100%">
+          <el-select v-model="bomForm.materialTypeId" placeholder="选择原料类型(可选)" clearable style="width: 100%" @change="onMaterialLink">
             <el-option
               v-for="item in materialTypes"
               :key="item.id"

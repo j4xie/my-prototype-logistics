@@ -187,18 +187,12 @@ async function loadBomProcesses(productTypeId: string) {
     return;
   }
   try {
-    const res = await get(`/${factoryId.value}/bom/labor`, { params: { productTypeId } });
+    // B1 fix (2026-05-10): 工序下拉应读"产品工序配置"(ProductWorkProcess),
+    // 不是 LaborCostConfig (人工成本). 后端按 processOrder asc 返回.
+    // Ref: docs/qa-audits/2026-05-10-customer-meeting-9bug-audit.md §B1
+    const res = await get(`/${factoryId.value}/product-work-processes`, { params: { productTypeId } });
     if (res.success && res.data && Array.isArray(res.data)) {
       const names = res.data.map((item: Record<string, unknown>) => String(item.processName || '')).filter(Boolean);
-      // Also load global (no productTypeId) processes as fallback
-      if (names.length === 0) {
-        const globalRes = await get(`/${factoryId.value}/bom/labor/all`);
-        if (globalRes.success && globalRes.data && Array.isArray(globalRes.data)) {
-          const allNames = globalRes.data.map((item: Record<string, unknown>) => String(item.processName || '')).filter(Boolean);
-          bomProcesses.value = [...new Set(allNames)];
-          return;
-        }
-      }
       bomProcesses.value = [...new Set(names)];
     } else {
       bomProcesses.value = [];
