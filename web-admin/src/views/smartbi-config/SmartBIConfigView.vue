@@ -71,9 +71,14 @@ async function loadThresholds() {
 async function saveThreshold(row: ThresholdConfig) {
   thresholdSavingIds.value.add(row.id);
   try {
+    // Issue #279: send FULL row to avoid partial-PUT corrupting comparisonOperator.
+    // BE entity has @Builder.Default `comparisonOperator = "GT"`; if FE omits the
+    // field on partial PUT, Jackson's no-arg constructor leaves it at "GT" and
+    // overwrites existing values (e.g. legacy "LESS_THAN" -> "GT").
     const response = await updateThreshold(row.id, {
-      warningThreshold: row.warningThreshold,
-      criticalThreshold: row.criticalThreshold,
+      warningValue: row.warningValue,
+      criticalValue: row.criticalValue,
+      comparisonOperator: row.comparisonOperator,
       isActive: row.isActive
     });
     if (response.success) {
@@ -97,13 +102,41 @@ const stats = computed(() => {
   };
 });
 
-// 阈值方向显示
-function getDirectionText(direction: string) {
-  return direction === 'UP' ? '上升超过' : '下降超过';
+// 比较操作符显示 (Issue #279: 兼容短/长枚举形式)
+// 短形式: GT/LT/GTE/LTE/EQ (entity @Column 注释定义)
+// 长形式: GREATER_THAN/LESS_THAN/... (DB 历史 seed 数据)
+function getOperatorText(op?: string) {
+  switch (op) {
+    case 'GT':
+    case 'GREATER_THAN':
+      return '大于';
+    case 'GTE':
+    case 'GREATER_THAN_OR_EQUAL':
+      return '大于等于';
+    case 'LT':
+    case 'LESS_THAN':
+      return '小于';
+    case 'LTE':
+    case 'LESS_THAN_OR_EQUAL':
+      return '小于等于';
+    case 'EQ':
+    case 'EQUAL':
+      return '等于';
+    default:
+      return op || '-';
+  }
 }
 
-function getDirectionType(direction: string) {
-  return direction === 'UP' ? 'danger' : 'warning';
+function getOperatorType(op?: string) {
+  // GT-family (越大越严重) 标 danger; LT-family 标 warning; EQ 标 info
+  if (!op) return 'info';
+  if (op === 'GT' || op === 'GTE' || op === 'GREATER_THAN' || op === 'GREATER_THAN_OR_EQUAL') {
+    return 'danger';
+  }
+  if (op === 'LT' || op === 'LTE' || op === 'LESS_THAN' || op === 'LESS_THAN_OR_EQUAL') {
+    return 'warning';
+  }
+  return 'info';
 }
 </script>
 
@@ -239,17 +272,17 @@ function getDirectionType(direction: string) {
                 </template>
               </el-table-column>
               <el-table-column prop="metricName" label="指标名称" width="180" />
-              <el-table-column prop="direction" label="触发方向" width="120" align="center">
+              <el-table-column prop="comparisonOperator" label="比较操作" width="120" align="center">
                 <template #default="{ row }">
-                  <el-tag :type="getDirectionType(row.direction)" size="small">
-                    {{ getDirectionText(row.direction) }}
+                  <el-tag :type="getOperatorType(row.comparisonOperator)" size="small">
+                    {{ getOperatorText(row.comparisonOperator) }}
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column label="警告阈值" width="150" align="center">
                 <template #default="{ row }">
                   <el-input-number
-                    v-model="row.warningThreshold"
+                    v-model="row.warningValue"
                     :min="0"
                     :precision="2"
                     size="small"
@@ -262,7 +295,7 @@ function getDirectionType(direction: string) {
               <el-table-column label="严重阈值" width="150" align="center">
                 <template #default="{ row }">
                   <el-input-number
-                    v-model="row.criticalThreshold"
+                    v-model="row.criticalValue"
                     :min="0"
                     :precision="2"
                     size="small"

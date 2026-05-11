@@ -62,14 +62,22 @@ export interface Formula {
 
 /**
  * 阈值配置
+ *
+ * 字段名必须与 BE entity SmartBiAlertThreshold 列名一致 (Issue #279 修复):
+ * - warningValue / criticalValue: BigDecimal 阈值
+ * - comparisonOperator: 短枚举 GT/LT/GTE/LTE/EQ
+ *   (DB 历史数据可能含长枚举 LESS_THAN/GREATER_THAN, 显示层兼容两种)
+ *
+ * 旧字段名 warningThreshold/criticalThreshold/direction 与 BE 列名不匹配,
+ * Jackson 静默丢弃导致 PUT 200 但 DB 不变 (silent-drop)。
  */
 export interface ThresholdConfig {
   id: number;
   metricCode: string;
   metricName: string;
-  warningThreshold?: number;
-  criticalThreshold?: number;
-  direction: 'UP' | 'DOWN';
+  warningValue?: number;
+  criticalValue?: number;
+  comparisonOperator?: string;
   unit?: string;
   description?: string;
   isActive: boolean;
