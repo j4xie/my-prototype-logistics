@@ -108,8 +108,12 @@ async def get_tenant_type(factory_id: str, conn) -> TenantType:
         ``isRestaurantTenant`` which returns ``false`` (i.e. factory
         branch) on missing rows, preserving legacy manufacturing path.
     """
+    # P0 fix 2026-05-11: column is `id` (PK), not `factory_id`. Verified via
+    # direct psql against cretas_prod_db.factories — caught by chat3 PR #365
+    # audit + chat2 verdict 复审 after restaurant-tenant /analysis/* requests
+    # all returned 500 in prod.
     row = await conn.fetchrow(
-        "SELECT type FROM factories WHERE factory_id = $1",
+        "SELECT type FROM factories WHERE id = $1",
         factory_id,
     )
     if row is None:
