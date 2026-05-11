@@ -1279,6 +1279,111 @@ public class PythonSmartBIClient {
     }
 
     /**
+     * 调用生产分析端点 (T6.6 Phase B Sub-A polymorphic Option A).
+     *
+     * GET /api/mobile/{factoryId}/smart-bi/analysis/production with query
+     * parameters startDate / endDate / analysisType. Single URL serves both
+     * factory and restaurant tenants; Python side dispatches on
+     * cretas_db.factories.type. Bearer JWT must be forwarded by the caller
+     * via {@code authorizationHeader} (typically the incoming request's
+     * Authorization header).
+     *
+     * @param factoryId           工厂 / 门店 ID (e.g. "F001", "R_ILTEATRO_REAL")
+     * @param startDate           查询区间开始 (inclusive)
+     * @param endDate             查询区间结束 (inclusive)
+     * @param analysisType        oee / efficiency / equipment / null for overview
+     * @param authorizationHeader 完整 "Bearer &lt;jwt&gt;" 头值; null 时不发送 (端点会返回 401)
+     * @return 响应 Map; 服务不可用 / 异常时返回 null
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callAnalysisProduction(String factoryId,
+                                                     java.time.LocalDate startDate,
+                                                     java.time.LocalDate endDate,
+                                                     String analysisType,
+                                                     String authorizationHeader) {
+        return callAnalysisGetEndpoint(
+                config.getAnalysisProductionUrl(factoryId),
+                startDate, endDate, analysisType, authorizationHeader, "生产分析");
+    }
+
+    /**
+     * 调用质量分析端点 (T6.6 Phase B Sub-B polymorphic Option A).
+     *
+     * GET /api/mobile/{factoryId}/smart-bi/analysis/quality with query
+     * parameters startDate / endDate / analysisType. Mirrors
+     * {@link #callAnalysisProduction} signature for symmetry — see that
+     * Javadoc for parameter semantics.
+     *
+     * @param factoryId           工厂 / 门店 ID
+     * @param startDate           查询区间开始 (inclusive)
+     * @param endDate             查询区间结束 (inclusive)
+     * @param analysisType        fpy / defect / rework / null for overview
+     * @param authorizationHeader 完整 "Bearer &lt;jwt&gt;" 头值; null 时不发送
+     * @return 响应 Map; 服务不可用 / 异常时返回 null
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callAnalysisQuality(String factoryId,
+                                                  java.time.LocalDate startDate,
+                                                  java.time.LocalDate endDate,
+                                                  String analysisType,
+                                                  String authorizationHeader) {
+        return callAnalysisGetEndpoint(
+                config.getAnalysisQualityUrl(factoryId),
+                startDate, endDate, analysisType, authorizationHeader, "质量分析");
+    }
+
+    /**
+     * 通用 GET-style analysis 端点调用 (T6.6 Phase B Sub-A / Sub-B 共享).
+     *
+     * Mirrors the existing POST-based {@link #callAnalysisEndpoint} shape but
+     * for the polymorphic Option A endpoints that take query parameters and
+     * return raw Map (no wrapping DTO). Auth header is forwarded verbatim
+     * because Python endpoint enforces cross-factory match via JWT factoryId.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> callAnalysisGetEndpoint(String baseUrl,
+                                                       java.time.LocalDate startDate,
+                                                       java.time.LocalDate endDate,
+                                                       String analysisType,
+                                                       String authorizationHeader,
+                                                       String operationName) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过{}", operationName);
+            return null;
+        }
+
+        HttpUrl parsed = HttpUrl.parse(baseUrl);
+        if (parsed == null) {
+            log.error("{} URL 解析失败: {}", operationName, baseUrl);
+            return null;
+        }
+        HttpUrl.Builder urlBuilder = parsed.newBuilder();
+        if (startDate != null) {
+            urlBuilder.addQueryParameter("startDate", startDate.toString());
+        }
+        if (endDate != null) {
+            urlBuilder.addQueryParameter("endDate", endDate.toString());
+        }
+        if (analysisType != null && !analysisType.isEmpty()) {
+            urlBuilder.addQueryParameter("analysisType", analysisType);
+        }
+
+        Request.Builder reqBuilder = new Request.Builder().url(urlBuilder.build()).get();
+        if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
+            reqBuilder.header("Authorization", authorizationHeader);
+        }
+        Request httpRequest = reqBuilder.build();
+        log.info("调用 Python SmartBI {}: url={}", operationName, urlBuilder.build());
+
+        try {
+            return executeWithRetry(httpRequest, Map.class);
+        } catch (IOException | PythonServiceUnavailableException e) {
+            log.error("{}调用失败: {}", operationName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 通用分析端点调用
      */
     private Optional<PythonAnalysisResponse> callAnalysisEndpoint(String url, PythonAnalysisRequest request, String operationName) {
