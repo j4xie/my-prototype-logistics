@@ -63,6 +63,7 @@ const bomItems = ref<BomItemRow[]>([]);
 const bomDialogVisible = ref(false);
 const bomDialogLoading = ref(false);
 const isBomEdit = ref(false);
+// D3 (2026-05-10 客户会议): BOM 配方层默认用 g, 仓库 / 调拨层用 kg, 后台 1:1000 自动换算
 const bomForm = ref({
   id: null as number | null,
   productTypeId: '',
@@ -70,11 +71,20 @@ const bomForm = ref({
   materialName: '',
   standardQuantity: 0,
   yieldRate: 100,
-  unit: 'kg',
+  unit: 'g',
   unitPrice: 0,
   taxRate: 13,
   sortOrder: 0,
   notes: ''
+});
+
+// D2 (2026-05-10 客户会议): 实时计算实际原料用量 = 成品含量 / (出成率/100)
+// 镜像后端 BomItem.getActualQuantity()
+const computedActualQuantity = computed(() => {
+  const sq = Number(bomForm.value.standardQuantity) || 0;
+  const yr = (Number(bomForm.value.yieldRate) || 100) / 100;
+  if (yr <= 0 || sq <= 0) return 0;
+  return Number((sq / yr).toFixed(4));
 });
 
 // Labor Costs (人工费用)
@@ -206,6 +216,7 @@ async function loadBomItems() {
 
 function handleAddBomItem() {
   isBomEdit.value = false;
+  // D3: 新建 BOM 默认单位为 g (克), 后台调拨时自动换算为 kg (千克)
   bomForm.value = {
     id: null,
     productTypeId: selectedProductTypeId.value,
@@ -214,7 +225,7 @@ function handleAddBomItem() {
     materialCategory: activeCategoryTab.value,
     standardQuantity: 0,
     yieldRate: 100,
-    unit: 'kg',
+    unit: 'g',
     unitPrice: 0,
     taxRate: 13,
     sortOrder: bomItems.value.length,
@@ -912,13 +923,30 @@ function refreshData() {
         </el-form-item>
         <el-form-item label="成品含量" required>
           <el-input-number v-model="bomForm.standardQuantity" :min="0" :precision="4" :step="0.01" style="width: 100%" />
+          <div class="form-tip">D2: 输入一份成品的标准用量, 系统按出成率自动算所需原料</div>
         </el-form-item>
         <el-form-item label="出成率%">
           <el-input-number v-model="bomForm.yieldRate" :min="0" :max="100" :precision="2" :step="1" style="width: 100%" />
           <div class="form-tip">输入百分比数值,如61表示61%</div>
         </el-form-item>
+        <!-- D2: 实时显示实际原料用量 (考虑出成率) -->
+        <el-form-item label="实际原料用量">
+          <div class="bom-computed-quantity">
+            {{ computedActualQuantity.toFixed(4) }} {{ bomForm.unit || 'g' }}
+          </div>
+          <div class="form-tip">
+            = 成品含量 ÷ (出成率/100) | 示例: 200g 成品 × 58% 出成率 → 自动算原料 344.83g
+          </div>
+        </el-form-item>
         <el-form-item label="计量单位">
-          <el-input v-model="bomForm.unit" placeholder="如: kg" />
+          <el-select v-model="bomForm.unit" placeholder="选择单位" style="width: 100%">
+            <el-option label="克 (g)" value="g" />
+            <el-option label="千克 (kg)" value="kg" />
+            <el-option label="毫升 (mL)" value="mL" />
+            <el-option label="升 (L)" value="L" />
+            <el-option label="件 (pcs)" value="pcs" />
+          </el-select>
+          <div class="form-tip">D3: 建议选 g (克), 系统调拨时自动按 1:1000 换算为 kg (千克)</div>
         </el-form-item>
         <el-form-item label="单价（含税）">
           <el-input-number v-model="bomForm.unitPrice" :min="0" :precision="4" :step="0.1" style="width: 100%" />
@@ -1165,6 +1193,14 @@ function refreshData() {
   font-size: 16px;
   font-weight: 600;
   color: #e6a23c;
+  line-height: 32px;
+}
+
+/* D2: 实际原料用量实时计算显示 */
+.bom-computed-quantity {
+  font-size: 16px;
+  font-weight: 600;
+  color: #67c23a;
   line-height: 32px;
 }
 

@@ -116,23 +116,76 @@ public class ProductionWorkflowOrchestrator {
             item.setItemType(TransferItemType.RAW_MATERIAL.name());
             item.setMaterialTypeId(req.getMaterialTypeId());
             item.setItemName(req.getMaterialTypeName());
-            item.setQuantity(req.getRequiredQuantity());
 
-            // 从 RawMaterialType 获取单位
-            String unit = "kg"; // 默认
+            // 从 RawMaterialType 获取目标单位
+            String targetUnit = "kg"; // 默认
             try {
                 RawMaterialType mt = rawMaterialTypeRepository.findById(req.getMaterialTypeId()).orElse(null);
                 if (mt != null && mt.getUnit() != null) {
-                    unit = mt.getUnit();
+                    targetUnit = mt.getUnit();
                 }
             } catch (Exception e) {
                 log.debug("获取原料单位失败: {}", req.getMaterialTypeId());
             }
-            item.setUnit(unit);
+
+            // D3 (2026-05-10 客户会议): g → kg 1:1000 后台自动换算
+            // BOM 配方层用 g, 仓库 / 调拨层用 kg
+            // 当 sourceUnit=g 且 targetUnit=kg 时, quantity = required / 1000
+            BigDecimal quantity = req.getRequiredQuantity();
+            String sourceUnit = req.getSourceUnit();
+            String finalUnit = targetUnit;
+            if (quantity != null && sourceUnit != null && targetUnit != null
+                    && !sourceUnit.equalsIgnoreCase(targetUnit)) {
+                BigDecimal converted = convertUnit(quantity, sourceUnit, targetUnit);
+                if (converted != null) {
+                    log.info("D3 单位换算: material={}, {}{} → {}{}",
+                            req.getMaterialTypeId(), quantity, sourceUnit, converted, targetUnit);
+                    quantity = converted;
+                    finalUnit = targetUnit;
+                }
+            }
+
+            item.setQuantity(quantity);
+            item.setUnit(finalUnit);
 
             items.add(item);
         }
         request.setItems(items);
         return request;
+    }
+
+    /**
+     * D3 单位换算 (固定 1:1000 g↔kg, 其他单位返回 null 不换算).
+     *
+     * 暂用硬编码 — 后续可改为查 UnitOfMeasurement.conversionFactor 实现通用换算。
+     *
+     * @param value      原值
+     * @param fromUnit   源单位 (如 "g")
+     * @param toUnit     目标单位 (如 "kg")
+     * @return 换算后的值, 不支持的换算返 null
+     */
+    private BigDecimal convertUnit(BigDecimal value, String fromUnit, String toUnit) {
+        if (value == null || fromUnit == null || toUnit == null) return null;
+        String from = fromUnit.trim().toLowerCase();
+        String to = toUnit.trim().toLowerCase();
+        if (from.equals(to)) return value;
+        // g → kg: ÷ 1000
+        if ("g".equals(from) && "kg".equals(to)) {
+            return value.divide(new BigDecimal("1000"), 6, java.math.RoundingMode.HALF_UP);
+        }
+        // kg → g: × 1000
+        if ("kg".equals(from) && "g".equals(to)) {
+            return value.multiply(new BigDecimal("1000"));
+        }
+        // ml → L
+        if ("ml".equals(from) && "l".equals(to)) {
+            return value.divide(new BigDecimal("1000"), 6, java.math.RoundingMode.HALF_UP);
+        }
+        // L → ml
+        if ("l".equals(from) && "ml".equals(to)) {
+            return value.multiply(new BigDecimal("1000"));
+        }
+        // 不支持的换算: null 表示沿用原 1:1 透传逻辑
+        return null;
     }
 }
