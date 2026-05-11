@@ -9,6 +9,7 @@ import com.cretas.aims.dto.batch.WorkerCheckoutDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.dto.processing.CreateProductionBatchRequest;
 import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
 import com.cretas.aims.dto.quality.*;
 import com.cretas.aims.entity.MaterialBatch;
@@ -72,8 +73,9 @@ public class ProcessingController {
     @Operation(summary = "创建生产批次", description = "创建新的生产批次")
     public ApiResponse<ProductionBatch> createBatch(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
-            @RequestBody @Valid ProductionBatch batch) {
-        log.info("创建生产批次: factoryId={}, batchNumber={}", factoryId, batch.getBatchNumber());
+            @Valid @RequestBody CreateProductionBatchRequest request) {
+        log.info("创建生产批次: factoryId={}, batchNumber={}", factoryId, request.getBatchNumber());
+        ProductionBatch batch = toProductionBatch(request);
         ProductionBatch result = processingService.createBatch(factoryId, batch);
         return ApiResponse.success(result);
     }
@@ -940,6 +942,56 @@ public class ProcessingController {
         log.info("获取AI分析格式数据: factoryId={}, batchId={}", factoryId, batchId);
         Map<String, String> result = stageRecordService.formatForAIAnalysis(factoryId, batchId);
         return ApiResponse.success(result);
+    }
+
+    // ========== Request DTO → Entity mappers (Rule 17.1 cleanup, PR #370, Issue #384 batch 3) ==========
+
+    /**
+     * Map {@link CreateProductionBatchRequest} → {@link ProductionBatch} entity.
+     *
+     * <p>This mapper deliberately does <strong>not</strong> apply any
+     * defaults: {@link com.cretas.aims.service.impl.ProcessingServiceImpl#createBatch}
+     * is the single owner of the defaulting logic (status=PLANNED,
+     * productName="待设置产品名称", quantity=plannedQuantity-or-ZERO, unit="kg",
+     * createdAt=now). Duplicating those defaults here would create two
+     * sources of truth and risk drift; we just propagate user-provided
+     * fields and let the service finish the work.
+     *
+     * <p>Auto-managed by service / controller path-variable / DB:
+     * {@code id}, {@code factoryId}, {@code status}, {@code createdAt},
+     * {@code updatedAt}, {@code deletedAt}, {@code createdBy},
+     * {@code qualityStatus}, {@code startTime}, {@code endTime},
+     * {@code actualQuantity}, {@code goodQuantity}, {@code defectQuantity},
+     * {@code totalCost}, {@code unitCost}, {@code yieldRate},
+     * {@code efficiency}, {@code workDurationMinutes}.
+     */
+    private static ProductionBatch toProductionBatch(CreateProductionBatchRequest r) {
+        ProductionBatch b = new ProductionBatch();
+        b.setBatchNumber(r.getBatchNumber());
+        b.setProductionPlanId(r.getProductionPlanId());
+        b.setProductTypeId(r.getProductTypeId());
+        b.setProductName(r.getProductName());
+        b.setPlannedQuantity(r.getPlannedQuantity());
+        b.setQuantity(r.getQuantity());
+        b.setUnit(r.getUnit());
+        b.setEquipmentId(r.getEquipmentId());
+        b.setEquipmentName(r.getEquipmentName());
+        b.setSupervisorId(r.getSupervisorId());
+        b.setSupervisorName(r.getSupervisorName());
+        b.setWorkerCount(r.getWorkerCount());
+        b.setMaterialCost(r.getMaterialCost());
+        b.setLaborCost(r.getLaborCost());
+        b.setEquipmentCost(r.getEquipmentCost());
+        b.setOtherCost(r.getOtherCost());
+        b.setNotes(r.getNotes());
+        if (r.getPhotoRequired() != null) {
+            b.setPhotoRequired(r.getPhotoRequired());
+        }
+        b.setSopConfigId(r.getSopConfigId());
+        if (r.getCustomFields() != null) {
+            b.setCustomFields(r.getCustomFields());
+        }
+        return b;
     }
 
 }
