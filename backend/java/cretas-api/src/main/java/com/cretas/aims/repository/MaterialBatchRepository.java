@@ -329,6 +329,14 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
                                                                        String warehouseId);
 
     /**
+     * 根据工厂ID + warehouse 查找全部批次 (含 EntityGraph 一并 fetch materialType + supplier).
+     * 分仓库存查询 (PR #309 B2=B, 2026-05-11 spec) — 配合 idx_material_batch_warehouse composite index。
+     * 注: 默认 @Where(deleted_at IS NULL) 已在 BaseEntity 起作用, 不需要显式过滤。
+     */
+    @EntityGraph(attributePaths = {"materialType", "supplier"})
+    List<MaterialBatch> findByFactoryIdAndWarehouseId(String factoryId, String warehouseId);
+
+    /**
      * 统计工厂批次数
      */
     long countByFactoryId(String factoryId);

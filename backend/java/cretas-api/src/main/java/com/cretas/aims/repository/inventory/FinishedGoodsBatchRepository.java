@@ -187,4 +187,11 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
     List<FinishedGoodsBatch> findAvailableBatchesAllFactoriesByWarehouseCode(
             @Param("productTypeId") String productTypeId,
             @Param("warehouseCode") String warehouseCode);
+
+    /**
+     * 分仓库存查询 (PR #309 B2=B, 2026-05-11 spec).
+     * factory_id × warehouse_id composite index (idx_finished_batch_warehouse).
+     * 默认 @Where(deleted_at IS NULL) 已在 entity 起作用。
+     */
+    List<FinishedGoodsBatch> findByFactoryIdAndWarehouseId(String factoryId, String warehouseId);
 }

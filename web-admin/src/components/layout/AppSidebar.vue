@@ -109,6 +109,7 @@ const menuConfig: MenuItem[] = [
       { path: '/warehouse/materials', title: '原料入库登记 (具体批次)', icon: '', module: 'warehouse' },
       { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
       { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' },
+      { path: '/inventory/by-warehouse', title: '分仓库存查询', icon: '', module: 'warehouse' },
       { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' },
       { path: '/transfer/list', title: '调拨单', icon: '', module: 'warehouse' }
     ]
