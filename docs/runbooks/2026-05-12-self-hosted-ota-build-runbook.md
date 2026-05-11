@@ -20,7 +20,7 @@ Run through these before starting. Missing any one of them will fail the build a
 - [ ] **`keytool`** from JDK 21 on `PATH` — `keytool -help` must work
 - [ ] **Node 18+** + `npx expo --version` works in `frontend/CretasFoodTrace/`
 - [ ] **PRs #363 / #364 / #373 / #375 / #380 + this PR's `app.json` change all merged**
-- [ ] **Server-side OTA stack live**: `curl https://api.cretaceousfuture.com/api/ota/health` returns 200
+- [ ] **Server-side OTA stack live**: `curl https://ota.cretaceousfuture.com/api/ota/health` returns 200
 
 ---
 
@@ -105,7 +105,7 @@ A: android:name(0x01010003)="expo.modules.updates.EXPO_RUNTIME_VERSION"
 A: android:value(0x01010024)="1.0.0"
 
 A: android:name(0x01010003)="expo.modules.updates.EXPO_UPDATE_URL"
-A: android:value(0x01010024)="https://api.cretaceousfuture.com/api/ota/manifest"
+A: android:value(0x01010024)="https://ota.cretaceousfuture.com/api/ota/manifest"
 
 A: android:name(0x01010003)="expo.modules.updates.EXPO_UPDATES_CODE_SIGNING_CERTIFICATE"
 A: android:value(0x01010024)="<the X.509 cert PEM contents>"
@@ -138,7 +138,7 @@ adb logcat -s expo-updates:V expo-modules:V
 
 Expected log lines on first launch:
 ```
-expo-updates: Checking for update at https://api.cretaceousfuture.com/api/ota/manifest
+expo-updates: Checking for update at https://ota.cretaceousfuture.com/api/ota/manifest
 expo-updates: No update available (server returned noUpdateAvailable directive)
 ```
 OR:
@@ -187,7 +187,7 @@ To verify customer received the update:
 ./scripts/ota/push-bundle.sh production android | tee /tmp/push-output
 # scrape the timestamp from the success line, then:
 curl -H 'Authorization: Bearer $OTA_ADMIN_TOKEN' \
-     'https://api.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=1.0.0&channel=production'
+     'https://ota.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=1.0.0&channel=production'
 # Confirm the new timestamp is at index 0 (newest)
 ```
 
@@ -220,7 +220,7 @@ When rebuilding for a version bump:
 ```bash
 # List bundles, pick a known-good timestamp:
 curl -H 'Authorization: Bearer $OTA_ADMIN_TOKEN' \
-     'https://api.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=1.0.0&channel=production'
+     'https://ota.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=1.0.0&channel=production'
 
 # Mark the latest as rolled-back:
 ./scripts/ota/rollback.sh 1.0.0 production <latest-bad-timestamp>

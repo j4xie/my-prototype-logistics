@@ -11,7 +11,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://api.cretaceousfuture.com/api/ota/manifest",
+      "url": "https://ota.cretaceousfuture.com/api/ota/manifest",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 5000,
       "codeSigningCertificate": "./ota_cert.pem",
