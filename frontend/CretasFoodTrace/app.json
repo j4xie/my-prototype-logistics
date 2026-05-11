@@ -2,6 +2,7 @@
   "expo": {
     "name": "白垩纪AI Agent",
     "slug": "CretasFoodTrace",
+    "owner": "stevenj4",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,7 +12,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/PLACEHOLDER-EAS-PROJECT-ID",
+      "url": "https://u.expo.dev/94352ce4-b6e6-4bfc-9ec1-36f989357949",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 5000
     },
@@ -71,7 +72,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#1976D2",
-          "sounds": ["./assets/notification-sound.wav"]
+          "sounds": [
+            "./assets/notification-sound.wav"
+          ]
         }
       ],
       [
@@ -101,8 +104,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "com.cretas.foodtrace"
-      }
+        "projectId": "94352ce4-b6e6-4bfc-9ec1-36f989357949"
+      },
+      "env": "test"
     }
   }
 }
