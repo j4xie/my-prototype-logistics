@@ -416,12 +416,21 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理数据完整性异常（唯一约束、外键约束等）
+     *
+     * BUG-1 fix (depth-e2e qa-v2.4, PR #370): FK violation 之前对所有 HTTP method
+     * 都返回 "无法删除" wording, 这对 POST/PUT (新建/更新关联资源) 极其困惑.
+     * 现在根据 request.getMethod() 分发到不同的 message + actionHint:
+     *   - POST  → "新建失败: 关联资源不存在" + "请确认引用的 X 已存在再重试"
+     *   - PUT   → "更新失败: 关联资源已失效" + "请刷新页面后重新选择"
+     *   - DELETE/其他 → 保留原 "无法删除" wording (已经准确)
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiResponse<?> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+    public ApiResponse<?> handleDataIntegrityViolationException(
+            DataIntegrityViolationException e, HttpServletRequest request) {
         String traceId = generateTraceId();
         String raw = e.getMessage() != null ? e.getMessage() : "";
+        String method = request != null ? request.getMethod() : null;
 
         // 分级: FK / 唯一约束是客户端操作问题 (e.g. 删引用的产品 / 重复提交), 不是服务端 bug
         // 其他 DataIntegrityException (真的数据损坏) 才 ERROR
@@ -432,8 +441,8 @@ public class GlobalExceptionHandler {
 
         if (isFkViolation || isUniqueViolation) {
             // 这类属"客户端想做但业务不允许", WARN 足够
-            log.warn("[{}] 数据冲突 ({}): {}", traceId,
-                isFkViolation ? "FK 引用" : "唯一约束", raw.split("\n")[0]);
+            log.warn("[{}] 数据冲突 ({}): method={}, raw={}", traceId,
+                isFkViolation ? "FK 引用" : "唯一约束", method, raw.split("\n")[0]);
         } else {
             log.error("[{}] 数据完整性异常: {}", traceId, raw, e);
         }
@@ -465,14 +474,45 @@ public class GlobalExceptionHandler {
                 actionHint = "请检查表单中的唯一字段是否已存在,或返回列表查看已存在记录";
             }
         } else if (isFkViolation) {
-            // 尝试从错误消息提取被引用的目标表, 给用户清晰线索
-            message = "无法删除: 该数据仍被其他记录引用";
-            actionHint = "先处理引用该数据的相关记录后再删除";
-            java.util.regex.Matcher m = java.util.regex.Pattern
+            // BUG-1: HTTP-method-aware dispatch. PG 的 referenced 关系在 FK 错误消息里:
+            //   - "referenced from table \"X\""  → 删除场景下被 X 引用
+            //   - 一般 violates FK 不指明 referenced from, 是 CREATE/UPDATE 引用了不存在的目标
+            // 用 m.find() 区分 referenced-from (被引用) vs plain FK (引用了不存在的)
+            java.util.regex.Matcher mReferenced = java.util.regex.Pattern
                 .compile("referenced from table \"([^\"]+)\"").matcher(raw);
-            if (m.find()) {
-                message = "无法删除: 该数据仍被 " + m.group(1) + " 引用，请先处理相关数据";
-                hintTarget = m.group(1);
+            // PG FK 错误也常含 "violates foreign key constraint \"fk_xxx\"" — 提取 target table
+            // 从 "Key (col)=(val) is not present in table \"X\"" 拿 X
+            java.util.regex.Matcher mTarget = java.util.regex.Pattern
+                .compile("is not present in table \"([^\"]+)\"").matcher(raw);
+
+            if ("POST".equalsIgnoreCase(method)) {
+                // CREATE: 引用了不存在的目标资源
+                message = "新建失败: 关联资源不存在";
+                actionHint = "请确认所引用的关联数据已存在再重试";
+                if (mTarget.find()) {
+                    String target = mTarget.group(1);
+                    message = "新建失败: 关联资源「" + target + "」不存在";
+                    actionHint = "请确认「" + target + "」已存在再重试";
+                    hintTarget = target;
+                }
+            } else if ("PUT".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method)) {
+                // UPDATE: 引用的资源在并发删除后失效
+                message = "更新失败: 关联资源已失效";
+                actionHint = "请刷新页面后重新选择有效的关联数据";
+                if (mTarget.find()) {
+                    String target = mTarget.group(1);
+                    message = "更新失败: 关联资源「" + target + "」已失效";
+                    actionHint = "请刷新页面后重新选择「" + target + "」";
+                    hintTarget = target;
+                }
+            } else {
+                // DELETE / 其他 (legacy 行为, 保持向后兼容)
+                message = "无法删除: 该数据仍被其他记录引用";
+                actionHint = "先处理引用该数据的相关记录后再删除";
+                if (mReferenced.find()) {
+                    message = "无法删除: 该数据仍被 " + mReferenced.group(1) + " 引用，请先处理相关数据";
+                    hintTarget = mReferenced.group(1);
+                }
             }
         } else {
             message = ErrorCode.DATA_INTEGRITY_ERROR.getUserMessage();
