@@ -166,14 +166,41 @@ def test_detect_report_type_partial_header_above_threshold() -> None:
     assert N.detect_report_type(partial) == N.REPORT_PRODUCT_SALES
 
 
-def test_detect_report_type_unsupported_profit_report() -> None:
-    # Profit report has wholly different columns.
-    profit = ["科目", "本期金额", "去年同期", "增减率"]
-    assert N.detect_report_type(profit) == N.REPORT_UNSUPPORTED
+def test_detect_report_type_profit_supported() -> None:
+    """Profit report (P&L statement) — 5 distinct cols, recognized as REPORT_PROFIT.
+
+    This was REPORT_UNSUPPORTED in PR #327; this PR adds first-class support.
+    """
+    profit = ["科目", "本期金额", "去年同期", "增减", "增减率"]
+    assert N.detect_report_type(profit) == N.REPORT_PROFIT
+
+
+def test_detect_report_type_purchase_inbound_supported() -> None:
+    """采购入库明细 — supplier × batch × SKU receipts, 5+ distinct cols match."""
+    purchase = ["入库日期", "单据编号", "供应商", "商品名称", "入库数量", "采购单价", "采购金额"]
+    assert N.detect_report_type(purchase) == N.REPORT_PURCHASE_INBOUND
+
+
+def test_detect_report_type_unknown_columns_unsupported() -> None:
+    """Truly unknown header (no canonical map matches) → UNSUPPORTED."""
+    unknown = ["random_col_1", "random_col_2", "random_col_3"]
+    assert N.detect_report_type(unknown) == N.REPORT_UNSUPPORTED
 
 
 def test_detect_report_type_empty_header_unsupported() -> None:
     assert N.detect_report_type([]) == N.REPORT_UNSUPPORTED
+
+
+def test_detect_report_type_profit_below_threshold_unsupported() -> None:
+    """Only 科目 + 本期金额 (2 cols) — below profit detect_threshold of 3."""
+    partial = ["科目", "本期金额"]
+    assert N.detect_report_type(partial) == N.REPORT_UNSUPPORTED
+
+
+def test_detect_report_type_purchase_below_threshold_unsupported() -> None:
+    """Only 4 columns — below purchase_inbound detect_threshold of 5."""
+    partial = ["入库日期", "商品名称", "数量", "金额"]
+    assert N.detect_report_type(partial) == N.REPORT_UNSUPPORTED
 
 
 def test_find_header_row_after_3_banner_rows() -> None:
@@ -287,6 +314,104 @@ def test_normalize_row_blank_numeric_preserved_as_none(il_teatro_chain: N.ChainE
     assert canonical["discount_allocated"] is None
 
 
+def test_normalize_row_profit_spec_happy(il_teatro_chain: N.ChainEntry) -> None:
+    """normalize_row accepts a report_spec parameter for non-default report types."""
+    raw = {
+        "account_subject": "营业收入",
+        "amount_current": "100000",
+        "amount_prior_year": "80000",
+        "amount_delta": "20000",
+        "change_rate": "0.25",
+    }
+    spec = N.REPORT_SPECS[N.REPORT_PROFIT]
+    canonical, events = N.normalize_row(raw, "2月利润表", il_teatro_chain, 3, spec)
+    assert events == []
+    assert canonical is not None
+    assert canonical["account_subject"] == "营业收入"
+    assert canonical["amount_current"] == 100000.0
+    assert canonical["change_rate"] == 0.25
+
+
+def test_normalize_row_purchase_spec_missing_required_quarantines(il_teatro_chain: N.ChainEntry) -> None:
+    """Per-report required-col check uses spec.required_cols (purchase: product_name)."""
+    raw = {
+        "inbound_date": "2026-02-15",
+        "supplier_name": "天华冷链",
+        "product_name": "",  # required for purchase_inbound
+        "inbound_qty": "50.000",
+        "unit_price": "82.50",
+    }
+    spec = N.REPORT_SPECS[N.REPORT_PURCHASE_INBOUND]
+    canonical, events = N.normalize_row(raw, "2月", il_teatro_chain, 3, spec)
+    assert canonical is None
+    assert any(ev.reason == N.QR_EMPTY_REQUIRED_FIELD for ev in events)
+    assert events[0].report_type == N.REPORT_PURCHASE_INBOUND
+
+
+# ──────────────────────────────────────────────────────────────────
+# Q-DEC-6 F1: return_qty path
+# Canonical `qty_refund` is the upstream surface;
+# Sub-ETL-2 loader (not this PR) maps it to fact_pos_item.return_qty per
+# V20260511_03 migration.
+# ──────────────────────────────────────────────────────────────────
+
+def test_normalize_row_qty_refund_nonzero_preserves_value(il_teatro_chain: N.ChainEntry) -> None:
+    """Q-DEC-6 F1: canonical qty_refund carries the return quantity downstream to Silver.
+
+    Source col 「退货数量(不含套餐子商品)」 → canonical `qty_refund` (float). Sub-ETL-2
+    loader then UPSERTs into fact_pos_item.return_qty per V20260511_03.
+    """
+    raw = _valid_raw_row()
+    raw["qty_refund"] = "3.50"  # 3.5 returns observed
+    canonical, events = N.normalize_row(raw, "2月报表", il_teatro_chain, 5)
+    assert events == []
+    assert canonical is not None
+    assert canonical["qty_refund"] == 3.5  # round-trips as float, ready for Silver loader
+
+
+def test_normalize_row_qty_refund_blank_preserves_null(il_teatro_chain: N.ChainEntry) -> None:
+    """Q-DEC-6 F1: blank qty_refund stays None (NOT silent 0.0) — Rule 1.
+
+    DEFAULT NULL on fact_pos_item.return_qty (V20260511_03) preserves this distinction
+    so historical rows pre-ETL stay 'unknown', not falsely 'zero observed returns'.
+    """
+    raw = _valid_raw_row()
+    raw["qty_refund"] = ""  # blank source
+    canonical, events = N.normalize_row(raw, "2月报表", il_teatro_chain, 5)
+    assert events == []
+    assert canonical is not None
+    assert canonical["qty_refund"] is None  # NOT 0.0 — preserves NULL for Silver loader
+
+
+def test_normalize_file_qty_refund_roundtrips_to_canonical_csv(tmp_path: Path) -> None:
+    """End-to-end: source CSV's 退货数量 column lands in canonical CSV as qty_refund.
+
+    Verifies the full pipeline: header detection → row normalize → CSV write → read-back.
+    This is the upstream half of the Q-DEC-6 F1 chain; Sub-ETL-2 (separate PR) carries
+    canonical → fact_pos_item.return_qty via V20260511_03 migration.
+    """
+    src = tmp_path / "IL TEATRO_2月.csv"
+    # Row has 3.5 returns; another has 0 returns.
+    src.write_text(make_csv_text(data_rows=[
+        ["京熹顺南京店", "饮料", "", "", "可乐", "", "餐饮商品", "单品",
+         "100.00", "100.00", "3.50", "0.00", "瓶", "5.00", "500.00",
+         "500.00", "0.00", "17.50", "482.50"],
+        ["京熹顺南京店", "饮料", "", "", "雪碧", "", "餐饮商品", "单品",
+         "80.00", "80.00", "0.00", "0.00", "瓶", "5.00", "400.00",
+         "400.00", "0.00", "0.00", "400.00"],
+    ]), encoding="utf-8")
+    out_root = tmp_path / "out"
+    result = N.normalize_file(src, out_root)
+    assert result.canonical_rows == 2
+    assert result.quarantine_events == []
+    with result.canonical_path.open("r", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows[0]["product_name"] == "可乐"
+    assert rows[0]["qty_refund"] == "3.5"
+    assert rows[1]["product_name"] == "雪碧"
+    assert rows[1]["qty_refund"] == "0.0"
+
+
 # ──────────────────────────────────────────────────────────────────
 # File-level pipeline + idempotence
 # ──────────────────────────────────────────────────────────────────
@@ -335,27 +460,82 @@ def test_normalize_file_unknown_chain_quarantines(tmp_path: Path) -> None:
     assert result.quarantine_events[0].reason == N.QR_UNKNOWN_CHAIN
 
 
-def test_normalize_file_profit_report_quarantines(tmp_path: Path) -> None:
-    """Profit report (火锅2月利润表) — wholly different shape, header scanner finds nothing
-    recognizable in the 10-row window, so quarantines as MISSING_HEADER.
+def test_normalize_file_profit_report_supported(tmp_path: Path) -> None:
+    """Profit report (火锅2月利润表) — recognized as REPORT_PROFIT, canonical CSV emitted.
 
-    Pilot only knows the product_sales header map; future Sub-ETL-1 expansion would add
-    profit_report / purchase_inbound maps and route their detection through
-    detect_report_type() returning REPORT_UNSUPPORTED. For now, MISSING_HEADER is the
-    correct quarantine label for these.
+    PR #327 quarantined this as MISSING_HEADER; this PR adds first-class profit support.
+    Source values like '25%' (with % sign) in numeric columns still quarantine via the
+    NON_NUMERIC_NUMERIC_FIELD path (fail-loud per Q-ETL-6) — operators must strip % or
+    pre-convert to decimal upstream. This is intentional: Sub-ETL-1 surfaces the format
+    gap rather than silently coercing.
     """
     src = tmp_path / "火锅2月利润表.csv"
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
-    w.writerow(["科目", "本期金额", "去年同期", "增减率"])
-    w.writerow(["营业收入", "100000", "80000", "25%"])
+    w.writerow(["科目", "本期金额", "去年同期", "增减", "增减率"])
+    # Clean numeric row — survives.
+    w.writerow(["营业收入", "100000", "80000", "20000", "0.25"])
+    # Row with '25%' — non-numeric in change_rate column → quarantines that row.
+    w.writerow(["营业成本", "60000", "50000", "10000", "20%"])
     src.write_text(buf.getvalue(), encoding="utf-8")
     out_root = tmp_path / "out"
     result = N.normalize_file(src, out_root)
     assert result.chain_factory_id == "R_HUOGUO_GENERIC_REAL"
-    assert result.canonical_path is None
-    # Quarantine event present; reason is MISSING_HEADER (no recognized header in window).
-    assert any(ev.reason == N.QR_MISSING_HEADER for ev in result.quarantine_events)
+    assert result.report_type == N.REPORT_PROFIT
+    assert result.canonical_path is not None
+    assert result.canonical_rows == 1  # clean row survives; "20%" row quarantines
+    # Quarantine event present for the % row.
+    assert any(
+        ev.reason == N.QR_NON_NUMERIC_NUMERIC_FIELD
+        for ev in result.quarantine_events
+    )
+
+
+def test_normalize_file_purchase_inbound_supported(tmp_path: Path) -> None:
+    """采购入库明细 — recognized as REPORT_PURCHASE_INBOUND, canonical CSV emitted.
+
+    Header has 7 cols, ≥5 matches purchase_inbound canonical → supported.
+    Multiple Chinese aliases (供应商 vs 供应商名称) collapse to same canonical col.
+    """
+    src = tmp_path / "锦川火锅2月_采购入库.csv"
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["入库日期", "单据编号", "供应商", "商品名称", "入库数量", "采购单价", "采购金额"])
+    w.writerow(["2026-02-15", "RK20260215001", "天华冷链", "牛上脑", "50.000", "82.50", "4125.00"])
+    w.writerow(["2026-02-16", "RK20260216001", "蜀韵蔬菜", "莴笋", "30.000", "8.20", "246.00"])
+    src.write_text(buf.getvalue(), encoding="utf-8")
+    out_root = tmp_path / "out"
+    result = N.normalize_file(src, out_root)
+    assert result.chain_factory_id == "R_JINCHUAN_HG_REAL"
+    assert result.report_type == N.REPORT_PURCHASE_INBOUND
+    assert result.canonical_path is not None
+    assert result.canonical_rows == 2
+    assert result.quarantine_events == []
+    # Verify canonical CSV content.
+    with result.canonical_path.open("r", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows[0]["supplier_name"] == "天华冷链"
+    assert rows[0]["product_name"] == "牛上脑"
+    assert rows[0]["inbound_qty"] == "50.0"
+
+
+def test_normalize_file_purchase_inbound_alias_columns(tmp_path: Path) -> None:
+    """Multiple aliases (供应商名称 instead of 供应商, 数量 instead of 入库数量) still match."""
+    src = tmp_path / "锦川火锅3月_采购入库.csv"
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["入库日期", "单据编号", "供应商名称", "商品名称", "数量", "单价", "金额"])
+    w.writerow(["2026-03-01", "RK20260301", "蜀韵蔬菜", "白菜", "10.000", "3.50", "35.00"])
+    src.write_text(buf.getvalue(), encoding="utf-8")
+    out_root = tmp_path / "out"
+    result = N.normalize_file(src, out_root)
+    assert result.report_type == N.REPORT_PURCHASE_INBOUND
+    assert result.canonical_rows == 1
+    with result.canonical_path.open("r", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows[0]["supplier_name"] == "蜀韵蔬菜"
+    assert rows[0]["inbound_qty"] == "10.0"
+    assert rows[0]["unit_price"] == "3.5"
 
 
 def test_normalize_file_empty_csv_no_header(tmp_path: Path) -> None:

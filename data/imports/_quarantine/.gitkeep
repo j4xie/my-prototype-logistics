@@ -1,0 +1,10 @@
+Sub-ETL-1 quarantine event directory.
+
+Per Q-DEC verbal sign-off 2026-05-12 (PR #330): raw + canonical restaurant chain data
+is gitignored, including quarantine reports. This .gitkeep preserves the directory
+tree for first-time normalizer runs.
+
+Contents written by `scripts/etl/normalize_restaurant_chains.py` on fail-loud (Q-ETL-6):
+  data/imports/_quarantine/<chain>/<report>/<period>__quarantine.csv
+
+NOT committed to git. Review locally; share excerpts in PR/audit docs only.
