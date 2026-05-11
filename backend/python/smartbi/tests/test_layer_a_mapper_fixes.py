@@ -26,6 +26,78 @@ from smartbi.services.chart_recommender import (  # noqa: E402
     ChartRecommender,
 )
 from smartbi.services.cross_sheet_aggregator import CrossSheetAggregator  # noqa: E402
+from smartbi.services.field_mapping import (  # noqa: E402
+    FieldMappingResult,
+    FieldMappingService,
+    MappingSource,
+)
+
+
+# -------------------- Issue #292 garbage upload detection --------------------
+
+
+def _make_mapping(confidence: float, source: MappingSource = MappingSource.FEATURE_INFER) -> FieldMappingResult:
+    """Build a minimal FieldMappingResult for garbage-detection tests."""
+    return FieldMappingResult(
+        original_column="col",
+        column_index=0,
+        standard_field=None,
+        standard_field_label=None,
+        confidence=confidence,
+        mapping_source=source,
+    )
+
+
+class TestIssue292GarbageUploadDetection:
+    def test_empty_results_treated_as_garbage(self):
+        assert FieldMappingService.is_likely_garbage_upload([]) is True
+
+    def test_high_confidence_recognized_columns_not_garbage(self):
+        # All EXACT_MATCH at 100 confidence — clearly valid upload.
+        results = [
+            _make_mapping(100.0, MappingSource.EXACT_MATCH),
+            _make_mapping(95.0, MappingSource.SYNONYM_MATCH),
+        ]
+        assert FieldMappingService.is_likely_garbage_upload(results) is False
+
+    def test_low_confidence_but_some_recognized_not_garbage(self):
+        # Mid confidence + one recognized column → soft warning UX still
+        # applies (requiresConfirmation per field), but envelope-level
+        # garbage flag should NOT fire.
+        results = [
+            _make_mapping(50.0, MappingSource.SYNONYM_MATCH),
+            _make_mapping(20.0, MappingSource.FEATURE_INFER),
+        ]
+        assert FieldMappingService.is_likely_garbage_upload(results) is False
+
+    def test_all_below_floor_and_zero_recognized_is_garbage(self):
+        # Random headers — all INFERRED, all below GARBAGE_CONFIDENCE_FLOOR.
+        # 0 recognized < 0.1 ratio → likely garbage.
+        results = [
+            _make_mapping(10.0, MappingSource.FEATURE_INFER),
+            _make_mapping(5.0, MappingSource.FEATURE_INFER),
+            _make_mapping(0.0, MappingSource.FEATURE_INFER),
+        ]
+        assert FieldMappingService.is_likely_garbage_upload(results) is True
+
+    def test_recognized_ratio_above_threshold_overrides_low_confidence(self):
+        # 1 of 3 columns recognized (33% > 10%) → not garbage, even if all
+        # are below the floor confidence-wise (e.g. truncated synonyms).
+        results = [
+            _make_mapping(25.0, MappingSource.SYNONYM_MATCH),
+            _make_mapping(10.0, MappingSource.FEATURE_INFER),
+            _make_mapping(5.0, MappingSource.FEATURE_INFER),
+        ]
+        assert FieldMappingService.is_likely_garbage_upload(results) is False
+
+    def test_one_column_above_floor_overrides_garbage(self):
+        # If any single column clears the floor, the upload has at least
+        # one meaningful column → don't classify as garbage.
+        results = [
+            _make_mapping(45.0, MappingSource.FEATURE_INFER),
+            _make_mapping(0.0, MappingSource.FEATURE_INFER),
+        ]
+        assert FieldMappingService.is_likely_garbage_upload(results) is False
 
 
 # -------------------- A1 dedupe --------------------

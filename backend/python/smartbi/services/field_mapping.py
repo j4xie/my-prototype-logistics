@@ -323,8 +323,63 @@ class FieldMappingService:
 
     CONFIDENCE_THRESHOLD = 70.0
 
+    # Issue #292: floor below which "soft warning + requiresConfirmation" UX is
+    # not enough — the upload should be flagged as likely-garbage. Default 30.0
+    # is conservative: the existing CONFIDENCE_THRESHOLD (70) already triggers
+    # per-field requiresConfirmation; the garbage floor is a stricter
+    # envelope-level signal for cases where EVERY column is far below that
+    # threshold (random headers, wrong file shape, etc).
+    GARBAGE_CONFIDENCE_FLOOR = 30.0
+
     def __init__(self):
         self.dictionary = FieldMappingDictionary()
+
+    @classmethod
+    def is_likely_garbage_upload(
+        cls,
+        results: List["FieldMappingResult"],
+        min_recognized_ratio: float = 0.1,
+    ) -> bool:
+        """
+        Issue #292 envelope-level signal: report True when the upload looks
+        like noise (random headers / wrong shape) rather than a valid xlsx
+        with low-confidence mappings.
+
+        Heuristic — ALL of:
+        - Every column's confidence is below GARBAGE_CONFIDENCE_FLOOR.
+        - Fewer than min_recognized_ratio of columns have any dictionary hit
+          (EXACT_MATCH or SYNONYM_MATCH).
+
+        Callers (api/excel.py upload-and-analyze) can surface this through a
+        dedicated `isLikelyGarbage` envelope flag so the FE can render a
+        stronger warning than the existing per-field `requiresConfirmation`
+        alone. Default behavior is unchanged — this method is purely
+        additive and does NOT reject the upload.
+
+        Args:
+            results: per-column mapping results
+            min_recognized_ratio: 0.0–1.0; ratio of columns that must have a
+                dictionary match to be considered "recognizable".
+
+        Returns:
+            True iff results look like garbage per the heuristic above.
+        """
+        if not results:
+            return True
+
+        all_below_floor = all(
+            r.confidence < cls.GARBAGE_CONFIDENCE_FLOOR for r in results
+        )
+        if not all_below_floor:
+            return False
+
+        recognized = sum(
+            1
+            for r in results
+            if r.mapping_source in (MappingSource.EXACT_MATCH, MappingSource.SYNONYM_MATCH)
+        )
+        recognized_ratio = recognized / len(results)
+        return recognized_ratio < min_recognized_ratio
 
     def map_fields(
         self,
