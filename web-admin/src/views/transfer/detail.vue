@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
-import { get, post } from '@/api/request';
+import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft, InfoFilled } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
@@ -121,6 +121,62 @@ function isStockShortage(row: Record<string, unknown>): boolean {
   if (Number.isNaN(sn) || Number.isNaN(qn)) return false;
   return sn < qn;
 }
+
+// ==================== B1 两阶段批次选择 (PR #309 B1=C, 2026-05-11) ====================
+// SHIP 前 (status=APPROVED), 调出方用户可为每个 item 预选批次:
+//   - 留空 = 默认 FEFO (最早过期先扣)
+//   - 选具体批次 = 优先扣减该批次, 不足部分 FEFO 兜底
+
+interface BatchOption {
+  batchId: string;
+  batchNumber: string;
+  availableQuantity: number;
+  expireDate: string | null;
+  warehouseId: string;
+}
+
+const availableBatchesMap = ref<Record<string, BatchOption[]>>({}); // itemId → 可用批次列表
+const batchesLoading = ref<Record<string, boolean>>({});
+
+// 仅 APPROVED 状态 + 调出方角度才显示批次列
+const canSelectBatch = computed(() =>
+  transfer.value?.status === 'APPROVED' && isOutbound.value && canWrite.value,
+);
+
+async function loadAvailableBatches(itemId: string | number) {
+  if (!factoryId.value || !transferId.value || itemId === null || itemId === undefined) return;
+  const key = String(itemId);
+  batchesLoading.value[key] = true;
+  try {
+    const res = await get<BatchOption[]>(
+      `/${factoryId.value}/transfers/${transferId.value}/items/${itemId}/available-batches`,
+    );
+    if (res.success) availableBatchesMap.value[key] = res.data || [];
+  } catch (e) { handleCatchError(e, '加载可用批次失败'); }
+  finally { batchesLoading.value[key] = false; }
+}
+
+async function onBatchChange(itemId: string | number, sourceBatchId: string | null) {
+  if (!factoryId.value || !transferId.value) return;
+  try {
+    const res = await put(
+      `/${factoryId.value}/transfers/${transferId.value}/items/${itemId}/source-batch`,
+      { sourceBatchId },
+    );
+    if (res.success) {
+      ElMessage.success(sourceBatchId ? '已锁定批次' : '已切换为默认 FEFO');
+      loadTransfer(); // refresh to show updated sourceBatchId
+    } else {
+      ElMessage.error(res.message || '批次保存失败');
+    }
+  } catch (e) { handleCatchError(e, '批次保存失败, 请重试'); }
+}
+
+function formatBatchLabel(b: BatchOption): string {
+  const parts = [b.batchNumber, `可用 ${formatStock(b.availableQuantity)}`];
+  if (b.expireDate) parts.push(`到期 ${b.expireDate}`);
+  return parts.join(' · ');
+}
 </script>
 
 <template>
@@ -213,6 +269,34 @@ function isStockShortage(row: Record<string, unknown>): boolean {
           </el-table-column>
           <el-table-column label="小计" width="130" align="right">
             <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
+          </el-table-column>
+          <!-- B1: SHIP 前批次选择 (status=APPROVED + 调出方视角) -->
+          <el-table-column v-if="canSelectBatch" label="发货批次" width="280" align="left">
+            <template #header>
+              <el-tooltip
+                content="留空 = 默认按 FEFO (最早过期) 扣减; 选具体批次 = 优先扣该批次. 卤味业务建议选新货."
+                placement="top">
+                <span>发货批次 <el-icon style="vertical-align: -2px"><InfoFilled /></el-icon></span>
+              </el-tooltip>
+            </template>
+            <template #default="{ row }">
+              <el-select
+                :model-value="row.sourceBatchId || ''"
+                placeholder="默认 FEFO (自动选最早过期)"
+                clearable
+                size="small"
+                style="width: 100%"
+                :loading="batchesLoading[String(row.id)]"
+                @visible-change="(v: boolean) => v && !availableBatchesMap[String(row.id)] && loadAvailableBatches(row.id)"
+                @change="(v: string | null) => onBatchChange(row.id, v || null)">
+                <el-option label="默认 FEFO (自动选最早过期)" value="" />
+                <el-option
+                  v-for="b in availableBatchesMap[String(row.id)] || []"
+                  :key="b.batchId"
+                  :label="formatBatchLabel(b)"
+                  :value="b.batchId" />
+              </el-select>
+            </template>
           </el-table-column>
         </el-table>
       </template>
