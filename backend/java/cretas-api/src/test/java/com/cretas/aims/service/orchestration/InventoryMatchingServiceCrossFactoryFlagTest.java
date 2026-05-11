@@ -1,17 +1,20 @@
 package com.cretas.aims.service.orchestration;
 
 import com.cretas.aims.dto.orchestration.StockCheckResult;
+import com.cretas.aims.entity.factory.WarehouseCodes;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.entity.inventory.SalesOrderItem;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
@@ -49,12 +52,17 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     @Mock
     private FinishedGoodsBatchRepository finishedGoodsBatchRepository;
 
+    @Mock
+    private WarehouseResolver warehouseResolver;
+
     @InjectMocks
     private InventoryMatchingService service;
 
     private static final String FACTORY_A = "F001";
     private static final String PRODUCT_TYPE = "PT-001";
     private static final String SALES_ORDER_ID = "SO-A5-TEST";
+    /** D1: WarehouseResolver mock 返回的 WH-LOG warehouse id. */
+    private static final String WH_LOG_ID = "wh-log-f001";
 
     /** 反射设置 @Value-注入的 boolean 字段，绕开 Spring context 用 pure Mockito. */
     private void setFlag(boolean enabled) throws Exception {
@@ -83,6 +91,8 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     void setUp() throws Exception {
         // 默认每个测试开始 flag=false; 个别测试自己覆盖.
         setFlag(false);
+        // D1 (2026-05-10): WarehouseResolver lookup returns WH-LOG id (lenient — some tests skip this branch).
+        Mockito.lenient().when(warehouseResolver.resolveLogisticsId(FACTORY_A)).thenReturn(WH_LOG_ID);
     }
 
     // ============================================================
@@ -90,20 +100,22 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     // ============================================================
 
     @Test
-    @DisplayName("flag=false (默认): checkAvailability 只查询 SO.factoryId 的库存")
+    @DisplayName("flag=false (默认): checkAvailability 只查询 SO.factoryId 的 WH-LOG 库存 (D1 双仓)")
     void checkAvailability_flagFalse_filtersByFactory() throws Exception {
         setFlag(false);
 
         SalesOrder so = buildSalesOrderWithOneItem(new BigDecimal("100"));
         when(salesOrderRepository.findById(SALES_ORDER_ID)).thenReturn(Optional.of(so));
-        when(finishedGoodsBatchRepository.sumAvailableQuantityByProductType(FACTORY_A, PRODUCT_TYPE))
+        // D1 2026-05-10: 默认走 WH-LOG 过滤 — D5 销售只从总仓出货
+        when(finishedGoodsBatchRepository.sumAvailableQuantityByProductTypeAndWarehouse(
+                FACTORY_A, PRODUCT_TYPE, WH_LOG_ID))
                 .thenReturn(new BigDecimal("200"));
 
         StockCheckResult result = service.checkAvailability(FACTORY_A, SALES_ORDER_ID);
 
-        // factory-filtered 查询被调用 1 次, all-factories 永远不调用
+        // D1: warehouse-filtered 查询调用 1 次, all-factories 永远不调用
         verify(finishedGoodsBatchRepository, times(1))
-                .sumAvailableQuantityByProductType(FACTORY_A, PRODUCT_TYPE);
+                .sumAvailableQuantityByProductTypeAndWarehouse(FACTORY_A, PRODUCT_TYPE, WH_LOG_ID);
         verify(finishedGoodsBatchRepository, never())
                 .sumAvailableQuantityByProductTypeAllFactories(anyString());
 
@@ -140,16 +152,17 @@ class InventoryMatchingServiceCrossFactoryFlagTest {
     // ============================================================
 
     @Test
-    @DisplayName("flag=false (默认): reserveStock 只在 SO.factoryId 内 FEFO 预留")
+    @DisplayName("flag=false (默认): reserveStock 只在 SO.factoryId 内 WH-LOG FEFO 预留 (D1 双仓)")
     void reserveStock_flagFalse_filtersByFactory() throws Exception {
         setFlag(false);
-        when(finishedGoodsBatchRepository.findAvailableBatches(FACTORY_A, PRODUCT_TYPE))
+        // D1 2026-05-10: 默认走 WH-LOG 过滤
+        when(finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_LOG_ID))
                 .thenReturn(Collections.emptyList());
 
         service.reserveStock(FACTORY_A, PRODUCT_TYPE, new BigDecimal("10"));
 
         verify(finishedGoodsBatchRepository, times(1))
-                .findAvailableBatches(FACTORY_A, PRODUCT_TYPE);
+                .findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_LOG_ID);
         verify(finishedGoodsBatchRepository, never())
                 .findAvailableBatchesAllFactories(anyString());
     }

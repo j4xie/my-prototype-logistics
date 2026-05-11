@@ -33,7 +33,8 @@ import java.util.Map;
            @Index(name = "idx_batch_factory", columnList = "factory_id"),
            @Index(name = "idx_batch_status", columnList = "status"),
            @Index(name = "idx_batch_expire", columnList = "expire_date"),
-           @Index(name = "idx_batch_material", columnList = "material_type_id")
+           @Index(name = "idx_batch_material", columnList = "material_type_id"),
+           @Index(name = "idx_material_batch_warehouse", columnList = "factory_id, warehouse_id")
        }
 )
 @Where(clause = "deleted_at IS NULL")
@@ -59,6 +60,14 @@ public class MaterialBatch extends BaseEntity {
     private LocalDate purchaseDate;
     @Column(name = "expire_date")
     private LocalDate expireDate;
+
+    /**
+     * D1 双仓流转 (2026-05-10 spec, PR #309 A1=A).
+     * FK to factory_warehouses.id. 默认 WH-LOG (物流仓) — 原料默认在物流仓持久库存,
+     * 调拨进车间才到 WH-WKS.
+     */
+    @Column(name = "warehouse_id", nullable = false, length = 64)
+    private String warehouseId;
 
     @Version
     @Column(name = "version")

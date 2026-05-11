@@ -30,6 +30,21 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
             @Param("factoryId") String factoryId,
             @Param("productTypeId") String productTypeId);
 
+    /**
+     * FEFO 出库（带 warehouse 过滤）。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     * 用途：销售批次预占/发货 (WH-LOG 固定)、调拨发货 (source warehouse)。
+     */
+    @Query("SELECT b FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
+            "AND b.productTypeId = :productTypeId " +
+            "AND b.warehouseId = :warehouseId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0 " +
+            "ORDER BY b.expireDate ASC NULLS LAST, b.productionDate ASC")
+    List<FinishedGoodsBatch> findAvailableBatchesByWarehouse(
+            @Param("factoryId") String factoryId,
+            @Param("productTypeId") String productTypeId,
+            @Param("warehouseId") String warehouseId);
+
     /** FIFO 推荐：按生产日期升序返回可用成品批次（先进先出） */
     @Query("SELECT b FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
             "AND b.productTypeId = :productTypeId AND b.status = 'AVAILABLE' " +
@@ -39,6 +54,20 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
             @Param("factoryId") String factoryId,
             @Param("productTypeId") String productTypeId);
 
+    /**
+     * FIFO 推荐（带 warehouse 过滤）。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     */
+    @Query("SELECT b FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
+            "AND b.productTypeId = :productTypeId " +
+            "AND b.warehouseId = :warehouseId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0 " +
+            "ORDER BY b.productionDate ASC NULLS LAST")
+    List<FinishedGoodsBatch> findAvailableBatchesFifoByWarehouse(
+            @Param("factoryId") String factoryId,
+            @Param("productTypeId") String productTypeId,
+            @Param("warehouseId") String warehouseId);
+
     /** 汇总指定产品类型的可用成品库存总量（用于销售订单库存检查） */
     @Query("SELECT COALESCE(SUM(b.producedQuantity - b.shippedQuantity - b.reservedQuantity), 0) " +
             "FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
@@ -47,6 +76,21 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
     BigDecimal sumAvailableQuantityByProductType(
             @Param("factoryId") String factoryId,
             @Param("productTypeId") String productTypeId);
+
+    /**
+     * 按 warehouse 过滤的可用成品库存汇总。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     * 用途：销售订单库存检查 (WH-LOG)、调拨单库存检查 (source warehouse)。
+     */
+    @Query("SELECT COALESCE(SUM(b.producedQuantity - b.shippedQuantity - b.reservedQuantity), 0) " +
+            "FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
+            "AND b.productTypeId = :productTypeId " +
+            "AND b.warehouseId = :warehouseId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0")
+    BigDecimal sumAvailableQuantityByProductTypeAndWarehouse(
+            @Param("factoryId") String factoryId,
+            @Param("productTypeId") String productTypeId,
+            @Param("warehouseId") String warehouseId);
 
     /**
      * A5 集团联销 (cross-factory sales) — 跨工厂可用成品库存汇总。

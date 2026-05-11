@@ -38,7 +38,8 @@ import org.hibernate.annotations.Where;
                 @Index(name = "idx_fgb_product", columnList = "product_type_id"),
                 @Index(name = "idx_fgb_status", columnList = "status"),
                 @Index(name = "idx_fgb_production_date", columnList = "production_date"),
-                @Index(name = "idx_fgb_expire_date", columnList = "expire_date")
+                @Index(name = "idx_fgb_expire_date", columnList = "expire_date"),
+                @Index(name = "idx_finished_batch_warehouse", columnList = "factory_id, warehouse_id")
         }
 )
 @Where(clause = "deleted_at IS NULL")
@@ -107,6 +108,15 @@ public class FinishedGoodsBatch extends BaseEntity {
     /** 关联生产计划ID（可选） */
     @Column(name = "production_plan_id", length = 191)
     private String productionPlanId;
+
+    /**
+     * D1 双仓流转 (2026-05-10 spec, PR #309 A1=A).
+     * FK to factory_warehouses.id. 默认 WH-WKS (车间仓) — 成品诞生于生产, 反向调拨前在车间仓.
+     * 反向调拨后才到 WH-LOG, 销售从 WH-LOG 出.
+     */
+    @NotBlank
+    @Column(name = "warehouse_id", nullable = false, length = 64)
+    private String warehouseId;
 
     /** 状态: AVAILABLE / DEPLETED / EXPIRED / FROZEN */
     @Column(name = "status", nullable = false, length = 32)
