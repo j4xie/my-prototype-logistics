@@ -7,7 +7,7 @@
 **Branch:** `feat/ota-self-hosted`
 **Worktree:** `.worktrees/ota-self-hosted`
 
-**Goal:** Stand up a self-hosted Expo Updates v1 protocol-compatible server inside `backend/python/` so the existing `expo-updates@~0.28.18` client in `frontend/CretasFoodTrace` can fetch JS/asset OTA updates from `https://api.cretaceousfuture.com/api/ota/manifest`, with zero EAS / Expo cloud dependency.
+**Goal:** Stand up a self-hosted Expo Updates v1 protocol-compatible server inside `backend/python/` so the existing `expo-updates@~0.28.18` client in `frontend/CretasFoodTrace` can fetch JS/asset OTA updates from `https://ota.cretaceousfuture.com/api/ota/manifest`, with zero EAS / Expo cloud dependency.
 
 **Architecture:** Python FastAPI module exposes manifest + asset endpoints implementing the [Expo Updates v1 protocol](https://docs.expo.dev/technical-specs/expo-updates-1/) byte-for-byte. Bundles are produced by `npx expo export` locally and uploaded to `/www/wwwroot/ota/updates/<runtimeVersion>/<channel>/<timestamp>/` on server 47. RSA-2048 keypair signs every manifest/directive; the public PEM is embedded in the APK and verified client-side by `expo-updates`. Android APKs are built locally with `./gradlew assembleRelease` — no EAS Build.
 
@@ -218,7 +218,7 @@ Returns `{"status":"ok","privateKeyLoaded":true,"basePath":"/www/wwwroot/ota","w
   "contentType": "application/javascript" if is_launch else mime_from_ext(ext),
   "url": f"{OTA_HOSTNAME}/api/ota/assets?asset={url_encode(rel_path)}&runtimeVersion={rv}&platform={p}",
   # Phase 1-3: OTA_HOSTNAME = "http://47.100.235.168:8083" (IP direct, HTTP)
-  # Phase 4+:  OTA_HOSTNAME = "https://api.cretaceousfuture.com" (nginx 139 + Let's Encrypt)
+  # Phase 4+:  OTA_HOSTNAME = "https://ota.cretaceousfuture.com" (nginx 139 + Let's Encrypt)
 }
 ```
 
@@ -382,7 +382,7 @@ Append at the end of the existing `app.include_router(...)` block (current line 
 | `OTA_PRIVATE_KEY_PATH` | `/www/wwwroot/ota/keys/ota_private.pem` | `/www/wwwroot/ota-test/keys/ota_private.pem` |
 | `OTA_ADMIN_TOKEN` | (32-byte hex from `openssl rand -hex 32`, in `.env.prod` not committed) | separate token |
 | `OTA_HOSTNAME` (Phase 1-3) | `http://47.100.235.168:8083` (IP direct, HTTP) | `http://47.100.235.168:8084` |
-| `OTA_HOSTNAME` (Phase 4+) | `https://api.cretaceousfuture.com` (after nginx 139 + Let's Encrypt) | same |
+| `OTA_HOSTNAME` (Phase 4+) | `https://ota.cretaceousfuture.com` (independent subdomain on nginx 139, Let's Encrypt ECC via acme.sh DNS-01) | same |
 | `OTA_DEFAULT_CHANNEL` | `production` | `staging` |
 
 **Channel set** (per Q2 resolution 2026-05-11): only `{production, staging}` — `development` dropped, Metro bundler covers dev iteration.
@@ -506,7 +506,7 @@ ssh root@47.100.235.168 "
 rm /tmp/ota-bundle-${TIMESTAMP}.tar.gz
 
 # 4. Register via admin API
-curl -sf -X POST https://api.cretaceousfuture.com/api/ota/admin/register \
+curl -sf -X POST https://ota.cretaceousfuture.com/api/ota/admin/register \
   -H "Authorization: Bearer ${OTA_ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"runtimeVersion\":\"${RUNTIME_VERSION}\",\"channel\":\"${CHANNEL}\",\"timestamp\":\"${TIMESTAMP}\"}"
@@ -531,7 +531,7 @@ Bundle upload is non-atomic (tar extract takes time). During the brief window, a
 
 ```bash
 # scripts/ota/rollback.sh <runtimeVersion> <channel> <timestamp>
-curl -sf -X POST https://api.cretaceousfuture.com/api/ota/admin/rollback \
+curl -sf -X POST https://ota.cretaceousfuture.com/api/ota/admin/rollback \
   -H "Authorization: Bearer ${OTA_ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"runtimeVersion\":\"$1\",\"channel\":\"$2\",\"timestamp\":\"$3\"}"
@@ -543,31 +543,89 @@ This touches a `rollback` marker. Next client poll → `rollBackToEmbedded` dire
 
 ## 8. Nginx reverse proxy (Phase 4)
 
-### Server 139 nginx config (existing gateway box)
+### Independent subdomain (NOT piggy-backed on api.cretaceousfuture.com)
 
-Append to existing server block for `api.cretaceousfuture.com` (verify cert exists; else use `47.100.235.168:8083` direct + IP whitelist):
+Steve directive 2026-05-12 amended Q1: OTA gets its own subdomain
+`ota.cretaceousfuture.com` instead of piggy-backing on the existing
+`api.cretaceousfuture.com` vhost. Rationale:
+
+1. **APK-baked URL is forever** — coupling OTA to the main API domain
+   locks the two together for every customer install's lifetime.
+   Decoupling now costs ~30 min; decoupling later costs every customer
+   reinstalling the APK.
+2. **Failure-domain isolation** — if the main API has trouble (timeouts,
+   JWT middleware bug, rate-limit storms), OTA stays reachable so we can
+   still ship a rollback bundle. That's the whole point of OTA.
+3. **Semantic** — OTA is static-resource distribution (closer to a CDN),
+   not business API. Putting it under `api.*` is misleading.
+4. **Future-proof** — switching OTA to OSS/CDN later = one DNS A-record
+   change; `api.*` stays untouched.
+
+### Server 139 nginx vhost (independent server block)
+
+Source-of-truth committed at `nginx/ota.cretaceousfuture.com.conf`.
+Live config at `/www/server/panel/vhost/nginx/ota.cretaceousfuture.com.conf`
+on 139. Installer: `./scripts/ota/install-nginx-ota.sh` (idempotent — scp +
+nginx -t + reload + external health probe; auto-removes the new conf if
+nginx -t fails so the gateway stays healthy).
 
 ```nginx
-location /api/ota/ {
-    proxy_pass http://47.100.235.168:8083/api/ota/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+server {
+    listen 80;
+    server_name ota.cretaceousfuture.com;
+    return 301 https://$host$request_uri;
+}
 
-    # Bundle files can be large
-    client_max_body_size 50M;
-    proxy_read_timeout 300s;
-    proxy_send_timeout 300s;
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ota.cretaceousfuture.com;
 
-    # Don't buffer asset downloads (stream binary to client)
-    proxy_buffering off;
+    ssl_certificate     /www/server/panel/vhost/cert/ota.cretaceousfuture.com.pem;
+    ssl_certificate_key /www/server/panel/vhost/cert/ota.cretaceousfuture.com.key;
+    # ... TLS hardening identical to api.cretaceousfuture.com vhost ...
+
+    location /api/ota/ {
+        proxy_pass http://cretas_python;
+        include /www/server/panel/vhost/nginx/include/cretas-python-proxy-defaults.conf;
+        # OTA-specific overrides on top of shared Python defaults:
+        client_max_body_size 50M;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    # Catch-all returns 404 — explicit OTA paths only.
+    location / { return 404; }
 }
 ```
 
-### TLS cert status (verify Phase 4 Step 1)
-- [ ] Check whether `api.cretaceousfuture.com` already has a cert on server 139 (nginx `server_name` match)
-- [ ] If not, options: (a) Let's Encrypt via certbot, (b) bypass HTTPS for now and use `http://47.100.235.168:8083/api/ota/manifest` directly in `app.json` for v1 (acceptable for internal customer base, NOT for production at scale)
+The `/api/ota/` path prefix is preserved (no rewrite) so the Python router
+in `main.py` (`prefix="/api/ota"`) does NOT have to change — manifest URLs
+emitted by `manifest_builder._asset_url()` stay self-consistent across the
+nginx hop.
+
+### TLS cert acquisition (2026-05-12)
+
+```
+ssh root@139.196.165.140
+export Ali_Key=<account C AccessKey ID>     # see .claude/rules/aliyun-credentials.md
+export Ali_Secret=<account C AccessKey Secret>
+~/.acme.sh/acme.sh --issue --dns dns_ali -d ota.cretaceousfuture.com
+~/.acme.sh/acme.sh --install-cert -d ota.cretaceousfuture.com \
+    --key-file       /www/server/panel/vhost/cert/ota.cretaceousfuture.com.key \
+    --fullchain-file /www/server/panel/vhost/cert/ota.cretaceousfuture.com.pem \
+    --reloadcmd      "nginx -s reload"
+```
+
+- Issuer: Let's Encrypt ECC
+- Validity: 2026-05-11 → 2026-08-09 (90 days)
+- Auto-renew: acme.sh cron at day 60 (Jul 10), runs reloadcmd on success
+
+### DNS
+
+`ota.cretaceousfuture.com` A → `139.196.165.140`, TTL 600, RecordId
+`2053952913076417536` (account C alidns, added via Python aliyunsdk-alidns
+`AddDomainRecord` on 2026-05-12).
 
 ### Security group (server 47)
 Verify port 8083 is reachable from 139 (per `.claude/rules/aliyun-credentials.md` security-group rules). Existing rule grants 139→47:8083 for prod Python.
@@ -652,7 +710,7 @@ After build, inspect `app/src/main/AndroidManifest.xml`:
 <meta-data android:name="expo.modules.updates.ENABLED" android:value="true" />
 <meta-data android:name="expo.modules.updates.EXPO_RUNTIME_VERSION" android:value="1.0.0" />
 <meta-data android:name="expo.modules.updates.EXPO_UPDATE_URL"
-    android:value="https://api.cretaceousfuture.com/api/ota/manifest" />
+    android:value="https://ota.cretaceousfuture.com/api/ota/manifest" />
 <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CODE_SIGNING_CERTIFICATE"
     android:value="@string/cretas_ota_cert" />
 ```
@@ -666,7 +724,7 @@ If `ENABLED=false`, prebuild didn't flip the flag — investigate `app.json` con
 ```diff
    "updates": {
 -    "url": "https://u.expo.dev/PLACEHOLDER-EAS-PROJECT-ID",
-+    "url": "https://api.cretaceousfuture.com/api/ota/manifest",
++    "url": "https://ota.cretaceousfuture.com/api/ota/manifest",
      "checkAutomatically": "ON_LOAD",
 -    "fallbackToCacheTimeout": 5000
 +    "fallbackToCacheTimeout": 5000,
@@ -740,7 +798,7 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 | Cert expires in 2031 | Calendar reminder; rotation requires new APK build |
 | `expo export` doesn't emit `expoConfig.json` | §7.1 fallback: explicit `expo config --json` call in push script |
 | Windows path-length kills Gradle | §9 — `buildStagingDirectory` override |
-| Public IPv4 of server 47 changes | Customer APKs hit `api.cretaceousfuture.com` (DNS abstraction), nginx on 139 forwards — IP change just needs 139 nginx update |
+| Public IPv4 of server 47 changes | Customer APKs hit `ota.cretaceousfuture.com` (DNS abstraction), nginx on 139 forwards — IP change just needs 139 nginx update |
 | Concurrent /clear loses chat5 worktree commits | Per memory `feedback_chat_must_push_before_clear.md` — push before any `/clear` |
 | chat1 main.py concurrent edits | Per Q5 resolution: Phase 1 PR does NOT touch main.py. Separate post-chat1-merge 1-line micro-PR registers the router. |
 
@@ -764,7 +822,7 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 - [ ] **Phase 1 (server):** `pytest backend/python/ota/tests/` 45/45 PASS; `/api/ota/health` returns 200; manifest endpoint serves valid multipart/mixed per protocol
 - [ ] **Phase 2 (keys):** `ota_public_cert.pem` committed; private key on 47 (`ls -la /www/wwwroot/ota/keys/`) shows mode 600
 - [ ] **Phase 3 (push script):** `./scripts/ota/push-bundle.sh production android` exits 0; `/api/ota/admin/list` shows the registered bundle
-- [ ] **Phase 4 (nginx):** `curl https://api.cretaceousfuture.com/api/ota/health` returns 200 from external network
+- [ ] **Phase 4 (nginx):** `curl https://ota.cretaceousfuture.com/api/ota/health` returns 200 from external network
 - [ ] **Phase 5 (build):** Local `./gradlew assembleRelease` produces signed APK; `aapt dump xmltree` confirms `ENABLED=true`
 - [ ] **Phase 6 (E2E):** Fresh APK on emulator → push a bundle with visible UI change (e.g. button color) → close + reopen app → new UI visible without reinstall
 
@@ -789,7 +847,7 @@ curl -s http://47.100.235.168:8084/api/ota/health | jq
 
 All 6 questions answered by Steve via dispatch reply 2026-05-11; spec amended inline elsewhere.
 
-1. [x] **HTTPS cert for `api.cretaceousfuture.com`** — Domain DNS is on aliyun account C (per `.claude/rules/aliyun-credentials.md`). **Phase 1-3 use IP direct over HTTP** (`http://47.100.235.168:8083` as `OTA_HOSTNAME`); `expo-updates` accepts HTTP in dev. Provision Let's Encrypt at Phase 4 (nginx on 139) before prod customer rollout.
+1. [x] **HTTPS cert + domain** — Domain DNS is on aliyun account C. **Phase 1-3 use IP direct over HTTP** (`http://47.100.235.168:8083` as `OTA_HOSTNAME`). **Amended 2026-05-12** by Steve directive: do NOT piggy-back on existing `api.cretaceousfuture.com` cert. OTA gets its own subdomain `ota.cretaceousfuture.com` because URL is baked into the APK forever; coupling OTA to the main API domain is a one-way door we'd regret (full rationale in §8). Cert acquired via `acme.sh --issue --dns dns_ali` against account C alidns, Let's Encrypt ECC, 90-day auto-renew via acme.sh cron.
 2. [x] **Channel set** — `{production, staging}` only. **Drop `development`** (Metro bundler covers dev). `app.json:updates.requestHeaders.expo-channel-name` defaults to `"production"`.
 3. [x] **`OTA_ADMIN_TOKEN` location** — `/www/wwwroot/cretas/.env.ota` (separate from `.env.prod` for independent rotation), chmod 600, owner `cretas-python:cretas-python`. systemd `cretas-python.service` adds `EnvironmentFile=/www/wwwroot/cretas/.env.ota`.
 4. [x] **Bundle retention** — keep last N=10 per `(runtimeVersion, channel)` **AND** always preserve the latest (rolling-window prune). Add `scripts/ota/prune-bundles.sh` (Phase 3 extension, NOT a Phase 1 blocker).
