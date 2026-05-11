@@ -1,5 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.disposal.ApproveDisposalRequest;
+import com.cretas.aims.dto.disposal.CreateDisposalRecordRequest;
+import com.cretas.aims.dto.disposal.UpdateDisposalRecordRequest;
 import com.cretas.aims.entity.DisposalRecord;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.DisposalRecordService;
@@ -7,6 +10,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -105,8 +109,9 @@ public class DisposalController {
     @Operation(summary = "创建报废记录", description = "创建新的报废记录，需要指定报废类型、数量、原因等信息。创建后默认状态为待审批")
     public ResponseEntity<?> createDisposalRecord(
             @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
-            @RequestBody @Parameter(description = "报废记录信息，包含type、quantity、reason、itemId等") DisposalRecord record) {
+            @Valid @RequestBody @Parameter(description = "报废记录请求") CreateDisposalRecordRequest request) {
         try {
+            DisposalRecord record = toDisposalRecord(request);
             record.setFactoryId(factoryId);
             DisposalRecord created = disposalRecordService.createDisposalRecord(record);
             return ResponseEntity.ok(Map.of(
@@ -133,8 +138,9 @@ public class DisposalController {
     public ResponseEntity<?> updateDisposalRecord(
             @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
             @PathVariable @Parameter(description = "报废记录ID", example = "1", required = true) Long id,
-            @RequestBody @Parameter(description = "更新数据，包含需要修改的字段") DisposalRecord updateData) {
+            @Valid @RequestBody @Parameter(description = "更新数据，包含需要修改的字段") UpdateDisposalRecordRequest request) {
         try {
+            DisposalRecord updateData = toUpdateDisposalRecord(request);
             DisposalRecord updated = disposalRecordService.updateDisposalRecord(id, updateData);
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -166,12 +172,10 @@ public class DisposalController {
     public ResponseEntity<?> approveDisposal(
             @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
             @PathVariable @Parameter(description = "报废记录ID", example = "1", required = true) Long id,
-            @RequestBody @Parameter(description = "审批信息 {\"approverId\": 1, \"approverName\": \"张三\"}") Map<String, Object> body) {
+            @Valid @RequestBody @Parameter(description = "审批信息") ApproveDisposalRequest request) {
         try {
-            Integer approverId = (Integer) body.get("approverId");
-            String approverName = (String) body.get("approverName");
-
-            DisposalRecord approved = disposalRecordService.approveDisposal(id, approverId, approverName);
+            DisposalRecord approved = disposalRecordService.approveDisposal(
+                    id, request.getApproverId(), request.getApproverName());
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "data", approved,
@@ -331,5 +335,59 @@ public class DisposalController {
                 "message", ErrorSanitizer.sanitize(e)
             ));
         }
+    }
+
+    // ===================================================================
+    // Rule 17.1 — wire→entity mappers (Issue #384 batch 5).
+    // Mapper deliberately does NOT replicate service-owned defaults:
+    //   - factoryId from @PathVariable (set in createDisposalRecord)
+    //   - disposalDate default LocalDateTime.now() (service-owned)
+    //   - isApproved default false (service-owned)
+    // ===================================================================
+
+    /**
+     * Map {@link CreateDisposalRecordRequest} → {@link DisposalRecord}.
+     *
+     * <p>Auto-managed by service / controller path-variable / DB:
+     * {@code id}, {@code factoryId}, {@code disposalDate} (fallback only),
+     * {@code isApproved} (forced false), {@code approvedBy} / {@code approvedByName} /
+     * {@code approvalDate} (set later via approveDisposal),
+     * {@code actualLoss} (only set post-approval), {@code createdAt}, {@code updatedAt},
+     * {@code deletedAt}.
+     */
+    private static DisposalRecord toDisposalRecord(CreateDisposalRecordRequest r) {
+        DisposalRecord rec = new DisposalRecord();
+        rec.setDisposalQuantity(r.getDisposalQuantity());
+        rec.setDisposalType(r.getDisposalType());
+        rec.setDisposalReason(r.getDisposalReason());
+        rec.setDisposalDate(r.getDisposalDate());
+        rec.setDisposalMethod(r.getDisposalMethod());
+        rec.setQualityInspectionId(r.getQualityInspectionId());
+        rec.setReworkRecordId(r.getReworkRecordId());
+        rec.setProductionBatchId(r.getProductionBatchId());
+        rec.setMaterialBatchId(r.getMaterialBatchId());
+        rec.setEstimatedLoss(r.getEstimatedLoss());
+        rec.setRecoveryValue(r.getRecoveryValue());
+        rec.setNotes(r.getNotes());
+        return rec;
+    }
+
+    /**
+     * Map {@link UpdateDisposalRecordRequest} → partial {@link DisposalRecord}.
+     *
+     * <p>The resulting entity carries only the mutable fields. Service
+     * iterates each field with an {@code if (... != null)} guard, so leaving
+     * a wire field absent preserves the existing DB value.
+     */
+    private static DisposalRecord toUpdateDisposalRecord(UpdateDisposalRecordRequest r) {
+        DisposalRecord rec = new DisposalRecord();
+        rec.setDisposalQuantity(r.getDisposalQuantity());
+        rec.setDisposalType(r.getDisposalType());
+        rec.setDisposalReason(r.getDisposalReason());
+        rec.setDisposalMethod(r.getDisposalMethod());
+        rec.setEstimatedLoss(r.getEstimatedLoss());
+        rec.setRecoveryValue(r.getRecoveryValue());
+        rec.setNotes(r.getNotes());
+        return rec;
     }
 }
