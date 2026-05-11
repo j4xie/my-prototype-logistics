@@ -51,6 +51,42 @@ if command -v acquire_deploy_lock >/dev/null 2>&1 || declare -F acquire_deploy_l
     acquire_deploy_lock "cretas-backend-deploy" || exit 1
 fi
 
+# ==================== Git Sync Pre-check ====================
+# May 11 2026 stale-local-deploy bug fix: deploy builds jar via mvn package from
+# local source. If local is behind origin/main (e.g. organizer admin-merged via
+# gh CLI without `git pull`), deploy ships stale code. Health checks PASS (code
+# compiles) but functional behavior is OLD.
+# Per HARD rule feedback_organizer_must_git_pull_before_deploy.md.
+log "INFO" "[0/4] Git sync pre-check..."
+cd "$PROJECT_ROOT"
+git fetch origin main 2>/dev/null || log "WARN" "git fetch origin main failed (offline?), continue with caution"
+GIT_LOCAL_SHA=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+GIT_ORIGIN_SHA=$(git rev-parse origin/main 2>/dev/null || echo "unknown")
+GIT_CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+
+if [ "$GIT_LOCAL_SHA" != "$GIT_ORIGIN_SHA" ] && [ "$GIT_LOCAL_SHA" != "unknown" ] && [ "$GIT_ORIGIN_SHA" != "unknown" ]; then
+    if [ "$GIT_CURRENT_BRANCH" = "main" ]; then
+        log "ERROR" "Local main HEAD != origin/main HEAD"
+        log "ERROR" "  local : $GIT_LOCAL_SHA"
+        log "ERROR" "  origin: $GIT_ORIGIN_SHA"
+        log "ERROR" "Run: cd $PROJECT_ROOT && git pull origin main"
+        log "ERROR" "Override: SKIP_GIT_CHECK=1 $0 ..."
+        if [ "${SKIP_GIT_CHECK:-}" != "1" ]; then
+            exit 1
+        fi
+        log "WARN" "SKIP_GIT_CHECK=1 set, continuing deploy with stale local"
+    else
+        log "WARN" "Current branch is '$GIT_CURRENT_BRANCH' (not main). Verify intended deploy source."
+    fi
+else
+    log "INFO" "  Git: local HEAD matches origin/main ✓"
+fi
+
+# Dirty tree warning (non-fatal)
+if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+    log "WARN" "Working tree has uncommitted changes — deploy will use local working tree state"
+fi
+
 # ==================== 配置 ====================
 REPO="j4xie/my-prototype-logistics"
 JAR_NAME="cretas-backend-system-1.0.0.jar"

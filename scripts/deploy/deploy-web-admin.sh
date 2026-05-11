@@ -71,6 +71,44 @@ LOCAL_BUILD_DIR="web-admin/dist"
 TMP_TAR="/tmp/web-admin-dist.tar.gz"
 BACKUP_KEEP=3
 
+# ==================== Git Sync Pre-check ====================
+# May 11 2026 stale-local-deploy bug fix: deploy builds Vite dist from local
+# working tree. If local is behind origin/main (e.g. organizer admin-merged via
+# gh CLI without `git pull`), deploy ships stale code. Bundle gets new hash but
+# missing post-PR fixes.
+# Per HARD rule feedback_organizer_must_git_pull_before_deploy.md.
+echo "[$(date '+%H:%M:%S')] [0/4] Git sync pre-check..."
+SCRIPT_DIR_GIT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT_GIT="$(cd "$SCRIPT_DIR_GIT/../.." && pwd)"
+cd "$PROJECT_ROOT_GIT"
+git fetch origin main 2>/dev/null || echo "[$(date '+%H:%M:%S')] [WARN] git fetch origin main failed (offline?), continue with caution"
+LOCAL_SHA=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+ORIGIN_SHA=$(git rev-parse origin/main 2>/dev/null || echo "unknown")
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+
+if [ "$LOCAL_SHA" != "$ORIGIN_SHA" ] && [ "$LOCAL_SHA" != "unknown" ] && [ "$ORIGIN_SHA" != "unknown" ]; then
+    if [ "$CURRENT_BRANCH" = "main" ]; then
+        echo "[$(date '+%H:%M:%S')] [ERROR] Local main HEAD != origin/main HEAD"
+        echo "[$(date '+%H:%M:%S')] [ERROR]   local : $LOCAL_SHA"
+        echo "[$(date '+%H:%M:%S')] [ERROR]   origin: $ORIGIN_SHA"
+        echo "[$(date '+%H:%M:%S')] [ERROR] Run: cd $PROJECT_ROOT_GIT && git pull origin main"
+        echo "[$(date '+%H:%M:%S')] [ERROR] Override: SKIP_GIT_CHECK=1 $0 ..."
+        if [ "${SKIP_GIT_CHECK:-}" != "1" ]; then
+            exit 1
+        fi
+        echo "[$(date '+%H:%M:%S')] [WARN] SKIP_GIT_CHECK=1 set, continuing deploy with stale local"
+    else
+        echo "[$(date '+%H:%M:%S')] [WARN] Current branch is '$CURRENT_BRANCH' (not main). Verify intended deploy source."
+    fi
+else
+    echo "[$(date '+%H:%M:%S')] [INFO]   Git: local HEAD matches origin/main ✓"
+fi
+
+# Dirty tree warning (non-fatal)
+if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+    echo "[$(date '+%H:%M:%S')] [WARN] Working tree has uncommitted changes — deploy will use local working tree state"
+fi
+
 # 根据 --env 决定目标路径
 if [ "$ENV" = "prod" ]; then
     REMOTE_PATH="/www/wwwroot/web-admin"
