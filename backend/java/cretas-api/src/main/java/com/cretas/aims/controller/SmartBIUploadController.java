@@ -478,7 +478,9 @@ public class SmartBIUploadController {
         log.info("Get upload history: factoryId={}, status={}, page={}, size={}", factoryId, status, page, size);
 
         if (pgUploadRepository == null) {
-            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+            // Issue #290: still wrap in paginated shape so FE upload history page
+            // can render an "empty" state instead of crashing on data:null.
+            return ResponseEntity.ok(ApiResponse.success(emptyPageMap(size)));
         }
 
         try {
@@ -486,11 +488,51 @@ public class SmartBIUploadController {
                     page, Math.min(size, 200));
             org.springframework.data.domain.Page<UploadHistoryDTO> dtoPage =
                     pgUploadRepository.findUploadHistoryLightweight(factoryId, pageable);
-            return ResponseEntity.ok(ApiResponse.success(dtoPage));
+            // Issue #290: Spring Boot 3.2+ deprecated default Page Jackson
+            // serialization → emits {} or null at FE which broke the upload
+            // history page (data:null evidence in PR #286 §X.0). Explicit Map
+            // wrapper mirrors what /uploads/{id}/data already does and matches
+            // SmartBIConfigController.pageToMap shape.
+            return ResponseEntity.ok(ApiResponse.success(pageToMap(dtoPage)));
         } catch (Exception e) {
             log.error("Get upload history failed: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("Get upload history failed: " + ErrorSanitizer.sanitize(e)));
         }
+    }
+
+    /**
+     * Convert Spring Data Page to plain Map for stable Jackson serialization
+     * (Spring Boot 3.2+ deprecated default Page JSON encoding — Issue #290).
+     */
+    private static Map<String, Object> pageToMap(org.springframework.data.domain.Page<?> page) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("content", page.getContent());
+        body.put("totalElements", page.getTotalElements());
+        body.put("totalPages", page.getTotalPages());
+        body.put("size", page.getSize());
+        body.put("number", page.getNumber());
+        body.put("first", page.isFirst());
+        body.put("last", page.isLast());
+        body.put("numberOfElements", page.getNumberOfElements());
+        body.put("empty", page.isEmpty());
+        return body;
+    }
+
+    /**
+     * Empty paginated wrapper for the "repository unavailable" fallback path.
+     */
+    private static Map<String, Object> emptyPageMap(int size) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("content", java.util.Collections.emptyList());
+        body.put("totalElements", 0L);
+        body.put("totalPages", 0);
+        body.put("size", size);
+        body.put("number", 0);
+        body.put("first", true);
+        body.put("last", true);
+        body.put("numberOfElements", 0);
+        body.put("empty", true);
+        return body;
     }
 
     @GetMapping("/uploads/{uploadId}/fields")
