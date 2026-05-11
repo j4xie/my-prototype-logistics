@@ -372,7 +372,7 @@ Phase 2D replacement: real-DB queries against the 5 Silver tables from §2.1.2, 
 
 **Owner**: chat-2D-quality (1 chat, depends on PR-B backfill; can parallel with PR-C)
 
-### 4.5 PR-E: Phase 2D cutover (T6.7 + T6.8 nginx + active-E2E)
+### 4.5 PR-E: Phase 2D cutover (T6.7 → T6.8 nginx + active-E2E)
 
 **Scope** (mirror `2026-05-11-t6-6-cutover-spec.md` cascade pattern):
 
@@ -380,7 +380,15 @@ Phase 2D replacement: real-DB queries against the 5 Silver tables from §2.1.2, 
 - **T6.7.2 canary**: F999 only — Python factory production active-E2E gate
 - **T6.7.3 cascade**: F001 → 5 more F-numeric → all 56 factory tenants
 - **T6.7.4 cleanup**: Java deprecation header — production path
-- **T6.8.x**: identical cascade for quality side (parallel with T6.7 or sequential per organizer)
+- **T6.8.x**: identical cascade for quality side — **Sequential after T6.7 close** ✅ Steve sign-off 2026-05-11
+
+**Sequencing rationale** (Steve sign-off 2026-05-11): T6.7 + T6.8 run **sequentially**, NOT parallel. Quality cascade waits for production T6.7.4 close before T6.8.1 dryrun begins. Reasons:
+
+1. **Schema dependency overlap**: `fact_quality_inspection` is shared between production and quality branches (§2.1). Sequential cutover ensures production-side reads are stable before introducing quality-side concurrent reads.
+2. **Rollback simplification**: parallel T6.7 + T6.8 would create combinatorial rollback states (revert one or both?). Sequential keeps each cascade self-contained.
+3. **Reviewer / customer bandwidth**: 2 simultaneous cascades double the active-E2E and customer-comms load. Sequential keeps per-day comms volume manageable.
+
+Trade-off: ~1 week additional elapsed time (T6.7 close + 24-72h observation → T6.8 start). Steve accepted this for the safety / clarity gains.
 
 **Gate per stage**:
 
@@ -495,6 +503,42 @@ Remove the 14 R_*_REAL entirely; Sub-ETL-3 V20260511_02 seed becomes a no-op. Ac
 
 **Option A (bulk INSERT)** — cleanest invariant preservation. Steve decides on PR comment of this spec. The migration impl is a separate chat dispatched after Steve's decision.
 
+### 5.6 ✅ Steve sign-off 2026-05-11 — Option A selected
+
+**Decision**: **Option A — bulk INSERT 14 R_*_REAL into `cretas_prod_db.factories` with `type='RESTAURANT'`.**
+
+Implementation lands in this same PR (chat1 spec-amend-and-ship):
+
+- Migration file: `backend/java/cretas-api/src/main/resources/db/migration-pg-converted/V2026_05_11_01__onboard_14_r_real_chains.sql`
+- Targets `cretas_prod_db.factories` via Java Flyway (NOT `smartbi_prod_db` — that's a different runner). Migration applied at Spring Boot startup post-deploy.
+- Idempotent via `ON CONFLICT (id) DO NOTHING` — safe to re-run.
+- 14 chain names sourced from `smartbi_prod_db.restaurant_chain_catalog` (V20260511_02 seed). Names + factory_ids enumerated in §5.6.1 below.
+- `is_active=true`, `manually_verified=false`, `ai_weekly_quota=1000`, `level=0`, `type='RESTAURANT'`. The `ai_weekly_quota=1000` is per Steve dispatch (higher than the entity default of 20 — these are real customer chains expected to query heavily).
+- Tests: new `backend/python/tests/test_phase_2d_onboarding.py` locks SQL invariants (14 rows, RESTAURANT type, ON CONFLICT idempotency) + `tenant.py.from_db_value('RESTAURANT')` resolution.
+
+#### 5.6.1 14 R_*_REAL roster (per V20260511_02 seed + Steve sign-off naming)
+
+| factory_id | name |
+|---|---|
+| `R_DONGMENKOU_REAL` | 东门口 |
+| `R_HONGDEJI_REAL` | 鸿德记 |
+| `R_HUOGUO_GENERIC_REAL` | 火锅 (generic) |
+| `R_ILTEATRO_REAL` | IL TEATRO 西餐 |
+| `R_JINCHUAN_HG_REAL` | 锦川火锅 |
+| `R_JINRINIUSHI_REAL` | 今日牛事 |
+| `R_LINJIAYAN_REAL` | 邻家宴 |
+| `R_QINGHUAJIAO_REAL` | 青花椒 |
+| `R_SHANGMA_HG_REAL` | 上马火锅 |
+| `R_XIMAXIANG_REAL` | 唏嘛香 牛肉面 |
+| `R_XINBASHU_REAL` | 鑫巴蜀 |
+| `R_YONGHE_REAL` | 永和豆浆 |
+| `R_YOUZIYOUWEI_REAL` | 有滋有味 |
+| `R_YUJIUJING_REAL` | 御九井 日料 |
+
+Post-deploy expected behavior: tenant.py queries `factories WHERE id = $1`, finds row, returns `TenantType.RESTAURANT` → restaurant dispatcher (chat-A2 PR #352 + chat4 PR #358 LIVE impl). 14 chains stop 500ing.
+
+Caveat: per §8 audit, these chains have ZERO ingested data in `fact_pos_*` / `restaurant_reviews` / `fact_restaurant_wastage`. They will return restaurant envelopes populated with `NO_POS_DATA_FOR_PERIOD` / `NO_REVIEW_DATA_FOR_CHAIN` / `WASTAGE_NOT_TRACKED` markers — semantically correct but UX shows "no data yet". Sub-ETL-2c data ingestion is a separate Steve action item (per §8 chat4 audit S2).
+
 ---
 
 ## 6. Active-E2E gate
@@ -584,26 +628,92 @@ T6.7 cascade has 3 sub-stages (canary → middle → full). Each commits a `vhos
 
 ⛔ **Placeholder — pending chat4 PR #367 `validate-factory-silver-schema.sql` execution against `smartbi_prod_db`.**
 
-This section will be amended via follow-up PR once chat4's audit output lands. Expected fields:
+✅ **AMENDED 2026-05-11 from chat4 PR #372 prod audit** (`docs/qa-audits/2026-05-12-restaurant-data-readiness-prod-evidence.md`). Run on server 47 at 2026-05-12 04:46 UTC+8 against `smartbi_prod_db` + `cretas_prod_db`.
 
-| Section | Expected data |
+### 8.1 Production-side tables status (Section 1)
+
+All 5 tables **MISSING**:
+
+| Table | Status |
 |---|---|
-| 8.1 Production-side tables status | Per-table MISSING / EXISTS from `--- Section 1 ---` of audit script |
-| 8.2 Quality-side tables status | Per-table MISSING / EXISTS from `--- Section 2 ---` |
-| 8.3 Restaurant-side sanity check | Confirm restaurant tables EXISTS (Section 3) |
-| 8.4 V20260511_03 return_qty column | Confirm column applied (Section 4) |
-| 8.5 14 REAL chains roster | Per-row dump from `restaurant_chain_catalog WHERE source_kind = 'REAL'` (Section 5) |
-| 8.6 `factories` type breakdown | `SELECT type, COUNT(*) FROM cretas_prod_db.factories GROUP BY type` (Section 6 — separate connection) |
-| 8.7 Migration sizing | If all 9 factory Silver tables MISSING → confirms PR-A scope is the full migration; if partial EXISTS → reduce PR-A scope to just missing tables |
+| `dim_equipment` | MISSING |
+| `dim_production_line` | MISSING |
+| `fact_equipment_event` | MISSING |
+| `fact_production_batch` | MISSING |
+| `fact_quality_inspection` | MISSING (shared with quality §8.2) |
 
-**Amendment workflow**:
+### 8.2 Quality-side tables status (Section 2)
 
-1. chat4 runs `psql "$SMARTBI_PROD_DSN" -f scripts/etl/validate-factory-silver-schema.sql > reports/factory-silver-audit-2026-05-11.txt`
-2. Output committed to `reports/` (not in this spec)
-3. New PR amends §8 of this doc with summarized findings
-4. Migration impl chat (PR-A) consumes amended §8 to scope PR-A migration files (full 9 tables vs partial)
+All 5 tables **MISSING**:
 
-Pre-amendment **placeholder assumption** (per validate-script comment block): all 9 factory Silver tables MISSING. Migration PR-A scoped for full 9-table creation. If §8 amendment reveals partial existing tables, PR-A scope narrows accordingly.
+| Table | Status |
+|---|---|
+| `fact_customer_complaint` | MISSING |
+| `fact_disposal_record` | MISSING |
+| `fact_quality_defect` | MISSING |
+| `fact_quality_inspection` | MISSING (shared) |
+| `fact_rework_record` | MISSING |
+
+### 8.3 Restaurant-side sanity check (Section 3)
+
+All 9 restaurant tables **EXISTS** ✅: `dim_ingredient`, `dim_product`, `dim_store`, `fact_pos_item`, `fact_pos_transaction`, `fact_restaurant_requisition`, `fact_restaurant_wastage`, `restaurant_chain_catalog`, `restaurant_reviews`.
+
+### 8.4 V20260511_03 `return_qty` column (Section 4)
+
+✅ Column LIVE in prod:
+
+```
+column_name | data_type | is_nullable | column_default
+return_qty  | numeric   | YES         | NULL::numeric
+```
+
+Migration applied. Blocker is upstream Sub-ETL-2c (does not populate column), not the column itself.
+
+### 8.5 14 REAL chains roster (Section 5)
+
+`SELECT source_kind, COUNT(*) FROM restaurant_chain_catalog GROUP BY source_kind`:
+
+| source_kind | chain_count |
+|---|---|
+| REAL | **14** |
+
+✅ V20260511_02 seed complete. All 14 chain names + cuisines + source_root_paths confirmed in chat4 audit JSON snapshot. Roster matches §5.6.1.
+
+### 8.6 `cretas_prod_db.factories` tenant breakdown (Section 6)
+
+`SELECT type, COUNT(*) FROM factories GROUP BY type ORDER BY type`:
+
+| type | count |
+|---|---|
+| FACTORY | 56 |
+| RESTAURANT | 19 |
+
+**0 BRANCH rows** in current env. `tenant.py:TenantType.BRANCH` predicate path is dead code in prod today (still safe to keep — Sub-A spec §2.2 + Sub-B spec §2.2 leave the door open for future BRANCH tenants).
+
+Post-Phase-2D-amend (this PR ships §5 Option A migration):
+
+| type | count (expected) |
+|---|---|
+| FACTORY | 56 |
+| RESTAURANT | **33** (19 existing + 14 new R_*_REAL) |
+
+### 8.7 Migration sizing impact
+
+All 9 factory Silver tables MISSING → **PR-A migration scope is the full 9-table creation** (no scope reduction). Confirms §2.4 V20260601_01 + V20260601_02 + V20260601_03 file plan.
+
+### 8.8 Restaurant data readiness (extra context from chat4 audit §3)
+
+19 existing RESTAURANT tenants currently have very thin data:
+
+| Metric | Count | Notes |
+|---|---|---|
+| N2 (reviews) READY | **0 / 19** | `restaurant_reviews` table empty across all tenants |
+| N3 (returns) READY | **0 / 19** | `fact_pos_item.return_qty` is 0 for all rows |
+| N4 (wastage) READY | **2 / 19** | Only F002 + R_XMX_CHAIN have non-trivial wastage data |
+| Overall PARTIAL | 2 | F002, R_XMX_CHAIN (N4 only) |
+| Overall EMPTY | 17 | All others |
+
+**Implication for §5 Option A onboarding**: the 14 new R_*_REAL chains will route to restaurant Python branch correctly (post-migration), but will return all-null envelopes with `NO_POS_DATA_FOR_PERIOD` / `NO_REVIEW_DATA_FOR_CHAIN` / `WASTAGE_NOT_TRACKED` markers — same as the 17 EMPTY existing tenants. This is **expected** post-onboard behavior; data layer fix is Sub-ETL-2c scope (chat4 audit §5.1 S2 for Steve).
 
 ---
 
@@ -611,8 +721,9 @@ Pre-amendment **placeholder assumption** (per validate-script comment block): al
 
 ### 9.1 Pre-dispatch decisions
 
-- [ ] **§5 R_*_REAL onboarding option chosen**: Option A (bulk INSERT — recommended) / Option B (`tenant.py` heuristic) / Option C (delete `restaurant_chain_catalog`)
-- [ ] §8 chat4 audit ran + spec amended
+- [x] **§5 R_*_REAL onboarding option chosen**: ✅ **Option A** (bulk INSERT) — Steve sign-off 2026-05-11 (this PR ships the migration in §5.6)
+- [x] §8 chat4 audit ran + spec amended — chat4 PR #372 prod audit data captured in §8.1-§8.8 above
+- [x] §4.5 T6.7/T6.8 sequencing chosen: ✅ **Sequential T6.7 → T6.8** — Steve sign-off 2026-05-11 (see §4.5 rationale)
 - [ ] PR-A migration column-level schema reviewed against Java entity references (`ProductionBatch.java`, `FactoryEquipment.java`, `DisposalRecord.java`, etc.)
 - [ ] PR-B Sub-ETL-factory ingest plan reviewed — cross-DB read pattern + idempotent upsert key per table
 
