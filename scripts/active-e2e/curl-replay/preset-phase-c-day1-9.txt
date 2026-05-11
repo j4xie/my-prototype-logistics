@@ -1,0 +1,44 @@
+# Phase C Day 1 — 9-endpoint customer-perspective probe (~2026-05-12 CST)
+# Per marching order (chat3 dispatch 2026-05-12): Day 0 baseline reprobe (4) + sales bonus (1)
+# + 4 new bug-fix-specific paths. Total = 74 (DB-active) × 9 = 666 calls.
+# Probe target: https://api.cretaceousfuture.com (customer-facing HTTPS gateway, server 139 nginx).
+#
+# §1 Day 0 subset reprobe — for direct comparison vs PR #302 baseline (296/296 PASS 0 regression)
+#   1. /smart-bi/dashboard           → Java prod 10010 (location / fallthrough)
+#   2. /smart-bi/analysis/inventory  → Python prod 8083 (nginx regex cohort)
+#   3. /smart-bi/analysis/finance    → Python prod 8083 (nginx regex cohort)
+#   4. /smart-bi/analysis/procurement → Python prod 8083 (nginx regex cohort)
+#
+# §1b Sales analysis (per chat3 Q1 — "Both": Day 0 reprobe + sales bonus)
+#   5. /smart-bi/analysis/sales      → Python prod 8083 (nginx regex cohort)
+#
+# §2 New bug-fix verify paths (4 paths, all read-only LIST/GET — per Q2/Q3 long-term-best)
+#
+# Path drift notes (MO listed vs actual — fully documented in §0 of report):
+#   - MO listed POST /transfers (empty body) → swapped to GET /transfers/statistics
+#     (TransferController has no root GET — only /{transferId} and /statistics.
+#     Probing statistics gives B9 reachability post-PR #138 without prod writes.)
+#   - MO listed /sales-orders/{soId}/quick-receipt → swapped to GET /finance/payments
+#     (Issue #317 fix is in ArApController.recordArPayment, not SO quick-receipt.
+#     PaymentRecordController exposes the list; body-sample to verify salesOrderId field.)
+#   - MO listed /{factoryId}/smart-bi/chart-templates → actual path /smartbi-config/chart-templates
+#     (No factoryId in URL — global SmartBI config endpoint. JWT still per-factory; verifies
+#     Issue #336 ChartTemplate Jackson field rename across 74 token contexts.)
+#
+#   6. /material-batches              → D1 双仓 regression check (warehouseId field shape)
+#   7. /transfers/statistics          → B9 reachability post PR #138 (Pattern B carry-over)
+#   8. /finance/payments              → Issue #317 orphan-receipt verify (post PR #342 — body
+#                                       sampling will confirm AR_PAYMENT rows carry salesOrderId)
+#   9. /smartbi-config/chart-templates → Issue #336 Jackson rename verify (post PR #342)
+#
+# Assertion: --expect-status 200 (Day 1 baseline parity)
+
+GET /api/mobile/{factoryId}/smart-bi/dashboard?period=month
+GET /api/mobile/{factoryId}/smart-bi/analysis/inventory?startDate=2026-01-01&endDate=2026-05-10
+GET /api/mobile/{factoryId}/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-05-10
+GET /api/mobile/{factoryId}/smart-bi/analysis/procurement?startDate=2026-01-01&endDate=2026-05-10
+GET /api/mobile/{factoryId}/smart-bi/analysis/sales?startDate=2026-01-01&endDate=2026-05-10
+GET /api/mobile/{factoryId}/material-batches
+GET /api/mobile/{factoryId}/transfers/statistics
+GET /api/mobile/{factoryId}/finance/payments
+GET /api/mobile/smartbi-config/chart-templates
