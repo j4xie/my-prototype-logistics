@@ -66,7 +66,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from smartbi_compat.api.analysis_finance import _decimal_to_number, _get_finance_overview
+from smartbi_compat.api.analysis_finance import _get_finance_overview
 from smartbi_compat.api.analysis_inventory import _get_inventory_health
 from smartbi_compat.api.analysis_procurement import _get_procurement_overview
 from smartbi_compat.api.analysis_sales import _get_sales_overview

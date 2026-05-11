@@ -20,7 +20,7 @@ imported into ``dashboard_composite``.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Any
 
 import pytest
