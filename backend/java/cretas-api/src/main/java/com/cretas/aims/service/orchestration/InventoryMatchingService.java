@@ -8,6 +8,7 @@ import com.cretas.aims.entity.inventory.SalesOrderItem;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ public class InventoryMatchingService {
 
     private final SalesOrderRepository salesOrderRepository;
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
+    private final WarehouseResolver warehouseResolver;
 
     /**
      * A5 集团联销 feature flag (PR #309 A5=C, 2026-05-10).
@@ -82,11 +84,18 @@ public class InventoryMatchingService {
                 continue;
             }
 
-            BigDecimal available = crossFactoryEnabled
-                    ? finishedGoodsBatchRepository
-                            .sumAvailableQuantityByProductTypeAllFactories(item.getProductTypeId())
-                    : finishedGoodsBatchRepository
-                            .sumAvailableQuantityByProductType(factoryId, item.getProductTypeId());
+            // D1: warehouse strategy per PR #310 §5 — sales from WH-LOG fixed (D5 销售从总仓出货).
+            // crossFactoryEnabled 分支保留 all-factories 语义 (A5 集团联销, 跨工厂总池).
+            BigDecimal available;
+            if (crossFactoryEnabled) {
+                available = finishedGoodsBatchRepository
+                        .sumAvailableQuantityByProductTypeAllFactories(item.getProductTypeId());
+            } else {
+                String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+                available = finishedGoodsBatchRepository
+                        .sumAvailableQuantityByProductTypeAndWarehouse(
+                                factoryId, item.getProductTypeId(), warehouseId);
+            }
 
             // 缺口 = max(待发 - 可用, 0)；若可用充足则缺口为负（富余），isFullySatisfied() 返回 true
             BigDecimal shortfall = pending.subtract(available).max(BigDecimal.ZERO);
@@ -125,9 +134,15 @@ public class InventoryMatchingService {
      */
     @Transactional
     public void reserveStock(String factoryId, String productTypeId, BigDecimal quantity) {
-        List<FinishedGoodsBatch> batches = crossFactoryEnabled
-                ? finishedGoodsBatchRepository.findAvailableBatchesAllFactories(productTypeId)
-                : finishedGoodsBatchRepository.findAvailableBatches(factoryId, productTypeId);
+        // D1: warehouse strategy per PR #310 §5 — sales reserve from WH-LOG fixed (D5).
+        List<FinishedGoodsBatch> batches;
+        if (crossFactoryEnabled) {
+            batches = finishedGoodsBatchRepository.findAvailableBatchesAllFactories(productTypeId);
+        } else {
+            String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+            batches = finishedGoodsBatchRepository
+                    .findAvailableBatchesByWarehouse(factoryId, productTypeId, warehouseId);
+        }
 
         BigDecimal remaining = quantity;
         for (FinishedGoodsBatch batch : batches) {

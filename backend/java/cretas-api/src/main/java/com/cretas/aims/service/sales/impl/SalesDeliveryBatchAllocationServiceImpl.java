@@ -8,6 +8,7 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.repository.inventory.SalesDeliveryItemRepository;
 import com.cretas.aims.repository.sales.SalesDeliveryItemBatchAllocationRepository;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.sales.SalesDeliveryBatchAllocationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
     private final SalesDeliveryItemBatchAllocationRepository allocationRepository;
     private final SalesDeliveryItemRepository deliveryItemRepository;
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
+    private final WarehouseResolver warehouseResolver;
 
     @Override
     @Transactional
@@ -141,7 +143,10 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
                     .withHint("请输入大于 0 的需求数量").withHintTarget("requiredQty");
         }
 
-        var batches = finishedGoodsBatchRepository.findAvailableBatchesFifo(factoryId, productTypeId);
+        // D1: warehouse strategy per PR #310 §5 — sales FIFO 推荐 WH-LOG fixed (D5).
+        String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+        var batches = finishedGoodsBatchRepository
+                .findAvailableBatchesFifoByWarehouse(factoryId, productTypeId, warehouseId);
 
         List<Map<String, Object>> result = new ArrayList<>();
         BigDecimal remaining = requiredQty;

@@ -157,6 +157,20 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
                                                   @Param("materialTypeId") String materialTypeId);
 
     /**
+     * 查找可用的批次（FIFO - 带 warehouse 过滤）。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     * warehouseId 必传 — 调用方需明确从哪个仓查 (WH-LOG / WH-WKS)。
+     */
+    @Query("SELECT m FROM MaterialBatch m WHERE m.factoryId = :factoryId " +
+           "AND m.materialTypeId = :materialTypeId " +
+           "AND m.warehouseId = :warehouseId " +
+           "AND m.status = 'AVAILABLE' " +
+           "AND (m.receiptQuantity - m.usedQuantity - m.reservedQuantity) > 0 " +
+           "ORDER BY m.receiptDate ASC, m.id ASC")
+    List<MaterialBatch> findAvailableBatchesFIFOByWarehouse(@Param("factoryId") String factoryId,
+                                                            @Param("materialTypeId") String materialTypeId,
+                                                            @Param("warehouseId") String warehouseId);
+
+    /**
      * 查找可用的批次（FEFO - 先到期先出，食品行业合规）
      */
     @Query("SELECT m FROM MaterialBatch m WHERE m.factoryId = :factoryId " +
@@ -166,6 +180,20 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
            "ORDER BY m.expireDate ASC NULLS LAST, m.receiptDate ASC, m.id ASC")
     List<MaterialBatch> findAvailableBatchesFEFO(@Param("factoryId") String factoryId,
                                                   @Param("materialTypeId") String materialTypeId);
+
+    /**
+     * 查找可用的批次（FEFO - 带 warehouse 过滤）。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     * 用途：报工消耗 (WH-WKS 固定)、调拨发货 (source warehouse)、BOM 展开 (WH-WKS 优先)。
+     */
+    @Query("SELECT m FROM MaterialBatch m WHERE m.factoryId = :factoryId " +
+           "AND m.materialTypeId = :materialTypeId " +
+           "AND m.warehouseId = :warehouseId " +
+           "AND m.status = 'AVAILABLE' " +
+           "AND (m.receiptQuantity - m.usedQuantity - m.reservedQuantity) > 0 " +
+           "ORDER BY m.expireDate ASC NULLS LAST, m.receiptDate ASC, m.id ASC")
+    List<MaterialBatch> findAvailableBatchesFEFOByWarehouse(@Param("factoryId") String factoryId,
+                                                            @Param("materialTypeId") String materialTypeId,
+                                                            @Param("warehouseId") String warehouseId);
 
     /**
      * 查找即将过期的批次
@@ -219,6 +247,21 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
             @Param("materialTypeId") String materialTypeId);
 
     /**
+     * 汇总指定原料类型在指定 warehouse 的可用库存总量。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     * 用途：调拨单 detail 页"现有库存"按 source warehouse 展示。
+     */
+    @Query("SELECT COALESCE(SUM(m.receiptQuantity - m.usedQuantity - m.reservedQuantity), 0) " +
+           "FROM MaterialBatch m WHERE m.factoryId = :factoryId " +
+           "AND m.materialTypeId = :materialTypeId " +
+           "AND m.warehouseId = :warehouseId " +
+           "AND m.status = 'AVAILABLE' " +
+           "AND (m.receiptQuantity - m.usedQuantity - m.reservedQuantity) > 0")
+    BigDecimal sumAvailableQuantityByMaterialTypeAndWarehouse(
+            @Param("factoryId") String factoryId,
+            @Param("materialTypeId") String materialTypeId,
+            @Param("warehouseId") String warehouseId);
+
+    /**
      * 获取低库存的原材料类型
      */
     @Query("SELECT m.materialTypeId FROM MaterialBatch m " +
@@ -261,6 +304,13 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
      * 根据工厂ID和材料类型ID查找
      */
     List<MaterialBatch> findByFactoryIdAndMaterialTypeId(String factoryId, String materialTypeId);
+
+    /**
+     * 根据工厂ID、材料类型ID、warehouse 查找。D1 双仓流转 (PR #309 A1=A, 2026-05-10 spec)。
+     */
+    List<MaterialBatch> findByFactoryIdAndMaterialTypeIdAndWarehouseId(String factoryId,
+                                                                       String materialTypeId,
+                                                                       String warehouseId);
 
     /**
      * 统计工厂批次数

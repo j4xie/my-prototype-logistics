@@ -12,6 +12,7 @@ import com.cretas.aims.repository.ConversionRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.service.BomService;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class BomExpansionService {
     private final MaterialBatchRepository materialBatchRepository;
     private final ProductionPlanRepository productionPlanRepository;
     private final BomService bomService;
+    private final WarehouseResolver warehouseResolver;
 
     /**
      * BOM展开：根据产品类型和生产数量，计算所有需要的原辅料（含损耗）。
@@ -186,10 +188,19 @@ public class BomExpansionService {
         List<MaterialShortfall> shortfalls = new ArrayList<>();
         List<MaterialAllocation> allocations = new ArrayList<>();
 
+        // D1: warehouse strategy per PR #310 §5 — BOM 物料分配 WH-WKS 优先 → fallback WH-LOG
+        // (生产先用车间仓余料, 不够回 LOG 拿). 在循环外解析 warehouse_id 避免重复 lookup.
+        String workshopId = warehouseResolver.resolveWorkshopId(factoryId);
+        String logisticsId = warehouseResolver.resolveLogisticsId(factoryId);
+
         for (MaterialRequirement req : requirements) {
-            // 使用FEFO策略获取可用批次（按到期日升序）
-            List<MaterialBatch> batches =
-                    materialBatchRepository.findAvailableBatchesFEFO(factoryId, req.getMaterialTypeId());
+            // WH-WKS 优先, 不足再合并 WH-LOG
+            List<MaterialBatch> workshopBatches = materialBatchRepository
+                    .findAvailableBatchesFEFOByWarehouse(factoryId, req.getMaterialTypeId(), workshopId);
+            List<MaterialBatch> logisticsBatches = materialBatchRepository
+                    .findAvailableBatchesFEFOByWarehouse(factoryId, req.getMaterialTypeId(), logisticsId);
+            List<MaterialBatch> batches = new ArrayList<>(workshopBatches);
+            batches.addAll(logisticsBatches);
 
             // 汇总可用数量
             BigDecimal totalAvailable = batches.stream()

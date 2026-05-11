@@ -18,6 +18,7 @@ import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
 import com.cretas.aims.service.config.FactoryConfigService;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.inventory.SalesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,10 @@ public class SalesServiceImpl implements SalesService {
     private final ProductTypeRepository productTypeRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    /** D1 双仓流转 (2026-05-10 spec, PR #309 A1=A) — sales 只从 WH-LOG 出. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private WarehouseResolver warehouseResolver;
 
     /** P0-13 批次分配校验（可选注入，避免破坏现有构造器）。 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -798,7 +803,10 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     public List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId) {
-        return finishedGoodsBatchRepository.findAvailableBatches(factoryId, productTypeId);
+        // D1: warehouse strategy per PR #310 §5 — sales 批次预占 WH-LOG fixed (D5 销售只从 WH-LOG 出).
+        String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+        return finishedGoodsBatchRepository
+                .findAvailableBatchesByWarehouse(factoryId, productTypeId, warehouseId);
     }
 
     @Override
@@ -819,6 +827,11 @@ public class SalesServiceImpl implements SalesService {
         batch.setCreatedBy(userId);
         if (batch.getBatchNumber() == null) {
             batch.setBatchNumber(generateFinishedGoodsBatchNumber(factoryId));
+        }
+        // D1: 成品默认 WH-WKS (per PR #310 spec §3.3) — 直接创建路径 (manual / rework) 也用 WH-WKS.
+        // 若 caller 显式设置 warehouseId, 不覆盖.
+        if (batch.getWarehouseId() == null) {
+            batch.setWarehouseId(warehouseResolver.resolveWorkshopId(factoryId));
         }
         batch = finishedGoodsBatchRepository.save(batch);
 
@@ -972,7 +985,10 @@ public class SalesServiceImpl implements SalesService {
      * 按生产日期从早到晚，依次扣减可用库存
      */
     private void deductFinishedGoodsInventory(String factoryId, SalesDeliveryItem item) {
-        List<FinishedGoodsBatch> batches = finishedGoodsBatchRepository.findAvailableBatches(factoryId, item.getProductTypeId());
+        // D1: warehouse strategy per PR #310 §5 — sales 发货 WH-LOG fixed (D5 销售只从 WH-LOG 出).
+        String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+        List<FinishedGoodsBatch> batches = finishedGoodsBatchRepository
+                .findAvailableBatchesByWarehouse(factoryId, item.getProductTypeId(), warehouseId);
 
         BigDecimal remaining = item.getDeliveredQuantity();
 

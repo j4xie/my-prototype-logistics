@@ -15,6 +15,7 @@ import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.service.MaterialBatchService;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.inventory.TransferService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,10 @@ public class TransferServiceImpl implements TransferService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MaterialBatchService materialBatchService;
     private final RawMaterialTypeRepository rawMaterialTypeRepository;
+
+    /** D1 双仓流转 (2026-05-10 spec, PR #309 A1=A). */
+    @org.springframework.beans.factory.annotation.Autowired
+    private WarehouseResolver warehouseResolver;
 
     /** Round 11 T4 — Canvas Integration Template hook 1: DB-driven validation. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -190,19 +195,28 @@ public class TransferServiceImpl implements TransferService {
         }
         String sourceFactoryId = transfer.getSourceFactoryId();
         if (sourceFactoryId == null) return;
+        // D1: warehouse strategy per PR #310 §5 — 调拨 detail 页"现有库存" filter by source warehouse.
+        // 若 transfer 显式指定了 sourceWarehouseId, 使用之; 否则 fallback 全 warehouse (老数据兼容).
+        String sourceWarehouseId = transfer.getSourceWarehouseId();
         for (InternalTransferItem item : transfer.getItems()) {
             try {
                 BigDecimal stock = null;
                 if (item.getItemType() == TransferItemType.RAW_MATERIAL
                         || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
                     if (item.getMaterialTypeId() != null) {
-                        stock = materialBatchRepository.sumAvailableQuantityByMaterialType(
-                                sourceFactoryId, item.getMaterialTypeId());
+                        stock = sourceWarehouseId != null
+                                ? materialBatchRepository.sumAvailableQuantityByMaterialTypeAndWarehouse(
+                                        sourceFactoryId, item.getMaterialTypeId(), sourceWarehouseId)
+                                : materialBatchRepository.sumAvailableQuantityByMaterialType(
+                                        sourceFactoryId, item.getMaterialTypeId());
                     }
                 } else if (item.getItemType() == TransferItemType.FINISHED_GOODS) {
                     if (item.getProductTypeId() != null) {
-                        stock = finishedGoodsBatchRepository.sumAvailableQuantityByProductType(
-                                sourceFactoryId, item.getProductTypeId());
+                        stock = sourceWarehouseId != null
+                                ? finishedGoodsBatchRepository.sumAvailableQuantityByProductTypeAndWarehouse(
+                                        sourceFactoryId, item.getProductTypeId(), sourceWarehouseId)
+                                : finishedGoodsBatchRepository.sumAvailableQuantityByProductType(
+                                        sourceFactoryId, item.getProductTypeId());
                     }
                 }
                 item.setCurrentStock(stock != null ? stock : BigDecimal.ZERO);
@@ -281,8 +295,10 @@ public class TransferServiceImpl implements TransferService {
         assertSourceFactory(factoryId, transfer, "发货");
         assertStatus(transfer, TransferStatus.APPROVED, "发货");
 
+        // D1: warehouse strategy per PR #310 §5 — 调拨发货扣减按 source warehouse 过滤.
+        String sourceWarehouseId = transfer.getSourceWarehouseId();
         for (InternalTransferItem item : transfer.getItems()) {
-            deductSourceInventory(transfer.getSourceFactoryId(), item);
+            deductSourceInventory(transfer.getSourceFactoryId(), sourceWarehouseId, item);
         }
 
         transfer.setStatus(TransferStatus.SHIPPED);
@@ -312,8 +328,10 @@ public class TransferServiceImpl implements TransferService {
         assertTargetFactory(factoryId, transfer, "确认");
         assertStatus(transfer, TransferStatus.RECEIVED, "确认");
 
+        // D1: warehouse strategy per PR #310 §5 — 调拨确认在 target warehouse 创建批次.
+        String targetWarehouseId = transfer.getTargetWarehouseId();
         for (InternalTransferItem item : transfer.getItems()) {
-            createTargetInventory(transfer.getTargetFactoryId(), item, userId);
+            createTargetInventory(transfer.getTargetFactoryId(), targetWarehouseId, item, userId);
         }
 
         transfer.setStatus(TransferStatus.CONFIRMED);
@@ -396,10 +414,17 @@ public class TransferServiceImpl implements TransferService {
         return String.format("TRF-%s-%04d", dateStr, ts);
     }
 
-    private void deductSourceInventory(String factoryId, InternalTransferItem item) {
+    /**
+     * D1: warehouse strategy per PR #310 §5 — 调拨发货扣减按 source warehouse 过滤.
+     * sourceWarehouseId null 时 fallback 全 warehouse (老数据兼容).
+     */
+    private void deductSourceInventory(String factoryId, String sourceWarehouseId, InternalTransferItem item) {
         if (item.getItemType() == TransferItemType.RAW_MATERIAL || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
-            // FEFO 扣减原料/包材库存（先到期先出）
-            List<MaterialBatch> batches = materialBatchRepository.findAvailableBatchesFEFO(factoryId, item.getMaterialTypeId());
+            // FEFO 扣减原料/包材库存（先到期先出）— D1: filter by source warehouse if available
+            List<MaterialBatch> batches = sourceWarehouseId != null
+                    ? materialBatchRepository.findAvailableBatchesFEFOByWarehouse(
+                            factoryId, item.getMaterialTypeId(), sourceWarehouseId)
+                    : materialBatchRepository.findAvailableBatchesFEFO(factoryId, item.getMaterialTypeId());
             BigDecimal remaining = item.getQuantity();
             for (MaterialBatch batch : batches) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -425,8 +450,11 @@ public class TransferServiceImpl implements TransferService {
                         .withHint("请先采购或从其他工厂调入该原料");
             }
         } else {
-            // 扣减成品库存
-            List<FinishedGoodsBatch> batches = finishedGoodsBatchRepository.findAvailableBatches(factoryId, item.getProductTypeId());
+            // 扣减成品库存 — D1: filter by source warehouse if available
+            List<FinishedGoodsBatch> batches = sourceWarehouseId != null
+                    ? finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(
+                            factoryId, item.getProductTypeId(), sourceWarehouseId)
+                    : finishedGoodsBatchRepository.findAvailableBatches(factoryId, item.getProductTypeId());
             BigDecimal remaining = item.getQuantity();
             for (FinishedGoodsBatch batch : batches) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -444,8 +472,17 @@ public class TransferServiceImpl implements TransferService {
         }
     }
 
-    private void createTargetInventory(String targetFactoryId, InternalTransferItem item, Long userId) {
+    /**
+     * D1: warehouse strategy per PR #310 §5 — 调拨确认在 target warehouse 创建批次.
+     * targetWarehouseId null 时 fallback 默认 WH-LOG (兼容老调拨单).
+     */
+    private void createTargetInventory(String targetFactoryId, String targetWarehouseId, InternalTransferItem item, Long userId) {
         BigDecimal qty = item.getReceivedQuantity() != null ? item.getReceivedQuantity() : item.getQuantity();
+
+        // D1: 解析 target warehouse — 显式指定优先, 否则按类型 fallback
+        String resolvedTargetWarehouseId = targetWarehouseId != null
+                ? targetWarehouseId
+                : warehouseResolver.resolveLogisticsId(targetFactoryId);  // raw material 默认 WH-LOG
 
         if (item.getItemType() == TransferItemType.RAW_MATERIAL) {
             // 调入方创建原料批次
@@ -464,6 +501,7 @@ public class TransferServiceImpl implements TransferService {
             batch.setReceiptDate(LocalDate.now());
             batch.setStatus(MaterialBatchStatus.AVAILABLE);
             batch.setCreatedBy(userId);
+            batch.setWarehouseId(resolvedTargetWarehouseId);  // D1 双仓
             materialBatchRepository.save(batch);
             item.setTargetBatchId(batch.getId());
 
@@ -510,6 +548,7 @@ public class TransferServiceImpl implements TransferService {
             batch.setProductionDate(LocalDate.now());
             batch.setStatus("AVAILABLE");
             batch.setCreatedBy(userId);
+            batch.setWarehouseId(resolvedTargetWarehouseId);  // D1 双仓
             finishedGoodsBatchRepository.save(batch);
             item.setTargetBatchId(batch.getId());
         }

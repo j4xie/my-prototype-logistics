@@ -58,6 +58,10 @@ public class SupplyChainOrchestrator {
     private final QualityInspectionService qualityInspectionService;
     private final BatchConsumptionService batchConsumptionService;
 
+    /** D1 双仓流转 (2026-05-10 spec, PR #309 A1=A) — production output 默认 WH-WKS. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.service.factory.WarehouseResolver warehouseResolver;
+
     @Autowired(required = false)
     private FactoryTriggerChainRepository triggerChainRepository;
 
@@ -339,6 +343,9 @@ public class SupplyChainOrchestrator {
         if (batch.getProductionPlanId() != null) {
             fg.setProductionPlanId(batch.getProductionPlanId());
         }
+        // D1: 生产产出默认 WH-WKS (车间仓). per PR #310 spec — finished goods born on workshop floor;
+        // 反向调拨 (BRANCH_TO_HQ) 后才到 WH-LOG.
+        fg.setWarehouseId(warehouseResolver.resolveWorkshopId(batch.getFactoryId()));
         return finishedGoodsBatchRepository.save(fg);
     }
 

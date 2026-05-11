@@ -96,6 +96,10 @@ public class PurchaseServiceImpl implements PurchaseService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
 
+    /** D1 双仓流转 (2026-05-10 spec, PR #309 A1=A) — 采购入库默认 WH-LOG. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.service.factory.WarehouseResolver warehouseResolver;
+
     /** 三价对比偏差预警阈值（10%） */
     private static final BigDecimal PRICE_ALERT_THRESHOLD = new BigDecimal("10");
 
@@ -822,6 +826,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         batch.setPurchaseDate(record.getReceiveDate());
         batch.setStatus(MaterialBatchStatus.AVAILABLE);
         batch.setCreatedBy(userId);
+        // D1: 采购入库默认 WH-LOG (物流仓). per PR #310 spec — raw material persistent in logistics warehouse.
+        batch.setWarehouseId(warehouseResolver.resolveLogisticsId(factoryId));
 
         // 根据原料类型计算过期日期
         if (materialType != null && materialType.getShelfLifeDays() != null) {

@@ -15,6 +15,7 @@ import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.service.BatchConsumptionService;
 import com.cretas.aims.service.MaterialBatchService;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.orchestration.BomExpansionService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public class BatchConsumptionServiceImpl implements BatchConsumptionService {
     private final MaterialConsumptionRepository consumptionRepository;
     private final ProductionBatchRepository productionBatchRepository;
     private final RawMaterialTypeRepository rawMaterialTypeRepository;
+    private final WarehouseResolver warehouseResolver;
 
     @Override
     @Transactional
@@ -205,9 +207,10 @@ public class BatchConsumptionServiceImpl implements BatchConsumptionService {
         }
 
         if (delta.compareTo(BigDecimal.ZERO) > 0) {
-            // 追加消耗: 尝试从FEFO批次扣减
+            // D1: warehouse strategy per PR #310 §5 — 报工消耗 WH-WKS fixed (报工只在车间).
+            String warehouseId = warehouseResolver.resolveWorkshopId(factoryId);
             List<MaterialBatch> fefoBatches = materialBatchRepository
-                    .findAvailableBatchesFEFO(factoryId, materialTypeId);
+                    .findAvailableBatchesFEFOByWarehouse(factoryId, materialTypeId, warehouseId);
             BigDecimal remaining = delta;
 
             for (MaterialBatch mb : fefoBatches) {

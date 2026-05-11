@@ -146,6 +146,10 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     @Autowired(required = false)
     private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
+    /** D1 双仓流转 (2026-05-10 spec, PR #309 A1=A) — 入库默认 WH-LOG. */
+    @Autowired
+    private com.cretas.aims.service.factory.WarehouseResolver warehouseResolver;
+
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public MaterialBatchServiceImpl(
             MaterialBatchRepository materialBatchRepository,
@@ -194,6 +198,11 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         MaterialBatch batch = materialBatchMapper.toEntity(request, factoryId, userId.longValue());
         // 生成UUID作为ID
         batch.setId(java.util.UUID.randomUUID().toString());
+
+        // D1 双仓流转 (PR #310 §5.5): 入库默认 WH-LOG (物流仓). DTO 显式传则用 DTO 值.
+        if (batch.getWarehouseId() == null) {
+            batch.setWarehouseId(warehouseResolver.resolveLogisticsId(factoryId));
+        }
 
         // 自动计算到期日期（如果未提供）
         if (batch.getExpireDate() == null && materialType.getShelfLifeDays() != null) {

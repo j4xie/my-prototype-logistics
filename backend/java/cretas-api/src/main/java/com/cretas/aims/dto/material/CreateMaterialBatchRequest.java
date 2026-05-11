@@ -89,6 +89,14 @@ public class CreateMaterialBatchRequest {
     private String sourceDocId;
 
     /**
+     * D1 双仓流转 (2026-05-10 spec, PR #309 A1=A).
+     * 可选 — null 时 service 层默认按 source 类型推: 采购入库 → WH-LOG, 报工/生产 → WH-WKS.
+     */
+    @Schema(description = "目标仓库ID (可选，null 时默认按业务场景推断：采购入库默认 WH-LOG)")
+    @Size(max = 64)
+    private String warehouseId;
+
+    /**
      * Round 9 Fix (R8-α Gap #3 per-module template continuation): Canvas V3 dynamic
      * field values. Customer-configured fields (如:产地, 批次来源证明, 农残检测报告,
      * 供应商 QC 等级 etc.) arrive here and get persisted via DynamicFieldService.

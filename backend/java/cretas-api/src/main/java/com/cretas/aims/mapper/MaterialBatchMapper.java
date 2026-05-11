@@ -168,6 +168,12 @@ public class MaterialBatchMapper {
         batch.setSourceDocType(request.getSourceDocType());
         batch.setSourceDocId(request.getSourceDocId());
 
+        // D1 双仓流转 (2026-05-10 spec, PR #309 A1=A): 透传 DTO 显式 warehouseId.
+        // null → MaterialBatchServiceImpl 默认 WH-LOG.
+        if (request.getWarehouseId() != null && !request.getWarehouseId().isBlank()) {
+            batch.setWarehouseId(request.getWarehouseId());
+        }
+
         // 设置到期日期（如果提供了）
         if (request.getExpireDate() != null) {
             batch.setExpireDate(request.getExpireDate());
