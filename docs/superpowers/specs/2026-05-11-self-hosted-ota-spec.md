@@ -305,13 +305,27 @@ scp root@47.100.235.168:/www/wwwroot/ota/keys/ota_public.pem \
 **X.509 wrapper for `codeSigningCertificate`:** `expo-updates` actually expects a self-signed X.509 cert, not raw RSA public key. Use:
 
 ```bash
-openssl req -new -x509 -key ota_private.pem -out ota_public_cert.pem -days 7300 \
-  -subj "/CN=cretas-ota/O=Cretaceous Future"
+openssl req -new -x509 -key ota_private.pem -out ota_cert.pem -days 1825 \
+  -subj "/CN=Cretas OTA Self-Signed/O=Cretas Food Trace/C=CN"
 ```
 
-Commit `ota_public_cert.pem` into frontend, set `"codeSigningCertificate": "./ota_public_cert.pem"` in `app.json`.
+Commit `ota_cert.pem` into `frontend/CretasFoodTrace/`, set
+`"codeSigningCertificate": "./ota_cert.pem"` in `app.json` (Phase 5).
 
-⚠ **5-year validity (7300 days):** must rotate before expiry; flag a 2031 calendar reminder. Rotation requires new APK build (cert is baked in).
+⚠ **5-year validity (1825 days):** rotation calendar reminder required before
+expiry; rotation forces a new APK build (cert is baked in).
+
+### Active cert (Phase 2 ship, 2026-05-11)
+
+| Field | Value |
+|---|---|
+| File on server 47 | `/www/wwwroot/cretas/ota/ota_cert.pem` (root:root) |
+| File in repo | `frontend/CretasFoodTrace/ota_cert.pem` (gets bundled into APK) |
+| SHA-256 fingerprint | `2C:4E:BF:E9:92:16:39:89:F3:92:BE:3E:22:73:E3:77:FF:B9:54:74:69:BC:05:2E:66:A3:E7:21:17:1B:5F:B3` |
+| Subject | `CN=Cretas OTA Self-Signed, O=Cretas Food Trace, C=CN` |
+| Valid from | 2026-05-11 20:01:23 UTC |
+| Valid until | **2031-05-10 20:01:23 UTC** (rotate calendar reminder) |
+| Private key location | `/www/wwwroot/cretas/ota/ota_private.pem` chmod 600 root:root, NEVER leaves server 47 |
 
 ---
 

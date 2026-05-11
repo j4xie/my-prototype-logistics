@@ -29,6 +29,11 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
+# Exception: the OTA code-signing X.509 cert is a PUBLIC artifact bundled
+# into the APK via app.json:updates.codeSigningCertificate. The matching
+# private key never leaves server 47 (see docs/superpowers/specs/
+# 2026-05-11-self-hosted-ota-spec.md §4.4).
+!ota_cert.pem
 
 # local env files
 .env*.local
