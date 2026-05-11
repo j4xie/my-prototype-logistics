@@ -62,6 +62,10 @@ PYTHON_BASE="${PYTHON_BASE:-http://47.100.235.168:8083}"
 DATE_RANGE="${DATE_RANGE:-${DATE_RANGE_DEFAULT}}"
 REPORTS_DIR="${REPORTS_DIR:-./reports/restaurant-parity}"
 GATE_RATE="${GATE_RATE:-99.945}"
+# Comma-separated pattern letters (A / A2 / B / C) to tolerate per PR #378.
+# Restaurant runs need TOLERATE_PATTERNS=B (Java mock vs Python tenant envelope
+# is structural-only divergence per Sub-A spec §6.1). Empty = strict default.
+TOLERATE_PATTERNS="${TOLERATE_PATTERNS:-}"
 
 # Resolve script-local path to compare.py so we can be invoked from anywhere.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -80,12 +84,13 @@ fi
 mkdir -p "${REPORTS_DIR}"
 
 echo "== restaurant parity-gate run =="
-echo "  factories:    ${FACTORIES}"
-echo "  java_base:    ${JAVA_BASE}"
-echo "  python_base:  ${PYTHON_BASE}"
-echo "  date_range:   ${DATE_RANGE}"
-echo "  reports_dir:  ${REPORTS_DIR}"
-echo "  gate_rate:    ${GATE_RATE}%"
+echo "  factories:        ${FACTORIES}"
+echo "  java_base:        ${JAVA_BASE}"
+echo "  python_base:      ${PYTHON_BASE}"
+echo "  date_range:       ${DATE_RANGE}"
+echo "  reports_dir:      ${REPORTS_DIR}"
+echo "  gate_rate:        ${GATE_RATE}%"
+echo "  tolerate_pattern: ${TOLERATE_PATTERNS:-<strict>}"
 echo ""
 
 # ── Run loop ────────────────────────────────────────────────────────
@@ -102,6 +107,11 @@ run_one() {
   local report_path="${REPORTS_DIR}/${endpoint_name}_${factory}_${analysis_type}.json"
   TOTAL=$((TOTAL + 1))
 
+  local tolerate_arg=()
+  if [[ -n "${TOLERATE_PATTERNS}" ]]; then
+    tolerate_arg=(--tolerate-divergence-patterns "${TOLERATE_PATTERNS}")
+  fi
+
   python "${COMPARE_PY}" \
     --factory "${factory}" \
     --endpoint "/api/mobile/{factory_id}/smart-bi/analysis/${endpoint_name}" \
@@ -110,7 +120,8 @@ run_one() {
     --python-base "${PYTHON_BASE}" \
     --output "${report_path}" \
     --gate-rate "${GATE_RATE}" \
-    --timeout 30
+    --timeout 30 \
+    "${tolerate_arg[@]}"
   local rc=$?
 
   if [[ ${rc} -eq 0 ]]; then
