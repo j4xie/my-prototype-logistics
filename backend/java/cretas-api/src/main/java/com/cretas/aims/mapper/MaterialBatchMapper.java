@@ -50,6 +50,7 @@ public class MaterialBatchMapper {
                 .totalPrice(batch.getTotalPrice())
                 .status(batch.getStatus())
                 .statusDisplayName(batch.getStatus() != null ? batch.getStatus().getDisplayName() : null)
+                .warehouseId(batch.getWarehouseId())
                 .storageLocation(batch.getStorageLocation())
                 .qualityCertificate(batch.getQualityCertificate())
                 .notes(batch.getNotes())
