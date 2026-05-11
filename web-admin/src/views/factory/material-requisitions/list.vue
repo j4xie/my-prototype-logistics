@@ -190,8 +190,8 @@ async function handleCancel(row: TableRow) {
       <el-alert
         type="info"
         :closable="false"
-        title="客户原话: 根据生产计划 → BOM 自动生成备料单 → 物流仓备料 → 调拨到工厂 → 生产 → 退料"
-        description="物流双仓制: 原料在物流仓, 生产时调拨到工厂鲜棉仓, 关单自动算退料 = issued - consumed"
+        title="客户原话: 根据生产计划 → BOM 自动生成备料单 → 总仓备料 → 调拨到工厂线边仓 → 生产 → 退料"
+        description="双仓制: 原料在总仓 (WH-LOG, 持久库存), 生产时调拨到工厂线边仓 (WH-WKS, 当日清零), 关单自动算退料 = issued - consumed"
         style="margin-bottom: 16px"
       />
 
