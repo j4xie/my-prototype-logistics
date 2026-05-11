@@ -59,6 +59,7 @@
     "expo-sharing": "~13.1.5",
     "expo-speech": "~13.1.7",
     "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.18",
     "i18next": "^25.7.3",
     "intl-pluralrules": "^2.0.1",
     "react": "19.0.0",
