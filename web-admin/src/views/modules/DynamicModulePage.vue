@@ -85,12 +85,13 @@ function resetSearch() {
 }
 
 // Tab 布局配置（来自 layoutConfig.tabs）
-interface LayoutConfig { tabs?: unknown[] }
-const layoutTabs = computed<unknown[]>(() => {
+import type { TabConfig } from './components/TabLayoutRenderer.vue'
+interface LayoutConfig { tabs?: TabConfig[] }
+const layoutTabs = computed<TabConfig[]>(() => {
   if (!config.value) return []
   const layout = (config.value as { layoutConfig?: LayoutConfig }).layoutConfig
   if (layout && typeof layout === 'object' && Array.isArray(layout.tabs)) {
-    return layout.tabs
+    return layout.tabs as TabConfig[]
   }
   return []
 })

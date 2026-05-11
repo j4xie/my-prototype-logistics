@@ -505,7 +505,7 @@ const formRules = {
   standardQuantity: [{ required: true, message: '请输入标准用量', trigger: 'blur' }],
 };
 
-const emptyForm = () => ({
+const emptyForm = (): RecipeItem => ({
   id: '',
   productTypeId: '',
   rawMaterialTypeId: '',
@@ -516,7 +516,7 @@ const emptyForm = () => ({
   isActive: true,
   notes: ''
 });
-const dialogForm = ref(emptyForm());
+const dialogForm = ref<RecipeItem>(emptyForm());
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -540,7 +540,7 @@ async function loadData() {
           return matName.toLowerCase().includes(kw) || prodName.toLowerCase().includes(kw) || (r.notes || '').toLowerCase().includes(kw);
         });
       }
-      tableData.value = items;
+      tableData.value = items as RecipeItem[];
       pagination.value.total = kw ? items.length : (Array.isArray(d) ? items.length : ((d as { content?: unknown[]; totalElements?: number }).totalElements ?? items.length));
     } else {
       tableData.value = [];
@@ -702,14 +702,14 @@ async function handleExport() {
       }
     } catch { /* fall back to current page */ }
   }
-  await exportTableToExcel(exportData, [
-    { label: '菜品', field: 'productTypeId', formatter: (val: string) => productNameMap.value[val] || val },
-    { label: '食材', field: 'rawMaterialTypeId', formatter: (val: string) => materialNameMap.value[val] || val },
+  await exportTableToExcel(exportData as unknown as Record<string, unknown>[], [
+    { label: '菜品', field: 'productTypeId', formatter: (val) => productNameMap.value[String(val)] || String(val) },
+    { label: '食材', field: 'rawMaterialTypeId', formatter: (val) => materialNameMap.value[String(val)] || String(val) },
     { label: '标准用量', field: 'standardQuantity' },
     { label: '单位', field: 'unit' },
-    { label: '净料率', field: 'netYieldRate', formatter: (val: number) => val ? (val * 100).toFixed(1) + '%' : '-' },
-    { label: '主料/辅料', field: 'isMainIngredient', formatter: (val: boolean) => val ? '主料' : '辅料' },
-    { label: '状态', field: 'isActive', formatter: (val: boolean) => val ? '启用' : '停用' },
+    { label: '净料率', field: 'netYieldRate', formatter: (val) => val ? (Number(val) * 100).toFixed(1) + '%' : '-' },
+    { label: '主料/辅料', field: 'isMainIngredient', formatter: (val) => val ? '主料' : '辅料' },
+    { label: '状态', field: 'isActive', formatter: (val) => val ? '启用' : '停用' },
     { label: '备注', field: 'notes' },
   ], '配方管理');
 }
@@ -1118,7 +1118,7 @@ async function showPriceHistory(materialId: string, materialName: string) {
       // Render chart if more than 1 entry
       if (res.data.history.length > 1) {
         import('echarts').then((echartsMod) => {
-          const echarts = (echartsMod.default ?? echartsMod) as typeof import('echarts');
+          const echarts = ((echartsMod as unknown as { default?: unknown }).default ?? echartsMod) as typeof import('echarts');
           setTimeout(() => {
             const el = document.getElementById('price-history-chart');
             if (!el) return;

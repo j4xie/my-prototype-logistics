@@ -30,13 +30,22 @@ const searchKeyword = ref('');
 const dateRange = ref<[string, string] | null>(null);
 const dialogVisible = ref(false);
 
+interface ProcurementOrderItem {
+  materialTypeId: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  specification?: string;
+  boxQuantity?: number;
+}
+
 const form = ref({
   supplierId: '',
   purchaseType: 'DIRECT',
   expectedDeliveryDate: '',
   remark: '',
   relatedSalesOrderId: '',
-  items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }] as ProcurementOrderItem[],
   customFields: {} as TableRow,
 });
 const suppliers = ref<TableRow[]>([]);

@@ -118,15 +118,15 @@ async function enrichBatch(batch: BatchRow): Promise<BatchRow> {
     );
     if (res.success && res.data) {
       // 后端返回 { items: [...], overallAchievementRate, totalPlannedCost, totalActualCost }
-      const items = res.data.items || (Array.isArray(res.data) ? res.data : []);
-      const planned = items.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.plannedQty ?? r.plannedQuantity ?? 0)), 0);
-      const actual = items.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.actualQty ?? r.actualQuantity ?? 0)), 0);
+      const items = (res.data.items as Record<string, unknown>[] | undefined) || (Array.isArray(res.data) ? res.data as Record<string, unknown>[] : []);
+      const planned = items.reduce((s: number, r) => s + (Number(r.plannedQty ?? r.plannedQuantity ?? 0)), 0);
+      const actual = items.reduce((s: number, r) => s + (Number(r.actualQty ?? r.actualQuantity ?? 0)), 0);
       if (items.length > 0) {
         return {
           ...batch,
           plannedTotal: Math.round(planned * 100) / 100,
           actualTotal: Math.round(actual * 100) / 100,
-          achievementRate: planned > 0 ? Math.round((actual / planned) * 1000) / 10 : (res.data.overallAchievementRate ?? 100),
+          achievementRate: planned > 0 ? Math.round((actual / planned) * 1000) / 10 : (Number(res.data.overallAchievementRate) || 100),
         };
       }
     }
@@ -155,13 +155,13 @@ async function handleExpandChange(row: BatchRow, expandedRows: BatchRow[]) {
     );
     if (res.success && res.data) {
       // 后端返回 { items: [...] } 或直接数组
-      const items = res.data.items || (Array.isArray(res.data) ? res.data : []);
-      expandedDetails.value[row.id] = items.map((item: Record<string, unknown>) => ({
-        materialName: item.materialName || item.materialTypeName || '-',
-        planned: item.plannedQty ?? item.plannedQuantity ?? 0,
-        actual: item.actualQty ?? item.actualQuantity ?? 0,
-        variance: Math.round(((item.actualQty ?? item.actualQuantity ?? 0) - (item.plannedQty ?? item.plannedQuantity ?? 0)) * 100) / 100,
-        unit: item.unit,
+      const items = (res.data.items as Record<string, unknown>[] | undefined) || (Array.isArray(res.data) ? res.data as Record<string, unknown>[] : []);
+      expandedDetails.value[row.id] = items.map((item) => ({
+        materialName: (item.materialName as string) || (item.materialTypeName as string) || '-',
+        planned: Number(item.plannedQty ?? item.plannedQuantity ?? 0),
+        actual: Number(item.actualQty ?? item.actualQuantity ?? 0),
+        variance: Math.round((Number(item.actualQty ?? item.actualQuantity ?? 0) - Number(item.plannedQty ?? item.plannedQuantity ?? 0)) * 100) / 100,
+        unit: item.unit as string,
       }));
     } else {
       expandedDetails.value[row.id] = [];

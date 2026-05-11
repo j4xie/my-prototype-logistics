@@ -388,14 +388,14 @@ async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
     const result = await ElMessageBox.prompt('说一下哪里不准确? (可选)', '反馈', {
       confirmButtonText: '提交',
       cancelButtonText: '取消',
-      inputRequired: false,
-    }).catch(() => null);
+      inputValidator: () => true,
+    }).catch((): null => null);
     if (result === null) {
       msg.feedbackValue = prevValue;
       msg.feedbackPending = false;
       return;
     }
-    comment = result.value || undefined;
+    comment = (result as { value?: string }).value || undefined;
   }
   const ok = await logFeedback(msg.logId, value, comment);
   if (!ok) {
@@ -1005,18 +1005,21 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
 
   let option: echarts.EChartsOption;
 
+  const xAxisData = chartConfig.data.xAxis as unknown[] | undefined;
+  const seriesArr = (chartConfig.data.series as Array<Record<string, unknown>> | undefined) || [];
+
   if (chartConfig.type === 'line') {
     option = {
       tooltip: { trigger: 'axis', confine: true },
       legend: { bottom: 0 },
       grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-      xAxis: { type: 'category', data: chartConfig.data.xAxis },
+      xAxis: { type: 'category', data: xAxisData as (string | number)[] },
       yAxis: { type: 'value' },
-      series: (chartConfig.data.series || []).map((s: { name: string; data: number[] }) => ({
-        name: s.name,
+      series: seriesArr.map((s) => ({
+        name: s.name as string,
         type: 'line',
         smooth: true,
-        data: s.data,
+        data: s.data as number[],
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(45, 139, 87, 0.3)' },
@@ -1030,12 +1033,12 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
       tooltip: { trigger: 'axis', confine: true },
       legend: { bottom: 0 },
       grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-      xAxis: { type: 'category', data: chartConfig.data.xAxis },
+      xAxis: { type: 'category', data: xAxisData as (string | number)[] },
       yAxis: { type: 'value' },
-      series: (chartConfig.data.series || []).map((s: { name: string; data: number[] }, i: number) => ({
-        name: s.name,
+      series: seriesArr.map((s, i) => ({
+        name: s.name as string,
         type: 'bar',
-        data: s.data,
+        data: s.data as number[],
         itemStyle: {
           color: i === 0 ? '#2D8B57' : '#67C23A',
           borderRadius: [4, 4, 0, 0]
@@ -1050,9 +1053,9 @@ function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
         type: 'pie',
         radius: ['40%', '70%'],
         center: ['40%', '50%'],
-        data: (chartConfig.data.series || []).map((s: { name: string; value: number }, i: number) => ({
-          name: s.name,
-          value: s.value,
+        data: seriesArr.map((s, i) => ({
+          name: s.name as string,
+          value: s.value as number,
           itemStyle: {
             color: ['#2D8B57', '#67C23A', '#E6A23C', '#F56C6C', '#909399'][i % 5]
           }

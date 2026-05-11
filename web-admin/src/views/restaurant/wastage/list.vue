@@ -287,7 +287,7 @@ async function loadData() {
     if (res.success && res.data) {
       const d = res.data as { content?: unknown[]; totalElements?: number } | unknown[];
       const items = Array.isArray(d) ? d : (d as { content?: unknown[]; totalElements?: number }).content || [];
-      tableData.value = items;
+      tableData.value = items as WastageRecord[];
       pagination.value.total = Array.isArray(d) ? items.length : ((d as { content?: unknown[]; totalElements?: number }).totalElements ?? items.length);
     } else {
       tableData.value = [];
@@ -409,12 +409,12 @@ async function handleExport() {
       }
     } catch { /* fall back to current page */ }
   }
-  await exportTableToExcel(exportData, [
+  await exportTableToExcel(exportData as unknown as Record<string, unknown>[], [
     { label: '损耗单号', field: 'wastageNumber' },
     { label: '损耗日期', field: 'wastageDate' },
-    { label: '损耗类型', field: 'type', formatter: (val: string) => wastageTypeText(val) },
-    { label: '状态', field: 'status', formatter: (val: string) => statusText(val) },
-    { label: '食材', field: 'rawMaterialTypeId', formatter: (val: string) => materialNameMap.value[val] || val },
+    { label: '损耗类型', field: 'type', formatter: (val) => wastageTypeText(String(val)) },
+    { label: '状态', field: 'status', formatter: (val) => statusText(String(val)) },
+    { label: '食材', field: 'rawMaterialTypeId', formatter: (val) => materialNameMap.value[String(val)] || String(val) },
     { label: '数量', field: 'quantity' },
     { label: '单位', field: 'unit' },
     { label: '估算损失', field: 'estimatedCost' },

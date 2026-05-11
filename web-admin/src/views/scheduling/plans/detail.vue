@@ -165,8 +165,9 @@ function updateGanttChart() {
   const option: echarts.EChartsOption = {
     tooltip: {
       confine: true,
-      formatter: (params: Record<string, unknown>) => {
-        const schedule = (params.data as Record<string, unknown>).schedule as LineSchedule;
+      formatter: ((params: unknown) => {
+        const p = params as { data: Record<string, unknown> };
+        const schedule = p.data.schedule as LineSchedule;
         const start = new Date(schedule.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
         const end = new Date(schedule.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
         const prob = schedule.predictedCompletionProb
@@ -183,7 +184,7 @@ function updateGanttChart() {
             <div>工人: ${schedule.assignedWorkerCount || 0} 人</div>
           </div>
         `;
-      }
+      }) as never
     },
     grid: {
       left: 120,
@@ -211,15 +212,21 @@ function updateGanttChart() {
     },
     series: [{
       type: 'custom',
-      renderItem: (_params: Record<string, unknown>, api: Record<string, (...args: unknown[]) => unknown>) => {
-        const lineIndex = api.value(0);
-        const startTime = api.value(1);
-        const endTime = api.value(2);
-        const progress = api.value(3);
+      renderItem: ((_params: unknown, api: unknown) => {
+        const a = api as {
+          value: (idx: number) => number;
+          coord: (xy: [number, number]) => [number, number];
+          size: (xy: [number, number]) => [number, number];
+          style: () => unknown;
+        };
+        const lineIndex = a.value(0);
+        const startTime = a.value(1);
+        const endTime = a.value(2);
+        const progress = a.value(3);
 
-        const startCoord = api.coord([startTime, lineIndex]);
-        const endCoord = api.coord([endTime, lineIndex]);
-        const height = api.size([0, 1])[1] * 0.6;
+        const startCoord = a.coord([startTime, lineIndex]);
+        const endCoord = a.coord([endTime, lineIndex]);
+        const height = a.size([0, 1])[1] * 0.6;
 
         const rectShape = {
           x: startCoord[0],
@@ -235,7 +242,7 @@ function updateGanttChart() {
             {
               type: 'rect',
               shape: rectShape,
-              style: api.style(),
+              style: a.style(),
               styleEmphasis: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.3)' }
             },
             // 进度条
@@ -251,7 +258,7 @@ function updateGanttChart() {
             }
           ]
         };
-      },
+      }) as never,
       data: data,
       encode: {
         x: [1, 2],

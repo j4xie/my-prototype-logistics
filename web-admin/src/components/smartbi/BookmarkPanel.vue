@@ -3,7 +3,7 @@
  * BookmarkPanel - SmartBI 书签管理面板
  * 支持保存/恢复视图快照、分享链接、拖拽排序、内联重命名
  */
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, type DeepReadonly } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { CollectionTag as BookmarkIcon, Close, Plus, Timer, Rank, Edit, Share, Delete } from '@element-plus/icons-vue';
 import type { Bookmark, BookmarkState } from '@/views/smart-bi/composables/useBookmarks';
@@ -84,7 +84,7 @@ function formatDate(iso: string): string {
   }
 }
 
-function statePreviewText(state: BookmarkState): string {
+function statePreviewText(state: DeepReadonly<BookmarkState>): string {
   const parts: string[] = [];
   if (state.year) parts.push(`${state.year}年`);
   if (state.startMonth && state.endMonth) {
@@ -122,7 +122,7 @@ async function confirmSave() {
   }
 }
 
-function handleApply(bm: Bookmark) {
+function handleApply(bm: DeepReadonly<Bookmark>) {
   const state = applyBookmark(bm.id);
   if (state) {
     emit('apply', state);
@@ -130,13 +130,13 @@ function handleApply(bm: Bookmark) {
   }
 }
 
-async function handleDelete(bm: Bookmark) {
+async function handleDelete(bm: DeepReadonly<Bookmark>) {
   await ElMessageBox.confirm(`确认删除书签「${bm.name}」？`, '提示', { type: 'warning' }).catch(() => { throw new Error('cancel'); });
   deleteBookmark(bm.id);
   ElMessage.success('已删除');
 }
 
-function startEdit(bm: Bookmark) {
+function startEdit(bm: DeepReadonly<Bookmark>) {
   editingId.value = bm.id;
   editingName.value = bm.name;
   editingDesc.value = bm.description ?? '';
@@ -156,7 +156,7 @@ function cancelEdit() {
   editingId.value = null;
 }
 
-function copyShareLink(bm: Bookmark) {
+function copyShareLink(bm: DeepReadonly<Bookmark>) {
   const url = generateShareUrl(bm.id);
   navigator.clipboard.writeText(url).then(() => {
     ElMessage.success('分享链接已复制');

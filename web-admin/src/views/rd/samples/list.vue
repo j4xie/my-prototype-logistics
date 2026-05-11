@@ -12,7 +12,7 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('rd'));
 const currentUser = computed(() => {
-  const u = authStore.user.value || authStore.user;
+  const u = authStore.user;
   return (u as TableRow)?.fullName || (u as TableRow)?.username || '';
 });
 
@@ -99,7 +99,7 @@ async function handleSampleAction(id: string, action: string) {
       const { value: notes } = await ElMessageBox.prompt('请输入驳回原因', '驳回');
       await post(`/${factoryId.value}/rd/samples/${id}/reject`, { notes });
     } else if (action === 'approve') {
-      const { value: notes } = await ElMessageBox.prompt('审核意见（可选）', '审核通过', { inputValue: '', required: false });
+      const { value: notes } = await ElMessageBox.prompt('审核意见（可选）', '审核通过', { inputValue: '', inputValidator: () => true });
       await post(`/${factoryId.value}/rd/samples/${id}/approve`, { notes: notes || '' });
     } else if (action === 'quote') {
       await ElMessageBox.confirm('确认提交报价申请？样品将进入报价流程。', '提交报价申请');
@@ -283,7 +283,7 @@ async function addTrackingRecord() {
         <el-table-column prop="urgency" label="紧急" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.urgency === 'HIGH' ? 'danger' : row.urgency === 'LOW' ? 'info' : 'warning'" size="small">
-              {{ { HIGH: '紧急', MEDIUM: '普通', LOW: '低' }[row.urgency] || row.urgency }}
+              {{ ({ HIGH: '紧急', MEDIUM: '普通', LOW: '低' } as Record<string, string>)[row.urgency] || row.urgency }}
             </el-tag>
           </template>
         </el-table-column>
@@ -343,8 +343,8 @@ async function addTrackingRecord() {
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="{ PENDING: 'warning', IN_PROGRESS: '', QUOTED: 'success', CONFIRMED: 'success' }[row.status] || 'info'" size="small">
-              {{ { PENDING: '待报价', IN_PROGRESS: '报价中', QUOTED: '已报价', CONFIRMED: '已确认' }[row.status] || row.status }}
+            <el-tag :type="(({ PENDING: 'warning', IN_PROGRESS: '', QUOTED: 'success', CONFIRMED: 'success' } as Record<string, string>)[row.status] || 'info')" size="small">
+              {{ ({ PENDING: '待报价', IN_PROGRESS: '报价中', QUOTED: '已报价', CONFIRMED: '已确认' } as Record<string, string>)[row.status] || row.status }}
             </el-tag>
           </template>
         </el-table-column>

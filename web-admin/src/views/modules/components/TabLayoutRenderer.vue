@@ -37,7 +37,7 @@ import { ref } from 'vue'
 import SchemaFormRenderer from './SchemaFormRenderer.vue'
 import SubTableEditor from './SubTableEditor.vue'
 
-interface TabConfig {
+export interface TabConfig {
   code: string
   label: string
   type?: 'fields' | 'sub_table' | 'ref_table'

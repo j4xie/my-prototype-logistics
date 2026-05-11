@@ -36,7 +36,7 @@
       <el-switch
         v-if="hasData"
         :model-value="layoutEditMode"
-        @update:model-value="(v) => $emit('update:layoutEditMode', !!v)"
+        @update:model-value="(v: unknown) => $emit('update:layoutEditMode', !!v)"
         active-text="编排"
         inactive-text="标准"
         size="small"

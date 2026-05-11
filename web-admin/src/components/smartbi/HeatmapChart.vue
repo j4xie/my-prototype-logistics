@@ -270,9 +270,9 @@ const chartOptions = computed<EChartsOption>(() => {
         color: '#606266',
         fontSize: 11
       },
-      formatter: (value: number) => {
-        return `${value.toFixed(0)}${props.valueUnit}`;
-      }
+      formatter: ((value: number | string) => {
+        return `${Number(value).toFixed(0)}${props.valueUnit}`;
+      }) as never
     },
     series: [
       {
@@ -328,7 +328,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

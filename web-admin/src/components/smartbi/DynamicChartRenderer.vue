@@ -355,7 +355,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         ...(axis.axisLabel || {}),
         formatter: (v: number) => formatAxisValue(v),
       },
-    }));
+    })) as echarts.EChartsOption['yAxis'];
   }
 
   if (config.series && config.series.length > 0) {
@@ -368,7 +368,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         stack: s.stack,
         smooth: s.smooth,
         itemStyle: s.itemStyle,
-        label: s.label ? {
+        label: s.label ? ({
           ...s.label,
           formatter: (params: { value: number | string }) => {
             const v = Number(params.value);
@@ -379,7 +379,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
             return String(v);
           },
           fontSize: 10,
-        } : undefined,
+        } as never) : undefined,
       };
       if (s.areaStyle && s.type === 'line') {
         (item as echarts.LineSeriesOption).areaStyle = {};
@@ -577,7 +577,7 @@ function buildWaterfallChart(config: LegacyChartConfig): echarts.EChartsOption {
         value: val,
         itemStyle: { color: idx === 0 ? CHART_COLORS[0] : CHART_COLORS[1] },
       })),
-      label: { show: true, position: 'top', formatter: (p: { value: number }) => formatAxisValue(p.value) },
+      label: { show: true, position: 'top', formatter: ((p: unknown) => formatAxisValue((p as { value: number }).value)) as never },
     }],
   };
 }
@@ -708,7 +708,10 @@ function buildScatterChart(config: LegacyChartConfig): echarts.EChartsOption {
   return {
     tooltip: {
       ...defaultTooltip('item'),
-      formatter: (params: { value: number[] }) => `(${params.value[0]}, ${params.value[1]})`,
+      formatter: ((params: unknown) => {
+        const value = (params as { value: number[] }).value;
+        return `(${value[0]}, ${value[1]})`;
+      }) as never,
     },
     grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
     xAxis: { type: 'value', name: xField, axisLabel: { formatter: (v: number) => formatAxisValue(v) } },
@@ -951,7 +954,10 @@ function buildTreemapChart(config: LegacyChartConfig): echarts.EChartsOption {
   return {
     tooltip: {
       ...defaultTooltip('item'),
-      formatter: (params: { name: string; value: number }) => `${params.name}: ${formatAxisValue(params.value)}`,
+      formatter: ((params: unknown) => {
+        const p = params as { name: string; value: number };
+        return `${p.name}: ${formatAxisValue(p.value)}`;
+      }) as never,
     },
     series: [{
       type: 'treemap',
@@ -995,10 +1001,11 @@ function buildMapChart(config: LegacyChartConfig): echarts.EChartsOption {
   return {
     tooltip: {
       ...defaultTooltip('item'),
-      formatter: (params: { name: string; value: number }) => {
-        if (params.value === undefined) return `${params.name}: 暂无数据`;
-        return `${params.name}: ${formatAxisValue(params.value)}`;
-      },
+      formatter: ((params: unknown) => {
+        const p = params as { name: string; value: number };
+        if (p.value === undefined) return `${p.name}: 暂无数据`;
+        return `${p.name}: ${formatAxisValue(p.value)}`;
+      }) as never,
     },
     visualMap: {
       type: 'continuous',
@@ -1103,12 +1110,15 @@ function buildHeatmapChart(config: LegacyChartConfig): echarts.EChartsOption {
   });
 
   return {
-    tooltip: { ...defaultTooltip('item'), formatter: (p: { value: [number, number, number] }) => `${xCategories[p.value[0]]} × ${yCategories[p.value[1]]}: ${formatAxisValue(p.value[2])}` },
+    tooltip: { ...defaultTooltip('item'), formatter: ((p: unknown) => {
+      const v = (p as { value: [number, number, number] }).value;
+      return `${xCategories[v[0]]} × ${yCategories[v[1]]}: ${formatAxisValue(v[2])}`;
+    }) as never },
     grid: { left: '12%', right: '8%', bottom: '15%', top: '5%', containLabel: true },
     xAxis: { type: 'category', data: xCategories, axisLabel: { rotate: 30, hideOverlap: true } },
     yAxis: { type: 'category', data: yCategories },
     visualMap: { min: 0, max: maxVal || 1, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'] } },
-    series: [{ type: 'heatmap', data: heatData, label: { show: heatData.length <= 100, formatter: (p: { value: [number, number, number] }) => String(p.value[2]) }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } } }],
+    series: [{ type: 'heatmap', data: heatData, label: { show: heatData.length <= 100, formatter: ((p: unknown) => String((p as { value: [number, number, number] }).value[2])) as never }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } } }],
   };
 }
 
@@ -1177,7 +1187,9 @@ function buildSankeyChart(config: LegacyChartConfig): echarts.EChartsOption {
     tooltip: { ...defaultTooltip('item') },
     series: [{
       type: 'sankey',
-      layout: 'none',
+      // 'layout' isn't in current echarts type definitions but is supported at runtime;
+      // cast via an extra property bag to satisfy strict types.
+      ...{ layout: 'none' },
       emphasis: { focus: 'adjacency' },
       data: [...nodesSet].map(name => ({ name })),
       links,

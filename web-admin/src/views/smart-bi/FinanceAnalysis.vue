@@ -470,7 +470,7 @@ async function buildExplorationCharts(data: TableRow[]) {
             id: `explore-${idx}`,
             chartType: c.chartType,
             title: plans[idx]?.title || c.chartType,
-            config: c.config as ChartConfig,
+            config: c.config as unknown as ChartConfig,
             xField: plans[idx]?.xField,
             yFields: plans[idx]?.yFields,
           }));
@@ -505,7 +505,7 @@ async function handleChartTypeSwitch(chartId: string, newType: string) {
         explorationCharts.value[idx] = {
           ...chart,
           chartType: newType,
-          config: result.option as ChartConfig,
+          config: result.option as unknown as ChartConfig,
         };
       }
     } else {
@@ -1547,7 +1547,7 @@ function buildEChartsOption(config: ChartConfig_Local | DynamicChartConfig): ech
 function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOption {
   const option: echarts.EChartsOption = {
     tooltip: {
-      trigger: config.tooltip?.trigger || 'axis',
+      trigger: (config.tooltip?.trigger as 'none' | 'item' | 'axis' | undefined) || 'axis',
       confine: true,
       axisPointer: config.tooltip?.axisPointer || { type: 'shadow' },
       formatter: (params: unknown) => {
@@ -1626,7 +1626,7 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         ...(axis.axisLabel || {}),
         formatter: formatAxisValue
       }
-    }));
+    })) as echarts.EChartsOption['yAxis'];
   }
 
   // 设置系列
@@ -1640,12 +1640,12 @@ function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOpti
         stack: s.stack,
         smooth: s.smooth,
         itemStyle: s.itemStyle,
-        label: s.label ? {
+        label: s.label ? ({
           ...s.label,
           // Prevent label overlap on dense bar charts: only show label if bar is wide enough
           formatter: (params: { value: number | string }) => formatAxisValue(Number(params.value)),
           fontSize: 10,
-        } : undefined
+        } as never) : undefined
       };
 
       if (s.areaStyle && s.type === 'line') {

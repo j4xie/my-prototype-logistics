@@ -44,6 +44,8 @@ export interface StocktakingRecord {
   actualQuantity?: number;
   differenceType?: 'SURPLUS' | 'SHORTAGE' | 'MATCH';
   differenceQuantity?: number;
+  /** Monetary value of the count difference (computed server-side). */
+  differenceAmount?: number;
   adjustmentReason?: string;
   notes?: string;
   createdAt?: string;
@@ -61,6 +63,7 @@ export interface WastageRecord {
   unit: string;
   estimatedCost?: number;
   reason?: string;
+  notes?: string;
   createdAt?: string;
   updatedAt?: string;
 }

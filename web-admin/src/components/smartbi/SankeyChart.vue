@@ -219,7 +219,8 @@ const chartOptions = computed<EChartsOption>(() => {
       borderColor: '#ebeef5',
       borderWidth: 1,
       textStyle: { color: '#303133', fontSize: 13 },
-      formatter: (params: Record<string, unknown>) => {
+      formatter: ((rawParams: unknown) => {
+        const params = rawParams as Record<string, unknown>;
         const p = params as { dataType?: string; data?: Record<string, unknown>; name?: string; value?: number };
         if (p.dataType === 'node') {
           const name = p.data?.name as string;
@@ -249,12 +250,13 @@ const chartOptions = computed<EChartsOption>(() => {
             </div>`;
         }
         return String(p.name || '');
-      },
+      }) as never,
     },
     series: [
       {
         type: 'sankey',
-        layout: 'none',
+        // layout: 'none' isn't in echarts type defs but accepted at runtime
+        ...{ layout: 'none' as const },
         orient: props.orient,
         draggable: props.draggable,
         nodeAlign: 'justify',
@@ -266,14 +268,15 @@ const chartOptions = computed<EChartsOption>(() => {
         bottom: '5%',
         data: coloredNodes,
         links: coloredLinks,
-        label: props.showLabels
+        label: (props.showLabels
           ? {
               show: true,
               position: props.labelPosition,
               fontSize: 12,
               color: '#303133',
               fontWeight: 500,
-              formatter: (params: Record<string, unknown>) => {
+              formatter: (rawParams: unknown) => {
+                const params = rawParams as Record<string, unknown>;
                 const name = params.name as string;
                 const nodeVal = (props.nodes.find((n) => n.name === name)?.value) ||
                   outflow.get(name) || inflow.get(name) || 0;
@@ -285,7 +288,7 @@ const chartOptions = computed<EChartsOption>(() => {
                 val: { fontSize: 11, color: '#909399' },
               },
             }
-          : { show: false },
+          : { show: false }) as never,
         lineStyle: { curveness: 0.5 },
         emphasis: {
           focus: props.highlightMode === 'adjacency' ? 'adjacency' : 'none',
@@ -302,7 +305,7 @@ const chartOptions = computed<EChartsOption>(() => {
 
 function initChart() {
   if (!chartRef.value) return;
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   chartInstance.value.on('click', (params: Record<string, unknown>) => {

@@ -30,6 +30,7 @@ const createDialogVisible = ref(false);
 const creating = ref(false);
 const productTypes = ref<TableRow[]>([]);
 const createForm = ref({
+  batchNumber: '',
   productTypeId: '',
   plannedQuantity: null as number | null,
   unit: 'kg',
@@ -106,9 +107,10 @@ async function handleCreate() {
       if (res.success) {
         productTypes.value = res.data || [];
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('加载产品类型失败:', e);
-      if (!e?.actionHint) ElMessage.error('加载产品类型失败');
+      const err = e as { actionHint?: unknown };
+      if (!err?.actionHint) ElMessage.error('加载产品类型失败');
     }
   }
 }
@@ -148,7 +150,8 @@ async function submitCreate() {
       ElMessage.error(response.message || '创建失败');
     }
   } catch (error: unknown) {
-    if (!error?.actionHint) ElMessage.error(error?.response?.data?.message || '创建失败');
+    const e = error as { actionHint?: unknown; response?: { data?: { message?: string } } };
+    if (!e?.actionHint) ElMessage.error(e?.response?.data?.message || '创建失败');
   } finally {
     creating.value = false;
   }

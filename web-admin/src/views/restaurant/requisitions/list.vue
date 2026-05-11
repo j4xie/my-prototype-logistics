@@ -357,7 +357,7 @@ async function loadData() {
     if (res.success && res.data) {
       const d = res.data as { content?: unknown[]; totalElements?: number } | unknown[];
       const items = Array.isArray(d) ? d : (d as { content?: unknown[]; totalElements?: number }).content || [];
-      tableData.value = items;
+      tableData.value = items as RequisitionItem[];
       pagination.value.total = Array.isArray(d) ? items.length : ((d as { content?: unknown[]; totalElements?: number }).totalElements ?? items.length);
     } else {
       tableData.value = [];
@@ -491,12 +491,12 @@ async function handleExport() {
       }
     } catch { /* fall back to current page */ }
   }
-  await exportTableToExcel(exportData, [
+  await exportTableToExcel(exportData as unknown as Record<string, unknown>[], [
     { label: '领料单号', field: 'requisitionNumber' },
     { label: '日期', field: 'requisitionDate' },
-    { label: '类型', field: 'type', formatter: (val: string) => val === 'PRODUCTION' ? '按BOM' : '手动' },
-    { label: '状态', field: 'status', formatter: (val: string) => statusText(val) },
-    { label: '菜品', field: 'productTypeId', formatter: (val: string) => productNameMap.value[val] || val || '-' },
+    { label: '类型', field: 'type', formatter: (val) => val === 'PRODUCTION' ? '按BOM' : '手动' },
+    { label: '状态', field: 'status', formatter: (val) => statusText(String(val)) },
+    { label: '菜品', field: 'productTypeId', formatter: (val) => productNameMap.value[String(val)] || String(val) || '-' },
     { label: '申请量', field: 'requestedQuantity' },
     { label: '实发量', field: 'actualQuantity' },
     { label: '单位', field: 'unit' },

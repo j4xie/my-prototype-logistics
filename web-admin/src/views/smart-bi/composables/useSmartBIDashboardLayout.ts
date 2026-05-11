@@ -89,9 +89,9 @@ export function useSmartBIDashboardLayout() {
   };
 
   const layoutCacheMap = new Map<string, DashboardLayout>();
-  const getCachedLayout = (
-    sheet: { uploadId?: number; sheetIndex: number; sheetName: string },
-    getSheetCharts: (s: unknown) => Array<{ chartType: string; title: string; config: Record<string, unknown> }>
+  const getCachedLayout = <S extends { uploadId?: number; sheetIndex: number; sheetName: string }>(
+    sheet: S,
+    getSheetCharts: (s: S) => Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }>
   ): DashboardLayout => {
     const charts = getSheetCharts(sheet);
     const cacheKey = `${sheet.uploadId}-${sheet.sheetIndex}-${charts.length}`;
@@ -106,7 +106,7 @@ export function useSmartBIDashboardLayout() {
     // Update internal reference (no-op placeholder)
   };
 
-  const handleLayoutSave = (layout: DashboardLayout, uploadId?: number) => {
+  const handleLayoutSave = (layout: DashboardLayout, uploadId?: number, _sheetIndex?: number) => {
     if (uploadId) {
       saveLayout(uploadId, layout);
       ElMessage.success('布局已保存');

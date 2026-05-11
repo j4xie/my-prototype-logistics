@@ -2,6 +2,15 @@ import { get, post, put, adminGet, adminPost, adminPut } from './request'
 
 // === Workflow Node Schemas ===
 
+/** JSON Schema-style field definition used by NodeSchema.configSchema.properties. */
+export interface NodeSchemaFieldDef {
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object'
+  description?: string
+  enum?: string[]
+  default?: unknown
+  [k: string]: unknown
+}
+
 export interface NodeSchema {
   nodeType: string
   displayName: string
@@ -9,7 +18,11 @@ export interface NodeSchema {
   icon: string
   color: string
   category: string
-  configSchema: Record<string, unknown>
+  configSchema: {
+    properties?: Record<string, NodeSchemaFieldDef>
+    required?: string[]
+    [k: string]: unknown
+  }
   defaultConfig: Record<string, unknown>
   allowedNextNodes: string[]
   availableGuards: string[]

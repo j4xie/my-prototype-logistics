@@ -183,7 +183,7 @@ const chartOptions = computed<EChartsOption>(() => {
     const centerTextDisplay = props.centerText || formatNumber(totals.value.currentTotal);
     const subTextDisplay = props.centerSubText || `同比 ${totals.value.yoyChange >= 0 ? '+' : ''}${totals.value.yoyChange.toFixed(1)}%`;
 
-    graphicElements.push({
+    graphicElements.push(({
       type: 'group',
       left: 'center',
       top: 'middle',
@@ -225,7 +225,7 @@ const chartOptions = computed<EChartsOption>(() => {
           }
         }
       ]
-    });
+    }) as echarts.GraphicComponentOption);
   }
 
   // Year badge labels: outer ring (current year) and inner ring (previous year)
@@ -271,7 +271,8 @@ const chartOptions = computed<EChartsOption>(() => {
       textStyle: {
         color: '#303133'
       },
-      formatter: (params: { name: string; value: number; percent: number; seriesName: string; color: string; data: { _originalData?: NestedDonutDataItem } }) => {
+      formatter: ((rawParams: unknown) => {
+        const params = rawParams as { name: string; value: number; percent: number; seriesName: string; color: string; data: { _originalData?: NestedDonutDataItem } };
         const item = params.data._originalData;
         if (!item) return '';
 
@@ -317,7 +318,7 @@ const chartOptions = computed<EChartsOption>(() => {
             </div>
           </div>
         `;
-      }
+      }) as never
     },
     legend: props.showLegend ? {
       orient: 'horizontal',
@@ -351,10 +352,11 @@ const chartOptions = computed<EChartsOption>(() => {
           borderColor: '#fff',
           borderWidth: 2
         },
-        label: props.showLabel ? {
+        label: (props.showLabel ? {
           show: true,
           position: 'outside',
-          formatter: (params: { name: string; percent: number; value: number }) => {
+          formatter: (rawParams: unknown) => {
+            const params = rawParams as { name: string; percent: number; value: number };
             const amtStr = formatNumber(params.value);
             return `{name|${params.name}}\n{amt|¥${amtStr}${props.unit ? props.unit : ''}}\n{pct|${params.percent.toFixed(1)}%}`;
           },
@@ -363,7 +365,7 @@ const chartOptions = computed<EChartsOption>(() => {
             amt: { color: '#606266', fontSize: 10, lineHeight: 14 },
             pct: { color: '#2D8B57', fontSize: 10, fontWeight: 'bold', lineHeight: 14 }
           }
-        } : { show: false },
+        } : { show: false }) as never,
         labelLine: props.showLabel ? {
           show: true,
           length: 15,
@@ -405,16 +407,17 @@ const chartOptions = computed<EChartsOption>(() => {
           show: false
         },
         emphasis: {
-          label: {
+          label: ({
             show: true,
             position: 'center',
-            formatter: (params: { name: string; percent: number }) => {
+            formatter: (rawParams: unknown) => {
+              const params = rawParams as { name: string; percent: number };
               return `${params.name}\n${params.percent.toFixed(1)}%`;
             },
             fontSize: 12,
             fontWeight: 'bold',
             color: '#303133'
-          },
+          }) as never,
           itemStyle: {
             shadowBlur: 10,
             shadowOffsetX: 0,
@@ -436,11 +439,12 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event for drill-down
-  chartInstance.value.on('click', (params: { componentType: string; seriesName?: string; dataIndex?: number; data?: { _originalData?: NestedDonutDataItem } }) => {
+  chartInstance.value.on('click', ((rawParams: unknown) => {
+    const params = rawParams as { componentType: string; seriesName?: string; dataIndex?: number; data?: { _originalData?: NestedDonutDataItem } };
     if (params.componentType === 'series' && params.dataIndex !== undefined) {
       const item = params.data?._originalData;
       if (item) {
@@ -452,7 +456,7 @@ function initChart() {
         emit('drillDown', item);
       }
     }
-  });
+  }) as never);
 }
 
 // Update chart

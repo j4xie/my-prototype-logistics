@@ -179,7 +179,7 @@ function initChart() {
     return;
   }
   if (chartInstance.value) chartInstance.value.dispose();
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value) as unknown as ECharts;
   chartInstance.value.setOption(buildOption());
 }
 

@@ -34,7 +34,7 @@ describe('pythonFetch', () => {
       status: 204,
       statusText: 'No Content',
       json: jsonMock,
-    } as Response);
+    } as unknown as Response);
 
     const result = await pythonFetch('/api/restaurant/outliers/dismiss/123', {
       method: 'DELETE',
@@ -56,7 +56,7 @@ describe('pythonFetch', () => {
       status: 200,
       statusText: 'OK',
       json: vi.fn().mockResolvedValue(mockData),
-    } as Response);
+    } as unknown as Response);
 
     const result = await pythonFetch('/api/data/get');
 
@@ -71,7 +71,7 @@ describe('pythonFetch', () => {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
-    } as Response);
+    } as unknown as Response);
 
     await expect(pythonFetch('/api/test')).rejects.toThrow(
       'Python service error: 500 Internal Server Error'
@@ -96,7 +96,7 @@ describe('pythonFetch', () => {
       ok: true,
       status: 200,
       json: vi.fn().mockResolvedValue({ success: true }),
-    } as Response);
+    } as unknown as Response);
 
     await pythonFetch('/api/test');
 
@@ -115,7 +115,7 @@ describe('pythonFetch', () => {
       ok: true,
       status: 200,
       json: vi.fn().mockResolvedValue(mockData),
-    } as Response);
+    } as unknown as Response);
 
     const result = await pythonFetch('/api/items');
 

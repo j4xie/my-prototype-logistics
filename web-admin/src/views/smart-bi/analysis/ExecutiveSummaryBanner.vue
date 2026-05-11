@@ -13,13 +13,13 @@
           <span v-if="kpi.trendValue" class="inline-kpi-trend" :class="kpi.trend">{{ kpi.trendValue }}</span>
         </div>
       </div>
-      <!-- Risk/Opportunity/Sensitivity tags -->
+      <!-- Risk/Opportunity/Sensitivity tags (mapped from AIInsight: negative=risks, suggestions=opportunities) -->
       <div v-if="structuredInsight" class="summary-tags">
-        <el-tag v-if="structuredInsight.riskAlerts?.length" type="danger" size="small" effect="plain">
-          {{ structuredInsight.riskAlerts.length }} 个风险
+        <el-tag v-if="structuredInsight.negative?.items?.length" type="danger" size="small" effect="plain">
+          {{ structuredInsight.negative.items.length }} 个风险
         </el-tag>
-        <el-tag v-if="structuredInsight.opportunities?.length" type="success" size="small" effect="plain">
-          {{ structuredInsight.opportunities.length }} 个机会
+        <el-tag v-if="structuredInsight.suggestions?.items?.length" type="success" size="small" effect="plain">
+          {{ structuredInsight.suggestions.items.length }} 个机会
         </el-tag>
         <el-tag v-if="sensitivityCount > 0" type="warning" size="small" effect="plain">
           {{ sensitivityCount }} 项敏感性

@@ -10,11 +10,13 @@ interface AnalyticsResponse {
   cached?: boolean
   cachedAt?: string
   data?: RestaurantAnalyticsResult
+  message?: string
 }
 
 interface UploadsResponse {
   success: boolean
   data: RestaurantUploadItem[]
+  message?: string
 }
 
 /**

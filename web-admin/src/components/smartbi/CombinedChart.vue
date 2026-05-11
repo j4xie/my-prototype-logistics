@@ -223,7 +223,7 @@ const chartOptions = computed<EChartsOption>(() => {
         },
         ...(shouldHaveMarkArea ? { markArea: markAreaConfig } : {}),
         ...(shouldHaveMarkPoint ? { markPoint: markPointConfig } : {})
-      } as echarts.BarSeriesOption;
+      } as unknown as echarts.BarSeriesOption;
     }
 
     if (s.type === 'scatter') {
@@ -254,7 +254,7 @@ const chartOptions = computed<EChartsOption>(() => {
       emphasis: { focus: 'series' },
       ...(shouldHaveMarkArea ? { markArea: markAreaConfig } : {}),
       ...(shouldHaveMarkPoint ? { markPoint: markPointConfig } : {})
-    } as echarts.LineSeriesOption;
+    } as unknown as echarts.LineSeriesOption;
   });
 
   const options: EChartsOption = {
@@ -443,7 +443,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value, 'cretas');
+  chartInstance.value = echarts.init(chartRef.value, 'cretas') as unknown as ECharts;
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event

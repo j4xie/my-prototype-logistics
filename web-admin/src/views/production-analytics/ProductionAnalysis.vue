@@ -39,7 +39,7 @@ async function loadData() {
       ElMessage.warning(res.message || '加载失败');
     }
   } catch (e: unknown) {
-    if (!e?.actionHint) ElMessage.error('加载生产分析数据失败');
+    if (!(e as { actionHint?: unknown })?.actionHint) ElMessage.error('加载生产分析数据失败');
     console.error(e);
   } finally {
     loading.value = false;

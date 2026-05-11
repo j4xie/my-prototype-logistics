@@ -60,6 +60,7 @@ import type {
   RankingItem,
   AIInsightResponse,
   DashboardChartConfig as ChartConfig,
+  ChartConfig as AnyChartConfig,
   DashboardResponse
 } from '@/types/smartbi';
 
@@ -149,12 +150,14 @@ const kpiData = computed(() => {
     totalProfit: null as number | null,
     profitGrowth: null as number | null,
     profitLabel: '本月利润',
+    profitUnit: undefined as string | undefined,
     orderCount: null as number | null,
     orderGrowth: null as number | null,
     orderLabel: '订单数量',
     customerCount: null as number | null,
     customerGrowth: null as number | null,
     customerLabel: '活跃客户',
+    customerUnit: undefined as string | undefined,
   };
 
   if (!dashboardData.value?.kpiCards || dashboardData.value.kpiCards.length === 0) {
@@ -343,7 +346,7 @@ const kpiSparklines = computed(() => {
   if (series.length === 0) return empty;
 
   // Extract xAxis labels (dates) for sparkline tooltips
-  const xAxisData = (normalized as Record<string, unknown>).xAxis;
+  const xAxisData = (normalized as unknown as Record<string, unknown>).xAxis;
   const labels: string[] = Array.isArray(xAxisData)
     ? ((xAxisData[0] as Record<string, unknown>)?.data as string[] || [])
     : ((xAxisData as Record<string, unknown>)?.data as string[] || []);
@@ -757,7 +760,7 @@ async function tryFallbackRanges(): Promise<boolean> {
     if (!d) return false;
     const charts = d.charts || {};
     return Object.keys(charts).length > 0 && Object.values(charts).some(c => {
-      const cfg = c as Record<string, unknown>;
+      const cfg = c as unknown as Record<string, unknown>;
       const series = cfg.series;
       if (Array.isArray(series) && series.length > 0) {
         return series.some(s => Array.isArray((s as Record<string, unknown>).data) && ((s as Record<string, unknown>).data as unknown[]).length > 0);
@@ -1144,7 +1147,7 @@ async function loadDynamicDashboardData(uploadId: number) {
         changeRate: kpi.changeRate ?? null,
         unit: '',
         trend: 'stable' as const,
-        sparklineData: [],
+        sparklineData: [] as number[],
       }));
 
       // Map dynamic charts → DashboardResponse.charts
@@ -1300,9 +1303,9 @@ function detectKpiKey(title: string): string {
  * DashboardChartConfig format (series[] + xAxis.data) that the render
  * functions expect.
  */
-function normalizeLegacyChart(config: ChartConfig): ChartConfig {
-  if ('series' in config && Array.isArray(config.series)) return config; // already in new format
-  if (!('data' in config) || !Array.isArray(config.data) || config.data.length === 0) return config;
+function normalizeLegacyChart(config: AnyChartConfig): ChartConfig {
+  if ('series' in config && Array.isArray(config.series)) return config as ChartConfig; // already in new format
+  if (!('data' in config) || !Array.isArray(config.data) || config.data.length === 0) return config as ChartConfig;
 
   const legacy = config as { chartType: string; title?: string; xAxisField?: string; xaxisField?: string; yAxisField?: string; yaxisField?: string; data: Array<Record<string, unknown>> };
   const xField = legacy.xAxisField || legacy.xaxisField || 'date';
@@ -1323,14 +1326,14 @@ function normalizeLegacyChart(config: ChartConfig): ChartConfig {
   } as ChartConfig;
 }
 
-function initCharts(charts?: Record<string, ChartConfig>) {
+function initCharts(charts?: Record<string, AnyChartConfig>) {
   const trend = charts?.['sales_trend'] || charts?.['销售趋势'];
   let pie = charts?.['category_distribution'] || charts?.['产品占比']
     || charts?.['类别分布'] || charts?.['产品销售占比'] || charts?.['产品分布'];
   // Fallback: find first pie-type chart by scanning all entries
   if (!pie && charts) {
     for (const [, cfg] of Object.entries(charts)) {
-      const c = cfg as Record<string, unknown>;
+      const c = cfg as unknown as Record<string, unknown>;
       if (String(c.chartType).toLowerCase() === 'pie' || (Array.isArray(c.series) && String((c.series as Record<string, unknown>[])[0]?.type).toLowerCase() === 'pie')) {
         pie = cfg;
         break;

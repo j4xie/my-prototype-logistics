@@ -13,6 +13,9 @@ interface ReferenceConfig {
   valueField: string
   searchFields?: string[]
   apiEndpoint: string
+  /** Optional entity-field → shadow-key map; when present, selecting an entity
+   *  emits a `project` event with the projected fields. */
+  projectFields?: Record<string, string>
 }
 
 const props = defineProps<{

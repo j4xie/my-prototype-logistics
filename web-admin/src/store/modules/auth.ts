@@ -46,21 +46,24 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value);
 
   const currentRole = computed(() => {
-    if (!user.value) return 'unactivated';
-    if (isPlatformUser(user.value)) return user.value.platformUser?.role || 'unactivated';
-    if (isFactoryUser(user.value)) return user.value.factoryUser?.role || 'unactivated';
+    const u = user.value as User | null;
+    if (!u) return 'unactivated';
+    if (isPlatformUser(u)) return u.platformUser?.role || 'unactivated';
+    if (isFactoryUser(u)) return u.factoryUser?.role || 'unactivated';
     return 'unactivated';
   });
 
   const factoryId = computed(() => {
-    if (!user.value) return '';
-    if (isFactoryUser(user.value)) return user.value.factoryUser?.factoryId || '';
+    const u = user.value as User | null;
+    if (!u) return '';
+    if (isFactoryUser(u)) return u.factoryUser?.factoryId || '';
     return '';
   });
 
   const factoryType = computed(() => {
-    if (!user.value) return '';
-    if (isFactoryUser(user.value)) return user.value.factoryUser?.factoryType || 'FACTORY';
+    const u = user.value as User | null;
+    if (!u) return '';
+    if (isFactoryUser(u)) return u.factoryUser?.factoryType || 'FACTORY';
     return '';
   });
 
@@ -69,8 +72,8 @@ export const useAuthStore = defineStore('auth', () => {
     return ROLE_METADATA[role] || ROLE_METADATA['viewer'];
   });
 
-  const isPlatform = computed(() => isPlatformUser(user.value));
-  const isFactory = computed(() => isFactoryUser(user.value));
+  const isPlatform = computed(() => isPlatformUser(user.value as User | null));
+  const isFactory = computed(() => isFactoryUser(user.value as User | null));
   const userLevel = computed(() => roleMetadata.value?.level ?? 99);
   const department = computed(() => roleMetadata.value?.department ?? 'none');
 

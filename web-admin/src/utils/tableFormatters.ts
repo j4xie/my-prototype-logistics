@@ -5,7 +5,7 @@ import { formatDate as _formatDate, formatDateTime as _formatDateTime } from './
  * null / undefined / '' 显示为 '-'
  */
 export function formatDateCell(_row: unknown, _column: unknown, cellValue: string | Date | null | undefined): string {
-  return _formatDate(cellValue)
+  return _formatDate(cellValue instanceof Date ? cellValue.toISOString() : cellValue)
 }
 
 /**
@@ -13,7 +13,7 @@ export function formatDateCell(_row: unknown, _column: unknown, cellValue: strin
  * null / undefined / '' 显示为 '-'
  */
 export function formatDateTimeCell(_row: unknown, _column: unknown, cellValue: string | Date | null | undefined): string {
-  return _formatDateTime(cellValue)
+  return _formatDateTime(cellValue instanceof Date ? cellValue.toISOString() : cellValue)
 }
 
 /**

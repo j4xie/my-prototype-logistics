@@ -53,7 +53,8 @@ interface BatchInfo {
 
 const props = defineProps<{
   factoryId: string;
-  activeTab: number;
+  /** Sheet index as string (parent uses ref<string> for el-tabs binding). */
+  activeTab: string;
 }>();
 
 const visible = ref(false);
@@ -87,7 +88,7 @@ const createShareLink = async () => {
       uploadId,
       title: shareTitle.value,
       ttlDays: shareTTL.value,
-      sheetIndex: props.activeTab,
+      sheetIndex: typeof props.activeTab === 'string' ? parseInt(props.activeTab, 10) || 0 : props.activeTab,
     });
     if (resp.success) {
       const token = resp.data.token;

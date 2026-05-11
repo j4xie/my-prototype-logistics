@@ -8,6 +8,7 @@
  */
 
 import { getFactoryId } from '@/api/smartbi/common';
+import type { ColumnSummary, StructuredAIData, FinancialMetrics } from '@/api/smartbi';
 
 const CACHE_VERSION = 4; // v4: invalidate old English AI insight cache
 const MAX_CACHE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
@@ -55,15 +56,15 @@ export interface DemoCacheData {
     detectedDataType?: string;
     savedRows?: number;
     uploadId?: number;
-    tableType?: string;
+    tableType?: 'index' | 'data' | 'summary' | 'metadata' | 'unknown';
     flowResult?: {
       recommendedChartType?: string;
       chartConfig?: Record<string, unknown>;
       aiAnalysis?: string;
-      charts?: Array<{ chartType: string; title: string; config: Record<string, unknown> }>;
-      kpiSummary?: { rowCount: number; columnCount: number; columns: Array<Record<string, unknown>> };
-      structuredAI?: Record<string, unknown>;
-      financialMetrics?: Record<string, unknown>;
+      charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }>;
+      kpiSummary?: { rowCount: number; columnCount: number; columns: ColumnSummary[] };
+      structuredAI?: StructuredAIData;
+      financialMetrics?: FinancialMetrics;
     };
   }>;
   uploadResult: {
