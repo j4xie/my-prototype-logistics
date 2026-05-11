@@ -151,13 +151,11 @@ public class BomServiceImpl implements BomService {
         BomItem saved = bomItemRepository.save(bomItem);
         log.info("BOM项目保存成功: id={}", saved.getId());
 
-        // D4 Path A (2026-05-10 customer meeting): BOM 数据写入 bom_items 表, 但生产计划展开 (BomExpansionService.expandBOM)
-        // 当前仍读 material_product_conversions (RPF). 客户在 BOM 页面录入的配方不被生产计划使用,
-        // 必须手动同步到"转换率配置". Path B 真正 reconciliation 待 Steve sign-off.
-        // 详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md
-        log.warn("[D4-divergence] BOM 已保存 (productTypeId={}), 但生产计划仍基于 RPF (MaterialProductConversion). "
-                + "客户编辑的 BOM 数据需手动同步到「转换率配置」才会被生产计划展开使用. "
-                + "详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md",
+        // D4 Path B (2026-05-10 customer meeting, PR #309 A2=B): BomExpansionService.expandBOM
+        // 现已优先读 bom_items 表 (BomItem)，本次保存的 BOM 数据将被生产计划展开直接使用。
+        // RPF (MaterialProductConversion) 仅作 fallback (老工厂数据无 BOM 配置时沿用)。
+        // 详见 docs/architecture/2026-05-10-rpf-vs-bomitem-divergence.md §7
+        log.info("[D4-B active] BOM 已保存 (productTypeId={}), 将被生产计划展开 (BomExpansionService) 直接使用",
                 saved.getProductTypeId());
 
         // P1-9 写 BomChangeLog (best-effort, 失败不影响主业务)

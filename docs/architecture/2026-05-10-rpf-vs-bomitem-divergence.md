@@ -1,9 +1,17 @@
 # RPF (MaterialProductConversion) vs BomItem 共存说明
 
 **Decided**: 2026-05-10 customer meeting (Steve + customer)
-**Status**: Path A (document only) — Path B (reconciliation) deferred, pending Steve sign-off
-**PR**: 本 doc 关联 PR #288 §D4 implementation plan
+**Status**: ✅ **Path B (B2) shipped 2026-05-10** — BomExpansionService 已改读 BomItem, RPF 保留作为 fallback。
+**PR**: PR #294 (Path A doc) → PR #297 (D2/D3 + sourceUnit dormant) → PR #309 A2=B (本 PR Path B 落地)
 **Owner**: Cretas Team
+
+> **2026-05-10 Path B shipped 摘要**:
+> - `BomExpansionService.expandBOM()` 优先查 `BomItem`, 不存在时 fallback 到 `MaterialProductConversion` (RPF)
+> - `MaterialRequirement.sourceUnit` (PR #297 dormant 字段) 通过 BomItem 路径激活, 端到端开通 D3 g↔kg 1:1000 单位换算
+> - RPF 表 + entity + repository **保留不删** (向后兼容 F001 等老工厂数据)
+> - `BomServiceImpl.saveBomItem()` 的 D4-divergence warn log 已改为 D4-B active info log
+> - `web-admin/src/views/production/bom/index.vue` 顶部 banner 从 warning 改为 success 提示
+> - 详见下方 §7 "Path B 落地说明"
 
 ---
 
@@ -121,15 +129,62 @@ Cretas 系统中存在两套"原料-成品配方"数据模型, 长期并存但�
 
 ---
 
-## 7. Path A → B 路径上的关闭标准
+## 7. Path B 落地说明 (2026-05-10 shipped, PR #309 A2=B)
+
+### 7.1 实施总结
+
+Steve 在 2026-05-10 选定 **B2 推荐方案** — 改 `BomExpansionService` 数据源到 `BomItem`, RPF 保留作为 fallback。
+
+**改动文件**:
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/service/orchestration/BomExpansionService.java`
+  - 注入 `BomService` 依赖
+  - `expandBOM()` 拆分为 `expandFromBomItems()` (主路径) + `expandFromConversions()` (fallback)
+  - BomItem 路径调用 `bomItem.getActualQuantity()` (= `standardQuantity / (yieldRate/100)`) × productionQuantity 计算 required
+  - **关键**: `req.setSourceUnit(item.getUnit())` 激活 PR #297 dormant 的 D3 单位换算
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/service/impl/BomServiceImpl.java`
+  - 移除 `[D4-divergence]` `log.warn` 警告, 改为 `[D4-B active]` `log.info` 正面消息
+- `web-admin/src/views/production/bom/index.vue`
+  - 顶部 `el-alert` 从 `type="warning"` 改为 `type="success"`, 文案改为 "BOM 已对接生产计划, 录入即生效"
+- `backend/java/cretas-api/src/test/java/com/cretas/aims/service/orchestration/BomExpansionServiceTest.java`
+  - 新建 5+ 单元测试: BomItem 优先 / RPF fallback / 双存在时 BomItem 赢 / yieldRate scaling / D3 sourceUnit 激活
+
+### 7.2 数据流 (Path B 之后)
+
+```
+[客户在 BOM 页面录入]
+       ↓
+   BomServiceImpl.saveBomItem()
+       ↓
+   bom_items 表
+       ↓ ✅ (直接被读取)
+[生产计划触发 BOM 展开]
+       ↓
+   BomExpansionService.expandBOM(factoryId, productTypeId, qty)
+       ├─ bomService.getBomItemsByProduct(...) (优先)
+       │   └─ 非空 → expandFromBomItems() → req.sourceUnit=BomItem.unit
+       │       ↓
+       │   ProductionWorkflowOrchestrator.buildTransferRequest()
+       │       └─ sourceUnit≠targetUnit (e.g. g≠kg) → convertUnit() 1:1000 换算
+       │
+       └─ 空 → expandFromConversions() (RPF fallback, sourceUnit=null, 沿用 1:1 透传)
+```
+
+### 7.3 向后兼容性
+
+- F001 等老工厂只配置了 `material_product_conversions` (RPF) 没配置 `bom_items` → 自动走 fallback 路径, 行为完全不变
+- 新工厂只配 BomItem (默认推荐) → 走新路径, 享受 D3 单位换算
+- 同一产品同时配置两种 → BomItem 优先 (per Path B 契约)
+
+### 7.4 关闭标准
 
 | 阶段 | 输出 | 状态 |
 |---|---|---|
-| Path A doc ship | 本 doc 在 main 落地 | ⏳ in flight (本 PR) |
-| Path A log warning | `BomServiceImpl.saveBomItem()` 加 `log.warn` | ⏳ 本 PR 一并 ship |
-| Path A UI banner | `bom/index.vue` 加 `el-alert` | ⏳ 本 PR 一并 ship |
-| Steve sign-off Path B | 选 B1 / B2 / B3 | ⏸️ blocked on Steve |
-| Path B spec | `docs/superpowers/specs/<date>-d4-path-b-design.md` | ⏸️ 待 sign-off 后 dispatch |
-| Path B impl | 单独 PR (估 2-5d) | ⏸️ 待 spec |
-| Path B regression test + cutover | F006 数据稽查 + feature flag 灰度 | ⏸️ 待 impl |
-| 关闭 RPF 表 (optional) | Phase 4 评估下线 | ⏸️ 长期 |
+| Path A doc ship | 本 doc 在 main 落地 (PR #294) | ✅ 2026-05-10 |
+| Path A log warning | `BomServiceImpl.saveBomItem()` `log.warn` | ✅ 2026-05-10 (本 PR 改为 info) |
+| Path A UI banner | `bom/index.vue` `el-alert warning` | ✅ 2026-05-10 (本 PR 改为 success) |
+| PR #297 D2/D3 + `sourceUnit` 字段 (dormant) | `MaterialRequirement.sourceUnit` ship | ✅ 2026-05-10 |
+| Steve sign-off Path B | 选 B2 (改 BomExpansionService) | ✅ 2026-05-10 |
+| Path B impl | `BomExpansionService` + `BomServiceImpl` + Vue banner + test | ✅ 2026-05-10 (PR #309 A2=B, 本 PR) |
+| Path B regression test | unit test 覆盖 BomItem / RPF fallback / D3 激活 | ✅ 2026-05-10 (本 PR) |
+| F006 数据稽查 + cutover 灰度 | 部署后客户回访验证 | ⏸️ 待部署后续观察 |
+| 关闭 RPF 表 (optional) | Phase 4 评估下线 | ⏸️ 长期 (保留 fallback) |
