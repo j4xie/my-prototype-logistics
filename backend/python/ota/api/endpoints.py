@@ -45,6 +45,12 @@ def _file_mtime_iso_z(path) -> str:
 
 @router.get("/health")
 def health(settings: OTASettings = Depends(get_settings)):
+    """Liveness + readiness probe. Per chat2 audit Important F (formerly
+    unnamed slot): the basePath filesystem string was previously echoed back
+    to anonymous clients, which leaks server topology. Now only boolean
+    health bits are exposed; ops can introspect basePath via admin/list or
+    server-side logs.
+    """
     has_key = (
         settings.private_key_path is not None
         and settings.private_key_path.is_file()
@@ -55,7 +61,6 @@ def health(settings: OTASettings = Depends(get_settings)):
     return {
         "status": "ok",
         "privateKeyLoaded": has_key,
-        "basePath": str(settings.base_path),
         "writable": writable,
     }
 
@@ -98,11 +103,23 @@ def manifest(
     def _maybe_sign(content_str: str) -> Optional[str]:
         if not expo_expect_signature:
             return None
+        # Per chat2 audit Important E (formerly unnamed slot): when the client
+        # explicitly requests a signature via expo-expect-signature but the
+        # server has no private key configured, we must fail loud (500) — not
+        # silently return None, which would cause confusing client-side signature
+        # verification failures on the device.
         if (
             settings.private_key_path is None
             or not settings.private_key_path.is_file()
         ):
-            return None
+            _logger.error(
+                "OTA signature requested but private_key_path is missing/unreadable: %s",
+                settings.private_key_path,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Private key not loaded but signature requested",
+            )
         # Per chat2 audit Important B: load_private_key_cached avoids re-parsing
         # the PEM on every request.
         private_key = signing.load_private_key_cached(str(settings.private_key_path))

@@ -176,6 +176,30 @@ def test_extra_expoClient_is_parsed_expoConfig_json(
     assert manifest["extra"]["expoClient"]["version"] == "1.0.0"
 
 
+# --- chat2 audit Important D: defense-in-depth URL encoding ---
+
+
+def test_asset_url_encodes_query_string_values_defense_in_depth():
+    """_asset_url must encode runtime_version + platform even though the manifest
+    endpoint already validates them via storage._validate_path_component. A
+    future caller that bypasses validation should still produce a safe URL."""
+    url = manifest_builder._asset_url(
+        "http://x", Path("a/b.png"), "1+0+0", "an droid"
+    )
+    assert "runtimeVersion=1%2B0%2B0" in url
+    assert "platform=an%20droid" in url
+
+
+def test_asset_url_safe_values_remain_readable():
+    """Unreserved characters (alphanumerics, dots, hyphens) stay un-encoded
+    so generated URLs are still grep-friendly for ops."""
+    url = manifest_builder._asset_url(
+        "http://x", Path("a/b.png"), "1.0.0", "android"
+    )
+    assert "runtimeVersion=1.0.0" in url
+    assert "platform=android" in url
+
+
 def test_manifest_field_order_matches_reference(
     populated_bundle_dir: Path, ota_root: Path
 ):

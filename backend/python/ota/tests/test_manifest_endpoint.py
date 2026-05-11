@@ -177,3 +177,65 @@ def test_missing_expo_config_json_returns_500(client, populated_bundle_dir: Path
     r = client.get("/api/ota/manifest", headers=_default_headers())
 
     assert r.status_code == 500
+
+
+# --- chat2 audit Important E: signature-requested-but-no-key fails loud ---
+
+
+def test_signature_requested_but_no_private_key_returns_500(
+    ota_root, populated_bundle_dir, monkeypatch
+):
+    """Per chat2 audit Important E: silently dropping the signature when the
+    client EXPLICITLY asked for it would cause confusing client-side verify
+    failures on the device. Server must fail loud (500) instead."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from ota.api.endpoints import router
+    from ota.config import OTASettings, get_settings
+
+    settings_no_key = OTASettings(
+        base_path=ota_root,
+        private_key_path=None,  # ← signature impossible
+        admin_token="x",
+        hostname="http://test.local",
+        default_channel="production",
+    )
+    app = FastAPI()
+    app.include_router(router, prefix="/api/ota")
+    app.dependency_overrides[get_settings] = lambda: settings_no_key
+
+    r = TestClient(app).get(
+        "/api/ota/manifest",
+        headers=_default_headers(
+            **{"expo-expect-signature": 'sig, keyid="main", alg="rsa-v1_5-sha256"'}
+        ),
+    )
+    assert r.status_code == 500
+    assert "Private key not loaded" in r.json().get("detail", "")
+
+
+def test_no_signature_request_with_no_key_still_succeeds(
+    ota_root, populated_bundle_dir
+):
+    """Sanity inverse: if client does NOT request signature, missing private
+    key is fine (server can serve unsigned manifests)."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from ota.api.endpoints import router
+    from ota.config import OTASettings, get_settings
+
+    settings_no_key = OTASettings(
+        base_path=ota_root,
+        private_key_path=None,
+        admin_token="x",
+        hostname="http://test.local",
+        default_channel="production",
+    )
+    app = FastAPI()
+    app.include_router(router, prefix="/api/ota")
+    app.dependency_overrides[get_settings] = lambda: settings_no_key
+
+    r = TestClient(app).get("/api/ota/manifest", headers=_default_headers())
+    assert r.status_code == 200

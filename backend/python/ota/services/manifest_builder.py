@@ -44,10 +44,16 @@ def _file_mtime_iso_z(path: Path) -> str:
 
 
 def _asset_url(hostname: str, rel_path: Path, runtime_version: str, platform: str) -> str:
-    encoded = quote(rel_path.as_posix(), safe="")
+    """Build the asset-fetch URL. All query-string values are URL-encoded for
+    defense in depth (the manifest endpoint already validates runtime_version
+    and platform via storage._validate_path_component, but encoding here means
+    a future caller that bypasses validation still produces a safe URL)."""
+    encoded_asset = quote(rel_path.as_posix(), safe="")
+    encoded_rv = quote(runtime_version, safe="")
+    encoded_platform = quote(platform, safe="")
     return (
-        f"{hostname}/api/ota/assets?asset={encoded}"
-        f"&runtimeVersion={runtime_version}&platform={platform}"
+        f"{hostname}/api/ota/assets?asset={encoded_asset}"
+        f"&runtimeVersion={encoded_rv}&platform={encoded_platform}"
     )
 
 
