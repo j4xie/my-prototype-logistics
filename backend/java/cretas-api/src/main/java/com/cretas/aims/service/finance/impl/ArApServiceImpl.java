@@ -196,8 +196,9 @@ public class ArApServiceImpl implements ArApService {
     @Override
     @Transactional
     public ArApTransaction recordArPayment(String factoryId, String customerId,
-                                            BigDecimal amount, PaymentMethod method,
-                                            String paymentReference, Long operatedBy, String remark) {
+                                            String salesOrderId, BigDecimal amount,
+                                            PaymentMethod method, String paymentReference,
+                                            Long operatedBy, String remark) {
         // Round 8-α Fix: Canvas validation rules were bypassed on recordArPayment (see R8-α Gap #4).
         // ValidationRuleEvaluator was injected but only used in recordReceivable. Now also fires
         // on payment with {amount, customerId, method} context so rules like "收款 > 100万 require
@@ -245,10 +246,37 @@ public class ArApServiceImpl implements ArApService {
                 negAmount, newBalance, null, operatedBy, remark);
         transaction.setPaymentMethod(method);
         transaction.setPaymentReference(paymentReference);
+        // Issue #317 fix: persist salesOrderId so SO 收款记录 tab finds the row +
+        // SO.paidAmount can be derived. null is allowed (on-account prepayment).
+        transaction.setSalesOrderId(salesOrderId);
 
-        log.info("应收收款: factoryId={}, customerId={}, amount={}, balance={}",
-                factoryId, customerId, amount, newBalance);
+        log.info("应收收款: factoryId={}, customerId={}, salesOrderId={}, amount={}, balance={}",
+                factoryId, customerId, salesOrderId, amount, newBalance);
         ArApTransaction saved = transactionRepository.save(transaction);
+
+        // Issue #317 fix: sync SO.paidAmount + settlementFlag so SO.paymentStatus
+        // (derived from paidAmount vs totalAmount) reflects the receipt. Skipped
+        // when salesOrderId is null (on-account customer prepayment, no SO scope).
+        if (salesOrderId != null && !salesOrderId.isBlank()) {
+            com.cretas.aims.entity.inventory.SalesOrder so =
+                    salesOrderRepository.findById(salesOrderId)
+                            .filter(s -> factoryId.equals(s.getFactoryId()))
+                            .orElse(null);
+            if (so != null) {
+                BigDecimal totalPaid = transactionRepository
+                        .sumArPaymentsBySalesOrderId(factoryId, salesOrderId);
+                so.setPaidAmount(totalPaid != null ? totalPaid : BigDecimal.ZERO);
+                boolean settled = so.getTotalAmount() != null
+                        && so.getPaidAmount().compareTo(so.getTotalAmount()) >= 0;
+                so.setSettlementFlag(settled);
+                salesOrderRepository.save(so);
+                log.info("销售订单收款状态已更新: salesOrderId={}, totalPaid={}, settled={}",
+                        salesOrderId, so.getPaidAmount(), settled);
+            } else {
+                log.warn("销售订单不存在或不属于该工厂, 跳过 paidAmount 更新: salesOrderId={}, factoryId={}",
+                        salesOrderId, factoryId);
+            }
+        }
 
         // Publish PaymentReceivedEvent so Canvas trigger chains (factory_trigger_chains
         // with eventType='PaymentReceivedEvent') can react to successful AR payments.

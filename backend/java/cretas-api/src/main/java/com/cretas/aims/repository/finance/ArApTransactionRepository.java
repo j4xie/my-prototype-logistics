@@ -145,6 +145,19 @@ public interface ArApTransactionRepository extends JpaRepository<ArApTransaction
     /** 收款幂等检查：同一 paymentReference 不能重复 */
     boolean existsByFactoryIdAndPaymentReference(String factoryId, String paymentReference);
 
+    /**
+     * Issue #317 fix: sum AR_PAYMENT amounts for a SO so SO.paidAmount/payment_status
+     * can be derived. amounts on AR_PAYMENT rows are stored NEGATIVE (冲减应收), so
+     * we negate before sum to return positive 累计收款.
+     */
+    @Query("SELECT COALESCE(SUM(-t.amount), 0) FROM ArApTransaction t " +
+            "WHERE t.factoryId = :factoryId AND t.salesOrderId = :salesOrderId " +
+            "AND t.transactionType = com.cretas.aims.entity.enums.ArApTransactionType.AR_PAYMENT " +
+            "AND t.deletedAt IS NULL")
+    BigDecimal sumArPaymentsBySalesOrderId(
+            @Param("factoryId") String factoryId,
+            @Param("salesOrderId") String salesOrderId);
+
     /** 按交易类型统计 */
     @Query("SELECT t.transactionType, COUNT(t), COALESCE(SUM(t.amount), 0) " +
             "FROM ArApTransaction t WHERE t.factoryId = :factoryId " +

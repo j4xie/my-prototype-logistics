@@ -89,10 +89,14 @@ public class SalesRecordPaymentTool extends AbstractBusinessTool {
 
         String paymentReference = getString(params, "paymentReference");
         String remark = getString(params, "remark");
+        // Issue #317 fix: AI tool path doesn't scope by SO; pass null so payment
+        // posts as on-account customer prepayment without SO link.
+        String salesOrderId = getString(params, "salesOrderId");
         Long userId = context.get("userId") != null ? ((Number) context.get("userId")).longValue() : 0L;
 
         ArApTransaction transaction = arApService.recordArPayment(
-                factoryId, counterpartyId, amount, method, paymentReference, userId, remark);
+                factoryId, counterpartyId, salesOrderId, amount, method,
+                paymentReference, userId, remark);
 
         Map<String, Object> result = new HashMap<>();
         result.put("message", "收款记录创建成功");

@@ -26,10 +26,18 @@ public interface ArApService {
 
     // ==================== 收付款（冲减应收/应付） ====================
 
-    /** 收到客户付款（AR_PAYMENT） */
+    /**
+     * 收到客户付款（AR_PAYMENT）
+     *
+     * Issue #317 fix: salesOrderId param added so 快速收款 from SO row persists
+     * the link. Was orphan-receipt: SO.paidAmount stayed null, SO 收款记录 tab
+     * '暂无数据', SO.paymentStatus stayed UNPAID. Pass null when payment is not
+     * scoped to a SO (e.g. on-account customer prepayment).
+     */
     ArApTransaction recordArPayment(String factoryId, String customerId,
-                                     BigDecimal amount, PaymentMethod method,
-                                     String paymentReference, Long operatedBy, String remark);
+                                     String salesOrderId, BigDecimal amount,
+                                     PaymentMethod method, String paymentReference,
+                                     Long operatedBy, String remark);
 
     /** 向供应商付款（AP_PAYMENT） */
     ArApTransaction recordApPayment(String factoryId, String supplierId,

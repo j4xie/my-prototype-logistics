@@ -66,9 +66,12 @@ public class ArApController {
         Long userId = extractUserId(authorization);
         PaymentMethod method = request.getPaymentMethod() != null
                 ? PaymentMethod.valueOf(request.getPaymentMethod()) : PaymentMethod.BANK_TRANSFER;
+        // Issue #317 fix: thread orderId (SO id) into service so 快速收款 from SO row
+        // persists salesOrderId on the AR_PAYMENT row + updates SO.paidAmount.
         ArApTransaction transaction = arApService.recordArPayment(
-                factoryId, request.getCounterpartyId(), request.getAmount(),
-                method, request.getPaymentReference(), userId, request.getRemark());
+                factoryId, request.getCounterpartyId(), request.getOrderId(),
+                request.getAmount(), method, request.getPaymentReference(),
+                userId, request.getRemark());
         return ApiResponse.success("收款记录创建成功", transaction);
     }
 

@@ -18,11 +18,12 @@ import {
   createChartTemplate,
   updateChartTemplate,
   deleteChartTemplate,
-  previewChart,
-  getDataSources,
-  type ChartTemplate,
-  type DataSource
+  type ChartTemplate
 } from '@/api/smartbi-config';
+// Issue #336 fix: previewChart removed (BE has no /preview endpoint). Local
+// preview shows the chartOptions JSON only, no server round-trip.
+// getDataSources also removed — old form had a 数据源 picker bound to
+// dataSourceId field which doesn't exist on BE entity (Jackson silent-drop).
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -34,7 +35,6 @@ const canWrite = computed(() => permissionStore.canWrite('system'));
 const loading = ref(false);
 const tableData = ref<ChartTemplate[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
-const dataSources = ref<DataSource[]>([]);
 
 // 搜索表单
 const searchForm = ref({
@@ -45,18 +45,19 @@ const searchForm = ref({
 });
 
 // 编辑对话框
+// Issue #336 fix: field names aligned with BE SmartBiChartTemplate entity.
+// Pre-fix used name/code/type/configJson — Jackson silent-dropped all 4 on POST/PUT.
 const dialogVisible = ref(false);
 const dialogTitle = ref('');
 const dialogLoading = ref(false);
 const formRef = ref();
 const editForm = ref<Partial<ChartTemplate>>({
-  name: '',
-  code: '',
-  type: 'LINE',
+  templateName: '',
+  templateCode: '',
+  chartType: 'LINE',
   category: '',
   description: '',
-  configJson: '',
-  dataSourceId: undefined,
+  chartOptions: '',
   isActive: true
 });
 
@@ -90,17 +91,17 @@ const categoryOptions = [
   { value: 'OTHER', label: '其他' }
 ];
 
-// 表单验证规则
+// 表单验证规则 (Issue #336: rule keys must match field names on BE entity)
 const formRules = {
-  name: [
+  templateName: [
     { required: true, message: '请输入模板名称', trigger: 'blur' },
     { max: 50, message: '名称不能超过50个字符', trigger: 'blur' }
   ],
-  code: [
+  templateCode: [
     { required: true, message: '请输入模板代码', trigger: 'blur' },
-    { pattern: /^[A-Z][A-Z0-9_]*$/, message: '代码必须以大写字母开头，只能包含大写字母、数字和下划线', trigger: 'blur' }
+    { pattern: /^[A-Za-z][A-Za-z0-9_]*$/, message: '代码必须以字母开头，只能包含字母、数字和下划线', trigger: 'blur' }
   ],
-  type: [
+  chartType: [
     { required: true, message: '请选择图表类型', trigger: 'change' }
   ],
   category: [
@@ -111,26 +112,37 @@ const formRules = {
 // ============ 初始化 ============
 onMounted(() => {
   loadData();
-  loadDataSources();
 });
 
 // ============ 数据加载 ============
+// Issue #336 fix: BE GET /chart-templates only accepts {category, chartType} —
+// returns un-paginated List<>. Keyword + isActive + pagination apply client-side.
 async function loadData() {
   loading.value = true;
   try {
-    const params: Record<string, unknown> = {
-      page: pagination.value.page - 1,
-      size: pagination.value.size
-    };
-    if (searchForm.value.keyword) params.keyword = searchForm.value.keyword;
-    if (searchForm.value.type) params.type = searchForm.value.type;
+    const params: { category?: string; chartType?: string } = {};
+    if (searchForm.value.type) params.chartType = searchForm.value.type;
     if (searchForm.value.category) params.category = searchForm.value.category;
-    if (searchForm.value.isActive !== '') params.isActive = searchForm.value.isActive === 'true';
 
     const response = await getChartTemplates(params);
     if (response.success && response.data) {
-      tableData.value = response.data.content || [];
-      pagination.value.total = response.data.totalElements || 0;
+      let all = response.data;
+      // Client-side keyword filter (BE doesn't accept keyword param).
+      if (searchForm.value.keyword) {
+        const kw = searchForm.value.keyword.toLowerCase();
+        all = all.filter(t =>
+          (t.templateName && t.templateName.toLowerCase().includes(kw)) ||
+          (t.templateCode && t.templateCode.toLowerCase().includes(kw))
+        );
+      }
+      // Client-side isActive filter.
+      if (searchForm.value.isActive !== '') {
+        const want = searchForm.value.isActive === 'true';
+        all = all.filter(t => t.isActive === want);
+      }
+      pagination.value.total = all.length;
+      const start = (pagination.value.page - 1) * pagination.value.size;
+      tableData.value = all.slice(start, start + pagination.value.size);
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载图表模板失败');
     }
@@ -140,18 +152,6 @@ async function loadData() {
     console.error('加载图表模板失败:', error);
   } finally {
     loading.value = false;
-  }
-}
-
-async function loadDataSources() {
-  try {
-    const response = await getDataSources({ size: 100, isActive: true });
-    if (response.success && response.data) {
-      dataSources.value = response.data.content || [];
-    }
-  } catch (error) {
-    // 同上 bug #55
-    console.error('加载数据源失败:', error);
   }
 }
 
@@ -175,13 +175,12 @@ function handlePageChange(page: number) {
 function handleAdd() {
   dialogTitle.value = '新建图表模板';
   editForm.value = {
-    name: '',
-    code: '',
-    type: 'LINE',
+    templateName: '',
+    templateCode: '',
+    chartType: 'LINE',
     category: '',
     description: '',
-    configJson: getDefaultConfig('LINE'),
-    dataSourceId: undefined,
+    chartOptions: getDefaultConfig('LINE'),
     isActive: true
   };
   dialogVisible.value = true;
@@ -230,7 +229,7 @@ async function handleSubmit() {
 async function handleDelete(row: ChartTemplate) {
   try {
     await ElMessageBox.confirm(
-      `确定要删除图表模板 "${row.name}" 吗？删除后无法恢复。`,
+      `确定要删除图表模板 "${row.templateName}" 吗？删除后无法恢复。`,
       '确认删除',
       {
         confirmButtonText: '确定',
@@ -253,22 +252,23 @@ async function handleDelete(row: ChartTemplate) {
 }
 
 // ============ 预览 ============
-async function handlePreview(row: ChartTemplate) {
-  previewLoading.value = true;
+// Issue #336 fix: BE has no /preview endpoint. Display the saved chartOptions
+// + dataMapping JSON inline. Real-data preview is a separate feature ticket.
+function handlePreview(row: ChartTemplate) {
+  previewLoading.value = false;
   previewVisible.value = true;
-  try {
-    const response = await previewChart(row.id);
-    if (response.success) {
-      previewData.value = response.data;
-    } else {
-      ElMessage.error(response.message || '获取预览数据失败');
-    }
-  } catch (error) {
-    console.error('预览失败:', error);
-    ElMessage.error('获取预览数据失败');
-  } finally {
-    previewLoading.value = false;
-  }
+  previewData.value = {
+    templateCode: row.templateCode,
+    templateName: row.templateName,
+    chartType: row.chartType,
+    chartOptions: row.chartOptions ? safeParseJson(row.chartOptions) : null,
+    dataMapping: row.dataMapping ? safeParseJson(row.dataMapping) : null,
+    layoutConfig: row.layoutConfig ? safeParseJson(row.layoutConfig) : null,
+  };
+}
+
+function safeParseJson(str: string): unknown {
+  try { return JSON.parse(str); } catch { return str; }
 }
 
 // ============ 辅助方法 ============
@@ -332,7 +332,7 @@ function getDefaultConfig(type: string): string {
 
 function handleTypeChange(type: string) {
   if (!editForm.value.id) {
-    editForm.value.configJson = getDefaultConfig(type);
+    editForm.value.chartOptions = getDefaultConfig(type);
   }
 }
 
@@ -407,16 +407,16 @@ function goBack() {
       </template>
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
-        <el-table-column prop="code" label="模板代码" width="180">
+        <el-table-column prop="templateCode" label="模板代码" width="180">
           <template #default="{ row }">
-            <code class="template-code">{{ row.code }}</code>
+            <code class="template-code">{{ row.templateCode }}</code>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="模板名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="type" label="图表类型" width="110" align="center">
+        <el-table-column prop="templateName" label="模板名称" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="chartType" label="图表类型" width="110" align="center">
           <template #default="{ row }">
-            <el-tag :type="getTypeTagType(row.type)" size="small">
-              {{ getTypeLabel(row.type) }}
+            <el-tag :type="getTypeTagType(row.chartType)" size="small">
+              {{ getTypeLabel(row.chartType) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -427,9 +427,9 @@ function goBack() {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="dataSourceName" label="数据源" width="140">
+        <el-table-column prop="factoryId" label="工厂" width="120">
           <template #default="{ row }">
-            {{ row.dataSourceName || '-' }}
+            {{ row.factoryId || '全局' }}
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip>
@@ -497,14 +497,14 @@ function goBack() {
       >
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="模板名称" prop="name">
-              <el-input v-model="editForm.name" placeholder="请输入模板名称" maxlength="50" show-word-limit />
+            <el-form-item label="模板名称" prop="templateName">
+              <el-input v-model="editForm.templateName" placeholder="请输入模板名称" maxlength="50" show-word-limit />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="模板代码" prop="code">
+            <el-form-item label="模板代码" prop="templateCode">
               <el-input
-                v-model="editForm.code"
+                v-model="editForm.templateCode"
                 placeholder="如: SALES_TREND_LINE"
                 :disabled="!!editForm.id"
                 maxlength="50"
@@ -514,9 +514,9 @@ function goBack() {
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="图表类型" prop="type">
+            <el-form-item label="图表类型" prop="chartType">
               <el-select
-                v-model="editForm.type"
+                v-model="editForm.chartType"
                 placeholder="请选择图表类型"
                 style="width: 100%"
                 @change="handleTypeChange"
@@ -543,24 +543,18 @@ function goBack() {
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="数据源">
-          <el-select
-            v-model="editForm.dataSourceId"
-            placeholder="请选择数据源 (可选)"
-            style="width: 100%"
+        <el-form-item label="工厂ID">
+          <el-input
+            v-model="editForm.factoryId"
+            placeholder="留空 = 全局模板; 或填工厂代码 (如 F001)"
             clearable
-          >
-            <el-option
-              v-for="ds in dataSources"
-              :key="ds.id"
-              :label="`${ds.name} (${ds.code})`"
-              :value="ds.id"
-            />
-          </el-select>
+            maxlength="32"
+          />
+          <div class="form-tip">全局模板对所有工厂可见; 工厂级模板覆盖同名全局模板</div>
         </el-form-item>
         <el-form-item label="图表配置">
           <el-input
-            v-model="editForm.configJson"
+            v-model="editForm.chartOptions"
             type="textarea"
             :rows="8"
             placeholder="JSON 格式的 ECharts 配置"
