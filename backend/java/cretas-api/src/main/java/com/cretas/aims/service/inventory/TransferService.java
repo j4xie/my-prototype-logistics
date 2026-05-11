@@ -3,7 +3,9 @@ package com.cretas.aims.service.inventory;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateTransferRequest;
 import com.cretas.aims.entity.inventory.InternalTransfer;
+import com.cretas.aims.entity.inventory.InternalTransferItem;
 
+import java.util.List;
 import java.util.Map;
 
 public interface TransferService {
@@ -35,4 +37,18 @@ public interface TransferService {
     InternalTransfer cancelTransfer(String factoryId, String transferId, Long userId, String reason);
 
     Map<String, Object> getTransferStatistics(String factoryId);
+
+    // ==================== B1 两阶段批次选择 (PR #309 B1=C, 2026-05-11) ====================
+
+    /**
+     * B1: 列出某 transfer item 在 source warehouse 当前可用批次, 用于 SHIP 前选批次 dropdown.
+     */
+    List<Map<String, Object>> getAvailableBatchesForItem(String factoryId, String transferId, Long itemId);
+
+    /**
+     * B1: 更新 transfer item 的 sourceBatchId (用户在 SHIP 前选批次). null = 清除预选, 走 FEFO.
+     * 仅 source factory + status=APPROVED 时允许.
+     */
+    InternalTransferItem updateItemSourceBatch(String factoryId, String transferId,
+                                                Long itemId, String sourceBatchId);
 }

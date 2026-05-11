@@ -93,6 +93,23 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
             @Param("warehouseId") String warehouseId);
 
     /**
+     * 查找 plan + warehouse 范围内的所有可用成品批次。D1 反向调拨触发 (PR #309 A3=A, 2026-05-10 spec)。
+     *
+     * <p>用途：报工触发计划完成后, 反向调拨编排查询该 plan 在 WH-WKS 生成的成品批次,
+     * 聚合后作为 BRANCH_TO_HQ 调拨单 items.
+     */
+    @Query("SELECT b FROM FinishedGoodsBatch b WHERE b.factoryId = :factoryId " +
+            "AND b.productionPlanId = :planId " +
+            "AND b.warehouseId = :warehouseId " +
+            "AND b.status = 'AVAILABLE' " +
+            "AND (b.producedQuantity - b.shippedQuantity - b.reservedQuantity) > 0 " +
+            "ORDER BY b.productTypeId ASC, b.expireDate ASC NULLS LAST, b.productionDate ASC")
+    List<FinishedGoodsBatch> findAvailableByPlanAndWarehouse(
+            @Param("factoryId") String factoryId,
+            @Param("planId") String planId,
+            @Param("warehouseId") String warehouseId);
+
+    /**
      * A5 集团联销 (cross-factory sales) — 跨工厂可用成品库存汇总。
      *
      * <p>当 feature flag {@code cretas.sales.cross-factory.enabled=true} 时启用。
@@ -170,4 +187,11 @@ public interface FinishedGoodsBatchRepository extends JpaRepository<FinishedGood
     List<FinishedGoodsBatch> findAvailableBatchesAllFactoriesByWarehouseCode(
             @Param("productTypeId") String productTypeId,
             @Param("warehouseCode") String warehouseCode);
+
+    /**
+     * 分仓库存查询 (PR #309 B2=B, 2026-05-11 spec).
+     * factory_id × warehouse_id composite index (idx_finished_batch_warehouse).
+     * 默认 @Where(deleted_at IS NULL) 已在 entity 起作用。
+     */
+    List<FinishedGoodsBatch> findByFactoryIdAndWarehouseId(String factoryId, String warehouseId);
 }

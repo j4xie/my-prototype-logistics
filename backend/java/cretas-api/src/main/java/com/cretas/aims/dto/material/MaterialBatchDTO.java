@@ -104,6 +104,18 @@ public class MaterialBatchDTO {
     @Schema(description = "状态显示名称")
     private String statusDisplayName;
 
+    /** D1 双仓流转 (PR #309 A1=A) — 仓库 UUID (factory_warehouses.id). */
+    @Schema(description = "仓库ID (UUID, factory_warehouses.id)")
+    private String warehouseId;
+
+    /** D1 双仓流转 (PR #309 A1=A) — 仓库 code, 例如 "WH-LOG" / "WH-WKS". */
+    @Schema(description = "仓库 code (WH-LOG / WH-WKS)")
+    private String warehouseCode;
+
+    /** D1 双仓流转 (PR #309 A1=A) — 仓库名称, 例如 "物流仓" / "鲜棉仓". */
+    @Schema(description = "仓库名称 (物流仓 / 鲜棉仓)")
+    private String warehouseName;
+
     @Schema(description = "存储位置")
     private String storageLocation;
 

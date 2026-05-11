@@ -172,6 +172,22 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
+      // PR #309 B2 — 分仓库存查询 (Dropdown 跨 factoryId × warehouseId)
+      {
+        path: 'inventory',
+        name: 'Inventory',
+        redirect: '/inventory/by-warehouse',
+        meta: { requiresAuth: true, title: '分仓库存查询', module: 'warehouse' },
+        children: [
+          {
+            path: 'by-warehouse',
+            name: 'InventoryByWarehouse',
+            component: () => import('@/views/inventory/by-warehouse/index.vue'),
+            meta: { requiresAuth: true, title: '分仓库存查询', module: 'warehouse' }
+          }
+        ]
+      },
+
       // 调拨管理
       {
         path: 'transfer',
