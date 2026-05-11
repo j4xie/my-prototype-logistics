@@ -143,16 +143,36 @@ The Sub-P marching order presented 4 options:
 | C | Phase D = **post-cutover 30-day soak + final close-out audit + rollback contingency expire** | LOW-MEDIUM — execution of spec §D.1-§D.4 + close-out doc | LOW | ✅ Matches spec §2.4 + §3.1 rollback table; preserves option to revert during contingency window |
 | D | Phase D = **Java SmartBI build profile isolated** (compile but exclude from prod jar) | MEDIUM — Maven profile + CI changes | MEDIUM (build pipeline complexity, marginal benefit since Phase C already removed bodies) | ❌ Solves a problem Phase C already solved — dead bodies removed, remaining code is alive |
 
-### §4.1 Recommendation: Option C — compressed via active-E2E shortcut (Steve sign-off 2026-05-12)
+### §4.1 Recommendation: Option C — compression LIVE per Day 1 empirical evidence (PR #347)
 
 **Phase D scope (recommendation, mirrors spec §2.4 + adds close-out)**:
 
-**⚡ 2026-05-12 AMENDMENT — Steve verbal sign-off compresses 30-day → ~1-day via active-E2E HARD rule.**
+**⚡ 2026-05-12 AMENDMENT — Compression LIVE per chat3 PR #347 empirical verification (was Steve verbal sign-off pending, now empirically validated).**
 
-Per HARD rule `feedback_active_e2e_replaces_passive_soak.md` + Day 0 296/296 PASS baseline (PR #302 chat4 2026-05-11) + Day 1 reprobe sustained verification (task #38 chat3 trigger 2026-05-12 18:00 CST):
+Per HARD rule `feedback_active_e2e_replaces_passive_soak.md` + Day 0 baseline (chat4 PR #302 2026-05-11) + Day 1 reprobe (chat3 PR #347 2026-05-12):
 
 - **Original**: 30-day passive soak post-Phase-C-prod-deploy
-- **Amended (Steve sign-off)**: **~1-day active-E2E shortcut** — Day 0 baseline + Day 1 sustained reprobe + 4 new bug-fix-specific probe paths (per reviewer audit IF-5) = sufficient active verification to compress 30d → 1d. Rollback contingency window REMAINS 30 days (no compression on rollback safety, only on positive-verification gate).
+- **Amended (Steve sign-off + empirical validation)**: **~1-day active-E2E shortcut LIVE** — sufficient active verification compressed 30d → 1d. Rollback contingency window REMAINS 30 days (positive-verification gate only compressed, NOT safety net).
+
+**Empirical validation evidence (chat3 PR #347 2026-05-12 01:27 CST)**:
+- **666/666 PASS** across 9 endpoints × 74 factories (4 Day-0 reprobe + 4 new bug-fix-specific + 1 bonus 5th endpoint)
+- **p95 0.453s / 2.64s** — actually **8.3% better** than Day 0 baseline 2.88s p95
+- **Issue #317 prod-verified fixed**: F006 receipts carry `salesOrderId` non-null UUID × 2 (PR #342 fix works on real customer data)
+- **Issue #336 prod-verified**: BE returns canonical field names (`templateCode`, `chartType`, `chartOptions`) — FE→BE alignment unblocked
+- **D1 dual-warehouse** healthy 74/74 (low-pri model-by-design flag documented in chat3 §2.2)
+- **B9 reachable** uniform shape
+
+**Sustained criterion met**: Day 0 → Day 1 ~14.5h sustained, 0 regression across 666 active-probe calls, prod stable through 6+ deploys overnight 2026-05-11.
+
+**Phase D timeline**:
+- Original ETA: 2026-06-10 (Day 30)
+- **Compressed ETA: 2026-05-13 (Day 2 buffer)** — close-out audit can fire NOW any time after PR #347 merge.
+
+1. **Active-E2E shortcut verified** — Day 0 baseline + Day 1 sustained reprobe shipped:
+   - **Day 0**: chat4 PR #302 296/296 PASS (74 factories × 4 endpoints). 2026-05-11.
+   - **Day 1**: chat3 PR #347 666/666 PASS (74 × 9 endpoints incl 4 bug-fix-specific). 2026-05-12 01:27 CST.
+   - **30-day rollback contingency window** stays open (active-E2E shortcut only compresses positive-verification gate, not safety net): daily journalctl `cretas-backend.service` startup log inspection (Sub-P delivers automation script in execution plan §7.1), weekly Blue-Green deploy rehearsal, on-call escalation path for any 5xx spike on `/api/mobile/*/smart-bi/*` paths.
+   - **Day 7 + Day 30 organizer auto-reprobe** scheduled (reuse chat3 scripts/preset/cohort/sampler on server 47, no chat slot needed).
 
 1. **~1-day active-E2E verification** post-Phase-C-prod-deploy (compressed from 30-day passive soak):
    - **Day 0 baseline**: chat4 PR #302 296/296 PASS (74 factories × 4 endpoints, 100% HTTP 200, 0 regression). Already shipped 2026-05-11.
