@@ -72,7 +72,14 @@ public class InternalTransferItem extends BaseEntity {
     @Column(name = "unit_price", precision = 15, scale = 4)
     private BigDecimal unitPrice;
 
-    /** 调出方批次ID（发货时关联） */
+    /**
+     * 调出方批次ID — 两阶段语义 (PR #309 B1=C, 2026-05-11):
+     * <ul>
+     *   <li><b>SHIP 前 (status=APPROVED)</b>: 用户可指定具体批次. null = 默认 FEFO (最早过期).</li>
+     *   <li><b>SHIP 后 (status=SHIPPED+)</b>: 记录实际扣减的首个批次 (用户指定的或 FEFO 选中的).</li>
+     * </ul>
+     * 卤味业务需求: CREATE 默认 FEFO, SHIP 可选新货. 详见 PR #309 B1=C.
+     */
     @Column(name = "source_batch_id", length = 191)
     private String sourceBatchId;
 

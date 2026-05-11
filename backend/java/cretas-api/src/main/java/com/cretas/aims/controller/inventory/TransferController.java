@@ -17,8 +17,10 @@ import com.cretas.aims.annotation.RequirePermission;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import java.util.Map;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.entity.inventory.InternalTransferItem;
 
 @Slf4j
 @RestController
@@ -165,6 +167,33 @@ public class TransferController {
             @PathVariable @NotBlank String factoryId) {
         Map<String, Object> stats = transferService.getTransferStatistics(factoryId);
         return ApiResponse.success("查询成功", stats);
+    }
+
+    // ==================== B1 两阶段批次选择 (PR #309 B1=C, 2026-05-11) ====================
+
+    @GetMapping("/{transferId}/items/{itemId}/available-batches")
+    @Operation(summary = "B1: 列出 transfer item 在 source warehouse 当前可用批次 (SHIP 前选批次 dropdown)")
+    @RequirePermission({"inventory:write", "inventory:read"})
+    public ApiResponse<List<Map<String, Object>>> getAvailableBatchesForItem(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String transferId,
+            @PathVariable Long itemId) {
+        List<Map<String, Object>> batches = transferService.getAvailableBatchesForItem(factoryId, transferId, itemId);
+        return ApiResponse.success("查询成功", batches);
+    }
+
+    @RequireModule("warehouse")
+    @PutMapping("/{transferId}/items/{itemId}/source-batch")
+    @Operation(summary = "B1: 更新 transfer item 的预选批次 (status=APPROVED 时, null=清除走 FEFO)")
+    @RequirePermission("inventory:write")
+    public ApiResponse<InternalTransferItem> updateItemSourceBatch(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String transferId,
+            @PathVariable Long itemId,
+            @RequestBody(required = false) Map<String, String> body) {
+        String sourceBatchId = body != null ? body.get("sourceBatchId") : null;
+        InternalTransferItem updated = transferService.updateItemSourceBatch(factoryId, transferId, itemId, sourceBatchId);
+        return ApiResponse.success("批次选择已保存", updated);
     }
 
     private Long extractUserId(String authorization) {

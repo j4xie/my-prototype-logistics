@@ -417,15 +417,28 @@ public class TransferServiceImpl implements TransferService {
     /**
      * D1: warehouse strategy per PR #310 §5 — 调拨发货扣减按 source warehouse 过滤.
      * sourceWarehouseId null 时 fallback 全 warehouse (老数据兼容).
+     *
+     * <p><b>B1 两阶段批次选择 (PR #309 B1=C, 2026-05-11)</b>: 如果用户在 SHIP 前已经
+     * 指定 {@code item.sourceBatchId} (e.g. 卤味需要选新货, 不要 FEFO 最早), 校验后
+     * 优先消耗该批次, 不足部分再 FEFO 兜底. 未指定时 = 默认全 FEFO (原行为).
      */
     private void deductSourceInventory(String factoryId, String sourceWarehouseId, InternalTransferItem item) {
+        // B1: 检查用户是否预选批次 (status=APPROVED 阶段写入). 若 SHIPPED+ 后被回填则也允许走 preselected 分支.
+        String preselectedBatchId = item.getSourceBatchId();
+
         if (item.getItemType() == TransferItemType.RAW_MATERIAL || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
             // FEFO 扣减原料/包材库存（先到期先出）— D1: filter by source warehouse if available
-            List<MaterialBatch> batches = sourceWarehouseId != null
+            List<MaterialBatch> fefoBatches = sourceWarehouseId != null
                     ? materialBatchRepository.findAvailableBatchesFEFOByWarehouse(
                             factoryId, item.getMaterialTypeId(), sourceWarehouseId)
                     : materialBatchRepository.findAvailableBatchesFEFO(factoryId, item.getMaterialTypeId());
+
+            // B1: 若用户预选, 校验该批次有效 + reorder 到队首
+            List<MaterialBatch> batches = reorderMaterialBatchesForPreselection(
+                    fefoBatches, preselectedBatchId, factoryId, sourceWarehouseId, item);
+
             BigDecimal remaining = item.getQuantity();
+            String firstConsumedBatchId = null;
             for (MaterialBatch batch : batches) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
                 // 使用乐观锁思路: 读取→计算→保存，@Transactional 保证原子性
@@ -439,9 +452,10 @@ public class TransferServiceImpl implements TransferService {
                     batch.setStatus(MaterialBatchStatus.DEPLETED);
                 }
                 materialBatchRepository.saveAndFlush(batch); // flush 立即写入，减少并发窗口
-                if (item.getSourceBatchId() == null) item.setSourceBatchId(batch.getId());
+                if (firstConsumedBatchId == null) firstConsumedBatchId = batch.getId();
                 remaining = remaining.subtract(deduct);
-                log.info("扣减原料批次: batchId={}, deduct={}, remaining={}", batch.getId(), deduct, remaining);
+                log.info("扣减原料批次: batchId={}, deduct={}, remaining={}, preselected={}",
+                        batch.getId(), deduct, remaining, preselectedBatchId != null);
             }
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
                 throw new BusinessException(409, String.format(
@@ -449,13 +463,23 @@ public class TransferServiceImpl implements TransferService {
                     item.getMaterialTypeId(), item.getQuantity(), remaining))
                         .withHint("请先采购或从其他工厂调入该原料");
             }
+            // B1: 记录实际首个消耗的批次 (用户指定的 = preselected; 否则 FEFO 选中的).
+            if (preselectedBatchId == null && firstConsumedBatchId != null) {
+                item.setSourceBatchId(firstConsumedBatchId);
+            }
         } else {
             // 扣减成品库存 — D1: filter by source warehouse if available
-            List<FinishedGoodsBatch> batches = sourceWarehouseId != null
+            List<FinishedGoodsBatch> fefoBatches = sourceWarehouseId != null
                     ? finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(
                             factoryId, item.getProductTypeId(), sourceWarehouseId)
                     : finishedGoodsBatchRepository.findAvailableBatches(factoryId, item.getProductTypeId());
+
+            // B1: 若用户预选, 校验该批次有效 + reorder 到队首
+            List<FinishedGoodsBatch> batches = reorderFinishedGoodsBatchesForPreselection(
+                    fefoBatches, preselectedBatchId, factoryId, sourceWarehouseId, item);
+
             BigDecimal remaining = item.getQuantity();
+            String firstConsumedBatchId = null;
             for (FinishedGoodsBatch batch : batches) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
                 BigDecimal available = batch.getAvailableQuantity();
@@ -463,11 +487,233 @@ public class TransferServiceImpl implements TransferService {
                 batch.setShippedQuantity(batch.getShippedQuantity().add(deduct));
                 if (batch.isDepleted()) batch.setStatus("DEPLETED");
                 finishedGoodsBatchRepository.save(batch);
-                if (item.getSourceBatchId() == null) item.setSourceBatchId(batch.getId());
+                if (firstConsumedBatchId == null) firstConsumedBatchId = batch.getId();
                 remaining = remaining.subtract(deduct);
             }
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
                 log.warn("调出方成品库存不足: productTypeId={}, 缺少={}", item.getProductTypeId(), remaining);
+            }
+            if (preselectedBatchId == null && firstConsumedBatchId != null) {
+                item.setSourceBatchId(firstConsumedBatchId);
+            }
+        }
+    }
+
+    /**
+     * B1: 若用户预选 materialBatch, 校验后 reorder 到 FEFO 队首.
+     * 不存在 / 错 warehouse / 错 materialType / 错 factory → BusinessException 409.
+     */
+    private List<MaterialBatch> reorderMaterialBatchesForPreselection(
+            List<MaterialBatch> fefoBatches,
+            String preselectedBatchId,
+            String factoryId,
+            String sourceWarehouseId,
+            InternalTransferItem item) {
+        if (preselectedBatchId == null) return fefoBatches;
+
+        // 校验 + 找到 preselected batch
+        MaterialBatch preselected = null;
+        List<MaterialBatch> remainingBatches = new ArrayList<>();
+        for (MaterialBatch b : fefoBatches) {
+            if (preselectedBatchId.equals(b.getId())) {
+                preselected = b;
+            } else {
+                remainingBatches.add(b);
+            }
+        }
+        if (preselected == null) {
+            // 不在可用 FEFO 列表 (不存在 / depleted / 错 warehouse / 错 materialType)
+            throw new BusinessException(409, String.format(
+                    "指定的原料批次 %s 不可用 (不存在/已耗尽/不属于源仓库/物料不匹配)",
+                    preselectedBatchId))
+                    .withHint("请刷新调拨单后重新选择批次, 或留空使用默认 FEFO");
+        }
+        // preselected 放队首, 其余按 FEFO 顺序保留 (用于不足时兜底)
+        List<MaterialBatch> reordered = new ArrayList<>(fefoBatches.size());
+        reordered.add(preselected);
+        reordered.addAll(remainingBatches);
+        return reordered;
+    }
+
+    /**
+     * B1: 若用户预选 finishedGoodsBatch, 校验后 reorder 到 FEFO 队首.
+     */
+    private List<FinishedGoodsBatch> reorderFinishedGoodsBatchesForPreselection(
+            List<FinishedGoodsBatch> fefoBatches,
+            String preselectedBatchId,
+            String factoryId,
+            String sourceWarehouseId,
+            InternalTransferItem item) {
+        if (preselectedBatchId == null) return fefoBatches;
+
+        FinishedGoodsBatch preselected = null;
+        List<FinishedGoodsBatch> remainingBatches = new ArrayList<>();
+        for (FinishedGoodsBatch b : fefoBatches) {
+            if (preselectedBatchId.equals(b.getId())) {
+                preselected = b;
+            } else {
+                remainingBatches.add(b);
+            }
+        }
+        if (preselected == null) {
+            throw new BusinessException(409, String.format(
+                    "指定的成品批次 %s 不可用 (不存在/已耗尽/不属于源仓库/产品不匹配)",
+                    preselectedBatchId))
+                    .withHint("请刷新调拨单后重新选择批次, 或留空使用默认 FEFO");
+        }
+        List<FinishedGoodsBatch> reordered = new ArrayList<>(fefoBatches.size());
+        reordered.add(preselected);
+        reordered.addAll(remainingBatches);
+        return reordered;
+    }
+
+    // ==================== B1 两阶段批次选择 API (PR #309 B1=C, 2026-05-11) ====================
+
+    /**
+     * B1: 列出某 transfer item 在 source warehouse 当前可用批次, 用于 SHIP 前选批次 dropdown.
+     * 仅 status=APPROVED (or earlier, before SHIP) 时有意义.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAvailableBatchesForItem(String factoryId, String transferId, Long itemId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        assertSourceFactory(factoryId, transfer, "查询可用批次");
+
+        InternalTransferItem item = transfer.getItems().stream()
+                .filter(i -> itemId.equals(i.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("调拨明细不存在: " + itemId));
+
+        String sourceWarehouseId = transfer.getSourceWarehouseId();
+        String sourceFactoryId = transfer.getSourceFactoryId();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (item.getItemType() == TransferItemType.RAW_MATERIAL || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
+            List<MaterialBatch> batches = sourceWarehouseId != null
+                    ? materialBatchRepository.findAvailableBatchesFEFOByWarehouse(
+                            sourceFactoryId, item.getMaterialTypeId(), sourceWarehouseId)
+                    : materialBatchRepository.findAvailableBatchesFEFO(sourceFactoryId, item.getMaterialTypeId());
+            for (MaterialBatch b : batches) {
+                BigDecimal available = b.getReceiptQuantity()
+                        .subtract(b.getUsedQuantity())
+                        .subtract(b.getReservedQuantity() != null ? b.getReservedQuantity() : BigDecimal.ZERO);
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("batchId", b.getId());
+                row.put("batchNumber", b.getBatchNumber());
+                row.put("availableQuantity", available);
+                row.put("expireDate", b.getExpireDate());
+                row.put("warehouseId", b.getWarehouseId());
+                result.add(row);
+            }
+        } else {
+            List<FinishedGoodsBatch> batches = sourceWarehouseId != null
+                    ? finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(
+                            sourceFactoryId, item.getProductTypeId(), sourceWarehouseId)
+                    : finishedGoodsBatchRepository.findAvailableBatches(sourceFactoryId, item.getProductTypeId());
+            for (FinishedGoodsBatch b : batches) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("batchId", b.getId());
+                row.put("batchNumber", b.getBatchNumber());
+                row.put("availableQuantity", b.getAvailableQuantity());
+                row.put("expireDate", b.getExpireDate());
+                row.put("warehouseId", b.getWarehouseId());
+                result.add(row);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * B1: 更新 transfer item 的 sourceBatchId (用户在 SHIP 前选批次). null = 清除预选, 走 FEFO.
+     * 仅 source factory + status=APPROVED 时允许.
+     */
+    @Override
+    @Transactional
+    public InternalTransferItem updateItemSourceBatch(String factoryId, String transferId,
+                                                       Long itemId, String sourceBatchId) {
+        InternalTransfer transfer = loadForStateChange(factoryId, transferId);
+        assertSourceFactory(factoryId, transfer, "选择批次");
+        // 只允许 APPROVED 阶段改 (SHIP 时已锁定).
+        if (transfer.getStatus() != TransferStatus.APPROVED) {
+            throw new BusinessException(409, String.format(
+                    "当前状态[%s]不允许修改批次, 仅[已批准]状态可选批次",
+                    transfer.getStatus().getDisplayName()))
+                    .withHint("请刷新调拨单状态");
+        }
+        InternalTransferItem item = transfer.getItems().stream()
+                .filter(i -> itemId.equals(i.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("调拨明细不存在: " + itemId));
+
+        // null = 清除预选 (走 FEFO). 非 null = 校验批次存在且属 source factory + warehouse.
+        if (sourceBatchId != null) {
+            validateBatchForItem(transfer, item, sourceBatchId);
+        }
+        item.setSourceBatchId(sourceBatchId);
+        transferItemRepository.save(item);
+        log.info("调拨明细批次选择: transferId={}, itemId={}, sourceBatchId={}",
+                transferId, itemId, sourceBatchId);
+        return item;
+    }
+
+    /**
+     * B1: 校验用户选的批次属于调拨单 source factory + source warehouse + 物料/产品匹配.
+     * Throws BusinessException 409 if invalid.
+     */
+    private void validateBatchForItem(InternalTransfer transfer, InternalTransferItem item, String batchId) {
+        String sourceWarehouseId = transfer.getSourceWarehouseId();
+        String sourceFactoryId = transfer.getSourceFactoryId();
+
+        if (item.getItemType() == TransferItemType.RAW_MATERIAL || item.getItemType() == TransferItemType.PACKAGING_MATERIAL) {
+            MaterialBatch b = materialBatchRepository.findById(batchId).orElse(null);
+            if (b == null) {
+                throw new BusinessException(409, "批次不存在: " + batchId)
+                        .withHint("请刷新可用批次列表");
+            }
+            if (!sourceFactoryId.equals(b.getFactoryId())) {
+                throw new BusinessException(409, "批次不属于源工厂")
+                        .withHint("请重新选择批次");
+            }
+            if (sourceWarehouseId != null && !sourceWarehouseId.equals(b.getWarehouseId())) {
+                throw new BusinessException(409, "批次不属于源仓库")
+                        .withHint("请重新选择批次");
+            }
+            if (!item.getMaterialTypeId().equals(b.getMaterialTypeId())) {
+                throw new BusinessException(409, "批次物料类型不匹配")
+                        .withHint("请重新选择批次");
+            }
+            BigDecimal available = b.getReceiptQuantity()
+                    .subtract(b.getUsedQuantity())
+                    .subtract(b.getReservedQuantity() != null ? b.getReservedQuantity() : BigDecimal.ZERO);
+            if (available.compareTo(item.getQuantity()) < 0) {
+                throw new BusinessException(409, String.format(
+                        "批次可用量不足: 需要 %s, 仅 %s",
+                        item.getQuantity(), available))
+                        .withHint("请选择其他批次或留空走 FEFO");
+            }
+        } else {
+            FinishedGoodsBatch b = finishedGoodsBatchRepository.findById(batchId).orElse(null);
+            if (b == null) {
+                throw new BusinessException(409, "批次不存在: " + batchId)
+                        .withHint("请刷新可用批次列表");
+            }
+            if (!sourceFactoryId.equals(b.getFactoryId())) {
+                throw new BusinessException(409, "批次不属于源工厂")
+                        .withHint("请重新选择批次");
+            }
+            if (sourceWarehouseId != null && !sourceWarehouseId.equals(b.getWarehouseId())) {
+                throw new BusinessException(409, "批次不属于源仓库")
+                        .withHint("请重新选择批次");
+            }
+            if (!item.getProductTypeId().equals(b.getProductTypeId())) {
+                throw new BusinessException(409, "批次产品类型不匹配")
+                        .withHint("请重新选择批次");
+            }
+            if (b.getAvailableQuantity().compareTo(item.getQuantity()) < 0) {
+                throw new BusinessException(409, String.format(
+                        "批次可用量不足: 需要 %s, 仅 %s",
+                        item.getQuantity(), b.getAvailableQuantity()))
+                        .withHint("请选择其他批次或留空走 FEFO");
             }
         }
     }
