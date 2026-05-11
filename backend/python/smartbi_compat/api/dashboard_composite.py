@@ -79,6 +79,27 @@ router = APIRouter()
 
 
 # ============================================================
+# UTC-naive datetime for Java LocalDateTime byte-parity (Rule 11)
+# ============================================================
+#
+# Java DTO field ``generatedAt`` is ``LocalDateTime`` (per chat3 Subagent A
+# research) — no timezone offset in serialized output. Python
+# ``datetime.now(timezone.utc)`` produces tz-aware → ``_java_isoformat``
+# preserves the ``+00:00`` suffix (helper splits on ".", finds non-digit
+# fraction part, returns unmodified) AND skips trailing-zero microsecond
+# stripping. Both behaviors break Rule 11 byte parity.
+#
+# Use ``datetime.now(timezone.utc).replace(tzinfo=None)`` to get a
+# naive UTC datetime (mirror Java ``LocalDateTime.now(ZoneOffset.UTC)``).
+# ``datetime.utcnow()`` would work but is deprecated in Python 3.12+.
+
+
+def _now_naive_utc() -> datetime:
+    """Naive UTC datetime — Java LocalDateTime mirror (Rule 11)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+# ============================================================
 # Period → DateRange resolution
 # ============================================================
 #
@@ -177,7 +198,7 @@ def _empty_dashboard_response(
         "alerts": [],
         "recommendations": [],
         "suggestions": [],
-        "generatedAt": _java_isoformat(datetime.now(timezone.utc)),
+        "generatedAt": _java_isoformat(_now_naive_utc()),
         "lastUpdated": None,
         "fromCache": False,
         "cacheExpireAt": None,
@@ -201,6 +222,13 @@ async def _fetch_sales_safe(
     """Sales sub-dashboard — primary content. Failure here is severe."""
     try:
         return await _get_sales_overview(factory_id, range_)
+    except asyncio.CancelledError:
+        # Cycle 2 audit finding (Important): Python 3.8 (server venv38)
+        # makes CancelledError a subclass of Exception. Letting the bare
+        # except Exception swallow it would produce a fake "all empty"
+        # response when the request was actually cancelled. Re-raise so
+        # asyncio.gather propagates the cancellation.
+        raise
     except Exception as e:
         logger.warning(
             "[dashboard_composite] sales overview failed factory=%s period=%s: %s",
@@ -215,6 +243,8 @@ async def _fetch_finance_safe(
     """Finance sub-dashboard — graceful degradation per Java line 376-380."""
     try:
         return await _get_finance_overview(factory_id, range_)
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         logger.warning(
             "[dashboard_composite] finance overview failed factory=%s: %s",
@@ -230,6 +260,8 @@ async def _fetch_inventory_safe(
         return await _get_inventory_health(
             factory_id, range_.start_date, range_.end_date
         )
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         logger.warning(
             "[dashboard_composite] inventory health failed factory=%s: %s",
@@ -245,6 +277,8 @@ async def _fetch_procurement_safe(
         return await _get_procurement_overview(
             factory_id, range_.start_date, range_.end_date
         )
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         logger.warning(
             "[dashboard_composite] procurement overview failed factory=%s: %s",
@@ -313,6 +347,12 @@ async def _build_executive_dashboard(
     """
     sales = await _fetch_sales_safe(factory_id, period, range_)
 
+    # Cycle 2 audit finding (Important): defensive copy before mutation.
+    # Phase 2A primitives return fresh dicts today, but no contract
+    # enforces it. If any future cache layer memoizes the response,
+    # mutating in place would corrupt the cache for subsequent callers.
+    sales = dict(sales)
+
     # Ensure envelope metadata is consistent — Phase 2A primitives may
     # not always emit these explicitly. Set defensively per Rule 1.
     if sales.get("period") is None:
@@ -322,7 +362,7 @@ async def _build_executive_dashboard(
     if sales.get("endDate") is None:
         sales["endDate"] = range_.end_date.isoformat()
     if sales.get("generatedAt") is None:
-        sales["generatedAt"] = _java_isoformat(datetime.now(timezone.utc))
+        sales["generatedAt"] = _java_isoformat(_now_naive_utc())
 
     return sales
 
@@ -352,6 +392,22 @@ async def _build_unified_dashboard(
         sales_task, finance_task, inventory_task, procurement_task
     )
 
+    # Cycle 2 audit finding (Critical): Java ``UnifiedDashboardResponse``
+    # has 3 manual derived getters Jackson emits as fields (lines 158-175
+    # of UnifiedDashboardResponse.java):
+    #
+    #   public int  getAlertCount()                       { return alerts.size(); }
+    #   public long getUrgentAlertCount()                 { return alerts.filter(isUrgent).count(); }
+    #   public long getHighPriorityRecommendationCount()  { return recs.filter(isHighPriority).count(); }
+    #
+    # No @JsonIgnore annotation → Java golden truth at
+    # tests/fixtures/java-smartbi-golden/dashboard-F001.json has 21 keys
+    # (the 18 source fields + these 3 derived). Pilot emits 0 for all 3
+    # since alerts=[] and recommendations=[] are pilot HOLDs.
+    alerts: list = []           # pilot HOLD — empty until RecommendationService port
+    recommendations: list = []  # pilot HOLD
+    ai_insights: list = []      # pilot HOLD
+
     return {
         "period": period,
         "startDate": range_.start_date.isoformat(),
@@ -364,13 +420,20 @@ async def _build_unified_dashboard(
         "procurement": procurement,
         "departmentRanking": [],
         "regionRanking": [],
-        "alerts": [],
-        "recommendations": [],
-        "aiInsights": [],
-        "generatedAt": _java_isoformat(datetime.now(timezone.utc)),
+        "alerts": alerts,
+        "recommendations": recommendations,
+        "aiInsights": ai_insights,
+        "generatedAt": _java_isoformat(_now_naive_utc()),
         "fromCache": False,
         "cacheExpireAt": None,
         "dataVersion": None,
+        # Lombok-derived getter fields — Java order is post-dataVersion
+        # per golden truth dashboard-F001.json. Rule 9.3 mandates these.
+        "alertCount": len(alerts),
+        "urgentAlertCount": sum(1 for a in alerts if a.get("urgent")),
+        "highPriorityRecommendationCount": sum(
+            1 for r in recommendations if r.get("highPriority")
+        ),
     }
 
 
