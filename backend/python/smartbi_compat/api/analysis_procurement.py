@@ -24,6 +24,7 @@ from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _to_decimal,
     _utc_now_iso,
 )
+from smartbi_compat._rbac_role import require_analytics_read  # noqa: E402
 from smartbi_compat._rbac_strip import strip_price_for_role  # noqa: E402
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response  # noqa: E402
@@ -1209,7 +1210,7 @@ async def get_procurement_analysis(
     startDate: date = Query(...),
     endDate: date = Query(...),
     analysisType: Optional[str] = Query(None),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Mirror Java SmartBIAnalysisController.getProcurementAnalysis (line 452-486)."""
     result = await _get_procurement_analysis(factory_id, startDate, endDate, analysisType)

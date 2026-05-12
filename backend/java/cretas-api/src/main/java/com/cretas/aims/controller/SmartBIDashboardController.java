@@ -153,6 +153,7 @@ public class SmartBIDashboardController {
 
     // ==================== Executive Dashboard ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/dashboard/executive")
     @Operation(summary = "Get executive dashboard", description = "Get comprehensive business analysis dashboard data")
     public ResponseEntity<ApiResponse<DashboardResponse>> getExecutiveDashboard(

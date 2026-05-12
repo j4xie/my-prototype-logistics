@@ -34,6 +34,7 @@ from typing import Any, Optional
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
@@ -3286,7 +3287,7 @@ async def get_finance_analysis(
     startDate: date = Query(..., alias="startDate"),
     endDate: date = Query(..., alias="endDate"),
     analysisType: Optional[str] = Query(None, alias="analysisType"),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 222-274.
 
@@ -3341,7 +3342,7 @@ async def get_budget_achievement(
     factory_id: str,
     year: int = Query(...),
     metric: str = Query("revenue"),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getBudgetAchievementChart line 276-292."""
     result = await _get_budget_achievement_chart(auth.factory_id, year, metric)
@@ -3355,7 +3356,7 @@ async def get_yoy_mom(
     startPeriod: str = Query(...),
     endPeriod: Optional[str] = Query(None),
     metric: str = Query("revenue"),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getYoYMoMComparisonChart line 294-312.
 
@@ -3409,7 +3410,7 @@ async def get_category_comparison(
     factory_id: str,
     year: int = Query(...),
     compareYear: int = Query(...),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getCategoryStructureComparisonChart line 314-330."""
     result = await _get_category_comparison_chart(auth.factory_id, year, compareYear)

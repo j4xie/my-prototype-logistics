@@ -108,11 +108,20 @@ def client():
     No DB pool patching by default — tests that hit the live endpoint
     monkeypatch ``_query_material_batches_in_range`` directly in the test
     body to inject synthetic batches.
+
+    Registers the RBAC forbidden handler so non-analytics roles get the
+    4-位一体 body matching prod (PR #470 contract) rather than a 500.
     """
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
+    from smartbi_compat._rbac_role import (
+        RbacForbiddenException,
+        rbac_forbidden_handler,
+    )
+
     app = FastAPI()
+    app.add_exception_handler(RbacForbiddenException, rbac_forbidden_handler)
     app.include_router(router)
     return TestClient(app)
 
@@ -579,23 +588,27 @@ async def test_endpoint_deep_overview_46_55_concentration_full_kpi_assertions(cl
 
 @pytest.mark.asyncio
 async def test_endpoint_rbac_warehouse_manager_strips_money_keeps_concentration(client, monkeypatch):
-    """R3+ borrow deep-API test (MO step 6: RBAC).
+    """R3+ borrow deep-API test (MO step 6: RBAC) — updated post PR #470.
 
-    The MO calls for warehouse_mgr1 (role=``warehouse_manager``) to see
-    supplier name + quantity but money fields (采购总额 / 平均批次金额) display
-    as ``—``. The Python side implements this via ``strip_price_for_role`` in
-    ``_rbac_strip.py`` (Java parity with ``PriceFieldResponseAdvice``).
+    The original contract (PR #435) read-allowed ``warehouse_manager`` and
+    relied on ``strip_price_for_role`` to null money fields. PR #470 caught
+    the strip missing nested ``rankings[*].value`` / ``charts.data[*]`` /
+    ``formattedValue`` — a P0 leak reproduced on prod 139:8086.
 
-    Asserts:
-      * ``warehouse_manager`` token receives 200 (no 403 — read allowed).
-      * Money KPI cards (unit=元) have their ``value`` / ``formattedValue`` /
-        ``rawValue`` etc. set to ``None``.
-      * SUPPLIER_CONCENTRATION (unit=%) is NOT stripped — value/formattedValue
-        still emit "46.6%".
-      * ``factory_super_admin`` (white-listed in PRICE_VIEW_ROLES) sees full
-        values — confirms the strip is role-conditional not always-on.
+    The PR #470 fix shifts the defense one layer up: gate via
+    ``require_analytics_read`` BEFORE any data is computed, so
+    ``warehouse_manager`` (no ``analytics`` permission in Java PERMISSION_MATRIX)
+    never reaches the strip code path. New contract for this endpoint:
 
-    Reference: PR #435 RBAC KPI/amount strip + PR #423 PriceFieldResponseAdvice.
+      * ``factory_super_admin`` (PRICE_VIEW_ROLES) — 200 with full money values.
+      * ``warehouse_manager`` (no analytics) — 403 with 4-位一体 body matching
+        the Java ``/drill-down`` reference template (PR #470 audit §4 F0).
+
+    Layered-defense coverage of strip_price_for_role for legit-but-no-price
+    roles (e.g. ``viewer``) is preserved by the dedicated unit tests in
+    ``test_price_strip_kpi_pilot.py``.
+
+    Reference: PR #470 RBAC bypass discovery + this PR's gate fix.
     """
     synthetic_batches = [
         # Same 46.55% canary
@@ -634,36 +647,29 @@ async def test_endpoint_rbac_warehouse_manager_strips_money_keeps_concentration(
         f"got rawValue={admin_amount.get('rawValue')!r}"
     )
 
-    # ── Probe 2: warehouse_manager (NOT white-listed) — money stripped ──
+    # ── Probe 2: warehouse_manager (no analytics perm) — 403 + 4-位一体 ──
+    # Pre-PR-#470 behavior: 200 with strip_price_for_role nulling money fields.
+    # Post-PR-#470 behavior: gate denies BEFORE any computation so the leak
+    # surface (nested rankings/charts/formattedValue) never materializes.
     r_wh = client.get(
         "/api/mobile/F001/smart-bi/analysis/procurement",
         params={"startDate": "2026-05-01", "endDate": "2026-05-31"},
         headers=_auth_header(factory_id="F001", role="warehouse_manager"),
     )
-    assert r_wh.status_code == 200, r_wh.text
-    wh_overview = r_wh.json()["data"]["overview"]
-    wh_kpis = {c.get("key"): c for c in wh_overview["kpiCards"]}
-
-    # Money KPI card — PROCUREMENT_AMOUNT (unit=元) — value/rawValue stripped to None
-    wh_amount = wh_kpis.get("PROCUREMENT_AMOUNT")
-    assert wh_amount is not None, f"PROCUREMENT_AMOUNT missing for warehouse: keys={list(wh_kpis.keys())}"
-    # _rbac_strip nulls value / rawValue / change / targetValue on money cards
-    assert wh_amount.get("value") is None, (
-        f"warehouse_manager PROCUREMENT_AMOUNT.value must be stripped to None "
-        f"(money card, unit=元), got value={wh_amount.get('value')!r}"
+    assert r_wh.status_code == 403, (
+        f"warehouse_manager must be denied at the gate (PR #470 contract), "
+        f"got {r_wh.status_code} body={r_wh.text[:200]}"
     )
-    assert wh_amount.get("rawValue") is None, (
-        f"warehouse_manager PROCUREMENT_AMOUNT.rawValue must be stripped, "
-        f"got rawValue={wh_amount.get('rawValue')!r}"
-    )
-
-    # Non-money KPI card — SUPPLIER_CONCENTRATION (unit=%) — must NOT be stripped
-    wh_conc = wh_kpis.get("SUPPLIER_CONCENTRATION")
-    assert wh_conc is not None, f"SUPPLIER_CONCENTRATION missing for warehouse: keys={list(wh_kpis.keys())}"
-    assert wh_conc["value"] == "46.6%", (
-        f"warehouse_manager SUPPLIER_CONCENTRATION must NOT be stripped "
-        f"(% unit, not money), expected '46.6%' got {wh_conc['value']!r}"
-    )
+    wh_body = r_wh.json()
+    assert wh_body.get("success") is False
+    assert wh_body.get("code") == "FORBIDDEN"
+    assert wh_body.get("severity") == "error"
+    assert "仓储主管" in wh_body.get("message", "")
+    assert "数据分析" in wh_body.get("message", "")
+    meta = wh_body.get("meta") or {}
+    assert meta.get("role") == "warehouse_manager"
+    assert meta.get("module") == "analytics"
+    assert meta.get("action") == "read"
 
 
 @pytest.mark.asyncio

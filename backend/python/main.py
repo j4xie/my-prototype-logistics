@@ -1225,6 +1225,14 @@ try:
     app.include_router(smartbi_compat_query_templates_write.router, tags=["SmartBI Compat: Query Templates Write"])
     from smartbi_compat.api import config_thresholds as smartbi_compat_config_thresholds
     app.include_router(smartbi_compat_config_thresholds.router, tags=["SmartBI Compat: Config Thresholds"])
+    # PR #470 follow-up — controller-level RBAC for analysis_*. The dependency
+    # raises RbacForbiddenException for non-analytics roles; handler renders
+    # the 4-位一体 body Java's PermissionInterceptor emits.
+    from smartbi_compat._rbac_role import (  # noqa: E402
+        RbacForbiddenException,
+        rbac_forbidden_handler,
+    )
+    app.add_exception_handler(RbacForbiddenException, rbac_forbidden_handler)
     _smartbi_compat_available = True
     logger.info("SmartBI compat routes registered (Phase 2A)")
 except ImportError as e:

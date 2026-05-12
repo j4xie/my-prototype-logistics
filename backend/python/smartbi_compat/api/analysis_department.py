@@ -24,6 +24,7 @@ from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _to_decimal,             # safe Decimal coercion
     _utc_now_iso,            # ISO timestamp for generatedAt (volatile, stripped)
 )
+from smartbi_compat._rbac_role import require_analytics_read  # noqa: E402
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 
@@ -679,7 +680,7 @@ async def get_department_analysis(
     startDate: date = Query(...),
     endDate: date = Query(...),
     department: Optional[str] = Query(None),    # accepted but IGNORED — mirror Java prod
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Mirror Java SmartBIAnalysisController.getDepartmentAnalysis (line 142-177).
 
