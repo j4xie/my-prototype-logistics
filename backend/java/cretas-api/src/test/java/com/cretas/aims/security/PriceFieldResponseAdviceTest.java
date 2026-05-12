@@ -753,5 +753,91 @@ class PriceFieldResponseAdviceTest {
         run(transfer);
         assertEquals(new BigDecimal("8888.00"), transfer.getTotalAmount());
         assertEquals(new BigDecimal("10.00"), transfer.getItems().get(0).getUnitPrice());
+    // PR #443 follow-up — F3 (MaterialBatch.getTotalCost annotation)
+    //                     F5 (permissionService exception → fail-CLOSED)
+    // 2026-05-12
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    @DisplayName("F3: MaterialBatch.getTotalCost() carries @PriceSensitive after PR #443 follow-up")
+    void f3_materialBatch_getTotalCost_annotationPresent() throws Exception {
+        java.lang.reflect.Method getter = MaterialBatch.class.getMethod("getTotalCost");
+        assertNotNull(getter.getAnnotation(PriceSensitive.class),
+                "getTotalCost must carry @PriceSensitive so Jackson modifier short-circuits "
+                        + "(defense-in-depth, not relying solely on getTotalPrice's null guard)");
+    }
+
+    @Test
+    @DisplayName("F3: MaterialBatch.getTotalCost() returns null safely after unitPrice stripped")
+    void f3_materialBatch_getTotalCost_returnsNullAfterStrip() {
+        asUser(10L, false);
+
+        MaterialBatch batch = new MaterialBatch();
+        batch.setId("batch-1");
+        batch.setBatchNumber("BATCH-001");
+        batch.setUnitPrice(new BigDecimal("88.88"));
+        batch.setReceiptQuantity(new BigDecimal("10.00"));
+
+        // Precondition — getTotalCost computes a real value before strip.
+        // BigDecimal multiplication scale = sum of operand scales (2 + 2 = 4).
+        assertEquals(0, batch.getTotalCost().compareTo(new BigDecimal("888.80")),
+                "precondition: getTotalCost ≈ unitPrice × receiptQuantity (88.88 × 10.00)");
+
+        run(batch);
+
+        assertNull(batch.getUnitPrice(), "unitPrice stripped");
+        assertDoesNotThrow(() -> batch.getTotalCost(),
+                "getTotalCost must not NPE after unitPrice stripped");
+        assertNull(batch.getTotalCost(),
+                "getTotalCost returns null via getTotalPrice's defensive guard");
+    }
+
+    @Test
+    @DisplayName("F5: permissionService.hasPermission throws → fail-CLOSED (prices stripped)")
+    void f5_permissionService_throws_failClosed_strips() {
+        // Stub: user resolves OK, but permission check throws (DB outage / cache misconfig).
+        Long userId = 42L;
+        httpRequest.setAttribute("userId", userId);
+        User user = new User();
+        user.setId(userId);
+        lenient().when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        lenient().when(permissionService.hasPermission(any(User.class), any(String.class)))
+                .thenThrow(new RuntimeException("simulated PermissionService failure (DB outage)"));
+
+        PurchaseOrder order = samplePurchaseOrder();
+
+        // Critical: advice MUST NOT propagate the exception (would 500 every request).
+        assertDoesNotThrow(() -> run(order),
+                "advice must not propagate permission-check exception (F5)");
+
+        // Fail-CLOSED: prices stripped even though we couldn't confirm permission denial.
+        assertNull(order.getTotalAmount(), "F5 fail-CLOSED: totalAmount stripped");
+        assertNull(order.getTaxAmount(), "F5 fail-CLOSED: taxAmount stripped");
+        assertNull(order.getItems().get(0).getUnitPrice(),
+                "F5 fail-CLOSED: nested item.unitPrice stripped");
+    }
+
+    @Test
+    @DisplayName("F5: permissionService throws + hide flag set so Jackson layer also short-circuits")
+    void f5_permissionService_throws_hideFlagAlsoSet() {
+        Long userId = 43L;
+        httpRequest.setAttribute("userId", userId);
+        User user = new User();
+        user.setId(userId);
+        lenient().when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        lenient().when(permissionService.hasPermission(any(User.class), any(String.class)))
+                .thenThrow(new RuntimeException("boom"));
+
+        SalesOrder so = new SalesOrder();
+        so.setTotalAmount(new BigDecimal("5000.00"));
+
+        run(so);
+
+        // Belt: field-strip path ran
+        assertNull(so.getTotalAmount(), "field stripped on fail-CLOSED path");
+        // Suspenders: ThreadLocal hide flag set, so Jackson layer ALSO short-circuits
+        // any @PriceSensitive methods downstream.
+        assertTrue(PriceSensitiveContext.shouldHide("procurement:price:view"),
+                "ThreadLocal hide flag set even when permission check throws (defense-in-depth)");
     }
 }

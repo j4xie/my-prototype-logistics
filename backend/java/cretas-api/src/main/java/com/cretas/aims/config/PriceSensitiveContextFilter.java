@@ -1,5 +1,6 @@
 package com.cretas.aims.config;
 
+import com.cretas.aims.security.PriceFieldResponseAdvice;
 import com.cretas.aims.security.PriceSensitiveContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -34,9 +35,31 @@ import java.io.IOException;
  * — the {@code finally} runs after every other filter / interceptor /
  * controller advice has completed.
  *
+ * <h2>Async dispatch</h2>
+ *
+ * <p>{@link OncePerRequestFilter#shouldNotFilterAsyncDispatch()} returns
+ * {@code true} by default, meaning the filter would NOT run on
+ * async-dispatch redispatches (e.g. when a controller returns
+ * {@code Callable}, {@code DeferredResult}, or {@code SseEmitter}). On
+ * async redispatch the response is written on a different pooled thread
+ * — if {@link PriceFieldResponseAdvice} sets the ThreadLocal on that
+ * thread but the filter does not fire, the {@code finally} block above
+ * never runs and the ThreadLocal leaks onto the worker pool. Next sync
+ * request landing on the same pooled thread would see
+ * {@link PriceSensitiveContext#shouldHide(String)} return {@code true}
+ * and intermittently strip prices for users who should see them
+ * (fail-CLOSED pollution: UX defect for admins/finance, not a data
+ * leak).
+ *
+ * <p>Today the 7 SSE/async controllers in this codebase do not return
+ * any {@code @PriceSensitive}-bearing entity, so no production scenario
+ * triggers the leak. The override below is defensive — it eliminates the
+ * class of bug so future async endpoints returning gated entities don't
+ * silently regress.
+ *
  * @author Cretas Team
  * @version 1.0.0
- * @since 2026-05-12 (P0 hotfix)
+ * @since 2026-05-12 (P0 hotfix; F1 async-dispatch hardening 2026-05-12)
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -53,5 +76,17 @@ public class PriceSensitiveContextFilter extends OncePerRequestFilter {
             // Always clear — covers happy path, errors, and short-circuited responses.
             PriceSensitiveContext.clear();
         }
+    }
+
+    /**
+     * Run the filter on async-dispatch redispatches so the {@code finally}
+     * cleanup above fires on the thread that wrote the async response. The
+     * default {@code true} would skip the filter on async dispatch, leaving
+     * the ThreadLocal set on the redispatch worker thread and leaking onto
+     * the pool. See class-level javadoc for the pollution scenario.
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
     }
 }
