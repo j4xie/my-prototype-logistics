@@ -104,6 +104,16 @@ jobs:
         # gradually replace each # noqa with a proper rewrite.
         # grpc_stubs/ excluded — auto-generated protobuf code (per PR #217 §1).
         run: flake8 --max-line-length=120 --statistics --count --exclude=venv,__pycache__,.git,grpc_stubs .
+      - name: Phase 2B endpoint coverage gate
+        # Runs pytest collection-only with the semantic endpoint gate enabled.
+        # Verifies every endpoint in conftest.KNOWN_ENDPOINTS (34 canonical)
+        # has >=3 tests carrying @pytest.mark.api_endpoint markers. The gate
+        # raises pytest.exit(returncode=1) on a miss; this is its own step
+        # (rather than env on "Run pytest") because that step ends in
+        # `|| true`, which would silently swallow the gate's exit code.
+        env:
+          CRETAS_TEST_ENDPOINT_GATE: "1"
+        run: pytest --collect-only -q tests/
       - name: Run pytest
         run: |
           pytest tests/ -v --timeout=30 \
