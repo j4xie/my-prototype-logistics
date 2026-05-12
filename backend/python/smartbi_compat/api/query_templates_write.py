@@ -220,13 +220,30 @@ def _delete_template(factory_id: str, template_id: int) -> bool:
 # Endpoints
 # ============================================================
 
+def _require_nonempty_name(body: dict) -> Optional[dict]:
+    """Return envelope error if body.name is missing/blank, else None.
+
+    Java handler deleted in T6.5; no parity constraint. Returning explicit
+    400 with envelope shape is consistent with `_envelope_error` UX everywhere
+    else in this module and avoids the DB-level NOT NULL constraint surfacing
+    as a 500 (the original P2 finding).
+    """
+    name = body.get("name")
+    if name is None or (isinstance(name, str) and not name.strip()):
+        return _envelope_error("name is required", code=400)
+    return None
+
+
 @router.post("/api/mobile/{factory_id}/smart-bi/query-templates")
 async def create_query_template(
     factory_id: str = Path(..., min_length=1),
     body: dict = Body(default_factory=dict),
     auth: AuthContext = Depends(verify_jwt_and_factory),
 ) -> dict:
-    """Mirror Java SmartBIAnalysisController.createQueryTemplate (line 965-973)."""
+    """Mirror Java SmartBIAnalysisController.createQueryTemplate (deleted in T6.5)."""
+    err = _require_nonempty_name(body)
+    if err is not None:
+        return err
     entity = _create_template(factory_id, body)
     if entity is None:
         return _envelope_error("Database unavailable", code=500)
@@ -240,7 +257,10 @@ async def update_query_template(
     body: dict = Body(default_factory=dict),
     auth: AuthContext = Depends(verify_jwt_and_factory),
 ) -> dict:
-    """Mirror Java SmartBIAnalysisController.updateQueryTemplate (line 976-994)."""
+    """Mirror Java SmartBIAnalysisController.updateQueryTemplate (deleted in T6.5)."""
+    err = _require_nonempty_name(body)
+    if err is not None:
+        return err
     entity = _update_template(factory_id, template_id, body)
     if entity is None:
         return _envelope_error("Template not found")

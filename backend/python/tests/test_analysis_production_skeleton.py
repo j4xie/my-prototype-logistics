@@ -396,6 +396,69 @@ def test_production_endpoint_returns_full_envelope(endpoint_client):
     assert isinstance(m3["proxyMetric"]["value"], int)
 
 
+@pytest.fixture
+def factory_endpoint_client(monkeypatch):
+    """Same as ``endpoint_client`` but with cretas_db type=FACTORY so the
+    router dispatches to ``_factory_production_dispatch`` (the Phase 2D
+    empty-envelope branch). Used to verify the R1 P2-3 fix: factory branch
+    now wraps at the router boundary instead of returning the raw inner dict.
+    """
+    monkeypatch.setenv("JWT_SECRET", _TEST_JWT_SECRET)
+
+    import smartbi.config
+
+    cretas_pool = _RouterFakePool({"type": "FACTORY"})
+
+    async def fake_get_cretas_pool():
+        return cretas_pool
+
+    monkeypatch.setattr(smartbi.config, "get_cretas_pool", fake_get_cretas_pool)
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    app = FastAPI()
+    app.include_router(analysis_production.router)
+    return TestClient(app)
+
+
+def test_factory_endpoint_returns_wrapped_envelope(factory_endpoint_client):
+    """R1 P2-3 regression lock: factory branch must emit the same outer
+    ApiResponse envelope as the restaurant branch.
+
+    Before the fix, the router returned the raw factory-dispatch inner dict
+    (``{startDate, endDate, metrics, ..., dataAvailability}``) while the
+    restaurant branch returned the wrapped envelope — frontend clients had
+    to handle two shapes. After the fix, both branches return the canonical
+    8-key envelope with the inner data under ``body["data"]``.
+    """
+    headers = {"Authorization": f"Bearer {_make_endpoint_token(factory_id='F001')}"}
+    resp = factory_endpoint_client.get(
+        "/api/mobile/F001/smart-bi/analysis/production",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-03", "analysisType": "oee"},
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    # Outer envelope identical shape to restaurant branch.
+    assert body["success"] is True
+    assert body["code"] == 200
+    assert body["message"] == "操作成功"
+    assert body["actionHint"] is None
+    assert body["severity"] is None
+    assert body["hintTarget"] is None
+
+    # Inner Phase 2D placeholder, marker preserved.
+    data = body["data"]
+    assert data["dataAvailability"] == FACTORY_PHASE_2D_PENDING_MARKER
+    assert data["startDate"] == "2026-05-01"
+    assert data["endDate"] == "2026-05-03"
+    # oee branch shape.
+    assert data["metrics"] == []
+    assert data["trendChart"] == {}
+
+
 def test_production_endpoint_requires_jwt(endpoint_client):
     """Missing Bearer header → 401 before tenant lookup or dispatch."""
     resp = endpoint_client.get(

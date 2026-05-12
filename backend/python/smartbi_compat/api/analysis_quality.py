@@ -739,9 +739,16 @@ async def get_quality_analysis(
             tenant = await get_tenant_type(factory_id, conn)
 
     if tenant.is_restaurant_tenant:
+        # Restaurant dispatch already returns a wrap_response() envelope.
         return await _restaurant_quality_dispatch(
             factory_id, startDate, endDate, analysisType
         )
-    return await _factory_quality_dispatch(
+    # Factory dispatch returns the raw inner dict per its Phase 2D contract
+    # (test_factory_stub.py locks the shape). Wrap at the router boundary so
+    # HTTP responses mirror Java ``ResponseEntity.ok(ApiResponse.success(result))``
+    # — fixes R1 P2 finding 3 (asymmetric envelope between factory/restaurant
+    # branches; factory previously emitted raw dict, restaurant emitted envelope).
+    raw = await _factory_quality_dispatch(
         factory_id, startDate, endDate, analysisType
     )
+    return wrap_response(raw)
