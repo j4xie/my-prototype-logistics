@@ -1,0 +1,628 @@
+{
+  "factory": "R_DONGMENKOU_REAL",
+  "java_base": "http://localhost:10020",
+  "python_base": "http://localhost:8083",
+  "endpoints_tested": 1,
+  "endpoints_matched": 1,
+  "endpoints_diverged": 0,
+  "match_rate": 100.0,
+  "total_real_bugs": 0,
+  "total_pattern_a": 0,
+  "total_pattern_b": 17,
+  "endpoints_in_pattern_b_context": 1,
+  "timestamp": "2026-05-12T10:56:39",
+  "results": [
+    {
+      "endpoint": "/api/mobile/{factory_id}/smart-bi/analysis/production",
+      "params": "analysisType=overview&startDate=2026-01-01&endDate=2026-01-31",
+      "verdict": "match",
+      "java_http": 200,
+      "python_http": 200,
+      "java_size": 6952,
+      "python_size": 908,
+      "java_lat_s": 0.019,
+      "python_lat_s": 0.004,
+      "java_error": null,
+      "python_error": null,
+      "dict_eq": {
+        "match": true,
+        "total_leaves": 8,
+        "matched_leaves": 8,
+        "pattern_b_context": true,
+        "diverges": [],
+        "tolerated_byte_diffs": [
+          {
+            "path": "data.tenantType",
+            "java": "<missing>",
+            "python": "RESTAURANT",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.aiInsights",
+            "java": [
+              {
+                "level": "YELLOW",
+                "category": "OEE",
+                "message": "综合设备效率为 79.5%，有提升空间",
+                "relatedEntity": null,
+                "actionSuggestion": "建议关注效率最低的设备和产线，制定改进计划"
+              }
+            ],
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.alerts",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.chartList",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.charts",
+            "java": {
+              "oee_trend": {
+                "chartType": "LINE",
+                "title": "OEE 趋势",
+                "seriesField": "metric",
+                "data": [
+                  {
+                    "date": "2026-01-01",
+                    "oee": 79.87,
+                    "availability": 92.85,
+                    "performance": 88.77,
+                    "quality": 96.9
+                  },
+                  {
+                    "date": "2026-01-02",
+                    "oee": 79.59,
+                    "availability": 91.22,
+                    "performance": 89.63,
+                    "quality": 97.35
+                  },
+                  {
+                    "date": "2026-01-03",
+                    "oee": 79.61,
+                    "availability": 90.42,
+                    "performance": 90.52,
+                    "quality": 97.26
+                  },
+                  {
+                    "date": "2026-01-04",
+                    "oee": 79.39,
+                    "availability": 91.7,
+                    "performance": 88.42,
+                    "quality": 97.91
+                  },
+                  {
+                    "date": "2026-01-05",
+                    "oee": 79.44,
+                    "availability": 91.25,
+                    "performance": 89.68,
+                    "quality": 97.07
+                  },
+                  {
+                    "date": "2026-01-06",
+                    "oee": 78.39,
+                    "availability": 90.95,
+                    "performance": 88.55,
+                    "quality": 97.34
+                  },
+                  {
+                    "date": "2026-01-07",
+                    "oee": 80.78,
+                    "availability": 91.06,
+                    "performance": 91.25,
+                    "quality": 97.22
+                  },
+                  {
+                    "date": "2026-01-08",
+                    "oee": 82.41,
+                    "availability": 92.01,
+                    "performance": 92.48,
+                    "quality": 96.85
+                  },
+                  {
+                    "date": "2026-01-09",
+                    "oee": 79.3,
+                    "availability": 91.18,
+                    "performance": 90.31,
+                    "quality": 96.3
+                  },
+                  {
+                    "date": "2026-01-10",
+                    "oee": 77.23,
+                    "availability": 90.06,
+                    "performance": 88.19,
+                    "quality": 97.24
+                  },
+                  {
+                    "date": "2026-01-11",
+                    "oee": 79.94,
+                    "availability": 91.09,
+                    "performance": 90.78,
+                    "quality": 96.67
+                  },
+                  {
+                    "date": "2026-01-12",
+                    "oee": 81.06,
+                    "availability": 90.69,
+                    "performance": 91.5,
+                    "quality": 97.68
+                  },
+                  {
+                    "date": "2026-01-13",
+                    "oee": 77.95,
+                    "availability": 89.38,
+                    "performance": 89.92,
+                    "quality": 96.99
+                  },
+                  {
+                    "date": "2026-01-14",
+                    "oee": 79.13,
+                    "availability": 91.86,
+                    "performance": 89.24,
+                    "quality": 96.53
+                  },
+                  {
+                    "date": "2026-01-15",
+                    "oee": 78.26,
+                    "availability": 89.11,
+                    "performance": 90.66,
+                    "quality": 96.87
+                  },
+                  {
+                    "date": "2026-01-16",
+                    "oee": 77.88,
+                    "availability": 90.66,
+                    "performance": 88.73,
+                    "quality": 96.82
+                  },
+                  {
+                    "date": "2026-01-17",
+                    "oee": 78.02,
+                    "availability": 91.36,
+                    "performance": 88.1,
+                    "quality": 96.93
+                  },
+                  {
+                    "date": "2026-01-18",
+                    "oee": 78.51,
+                    "availability": 91.64,
+                    "performance": 88.09,
+                    "quality": 97.25
+                  },
+                  {
+                    "date": "2026-01-19",
+                    "oee": 77.9,
+                    "availability": 90.68,
+                    "performance": 88.49,
+                    "quality": 97.08
+                  },
+                  {
+                    "date": "2026-01-20",
+                    "oee": 79.02,
+                    "availability": 90.36,
+                    "performance": 89.56,
+                    "quality": 97.65
+                  },
+                  {
+                    "date": "2026-01-21",
+                    "oee": 79.44,
+                    "availability": 93.04,
+                    "performance": 87.97,
+                    "quality": 97.06
+                  },
+                  {
+                    "date": "2026-01-22",
+                    "oee": 79.3,
+                    "availability": 91.03,
+                    "performance": 89.63,
+                    "quality": 97.19
+                  },
+                  {
+                    "date": "2026-01-23",
+                    "oee": 79.55,
+                    "availability": 91.55,
+                    "performance": 89.29,
+                    "quality": 97.31
+                  },
+                  {
+                    "date": "2026-01-24",
+                    "oee": 80.21,
+                    "availability": 92.31,
+                    "performance": 89.48,
+                    "quality": 97.11
+                  },
+                  {
+                    "date": "2026-01-25",
+                    "oee": 80.59,
+                    "availability": 89.61,
+                    "performance": 92.51,
+                    "quality": 97.22
+                  },
+                  {
+                    "date": "2026-01-26",
+                    "oee": 78.61,
+                    "availability": 91.16,
+                    "performance": 88.95,
+                    "quality": 96.95
+                  },
+                  {
+                    "date": "2026-01-27",
+                    "oee": 80.78,
+                    "availability": 91.8,
+                    "performance": 91.07,
+                    "quality": 96.62
+                  },
+                  {
+                    "date": "2026-01-28",
+                    "oee": 80.35,
+                    "availability": 93.37,
+                    "performance": 88.88,
+                    "quality": 96.82
+                  },
+                  {
+                    "date": "2026-01-29",
+                    "oee": 80.6,
+                    "availability": 92.71,
+                    "performance": 89.82,
+                    "quality": 96.79
+                  },
+                  {
+                    "date": "2026-01-30",
+                    "oee": 82.15,
+                    "availability": 92.84,
+                    "performance": 90.99,
+                    "quality": 97.25
+                  },
+                  {
+                    "date": "2026-01-31",
+                    "oee": 77.74,
+                    "availability": 90.46,
+                    "performance": 88.95,
+                    "quality": 96.61
+                  }
+                ],
+                "options": {
+                  "showLegend": true,
+                  "multiLine": true,
+                  "yAxisMax": 100
+                },
+                "xaxisField": "date",
+                "yaxisField": "oee"
+              },
+              "production_line_comparison": {
+                "chartType": "BAR",
+                "title": "产线 OEE 对比",
+                "seriesField": "metric",
+                "data": [
+                  {
+                    "productionLine": "产线D",
+                    "oee": 79.4,
+                    "availability": 91.03,
+                    "performance": 89.95,
+                    "quality": 96.97
+                  },
+                  {
+                    "productionLine": "产线B",
+                    "oee": 79.24,
+                    "availability": 91.44,
+                    "performance": 89.27,
+                    "quality": 97.07
+                  },
+                  {
+                    "productionLine": "产线C",
+                    "oee": 80.46,
+                    "availability": 91.71,
+                    "performance": 90.39,
+                    "quality": 97.06
+                  },
+                  {
+                    "productionLine": "产线A",
+                    "oee": 78.78,
+                    "availability": 90.96,
+                    "performance": 89.16,
+                    "quality": 97.14
+                  }
+                ],
+                "options": {
+                  "showLegend": true,
+                  "grouped": true
+                },
+                "xaxisField": "productionLine",
+                "yaxisField": "oee"
+              },
+              "downtime_distribution": {
+                "chartType": "PIE",
+                "title": "停机原因分布",
+                "seriesField": null,
+                "data": [
+                  {
+                    "reason": "质量问题",
+                    "downtime": 143.54
+                  },
+                  {
+                    "reason": "计划维护",
+                    "downtime": 131.7
+                  },
+                  {
+                    "reason": "物料短缺",
+                    "downtime": 127.18
+                  },
+                  {
+                    "reason": "设备故障",
+                    "downtime": 118.06
+                  },
+                  {
+                    "reason": "换型调整",
+                    "downtime": 100.61
+                  }
+                ],
+                "options": {
+                  "showPercentage": true,
+                  "showLegend": true
+                },
+                "xaxisField": "reason",
+                "yaxisField": "downtime"
+              }
+            },
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.endDate",
+            "java": "2026-01-31",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.fromCache",
+            "java": false,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.kpiCards",
+            "java": [
+              {
+                "key": "OEE",
+                "title": "综合设备效率 (OEE)",
+                "value": "79.5%",
+                "rawValue": 79.48,
+                "unit": "%",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "yellow",
+                "compareText": null,
+                "description": "OEE = 可用性 x 性能 x 质量",
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "AVAILABILITY",
+                "title": "可用性",
+                "value": "91.3%",
+                "rawValue": 91.29,
+                "unit": "%",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "green",
+                "compareText": null,
+                "description": "实际运行时间 / 计划运行时间",
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "PERFORMANCE",
+                "title": "性能",
+                "value": "89.7%",
+                "rawValue": 89.7,
+                "unit": "%",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "yellow",
+                "compareText": null,
+                "description": "实际产量 / 理论产量",
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "QUALITY_RATE",
+                "title": "质量率",
+                "value": "97.1%",
+                "rawValue": 97.06,
+                "unit": "%",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "yellow",
+                "compareText": null,
+                "description": "良品数 / 总产量",
+                "targetValue": null,
+                "completionRate": null
+              }
+            ],
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.metricCards",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.period",
+            "java": "CUSTOM",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.rankings",
+            "java": {
+              "equipment": [
+                {
+                  "rank": 1,
+                  "name": "设备4",
+                  "value": 80.55,
+                  "target": 85,
+                  "completionRate": 94.77,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 2,
+                  "name": "设备3",
+                  "value": 79.93,
+                  "target": 85,
+                  "completionRate": 94.04,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 3,
+                  "name": "设备2",
+                  "value": 79.9,
+                  "target": 85,
+                  "completionRate": 94.0,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 4,
+                  "name": "设备5",
+                  "value": 78.72,
+                  "target": 85,
+                  "completionRate": 92.61,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 5,
+                  "name": "设备1",
+                  "value": 78.2,
+                  "target": 85,
+                  "completionRate": 92.01,
+                  "alertLevel": "YELLOW"
+                }
+              ],
+              "production_line": [
+                {
+                  "rank": 1,
+                  "name": "产线C",
+                  "value": 95.46,
+                  "target": 100,
+                  "completionRate": 95.46,
+                  "alertLevel": "GREEN"
+                },
+                {
+                  "rank": 2,
+                  "name": "产线D",
+                  "value": 95.01,
+                  "target": 100,
+                  "completionRate": 95.01,
+                  "alertLevel": "GREEN"
+                },
+                {
+                  "rank": 3,
+                  "name": "产线B",
+                  "value": 94.29,
+                  "target": 100,
+                  "completionRate": 94.29,
+                  "alertLevel": "GREEN"
+                },
+                {
+                  "rank": 4,
+                  "name": "产线A",
+                  "value": 94.2,
+                  "target": 100,
+                  "completionRate": 94.2,
+                  "alertLevel": "GREEN"
+                }
+              ]
+            },
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.recommendations",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.startDate",
+            "java": "2026-01-01",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.suggestions",
+            "java": [
+              "主要停机原因是「质量问题」，建议重点改善",
+              "故障次数较多，建议加强预防性维护，制定设备保养计划",
+              "性能指标偏低，建议检查设备速度设定、消除微停机"
+            ],
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.kpis",
+            "java": "<missing>",
+            "python": [
+              {
+                "metricCode": "KITCHEN_STATION_UTILIZATION",
+                "value": null,
+                "unit": "%",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "MISSING_KITCHEN_STATION_DATA"
+              },
+              {
+                "metricCode": "AVG_PREP_TIME",
+                "value": null,
+                "unit": "minutes",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "MISSING_ORDER_TIMESTAMP_SPLIT"
+              },
+              {
+                "metricCode": "TABLE_TURNOVER_RATE",
+                "value": null,
+                "unit": "turns_per_day",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "PROXY_AS_BILLS_PER_STORE",
+                "proxyMetric": {
+                  "metricCode": "BILLS_PER_STORE_PER_DAY",
+                  "value": null,
+                  "unit": "bills_per_store_per_day",
+                  "trend": null,
+                  "alertLevel": null
+                }
+              }
+            ],
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.recentChanges",
+            "java": "<missing>",
+            "python": [],
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.summary",
+            "java": "<missing>",
+            "python": "Restaurant production analytics (R_DONGMENKOU_REAL)",
+            "classification": "PATTERN_B_STRUCTURAL"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "factory": "R_DONGMENKOU_REAL",
+  "java_base": "http://localhost:10020",
+  "python_base": "http://localhost:8083",
+  "endpoints_tested": 1,
+  "endpoints_matched": 1,
+  "endpoints_diverged": 0,
+  "match_rate": 100.0,
+  "total_real_bugs": 0,
+  "total_pattern_a": 0,
+  "total_pattern_b": 3,
+  "endpoints_in_pattern_b_context": 1,
+  "timestamp": "2026-05-12T10:56:39",
+  "results": [
+    {
+      "endpoint": "/api/mobile/{factory_id}/smart-bi/analysis/quality",
+      "params": "analysisType=fpy&startDate=2026-01-01&endDate=2026-01-31",
+      "verdict": "match",
+      "java_http": 200,
+      "python_http": 200,
+      "java_size": 4765,
+      "python_size": 821,
+      "java_lat_s": 0.011,
+      "python_lat_s": 0.005,
+      "java_error": null,
+      "python_error": null,
+      "dict_eq": {
+        "match": true,
+        "total_leaves": 9,
+        "matched_leaves": 8,
+        "pattern_b_context": true,
+        "diverges": [],
+        "tolerated_byte_diffs": [
+          {
+            "path": "data.tenantType",
+            "java": "<missing>",
+            "python": "RESTAURANT",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics",
+            "java": "<list len=8>",
+            "python": "<list len=4>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.trendChart",
+            "java": "<dict>",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          }
+        ]
+      }
+    }
+  ]
+}

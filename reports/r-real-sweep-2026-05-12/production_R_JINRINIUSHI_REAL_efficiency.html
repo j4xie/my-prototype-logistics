@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<title>Parity Gate Report — R_JINRINIUSHI_REAL</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 20px; }
+h1 { margin-bottom: 4px; }
+.summary { background: #f6f8fa; padding: 16px; border-radius: 6px; margin-bottom: 24px; }
+.summary .rate { font-size: 32px; font-weight: bold; }
+.rate-pass { color: #1a7f37; }
+.rate-warn { color: #9a6700; }
+.rate-fail { color: #cf222e; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; vertical-align: top; }
+th { background: #f6f8fa; font-weight: 600; }
+.verdict-match { background: #dafbe1; }
+.verdict-diverge { background: #fff8c5; }
+.verdict-error { background: #ffebe9; }
+.verdict { font-weight: 600; font-family: monospace; }
+details { margin-top: 4px; }
+summary { cursor: pointer; font-size: 12px; }
+summary.pattern-a { color: #6e7781; }
+.diverge-table { font-size: 12px; margin-top: 4px; font-family: monospace; }
+.diverge-table td { padding: 4px; max-width: 400px; word-break: break-all; }
+</style>
+</head><body>
+<h1>Parity Gate Report — R_JINRINIUSHI_REAL</h1>
+<div class="summary">
+  <div class="rate rate-pass">100.0% match</div>
+  <div>1/1 endpoints matched
+       (0 diverged · 0 REAL_BUG
+       · 0 PATTERN_A tolerated)</div>
+  <div>Java: <code>http://localhost:10020</code> · Python: <code>http://localhost:8083</code></div>
+  <div>Generated: 2026-05-12T10:56:41</div>
+  <div><small>Phase 2A standard: ≥99.945% dict-eq match (T6.1 dryrun bar).</small></div>
+</div>
+<table>
+<tr><th>Endpoint</th><th>Java</th><th>Python</th><th>Verdict</th><th>Details</th></tr>
+<tr class="verdict-match">
+                <td>/api/mobile/{factory_id}/smart-bi/analysis/production<br><small>analysisType=efficiency&amp;startDate=2026-01-01&amp;endDate=2026-01-31</small></td>
+                <td>200 (1364 B / 0.007s)</td>
+                <td>200 (828 B / 0.003s)</td>
+                <td class="verdict">match</td>
+                <td><details><summary class='pattern-a'>41 PATTERN_A (tolerated)</summary><table class='diverge-table'><tr><th>path</th><th>java</th><th>python</th></tr><tr><td>data.tenantType</td><td>&lt;missing&gt;</td><td>RESTAURANT</td></tr><tr><td>data.metrics[0].changeDirection</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].changePercent</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].changeValue</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].description</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].dimensionValue</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].formattedValue</td><td>89.7%</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].metricName</td><td>产能利用率</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[0].dataAvailability</td><td>&lt;missing&gt;</td><td>MISSING_KITCHEN_STATION_DATA</td></tr><tr><td>data.metrics[0].trend</td><td>&lt;missing&gt;</td><td>None</td></tr><tr><td>data.metrics[0].alertLevel</td><td>YELLOW</td><td>None</td></tr><tr><td>data.metrics[0].metricCode</td><td>CAPACITY_UTILIZATION</td><td>KITCHEN_STATION_UTILIZATION</td></tr><tr><td>data.metrics[0].value</td><td>89.74</td><td>None</td></tr><tr><td>data.metrics[1].changeDirection</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[1].changePercent</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[1].changeValue</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[1].description</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[1].dimensionValue</td><td>None</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[1].formattedValue</td><td>0.08 分钟/件</td><td>&lt;missing&gt;</td></tr><tr><td>data.metrics[1].metricName</td><td>平均节拍时间</td><td>&lt;missing&gt;</td></tr><tr><td colspan=3>... +21 more</td></tr></table></details></td>
+            </tr>
+</table>
+</body></html>

@@ -1,0 +1,290 @@
+{
+  "factory": "R_YUJIUJING_REAL",
+  "java_base": "http://localhost:10020",
+  "python_base": "http://localhost:8083",
+  "endpoints_tested": 1,
+  "endpoints_matched": 1,
+  "endpoints_diverged": 0,
+  "match_rate": 100.0,
+  "total_real_bugs": 0,
+  "total_pattern_a": 0,
+  "total_pattern_b": 41,
+  "endpoints_in_pattern_b_context": 1,
+  "timestamp": "2026-05-12T10:56:44",
+  "results": [
+    {
+      "endpoint": "/api/mobile/{factory_id}/smart-bi/analysis/production",
+      "params": "analysisType=efficiency&startDate=2026-01-01&endDate=2026-01-31",
+      "verdict": "match",
+      "java_http": 200,
+      "python_http": 200,
+      "java_size": 1365,
+      "python_size": 828,
+      "java_lat_s": 0.006,
+      "python_lat_s": 0.003,
+      "java_error": null,
+      "python_error": null,
+      "dict_eq": {
+        "match": true,
+        "total_leaves": 20,
+        "matched_leaves": 9,
+        "pattern_b_context": true,
+        "diverges": [],
+        "tolerated_byte_diffs": [
+          {
+            "path": "data.tenantType",
+            "java": "<missing>",
+            "python": "RESTAURANT",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].changeDirection",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].changePercent",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].changeValue",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].description",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].dimensionValue",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].formattedValue",
+            "java": "89.9%",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].metricName",
+            "java": "产能利用率",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].dataAvailability",
+            "java": "<missing>",
+            "python": "MISSING_KITCHEN_STATION_DATA",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].trend",
+            "java": "<missing>",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].alertLevel",
+            "java": "YELLOW",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].metricCode",
+            "java": "CAPACITY_UTILIZATION",
+            "python": "KITCHEN_STATION_UTILIZATION",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[0].value",
+            "java": 89.85,
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].changeDirection",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].changePercent",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].changeValue",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].description",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].dimensionValue",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].formattedValue",
+            "java": "0.08 分钟/件",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].metricName",
+            "java": "平均节拍时间",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].dataAvailability",
+            "java": "<missing>",
+            "python": "MISSING_ORDER_TIMESTAMP_SPLIT",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].trend",
+            "java": "<missing>",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].alertLevel",
+            "java": "GREEN",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].metricCode",
+            "java": "CYCLE_TIME",
+            "python": "AVG_PREP_TIME",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].unit",
+            "java": "分钟/件",
+            "python": "minutes",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[1].value",
+            "java": 0.08,
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].changeDirection",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].changePercent",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].changeValue",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].description",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].dimensionValue",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].formattedValue",
+            "java": "94.9%",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].metricName",
+            "java": "计划达成率",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].dataAvailability",
+            "java": "<missing>",
+            "python": "PROXY_AS_BILLS_PER_STORE",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].proxyMetric",
+            "java": "<missing>",
+            "python": {
+              "metricCode": "BILLS_PER_STORE_PER_DAY",
+              "value": null,
+              "unit": "bills_per_store_per_day",
+              "trend": null,
+              "alertLevel": null
+            },
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].trend",
+            "java": "<missing>",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].alertLevel",
+            "java": "GREEN",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].metricCode",
+            "java": "ACHIEVEMENT_RATE",
+            "python": "TABLE_TURNOVER_RATE",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].unit",
+            "java": "%",
+            "python": "turns_per_day",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics[2].value",
+            "java": 94.88,
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.ranking",
+            "java": "<list len=4>",
+            "python": "<list len=0>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          }
+        ]
+      }
+    }
+  ]
+}
