@@ -3,8 +3,11 @@ package com.cretas.aims.security;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
+import com.cretas.aims.dto.sales.ExtraFeeItem;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.inventory.InternalTransfer;
+import com.cretas.aims.entity.inventory.InternalTransferItem;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.PurchaseOrderItem;
 import com.cretas.aims.entity.inventory.PurchaseReceiveItem;
@@ -569,5 +572,186 @@ class PriceFieldResponseAdviceTest {
         // clear() removes flag
         PriceSensitiveContext.clear();
         assertFalse(PriceSensitiveContext.shouldHide("procurement:price:view"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BUG-6 follow-up 2026-05-12 — Sister-sweep coverage:
+    //   8 HIGH persisted price fields + InternalTransfer scope.
+    //   Reference: docs/qa-audits/2026-05-12-bug-6-price-sensitive-sister-sweep.md
+    //   PR #443 covered: 13 PR #423 baseline fields + 7 computed getters + @Target METHOD.
+    //   This sweep adds: SalesOrder shipping/extra/cost/profit/invoiced/paid
+    //                  + ExtraFeeItem.amount + InternalTransfer.totalAmount + InternalTransferItem.unitPrice.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    @DisplayName("BUG-6: mgr role — SalesOrder.shippingFee / actualShippedAmount stripped")
+    void bug6_salesOrder_shippingFields_stripped() {
+        asUser(10L, false);
+
+        SalesOrder so = new SalesOrder();
+        so.setId("so-bug6-1");
+        so.setOrderNumber("SO-BUG6-001");
+        so.setShippingFee(new BigDecimal("250.00"));
+        so.setActualShippedAmount(new BigDecimal("5250.00"));
+
+        run(so);
+
+        assertNull(so.getShippingFee(), "shippingFee stripped (运费)");
+        assertNull(so.getActualShippedAmount(), "actualShippedAmount stripped (实际发货金额)");
+        // Non-price preserved
+        assertEquals("SO-BUG6-001", so.getOrderNumber());
+    }
+
+    @Test
+    @DisplayName("BUG-6: mgr role — SalesOrder.estimatedCost / estimatedProfit stripped (internal financial)")
+    void bug6_salesOrder_estimatedFinancials_stripped() {
+        asUser(10L, false);
+
+        SalesOrder so = new SalesOrder();
+        so.setId("so-bug6-2");
+        so.setOrderNumber("SO-BUG6-002");
+        so.setEstimatedCost(new BigDecimal("3800.50"));
+        so.setEstimatedProfit(new BigDecimal("1199.50"));
+
+        run(so);
+
+        assertNull(so.getEstimatedCost(), "estimatedCost stripped (预估BOM成本 - 内部财务)");
+        assertNull(so.getEstimatedProfit(), "estimatedProfit stripped (预估利润 - 内部财务)");
+    }
+
+    @Test
+    @DisplayName("BUG-6: mgr role — SalesOrder.invoicedAmount / paidAmount stripped (回款数据)")
+    void bug6_salesOrder_paymentFields_stripped() {
+        asUser(10L, false);
+
+        SalesOrder so = new SalesOrder();
+        so.setId("so-bug6-3");
+        so.setOrderNumber("SO-BUG6-003");
+        so.setInvoicedAmount(new BigDecimal("4500.00"));
+        so.setPaidAmount(new BigDecimal("3000.00"));
+
+        run(so);
+
+        assertNull(so.getInvoicedAmount(), "invoicedAmount stripped (已开票金额)");
+        assertNull(so.getPaidAmount(), "paidAmount stripped (已收款金额)");
+    }
+
+    @Test
+    @DisplayName("BUG-6: mgr role — SalesOrder.extraFees list ExtraFeeItem.amount stripped per item")
+    void bug6_salesOrder_extraFees_amountStripped() {
+        asUser(10L, false);
+
+        SalesOrder so = new SalesOrder();
+        so.setId("so-bug6-4");
+        so.setOrderNumber("SO-BUG6-004");
+
+        ExtraFeeItem fee1 = new ExtraFeeItem("装卸费", new BigDecimal("100.00"), "搬运费用");
+        ExtraFeeItem fee2 = new ExtraFeeItem("包装费", new BigDecimal("50.00"), null);
+        ExtraFeeItem fee3 = new ExtraFeeItem("加急费", new BigDecimal("200.00"), "次日达");
+        so.setExtraFees(Arrays.asList(fee1, fee2, fee3));
+
+        run(so);
+
+        // Each ExtraFeeItem.amount stripped recursively
+        assertEquals(3, so.getExtraFees().size(), "list size preserved");
+        assertNull(so.getExtraFees().get(0).getAmount(), "extraFees[0].amount stripped (装卸费)");
+        assertNull(so.getExtraFees().get(1).getAmount(), "extraFees[1].amount stripped (包装费)");
+        assertNull(so.getExtraFees().get(2).getAmount(), "extraFees[2].amount stripped (加急费)");
+        // Non-price preserved per item
+        assertEquals("装卸费", so.getExtraFees().get(0).getName());
+        assertEquals("包装费", so.getExtraFees().get(1).getName());
+        assertEquals("搬运费用", so.getExtraFees().get(0).getRemark());
+    }
+
+    @Test
+    @DisplayName("BUG-6: mgr role — InternalTransfer.totalAmount stripped")
+    void bug6_internalTransfer_totalAmount_stripped() {
+        asUser(10L, false);
+
+        InternalTransfer transfer = new InternalTransfer();
+        transfer.setId("trf-bug6-1");
+        transfer.setTransferNumber("TRF-BUG6-001");
+        transfer.setSourceFactoryId("F006");
+        transfer.setTargetFactoryId("F006");
+        transfer.setTotalAmount(new BigDecimal("8888.00"));
+
+        run(transfer);
+
+        assertNull(transfer.getTotalAmount(), "InternalTransfer.totalAmount stripped");
+        // Non-price preserved
+        assertEquals("TRF-BUG6-001", transfer.getTransferNumber());
+        assertEquals("F006", transfer.getSourceFactoryId());
+    }
+
+    @Test
+    @DisplayName("BUG-6: mgr role — InternalTransferItem.unitPrice stripped (nested in InternalTransfer)")
+    void bug6_internalTransferItem_unitPrice_stripped() {
+        asUser(10L, false);
+
+        InternalTransfer transfer = new InternalTransfer();
+        transfer.setId("trf-bug6-2");
+        transfer.setTransferNumber("TRF-BUG6-002");
+        transfer.setSourceFactoryId("F006");
+        transfer.setTargetFactoryId("F006");
+        transfer.setTotalAmount(new BigDecimal("500.00"));
+
+        InternalTransferItem item = new InternalTransferItem();
+        item.setId(1L);
+        item.setTransferId("trf-bug6-2");
+        item.setItemName("冻猪蹄");
+        item.setQuantity(new BigDecimal("50.0000"));
+        item.setUnitPrice(new BigDecimal("10.00"));
+        item.setUnit("kg");
+        transfer.setItems(java.util.Arrays.asList(item));
+
+        run(transfer);
+
+        assertNull(transfer.getTotalAmount(), "parent totalAmount stripped");
+        assertNull(transfer.getItems().get(0).getUnitPrice(),
+                "InternalTransferItem.unitPrice stripped (调拨单价)");
+        // Computed getter from PR #443 also returns null (no NPE)
+        assertDoesNotThrow(() -> transfer.getItems().get(0).getLineAmount());
+        assertNull(transfer.getItems().get(0).getLineAmount(),
+                "InternalTransferItem.getLineAmount() returns null when unitPrice stripped");
+        // Non-price preserved
+        assertEquals("冻猪蹄", transfer.getItems().get(0).getItemName());
+        assertEquals(new BigDecimal("50.0000"), transfer.getItems().get(0).getQuantity());
+    }
+
+    @Test
+    @DisplayName("BUG-6: admin role — all 8 HIGH fields + InternalTransfer values preserved (regression)")
+    void bug6_adminRole_allFieldsPreserved() {
+        asUser(1L, true);  // can view prices
+
+        SalesOrder so = new SalesOrder();
+        so.setShippingFee(new BigDecimal("250.00"));
+        so.setActualShippedAmount(new BigDecimal("5250.00"));
+        so.setEstimatedCost(new BigDecimal("3800.50"));
+        so.setEstimatedProfit(new BigDecimal("1199.50"));
+        so.setInvoicedAmount(new BigDecimal("4500.00"));
+        so.setPaidAmount(new BigDecimal("3000.00"));
+        so.setExtraFees(java.util.Arrays.asList(
+                new ExtraFeeItem("装卸费", new BigDecimal("100.00"), null)));
+
+        run(so);
+
+        assertEquals(new BigDecimal("250.00"), so.getShippingFee());
+        assertEquals(new BigDecimal("5250.00"), so.getActualShippedAmount());
+        assertEquals(new BigDecimal("3800.50"), so.getEstimatedCost());
+        assertEquals(new BigDecimal("1199.50"), so.getEstimatedProfit());
+        assertEquals(new BigDecimal("4500.00"), so.getInvoicedAmount());
+        assertEquals(new BigDecimal("3000.00"), so.getPaidAmount());
+        assertEquals(new BigDecimal("100.00"), so.getExtraFees().get(0).getAmount(),
+                "ExtraFeeItem.amount preserved for admin");
+
+        InternalTransfer transfer = new InternalTransfer();
+        transfer.setTotalAmount(new BigDecimal("8888.00"));
+        InternalTransferItem item = new InternalTransferItem();
+        item.setUnitPrice(new BigDecimal("10.00"));
+        item.setQuantity(new BigDecimal("50.0000"));
+        transfer.setItems(java.util.Arrays.asList(item));
+        run(transfer);
+        assertEquals(new BigDecimal("8888.00"), transfer.getTotalAmount());
+        assertEquals(new BigDecimal("10.00"), transfer.getItems().get(0).getUnitPrice());
     }
 }

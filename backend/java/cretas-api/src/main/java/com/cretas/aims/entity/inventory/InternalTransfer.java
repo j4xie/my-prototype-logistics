@@ -5,6 +5,7 @@ import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.TransferStatus;
 import com.cretas.aims.entity.enums.TransferType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -94,6 +95,7 @@ public class InternalTransfer extends BaseEntity {
     @Column(name = "expected_arrival_date")
     private LocalDate expectedArrivalDate;
 
+    @PriceSensitive
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 

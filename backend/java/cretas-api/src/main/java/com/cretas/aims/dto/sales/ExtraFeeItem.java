@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.sales;
 
+import com.cretas.aims.security.PriceSensitive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,8 @@ import java.math.BigDecimal;
 public class ExtraFeeItem {
     /** 费用名称, 如 "装卸费" */
     private String name;
-    /** 金额 */
+    /** 金额 — @PriceSensitive: stripped to null for warehouse_manager (BUG-6 follow-up 2026-05-12). */
+    @PriceSensitive
     private BigDecimal amount;
     /** 备注, 可空 */
     private String remark;

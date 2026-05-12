@@ -70,6 +70,7 @@ public class InternalTransferItem extends BaseEntity {
     private String unit;
 
     /** 调拨单价（按总部定价或协议价） */
+    @PriceSensitive
     @Column(name = "unit_price", precision = 15, scale = 4)
     private BigDecimal unitPrice;
 
