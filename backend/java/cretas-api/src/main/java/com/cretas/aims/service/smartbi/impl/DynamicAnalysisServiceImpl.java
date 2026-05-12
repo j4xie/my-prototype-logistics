@@ -1,6 +1,5 @@
 package com.cretas.aims.service.smartbi.impl;
 
-import com.cretas.aims.client.PythonSmartBIClient;
 import com.cretas.aims.dto.smartbi.BackfillResult;
 import com.cretas.aims.dto.smartbi.BatchBackfillResult;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
@@ -45,7 +44,6 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
     private final SmartBiDynamicDataRepository dynamicDataRepository;
     private final SmartBiPgExcelUploadRepository uploadRepository;
     private final SmartBiPgFieldDefinitionRepository fieldDefRepository;
-    private final PythonSmartBIClient pythonClient;
 
     // Shared pool for parallel aggregate queries; 8 workers match DB connection
     // pool headroom while keeping N+1 loops fast even at 12-16 measures.
