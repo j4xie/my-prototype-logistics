@@ -217,6 +217,39 @@ upload file(s)
 
 `smart_bi_pg_excel_uploads.content_hash`（sha256 文件字节）+ UNIQUE `(factory_id, content_hash)`。重传返 409 + 现有 upload_id。
 
+### 5.5 meal_period 归一化责任链
+
+二维火 CSV `班次` 列原始值可能为 `"午市"` / `"晚市"` / `"早餐"` / `"下午茶"` / 空。归一化在**三个不同入口**各自处理：
+
+| 入口 | 归一化方 | 行为 |
+|---|---|---|
+| **CSV → Silver writer**（bill_flow / daily_summary / meal_split / region_summary writer 入口）| writer 内置 `.strip()` 仅 | 不做语义映射，原值入库（DB 接受 `早餐/午餐/下午茶/晚餐/其他/午市/晚市`，CHECK constraint 兜底）|
+| **Vue 表单 → /prepare**（Web UI 入口）| 不需要归一化 | 表单 `el-checkbox` 仅暴露 `["午市", "晚市"]`，用户只能选这两个 |
+| **LLM NL → Java Tool → /prepare**（AI Chat 入口）| Java `MealPeriodNormalizer.normalize()` | `"下午茶"→"午市"`, `"夜宵"→"晚市"`, `"早餐"→"早餐"`（透传 enum-defined 值，其他抛 IllegalArgumentException）|
+| **/prepare API 入参** | 无 — 信任 caller 已归一 | Python 直接 `WHERE TRIM(meal_period) = ANY($5)` 查询；不在 Python 再做映射 |
+
+**关键约束**：Vue 表单**不**让用户输入 "下午茶" 等自由文本；LLM 通过 Java Tool 路径自动归一。Python 层是被动的查询消费方。
+
+### 5.6 `_resolve_store_ids` Python fuzzy 候选返回格式
+
+当 fuzzy 匹配返 N>1，HTTP 400 body 形如：
+
+```json
+{
+  "success": false,
+  "message": "门店名 '颛桥' 匹配多个，请使用完整名",
+  "data": {
+    "ambiguous_name": "颛桥",
+    "candidates": [
+      {"store_id": 123, "name": "青花椒颛桥龙湖店"},
+      {"store_id": 456, "name": "青花椒颛桥万达店"}
+    ]
+  }
+}
+```
+
+Vue UI 处理（Section 9.x）：弹 ElMessageBox.confirm 列出候选名，用户点击其中一个，前端用完整名重新调 /prepare。AI Chat 路径：Tool 把候选列表回给 LLM，LLM 生成 "请确认是哪个门店：1. xxx 2. yyy" 类对话续问。
+
 ---
 
 ## 6. 模板计算层
@@ -389,9 +422,63 @@ CREATE INDEX idx_agg_daily_omt_factory_date_store_meal
 
 ### 6.7 物化策略
 
-- 新增 `materialize_daily_order_type_meal(factory_id, date_min, date_max)` in `gold/materializer.py`
-- 挂入现有 `UploadCompleteTrigger`（post-upload 立即）+ `ApiAppendIncrementalTrigger`（daily cron）
-- 首次回填：`python scripts/backfill_agg_order_type_meal.py --factory R_QINGHUAJIAO_REAL --date-from 2025-01-01 --date-to 2025-12-31`
+**源表**：`fact_pos_transaction`（Silver bill 级），不读 `fact_pos_item`。聚合粒度 (factory_id, date, store_id, order_type, meal_period)。
+
+**函数实现**（in `backend/python/smartbi/services/materialized_analytics/materializer.py`）：
+
+```python
+_AGG_DAILY_OMT_UPSERT_SQL = """
+INSERT INTO agg_daily_order_type_meal AS a (
+    factory_id, date, store_id, order_type, meal_period,
+    gross_amount, actual_receive, bill_count, customer_count,
+    version, computed_at
+)
+SELECT
+    t.factory_id,
+    t.date,
+    t.store_id,
+    COALESCE(TRIM(t.order_type), '未分类') AS order_type,
+    COALESCE(TRIM(t.meal_period), '未分类') AS meal_period,
+    SUM(COALESCE(t.gross_amount,   0)) AS gross_amount,
+    SUM(COALESCE(t.actual_receive, 0)) AS actual_receive,
+    COUNT(*)                            AS bill_count,
+    SUM(COALESCE(t.customer_count, 0))  AS customer_count,
+    1, NOW()
+FROM fact_pos_transaction t
+WHERE t.factory_id = $1
+  AND t.date BETWEEN $2 AND $3
+GROUP BY t.factory_id, t.date, t.store_id,
+         COALESCE(TRIM(t.order_type), '未分类'),
+         COALESCE(TRIM(t.meal_period), '未分类')
+ON CONFLICT (factory_id, date, store_id, order_type, meal_period)
+DO UPDATE SET
+    gross_amount   = EXCLUDED.gross_amount,
+    actual_receive = EXCLUDED.actual_receive,
+    bill_count     = EXCLUDED.bill_count,
+    customer_count = EXCLUDED.customer_count,
+    version        = a.version + 1,
+    computed_at    = NOW();
+"""
+
+async def materialize_daily_order_type_meal(
+    conn,
+    factory_id: str,
+    date_min: date,
+    date_max: date,
+) -> int:
+    """返回受影响行数。upsert + version bump + computed_at 更新（缓存失效信号）。"""
+    result = await conn.execute(_AGG_DAILY_OMT_UPSERT_SQL,
+                                factory_id, date_min, date_max)
+    return int(result.split()[-1])
+```
+
+**Trigger 接入**（同 `UploadCompleteTrigger` 现有模式）：
+- `materialize_all(factory_id, date_min, date_max)` 内追加一行调用
+- 触发时机：post-upload 立即 + daily cron + on-demand (per `ensure_gold_freshness`)
+
+**回填**：`python scripts/backfill_agg_order_type_meal.py --factory R_QINGHUAJIAO_REAL --date-from 2025-01-01 --date-to 2025-12-31`
+
+### 6.8 V20260513_02 — Upload dedup
 
 ### 6.8 V20260513_02 — Upload dedup
 
@@ -523,6 +610,45 @@ if cached_bytes:
 
 **不**用 `with_factory_serialization` 包整个 multi-file 流（避免 200MB byte stream 锁 N 分钟）。仅锁 writer-write 阶段。Mirror 现有 `excel_async` 无锁 byte streaming 模式。
 
+```python
+async def upload_pos_files(factory_id, files, request, pool):
+    _check_factory(factory_id, request)
+    batch_id = uuid.uuid4()
+    results = []
+    
+    # ① bytes streaming 阶段 - 无锁,可并发
+    for upload_file in files:
+        content = await upload_file.read()                    # 大字节流不持锁
+        content_hash = hashlib.sha256(content).hexdigest()
+        if await _exists_by_hash(factory_id, content_hash):
+            results.append({"filename": upload_file.filename, "status": "duplicate"})
+            continue
+        
+        # ② parse 阶段 - 仍无锁
+        try:
+            parsed = await pos_router.parse(filename=upload_file.filename, content=content)
+        except UnknownReportTypeError as e:
+            results.append({"filename": upload_file.filename, "status": "unknown",
+                            "preview_headers": e.preview_headers})
+            continue
+        
+        # ③ writer-write 阶段 - 仅此 critical section 持 per-factory 锁
+        async def _persist():
+            async with pool.acquire() as conn:
+                await _set_factory_ctx(conn, factory_id)
+                await parsed.writer.write(conn, factory_id, batch_id, parsed)
+                await _record_upload(conn, factory_id, batch_id,
+                                     upload_file.filename, content_hash)
+        
+        await with_factory_serialization(factory_id, pool, _persist)
+        results.append({"filename": upload_file.filename, "status": "ok", ...})
+    
+    schedule_materialization(batch_id, factory_id)             # fire-and-forget
+    return {"success": True, "data": {"batch_id": str(batch_id), "files": results}}
+```
+
+锁仅覆盖 ③，N MB bytes 流 + parse 全程无锁。
+
 ### 8.3 门店名 fuzzy resolver（Python 端）
 
 ```python
@@ -565,7 +691,37 @@ public class RevenueReportGenerateTool extends AbstractBusinessTool {
                "meal_periods 可选 enum ['午市','晚市']（'下午茶'→'午市', '夜宵'→'晚市' 由 Tool 内化）。";
     }
 
-    @Override public Map<String,Object> getParametersSchema() { /* ... */ }
+    @Override public Map<String,Object> getParametersSchema() {
+        return Map.of(
+            "type", "object",
+            "properties", Map.of(
+                "date_from", Map.of(
+                    "type", "string",
+                    "format", "date",
+                    "description", "本期开始日期 YYYY-MM-DD (LLM 必须先 resolve '上周'/'本月' 等短语)"
+                ),
+                "date_to", Map.of(
+                    "type", "string",
+                    "format", "date",
+                    "description", "本期结束日期 YYYY-MM-DD (含)"
+                ),
+                "store_names", Map.of(
+                    "type", "array",
+                    "items", Map.of("type", "string"),
+                    "description", "门店名列表 (支持模糊匹配); 省略 = 全部门店"
+                ),
+                "meal_periods", Map.of(
+                    "type", "array",
+                    "items", Map.of(
+                        "type", "string",
+                        "enum", List.of("午市", "晚市")
+                    ),
+                    "description", "班次过滤; 省略 = 全班次。Tool 内化映射: '下午茶'->'午市', '夜宵'->'晚市'"
+                )
+            ),
+            "required", List.of("date_from", "date_to")
+        );
+    }
 
     @Override protected List<String> getRequiredParameters() {
         return List.of("date_from", "date_to");
@@ -791,7 +947,195 @@ Week 2+
 
 ---
 
-## 11. Open Questions / Phase 2 候选
+### 10.7 API Endpoint Contracts
+
+每个 endpoint 标准响应 envelope `{success: bool, data: any, message: str, code?: str}`（项目 `api-response-handling.md` 标准），错误用 HTTP status + message，**不**引 enum code 字段。
+
+### POST `/upload`
+
+```jsonc
+// Request: multipart/form-data with field `files` (List[UploadFile])
+// Response 200:
+{
+  "success": true,
+  "data": {
+    "batch_id": "uuid",
+    "files": [
+      {"filename": "营业概况报表.csv", "status": "ok",
+       "report_type": "daily_summary", "rows_ingested": 1244,
+       "stores_touched": ["青花椒南方百联店", ...]},
+      {"filename": "x.csv", "status": "duplicate"},
+      {"filename": "y.csv", "status": "unknown",
+       "preview_headers": ["列1", "列2", ...]}
+    ]
+  },
+  "message": "上传完成"
+}
+```
+
+### POST `/prepare`（LLM Tool 路径）
+
+```jsonc
+// Request:
+{
+  "store_names": ["颛桥龙湖店"] | [],       // [] = 全部
+  "date_from": "2025-10-01",
+  "date_to":   "2025-10-07",
+  "meal_periods": ["午市", "晚市"] | []     // [] = 全班次
+}
+// Response 200:
+{
+  "success": true,
+  "data": {
+    "cache_key": "revenue_report:R_QINGHUAJIAO_REAL:abc123:2025-10-07T18:00:00",
+    "download_url": "/api/smartbi/R_QINGHUAJIAO_REAL/revenue-report/download/{cache_key}",
+    "summary": {
+      "store_count": 3,
+      "date_range": "2025-10-01 - 2025-10-07",
+      "gold_materialized_at": "2025-10-07T18:00:00",
+      "file_size_bytes": 28456,
+      "cache_hit": true,
+      "is_stale": false                       // true if gold lag > 5s timeout
+    }
+  }
+}
+```
+
+### POST `/generate`（Web UI 路径，流式 xlsx）
+
+Request 同 `/prepare`。Response：
+- Content-Type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Content-Disposition: `attachment; filename*=UTF-8''收入管理报表_YYYY-MM-DD_YYYY-MM-DD.xlsx`
+- Body: xlsx 字节流
+- 响应头：`X-Cache-Hit: true/false`、`X-Gold-Materialized-At: ISO8601`、`X-Store-Count: N`、`X-Is-Stale: true/false`
+
+### GET `/download/{cache_key}`
+
+无 body 入参。Response 同 `/generate`。如 Redis 不命中，按 cache_key 反查 audit_log 的 `params_snapshot` 重新生成。
+
+### GET `/stores`
+
+```jsonc
+// Query: ?exclude_closed=true (默认 true)
+// Response 200:
+{
+  "success": true,
+  "data": [
+    {"store_id": 123, "name": "青花椒南方百联店"},
+    ...
+  ]
+}
+```
+
+### GET `/audit-log`
+
+```jsonc
+// Query: ?limit=20
+// Response 200:
+{
+  "success": true,
+  "data": [
+    {
+      "id": 12345,
+      "generated_by": "user_id_xxx",
+      "generated_at": "2025-10-07T18:00:00",
+      "params_snapshot": {"store_names": [...], "date_from": "...", ...},
+      "file_size_bytes": 28456,
+      "status": "ok",
+      "cache_hit": false,
+      "duration_ms": 4200
+    }
+  ]
+}
+```
+
+### 内部共享 helper
+
+```python
+async def _generate_with_cache(factory_id, params, request_ctx) -> tuple[str, dict, BytesIO]:
+    """两条端点 (/prepare + /generate) 共享。返回 (cache_key, summary, bytes_io)。"""
+    # 1. 计算 cache_key (含 gold_max_computed_at)
+    # 2. Redis GET; hit → 返回缓存字节 + summary
+    # 3. miss → with_factory_serialization → compute_qhj_revenue_report → render → SET cache
+    # 4. 写 audit_log (cache_hit/duration_ms/file_size 都记入)
+    # 5. 返回结果
+```
+
+`/prepare` 用其 summary 部分，`/generate` 直接流式 BytesIO 部分。
+
+---
+
+## 11. Pre-Implementation Clarifications（F 审计 MAJORs 解决）
+
+### 11.1 Block 4 NULLIF 边界行为
+
+```sql
+ROUND(SUM(bi.actual_receive) /
+      NULLIF(bi.customer_count * COUNT(*), 0), 0) AS revenue_per_diner
+```
+
+- `customer_count` 是 INT > 0（SQL 已 WHERE 过滤 `customer_count > 0`），所以 `bi.customer_count * COUNT(*)` 在 GROUP BY 单 bin 内 ≥ 1
+- NULLIF 实际不会触发（防御性写法）
+- `revenue_per_item` 分母是 `SUM(items_per_bill)`，理论可能 0（订单无商品行），NULLIF 触发 → NULL → 前端渲染 "—"
+- `revenue_ratio` 分母 `t.total_revenue` 若全期零销售，NULLIF → NULL → 前端 "—"
+- 前端规约：所有 NULL 数值列渲染 `—`，不渲染 `0` 或 `null`
+
+### 11.2 `include_yoy` 参数来源
+
+- **首期固定 `False`**：Python `RevenueReportParams.include_yoy` 默认 False，调用方**不传**
+- 不在 Vue 表单暴露，不在 URL query 出现，不在 Java Tool 入参出现
+- Phase 2 加 2024 数据后，Vue 加 checkbox + API 接受 `include_yoy: true`
+- API 入参可选字段不破坏向后兼容
+
+### 11.3 cache_hit 场景指标语义
+
+| 字段 | cache miss 场景 | cache hit 场景 |
+|---|---|---|
+| `file_size_bytes` | 实际生成的字节数 | 缓存中的字节数（与首次生成一致）|
+| `duration_ms` (audit log) | 全程耗时含生成 | Redis fetch 耗时 (~5-50ms) |
+| `cache_hit` (audit log) | `false` | `true` |
+| Prometheus `gen_seconds` | 实际生成时长 | Redis 命中时**不上报** `gen_seconds`，改上报 `cache_hit_total` counter |
+
+cache hit 也写 audit log 一行（cache_hit=true），方便客户争议时反查"上次下载了什么"。
+
+### 11.4 Stale data UI 展示
+
+API 返 `X-Is-Stale: true` 时（gold 物化超 5s 未完成，返 stale 数据）：
+
+- Vue 页面顶部弹 `el-alert type="warning"` 持久横幅："⚠️ 数据延迟，最新截至 {X-Gold-Materialized-At}，可能不含最近一次上传的数据"
+- xlsx 文件首 sheet 底部注释行加红字 "本报表数据截至 {timestamp}"（renderer 在 stale=true 时插入）
+- LLM Tool 返回 message 加 "（数据延迟，截至 YYYY-MM-DD HH:MM）" 后缀
+
+### 11.5 测试 fixture 数据源
+
+- 真二维火 CSV 字节样本 → 抽取 5-10 行从 `smartbi维度分析/大众点评/真实餐饮连锁数据/青花椒25年/青花椒25年/` 各报表
+- 存为 `backend/python/smartbi/tests/fixtures/qhj_pos/*.csv`（首次创建该目录）
+- 每个 fixture 文件 < 10 KB，敏感字段（如真实店名）保留（已在 `dim_store` 公开数据）
+- 测试用 `@pytest.fixture` 引用：
+  ```python
+  @pytest.fixture
+  def daily_summary_csv() -> bytes:
+      path = Path(__file__).parent / "fixtures" / "qhj_pos" / "daily_summary_sample.csv"
+      return path.read_bytes()
+  ```
+- 不 vendoring 完整 120MB 详细日报表，生成时用合成数据 (5 店 × 7 天 × 10 单)
+
+### 11.6 渐进 rollout `is_active` 操作
+
+`UPDATE ai_intent_configs SET is_active=true WHERE intent_code='REVENUE_REPORT_GENERATE';` 由**部署负责人**手动在 test/prod psql 中执行（项目首例此 pattern，runbook 文档化）。未来可考虑加 admin UI 切换 / DB-backed feature flag 服务。
+
+### 11.7 Phase 2 候选明确化
+
+| 候选 | 决策 |
+|---|---|
+| LLM 路径有附件上传（Q6 提及）| **Phase 2** — 首期 LLM 不支持附件，要求 LLM "查 Silver 已有数据"。Tool description 不暴露上传能力 |
+| 工厂 ID 级菜单 allowlist | **Phase 2** — 首期 `hideForFactoryTypes: ['FACTORY']` 粗筛够 |
+| streaming progress | **Phase 2** — 首期用 elapsed-time 弹层 |
+| 多 POS 源 | **Phase 2** — 各 POS 独立 spec |
+
+---
+
+## 12. Open Questions / Phase 2 候选
 
 - 工厂 ID 级菜单 allowlist 字段（首期类型粗筛够用，后续需要时新增 `showOnlyForFactoryIds`）
 - streaming progress / WebSocket 长任务推送
