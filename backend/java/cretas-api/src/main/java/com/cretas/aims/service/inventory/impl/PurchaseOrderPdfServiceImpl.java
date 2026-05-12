@@ -47,8 +47,11 @@ public class PurchaseOrderPdfServiceImpl implements PurchaseOrderPdfService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    /** Placeholder rendered in 单价/小计/合计 cells when the caller lacks procurement:price:view. */
+    private static final String PRICE_MASK_PLACEHOLDER = "—";
+
     @Override
-    public byte[] generatePurchaseOrderPdf(String factoryId, String orderId) {
+    public byte[] generatePurchaseOrderPdf(String factoryId, String orderId, boolean maskPrice) {
         // 1. 加载订单 (PurchaseService 已校验工厂归属 + hydrate 关联字段)
         PurchaseOrder order = purchaseService.getPurchaseOrderById(factoryId, orderId);
 
@@ -60,9 +63,10 @@ public class PurchaseOrderPdfServiceImpl implements PurchaseOrderPdfService {
         // 3. 加载工厂信息 (用于 PDF 抬头)
         Factory factory = factoryRepository.findById(factoryId).orElse(null);
 
-        log.info("生成采购订单 PDF: factoryId={}, orderId={}, orderNumber={}, itemCount={}",
+        log.info("生成采购订单 PDF: factoryId={}, orderId={}, orderNumber={}, itemCount={}, maskPrice={}",
                 factoryId, orderId, order.getOrderNumber(),
-                order.getItems() != null ? order.getItems().size() : 0);
+                order.getItems() != null ? order.getItems().size() : 0,
+                maskPrice);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4, 36, 36, 36, 36);
@@ -188,22 +192,29 @@ public class PurchaseOrderPdfServiceImpl implements PurchaseOrderPdfService {
                     addBodyCell(itemsTable,
                             item.getBoxQuantity() != null ? formatDecimal(item.getBoxQuantity()) : "-",
                             normalFont, Element.ALIGN_RIGHT);
-                    addBodyCell(itemsTable, formatDecimal(item.getUnitPrice()),
+                    // 单价 / 小计: maskPrice=true 时以 "—" 占位 (RBAC defense-in-depth, mirrors @PriceSensitive JSON strip)
+                    addBodyCell(itemsTable,
+                            maskPrice ? PRICE_MASK_PLACEHOLDER : formatDecimal(item.getUnitPrice()),
                             normalFont, Element.ALIGN_RIGHT);
                     BigDecimal lineAmount = item.getLineAmount();
-                    addBodyCell(itemsTable, formatDecimal(lineAmount), normalFont, Element.ALIGN_RIGHT);
-                    grandTotal = grandTotal.add(lineAmount);
+                    addBodyCell(itemsTable,
+                            maskPrice ? PRICE_MASK_PLACEHOLDER : formatDecimal(lineAmount),
+                            normalFont, Element.ALIGN_RIGHT);
+                    if (!maskPrice) {
+                        grandTotal = grandTotal.add(lineAmount);
+                    }
                 }
             }
 
-            // 合计行
+            // 合计行 — label 保留 (布局一致性), 数值在 maskPrice=true 时同样以 "—" 占位
             PdfPCell totalLabelCell = new PdfPCell(new Phrase("合计", boldFont));
             totalLabelCell.setColspan(6);
             totalLabelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             totalLabelCell.setPadding(5);
             totalLabelCell.setBackgroundColor(new BaseColor(240, 240, 240));
             itemsTable.addCell(totalLabelCell);
-            PdfPCell totalValueCell = new PdfPCell(new Phrase(formatDecimal(grandTotal), boldFont));
+            PdfPCell totalValueCell = new PdfPCell(new Phrase(
+                    maskPrice ? PRICE_MASK_PLACEHOLDER : formatDecimal(grandTotal), boldFont));
             totalValueCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             totalValueCell.setPadding(5);
             totalValueCell.setBackgroundColor(new BaseColor(240, 240, 240));

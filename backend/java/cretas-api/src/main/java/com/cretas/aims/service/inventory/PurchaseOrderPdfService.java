@@ -26,10 +26,18 @@ public interface PurchaseOrderPdfService {
     /**
      * 生成采购订单 PDF (供货单) 字节流.
      *
+     * <p>RBAC defense-in-depth (PR P0-C, 2026-05-12): {@code maskPrice}=true 时
+     * 单价/小计/合计 列以 "—" 占位. 与 {@link com.cretas.aims.security.PriceFieldResponseAdvice}
+     * 对 JSON 响应的脱敏行为一致 (PR #423 只处理 JSON, byte[] PDF 走此路径).
+     * 仓库管理员 (warehouse_manager) 等无 {@code procurement:price:view} 权限的角色
+     * 仍可下载 PDF 做收货 audit, 但看不到价格.
+     *
      * @param factoryId 工厂 ID (path)
      * @param orderId   采购订单 ID (path)
+     * @param maskPrice {@code true} → 单价/小计/合计 显示 "—" (调用方应基于
+     *                  {@code !PermissionService.hasPermission(user, "procurement:price:view")} 决定)
      * @return PDF 字节内容
      * @throws com.cretas.aims.exception.BusinessException 订单不存在 / 跨工厂访问
      */
-    byte[] generatePurchaseOrderPdf(String factoryId, String orderId);
+    byte[] generatePurchaseOrderPdf(String factoryId, String orderId, boolean maskPrice);
 }
