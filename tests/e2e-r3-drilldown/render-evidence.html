@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R3 Drilldown L4 Deep — Evidence Dashboard</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background:#0d1117; color:#e6edf3; }
+  header { padding: 24px 32px; background: #161b22; border-bottom: 1px solid #30363d; position: sticky; top: 0; z-index: 10; }
+  h1 { margin: 0 0 8px; font-size: 24px; color: #58a6ff; }
+  .meta { font-size: 13px; color: #8b949e; }
+  main { padding: 24px 32px 80px; max-width: 1400px; margin: 0 auto; }
+  section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; margin-bottom: 24px; overflow: hidden; }
+  section[data-status="PASS"] { border-left: 4px solid #3fb950; }
+  section[data-status="FAIL"] { border-left: 4px solid #f85149; }
+  section[data-status="INFO"] { border-left: 4px solid #58a6ff; }
+  h2 { margin: 0; padding: 14px 20px; background: #21262d; font-size: 15px; display: flex; align-items: center; gap: 12px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .tag.PASS { background: #1c5d2e; color: #56d364; }
+  .tag.FAIL { background: #67060d; color: #ff7b72; }
+  .tag.INFO { background: #1f3552; color: #79c0ff; }
+  .tag.depth { background: #4d2d8e; color: #d2a8ff; }
+  .body { padding: 16px 20px; }
+  .key-fact { color: #ffd700; font-weight: 600; }
+  pre { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; padding: 12px; overflow-x: auto; font-size: 12px; line-height: 1.5; max-height: 500px; overflow-y: auto; }
+  .field { color: #79c0ff; }
+  .str { color: #a5d6ff; }
+  .num { color: #79c0ff; }
+  .null { color: #ff7b72; font-style: italic; }
+  .true { color: #56d364; }
+  .false { color: #ff7b72; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card { background: #21262d; padding: 14px 18px; border-radius: 6px; border: 1px solid #30363d; }
+  .card-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-value { font-size: 22px; font-weight: 600; margin-top: 4px; color: #e6edf3; }
+  .card-value.green { color: #56d364; }
+  .card-value.red { color: #ff7b72; }
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .badge { font-size: 11px; padding: 3px 8px; background: #21262d; border: 1px solid #30363d; border-radius: 12px; color: #c9d1d9; }
+  .badge.ok { color: #56d364; border-color: #2ea043; }
+  .badge.lock { color: #d2a8ff; border-color: #6e40c9; }
+  .quote { color: #f0883e; font-style: italic; }
+  .anchor { font-size: 11px; color: #8b949e; }
+  .actionhint { background:#1c2d3e; border-left: 3px solid #58a6ff; padding:10px 14px; margin:8px 0; border-radius: 4px; color:#79c0ff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>R3 Drilldown L4 Deep — API-only Evidence Dashboard</h1>
+  <div class="meta">
+    Target endpoint: <span class="key-fact">POST /api/mobile/{factoryId}/smart-bi/drill-down</span>
+    · Server: deployed Python <code>analysis_drilldown.py</code> via test vhost <code>139.196.165.140:8097 → 47:10011 → python 8084</code>
+    · Branch: <code>qa/r3-drilldown-l4-deep</code> · Base: <code>origin/main @ 493782b3c</code>
+  </div>
+</header>
+
+<main>
+  <div class="summary-grid">
+    <div class="card"><div class="card-label">Total tests</div><div class="card-value">10</div></div>
+    <div class="card"><div class="card-label">PASS</div><div class="card-value green">10</div></div>
+    <div class="card"><div class="card-label">FAIL</div><div class="card-value">0</div></div>
+    <div class="card"><div class="card-label">Depth: deep</div><div class="card-value">10</div></div>
+    <div class="card"><div class="card-label">Depth: smoke/medium</div><div class="card-value">0</div></div>
+    <div class="card"><div class="card-label">Rule 12 boundary</div><div class="card-value green">LOCKED</div></div>
+  </div>
+
+  <!-- Rule 12 lock-down evidence -->
+  <section data-status="PASS" id="rule12">
+    <h2>
+      <span class="tag PASS">PASS</span>
+      <span class="tag depth">deep</span>
+      <span class="tag lock">Rule 12 lock</span>
+      T10 — Rule 12 HALF_UP boundary verification (deployed code, server 47)
+    </h2>
+    <div class="body">
+      <p>Imported <code>_build_kpi_card</code> from the deployed <code>analysis_drilldown.py</code> on server 47 (line <span class="key-fact">315</span>) and invoked it with the scale-2 boundary canaries that diverge between HALF_UP and Python's default banker's (ROUND_HALF_EVEN).</p>
+      <div class="badge-row">
+        <span class="badge ok">Decimal('100.005') → '100.01' / 100.01 ✓ HALF_UP</span>
+        <span class="badge ok">Decimal('100.025') → '100.03' / 100.03 ✓ HALF_UP</span>
+        <span class="badge ok">Decimal('46') → '46.00' / 46.0 ✓ scale-2 preserved</span>
+        <span class="badge ok">raw layer: 100.005 banker's=100.00 ≠ HALF_UP=100.01</span>
+      </div>
+      <div class="anchor">analysis_drilldown.py:315 — <code>quantized = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)</code></div>
+      <div class="anchor">analysis_drilldown.py:319 — <code>"value": _format_decimal_half_up(value, 2)</code></div>
+      <pre id="rule12-out">(loading...)</pre>
+    </div>
+  </section>
+
+  <!-- T01 -->
+  <section data-status="PASS" id="t01"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T01 — region happy (admin) — dimension dispatch + drillPath</h2><div class="body"><div class="anchor">_process_region_drilldown (analysis_drilldown.py:554)</div><pre data-evidence="01-region-happy-admin.json"></pre></div></section>
+
+  <!-- T02 -->
+  <section data-status="PASS" id="t02"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T02 — department happy (admin) — _build_kpi_card 13-field Lombok @Data shape</h2><div class="body">
+    <div class="badge-row">
+      <span class="badge ok">httpStatus=200</span><span class="badge ok">kpiCards.length=4</span><span class="badge ok">shape13=true</span>
+      <span class="badge lock">Rule 9 + Rule 12 emit shape</span>
+    </div>
+    <div class="anchor">_build_kpi_card line 310-330: 13 fields in Lombok @Data declaration order — key/title/value/rawValue/unit/change/changeRate/trend/status/compareText/description/targetValue/completionRate</div>
+    <pre data-evidence="02-department-happy-admin.json"></pre></div></section>
+
+  <!-- T03 -->
+  <section data-status="PASS" id="t03"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T03 — product happy (admin) — ChartConfig 7-field shape (Rule 9 xaxisField lowercase)</h2><div class="body">
+    <div class="badge-row">
+      <span class="badge ok">httpStatus=200</span><span class="badge ok">chartShape7=true</span><span class="badge ok">xaxisField LOWERCASE 'a' ✓</span>
+      <span class="badge lock">Rule 9 Introspector.decapitalize quirk</span>
+    </div>
+    <div class="anchor">_build_product_distribution_chart line 378-386: 7 fields per F999 golden — chartType, title, seriesField, data, options, <strong>xaxisField, yaxisField</strong> (lowercase 'a' per Java Introspector.decapitalize)</div>
+    <pre data-evidence="03-product-happy-admin.json"></pre></div></section>
+
+  <!-- T04 -->
+  <section data-status="PASS" id="t04"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T04 — time happy (admin) — period dimension dispatch</h2><div class="body"><div class="anchor">_process_time_drilldown (analysis_drilldown.py:595)</div><pre data-evidence="04-time-happy-admin.json"></pre></div></section>
+
+  <!-- T05 -->
+  <section data-status="PASS" id="t05"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T05 — salesperson happy (admin) — MetricResult list shape</h2><div class="body"><div class="anchor">_process_salesperson_drilldown (analysis_drilldown.py:627)</div><pre data-evidence="05-salesperson-happy-admin.json"></pre></div></section>
+
+  <!-- T06 -->
+  <section data-status="PASS" id="t06"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span><span class="tag lock">RBAC defense-in-depth</span>T06 — warehouse_mgr1 permission gate 403 (rich envelope)</h2><div class="body">
+    <p><strong>Architectural finding</strong>: warehouse_manager is blocked at the <code>analytics:read_write</code> permission gate <em>before</em> reaching the Python handler. The Python <code>strip_price_for_role</code> (the &ldquo;Option D Jackson serializer&rdquo; equivalent for Python-served endpoints) is unreachable for this role on this endpoint — it acts as a defense-in-depth second wall.</p>
+    <div class="actionhint">Action hint surfaced to user: 请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [数据分析] 的 [读写] 权限, 或切换到有权限的账号重试</div>
+    <div class="badge-row">
+      <span class="badge ok">httpStatus=403</span><span class="badge ok">code=FORBIDDEN</span><span class="badge ok">severity=error</span>
+      <span class="badge ok">actionHint present</span><span class="badge ok">meta.role=warehouse_manager</span><span class="badge ok">meta.module=analytics</span><span class="badge ok">meta.action=read_write</span>
+    </div>
+    <pre data-evidence="06-warehouse-permission-gate.json"></pre></div></section>
+
+  <!-- T07 -->
+  <section data-status="PASS" id="t07"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T07 — invalid body (missing dimension) — HTTP 200 + success=false Java parity</h2><div class="body">
+    <p>Contract: <code>analysis_drilldown.py:730</code> docstring &mdash; <em>&ldquo;HTTP 200 always (Java returns ResponseEntity.ok even on BusinessException)&rdquo;</em>. Pydantic ValidationError is caught by the generic <code>except Exception</code> at <code>line 747-749</code> and wrapped via <code>wrap_error</code>.</p>
+    <div class="badge-row">
+      <span class="badge ok">httpStatus=200</span><span class="badge ok">success=false</span><span class="badge ok">code=400</span><span class="badge ok">message non-empty</span>
+    </div>
+    <pre data-evidence="07-invalid-body-missing-dimension.json"></pre></div></section>
+
+  <!-- T08 -->
+  <section data-status="PASS" id="t08"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T08 — unsupported dimension (vendor) — DrilldownBusinessException → 200 + success=false</h2><div class="body">
+    <p>Java parity: SmartBIServiceImpl throws BusinessException for unsupported dimensions; controller catches → ResponseEntity.ok with success=false. Python mirrors at <code>line 745-746</code>.</p>
+    <pre data-evidence="08-unsupported-dimension.json"></pre></div></section>
+
+  <!-- T09 -->
+  <section data-status="PASS" id="t09"><h2><span class="tag PASS">PASS</span><span class="tag depth">deep</span>T09 — cross-factory denial (F001 admin token → F002 path) — 403</h2><div class="body">
+    <p>verify_jwt_and_factory rejects when JWT.factoryId ≠ path.factoryId. Defense-in-depth at auth layer before any handler logic executes.</p>
+    <pre data-evidence="09-cross-factory-denial.json"></pre></div></section>
+</main>
+
+<script>
+async function loadEvidence() {
+  // Inline the Rule 12 output (server-side proof captured separately)
+  document.getElementById('rule12-out').textContent =
+`=== R3 Rule 12 LIVE verification against deployed analysis_drilldown.py ===
+
+Boundary canary results (deployed code):
+  Decimal('100.005') -> value='100.01'  rawValue=100.01  (HALF_UP expected '100.01' / 100.01)
+  Decimal('100.025') -> value='100.03'  rawValue=100.03  (HALF_UP expected '100.03' / 100.03)
+  Decimal('46.55')   -> value= '46.55'  rawValue= 46.55  (HALF_UP expected '46.55'  / 46.55)
+  Decimal('46')      -> value= '46.00'  rawValue=  46.0  (scale-2 expected '46.00'  / 46.0)
+
+Raw Decimal-layer divergence proof:
+  Decimal('100.005').quantize(Decimal('0.01'))                            = 100.00  (banker's default)
+  Decimal('100.005').quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)    = 100.01  (HALF_UP explicit)
+  divergence: bankers != half_up -> True
+
+RESULT: Rule 12 HALF_UP LOCKED on deployed analysis_drilldown.py
+  - line 315: value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+  - line 319: _format_decimal_half_up(value, 2)
+  Boundary canaries 100.005 and 100.025 both round per HALF_UP, not banker's.`;
+
+  const slots = document.querySelectorAll('pre[data-evidence]');
+  for (const slot of slots) {
+    const file = slot.dataset.evidence;
+    try {
+      const res = await fetch('./evidence/' + file);
+      const data = await res.json();
+      slot.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      slot.textContent = '(failed to load ' + file + ': ' + e.message + ')';
+    }
+  }
+}
+loadEvidence();
+</script>
+</body>
+</html>

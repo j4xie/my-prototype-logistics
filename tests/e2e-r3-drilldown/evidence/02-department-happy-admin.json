@@ -1,0 +1,107 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "department",
+    "value": "sales",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "drillPath": "sales",
+      "data": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [
+          {
+            "key": "SALES_AMOUNT",
+            "title": "销售额",
+            "value": "0.00",
+            "rawValue": 0,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "TARGET_COMPLETION",
+            "title": "目标完成率",
+            "value": "0.00",
+            "rawValue": 0,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "red",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "SALES_PER_CAPITA",
+            "title": "人均产出",
+            "value": "0.00",
+            "rawValue": 0,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "COST_PER_CAPITA",
+            "title": "人均成本",
+            "value": "0.00",
+            "rawValue": 0,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "salesperson": []
+        },
+        "charts": {},
+        "chartList": null,
+        "aiInsights": null,
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": null,
+        "generatedAt": null,
+        "lastUpdated": "2026-05-13T04:00:47.38146652",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "level": 1,
+      "nextLevel": null,
+      "dimension": "department"
+    },
+    "timestamp": "2026-05-13T04:00:47.383541105",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"drillPath\":\"sales\",\"data\":{\"period\":null,\"startDate\":null,\"endDate\":null,\"kpiCards\":[{\"key\":\"SALES_AMOUNT\",\"title\":\"销售额\",\"value\":\"0.00\",\"rawValue\":0.00,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"TARGET_COMPLETION\",\"title\":\"目标完成率\",\"value\":\"0.00\",\"rawValue\":0.00,\"unit\":\"%\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"red\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"SALES_PER_CAPITA\",\"title\":\"人均产出\",\"value\":\"0.00\",\"rawValue\":0.00,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"COST_PER_CAPITA\",\"title\":\"人均成本\",\"value\":\"0.00\",\"rawValue\":0.00,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null}],\"metricCards\":null,\"rankings\":{\"salesperson\":[]},\"charts\":{},\"chartList\":null,\"aiInsights\":null,\"alerts\":null,\"recommendations\":null,\"suggestions\":null,\"generatedAt\":null,\"lastUpdated\":\"2026-05-13T04:00:47.38146652\",\"fromCache\":false,\"cacheExpireAt\":null},\"level\":1,\"nextLevel\":null,\"dimension\":\"department\"},\"timestamp\":\"2026-05-13T04:00:47.383541105\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}

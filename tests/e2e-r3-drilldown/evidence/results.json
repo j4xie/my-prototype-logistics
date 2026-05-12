@@ -1,0 +1,182 @@
+{
+  "runAt": "2026-05-12T20:00:49.312Z",
+  "gateway": "http://139.196.165.140:8097",
+  "endpoint": "/api/mobile/{factoryId}/smart-bi/drill-down",
+  "total": 9,
+  "pass": 9,
+  "fail": 0,
+  "depthBreakdown": {
+    "smoke": 0,
+    "medium": 0,
+    "deep": 9
+  },
+  "results": [
+    {
+      "testId": "T01-region-happy",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 drillPath=华东",
+        "httpStatus": 200,
+        "drillPath": "华东",
+        "nextLevel": "city",
+        "dimension": "region",
+        "success": true
+      },
+      "ts": "2026-05-12T20:00:47.257Z"
+    },
+    {
+      "testId": "T02-department-happy-admin",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 kpiCards.length=4 shape13=true",
+        "httpStatus": 200,
+        "kpiCardsCount": 4,
+        "firstKpiKeys": [
+          "key",
+          "title",
+          "value",
+          "rawValue",
+          "unit",
+          "change",
+          "changeRate",
+          "trend",
+          "status",
+          "compareText",
+          "description",
+          "targetValue",
+          "completionRate"
+        ],
+        "missingKeys": [],
+        "extraKeys": [],
+        "firstKpiSample": {
+          "key": "SALES_AMOUNT",
+          "title": "销售额",
+          "value": "0.00",
+          "rawValue": 0,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": null,
+          "targetValue": null,
+          "completionRate": null
+        }
+      },
+      "ts": "2026-05-12T20:00:47.495Z"
+    },
+    {
+      "testId": "T03-product-happy-admin",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 chartShape7=true xaxisLowercase=true",
+        "httpStatus": 200,
+        "chartKeys": [
+          "chartType",
+          "title",
+          "seriesField",
+          "data",
+          "options",
+          "yaxisField",
+          "xaxisField"
+        ],
+        "xaxisLowercase": true,
+        "chartType": "PIE"
+      },
+      "ts": "2026-05-12T20:00:47.730Z"
+    },
+    {
+      "testId": "T04-time-happy-admin",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 drillPath=DAY",
+        "httpStatus": 200,
+        "drillPath": "DAY",
+        "period": "MONTH"
+      },
+      "ts": "2026-05-12T20:00:47.964Z"
+    },
+    {
+      "testId": "T05-salesperson-happy-admin",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 drillPath=张三",
+        "httpStatus": 200,
+        "drillPath": "张三",
+        "dataType": "array"
+      },
+      "ts": "2026-05-12T20:00:48.198Z"
+    },
+    {
+      "testId": "T06-warehouse-permission-gate-403",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=403 code=FORBIDDEN role=warehouse_manager hasActionHint=true",
+        "httpStatus": 403,
+        "code": "FORBIDDEN",
+        "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读写] 权限",
+        "actionHint": "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [数据分析] 的 [读写] 权限, 或切换到有权限的账号重试",
+        "severity": "error",
+        "meta": {
+          "role": "warehouse_manager",
+          "module": "analytics",
+          "action": "read_write",
+          "requireAll": false,
+          "requiredPermissions": [
+            {
+              "module": "analytics",
+              "action": "read_write"
+            }
+          ]
+        }
+      },
+      "ts": "2026-05-12T20:00:48.428Z"
+    },
+    {
+      "testId": "T07-invalid-body-200-parity",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 success=false code=400 message=Drill-down failed: 操作失败，请稍后重试",
+        "httpStatus": 200,
+        "success": false,
+        "code": 400,
+        "message": "Drill-down failed: 操作失败，请稍后重试",
+        "note_parity": "Per analysis_drilldown.py:730 HTTP 200 always (Java BusinessException wrapped at controller layer)"
+      },
+      "ts": "2026-05-12T20:00:48.853Z"
+    },
+    {
+      "testId": "T08-unsupported-dimension-parity",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=200 success=false message=Drill-down failed: 不支持的下钻维度: vendor",
+        "httpStatus": 200,
+        "success": false,
+        "message": "Drill-down failed: 不支持的下钻维度: vendor",
+        "code": 400
+      },
+      "ts": "2026-05-12T20:00:49.083Z"
+    },
+    {
+      "testId": "T09-cross-factory-denial",
+      "depth": "deep",
+      "status": "PASS",
+      "evidence": {
+        "note": "httpStatus=403 success=false",
+        "httpStatus": 403,
+        "success": false,
+        "message": "无权访问该工厂数据"
+      },
+      "ts": "2026-05-12T20:00:49.312Z"
+    }
+  ]
+}

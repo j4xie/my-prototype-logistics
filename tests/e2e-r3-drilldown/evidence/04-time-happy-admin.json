@@ -1,0 +1,43 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "time",
+    "value": "DAY",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "period": "MONTH",
+      "drillPath": "DAY",
+      "data": {
+        "chartType": "LINE",
+        "title": "销售趋势",
+        "seriesField": null,
+        "data": [
+          {
+            "date": "2026-04",
+            "amount": 6095716
+          }
+        ],
+        "options": {
+          "showDataLabels": false,
+          "smooth": true
+        },
+        "yaxisField": "amount",
+        "xaxisField": "date"
+      },
+      "level": 1,
+      "dimension": "time"
+    },
+    "timestamp": "2026-05-13T04:00:47.855114216",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"period\":\"MONTH\",\"drillPath\":\"DAY\",\"data\":{\"chartType\":\"LINE\",\"title\":\"销售趋势\",\"seriesField\":null,\"data\":[{\"date\":\"2026-04\",\"amount\":6095716.00}],\"options\":{\"showDataLabels\":false,\"smooth\":true},\"yaxisField\":\"amount\",\"xaxisField\":\"date\"},\"level\":1,\"dimension\":\"time\"},\"timestamp\":\"2026-05-13T04:00:47.855114216\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}

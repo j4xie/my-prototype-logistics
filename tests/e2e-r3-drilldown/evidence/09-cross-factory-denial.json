@@ -1,0 +1,19 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F002/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "department",
+    "value": "sales",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 403,
+  "response": {
+    "success": false,
+    "code": 403,
+    "message": "无权访问该工厂数据",
+    "severity": "error",
+    "actionHint": "请检查是否访问了错误的工厂, 或切换到有权限的账号重试",
+    "timestamp": "2026-05-13T04:00:49.203726586"
+  },
+  "rawText": "{\"success\":false,\"code\":403,\"message\":\"无权访问该工厂数据\",\"severity\":\"error\",\"actionHint\":\"请检查是否访问了错误的工厂, 或切换到有权限的账号重试\",\"timestamp\":\"2026-05-13T04:00:49.203726586\"}"
+}

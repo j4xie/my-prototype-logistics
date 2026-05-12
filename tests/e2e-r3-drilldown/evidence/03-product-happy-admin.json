@@ -1,0 +1,113 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "product",
+    "value": "all",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "drillPath": "all",
+      "data": [
+        {
+          "rank": 1,
+          "name": "团餐",
+          "value": 2770477.2,
+          "target": null,
+          "completionRate": 45.45,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 2,
+          "name": "酱料",
+          "value": 1391369.6,
+          "target": null,
+          "completionRate": 22.83,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 3,
+          "name": "调味汁",
+          "value": 831051,
+          "target": null,
+          "completionRate": 13.63,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 4,
+          "name": "中式汤底",
+          "value": 693446,
+          "target": null,
+          "completionRate": 11.38,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 5,
+          "name": "预制菜",
+          "value": 221868.3,
+          "target": null,
+          "completionRate": 3.64,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 6,
+          "name": "复合调味粉",
+          "value": 187503.9,
+          "target": null,
+          "completionRate": 3.08,
+          "alertLevel": "GREEN"
+        }
+      ],
+      "level": 1,
+      "nextLevel": null,
+      "chart": {
+        "chartType": "PIE",
+        "title": "产品销售占比",
+        "seriesField": null,
+        "data": [
+          {
+            "category": "团餐",
+            "amount": 2770477.2
+          },
+          {
+            "category": "酱料",
+            "amount": 1391369.6
+          },
+          {
+            "category": "调味汁",
+            "amount": 831051
+          },
+          {
+            "category": "中式汤底",
+            "amount": 693446
+          },
+          {
+            "category": "预制菜",
+            "amount": 221868.3
+          },
+          {
+            "category": "复合调味粉",
+            "amount": 187503.9
+          }
+        ],
+        "options": {
+          "showPercentage": true,
+          "showLegend": true
+        },
+        "yaxisField": "amount",
+        "xaxisField": "category"
+      },
+      "dimension": "product"
+    },
+    "timestamp": "2026-05-13T04:00:47.6212339",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"drillPath\":\"all\",\"data\":[{\"rank\":1,\"name\":\"团餐\",\"value\":2770477.20,\"target\":null,\"completionRate\":45.45,\"alertLevel\":\"GREEN\"},{\"rank\":2,\"name\":\"酱料\",\"value\":1391369.60,\"target\":null,\"completionRate\":22.83,\"alertLevel\":\"GREEN\"},{\"rank\":3,\"name\":\"调味汁\",\"value\":831051.00,\"target\":null,\"completionRate\":13.63,\"alertLevel\":\"GREEN\"},{\"rank\":4,\"name\":\"中式汤底\",\"value\":693446.00,\"target\":null,\"completionRate\":11.38,\"alertLevel\":\"GREEN\"},{\"rank\":5,\"name\":\"预制菜\",\"value\":221868.30,\"target\":null,\"completionRate\":3.64,\"alertLevel\":\"GREEN\"},{\"rank\":6,\"name\":\"复合调味粉\",\"value\":187503.90,\"target\":null,\"completionRate\":3.08,\"alertLevel\":\"GREEN\"}],\"level\":1,\"nextLevel\":null,\"chart\":{\"chartType\":\"PIE\",\"title\":\"产品销售占比\",\"seriesField\":null,\"data\":[{\"category\":\"团餐\",\"amount\":2770477.20},{\"category\":\"酱料\",\"amount\":1391369.60},{\"category\":\"调味汁\",\"amount\":831051.00},{\"category\":\"中式汤底\",\"amount\":693446.00},{\"category\":\"预制菜\",\"amount\":221868.30},{\"category\":\"复合调味粉\",\"amount\":187503.90}],\"options\":{\"showPercentage\":true,\"showLegend\":true},\"yaxisField\":\"amount\",\"xaxisField\":\"category\"},\"dimension\":\"product\"},\"timestamp\":\"2026-05-13T04:00:47.6212339\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}

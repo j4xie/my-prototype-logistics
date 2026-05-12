@@ -1,0 +1,21 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "vendor",
+    "value": "acme",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 400,
+    "message": "Drill-down failed: 不支持的下钻维度: vendor",
+    "data": null,
+    "timestamp": "2026-05-13T04:00:48.974703311",
+    "success": false,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":400,\"message\":\"Drill-down failed: 不支持的下钻维度: vendor\",\"data\":null,\"timestamp\":\"2026-05-13T04:00:48.974703311\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}

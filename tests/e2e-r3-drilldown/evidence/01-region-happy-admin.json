@@ -1,0 +1,27 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "region",
+    "value": "华东",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "drillPath": "华东",
+      "data": [],
+      "level": 1,
+      "nextLevel": "city",
+      "dimension": "region"
+    },
+    "timestamp": "2026-05-13T04:00:47.140014907",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"drillPath\":\"华东\",\"data\":[],\"level\":1,\"nextLevel\":\"city\",\"dimension\":\"region\"},\"timestamp\":\"2026-05-13T04:00:47.140014907\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}

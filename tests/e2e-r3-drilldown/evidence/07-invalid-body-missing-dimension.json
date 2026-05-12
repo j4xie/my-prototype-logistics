@@ -1,0 +1,20 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "value": "sales",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 400,
+    "message": "Drill-down failed: 操作失败，请稍后重试",
+    "data": null,
+    "timestamp": "2026-05-13T04:00:48.753040187",
+    "success": false,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":400,\"message\":\"Drill-down failed: 操作失败，请稍后重试\",\"data\":null,\"timestamp\":\"2026-05-13T04:00:48.753040187\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}
