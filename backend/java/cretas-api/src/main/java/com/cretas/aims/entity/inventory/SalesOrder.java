@@ -138,15 +138,18 @@ public class SalesOrder extends BaseEntity {
     private Boolean shippingIncluded;
 
     /** 运费 */
+    @PriceSensitive
     @Column(name = "shipping_fee", precision = 15, scale = 2)
     private BigDecimal shippingFee;
 
-    /** 其他费用 (装卸费/包装费/...) — JSON 数组 [{name, amount, remark}] */
+    /** 其他费用 (装卸费/包装费/...) — JSON 数组 [{name, amount, remark}].
+     * Note: each item's {@code amount} is also {@code @PriceSensitive} (see {@link ExtraFeeItem}). */
     @Type(JsonBinaryType.class)
     @Column(name = "extra_fees", columnDefinition = "jsonb")
     private List<ExtraFeeItem> extraFees;
 
     /** 实际发货金额 */
+    @PriceSensitive
     @Column(name = "actual_shipped_amount", precision = 15, scale = 2)
     private BigDecimal actualShippedAmount;
 
@@ -165,10 +168,12 @@ public class SalesOrder extends BaseEntity {
     private String financeReviewNotes;
 
     /** 预估BOM成本（基于BOM + 历史采购均价） */
+    @PriceSensitive
     @Column(name = "estimated_cost", precision = 15, scale = 2)
     private BigDecimal estimatedCost;
 
     /** 预估利润（totalAmount - estimatedCost） */
+    @PriceSensitive
     @Column(name = "estimated_profit", precision = 15, scale = 2)
     private BigDecimal estimatedProfit;
 
@@ -179,6 +184,7 @@ public class SalesOrder extends BaseEntity {
     private String invoiceStatus;
 
     /** 已开票金额 */
+    @PriceSensitive
     @Column(name = "invoiced_amount", precision = 15, scale = 2)
     private BigDecimal invoicedAmount;
 
@@ -187,6 +193,7 @@ public class SalesOrder extends BaseEntity {
     private Boolean settlementFlag;
 
     /** 已收款金额 */
+    @PriceSensitive
     @Column(name = "paid_amount", precision = 15, scale = 2)
     private BigDecimal paidAmount;
 
