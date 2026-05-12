@@ -1,0 +1,1 @@
+{"code":400,"message":"Excel parse failed: 文件不是有效的 xlsx 格式 (可能损坏/非 Excel/旧 .xls 格式). 请确认文件并重新上传.","data":null,"timestamp":"2026-05-13T05:38:16.580513846","success":false,"actionHint":null,"severity":null,"hintTarget":null}
