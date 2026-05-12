@@ -645,3 +645,269 @@ async def test_build_executive_does_not_mutate_primitive_result(monkeypatch):
     # metadata fills — if it were, subsequent callers would see leaked state.
     assert "period" not in primitive_response
     assert "generatedAt" not in primitive_response
+
+
+# ============================================================
+# Phase 2B-3 endpoint-level backfill (chat-2B-dashboard, audit row 18)
+# ============================================================
+#
+# Per Phase 2A test gap audit (2026-05-12) §2.4 row 3: the 3 router
+# endpoints (`/dashboard/executive`, `/dashboard/executive/custom`,
+# `/dashboard`) had zero direct HTTP tests — only the helpers below were
+# covered. This block exercises the routes through FastAPI ``TestClient``
+# with mocked Phase 2A primitives, verifying:
+#
+#   • envelope wrap (``{success, data, message}`` from ``wrap_response``)
+#   • JWT auth boundary (401 missing token / 403 cross-factory)
+#   • query-param validation (FastAPI 422 on missing required date params)
+#   • period dispatch — including Java line 162 fallback to month
+#   • composite shape — 21-key unified envelope (Rule 9.3 derived getters)
+#
+# Auth pattern mirrors ``test_config_thresholds_pilot.py`` (gold standard).
+# JWT secret is set via ``os.environ.setdefault`` so it does not clobber
+# any pre-existing env (e.g. CI matrix that also runs the config pilot).
+
+import os as _os
+
+_os.environ.setdefault("JWT_SECRET", "phase-2b-3-dashboard-test-secret")
+
+import jwt as _pyjwt  # noqa: E402
+from time import time as _time  # noqa: E402
+
+from fastapi import FastAPI as _FastAPI  # noqa: E402
+from fastapi.testclient import TestClient as _TestClient  # noqa: E402
+
+
+_JWT_SECRET_FOR_TESTS = "phase-2b-3-dashboard-test-secret"
+_JWT_ALGORITHM = "HS256"
+
+
+def _make_token(
+    *,
+    user_id: int = 22,
+    username: str = "alice",
+    factory_id: str | None = "F001",
+    role: str = "factory_super_admin",
+    exp_offset: int = 3600,
+) -> str:
+    payload: dict = {
+        "userId": user_id,
+        "username": username,
+        "role": role,
+        "exp": int(_time()) + exp_offset,
+    }
+    if factory_id is not None:
+        payload["factoryId"] = factory_id
+    return _pyjwt.encode(payload, _JWT_SECRET_FOR_TESTS, algorithm=_JWT_ALGORITHM)
+
+
+def _auth_header(token: str | None = None, **token_kwargs) -> dict:
+    if token is None:
+        token = _make_token(**token_kwargs)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def endpoint_client(monkeypatch):
+    """FastAPI TestClient with the 4 Phase 2A primitives stubbed.
+
+    Sales primitive returns a single deterministic KPI so happy-path
+    assertions can verify the value flows through ``wrap_response``.
+    Finance/inventory/procurement return empty payloads — sub-dashboards
+    end up as 16-key empty envelopes (boundary case for Rule 9.2).
+    """
+
+    async def fake_sales(factory_id, range_):
+        return {
+            "period": "month",
+            "startDate": "2026-05-01",
+            "endDate": "2026-05-31",
+            "kpiCards": [{"key": "REVENUE", "value": 100}],
+            "generatedAt": "2026-05-12T10:00:00",
+        }
+
+    async def fake_finance(factory_id, range_):
+        return {"period": "month", "kpiCards": []}
+
+    async def fake_inventory(factory_id, start_date, end_date):
+        return {"period": "month", "kpiCards": []}
+
+    async def fake_procurement(factory_id, start_date, end_date):
+        return {"period": "month", "kpiCards": []}
+
+    monkeypatch.setattr(dc, "_get_sales_overview", fake_sales)
+    monkeypatch.setattr(dc, "_get_finance_overview", fake_finance)
+    monkeypatch.setattr(dc, "_get_inventory_health", fake_inventory)
+    monkeypatch.setattr(dc, "_get_procurement_overview", fake_procurement)
+
+    app = _FastAPI()
+    app.include_router(dc.router)
+    return _TestClient(app)
+
+
+# ============================================================
+# Endpoint: GET /dashboard/executive
+# ============================================================
+
+
+def test_executive_endpoint_happy_path_returns_wrapped_envelope(endpoint_client):
+    """Valid JWT + default period → 200 + {success, data, message} envelope.
+
+    Verifies the primitive's kpiCards survive ``wrap_response`` round-trip.
+    """
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard/executive",
+        params={"period": "month"},
+        headers=_auth_header(),
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["success"] is True
+    assert "data" in body and "message" in body
+    assert body["data"]["kpiCards"] == [{"key": "REVENUE", "value": 100}]
+    assert body["data"]["period"] == "month"
+
+
+def test_executive_endpoint_unknown_period_falls_back_to_month(endpoint_client):
+    """Java SmartBIServiceImpl line 162-163: unknown period → month.
+
+    The endpoint must accept an arbitrary string and resolve to the month
+    range without 4xx. Verifies the fallback semantics at the HTTP layer.
+    """
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard/executive",
+        params={"period": "frobnicate"},
+        headers=_auth_header(),
+    )
+    assert r.status_code == 200
+    # Sales primitive returns its own period "month" — verifies the
+    # resolved range was passed through and primitive ran.
+    assert r.json()["data"]["kpiCards"] == [{"key": "REVENUE", "value": 100}]
+
+
+def test_executive_endpoint_requires_jwt_returns_401(endpoint_client):
+    """Missing Authorization header → 401 (verify_jwt_and_factory)."""
+    r = endpoint_client.get("/api/mobile/F001/smart-bi/dashboard/executive")
+    assert r.status_code == 401
+
+
+def test_executive_endpoint_cross_factory_returns_403(endpoint_client):
+    """Token's factoryId=F001 against URL /F002/... → 403 cross-factory."""
+    r = endpoint_client.get(
+        "/api/mobile/F002/smart-bi/dashboard/executive",
+        headers=_auth_header(factory_id="F001"),
+    )
+    assert r.status_code == 403
+
+
+# ============================================================
+# Endpoint: GET /dashboard/executive/custom
+# ============================================================
+
+
+def test_executive_custom_endpoint_happy_path(endpoint_client):
+    """Custom date-range variant — valid JWT + start/end → 200."""
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard/executive/custom",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-31"},
+        headers=_auth_header(),
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["success"] is True
+    assert body["data"]["kpiCards"] == [{"key": "REVENUE", "value": 100}]
+
+
+def test_executive_custom_endpoint_missing_dates_returns_422(endpoint_client):
+    """FastAPI Query(...) validation rejects requests without startDate/endDate.
+
+    Both params are declared ``Query(...)`` (required) on the endpoint —
+    FastAPI returns 422 with the missing-field details before auth runs.
+    """
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard/executive/custom",
+        headers=_auth_header(),
+    )
+    assert r.status_code == 422
+
+
+def test_executive_custom_endpoint_requires_jwt_returns_401(endpoint_client):
+    """Missing Authorization header → 401 even when dates are present."""
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard/executive/custom",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-31"},
+    )
+    assert r.status_code == 401
+
+
+# ============================================================
+# Endpoint: GET /dashboard (unified composite)
+# ============================================================
+
+
+def test_unified_endpoint_happy_path_21_key_envelope(endpoint_client):
+    """Java UnifiedDashboardResponse has 18 source fields + 3 Lombok-derived
+    getters (alertCount / urgentAlertCount / highPriorityRecommendationCount)
+    per Rule 9.3 audit. Endpoint must emit all 21 keys verbatim.
+    """
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard",
+        params={"period": "month"},
+        headers=_auth_header(),
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["success"] is True
+    assert set(body["data"].keys()) == {
+        "period", "startDate", "endDate",
+        "sales", "finance", "inventory", "production", "quality", "procurement",
+        "departmentRanking", "regionRanking",
+        "alerts", "recommendations", "aiInsights",
+        "generatedAt", "fromCache", "cacheExpireAt", "dataVersion",
+        "alertCount", "urgentAlertCount", "highPriorityRecommendationCount",
+    }
+
+
+def test_unified_endpoint_aggregates_four_primitives_with_placeholders(endpoint_client):
+    """Sales primitive injects one KPI → flows through to data.sales.
+    Production + quality are always Phase 2D placeholders (empty kpiCards)."""
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard",
+        headers=_auth_header(),
+    )
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["sales"]["kpiCards"] == [{"key": "REVENUE", "value": 100}]
+    assert data["finance"]["kpiCards"] == []
+    assert data["inventory"]["kpiCards"] == []
+    assert data["procurement"]["kpiCards"] == []
+    # Phase 2D placeholders: empty kpiCards + DEFERRED aiInsight.
+    assert data["production"]["kpiCards"] == []
+    assert data["quality"]["kpiCards"] == []
+    assert data["production"]["aiInsights"][0]["category"] == "DEFERRED"
+    assert data["quality"]["aiInsights"][0]["category"] == "DEFERRED"
+
+
+def test_unified_endpoint_requires_jwt_returns_401(endpoint_client):
+    """Missing Authorization header → 401."""
+    r = endpoint_client.get("/api/mobile/F001/smart-bi/dashboard")
+    assert r.status_code == 401
+
+
+def test_unified_endpoint_cross_factory_returns_403(endpoint_client):
+    """Token's factoryId=F001 against URL /F002/... → 403 cross-factory."""
+    r = endpoint_client.get(
+        "/api/mobile/F002/smart-bi/dashboard",
+        headers=_auth_header(factory_id="F001"),
+    )
+    assert r.status_code == 403
+
+
+def test_unified_endpoint_platform_admin_no_factoryid_succeeds(endpoint_client):
+    """Privileged role (platform_admin) without factoryId token claim
+    can call any factory URL — gate in ``verify_jwt_and_factory``."""
+    r = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/dashboard",
+        headers=_auth_header(factory_id=None, role="platform_admin"),
+    )
+    assert r.status_code == 200
