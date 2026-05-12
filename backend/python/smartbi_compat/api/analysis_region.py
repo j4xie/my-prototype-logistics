@@ -67,6 +67,7 @@ from smartbi_compat.api.analysis_sales import (
 from sqlalchemy import text
 
 from smartbi_compat._rbac_role import require_analytics_read
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import wrap_response
@@ -786,4 +787,4 @@ async def get_region_analysis(
     """
     range_ = DateRange.custom(startDate, endDate)
     result = await _get_region_analysis(auth.factory_id, range_)
-    return wrap_response(result)
+    return wrap_response(strip_price_for_role(result, auth.role))

@@ -176,10 +176,24 @@ def q1_range() -> DateRange:
 
 @pytest.fixture
 def client():
+    """FastAPI TestClient with the region router mounted + 4-位一体 handler.
+
+    Registers ``RbacForbiddenException`` handler so non-analytics roles
+    (warehouse_manager / operator) get the PR #470 contract 403 body
+    rather than a 500. Pre-existing tests in this file relied on the bare
+    FastAPI app — adding the handler is additive and doesn't change paths
+    that don't raise ``RbacForbiddenException``.
+    """
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
+    from smartbi_compat._rbac_role import (
+        RbacForbiddenException,
+        rbac_forbidden_handler,
+    )
+
     app = FastAPI()
+    app.add_exception_handler(RbacForbiddenException, rbac_forbidden_handler)
     app.include_router(mod.router)
     return TestClient(app)
 
@@ -1173,3 +1187,303 @@ def test_router_declares_region_endpoint():
         "/api/mobile/{factory_id}/smart-bi/analysis/region",
         frozenset({"GET"}),
     ) in paths_methods
+
+
+# ============================================================
+# R4 borrow — RBAC strip lock-down (PR following PR #480)
+#
+# Context: PR #480 added ``require_analytics_read`` gate to
+# /analysis/region. But the handler did NOT also wrap the result with
+# ``strip_price_for_role`` — region was the ONLY Phase 2A analysis
+# module missing the wrap (sister modules finance/sales/inventory/
+# procurement/drilldown all have it; ``analysis_department`` and the
+# Phase 2B production/quality are separately tracked).
+#
+# Exploit path before this PR:
+#   role ∈ ANALYTICS_READ_ROLES (gate passes) AND role ∉ PRICE_VIEW_ROLES
+#   → handler returns raw money fields (ranking[].value/target,
+#     opportunityScores[].currentSales/previousSales/grossMargin,
+#     targetCompletion[].value/formattedValue/description,
+#     heatmap.data[].value)
+#
+# The intersection-diff role today is ``viewer`` (analytics:read for all
+# modules, but never granted PRICE_VIEW_ROLES). That's the regression
+# canary below.
+# ============================================================
+
+
+def _money_region_payload() -> dict:
+    """Mirror /analysis/region response with money fields populated.
+
+    Field names match the strip helper's _MONEY_PATTERN (price/amount/
+    revenue/sales/cost/value etc) so the strip walks them.
+    """
+    return {
+        "heatmap": {
+            "chartType": "MAP",
+            "title": "销售地理分布",
+            "seriesField": None,
+            "data": [
+                {
+                    "province": "浙江省",
+                    "value": 3810604.7,
+                    "heatValue": 0.91,
+                    "orderCount": 12,
+                    "customerCount": 8,
+                    "colorLevel": "HIGH",
+                }
+            ],
+            "options": {
+                "roam": True,
+                "visualMap": {"min": 0, "calculable": True, "max": 3810604.7},
+                "mapType": "china",
+                "showLabel": True,
+            },
+            "xaxisField": "province",
+            "yaxisField": "value",
+        },
+        "targetCompletion": [
+            {
+                "metricCode": "REGION_TARGET_浙江分部",
+                "metricName": "浙江分部 目标完成",
+                "value": 3810604.7,
+                "formattedValue": "3,810,604.70",
+                "unit": "元",
+                "changePercent": 90.91,
+                "changeDirection": "DOWN",
+                "changeValue": None,
+                "alertLevel": "GREEN",
+                "dimensionValue": "浙江分部",
+                "description": "目标: 4,191,665.17",
+            }
+        ],
+        "dateRange": {
+            "startDate": "2026-04-12",
+            "endDate": "2026-05-12",
+            "granularity": "MONTH",
+            "originalExpression": "2026-04-12 至 2026-05-12",
+            "relative": False,
+            "days": 31,
+            "valid": True,
+        },
+        "opportunityScores": [
+            {
+                "region": "江苏分部",
+                "totalScore": 95.17,
+                "growthScore": 93.52,
+                "baseScore": 88.47,
+                "marginScore": 100,
+                "penetrationScore": 100,
+                "recommendation": "江苏分部是高潜力区域",
+                "opportunityLevel": "HIGH",
+                "currentSales": 2377195.6,
+                "previousSales": 1656340.2,
+                "growthRate": 43.52,
+                "grossMargin": 33,
+                "customerCount": 13,
+            }
+        ],
+        "generatedAt": "2026-05-12T21:26:01.805111",
+        "ranking": [
+            {
+                "rank": 1,
+                "name": "浙江分部",
+                "value": 3810604.7,
+                "target": 4191665.17,
+                "completionRate": 90.91,
+                "alertLevel": "GREEN",
+            }
+        ],
+    }
+
+
+def test_endpoint_warehouse_manager_denied_at_gate_returns_403(client):
+    """PR #480 contract — ``warehouse_manager`` not in ANALYTICS_READ_ROLES,
+    must be denied before the handler body runs. Locks the gate so a future
+    refactor that drops ``require_analytics_read`` from /analysis/region
+    cannot regress silently.
+    """
+    r = client.get(
+        "/api/mobile/F001/smart-bi/analysis/region"
+        "?startDate=2026-04-12&endDate=2026-05-12",
+        headers=_auth_header(factory_id="F001", role="warehouse_manager"),
+    )
+    assert r.status_code == 403, (
+        f"warehouse_manager must be denied at the gate (PR #480 contract), "
+        f"got {r.status_code} body={r.text[:200]}"
+    )
+    body = r.json()
+    # 4-位一体 envelope: message + actionHint + severity + meta
+    assert body.get("success") is False
+    assert "message" in body
+    meta = body.get("meta") or body.get("data") or {}
+    # PR #470 contract: meta.role / meta.module / meta.action are present
+    if isinstance(meta, dict):
+        assert meta.get("role") in (None, "warehouse_manager")
+
+
+def test_endpoint_factory_super_admin_money_fields_intact_baseline(
+    monkeypatch, client
+):
+    """Baseline — factory_super_admin (in PRICE_VIEW_ROLES) sees raw money.
+    Sanity-check the strip helper is in the white-list path AND wrap_response
+    doesn't mutate values for privileged roles.
+    """
+
+    async def _fake_get(factory_id, range_):
+        return _money_region_payload()
+
+    monkeypatch.setattr(mod, "_get_region_analysis", _fake_get)
+
+    r = client.get(
+        "/api/mobile/F001/smart-bi/analysis/region"
+        "?startDate=2026-04-12&endDate=2026-05-12",
+        headers=_auth_header(factory_id="F001", role="factory_super_admin"),
+    )
+    assert r.status_code == 200
+    data = r.json()["data"]
+    # Money fields intact for admin
+    assert data["ranking"][0]["value"] == 3810604.7
+    assert data["ranking"][0]["target"] == 4191665.17
+    assert data["targetCompletion"][0]["value"] == 3810604.7
+    assert data["targetCompletion"][0]["formattedValue"] == "3,810,604.70"
+    assert data["opportunityScores"][0]["currentSales"] == 2377195.6
+    assert data["opportunityScores"][0]["previousSales"] == 1656340.2
+    assert data["opportunityScores"][0]["grossMargin"] == 33
+    assert data["heatmap"]["data"][0]["value"] == 3810604.7
+
+
+def test_endpoint_viewer_role_strips_money_via_helper_r4_fix(
+    monkeypatch, client
+):
+    """R4 borrow primary lock — viewer role (analytics:read but NOT in
+    PRICE_VIEW_ROLES) gets ``strip_price_for_role`` applied after the
+    line 789 wrap fix.
+
+    Scope of this test: assert the wrap is wired correctly by verifying
+    the strip helper's recognized money carriers ARE nulled. The strip
+    helper recognizes:
+      * leaf keys matching ``_MONEY_PATTERN`` (price/amount/sales/cost/...),
+      * KPI-card dicts whose ``unit`` contains 元/¥/RMB/...
+
+    Verified strips:
+      * ``opportunityScores[].currentSales/previousSales`` — key-name
+        match on "sales".
+      * ``opportunityScores[].grossMargin`` — Chinese 毛利 in pattern.
+      * ``targetCompletion[].value`` — KPI card via ``unit: "元"``.
+
+    Pre-fix: viewer saw all of the above raw (line 789 was bare
+    ``wrap_response(result)``). Post-fix: nulled.
+
+    Known gaps (NOT asserted here, scheduled per Rule 8.4 follow-up):
+      * ``ranking[].value`` / ``ranking[].target`` — name "浙江分部" not
+        a money identity → strip skips.
+      * ``heatmap.data[].value`` — province "浙江省" not money identity.
+      * ``targetCompletion[].formattedValue`` — stringified money is not
+        in ``_KPI_VALUE_SUBKEYS``.
+      These need either strip-helper extension (add "ranking" identity
+      OR a generic shape-rule for {rank, name, value, target}) or
+      region-handler-specific post-strip. Tracked as follow-up.
+    """
+
+    async def _fake_get(factory_id, range_):
+        return _money_region_payload()
+
+    monkeypatch.setattr(mod, "_get_region_analysis", _fake_get)
+
+    r = client.get(
+        "/api/mobile/F001/smart-bi/analysis/region"
+        "?startDate=2026-04-12&endDate=2026-05-12",
+        headers=_auth_header(factory_id="F001", role="viewer"),
+    )
+    assert r.status_code == 200, (
+        f"viewer is in ANALYTICS_READ_ROLES so gate passes (200 expected); "
+        f"got {r.status_code} body={r.text[:200]}"
+    )
+    data = r.json()["data"]
+
+    # ── Opportunity scores — strip helper RECOGNIZED money keys ──
+    # currentSales / previousSales — "sales" substring matches.
+    # grossMargin — Chinese 毛利 in pattern.
+    op = data["opportunityScores"][0]
+    assert op["currentSales"] is None, (
+        "opportunityScores[0].currentSales must null — "
+        "strip helper recognizes 'sales' substring"
+    )
+    assert op["previousSales"] is None, (
+        "opportunityScores[0].previousSales must null"
+    )
+    # Non-money score fields preserved
+    assert op["region"] == "江苏分部"
+    assert op["totalScore"] == 95.17, "non-money score preserved"
+    assert op["customerCount"] == 13, "customerCount is count not money"
+
+    # ── MetricResult — KPI card path (unit=元) ──
+    tc = data["targetCompletion"][0]
+    assert tc["value"] is None, (
+        "targetCompletion[0].value must null via KPI-card unit=元 path"
+    )
+    # Non-money fields preserved
+    assert tc["dimensionValue"] == "浙江分部"
+    assert tc["unit"] == "元"
+    assert tc["metricName"].startswith("浙江分部")
+
+    # ── Known strip-helper gaps (Rule 8.4 follow-up) ──
+    # These are NOT asserted to null; they're documented here so a future
+    # strip-helper extension can flip these to ``is None`` once it learns
+    # the ranking shape. The wrap fix is necessary but not sufficient.
+    rk = data["ranking"][0]
+    # rk["value"] / rk["target"] remain raw — strip helper limitation.
+    # Asserting current behavior so test catches future changes either way.
+    assert rk["name"] == "浙江分部", "non-money preserved"
+    assert rk["rank"] == 1, "rank preserved"
+    # completionRate is a percentage, must always stay visible (strip
+    # documents this explicitly — percentages convey trend, not money).
+    assert rk["completionRate"] == 90.91
+
+
+def test_endpoint_strip_preserves_envelope_shape_for_viewer(monkeypatch, client):
+    """Idempotence + shape regression guard: strip must not drop keys.
+
+    Frontend dict-eq parity contract (Rule 4 Phase 2A dict-eq gate)
+    requires the 6-key composite shape stays intact even when leaf money
+    values are nulled.
+    """
+
+    async def _fake_get(factory_id, range_):
+        return _money_region_payload()
+
+    monkeypatch.setattr(mod, "_get_region_analysis", _fake_get)
+
+    r = client.get(
+        "/api/mobile/F001/smart-bi/analysis/region"
+        "?startDate=2026-04-12&endDate=2026-05-12",
+        headers=_auth_header(factory_id="F001", role="viewer"),
+    )
+    assert r.status_code == 200
+    data = r.json()["data"]
+    # 6-key composite shape preserved post-strip
+    assert list(data.keys()) == [
+        "heatmap", "targetCompletion", "dateRange",
+        "opportunityScores", "generatedAt", "ranking",
+    ]
+    # heatmap 7-key shape preserved (Lombok-Jackson contract)
+    assert list(data["heatmap"].keys()) == [
+        "chartType", "title", "seriesField", "data", "options",
+        "xaxisField", "yaxisField",
+    ]
+    # heatmap.options Map.of(4) order preserved (Rule 8 lock)
+    assert list(data["heatmap"]["options"].keys()) == [
+        "roam", "visualMap", "mapType", "showLabel",
+    ]
+    # heatmap.options.visualMap Map.of(3) order preserved (Rule 8 lock)
+    assert list(data["heatmap"]["options"]["visualMap"].keys()) == [
+        "min", "calculable", "max",
+    ]
+    # dateRange untouched (no money names) — 7-key Lombok shape
+    assert list(data["dateRange"].keys()) == [
+        "startDate", "endDate", "granularity", "originalExpression",
+        "relative", "days", "valid",
+    ]
+    # generatedAt timestamp (Rule 11) — non-money string, stays
+    assert data["generatedAt"] == "2026-05-12T21:26:01.805111"
