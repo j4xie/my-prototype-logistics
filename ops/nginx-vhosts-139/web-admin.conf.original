@@ -1,0 +1,172 @@
+server {
+    listen 8086;
+    server_name _;
+    root /www/wwwroot/web-admin;
+    index index.html;
+
+    # HTML - no cache (always get latest)
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires 0;
+    }
+
+    # Static assets with content hash -- 1 year cache
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # =====================================================
+    # Client Requirement Wizard (onboarding page)
+    # =====================================================
+    location ^~ /onboarding/ {
+        alias /www/wwwroot/client-request/;
+        index index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Client Requirement API proxy (public)
+    location /api/public/client-requirement/ {
+        charset utf-8;
+        proxy_pass http://47.100.235.168:8083/api/public/client-requirement/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Content-Type $http_content_type;
+        proxy_buffering off;
+    }
+
+    # SSE streaming for AI Chat (Python service via smartbi-api)
+    location ~ ^/smartbi-api/api/chat/.*-stream$ {
+        proxy_pass http://47.100.235.168:8083;
+        rewrite ^/smartbi-api(/.*)$ $1 break;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        chunked_transfer_encoding on;
+        add_header X-Accel-Buffering no;
+        add_header Cache-Control no-cache;
+    }
+
+    # Python SmartBI API proxy (via /smartbi-api prefix from frontend)
+    location /smartbi-api/ {
+        proxy_pass http://47.100.235.168:8083/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        client_max_body_size 500m;
+    }
+
+    # Python SmartBI API proxy (direct path)
+    location /api/smartbi/ {
+        proxy_pass http://47.100.235.168:8083/api/smartbi/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        client_max_body_size 500m;
+    }
+
+    # SSE streaming endpoint -- disable buffering for real-time events
+    location ~ /api/mobile/.*/smart-bi/upload-batch-stream {
+        proxy_pass http://cretas_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Authorization $http_authorization;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        chunked_transfer_encoding on;
+        add_header X-Accel-Buffering no;
+        add_header Cache-Control no-cache;
+    }
+
+    # Public API proxy (no auth needed - share links, etc)
+    location /api/public/ {
+        proxy_pass http://cretas_backend/api/public/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # Java API proxy
+    location /api/mobile/ {
+        proxy_pass http://cretas_backend/api/mobile/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        client_max_body_size 500m;
+    }
+
+
+    # Admin API proxy (Bug #46: authenticated users for L1 role-permissions, etc)
+    location /api/admin/ {
+        proxy_pass http://cretas_backend/api/admin/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Platform API proxy (platform_admin only - enforced by Java interceptor)
+    location /api/platform/ {
+        proxy_pass http://cretas_backend/api/platform/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+
+    # Browser console error collector
+    location = /api/console-report {
+        access_log /www/wwwlogs/web-admin-console.log;
+        client_body_buffer_size 16k;
+        client_max_body_size 16k;
+        return 204;
+    }
+
+    # Vue Router history mode
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    access_log /www/wwwlogs/web-admin.log;
+    error_log /www/wwwlogs/web-admin.error.log;
+}
