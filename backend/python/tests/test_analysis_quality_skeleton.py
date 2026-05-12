@@ -62,6 +62,9 @@ from smartbi_compat.api.analysis_quality import (  # noqa: E402
     router,
 )
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+pytestmark = [pytest.mark.api_endpoint("analysis_quality")]
+
 
 # ============================================================
 # Factory deferred-message content (Phase 2D handoff grep-ables)

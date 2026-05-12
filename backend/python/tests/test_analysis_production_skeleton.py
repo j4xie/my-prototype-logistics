@@ -40,6 +40,9 @@ from smartbi_compat.api.analysis_production import (
     router,
 )
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+pytestmark = [pytest.mark.api_endpoint("analysis_production")]
+
 
 # ============================================================
 # Enum + predicate parity with Java FactoryType

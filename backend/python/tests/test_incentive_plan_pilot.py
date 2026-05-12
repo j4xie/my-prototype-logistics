@@ -87,6 +87,9 @@ from smartbi_compat.api.incentive_plan import (  # noqa: E402
 from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402
 from smartbi_compat.date_range import DateRange  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+pytestmark = [pytest.mark.api_endpoint("incentive_plan")]
+
 
 # ============================================================
 # JWT + test client fixtures (mirror test_analysis_drilldown_pilot.py)

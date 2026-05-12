@@ -45,6 +45,14 @@ from smartbi_compat.api import query_templates_write as mod  # noqa: E402
 from smartbi_compat.api.query_templates_write import router  # noqa: E402
 from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+# POST/PUT/DELETE — 3 endpoints in one file (mirrors KNOWN_ENDPOINTS canonical names).
+pytestmark = [
+    pytest.mark.api_endpoint("query_templates_create"),
+    pytest.mark.api_endpoint("query_templates_update"),
+    pytest.mark.api_endpoint("query_templates_delete"),
+]
+
 
 # ============================================================
 # JWT + TestClient fixtures
