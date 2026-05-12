@@ -1,0 +1,25 @@
+=== Phase 6 E2E smoke — rv=0.0.0-smoke channel=staging ts=1778602773381 ===
+
+[smoke] 0/6 /api/ota/health
+  PASS — {"status":"ok","privateKeyLoaded":true,"writable":true}
+
+[smoke] 1/6 synthesizing test bundle
+  staged 1.0K
+[smoke] 2/6 uploading to root@47.100.235.168:/www/wwwroot/ota/updates/0.0.0-smoke/staging/1778602773381
+[smoke] 3/6 POST /api/ota/admin/register
+  PASS
+[smoke] 4/6 GET /api/ota/manifest
+  PASS — id=1aa3688a-b06e-c485-7887-b328bf17b274
+[smoke] 5/6 GET /api/ota/assets (binary fetch)
+  PASS
+[smoke] 6/6 GET /api/ota/manifest (with current-update-id = 1aa3688a-b06e-c485-7887-b328bf17b274)
+  PASS
+
+=== ALL 6 ASSERTIONS GREEN — Phase 6 E2E smoke COMPLETE ===
+
+Cleanup follows automatically via trap. To verify ops side, run:
+  curl -H 'Authorization: Bearer $OTA_ADMIN_TOKEN' \
+       'https://ota.cretaceousfuture.com/api/ota/admin/list?runtimeVersion=0.0.0-smoke&channel=staging'
+(should return an empty or no-1778602773381 list)
+
+[smoke] cleanup: removing /www/wwwroot/ota/updates/0.0.0-smoke/staging/1778602773381

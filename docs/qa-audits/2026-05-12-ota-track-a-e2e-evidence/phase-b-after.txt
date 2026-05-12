@@ -1,0 +1,16 @@
+=== AFTER push: /admin/list ===
+{"bundles":[{"timestamp":"1778603319107","isRollback":false}]}
+=== AFTER push: /api/ota/manifest ===
+--- Manifest body (first 2000 chars) ---
+HTTP/1.1 500 Internal Server Error
+Server: nginx
+Date: Tue, 12 May 2026 16:34:12 GMT
+Content-Type: application/json
+Content-Length: 47
+Connection: keep-alive
+x-correlation-id: 00b68b2d-b42f-43f8-b8a3-2a3ced9a17bb
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
+
+{"error":"Bundle metadata corrupted on server"}

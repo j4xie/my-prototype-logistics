@@ -1,0 +1,2 @@
+[rollback] ✓ marker set: rv=1.0.0 channel=production ts=1778603319107
+[rollback]   next client poll → rollBackToEmbedded directive → device reverts to baked bundle

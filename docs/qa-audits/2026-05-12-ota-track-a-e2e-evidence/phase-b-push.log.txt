@@ -1,0 +1,53 @@
+[push-bundle] runtimeVersion=1.0.0 channel=production platform=android timestamp=1778603319107
+[push-bundle] 1/5 npx expo export --platform android
+env: load .env.production
+env: export REACT_APP_API_URL REACT_APP_DEBUG REACT_APP_NAME REACT_APP_ENV REACT_APP_LOG_LEVEL REACT_APP_ENABLE_ANALYTICS
+Starting Metro Bundler
+Android .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 87.9% (2141/2304)
+Android .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2900/2900)
+Android Bundled 23807ms index.ts (2900 modules)
+Android .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (2900/2900)
+
+› Assets (37):
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\AntDesign.ttf (70.3 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Entypo.ttf (66.2 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\EvilIcons.ttf (13.5 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Feather.ttf (56.2 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome.ttf (166 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Brands.ttf (134 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Regular.ttf (33.7 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Solid.ttf (203 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Brands.ttf (209 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Regular.ttf (68 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Solid.ttf (424 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Fontisto.ttf (314 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Foundation.ttf (57 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Ionicons.ttf (443 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialCommunityIcons.ttf (1.15 MB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialIcons.ttf (357 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Octicons.ttf (49.4 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\SimpleLineIcons.ttf (54.1 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Zocial.ttf (25.8 kB)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@react-navigation\elements\lib\module\assets\back-icon-mask.png (653 B)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@react-navigation\elements\lib\module\assets\back-icon.png (4 variations | 152 B)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@react-navigation\elements\lib\module\assets\clear-icon.png (4 variations | 425 B)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@react-navigation\elements\lib\module\assets\close-icon.png (4 variations | 235 B)
+..\..\..\my-prototype-logistics\frontend\CretasFoodTrace\node_modules\@react-navigation\elements\lib\module\assets\search-icon.png (4 variations | 599 B)
+assets\icon.png (742 kB)
+
+› android bundles (1):
+_expo/static/js/android/index-0f63d5fa0f223a6054277185af6c069a.hbc (14.7 MB)
+
+› Files (1):
+metadata.json (2.65 kB)
+
+Exported: dist
+[push-bundle] 2/5 npx expo config --json > dist/expoConfig.json
+[push-bundle] 3/5 packaging /tmp/ota-bundle-1778603319107.tar.gz
+[push-bundle] 4/5 uploading + atomic-extracting to root@47.100.235.168:/www/wwwroot/ota/updates/1.0.0/production/1778603319107
+[push-bundle] 5/5 POST https://ota.cretaceousfuture.com/api/ota/admin/register
+[push-bundle] ✓ bundle live: rv=1.0.0 channel=production ts=1778603319107
+[push-bundle]   verify: curl -H 'expo-protocol-version: 1' -H 'expo-platform: android' \
+                       -H 'expo-runtime-version: 1.0.0' \
+                       -H 'expo-channel-name: production' https://ota.cretaceousfuture.com/api/ota/manifest
