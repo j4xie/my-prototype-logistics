@@ -1,0 +1,56 @@
+R3 Finance L4 Deep — 2026-05-12T19:56:26.570Z
+Target: http://139.196.165.140:8097
+✓ [L1] PRE.0 baseline /analysis/finance [smoke] — PASS
+
+========== Deep #1: page render + KPI cards (factory_admin1) ==========
+✓ [L4] D1.1 admin login [deep] — PASS
+   📸 01-admin-finance-page.png
+✗ [L4] D1.2 KPI cards rendered [deep] — FAIL
+   evidence: {"depth":"deep","cardCount":0,"kpis":[]}
+✓ [L4] D1.3 console clean (0 error) [deep] — PASS
+✓ [L4] D1.4 /analysis/finance HTTP 200 + envelope [deep] — PASS
+✗ [L4] D1.5 KPI values are real (not all dashes) [deep] — FAIL
+   evidence: {"depth":"deep","sampleValues":[],"baselineKpi":[{"code":"GROSS_PROFIT","value":23075969.6},{"code":"GROSS_MARGIN","value":76.84},{"code":"NET_PROFIT","value":2440637.8},{"code":"NET_MARGIN","value":8.13},{"code":"ROI","value":331.81}]}
+
+========== Deep #2: KPI drill-down ==========
+   📸 02-admin-after-kpi-click.png
+✓ [L4] D2.1 KPI card clickable + chart present [deep] — PASS
+
+========== Deep #3: Rule 9 抽检 + Rule 10 boundary ==========
+✓ [L4] D3.1 Rule 9 抽检 Top/Mid/Last (trend chart) [deep] — PASS
+✓ [L4] D3.2 Rule 10/12 formatted-value parity (scale-2 toFixed) [deep] — PASS
+✓ [L4] D3.3 Rule 4 byte-shape: KPI values are JSON numbers (not strings) [deep] — PASS
+
+========== Deep #4: RBAC roundtrip (warehouse_mgr1) ==========
+✓ [L4] D4.1 warehouse_mgr1 login (API) [deep] — PASS
+✓ [L4] D4.2 RBAC API verdict (warehouse_mgr1 → /analysis/finance) [deep] — PASS
+✓ [L4] D4.3 warehouse_mgr1 login (UI) [deep] — PASS
+   📸 03-warehouse-finance-page.png
+✓ [L4] D4.4 RBAC UI verdict (warehouse @ /smart-bi/finance) [deep] — PASS
+
+========== Error-Deep: 4xx + sticky toast + actionHint ==========
+✓ [L4] E1.1 Cross-factory 403 (admin F001 → F002 finance) [deep] — PASS
+✓ [L4] E1.2 Invalid periodType handling [deep] — PASS
+   📸 04-admin-error-path.png
+✓ [L4] E1.3 UI error/empty state visibility [deep] — PASS
+
+========== SUMMARY ==========
+{
+  "total": 17,
+  "byStatus": {
+    "PASS": 15,
+    "FAIL": 2
+  },
+  "byDepth": {
+    "smoke": 1,
+    "deep": 16
+  },
+  "bugDiscoveryCapability": {
+    "backendApi500Detectable": "D1.4 would FAIL — captures last response status",
+    "frontendCrashDetectable": "D1.2 would FAIL — checks .kpi-card count + non-empty values",
+    "silentBugDetectable": "D4.2 would FAIL on RBAC leak — explicit value-null check",
+    "bugsFoundThisRound": 2
+  }
+}
+
+✓ results.json saved to C:\Users\Steve\cretas-r3-finance-deep\docs\qa-audits\2026-05-12-r3-finance-l4-deep-evidence
