@@ -268,6 +268,35 @@ def test_post_create_db_unavailable_returns_500_envelope(client, monkeypatch):
     assert body["data"] is None
 
 
+@pytest.mark.parametrize("missing_body", [{}, {"name": ""}, {"name": "   "}, {"name": None}])
+def test_post_create_missing_name_returns_400_envelope(client, monkeypatch, missing_body):
+    """R1 P2-2 fix: missing/blank ``name`` previously surfaced as a 500
+    (DB NOT NULL constraint violation). Now caught at the endpoint with an
+    explicit 400 envelope before any DB call.
+    """
+    called: dict = {"called": False}
+
+    def _fake_create(factory_id, body):
+        called["called"] = True
+        return _sample_entity(id=1, name="ignored")
+
+    monkeypatch.setattr(mod, "_create_template", _fake_create)
+
+    r = client.post(
+        "/api/mobile/F001/smart-bi/query-templates",
+        json=missing_body,
+        headers=_auth_header(),
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["success"] is False
+    assert body["code"] == 400
+    assert body["message"] == "name is required"
+    assert body["data"] is None
+    # Validation rejects BEFORE the DB helper is invoked
+    assert called["called"] is False
+
+
 # ============================================================
 # PUT /query-templates/{id} — update (3 tests)
 # ============================================================

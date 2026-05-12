@@ -460,6 +460,41 @@ def test_quality_endpoint_returns_full_envelope(client_endpoint_restaurant):
     assert n3["value"] == 3.45
 
 
+def test_factory_endpoint_returns_wrapped_envelope(client_endpoint_factory):
+    """R1 P2-3 regression lock: factory branch must emit the same outer
+    ApiResponse envelope as the restaurant branch.
+
+    The ``client_endpoint_factory`` fixture raises on pool acquisition so
+    the router's ``pool is None`` defensive path drops to
+    ``TenantType.FACTORY`` and dispatches to ``_factory_quality_dispatch``.
+    Before the fix the router returned that dispatcher's raw inner dict
+    while the restaurant branch returned a wrapped envelope; after the fix
+    both branches return the canonical 8-key envelope.
+    """
+    r = client_endpoint_factory.get(
+        "/api/mobile/F001/smart-bi/analysis/quality",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-31", "analysisType": "fpy"},
+        headers=_auth_header_endpoint(factory_id="F001"),
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # Outer envelope identical shape to restaurant branch.
+    assert body["success"] is True
+    assert body["code"] == 200
+    assert body["message"] == "操作成功"
+    assert body["actionHint"] is None
+    assert body["severity"] is None
+    assert body["hintTarget"] is None
+    # Inner Phase 2D placeholder, marker preserved.
+    data = body["data"]
+    assert data["dataAvailability"] == FACTORY_PHASE_2D_PENDING_MARKER
+    assert data["startDate"] == "2026-05-01"
+    assert data["endDate"] == "2026-05-31"
+    # fpy branch shape per Sub-B spec.
+    assert data["metrics"] == []
+    assert data["trendChart"] == {}
+
+
 def test_quality_endpoint_requires_jwt(client_endpoint_factory):
     """No Authorization header → 401 (verify_jwt_and_factory Depend)."""
     r = client_endpoint_factory.get(
