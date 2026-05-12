@@ -2,12 +2,14 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.dto.notification.CreateNotificationRequest;
 import com.cretas.aims.entity.Notification;
 import com.cretas.aims.entity.enums.NotificationType;
 import com.cretas.aims.repository.NotificationRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -210,11 +212,16 @@ public class NotificationController {
     @Operation(summary = "创建通知", description = "创建新的通知消息，系统内部使用。默认通知类型为INFO，默认未读状态")
     public ApiResponse<Notification> createNotification(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
-            @RequestBody @Parameter(description = "通知信息，包含标题、内容、类型等") Notification notification) {
+            @Valid @RequestBody @Parameter(description = "通知信息，包含标题、内容、类型等")
+                CreateNotificationRequest request) {
 
-        log.info("创建通知: factoryId={}, title={}", factoryId, notification.getTitle());
+        log.info("创建通知: factoryId={}, title={}", factoryId, request.getTitle());
 
+        Notification notification = toNotification(request);
         notification.setFactoryId(factoryId);
+        // Apply service-owned defaults when caller omits (Rule 17.1: defaults live in
+        // a single source-of-truth — this controller, NOT @Builder.Default leaking
+        // through Jackson @NoArgsConstructor field initializers).
         if (notification.getType() == null) {
             notification.setType(NotificationType.INFO);
         }
@@ -225,6 +232,37 @@ public class NotificationController {
         Notification saved = notificationRepository.save(notification);
 
         return ApiResponse.success(saved);
+    }
+
+    // ===================================================================
+    // Rule 17.1 — wire→entity mappers (Issue #384 batch 6 final).
+    // Mapper deliberately does NOT replicate service-owned defaults:
+    //   - factoryId from @PathVariable (set after mapping)
+    //   - type default NotificationType.INFO (controller-owned)
+    //   - isRead default false (controller-owned)
+    //   - id, readAt, audit timestamps managed by JPA / BaseEntity
+    // ===================================================================
+
+    /**
+     * Map {@link CreateNotificationRequest} → {@link Notification}.
+     *
+     * <p>Auto-managed by controller after mapping: {@code factoryId} (path var),
+     * {@code type} INFO-fallback, {@code isRead} false-fallback. Auto-managed by
+     * JPA / BaseEntity: {@code id}, {@code readAt}, {@code createdAt},
+     * {@code updatedAt}, {@code deletedAt}.
+     */
+    private static Notification toNotification(CreateNotificationRequest r) {
+        Notification n = new Notification();
+        n.setUserId(r.getUserId());
+        n.setTitle(r.getTitle());
+        n.setContent(r.getContent());
+        n.setType(r.getType());
+        n.setIsRead(r.getIsRead());
+        n.setTargetRole(r.getTargetRole());
+        n.setSource(r.getSource());
+        n.setSourceId(r.getSourceId());
+        n.setActionUrl(r.getActionUrl());
+        return n;
     }
 
     /**
