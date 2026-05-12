@@ -6,10 +6,14 @@ import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
 import com.cretas.aims.dto.inventory.UpdatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.PurchaseReceiveRecord;
+import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.security.PriceFieldResponseAdvice;
 import com.cretas.aims.service.MobileService;
+import com.cretas.aims.service.PermissionService;
 import com.cretas.aims.service.inventory.PurchaseOrderPdfService;
 import com.cretas.aims.service.inventory.PurchaseService;
 import com.cretas.aims.utils.TokenUtils;
@@ -43,6 +47,8 @@ public class PurchaseController {
     private final PurchaseService purchaseService;
     private final PurchaseOrderPdfService purchaseOrderPdfService;
     private final MobileService mobileService;
+    private final PermissionService permissionService;
+    private final UserRepository userRepository;
 
     // ==================== 采购订单 ====================
 
@@ -111,13 +117,24 @@ public class PurchaseController {
      */
     @GetMapping("/orders/{orderId}/pdf")
     @Operation(summary = "下载采购订单 PDF (供货单)",
-            description = "生成包含 Code128 条码 + QR 二维码的 PDF 供货单, 供应商打印 / 仓管员扫码入库 (六扇门 May 7 transcript)")
+            description = "生成包含 Code128 条码 + QR 二维码的 PDF 供货单, 供应商打印 / 仓管员扫码入库 (六扇门 May 7 transcript). "
+                    + "RBAC: 仓库管理员/质检员等无 procurement:price:view 权限的角色, PDF 中 单价/小计/合计 显示 '—'.")
     @RequirePermission({"procurement:read_write", "procurement:read"})
     public ResponseEntity<byte[]> downloadOrderPdf(
             @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String orderId) {
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader("Authorization") String authorization) {
         PurchaseOrder order = purchaseService.getPurchaseOrderById(factoryId, orderId);
-        byte[] pdfBytes = purchaseOrderPdfService.generatePurchaseOrderPdf(factoryId, orderId);
+
+        // RBAC defense-in-depth (P0-C fix, 2026-05-12): PriceFieldResponseAdvice (PR #423) 只处理 JSON
+        // body, 不 walk byte[] PDF — chat4 R1-C deep test 抓到 warehouse curl /pdf 看到完整 单价/小计/合计.
+        // 这里 mirror PermissionService.PRICE_VIEW_ROLES (镜像 @PriceSensitive JSON strip 决策),
+        // 把 user 看不见的字段在 PDF 渲染入口替换为 "—".
+        User currentUser = resolveCurrentUser(authorization);
+        boolean maskPrice = currentUser == null
+                || !permissionService.hasPermission(currentUser, PriceFieldResponseAdvice.PRICE_VIEW_PERMISSION);
+
+        byte[] pdfBytes = purchaseOrderPdfService.generatePurchaseOrderPdf(factoryId, orderId, maskPrice);
 
         // 文件名 = 供货单_{订单号}.pdf, 含中文需 RFC 5987 编码
         String filename = "供货单_" + (order.getOrderNumber() != null ? order.getOrderNumber() : orderId) + ".pdf";
@@ -128,7 +145,9 @@ public class PurchaseController {
         headers.add(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"order.pdf\"; filename*=UTF-8''" + encoded);
         headers.setContentLength(pdfBytes.length);
-        log.info("下载采购订单 PDF: factoryId={}, orderId={}, bytes={}", factoryId, orderId, pdfBytes.length);
+        log.info("下载采购订单 PDF: factoryId={}, orderId={}, bytes={}, maskPrice={}, userId={}",
+                factoryId, orderId, pdfBytes.length, maskPrice,
+                currentUser != null ? currentUser.getId() : null);
         return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
 
@@ -321,5 +340,24 @@ public class PurchaseController {
     private Long extractUserId(String authorization) {
         String token = TokenUtils.extractToken(authorization);
         return mobileService.getUserFromToken(token).getId();
+    }
+
+    /**
+     * Resolve the authenticated user entity (not DTO) for permission checks.
+     * Returns {@code null} when token is missing or user is not found — caller decides
+     * whether to fail open or closed. For RBAC defense-in-depth, callers MUST treat
+     * null as "no permission" (closed-by-default).
+     */
+    private User resolveCurrentUser(String authorization) {
+        try {
+            Long userId = extractUserId(authorization);
+            if (userId == null) {
+                return null;
+            }
+            return userRepository.findById(userId).orElse(null);
+        } catch (Exception e) {
+            log.debug("resolveCurrentUser failed: {}", e.getMessage());
+            return null;
+        }
     }
 }
