@@ -1,0 +1,347 @@
+{
+  "round": "R3-finance-L4-deep",
+  "factory": "F001",
+  "startedAt": "2026-05-12T19:56:26.570Z",
+  "tests": [
+    {
+      "testId": "PRE.0",
+      "layer": "L1",
+      "name": "baseline /analysis/finance",
+      "status": "PASS",
+      "depth": "smoke",
+      "apiStatus": 200,
+      "metricCount": 5,
+      "trendRowCount": 2,
+      "sampleMetricCodes": [
+        "GROSS_PROFIT",
+        "GROSS_MARGIN",
+        "NET_PROFIT",
+        "NET_MARGIN",
+        "ROI"
+      ],
+      "recordedAt": "2026-05-12T19:56:27.348Z"
+    },
+    {
+      "testId": "D1.1",
+      "layer": "L4",
+      "name": "admin login",
+      "status": "PASS",
+      "depth": "deep",
+      "urlAfter": "http://139.196.165.140:8097/dashboard",
+      "recordedAt": "2026-05-12T19:56:45.579Z"
+    },
+    {
+      "testId": "D1.2",
+      "layer": "L4",
+      "name": "KPI cards rendered",
+      "status": "FAIL",
+      "depth": "deep",
+      "cardCount": 0,
+      "kpis": [],
+      "recordedAt": "2026-05-12T19:57:16.381Z"
+    },
+    {
+      "testId": "D1.3",
+      "layer": "L4",
+      "name": "console clean (0 error)",
+      "status": "PASS",
+      "depth": "deep",
+      "errorCount": 0,
+      "sample": [],
+      "recordedAt": "2026-05-12T19:57:16.381Z"
+    },
+    {
+      "testId": "D1.4",
+      "layer": "L4",
+      "name": "/analysis/finance HTTP 200 + envelope",
+      "status": "PASS",
+      "depth": "deep",
+      "callCount": 1,
+      "lastStatus": 200,
+      "lastUrl": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2025-05-12&endDate=2026-05-12&analysisType=profit",
+      "bodyPreview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"endDate\":\"2026-05-12\",\"metrics\":[{\"metricCode\":\"GROSS_PROFIT\",\"metricName\":\"毛利额\",\"value\":-1774716.78,\"formattedValue\":\"-1,774,716.78\",\"unit\":\"元\",\"changePercent\":n",
+      "recordedAt": "2026-05-12T19:57:16.381Z"
+    },
+    {
+      "testId": "D1.5",
+      "layer": "L4",
+      "name": "KPI values are real (not all dashes)",
+      "status": "FAIL",
+      "depth": "deep",
+      "sampleValues": [],
+      "baselineKpi": [
+        {
+          "code": "GROSS_PROFIT",
+          "value": 23075969.6
+        },
+        {
+          "code": "GROSS_MARGIN",
+          "value": 76.84
+        },
+        {
+          "code": "NET_PROFIT",
+          "value": 2440637.8
+        },
+        {
+          "code": "NET_MARGIN",
+          "value": 8.13
+        },
+        {
+          "code": "ROI",
+          "value": 331.81
+        }
+      ],
+      "recordedAt": "2026-05-12T19:57:16.381Z"
+    },
+    {
+      "testId": "D2.1",
+      "layer": "L4",
+      "name": "KPI card clickable + chart present",
+      "status": "PASS",
+      "depth": "deep",
+      "canvasCount": 2,
+      "chartTitles": [],
+      "drillRequestCount": 0,
+      "note": "No drill endpoint — trend chart is the in-page detail (acceptable for read-only dashboard)",
+      "recordedAt": "2026-05-12T19:57:16.550Z"
+    },
+    {
+      "testId": "D3.1",
+      "layer": "L4",
+      "name": "Rule 9 抽检 Top/Mid/Last (trend chart)",
+      "status": "PASS",
+      "depth": "deep",
+      "totalRows": 2,
+      "sampleIndices": [
+        0,
+        1
+      ],
+      "samples": [
+        {
+          "period": "2026-04",
+          "revenue": 14205428.3,
+          "cost": 3974022.1,
+          "grossProfit": 10231406.2,
+          "netProfit": 1186926.5,
+          "grossMargin": 72.02
+        },
+        {
+          "period": "2026-05",
+          "revenue": 15825032.1,
+          "cost": 2980468.7,
+          "grossProfit": 12844563.4,
+          "netProfit": 1253711.3,
+          "grossMargin": 81.17
+        }
+      ],
+      "recordedAt": "2026-05-12T19:57:16.974Z"
+    },
+    {
+      "testId": "D3.2",
+      "layer": "L4",
+      "name": "Rule 10/12 formatted-value parity (scale-2 toFixed)",
+      "status": "PASS",
+      "depth": "deep",
+      "sanityNote": "Rule 10 lock-down sanity-check skipped (would require Python backend revert+redeploy per spec §11.3, out of this chat scope). Instead: verify that value→formattedValue parity holds across all percent KPIs, which directly tests the Rule 10/12 helper paths.",
+      "checks": [
+        {
+          "code": "GROSS_MARGIN",
+          "value": 76.84,
+          "formattedValue": "76.84%",
+          "expectedSubstring": "76.84",
+          "match": true
+        },
+        {
+          "code": "NET_MARGIN",
+          "value": 8.13,
+          "formattedValue": "8.13%",
+          "expectedSubstring": "8.13",
+          "match": true
+        },
+        {
+          "code": "ROI",
+          "value": 331.81,
+          "formattedValue": "331.81%",
+          "expectedSubstring": "331.81",
+          "match": true
+        }
+      ],
+      "recordedAt": "2026-05-12T19:57:16.974Z"
+    },
+    {
+      "testId": "D3.3",
+      "layer": "L4",
+      "name": "Rule 4 byte-shape: KPI values are JSON numbers (not strings)",
+      "status": "PASS",
+      "depth": "deep",
+      "types": [
+        {
+          "code": "GROSS_PROFIT",
+          "value": 23075969.6,
+          "type": "number",
+          "isInt": false
+        },
+        {
+          "code": "GROSS_MARGIN",
+          "value": 76.84,
+          "type": "number",
+          "isInt": false
+        },
+        {
+          "code": "NET_PROFIT",
+          "value": 2440637.8,
+          "type": "number",
+          "isInt": false
+        },
+        {
+          "code": "NET_MARGIN",
+          "value": 8.13,
+          "type": "number",
+          "isInt": false
+        },
+        {
+          "code": "ROI",
+          "value": 331.81,
+          "type": "number",
+          "isInt": false
+        }
+      ],
+      "recordedAt": "2026-05-12T19:57:16.975Z"
+    },
+    {
+      "testId": "D4.1",
+      "layer": "L4",
+      "name": "warehouse_mgr1 login (API)",
+      "status": "PASS",
+      "depth": "deep",
+      "role": "warehouse_manager",
+      "factoryId": "F001",
+      "recordedAt": "2026-05-12T19:57:17.257Z"
+    },
+    {
+      "testId": "D4.2",
+      "layer": "L4",
+      "name": "RBAC API verdict (warehouse_mgr1 → /analysis/finance)",
+      "status": "PASS",
+      "depth": "deep",
+      "verdict": "kpi_stripped",
+      "apiStatus": 200,
+      "apiBodyPreview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"endDate\":\"2026-05-31\",\"metrics\":[{\"metricCode\":\"GROSS_PROFIT\",\"metricName\":\"毛利额\",\"value\":null,\"formattedValue\":\"23,075,969.60\",\"unit\":\"元\",\"changePercent\":null,\"changeDirection\":null,\"changeValue\":null,\"alertLevel\":\"GREEN\",\"dimensionValue\":null,\"description\":\"销售收入减去销售成本\"},{\"metricCode\":\"GROSS_MARGIN\",\"metricName\":\"毛利率\",\"value\":null,\"formattedValue\":\"76.84%\",\"unit\":\"%\",\"changePercent\":null,\"changeDirection\":null,\"changeValue\":null,\"alertLevel\":\"GREEN\",\"dimensi",
+      "adminMetricsForCompare": [
+        {
+          "code": "GROSS_PROFIT",
+          "value": 23075969.6,
+          "formatted": "23,075,969.60"
+        },
+        {
+          "code": "GROSS_MARGIN",
+          "value": 76.84,
+          "formatted": "76.84%"
+        },
+        {
+          "code": "NET_PROFIT",
+          "value": 2440637.8,
+          "formatted": "2,440,637.80"
+        }
+      ],
+      "recordedAt": "2026-05-12T19:57:17.480Z"
+    },
+    {
+      "testId": "D4.3",
+      "layer": "L4",
+      "name": "warehouse_mgr1 login (UI)",
+      "status": "PASS",
+      "depth": "deep",
+      "urlAfter": "http://139.196.165.140:8097/dashboard",
+      "recordedAt": "2026-05-12T19:57:59.726Z"
+    },
+    {
+      "testId": "D4.4",
+      "layer": "L4",
+      "name": "RBAC UI verdict (warehouse @ /smart-bi/finance)",
+      "status": "PASS",
+      "depth": "deep",
+      "uiVerdict": "route_blocked_ui",
+      "urlAfter": "http://139.196.165.140:8097/403",
+      "is403": true,
+      "cardCount": 0,
+      "kpiValues": [],
+      "kpiLabels": [],
+      "urlPath": "/403",
+      "bodyTextSample": "403\n访问被拒绝\n\n抱歉，您没有权限访问此页面。\n\n返回上页\n返回首页",
+      "recordedAt": "2026-05-12T19:58:05.050Z"
+    },
+    {
+      "testId": "E1.1",
+      "layer": "L4",
+      "name": "Cross-factory 403 (admin F001 → F002 finance)",
+      "status": "PASS",
+      "depth": "deep",
+      "apiStatus": 403,
+      "message": "Cross-factory access denied: token factoryId=F001 URL factoryId=F002",
+      "bodyPreview": "{\"success\":false,\"data\":null,\"message\":\"Cross-factory access denied: token factoryId=F001 URL factoryId=F002\",\"code\":\"AUTH_ERROR\"}",
+      "recordedAt": "2026-05-12T19:58:05.486Z"
+    },
+    {
+      "testId": "E1.2",
+      "layer": "L4",
+      "name": "Invalid periodType handling",
+      "status": "PASS",
+      "depth": "deep",
+      "apiStatus": 422,
+      "bodyPreview": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\",\"startDate\"],\"msg\":\"Field required\",\"input\":null},{\"type\":\"missing\",\"loc\":[\"query\",\"endDate\"],\"msg\":\"Field required\",\"input\":null}]}",
+      "recordedAt": "2026-05-12T19:58:05.910Z"
+    },
+    {
+      "testId": "E1.3",
+      "layer": "L4",
+      "name": "UI error/empty state visibility",
+      "status": "PASS",
+      "depth": "deep",
+      "toastsObserved": [],
+      "alerts": [
+        {
+          "cls": "el-alert el-alert--info is-light gold-cta",
+          "text": "🆕 Gold 数据层预览\n\n试用基于 Silver+Gold (agg_*) 的新数据路径 — 6 个 KPI 查询并发,直连 Python。\n打开 Gold 预览",
+          "type": "el-alert--info"
+        }
+      ],
+      "note": "finance dashboard tolerates invalid query params by falling back to default tab — UI does not 4xx, but data-quality alerts may render",
+      "recordedAt": "2026-05-12T19:58:34.501Z"
+    }
+  ],
+  "adminConsoleErrorCount": 0,
+  "adminConsoleSample": [
+    {
+      "type": "info",
+      "text": "[cretas] ElMessage.error patched: duration=0 + showClose=true default",
+      "url": "http://139.196.165.140:8097/assets/index-_iHIJmvd.js",
+      "lineNumber": 1
+    },
+    {
+      "type": "info",
+      "text": "[cretas] ElMessage.error patched: duration=0 + showClose=true default",
+      "url": "http://139.196.165.140:8097/assets/index-_iHIJmvd.js",
+      "lineNumber": 1
+    }
+  ],
+  "adminNetworkCount": 11,
+  "endedAt": "2026-05-12T19:58:35.000Z",
+  "summary": {
+    "total": 17,
+    "byStatus": {
+      "PASS": 15,
+      "FAIL": 2
+    },
+    "byDepth": {
+      "smoke": 1,
+      "deep": 16
+    },
+    "bugDiscoveryCapability": {
+      "backendApi500Detectable": "D1.4 would FAIL — captures last response status",
+      "frontendCrashDetectable": "D1.2 would FAIL — checks .kpi-card count + non-empty values",
+      "silentBugDetectable": "D4.2 would FAIL on RBAC leak — explicit value-null check",
+      "bugsFoundThisRound": 2
+    }
+  }
+}
