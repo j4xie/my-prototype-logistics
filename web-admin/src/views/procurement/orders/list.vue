@@ -4,9 +4,9 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
-import { get, post } from '@/api/request';
+import request, { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Refresh, ChatDotRound } from '@element-plus/icons-vue';
+import { Plus, Search, Refresh, ChatDotRound, Download } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
@@ -335,6 +335,36 @@ function goDetail(id: string) {
   router.push(`/procurement/orders/${id}`);
 }
 
+// P0 (六扇门 May 7 transcript): 列表行内直接下载 PDF 供货单
+const pdfDownloadingIds = ref<Set<string>>(new Set());
+async function handleDownloadPdf(row: TableRow) {
+  if (!factoryId.value || !row.id) return;
+  const id = String(row.id);
+  if (pdfDownloadingIds.value.has(id)) return;
+  pdfDownloadingIds.value.add(id);
+  try {
+    const response = await request.get(
+      `/${factoryId.value}/purchase/orders/${id}/pdf`,
+      { responseType: 'blob' }
+    );
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `供货单_${row.orderNumber || id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    ElMessage.success('PDF 下载成功');
+  } catch (e) {
+    console.error('[PDF 下载失败]', e);
+    ElMessage.error('PDF 下载失败,请稍后重试');
+  } finally {
+    pdfDownloadingIds.value.delete(id);
+  }
+}
+
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
@@ -459,9 +489,13 @@ function handleAiFill(params: TableRow) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right" align="center">
+        <el-table-column label="操作" width="260" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="goDetail(row.id)">详情</el-button>
+            <!-- P0 (六扇门 May 7 transcript): 下载 PDF 供货单 (含 Code128 + QR 条码) -->
+            <el-button type="info" link size="small" :icon="Download"
+              :loading="pdfDownloadingIds.has(String(row.id))"
+              @click="handleDownloadPdf(row)">PDF</el-button>
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="warning" link size="small" @click="handleAction(row.id, 'submit')">提交</el-button>
             <el-button v-if="row.status === 'SUBMITTED' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'approve')">审批</el-button>
             <el-button v-if="['DRAFT','SUBMITTED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
