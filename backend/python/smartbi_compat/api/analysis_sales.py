@@ -38,6 +38,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 
 from smartbi_compat.api.analysis import _query_sales_data, wrap_response
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import _java_isoformat
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
@@ -1741,4 +1742,4 @@ async def get_sales_analysis(
     """
     range_ = DateRange.custom(startDate, endDate)
     result = await _get_comprehensive_sales_analysis(auth.factory_id, range_)
-    return wrap_response(result)
+    return wrap_response(strip_price_for_role(result, auth.role))

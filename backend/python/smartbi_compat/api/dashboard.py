@@ -19,6 +19,7 @@ from typing import Any, Optional, Tuple
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.schema_compat import wrap_response
 
@@ -90,7 +91,10 @@ async def data_date_range(
     pair = _query_date_range(auth.factory_id)
     if pair is None:
         return wrap_response(
-            {"hasData": False, "message": "No sales data detected"},
+            strip_price_for_role(
+                {"hasData": False, "message": "No sales data detected"},
+                auth.role,
+            ),
             message="No sales data detected",
         )
     start, end = pair
@@ -101,4 +105,4 @@ async def data_date_range(
         "granularity": _infer_granularity(start, end),
         "description": f"数据范围 {start.isoformat()} 至 {end.isoformat()}",
     }
-    return wrap_response(data, message="Data date range detected")
+    return wrap_response(strip_price_for_role(data, auth.role), message="Data date range detected")

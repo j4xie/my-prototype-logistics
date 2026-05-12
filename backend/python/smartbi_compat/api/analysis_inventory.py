@@ -32,6 +32,7 @@ from smartbi_compat.api.analysis_finance import (
     _utc_now_iso,
     _fetch_all,
 )
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import wrap_response
 from smartbi_compat.auth import verify_jwt_and_factory, AuthContext
 # Java HashMap iter-order helper for value-tied entries on Collectors.groupingBy
@@ -1908,17 +1909,17 @@ async def get_inventory_analysis(
     """
     if analysisType == "turnover":
         result = await _get_turnover_mode(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
     if analysisType == "expiry":
         result = await _get_expiry_mode(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
     if analysisType == "aging":
         result = await _get_aging_mode(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
     if not analysisType or analysisType == "overview":
         # PR-B: default mode (getInventoryHealth + DashboardResponse wrapped)
         result = await _get_default_mode(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
     # Unknown analysisType → 501
     return wrap_response(
         data=None,

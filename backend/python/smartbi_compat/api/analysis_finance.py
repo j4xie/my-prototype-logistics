@@ -34,6 +34,7 @@ from typing import Any, Optional
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import _java_isoformat, wrap_error, wrap_response
@@ -3305,27 +3306,27 @@ async def get_finance_analysis(
 
     if not analysisType or analysisType == "overview":
         result = await _get_comprehensive_finance_analysis(auth.factory_id, range_)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
 
     if analysisType == "payable":
         result = await _get_payable_analysis(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
 
     if analysisType == "profit":
         result = await _get_profit_analysis(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
 
     if analysisType == "cost":
         result = await _get_cost_analysis(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
 
     if analysisType == "budget":
         result = await _get_budget_analysis(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
 
     if analysisType == "receivable":
         result = await _get_receivable_analysis(auth.factory_id, startDate, endDate)
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
 
     return wrap_response(
         data=None,
@@ -3344,7 +3345,7 @@ async def get_budget_achievement(
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getBudgetAchievementChart line 276-292."""
     result = await _get_budget_achievement_chart(auth.factory_id, year, metric)
-    return wrap_response(result)
+    return wrap_response(strip_price_for_role(result, auth.role))
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/yoy-mom")
@@ -3379,7 +3380,7 @@ async def get_yoy_mom(
         result = await _get_yoy_mom_chart(
             auth.factory_id, periodType, startPeriod, endPeriod, metric
         )
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
     except (ValueError, HTTPException) as e:
         # HTTPException (e.g. 400 from missing endPeriod) — re-raise so FastAPI
         # uses its built-in handling. ValueError → mirror Java parse error.
@@ -3412,4 +3413,4 @@ async def get_category_comparison(
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getCategoryStructureComparisonChart line 314-330."""
     result = await _get_category_comparison_chart(auth.factory_id, year, compareYear)
-    return wrap_response(result)
+    return wrap_response(strip_price_for_role(result, auth.role))
