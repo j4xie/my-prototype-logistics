@@ -28,6 +28,9 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from smartbi_compat.api import dashboard as dm  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+pytestmark = [pytest.mark.api_endpoint("dashboard_data_date_range")]
+
 
 _JWT_SECRET_FOR_TESTS = "phase-2b-3-dashboard-test-secret"
 _JWT_ALGORITHM = "HS256"
