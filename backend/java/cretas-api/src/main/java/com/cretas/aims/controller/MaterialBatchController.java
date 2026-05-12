@@ -700,7 +700,16 @@ public class MaterialBatchController {
 
     /**
      * 获取库存价值
+     *
+     * <p>RBAC: 仅授予 {@code procurement:price:view} 权限的角色可访问 (factory_super_admin /
+     * procurement_manager / finance_manager / sales_manager / dispatcher / restaurant_manager).
+     * 仓库/质检/操作员等无该权限的角色返回 403. 原因: 响应体是裸 {@code BigDecimal} 聚合金额,
+     * {@code PriceFieldResponseAdvice} 的字段级 strip 无 field path 可作用; 且 per-batch
+     * {@code totalValue} 已对这些角色 strip, 允许其访问 SUM 聚合自相矛盾.
+     * 参考 {@code EquipmentController.calculateDepreciatedValue} 同形态先例.
+     * 决策记录: {@code docs/qa-audits/2026-05-12-e5-valuation-rbac-decision.md}.
      */
+    @RequirePermission({"procurement:price:view"})
     @GetMapping("/inventory/valuation")
     @Operation(summary = "获取库存价值")
     public ApiResponse<BigDecimal> getInventoryValuation(
