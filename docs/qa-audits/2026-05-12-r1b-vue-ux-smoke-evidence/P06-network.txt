@@ -1,0 +1,10 @@
+[GET] http://139.196.165.140:8097/vite.svg => [200] OK
+[GET] http://139.196.165.140:8097/api/admin/role-permissions => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override => [200] 
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/gold/analysis-results?template_codes=monthly_trend%2Cperiod_comparison_trend%2Cweekday_weekend_pattern%2Cmonthly_anomaly&factory_id=F001 => [200] OK
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/capability/F001 => [200] OK
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/gold/daily-trend?factory_id=F001&start_date=2026-05-06&end_date=2026-05-12 => [200] OK
+[GET] http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F001/reports/dashboard/trends?period=week => [200] 
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/gold/daily-trend?factory_id=F001&start_date=2026-02-12&end_date=2026-05-12 => [200] OK
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/gold/daily-trend?factory_id=F001&start_date=2025-01-01&end_date=2025-12-31 => [200] OK

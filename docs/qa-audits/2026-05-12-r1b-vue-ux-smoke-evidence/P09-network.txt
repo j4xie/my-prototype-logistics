@@ -1,0 +1,4 @@
+[GET] http://139.196.165.140:8097/vite.svg => [200] OK
+[GET] http://139.196.165.140:8097/api/admin/role-permissions => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override => [200] 
+[GET] http://139.196.165.140:8097/vite.svg => [200] OK
