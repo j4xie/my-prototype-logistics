@@ -73,6 +73,20 @@ def migration_sql() -> str:
     return MIGRATION_PATH.read_text(encoding="utf-8")
 
 
+@pytest.fixture(scope="module")
+def factory_id_to_name(migration_sql: str) -> dict[str, str]:
+    """Parse the migration into {factory_id: name} dict for shape-checking tests.
+
+    Extracts the first two tuple positions from each row INSERT:
+        ('R_<chain>_REAL', '<display_name>', 'RESTAURANT', ...)
+    """
+    pairs = re.findall(
+        r"\('(R_[A-Z_]+_REAL)',\s*'([^']+)',\s*'RESTAURANT',",
+        migration_sql,
+    )
+    return {fid: name for fid, name in pairs}
+
+
 # ============================================================
 # Migration content invariants
 # ============================================================
@@ -152,6 +166,44 @@ def test_migration_includes_required_not_null_columns(migration_sql: str):
         assert col in column_list, (
             f"Required NOT NULL column `{col}` not in INSERT column list: {column_list!r}"
         )
+
+
+# ============================================================
+# Name disambiguation locks (P0v2 fix + PR #395 fix)
+# ============================================================
+
+
+def test_migration_disambiguates_r_shangma_hg_real(factory_id_to_name):
+    """P0v2 fix lock: name must be the disambiguated value, not bare '上马火锅'.
+
+    The bare '上马火锅' collides with the legacy test_db R_SMH seed (UNIQUE
+    constraint ukrjab5dbtnnpf6t623u4t24ikq on factories.name). Subagent A
+    sweep 2026-05-11 confirmed this is the only remaining exact conflict.
+    """
+    assert factory_id_to_name.get("R_SHANGMA_HG_REAL") == "上马火锅 (真实)", (
+        f"R_SHANGMA_HG_REAL must use disambiguated name to avoid test_db R_SMH collision; "
+        f"got {factory_id_to_name.get('R_SHANGMA_HG_REAL')!r}"
+    )
+
+
+def test_migration_disambiguates_r_yujiujing_real(factory_id_to_name):
+    """PR #395 fix lock: name must stay disambiguated. Symmetric to R_SHANGMA above."""
+    assert factory_id_to_name.get("R_YUJIUJING_REAL") == "御九井 日料 (真实)", (
+        f"R_YUJIUJING_REAL must use disambiguated name (PR #395 fix); "
+        f"got {factory_id_to_name.get('R_YUJIUJING_REAL')!r}"
+    )
+
+
+def test_migration_names_are_globally_unique(factory_id_to_name):
+    """Two R_*_REAL rows must NEVER share a name string — UNIQUE constraint
+    on factories.name would reject the second one regardless of which legacy
+    row collides.
+    """
+    names = list(factory_id_to_name.values())
+    duplicates = [n for n in set(names) if names.count(n) > 1]
+    assert not duplicates, (
+        f"14 R_*_REAL rows must have unique names; duplicates found: {duplicates}"
+    )
 
 
 # ============================================================

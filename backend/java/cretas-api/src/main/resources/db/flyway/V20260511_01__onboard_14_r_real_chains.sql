@@ -46,6 +46,17 @@
 --   so no `flyway repair` is required — Java picks up the corrected
 --   migration on next deploy.
 --
+-- P0v2 fix 2026-05-11 (chat1, post-PR #395):
+--   R_SHANGMA_HG_REAL name disambiguated from '上马火锅' → '上马火锅 (真实)'
+--   to avoid collision with legacy R_SMH test_db seed (cretas_db). PR #395
+--   fixed R_YUJIUJING_REAL ↔ R_YJJ_DEMO prod_db collision; this fix handles
+--   the test_db symmetric case + applies prod_db reconciliation via
+--   V20260512_01 sync migration. FlywayConfig.java auto-repair handles
+--   checksum lock for prod_db (V20260511_01 success=true with checksum
+--   -1849470695). Plan A long-term: unique-from-day-1 names for any new
+--   env (stage, dev, future test rebuild) — no manual delete-and-forget.
+--   Subagent A sweep 2026-05-11: only this 1 remaining exact conflict.
+--
 -- Spec: docs/superpowers/specs/2026-05-11-phase-2d-silver-migration-and-factory-impl-spec.md §5.6
 -- Seed: backend/python/smartbi/database/migrations/V20260511_02__t6_6_etl_seed_14_real_chains.sql
 -- Audit: docs/qa-audits/2026-05-12-restaurant-data-readiness-prod-evidence.md
@@ -64,7 +75,8 @@ INSERT INTO factories (
     ('R_JINRINIUSHI_REAL',    '今日牛事',        'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_LINJIAYAN_REAL',      '邻家宴',          'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_QINGHUAJIAO_REAL',    '青花椒',          'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
-    ('R_SHANGMA_HG_REAL',     '上马火锅',        'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
+    -- P0v2 fix: disambiguated from '上马火锅' (collided with legacy R_SMH in test_db).
+    ('R_SHANGMA_HG_REAL',     '上马火锅 (真实)',  'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_XIMAXIANG_REAL',      '唏嘛香 牛肉面',   'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_XINBASHU_REAL',       '鑫巴蜀',          'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_YONGHE_REAL',         '永和豆浆',        'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),

@@ -1,0 +1,65 @@
+-- Phase 2D P0v2 reconciliation — sync prod_db R_SHANGMA_HG_REAL name to disambiguated form.
+--
+-- Steve sign-off 2026-05-11 (Plan A long-term) on Phase 2D R_*_REAL onboarding migration.
+--
+-- Background
+-- ----------
+-- PR #395 (chat1, 2026-05-12) deployed V20260511_01 successfully to cretas_prod_db
+-- with R_SHANGMA_HG_REAL row inserted at name = '上马火锅'. After deploy, Subagent A
+-- sweep of cretas_db (test) discovered legacy seed R_SMH already owns name = '上马火锅'
+-- (short-ID test-only artifact, never present in prod_db). On the next test deploy,
+-- Flyway will attempt to apply V20260511_01 fresh against cretas_db and fail with the
+-- same `duplicate key value violates unique constraint ukrjab5dbtnnpf6t623u4t24ikq`
+-- error PR #395 saw on prod_db before the R_YJJ_DEMO disambiguation fix.
+--
+-- Plan A (long-term, idempotent-across-envs):
+--   1. V20260511_01 SQL rewritten this PR — '上马火锅' → '上马火锅 (真实)' (parallel to
+--      the prior R_YUJIUJING_REAL disambiguation from PR #395). New envs (test_db,
+--      future stage / dev / rebuild) will insert the row already disambiguated, no
+--      UNIQUE collision.
+--   2. THIS MIGRATION reconciles the EXISTING prod_db row that PR #395 inserted at
+--      the old name, bringing it in sync with the corrected V20260511_01 SQL so
+--      `cretas_prod_db.factories` row data matches the migration source of truth.
+--   3. FlywayConfig.java auto-repair handles the V20260511_01 checksum lock that
+--      results from modifying the V20260511_01 file (prod_db has the old checksum
+--      -1849470695 in flyway_schema_history; Spring Boot Flyway validation would
+--      otherwise fail on next startup with `checksum mismatch`).
+--
+-- Idempotency
+-- -----------
+-- The `WHERE name = '上马火锅'` clause makes re-runs a no-op once the row is already
+-- disambiguated. Safe to re-apply (e.g. Flyway repair / manual replay scenarios).
+--
+-- When this UPDATE is a no-op
+-- ---------------------------
+-- - cretas_db (test): V20260511_01 has never applied (0 rows in flyway_schema_history
+--   per Subagent A). When test deploy runs both migrations fresh, V20260511_01 will
+--   insert the row already at name '上马火锅 (真实)'. The WHERE clause here matches
+--   nothing → no-op.
+-- - Any FUTURE env (stage / dev / rebuilt test): same as above — V20260511_01 inserts
+--   disambiguated, this UPDATE no-ops.
+-- - cretas_prod_db: V20260511_01 already applied (PR #395, success=true 2026-05-12
+--   10:00:30 UTC) with the OLD name '上马火锅'. This UPDATE will match and rename
+--   exactly 1 row.
+--
+-- When NOT to skip this migration
+-- -------------------------------
+-- Any env that successfully applied V20260511_01 BEFORE this PR's modification —
+-- that's cretas_prod_db today. Skipping leaves prod_db row at the stale name,
+-- diverged from migration source of truth and from all other envs.
+--
+-- Subagent A sweep 2026-05-11 confirmed only ONE remaining exact-string conflict
+-- across the 14 R_*_REAL roster (R_SHANGMA_HG_REAL ↔ R_SMH). Fuzzy partial matches
+-- (R_ITE / R_XMX / R_YJJ vs proposed) don't trigger UNIQUE because they're distinct
+-- strings.
+--
+-- Spec: docs/superpowers/specs/2026-05-11-phase-2d-silver-migration-and-factory-impl-spec.md §5.6
+-- Prior PR: #395 (R_YUJIUJING_REAL disambiguation + V20260511_01 prod_db apply)
+-- This PR: P0v2 long-term fix for R_SHANGMA_HG_REAL test_db symmetric case
+-- Audit: Subagent A sweep 2026-05-11 (only remaining exact conflict)
+
+UPDATE factories
+   SET name = '上马火锅 (真实)',
+       updated_at = NOW()
+ WHERE id = 'R_SHANGMA_HG_REAL'
+   AND name = '上马火锅';
