@@ -32,6 +32,7 @@ from smartbi_compat.api.analysis_finance import (
     _utc_now_iso,
     _fetch_all,
 )
+from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import wrap_response
 from smartbi_compat.auth import verify_jwt_and_factory, AuthContext
@@ -1893,7 +1894,7 @@ async def get_inventory_analysis(
     startDate: date = Query(..., alias="startDate"),
     endDate: date = Query(..., alias="endDate"),
     analysisType: Optional[str] = Query(None, alias="analysisType"),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java SmartBIAnalysisController.getInventoryAnalysis line 411-448.
 

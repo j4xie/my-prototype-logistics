@@ -66,6 +66,7 @@ from smartbi_compat.api.analysis_sales import (
 
 from sqlalchemy import text
 
+from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import wrap_response
@@ -773,7 +774,7 @@ async def get_region_analysis(
     startDate: date = Query(..., alias="startDate"),
     endDate: date = Query(..., alias="endDate"),
     region: Optional[str] = None,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getRegionAnalysis line 181-218.
 

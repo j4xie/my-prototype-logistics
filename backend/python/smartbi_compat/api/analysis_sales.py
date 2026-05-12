@@ -38,6 +38,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 
 from smartbi_compat.api.analysis import _query_sales_data, wrap_response
+from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import _java_isoformat
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
@@ -1729,7 +1730,7 @@ async def get_sales_analysis(
     endDate: date = Query(..., alias="endDate"),
     department: Optional[str] = None,
     dimension: Optional[str] = None,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getSalesAnalysis line 98-138.
 
