@@ -237,6 +237,31 @@ function statusTag(status: string): { type: string; label: string } {
   }
 }
 
+/**
+ * 汇总收货数量 (六扇门 May 7 transcript MINOR gap close):
+ * 客户想直接在列表看到这次收了多少。
+ * 多 item 同单位 → 求和; 多单位 → 显式分组显示 (e.g. "120 kg + 30 L")。
+ */
+function totalReceivedQuantity(row: ReceiveRow): string {
+  const items = row.items || [];
+  if (items.length === 0) return '-';
+  // group by unit, accumulate quantity
+  const byUnit = new Map<string, number>();
+  for (const it of items) {
+    const qty = Number(it.receivedQuantity) || 0;
+    const unit = (it.unit || '').trim() || '-';
+    byUnit.set(unit, (byUnit.get(unit) || 0) + qty);
+  }
+  // format: strip trailing zeros, max 3 decimals
+  const fmt = (n: number) => {
+    const s = n.toFixed(3);
+    return s.replace(/\.?0+$/, '');
+  };
+  return Array.from(byUnit.entries())
+    .map(([unit, qty]) => `${fmt(qty)} ${unit}`)
+    .join(' + ');
+}
+
 function formatDate(s: string): string {
   if (!s) return '';
   return new Date(s).toLocaleString('zh-CN', { hour12: false });
@@ -291,6 +316,9 @@ onMounted(() => { loadData(); loadOptions(); });
         <el-table-column prop="receiveDate" label="入库日期" width="110" />
         <el-table-column prop="itemCount" label="物料行数" width="90" align="center">
           <template #default="{ row }">{{ row.itemCount ?? row.items?.length ?? '-' }}</template>
+        </el-table-column>
+        <el-table-column label="收货数量" min-width="140" align="right" show-overflow-tooltip>
+          <template #default="{ row }">{{ totalReceivedQuantity(row) }}</template>
         </el-table-column>
         <el-table-column prop="createdByName" label="创建人" width="110" show-overflow-tooltip />
         <el-table-column label="创建时间" width="170">
