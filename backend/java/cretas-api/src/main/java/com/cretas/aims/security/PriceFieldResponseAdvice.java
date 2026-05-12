@@ -123,7 +123,20 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
         }
 
         // Check permission once — short-circuit for users with full access.
-        if (permissionService.hasPermission(currentUser, PRICE_VIEW_PERMISSION)) {
+        // Wrapped to fail-CLOSED on PermissionService faults (DB outage,
+        // cache misconfig, NPE). An unhandled exception here would
+        // propagate to a 500 response on every request — bad UX and brittle.
+        // On exception we treat the user as NOT permitted (strip prices),
+        // which preserves data confidentiality.
+        boolean canViewPrices;
+        try {
+            canViewPrices = permissionService.hasPermission(currentUser, PRICE_VIEW_PERMISSION);
+        } catch (Exception e) {
+            log.warn("PriceFieldResponseAdvice: permission check failed for userId={}, defaulting fail-CLOSED (strip): {}",
+                    currentUser.getId(), e.getMessage());
+            canViewPrices = false;
+        }
+        if (canViewPrices) {
             return body;
         }
 
