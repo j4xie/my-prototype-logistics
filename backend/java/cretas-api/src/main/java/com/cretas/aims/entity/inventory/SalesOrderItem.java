@@ -89,10 +89,14 @@ public class SalesOrderItem extends BaseEntity {
     @Column(name = "box_quantity", precision = 15, scale = 2)
     private BigDecimal boxQuantity;
 
-    /** 成本小计 = 数量 × 成本单价 */
+    /** 成本小计 = 数量 × 成本单价. Price-sensitive: returns null when costUnitPrice stripped. */
     @Transient
+    @PriceSensitive
     public BigDecimal getCostTotal() {
-        if (costUnitPrice == null || quantity == null) return BigDecimal.ZERO;
+        // Defensive null guard — costUnitPrice is @PriceSensitive, stripped to null
+        // for warehouse_manager. Original ZERO fallback would have leaked "0.00" cost
+        // for stripped rows, misleading non-price users into thinking cost is free.
+        if (costUnitPrice == null || quantity == null) return null;
         return quantity.multiply(costUnitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
@@ -110,10 +114,13 @@ public class SalesOrderItem extends BaseEntity {
 
     // ==================== 计算属性 ====================
 
-    /** 行金额 = 数量 × 单价 */
+    /** 行金额 = 数量 × 单价. Price-sensitive: returns null when unitPrice stripped. */
     @Transient
+    @PriceSensitive
     public BigDecimal getLineAmount() {
-        if (unitPrice == null || quantity == null) return BigDecimal.ZERO;
+        // Defensive null guard — unitPrice is @PriceSensitive, stripped to null
+        // for warehouse_manager. Return null (not ZERO) to signal "not visible" vs "free".
+        if (unitPrice == null || quantity == null) return null;
         BigDecimal amount = quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
         if (discountRate != null && discountRate.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal discountMultiplier = BigDecimal.ONE.subtract(

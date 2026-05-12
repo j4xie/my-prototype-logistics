@@ -94,25 +94,32 @@ public class PurchaseOrderItem extends BaseEntity {
 
     // ==================== 计算属性 ====================
 
-    /** 行金额 = 数量 × 单价 */
+    /** 行金额 = 数量 × 单价. Price-sensitive: returns null when unitPrice stripped. */
     @Transient
+    @PriceSensitive
     public BigDecimal getLineAmount() {
-        if (unitPrice == null || quantity == null) return BigDecimal.ZERO;
+        // Defensive null guard — unitPrice is @PriceSensitive, stripped to null
+        // for warehouse_manager. Return null (not ZERO) to avoid leaking "free".
+        if (unitPrice == null || quantity == null) return null;
         return quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
-    /** 含税金额 */
+    /** 含税金额. Price-sensitive: returns null when unitPrice / taxRate stripped. */
     @Transient
+    @PriceSensitive
     public BigDecimal getLineAmountWithTax() {
         BigDecimal amount = getLineAmount();
+        // Defensive: getLineAmount() now returns null when unitPrice stripped.
+        if (amount == null) return null;
         if (taxRate == null || taxRate.compareTo(BigDecimal.ZERO) == 0) return amount;
         BigDecimal taxMultiplier = BigDecimal.ONE.add(taxRate.divide(new BigDecimal("100"), 6, BigDecimal.ROUND_HALF_UP));
         return amount.multiply(taxMultiplier).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 
-    /** 未收货数量 */
+    /** 未收货数量. Non-price (no @PriceSensitive). */
     @Transient
     public BigDecimal getPendingQuantity() {
+        if (quantity == null) return BigDecimal.ZERO;
         BigDecimal received = receivedQuantity != null ? receivedQuantity : BigDecimal.ZERO;
         return quantity.subtract(received);
     }

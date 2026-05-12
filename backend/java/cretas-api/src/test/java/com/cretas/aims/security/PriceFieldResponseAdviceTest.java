@@ -71,6 +71,15 @@ class PriceFieldResponseAdviceTest {
     void setup() {
         httpRequest = new MockHttpServletRequest();
         serverRequest = new ServletServerHttpRequest(httpRequest);
+        // Defensive: clear any ThreadLocal leakage from prior tests in the same JVM.
+        // In prod, PriceSensitiveContextFilter handles this — tests have no such filter.
+        PriceSensitiveContext.clear();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void teardown() {
+        // Always clear after — mirrors prod PriceSensitiveContextFilter finally-block contract.
+        PriceSensitiveContext.clear();
     }
 
     // ───────── Helpers ─────────
@@ -354,5 +363,211 @@ class PriceFieldResponseAdviceTest {
             assertNull(o.getTotalAmount());
             assertNull(o.getItems().get(0).getUnitPrice());
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // P0 hotfix 2026-05-12 — @PriceSensitive METHOD target + defensive null guards
+    // Regression test suite: ensures stripped fields don't trigger NPE in
+    // @Transient computed getters during Jackson serialization.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Test
+    @DisplayName("P0: SalesOrder.getPayableAmount() returns null safely after totalAmount stripped (no NPE)")
+    void p0_salesOrder_getPayableAmount_noNPE_afterStrip() {
+        asUser(10L, false);
+
+        SalesOrder so = new SalesOrder();
+        so.setId("so-1");
+        so.setOrderNumber("SO-2026-001");
+        so.setTotalAmount(new BigDecimal("5000.00"));
+        so.setDiscountAmount(new BigDecimal("100.00"));
+        so.setTaxAmount(new BigDecimal("650.00"));
+
+        // Run strip
+        run(so);
+
+        // Field strip should have nulled totalAmount/discountAmount/taxAmount
+        assertNull(so.getTotalAmount(), "totalAmount stripped");
+        assertNull(so.getDiscountAmount(), "discountAmount stripped");
+        assertNull(so.getTaxAmount(), "taxAmount stripped");
+
+        // KEY ASSERTION: getPayableAmount() with stripped totalAmount must NOT throw NPE.
+        // This is the exact regression that broke /api/mobile/F006/sales/orders.
+        assertDoesNotThrow(() -> so.getPayableAmount(),
+                "getPayableAmount() must not NPE when totalAmount is null (defensive guard)");
+        assertNull(so.getPayableAmount(),
+                "getPayableAmount() should return null when totalAmount stripped");
+
+        // Also verify ThreadLocal hide flag was set so Jackson modifier would short-circuit.
+        assertTrue(PriceSensitiveContext.shouldHide("procurement:price:view"),
+                "ThreadLocal hide flag set for warehouse_manager scenario");
+        PriceSensitiveContext.clear(); // explicit cleanup for test isolation
+    }
+
+    @Test
+    @DisplayName("P0: SalesOrderItem.getCostTotal()/getLineAmount() return null safely after prices stripped")
+    void p0_salesOrderItem_getters_noNPE_afterStrip() {
+        asUser(10L, false);
+
+        SalesOrderItem item = new SalesOrderItem();
+        item.setId(1L);
+        item.setProductName("青花椒成品");
+        item.setQuantity(new BigDecimal("500.0000"));
+        item.setUnitPrice(new BigDecimal("100.0000"));
+        item.setCostUnitPrice(new BigDecimal("80.0000"));
+        item.setDiscountRate(new BigDecimal("5.00"));
+        item.setTaxRate(new BigDecimal("13.00"));
+
+        run(item);
+
+        assertNull(item.getUnitPrice(), "unitPrice stripped");
+        assertNull(item.getCostUnitPrice(), "costUnitPrice stripped");
+
+        // KEY ASSERTIONS: getters must NOT throw, must return null safely
+        assertDoesNotThrow(() -> item.getLineAmount(),
+                "getLineAmount() must not NPE when unitPrice null");
+        assertDoesNotThrow(() -> item.getCostTotal(),
+                "getCostTotal() must not NPE when costUnitPrice null");
+
+        assertNull(item.getLineAmount(),
+                "getLineAmount() returns null when unitPrice stripped");
+        assertNull(item.getCostTotal(),
+                "getCostTotal() returns null when costUnitPrice stripped");
+
+        // Non-price preserved
+        assertEquals(new BigDecimal("500.0000"), item.getQuantity());
+        PriceSensitiveContext.clear();
+    }
+
+    @Test
+    @DisplayName("P0: PurchaseOrderItem.getLineAmount()/getLineAmountWithTax() safe after unitPrice stripped")
+    void p0_purchaseOrderItem_getters_noNPE_afterStrip() {
+        asUser(10L, false);
+
+        PurchaseOrderItem item = new PurchaseOrderItem();
+        item.setId(1L);
+        item.setMaterialName("青花椒");
+        item.setQuantity(new BigDecimal("100.0000"));
+        item.setUnitPrice(new BigDecimal("123.45"));
+        item.setTaxRate(new BigDecimal("13.00"));
+
+        run(item);
+
+        assertNull(item.getUnitPrice());
+        assertNull(item.getTaxRate());
+
+        assertDoesNotThrow(() -> item.getLineAmount());
+        assertDoesNotThrow(() -> item.getLineAmountWithTax());
+        assertNull(item.getLineAmount());
+        assertNull(item.getLineAmountWithTax());
+
+        // Non-price getPendingQuantity also defended against null quantity
+        item.setReceivedQuantity(new BigDecimal("10.0000"));
+        assertDoesNotThrow(() -> item.getPendingQuantity());
+        PriceSensitiveContext.clear();
+    }
+
+    @Test
+    @DisplayName("P0: MaterialBatch.getTotalPrice()/getTotalValue() return null after unitPrice stripped")
+    void p0_materialBatch_getters_noNPE_afterStrip() {
+        asUser(10L, false);
+
+        MaterialBatch batch = new MaterialBatch();
+        batch.setId("batch-1");
+        batch.setBatchNumber("BATCH-001");
+        batch.setUnitPrice(new BigDecimal("88.88"));
+        batch.setReceiptQuantity(new BigDecimal("10.00"));
+
+        run(batch);
+
+        assertNull(batch.getUnitPrice());
+        assertDoesNotThrow(() -> batch.getTotalPrice());
+        assertDoesNotThrow(() -> batch.getTotalValue());
+        assertNull(batch.getTotalPrice());
+        assertNull(batch.getTotalValue());
+        PriceSensitiveContext.clear();
+    }
+
+    @Test
+    @DisplayName("P0: PageResponse with SalesOrders + items — full E2E NPE-free path")
+    void p0_pageResponse_salesOrders_noNPE() {
+        asUser(10L, false);
+
+        // Build a SalesOrder with items, like prod /sales/orders response
+        SalesOrder so = new SalesOrder();
+        so.setId("so-prod-1");
+        so.setOrderNumber("SO-PROD-001");
+        so.setTotalAmount(new BigDecimal("5000.00"));
+        so.setDiscountAmount(new BigDecimal("0.00"));
+        so.setTaxAmount(new BigDecimal("0.00"));
+
+        SalesOrderItem item = new SalesOrderItem();
+        item.setId(1L);
+        item.setProductName("青花椒成品");
+        item.setQuantity(new BigDecimal("50.0000"));
+        item.setUnitPrice(new BigDecimal("100.0000"));
+        item.setCostUnitPrice(new BigDecimal("80.0000"));
+        so.setItems(Arrays.asList(item));
+
+        PageResponse<SalesOrder> page = new PageResponse<>();
+        page.setContent(Arrays.asList(so));
+        page.setTotalElements(1L);
+
+        ApiResponse<PageResponse<SalesOrder>> response = ApiResponse.success("ok", page);
+
+        // Run the full advice — including ThreadLocal setup
+        run(response);
+
+        SalesOrder stripped = response.getData().getContent().get(0);
+        assertNull(stripped.getTotalAmount(), "totalAmount stripped");
+        assertNull(stripped.getItems().get(0).getUnitPrice(), "item unitPrice stripped");
+
+        // Critical: computed getters must NOT NPE — this is the exact prod regression scenario
+        assertDoesNotThrow(() -> stripped.getPayableAmount(),
+                "SalesOrder.getPayableAmount() must not NPE in PageResponse path (PROD regression)");
+        assertDoesNotThrow(() -> stripped.getItems().get(0).getLineAmount());
+        assertDoesNotThrow(() -> stripped.getItems().get(0).getCostTotal());
+
+        assertNull(stripped.getPayableAmount());
+        PriceSensitiveContext.clear();
+    }
+
+    @Test
+    @DisplayName("P0: admin role — getter returns correct value (not null), ThreadLocal not set")
+    void p0_adminRole_getters_returnRealValue() {
+        asUser(1L, true);  // can view prices
+
+        SalesOrder so = new SalesOrder();
+        so.setTotalAmount(new BigDecimal("5000.00"));
+        so.setDiscountAmount(new BigDecimal("100.00"));
+        so.setTaxAmount(new BigDecimal("650.00"));
+
+        run(so);
+
+        // Values preserved (no strip)
+        assertEquals(new BigDecimal("5000.00"), so.getTotalAmount());
+        // Computed getter returns real value: 5000 - 100 + 650 = 5550
+        assertEquals(new BigDecimal("5550.00"), so.getPayableAmount());
+
+        // ThreadLocal NOT set for admin
+        assertFalse(PriceSensitiveContext.shouldHide("procurement:price:view"),
+                "ThreadLocal NOT set when user has permission (short-circuit branch)");
+    }
+
+    @Test
+    @DisplayName("P0: PriceSensitiveContext lifecycle — hide/clear works correctly")
+    void p0_threadLocal_lifecycle() {
+        // Initially clean
+        assertFalse(PriceSensitiveContext.shouldHide("procurement:price:view"));
+
+        // hide() sets flag
+        PriceSensitiveContext.hide();
+        assertTrue(PriceSensitiveContext.shouldHide("procurement:price:view"));
+        assertTrue(PriceSensitiveContext.shouldHide("any:other:permission"),
+                "hide flag is global for current iteration (single-flag impl)");
+
+        // clear() removes flag
+        PriceSensitiveContext.clear();
+        assertFalse(PriceSensitiveContext.shouldHide("procurement:price:view"));
     }
 }

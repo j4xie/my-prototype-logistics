@@ -243,16 +243,21 @@ public class SalesOrder extends BaseEntity {
     @Transient
     public BigDecimal calculateTotalAmount() {
         if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        // Defensive: items[].getLineAmount() may return null when unitPrice stripped
+        // (@PriceSensitive). Filter nulls so reduce doesn't NPE on BigDecimal::add.
         return items.stream()
                 .map(SalesOrderItem::getLineAmount)
+                .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Transient
+    @PriceSensitive
     public BigDecimal getPayableAmount() {
         // PR #423 hardening: PriceFieldResponseAdvice strips totalAmount to null for
-        // roles without procurement:price:view. Derived getter must mirror that strip
-        // — otherwise Jackson NPEs on subtract(...) when serializing for those roles.
+        // roles without procurement:price:view (e.g. warehouse_manager). Derived getter
+        // must mirror that strip — otherwise Jackson NPEs on subtract(...) when
+        // serializing for those roles → HTTP 500 (P0 fix 2026-05-12, PR #443).
         if (totalAmount == null) return null;
         BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
         BigDecimal tax = taxAmount != null ? taxAmount : BigDecimal.ZERO;

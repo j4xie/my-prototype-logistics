@@ -212,19 +212,24 @@ public class MaterialBatch extends BaseEntity {
     /**
      * 获取总价
      * 计算公式: unitPrice × receiptQuantity
+     * Price-sensitive: returns null when unitPrice stripped for warehouse_manager.
      */
     @Transient
+    @PriceSensitive
     public BigDecimal getTotalPrice() {
+        // Defensive null guard — unitPrice is @PriceSensitive, stripped to null
+        // for warehouse_manager. Return null (not ZERO) to avoid leaking "free".
         if (unitPrice == null || receiptQuantity == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         return unitPrice.multiply(receiptQuantity);
     }
 
     /**
-     * 获取总价值（与getTotalPrice相同）
+     * 获取总价值（与getTotalPrice相同）. Price-sensitive — see {@link #getTotalPrice()}.
      */
     @Transient
+    @PriceSensitive
     public BigDecimal getTotalValue() {
         return getTotalPrice();
     }

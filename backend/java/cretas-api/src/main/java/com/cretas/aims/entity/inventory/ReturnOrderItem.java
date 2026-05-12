@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.inventory;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -45,9 +46,11 @@ public class ReturnOrderItem extends BaseEntity {
     @Column(name = "quantity", nullable = false, precision = 15, scale = 4)
     private BigDecimal quantity;
 
+    @PriceSensitive
     @Column(name = "unit_price", precision = 15, scale = 4)
     private BigDecimal unitPrice;
 
+    @PriceSensitive
     @Column(name = "line_amount", precision = 15, scale = 2)
     private BigDecimal lineAmount;
 
@@ -66,10 +69,16 @@ public class ReturnOrderItem extends BaseEntity {
 
     // ==================== 计算 ====================
 
+    /** 行金额 = lineAmount (if persisted) else 数量 × 单价. Price-sensitive: returns null when stripped. */
     @Transient
+    @PriceSensitive
     public BigDecimal getLineAmount() {
+        // Defensive null guard — both lineAmount and unitPrice are @PriceSensitive,
+        // stripped to null for warehouse_manager. Original ZERO fallback would have
+        // leaked "0.00" for stripped rows, misleading non-price users into thinking
+        // the return is free. Return null instead to signal "not visible" vs "free".
         if (lineAmount != null) return lineAmount;
-        if (unitPrice == null || quantity == null) return BigDecimal.ZERO;
+        if (unitPrice == null || quantity == null) return null;
         return quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 }

@@ -3,6 +3,7 @@ package com.cretas.aims.entity.inventory;
 import com.cretas.aims.entity.BaseEntity;
 import com.cretas.aims.entity.enums.ReturnOrderStatus;
 import com.cretas.aims.entity.enums.ReturnType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -78,6 +79,7 @@ public class ReturnOrder extends BaseEntity {
     @Column(name = "return_date", nullable = false)
     private LocalDate returnDate;
 
+    @PriceSensitive
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -110,8 +112,12 @@ public class ReturnOrder extends BaseEntity {
     @Transient
     public BigDecimal calculateTotalAmount() {
         if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        // Defensive: items[].getLineAmount() may return null when unitPrice/lineAmount
+        // are @PriceSensitive-stripped (PR #443 F2 fix). Filter nulls so reduce doesn't
+        // NPE on BigDecimal::add — mirrors SalesOrder.calculateTotalAmount.
         return items.stream()
                 .map(ReturnOrderItem::getLineAmount)
+                .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
