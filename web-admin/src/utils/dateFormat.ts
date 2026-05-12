@@ -10,6 +10,20 @@ export function toDateString(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+// el-date-picker 配 `value-format="YYYY-MM-DD"` 时 v-model 是 string 而非 Date,
+// TS 类型 `[Date, Date]` 与运行时不符. 直接 `.toISOString()` 会抛
+// "e.toISOString is not a function" (PR #468 §6 P1-A).
+export function toApiDateString(value: Date | string | null | undefined): string {
+  if (value == null) return '';
+  if (typeof value === 'string') {
+    return value.length >= 10 ? value.slice(0, 10) : '';
+  }
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return toDateString(value);
+  }
+  return '';
+}
+
 /** ISO 字符串 → "YYYY-MM-DD HH:mm:ss" (去掉T和毫秒) */
 export function formatDateTime(dateStr?: string | null): string {
   if (!dateStr) return '-';

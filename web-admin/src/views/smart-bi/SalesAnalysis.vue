@@ -8,6 +8,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
+import { toApiDateString } from '@/utils/dateFormat';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -833,6 +834,11 @@ async function loadOverviewData(signal?: AbortSignal) {
     // SMARTBI_MIGRATED, 5xx, network error, etc — fan-out would just re-hit
     // the same endpoint with the same outcome.
     overviewFailed = true;
+    // PR #468 §6 P1-A: surface error to user (previously silent → stale-data UX gap).
+    // 410 SMARTBI_MIGRATED + 401/403 are surfaced by axios interceptor already; this
+    // covers 5xx, network, parse errors. ElMessage dedupes by message + duration.
+    const msg = error instanceof Error ? error.message : '未知错误';
+    ElMessage.error(`加载销售概览失败: ${msg}`);
     console.warn('加载销售概览失败:', error);
   } finally {
     kpiLoading.value = false;
@@ -946,9 +952,9 @@ async function loadProductData() {
   }
 }
 
-function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
+// PR #468 §6 P1-A: 委托给 toApiDateString — el-date-picker 配 value-format="YYYY-MM-DD"
+// 时 v-model 实际是 string, 旧实现 .toISOString() 抛 TypeError → 用户拿到陈旧数据.
+const formatDate = toApiDateString;
 
 function initCharts() {
   initTrendChart();

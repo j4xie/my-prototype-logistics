@@ -43,6 +43,7 @@ import {
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { formatNumber, formatAxisValue } from '@/utils/format-number';
+import { toApiDateString } from '@/utils/dateFormat';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
@@ -588,13 +589,14 @@ async function loadGoldFinSummary() {
     goldFinFallbackLabel.value = '';
     return;
   }
-  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  // PR #468 §6 P1-A: dateRange 运行时是 [string, string] (value-format="YYYY-MM-DD"),
+  // 旧 iso(d: Date) 在用户改日期后会 TypeError. 用 toApiDateString 容忍 string/Date.
   const [s, e] = dateRange.value
-    ? [iso(dateRange.value[0]), iso(dateRange.value[1])]
+    ? [toApiDateString(dateRange.value[0]), toApiDateString(dateRange.value[1])]
     : (() => {
         const now = new Date();
         const start = new Date(); start.setTime(start.getTime() - 3600 * 1000 * 24 * 365);
-        return [iso(start), iso(now)];
+        return [toApiDateString(start), toApiDateString(now)];
       })();
   try {
     const r = await getFinanceSummary({
@@ -1043,9 +1045,9 @@ watch([analysisType, dateRange], () => {
   }
 });
 
-function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
+// PR #468 §6 P1-A sister site: el-date-picker value-format="YYYY-MM-DD" emits string,
+// 旧实现 .toISOString() 抛 TypeError. 同 SalesAnalysis.vue 修复.
+const formatDate = toApiDateString;
 
 async function loadFinanceData() {
   if (!factoryId.value || !dateRange.value) return;
