@@ -1,0 +1,6 @@
+[GET] http://139.196.165.140:8097/vite.svg => [200] OK
+[GET] http://139.196.165.140:8097/api/admin/role-permissions => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/canvas/role-module-override => [200] 
+[GET] http://139.196.165.140:8097/smartbi-api/health => [200] OK
+[GET] http://139.196.165.140:8097/api/mobile/F006/config/disabled-modules => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/uploads?page=0&size=200 => [200] 

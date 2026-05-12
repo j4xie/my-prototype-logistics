@@ -1,0 +1,3 @@
+[ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://139.196.165.140:8097/smartbi-api/api/smartbi/capability/F006:0
+[ERROR] [capability] fetch failed, falling back to permissive mode: Error: capability fetch failed: 503
+    at http://139.196.165.140:8097/assets/useCapability-6L9TEw4O.js:1:4523 @ http://139.196.165.140:8097/assets/useCapability-6L9TEw4O.js:0

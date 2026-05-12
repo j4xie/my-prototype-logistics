@@ -1,0 +1,12 @@
+[GET] http://139.196.165.140:8097/vite.svg => [200] OK
+[GET] http://139.196.165.140:8097/api/admin/role-permissions => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/canvas/role-module-override => [200] 
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/gold/analysis-results?template_codes=monthly_trend%2Ctop_n_by_dim%2Ccategory_distribution%2Canomaly_detection&factory_id=F006 => [200] OK
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/capability/F006 => [503] Service Unavailable
+[GET] http://139.196.165.140:8097/api/mobile/F006/config/disabled-modules => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/uploads?page=0&size=200 => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/dashboard/executive?period=month => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/dashboard/executive/custom?startDate=2026-02-12&endDate=2026-05-12 => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/dashboard/executive/custom?startDate=2025-01-01&endDate=2025-12-31 => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/dashboard/executive/custom?startDate=2024-01-01&endDate=2024-12-31 => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F006/smart-bi/dashboard/executive/insights?period=month

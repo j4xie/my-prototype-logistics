@@ -1,0 +1,7 @@
+[ERROR] Failed to load resource: the server responded with a status of 404 () @ http://139.196.165.140:8097/api/mobile/F001/smart-bi/analysis/finance?startDate=2026-04-12&endDate=2026-05-12&analysisType=profit:0
+[ERROR] 加载财务数据失败: ApiError: 请求的接口不存在 (GET /F001/smart-bi/analysis/finance?startDate=2026-04-12&endDate=2026-05-12&analysisType=profit)。可能是后端未上线该功能,或当前账号无权访问。
+    at http://139.196.165.140:8097/assets/request-FMaoGuSk.js:6:2494
+    at async j.request (http://139.196.165.140:8097/assets/index-B9ygI19o.js:5:1982)
+    at async Promise.all (index 0)
+    at async T (http://139.196.165.140:8097/assets/index-DFR-6hYV.js:1:2194) @ http://139.196.165.140:8097/assets/index-DFR-6hYV.js:0
+[ERROR] Failed to load resource: the server responded with a status of 404 () @ http://139.196.165.140:8097/api/mobile/F001/smart-bi/analysis/finance?startDate=2026-04-12&endDate=2026-05-12&analysisType=cost:0
