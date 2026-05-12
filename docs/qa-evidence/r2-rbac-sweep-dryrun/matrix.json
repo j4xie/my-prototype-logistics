@@ -1,0 +1,14 @@
+[
+  {
+    "cell_id": "C1",
+    "endpoint": "/api/mobile/F001/material-batches?page=1&size=10",
+    "role": "admin",
+    "expected": "REAL",
+    "actual_status": 200,
+    "verdict": "PASS",
+    "leak_fields": [],
+    "warn_fields": [],
+    "rationale": "admin sees 30 non-null price field(s) (sampled: $.data.content[0].totalValue=3000.0)",
+    "raw_response_path": "r2-rbac-sweep-dryrun\\raw\\C1-admin.json"
+  }
+]
