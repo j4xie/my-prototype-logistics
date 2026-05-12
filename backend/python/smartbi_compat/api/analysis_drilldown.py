@@ -29,6 +29,7 @@ from smartbi_compat.api.analysis_sales import (  # noqa: E402
 from smartbi_compat.api.analysis_region import _get_region_analysis  # noqa: E402
 from smartbi_compat.api.analysis_department import _get_department_ranking  # noqa: E402
 from smartbi_compat._java_compat import _format_decimal_half_up  # noqa: E402
+from smartbi_compat._rbac_strip import strip_price_for_role  # noqa: E402
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
 from smartbi_compat.date_range import DateRange  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response, wrap_error  # noqa: E402
@@ -740,7 +741,7 @@ async def drill_down(
         result = await _process_drilldown_tx(
             factory_id=auth.factory_id, request=request,
         )
-        return wrap_response(result)
+        return wrap_response(strip_price_for_role(result, auth.role))
     except DrilldownBusinessException as e:
         return wrap_error(f"Drill-down failed: {e.message}", code=e.code)
     except Exception as e:  # I1: mirror Java controller `catch (Exception e)`

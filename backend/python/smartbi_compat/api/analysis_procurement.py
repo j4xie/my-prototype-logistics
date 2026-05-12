@@ -24,6 +24,7 @@ from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _to_decimal,
     _utc_now_iso,
 )
+from smartbi_compat._rbac_strip import strip_price_for_role  # noqa: E402
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 # Java HashMap iter-order helpers (extracted to shared module per task #22 —
@@ -1212,4 +1213,4 @@ async def get_procurement_analysis(
 ) -> dict:
     """Mirror Java SmartBIAnalysisController.getProcurementAnalysis (line 452-486)."""
     result = await _get_procurement_analysis(factory_id, startDate, endDate, analysisType)
-    return wrap_response(result)
+    return wrap_response(strip_price_for_role(result, auth.role))

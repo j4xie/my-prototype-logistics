@@ -70,6 +70,7 @@ from smartbi_compat.api.analysis_finance import _get_finance_overview
 from smartbi_compat.api.analysis_inventory import _get_inventory_health
 from smartbi_compat.api.analysis_procurement import _get_procurement_overview
 from smartbi_compat.api.analysis_sales import _get_sales_overview
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import _java_isoformat, wrap_response
@@ -459,7 +460,7 @@ async def get_executive_dashboard(
     """
     range_ = _resolve_period(period)
     data = await _build_executive_dashboard(factory_id, period, range_)
-    return wrap_response(data)
+    return wrap_response(strip_price_for_role(data, auth.role))
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/dashboard/executive/custom")
@@ -480,7 +481,7 @@ async def get_executive_dashboard_custom_range(
     # mirror Java by emitting the literal "CUSTOM" placeholder used by
     # _build_empty_dashboard pre-existing Phase 2A primitives.
     data = await _build_executive_dashboard(factory_id, "CUSTOM", range_)
-    return wrap_response(data)
+    return wrap_response(strip_price_for_role(data, auth.role))
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/dashboard")
@@ -501,4 +502,4 @@ async def get_unified_dashboard(
     """
     range_ = _resolve_period(period)
     data = await _build_unified_dashboard(factory_id, period, range_)
-    return wrap_response(data)
+    return wrap_response(strip_price_for_role(data, auth.role))
