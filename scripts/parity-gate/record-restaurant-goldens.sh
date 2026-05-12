@@ -67,6 +67,13 @@ GATE_RATE="${GATE_RATE:-99.945}"
 # is structural-only divergence per Sub-A spec §6.1). Empty = strict default.
 TOLERATE_PATTERNS="${TOLERATE_PATTERNS:-}"
 
+# Blue-Green fallback (Task B / PR #403 §6) — when ON the harness probes both
+# 10010 (blue) and 10020 (green) on the Java host and uses whichever answers
+# /api/mobile/health. Prevents 88/88 false-positive Connection refused when
+# the BG slot flips mid-task. Default ON because every prod parity run since
+# 2026-05-07 has hit at least one BG flip. Set to 0 to disable.
+JAVA_BG_FALLBACK="${JAVA_BG_FALLBACK:-1}"
+
 # Resolve script-local path to compare.py so we can be invoked from anywhere.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPARE_PY="${SCRIPT_DIR}/compare.py"
@@ -91,6 +98,7 @@ echo "  date_range:       ${DATE_RANGE}"
 echo "  reports_dir:      ${REPORTS_DIR}"
 echo "  gate_rate:        ${GATE_RATE}%"
 echo "  tolerate_pattern: ${TOLERATE_PATTERNS:-<strict>}"
+echo "  java_bg_fallback: ${JAVA_BG_FALLBACK}"
 echo ""
 
 # ── Run loop ────────────────────────────────────────────────────────
@@ -112,6 +120,11 @@ run_one() {
     tolerate_arg=(--tolerate-divergence-patterns "${TOLERATE_PATTERNS}")
   fi
 
+  local bg_arg=()
+  if [[ "${JAVA_BG_FALLBACK}" == "1" ]]; then
+    bg_arg=(--java-bg-fallback)
+  fi
+
   python "${COMPARE_PY}" \
     --factory "${factory}" \
     --endpoint "/api/mobile/{factory_id}/smart-bi/analysis/${endpoint_name}" \
@@ -121,7 +134,8 @@ run_one() {
     --output "${report_path}" \
     --gate-rate "${GATE_RATE}" \
     --timeout 30 \
-    "${tolerate_arg[@]}"
+    "${tolerate_arg[@]}" \
+    "${bg_arg[@]}"
   local rc=$?
 
   if [[ ${rc} -eq 0 ]]; then

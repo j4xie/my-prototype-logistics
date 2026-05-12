@@ -87,12 +87,25 @@ PATTERN_B_STRUCTURAL = "PATTERN_B_STRUCTURAL"
 PATTERN_C_VALUE_PLACEHOLDER = "PATTERN_C_VALUE_PLACEHOLDER"  # not currently auto-detected
 REAL_BUG = "REAL_BUG"
 
+# HTTP-layer routing classifications (Phase C cutover awareness, not body-level).
+# Surfaced via compare.classify_routing() before dict_eq runs; see report.py for
+# how these affect verdict/REAL_BUG accounting.
+PATTERN_X_JAVA_DELETED = "PATTERN_X_JAVA_DELETED"
+PATTERN_Y_BOTH_GONE = "PATTERN_Y_BOTH_GONE"
+PATTERN_Z_PYTHON_NOT_IN_SCOPE = "PATTERN_Z_PYTHON_NOT_IN_SCOPE"
+
 # All known pattern letters (CLI accepts these via --tolerate-divergence-patterns).
+# Patterns X/Y/Z are HTTP-layer (see classify_routing) — listed here so
+# `--tolerate-divergence-patterns` can be used as an alternative spelling, but the
+# canonical flags are `--tolerate-java-deleted` / `--tolerate-python-not-in-scope`.
 KNOWN_PATTERNS = {
     "A": PATTERN_A_INT_COLLAPSE,
     "A2": PATTERN_A2_TRAILING_ZERO,
     "B": PATTERN_B_STRUCTURAL,
     "C": PATTERN_C_VALUE_PLACEHOLDER,
+    "X": PATTERN_X_JAVA_DELETED,
+    "Y": PATTERN_Y_BOTH_GONE,
+    "Z": PATTERN_Z_PYTHON_NOT_IN_SCOPE,
 }
 
 

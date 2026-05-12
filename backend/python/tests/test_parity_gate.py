@@ -842,8 +842,9 @@ def test_parse_patterns_arg_empty_returns_none():
 
 
 def test_parse_patterns_arg_unknown_raises():
-    with pytest.raises(ValueError, match="Unknown tolerate-divergence pattern 'Z'"):
-        dict_eq.parse_patterns_arg("Z")
+    # Q is not in KNOWN_PATTERNS (A/A2/B/C plus X/Y/Z added for F-2).
+    with pytest.raises(ValueError, match="Unknown tolerate-divergence pattern 'Q'"):
+        dict_eq.parse_patterns_arg("Q")
 
 
 # ── compare.py CLI integration ──
@@ -924,7 +925,12 @@ def test_compare_cli_default_strict_fails_on_pattern_b(tmp_path):
 
 
 def test_compare_cli_unknown_pattern_letter_rejected(tmp_path):
-    """--tolerate-divergence-patterns Z (unknown) → argparse error."""
+    """--tolerate-divergence-patterns Q (unknown) → argparse error.
+
+    Note: X/Y/Z now valid (registered for HTTP-layer routing tolerance, see
+    PATTERN_X_JAVA_DELETED / PATTERN_Y_BOTH_GONE / PATTERN_Z_PYTHON_NOT_IN_SCOPE
+    in dict_eq.KNOWN_PATTERNS).
+    """
     import compare
 
     java_fix = tmp_path / "java.json"
@@ -938,7 +944,7 @@ def test_compare_cli_unknown_pattern_letter_rejected(tmp_path):
             "--endpoint", "/api/x",
             "--fixtures-java", str(java_fix),
             "--fixtures-python", str(py_fix),
-            "--tolerate-divergence-patterns", "Z",
+            "--tolerate-divergence-patterns", "Q",
         ])
 
 
@@ -977,3 +983,337 @@ def test_summarize_includes_b_context_marker():
     r = dict_eq.dict_eq_match(java, py)
     s = dict_eq.summarize(r)
     assert "b_context=true" in s
+
+
+# ============================================================
+# F-2 — Phase-C routing-aware classification (2026-05-12 cohort sweep finding)
+# ============================================================
+
+
+def test_classify_routing_java_deleted():
+    """Java 404 + Python 200 → java_deleted (handler intentionally removed)."""
+    import compare
+    assert compare.classify_routing(404, 200) == "java_deleted"
+    assert compare.classify_routing(404, 201) == "java_deleted"
+    assert compare.classify_routing(404, 299) == "java_deleted"
+
+
+def test_classify_routing_both_gone():
+    """Java 404 + Python 4xx/5xx → both_gone (latent coverage gap, F-1 in sweep)."""
+    import compare
+    # F-1 finding: /analysis/finance?analysisType=overview → Python 501 stub.
+    assert compare.classify_routing(404, 501) == "both_gone"
+    assert compare.classify_routing(404, 404) == "both_gone"
+    assert compare.classify_routing(404, 422) == "both_gone"
+
+
+def test_classify_routing_python_not_in_scope():
+    """Python 404 + Java 200 → python_not_in_scope (dashboards stay Java-only)."""
+    import compare
+    assert compare.classify_routing(200, 404) == "python_not_in_scope"
+    assert compare.classify_routing(204, 404) == "python_not_in_scope"
+
+
+def test_classify_routing_returns_none_when_disabled():
+    """All three tolerance flags off → never classify; defer to http_mismatch."""
+    import compare
+    assert compare.classify_routing(
+        404, 200, tolerate_java_deleted=False, tolerate_python_not_in_scope=False
+    ) is None
+    assert compare.classify_routing(
+        200, 404, tolerate_java_deleted=False, tolerate_python_not_in_scope=False
+    ) is None
+
+
+def test_classify_routing_returns_none_for_unrelated_mismatch():
+    """Java 500 vs Python 200 is NOT a Phase-C pattern — keep http_mismatch."""
+    import compare
+    assert compare.classify_routing(500, 200) is None
+    assert compare.classify_routing(200, 500) is None
+    assert compare.classify_routing(401, 200) is None
+    assert compare.classify_routing(200, 200) is None
+    assert compare.classify_routing(500, 500) is None
+
+
+def test_classify_routing_partial_flag_disable():
+    """Java-deleted off but python-not-in-scope still on → only Z fires."""
+    import compare
+    assert compare.classify_routing(
+        404, 200,
+        tolerate_java_deleted=False,
+        tolerate_python_not_in_scope=True,
+    ) is None
+    assert compare.classify_routing(
+        200, 404,
+        tolerate_java_deleted=False,
+        tolerate_python_not_in_scope=True,
+    ) == "python_not_in_scope"
+
+
+def _fetch_envelope(http: int, data, verdict: str = "ok"):
+    """Shape-builder for ``run_single``/``build_report`` test inputs."""
+    return {
+        "url": "<test>",
+        "http": http,
+        "lat_s": 0.0,
+        "size": len(json.dumps(data)) if data is not None else 0,
+        "raw": json.dumps(data) if data is not None else "",
+        "data": data,
+        "error": None,
+        "verdict": verdict,
+    }
+
+
+def test_build_report_java_deleted_counts_as_match():
+    """routing_pattern=java_deleted → endpoints_matched += 1, no REAL_BUG."""
+    java_404 = _fetch_envelope(
+        404, {"timestamp": "...", "status": 404, "error": "Not Found", "path": "/api/..."}
+    )
+    python_200 = _fetch_envelope(200, {"data": {"value": 100}, "success": True})
+    rep = report.build_report(
+        factory="R_TEST_MOCK",
+        java_base="java", python_base="python",
+        results=[{
+            "endpoint": "/api/x", "params": "",
+            "java": java_404, "python": python_200,
+            "dict_eq": None,
+            "routing_pattern": "java_deleted",
+        }],
+    )
+    assert rep["endpoints_matched"] == 1
+    assert rep["endpoints_diverged"] == 0
+    assert rep["match_rate"] == 100.0
+    assert rep["total_real_bugs"] == 0
+    assert rep["total_java_deleted"] == 1
+    assert rep["results"][0]["verdict"] == "java_deleted"
+    assert rep["results"][0]["routing_pattern"] == "java_deleted"
+
+
+def test_build_report_both_gone_logged_not_matched():
+    """routing_pattern=both_gone → counted separately, NOT matched/diverged/REAL_BUG."""
+    java_404 = _fetch_envelope(404, {"status": 404})
+    python_501 = _fetch_envelope(
+        501, {"code": 501, "message": "尚未 port 到 Python..."}
+    )
+    rep = report.build_report(
+        factory="R_TEST_MOCK",
+        java_base="java", python_base="python",
+        results=[{
+            "endpoint": "/api/analysis/finance?analysisType=overview", "params": "",
+            "java": java_404, "python": python_501,
+            "dict_eq": None,
+            "routing_pattern": "both_gone",
+        }],
+    )
+    assert rep["endpoints_matched"] == 0
+    assert rep["endpoints_diverged"] == 0
+    assert rep["total_real_bugs"] == 0
+    assert rep["total_both_gone"] == 1
+    assert rep["results"][0]["verdict"] == "both_gone"
+
+
+def test_build_report_python_not_in_scope_counts_as_match():
+    """routing_pattern=python_not_in_scope (Java-only paths) → matched."""
+    java_200 = _fetch_envelope(200, {"data": {"executive": "..."}})
+    python_404 = _fetch_envelope(404, {"status": 404})
+    rep = report.build_report(
+        factory="R_TEST_MOCK",
+        java_base="java", python_base="python",
+        results=[{
+            "endpoint": "/api/dashboard/executive", "params": "",
+            "java": java_200, "python": python_404,
+            "dict_eq": None,
+            "routing_pattern": "python_not_in_scope",
+        }],
+    )
+    assert rep["endpoints_matched"] == 1
+    assert rep["total_python_not_in_scope"] == 1
+    assert rep["match_rate"] == 100.0
+
+
+def test_build_report_cohort_simulation_zero_real_bug():
+    """Simulate the 2026-05-12 cohort sweep row: 17 endpoints where Java is
+    deleted (404) and Python serves. Before F-2 fix this row reported 4-7
+    REAL_BUG (envelope-mismatch artefacts). After fix: 0 REAL_BUG.
+    """
+    results = []
+    # 14 java_deleted endpoints (Java 404 ↔ Python 200)
+    for i in range(14):
+        results.append({
+            "endpoint": f"/api/migrated/{i}", "params": "",
+            "java": _fetch_envelope(404, {"status": 404, "error": "Not Found"}),
+            "python": _fetch_envelope(200, {"data": {"k": i}, "success": True}),
+            "dict_eq": None,
+            "routing_pattern": "java_deleted",
+        })
+    # 3 python_not_in_scope endpoints (Java 200 ↔ Python 404 — dashboards)
+    for i in range(3):
+        results.append({
+            "endpoint": f"/api/dashboard/{i}", "params": "",
+            "java": _fetch_envelope(200, {"data": {"d": i}}),
+            "python": _fetch_envelope(404, {"status": 404}),
+            "dict_eq": None,
+            "routing_pattern": "python_not_in_scope",
+        })
+    rep = report.build_report(
+        factory="R_GML_DEMO",
+        java_base="java", python_base="python",
+        results=results,
+    )
+    assert rep["endpoints_tested"] == 17
+    assert rep["endpoints_matched"] == 17
+    assert rep["match_rate"] == 100.0
+    assert rep["total_real_bugs"] == 0   # ← F-2 ACCEPTANCE: was 4-7 pre-fix
+    assert rep["total_java_deleted"] == 14
+    assert rep["total_python_not_in_scope"] == 3
+
+
+def test_build_report_routing_overrides_http_mismatch_verdict():
+    """When routing_pattern is set, verdict takes that value (not http_mismatch).
+
+    Pre-F-2 the same Java=404 + Python=200 pair would have produced
+    verdict='http_mismatch' AND a noisy dict_eq output classified as REAL_BUG.
+    """
+    rep = report.build_report(
+        factory="R_TEST_MOCK", java_base="java", python_base="python",
+        results=[{
+            "endpoint": "/x", "params": "",
+            "java": _fetch_envelope(404, {"status": 404, "error": "Not Found"}),
+            "python": _fetch_envelope(200, {"data": {"value": 100}}),
+            "dict_eq": None,
+            "routing_pattern": "java_deleted",
+        }],
+    )
+    assert rep["results"][0]["verdict"] == "java_deleted"
+    assert rep["total_java_deleted"] == 1
+    assert rep["match_rate"] == 100.0
+
+
+def test_compare_cli_strict_mode_via_no_flag(tmp_path):
+    """--no-tolerate-java-deleted + Java 404 fixture pair should NOT classify;
+    the harness would then fall through to http_mismatch verdict.
+
+    We can't drive a 404 through fixtures-mode (fixtures synthesise 200 by
+    design), so this test exercises run_single directly with HTTP envelopes
+    constructed in-process.
+    """
+    import compare
+    fake_java_404 = _fetch_envelope(404, {"status": 404})
+    fake_python_200 = _fetch_envelope(200, {"data": {"v": 1}})
+
+    # Direct classify_routing call (the CLI plumbing already passes the flag
+    # values straight through to this function).
+    assert compare.classify_routing(
+        fake_java_404["http"], fake_python_200["http"],
+        tolerate_java_deleted=False, tolerate_python_not_in_scope=False,
+    ) is None
+    assert compare.classify_routing(
+        fake_java_404["http"], fake_python_200["http"],
+        tolerate_java_deleted=True, tolerate_python_not_in_scope=False,
+    ) == "java_deleted"
+
+
+# ============================================================
+# Task B — Blue-Green Java port detection helper
+# ============================================================
+
+
+def test_probe_java_health_returns_false_on_refused():
+    """_probe_java_health on a closed port returns False (no exception leak)."""
+    assert fetch_endpoint._probe_java_health("127.0.0.1", 1, timeout=2) is False
+
+
+def test_detect_active_java_port_returns_none_when_all_dead():
+    """No port responds → None, NOT a silent fallback to localhost."""
+    # Two definitely-closed ports.
+    result = fetch_endpoint.detect_active_java_port(
+        "127.0.0.1", ports=(1, 2), timeout=2
+    )
+    assert result is None
+
+
+def test_resolve_java_base_noop_when_bg_fallback_off():
+    """bg_fallback=False → return input URL unchanged, no network probes."""
+    fetch_endpoint._reset_bg_cache()
+    base = "http://47.100.235.168:10010"
+    assert fetch_endpoint.resolve_java_base(base, bg_fallback=False) == base
+
+
+def test_resolve_java_base_noop_when_port_not_in_bg_set():
+    """Explicit non-BG port (e.g. test env :10011) → unchanged.
+
+    Forbids silent move-off-the-intended-slot when an operator explicitly
+    picks a non-BG port.
+    """
+    fetch_endpoint._reset_bg_cache()
+    base = "http://47.100.235.168:10011"
+    # Even with bg_fallback=True and probes that would succeed, leave alone.
+    assert fetch_endpoint.resolve_java_base(
+        base, bg_fallback=True, verbose=False
+    ) == base
+
+
+def test_resolve_java_base_swaps_to_alternate_port(monkeypatch):
+    """Primary (10010) refused, alternate (10020) alive → URL swapped + cached."""
+    fetch_endpoint._reset_bg_cache()
+    probe_calls = []
+
+    def fake_probe(host, port, timeout=3):
+        probe_calls.append((host, port))
+        return port == 10020  # only green alive
+    monkeypatch.setattr(fetch_endpoint, "_probe_java_health", fake_probe)
+
+    base = "http://47.100.235.168:10010"
+    resolved = fetch_endpoint.resolve_java_base(
+        base, bg_fallback=True, verbose=False
+    )
+    assert resolved == "http://47.100.235.168:10020"
+    # Both ports probed; primary first.
+    assert probe_calls == [("47.100.235.168", 10010), ("47.100.235.168", 10020)]
+
+
+def test_resolve_java_base_caches_per_process(monkeypatch):
+    """Second call with same input → cached, no additional probes."""
+    fetch_endpoint._reset_bg_cache()
+    probe_calls = []
+
+    def fake_probe(host, port, timeout=3):
+        probe_calls.append((host, port))
+        return port == 10010  # blue alive
+    monkeypatch.setattr(fetch_endpoint, "_probe_java_health", fake_probe)
+
+    base = "http://47.100.235.168:10010"
+    a = fetch_endpoint.resolve_java_base(base, bg_fallback=True, verbose=False)
+    b = fetch_endpoint.resolve_java_base(base, bg_fallback=True, verbose=False)
+    assert a == b == base
+    # Second call hit cache — no extra probe.
+    assert probe_calls == [("47.100.235.168", 10010)]
+
+
+def test_resolve_java_base_keeps_input_when_both_dead(monkeypatch):
+    """Neither slot responds → return input as-is + WARN to stderr.
+
+    The actual fetch in fetch_pair will then surface a network_error verdict
+    rather than this helper silently substituting in a localhost or anything
+    else surprising.
+    """
+    fetch_endpoint._reset_bg_cache()
+    monkeypatch.setattr(
+        fetch_endpoint, "_probe_java_health", lambda host, port, timeout=3: False
+    )
+    base = "http://47.100.235.168:10010"
+    resolved = fetch_endpoint.resolve_java_base(
+        base, bg_fallback=True, verbose=False
+    )
+    assert resolved == base
+
+
+def test_swap_port_preserves_path_and_scheme():
+    """_swap_port keeps scheme + path + query + userinfo intact."""
+    assert fetch_endpoint._swap_port(
+        "http://47.100.235.168:10010", 10020
+    ) == "http://47.100.235.168:10020"
+    # Path/query preserved
+    assert fetch_endpoint._swap_port(
+        "http://host:10010/api/x?y=1", 10020
+    ) == "http://host:10020/api/x?y=1"
