@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.restaurant;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
@@ -126,6 +127,7 @@ public class WastageRecord extends BaseEntity {
     /**
      * 估算损失金额（损耗量 × 单价）
      */
+    @PriceSensitive
     @Column(name = "estimated_cost", precision = 15, scale = 2)
     private BigDecimal estimatedCost;
 
