@@ -61,7 +61,7 @@ Sister: ``test_analysis_drilldown_pilot.py`` (Phase 2B-3, PR #419).
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 
 import jwt

@@ -677,7 +677,7 @@ async def test_build_executive_does_not_mutate_primitive_result(monkeypatch):
 # JWT secret is set via ``os.environ.setdefault`` so it does not clobber
 # any pre-existing env (e.g. CI matrix that also runs the config pilot).
 
-import os as _os
+import os as _os  # noqa: E402
 
 _os.environ.setdefault("JWT_SECRET", "phase-2b-3-dashboard-test-secret")
 
