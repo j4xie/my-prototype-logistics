@@ -231,3 +231,185 @@ def test_module_advertises_dispatch_helpers():
     assert hasattr(analysis_production, "_factory_production_dispatch")
     assert hasattr(analysis_production, "_restaurant_production_dispatch")
     assert hasattr(analysis_production, "get_production_analysis")
+
+
+# ============================================================
+# Direct API endpoint tests (Phase 2B-1 chat-2B-prod-upgrade ⚠️→✅)
+# ============================================================
+#
+# Per audit §4.1 — docs/qa-audits/2026-05-12-python-migration-test-coverage-audit.md
+# — upgrade this module from ⚠️ partial (37 transitive tests, data-layer
+# only) to ✅ full by adding 3 direct HTTP endpoint tests:
+#
+#   1. happy path: restaurant tenant → wrap_response 8-key envelope +
+#      Rule 4 ``_decimal_to_number`` byte-parity on integer Decimal
+#   2. JWT boundary: missing Bearer → 401
+#   3. Cross-factory denial: token factoryId ≠ URL factoryId → 403
+#
+# Pattern mirrors gold-standard ``test_config_thresholds_pilot.py``.
+
+import os  # noqa: E402
+
+import jwt  # noqa: E402
+
+from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402
+
+
+_TEST_JWT_SECRET = "phase-2b-prod-upgrade-pilot-secret"
+
+
+def _make_endpoint_token(
+    *,
+    factory_id="F001",
+    role="factory_super_admin",
+    exp_offset=3600,
+):
+    from time import time
+
+    payload = {
+        "userId": 22,
+        "username": "prod-upgrade-test",
+        "role": role,
+        "exp": int(time()) + exp_offset,
+    }
+    if factory_id is not None:
+        payload["factoryId"] = factory_id
+    return jwt.encode(payload, _TEST_JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+class _RouterFakeConn:
+    """asyncpg.Connection stub returning a fixed row from fetchrow."""
+
+    def __init__(self, row):
+        self._row = row
+
+    async def fetchrow(self, sql, *args):
+        return self._row
+
+
+class _RouterFakePool:
+    """asyncpg.Pool stub yielding a single _RouterFakeConn from acquire()."""
+
+    def __init__(self, row):
+        self._conn = _RouterFakeConn(row)
+
+    def acquire(self):
+        pool = self
+
+        class _Ctx:
+            async def __aenter__(self_inner):
+                return pool._conn
+
+            async def __aexit__(self_inner, *exc):
+                return False
+
+        return _Ctx()
+
+
+@pytest.fixture
+def endpoint_client(monkeypatch):
+    """FastAPI TestClient with cretas_db + smartbi_db pools patched.
+
+    cretas_db pool returns ``{"type": "RESTAURANT"}`` so the router
+    dispatches to ``_restaurant_production_dispatch`` (the wrap_response
+    branch). smartbi_db pool returns ``60 bills / 2 stores / 3 days`` so
+    M3 proxy = ``Decimal("10")`` which exercises Rule 4 int-collapse via
+    ``_decimal_to_number``.
+
+    JWT_SECRET is set via monkeypatch so each test gets a clean env and
+    the signer (``_make_endpoint_token``) and verifier
+    (``verify_jwt_and_factory``) use identical secrets.
+    """
+    monkeypatch.setenv("JWT_SECRET", _TEST_JWT_SECRET)
+
+    import smartbi.config
+
+    cretas_pool = _RouterFakePool({"type": "RESTAURANT"})
+    smartbi_pool = _RouterFakePool(
+        {"bill_count": 60, "store_count": 2, "day_count": 3}
+    )
+
+    async def fake_get_cretas_pool():
+        return cretas_pool
+
+    async def fake_get_pg_pool():
+        return smartbi_pool
+
+    monkeypatch.setattr(smartbi.config, "get_cretas_pool", fake_get_cretas_pool)
+    monkeypatch.setattr(smartbi.config, "get_pg_pool", fake_get_pg_pool)
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    app = FastAPI()
+    app.include_router(analysis_production.router)
+    return TestClient(app)
+
+
+def test_production_endpoint_returns_full_envelope(endpoint_client):
+    """Happy path — restaurant tenant returns 8-key wrap_response envelope.
+
+    Audit §4.1 spec ``assert "success" in data and data["success"] is True``
+    + envelope-shape verification. The audit template's literal "21-key"
+    count was approximate; the actual restaurant oee/None branch emits
+    5 inner data keys (tenantType, startDate, endDate, metrics, trendChart)
+    inside an 8-key outer ApiResponse envelope (Rule 9 emit-nulls). Both
+    are asserted explicitly below.
+
+    Rule 4 byte parity: M3 proxy = ``60 / (2 * 3) = Decimal("10")``;
+    ``_decimal_to_number`` collapses integer-valued Decimal to ``int 10``.
+    """
+    headers = {"Authorization": f"Bearer {_make_endpoint_token(factory_id='F001')}"}
+    resp = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/analysis/production",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-03"},
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+
+    # Outer ApiResponse envelope — 8 keys (Rule 9 emit-nulls).
+    assert body["success"] is True
+    assert body["code"] == 200
+    assert body["message"] == "操作成功"
+    assert "data" in body
+    assert "timestamp" in body
+    assert body["actionHint"] is None
+    assert body["severity"] is None
+    assert body["hintTarget"] is None
+
+    # Inner restaurant body — oee/None branch.
+    data = body["data"]
+    assert data["tenantType"] == "RESTAURANT"
+    assert data["startDate"] == "2026-05-01"
+    assert data["endDate"] == "2026-05-03"
+    assert data["trendChart"] is None
+    assert len(data["metrics"]) == 3
+    assert data["metrics"][0]["metricCode"] == "KITCHEN_STATION_UTILIZATION"
+    assert data["metrics"][1]["metricCode"] == "AVG_PREP_TIME"
+
+    # Rule 4 — _decimal_to_number int-collapse on integer-valued Decimal.
+    m3 = data["metrics"][2]
+    assert m3["metricCode"] == "TABLE_TURNOVER_RATE"
+    assert m3["proxyMetric"]["value"] == 10
+    assert isinstance(m3["proxyMetric"]["value"], int)
+
+
+def test_production_endpoint_requires_jwt(endpoint_client):
+    """Missing Bearer header → 401 before tenant lookup or dispatch."""
+    resp = endpoint_client.get(
+        "/api/mobile/F001/smart-bi/analysis/production",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-03"},
+    )
+    assert resp.status_code == 401
+
+
+def test_production_endpoint_cross_factory_denied(endpoint_client):
+    """Token factoryId=F001 vs URL factoryId=F002 → 403 cross-factory deny."""
+    headers = {"Authorization": f"Bearer {_make_endpoint_token(factory_id='F001')}"}
+    resp = endpoint_client.get(
+        "/api/mobile/F002/smart-bi/analysis/production",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-03"},
+        headers=headers,
+    )
+    assert resp.status_code == 403
