@@ -197,6 +197,19 @@ acquire_deploy_lock() {
     local lock_name="${1:-cretas-deploy}"
     local lock_file="/tmp/${lock_name}.lock"
 
+    # Stale-PID precheck (covers both branches below).
+    # SIGKILL / Ctrl-C race / harness termination skips the EXIT trap;
+    # flock fd auto-release is also brittle on Git Bash for Windows.
+    # If the file contains a dead PID, treat as stale and remove.
+    if [ -f "$lock_file" ]; then
+        local stale_pid
+        stale_pid=$(cat "$lock_file" 2>/dev/null)
+        if [ -n "$stale_pid" ] && ! kill -0 "$stale_pid" 2>/dev/null; then
+            log "WARN" "发现残留 lock 文件 (PID $stale_pid 不存在), 自动清理后继续."
+            rm -f "$lock_file"
+        fi
+    fi
+
     if command -v flock >/dev/null 2>&1; then
         # flock 模式 (POSIX advisory lock, Linux/Mac/Git Bash)
         exec 200>"$lock_file"
@@ -209,8 +222,10 @@ acquire_deploy_lock() {
             fi
             return 1
         fi
+        # 写 PID 进 lock 文件, 让下次 precheck 能验证 (flock fd 在 SIGKILL 时不一定释放).
+        echo $$ >&200
         # fd 200 保持打开, 进程退出时 flock 自动释放
-        log "DEBUG" "获取 flock: $lock_file"
+        log "DEBUG" "获取 flock: $lock_file (PID $$)"
     else
         # PID 文件模式 (fallback)
         if [ -f "$lock_file" ]; then
