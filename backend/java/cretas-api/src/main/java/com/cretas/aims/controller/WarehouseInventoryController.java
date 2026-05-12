@@ -12,9 +12,9 @@ import com.cretas.aims.repository.factory.FactoryWarehouseRepository;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.service.FactoryService;
 import com.cretas.aims.utils.FactoryAccessValidator;
-import com.cretas.aims.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,25 +93,36 @@ public class WarehouseInventoryController {
     public ApiResponse<Map<String, Object>> queryByWarehouse(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(required = false) String targetFactoryId,
-            @RequestParam @NotBlank String warehouseId) {
+            @RequestParam @NotBlank String warehouseId,
+            HttpServletRequest request) {
 
-        // 1. Multi-tenancy gate: path factoryId 必须匹配 token (或 platform-admin)
-        factoryAccessValidator.validateAccess(factoryId);
+        // P1-B fix (PR #469 §6): 移除 redundant `factoryAccessValidator.validateAccess(factoryId)` —
+        // 同 BUG-2 (PR #370) 在 FactoryNetworkController 修过的根因: validator 依赖 SecurityContextHolder,
+        // 但项目用 JwtAuthInterceptor 把 userId 写到 request attributes (不填 SecurityContextHolder),
+        // 导致 SecurityUtils.getCurrentUserId() 返 null → AuthenticationException("用户未登录") = 401
+        // 即便合法登录的 admin/warehouse 用户也被错误拒绝.
+        //
+        // 多租户边界已由 JwtAuthInterceptor.preHandle 强制: 跨工厂访问 403, 未登录 401.
+        // 路径 factoryId 的合法性已 gate 在到达 controller 之前.
 
-        // 2. Resolve target factory (default = path)
+        // 1. Resolve target factory (default = path)
         String effectiveFactoryId = (targetFactoryId != null && !targetFactoryId.isBlank())
                 ? targetFactoryId
                 : factoryId;
 
-        // 3. Cross-factory access check: targetFactoryId 必须在 path factoryId 的可见网络
-        //    平台管理员已通过 step 1, 此处只需要检查非平台管理员的 cross-factory 跳跃
+        // 2. Cross-factory access check: targetFactoryId 必须在 path factoryId 的可见网络.
+        //    JwtAuthInterceptor 已 gate path factoryId, 这里只校验 targetFactoryId 跳跃.
         if (!effectiveFactoryId.equals(factoryId)) {
+            Long userId = readUserIdAttr(request);
             try {
-                Long userId = SecurityUtils.getCurrentUserId();
-                // 平台管理员: validateAccess 已 pass 任意 factoryId, 直接走 accessible 路径
                 List<String> accessible = factoryService.getAccessibleFactoryIds(factoryId);
                 if (accessible == null || !accessible.contains(effectiveFactoryId)) {
-                    // 再 fall back 让 validator 检查是否平台管理员 — 抛对应 403
+                    // Accessible 不含 → 仅平台管理员可豁免; 否则 403.
+                    if (userId == null) {
+                        log.warn("跨工厂分仓查询被拒 (无 userId attr): pathFactoryId={}, targetFactoryId={}",
+                                factoryId, effectiveFactoryId);
+                        throw new AuthorizationException("无权访问该工厂的库存数据");
+                    }
                     try {
                         factoryAccessValidator.validateAccess(effectiveFactoryId, userId);
                     } catch (Exception ex) {
@@ -184,19 +195,22 @@ public class WarehouseInventoryController {
                description = "默认列出 path factoryId 的仓库; 若指定 targetFactoryId 且在可见网络中, 列目标工厂的仓库")
     public ApiResponse<List<FactoryWarehouse>> listWarehouses(
             @PathVariable @NotBlank String factoryId,
-            @RequestParam(required = false) String targetFactoryId) {
+            @RequestParam(required = false) String targetFactoryId,
+            HttpServletRequest request) {
 
-        factoryAccessValidator.validateAccess(factoryId);
-
+        // P1-B fix: 同 queryByWarehouse — JwtAuthInterceptor 已 gate path factoryId.
         String effectiveFactoryId = (targetFactoryId != null && !targetFactoryId.isBlank())
                 ? targetFactoryId
                 : factoryId;
 
         if (!effectiveFactoryId.equals(factoryId)) {
+            Long userId = readUserIdAttr(request);
             try {
-                Long userId = SecurityUtils.getCurrentUserId();
                 List<String> accessible = factoryService.getAccessibleFactoryIds(factoryId);
                 if (accessible == null || !accessible.contains(effectiveFactoryId)) {
+                    if (userId == null) {
+                        throw new AuthorizationException("无权访问该工厂的仓库列表");
+                    }
                     try {
                         factoryAccessValidator.validateAccess(effectiveFactoryId, userId);
                     } catch (Exception ex) {
@@ -213,5 +227,19 @@ public class WarehouseInventoryController {
         List<FactoryWarehouse> list =
                 factoryWarehouseRepository.findByFactoryIdAndDeletedAtIsNullOrderByCodeAsc(effectiveFactoryId);
         return ApiResponse.success("查询成功", list);
+    }
+
+    /**
+     * 读取 JwtAuthInterceptor 写入的 userId attribute. 兼容 Long / Integer / String 三种类型.
+     * 返回 null 表示请求未携带有效 token (理论上不可能到达此处 — interceptor 应已 401).
+     */
+    private Long readUserIdAttr(HttpServletRequest request) {
+        Object raw = request.getAttribute("userId");
+        if (raw instanceof Long l) return l;
+        if (raw instanceof Integer i) return i.longValue();
+        if (raw instanceof String s) {
+            try { return Long.parseLong(s); } catch (NumberFormatException ignored) { return null; }
+        }
+        return null;
     }
 }
