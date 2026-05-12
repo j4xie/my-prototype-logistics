@@ -5,6 +5,7 @@ import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.PurchaseReceiveStatus;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -81,6 +82,7 @@ public class PurchaseReceiveRecord extends BaseEntity {
     @Column(name = "received_by", nullable = false)
     private Long receivedBy;
 
+    @PriceSensitive
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 

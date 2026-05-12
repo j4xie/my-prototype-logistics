@@ -250,6 +250,36 @@ public class PermissionServiceImpl implements PermissionService {
         PERMISSION_MATRIX.put(FactoryUserRole.unactivated, new HashMap<>());
     }
 
+    /**
+     * 角色白名单 — 允许查看金额/价格字段 ({@code procurement:price:view}).
+     *
+     * <p>PR #415 RBAC audit verdict 🔴 RED 修复 (2026-05-12): 仓库管理员/质检员/操作员
+     * 等不需要查看价格的角色, 被 {@link com.cretas.aims.security.PriceFieldResponseAdvice}
+     * 后端剥离 totalAmount / unitPrice / costUnitPrice 等字段.
+     *
+     * <p>白名单角色: factory_super_admin / platform_admin / procurement_manager /
+     * finance_manager / sales_manager / dispatcher / production_manager /
+     * restaurant_manager. 其余角色一律不可见.
+     */
+    private static final Set<FactoryUserRole> PRICE_VIEW_ROLES = Set.of(
+            FactoryUserRole.factory_super_admin,
+            FactoryUserRole.platform_admin,
+            FactoryUserRole.procurement_manager,
+            FactoryUserRole.finance_manager,
+            FactoryUserRole.sales_manager,
+            // 调度员 / 生产主管 需协调成本预算
+            FactoryUserRole.dispatcher,
+            FactoryUserRole.production_manager,
+            // 餐饮主管查看食材/菜品成本
+            FactoryUserRole.restaurant_manager,
+            // 向后兼容
+            FactoryUserRole.permission_admin,
+            FactoryUserRole.department_admin
+    );
+
+    /** 价格查看权限代码 (与 PriceFieldResponseAdvice.PRICE_VIEW_PERMISSION 一致). */
+    private static final String PRICE_VIEW_PERMISSION = "procurement:price:view";
+
     @Override
     public boolean hasPermission(User user, String permissionCode) {
         if (user == null || permissionCode == null || permissionCode.isEmpty()) {
@@ -264,6 +294,12 @@ public class PermissionServiceImpl implements PermissionService {
         // 超级管理员拥有所有权限
         if (role == FactoryUserRole.factory_super_admin || role == FactoryUserRole.platform_admin) {
             return true;
+        }
+
+        // procurement:price:view — 价格字段查看权限 (PR #415 Option B)
+        // 走独立角色白名单, 不复用 module:action 矩阵 (该矩阵只支持 read/write 二元).
+        if (PRICE_VIEW_PERMISSION.equals(permissionCode)) {
+            return PRICE_VIEW_ROLES.contains(role);
         }
 
         // 解析权限代码 (格式: module:action)

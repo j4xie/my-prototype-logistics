@@ -418,7 +418,18 @@ onMounted(() => { loadData(); loadOptions(); });
         <el-table-column prop="materialName" label="物料名称" min-width="160" />
         <el-table-column prop="receivedQuantity" label="到货数量" width="110" align="right" />
         <el-table-column prop="unit" label="单位" width="80" align="center" />
-        <el-table-column prop="unitPrice" label="单价" width="100" align="right" />
+        <el-table-column label="单价" width="100" align="right">
+          <!--
+            RBAC defense-in-depth (PR #415 Option B 2026-05-12):
+            backend PriceFieldResponseAdvice strips unitPrice → null for roles
+            lacking procurement:price:view (warehouse_mgr / inspector / operator).
+            v-if guard avoids rendering "0" or empty when stripped.
+          -->
+          <template #default="{ row }">
+            <span v-if="row.unitPrice != null">{{ row.unitPrice }}</span>
+            <span v-else class="price-masked">—</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="qcResult" label="质检" width="100" align="center" />
         <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
       </el-table>

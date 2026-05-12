@@ -1,6 +1,7 @@
 package com.cretas.aims.dto.material;
 
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -89,12 +90,15 @@ public class MaterialBatchDTO {
     @Schema(description = "单位")
     private String unit;
 
+    @PriceSensitive
     @Schema(description = "入库总价值(元)")
     private BigDecimal totalValue;
 
+    @PriceSensitive
     @Schema(description = "单价(元/kg)")
     private BigDecimal unitPrice;
 
+    @PriceSensitive
     @Schema(description = "总价")
     private BigDecimal totalPrice;
 

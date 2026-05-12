@@ -2,6 +2,7 @@ package com.cretas.aims.entity.inventory;
 
 import com.cretas.aims.entity.BaseEntity;
 import com.cretas.aims.entity.ProductType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -55,9 +56,11 @@ public class SalesOrderItem extends BaseEntity {
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
 
+    @PriceSensitive
     @Column(name = "unit_price", precision = 15, scale = 4)
     private BigDecimal unitPrice;
 
+    @PriceSensitive
     @Column(name = "discount_rate", precision = 5, scale = 2)
     private BigDecimal discountRate = BigDecimal.ZERO;
 
@@ -69,10 +72,12 @@ public class SalesOrderItem extends BaseEntity {
     private String remark;
 
     /** 成本单价 (含税) */
+    @PriceSensitive
     @Column(name = "cost_unit_price", precision = 15, scale = 4)
     private BigDecimal costUnitPrice;
 
     /** 税率 (%) */
+    @PriceSensitive
     @Column(name = "tax_rate", precision = 5, scale = 2)
     private BigDecimal taxRate;
 

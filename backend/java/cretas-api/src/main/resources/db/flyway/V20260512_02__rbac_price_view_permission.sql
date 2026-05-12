@@ -1,0 +1,42 @@
+-- V20260512_01: RBAC price field visibility — procurement:price:view permission
+--
+-- Background: PR #415 RBAC audit verdict 🔴 RED (2026-05-12) — f006_warehouse_mgr
+-- could see totalAmount / unitPrice / costUnitPrice on purchase orders, receive
+-- records, material batches and sales orders. Option B (long-term fix):
+--   1. Backend ResponseAdvice strips @PriceSensitive fields server-side based
+--      on the procurement:price:view permission.
+--   2. UI explicit v-if defense in depth (mgr role will see null values
+--      anyway after backend strip, but v-if avoids "—" column rendering).
+--
+-- Permission model:
+--   procurement:price:view  →  whitelist of roles allowed to see price/amount
+--                              fields. Implemented in
+--                              PermissionServiceImpl.PRICE_VIEW_ROLES (Set<FactoryUserRole>).
+--
+-- Whitelisted roles (KEEP price visibility):
+--   factory_super_admin / platform_admin
+--   procurement_manager / finance_manager / sales_manager
+--   dispatcher / production_manager / restaurant_manager
+--   permission_admin / department_admin (legacy compat)
+--
+-- Non-whitelisted roles (LOSE price visibility — backend strips fields to null):
+--   warehouse_manager / warehouse_worker
+--   quality_manager / quality_inspector
+--   operator / workshop_supervisor / team_leader / group_leader
+--   hr_admin / equipment_admin / viewer / unactivated
+--
+-- This migration is a no-op marker file — the permission whitelist is
+-- maintained in code (PermissionServiceImpl) rather than DB rows because
+-- (a) it's a single permission with role-based predicate (not a module:action
+-- matrix entry), and (b) the existing platform_role_permissions table only
+-- supports rw/r/w/- legacy levels, not custom predicates.
+--
+-- Rollback: revert PR + redeploy.
+--
+-- Verification (after deploy):
+--   SELECT 'V20260512_01 applied — procurement:price:view permission seeded in code'
+--          AS status;
+
+-- Idempotent no-op (Flyway needs at least one statement)
+SELECT 'V20260512_01: procurement:price:view permission whitelist seeded in PermissionServiceImpl.PRICE_VIEW_ROLES'
+       AS migration_note;

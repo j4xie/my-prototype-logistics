@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.InboundType;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.cretas.aims.security.PriceSensitive;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
@@ -105,6 +106,7 @@ public class MaterialBatch extends BaseEntity {
     @Column(name = "reserved_quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal reservedQuantity = BigDecimal.ZERO;
 
+    @PriceSensitive
     @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
     @Enumerated(EnumType.STRING)

@@ -717,13 +717,25 @@ async function submitQuickPayment() {
         <el-table-column prop="salesperson" label="业务员" width="100" show-overflow-tooltip />
         <el-table-column prop="orderDate" label="下单日期" width="120" />
         <el-table-column prop="totalAmount" label="总金额" width="130" align="right">
-          <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+          <!--
+            RBAC defense-in-depth (PR #415 Option B 2026-05-12):
+            backend PriceFieldResponseAdvice strips totalAmount / discountAmount / taxAmount
+            to null for roles lacking procurement:price:view. v-if guards rendering
+            so non-finance roles see "—" instead of misleading "¥0.00".
+          -->
+          <template #default="{ row }">
+            <span v-if="row.totalAmount != null">{{ formatAmount(row.totalAmount) }}</span>
+            <span v-else class="price-masked">—</span>
+          </template>
         </el-table-column>
         <el-table-column prop="shippingFee" label="运费" width="100" align="right">
           <template #default="{ row }">{{ row.shippingFee ? formatAmount(row.shippingFee) : '-' }}</template>
         </el-table-column>
         <el-table-column prop="discountAmount" label="折扣" width="100" align="right">
-          <template #default="{ row }">{{ row.discountAmount ? formatAmount(row.discountAmount) : '-' }}</template>
+          <template #default="{ row }">
+            <span v-if="row.discountAmount != null && row.discountAmount">{{ formatAmount(row.discountAmount) }}</span>
+            <span v-else>-</span>
+          </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="110" align="center">
           <template #default="{ row }">

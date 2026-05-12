@@ -6,6 +6,7 @@ import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.enums.PurchaseType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.Formula;
@@ -86,9 +87,11 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "expected_delivery_date")
     private LocalDate expectedDeliveryDate;
 
+    @PriceSensitive
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
+    @PriceSensitive
     @Column(name = "tax_amount", precision = 15, scale = 2)
     private BigDecimal taxAmount = BigDecimal.ZERO;
 

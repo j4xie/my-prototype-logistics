@@ -3,6 +3,7 @@ package com.cretas.aims.entity.inventory;
 import com.cretas.aims.entity.BaseEntity;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.RawMaterialType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -55,6 +56,7 @@ public class PurchaseReceiveItem extends BaseEntity {
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
 
+    @PriceSensitive
     @Column(name = "unit_price", precision = 15, scale = 4)
     private BigDecimal unitPrice;
 
