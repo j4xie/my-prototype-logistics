@@ -53,6 +53,48 @@ def _attach_query(path: str, params: str) -> str:
     return f"{path}{sep}{params}"
 
 
+def classify_routing(
+    java_http: int,
+    python_http: int,
+    tolerate_java_deleted: bool = True,
+    tolerate_python_not_in_scope: bool = True,
+) -> Optional[str]:
+    """Phase-C cutover routing classifier.
+
+    Returns one of:
+        ``"java_deleted"``         — Java 404 (handler removed in Phase C),
+                                     Python served the path with 2xx.
+        ``"both_gone"``            — Java 404 AND Python 4xx. Latent coverage
+                                     gap (e.g. /analysis/finance?analysisType=
+                                     overview): F-1 in 2026-05-12 cohort sweep.
+        ``"python_not_in_scope"``  — Python 404, Java served with 2xx. Java-only
+                                     paths (/dashboard*, /smartbi-config/*).
+        ``None``                   — no routing pattern applies; defer to the
+                                     normal http_mismatch / dict_eq logic.
+
+    Tolerance flags control whether the classification fires at all. When both
+    are False the function returns None for every input — the harness reverts
+    to pre-F-2 behaviour. Default both True because we're post-Phase-C and the
+    HTTP mismatches caught by these patterns are EXPECTED, not regressions
+    (see 2026-05-12 cohort sweep §4: zero genuine REAL_BUG behind 102 runs).
+    """
+    if java_http == 404 and 200 <= python_http < 300 and tolerate_java_deleted:
+        return "java_deleted"
+    if (
+        java_http == 404
+        and 400 <= python_http < 600
+        and tolerate_java_deleted
+    ):
+        return "both_gone"
+    if (
+        python_http == 404
+        and 200 <= java_http < 300
+        and tolerate_python_not_in_scope
+    ):
+        return "python_not_in_scope"
+    return None
+
+
 def _load_fixture(path: Optional[str]) -> Optional[Any]:
     """Read a JSON fixture file. Returns None if path is falsy."""
     if not path:
@@ -76,12 +118,20 @@ def run_single(
     timeout: int = 20,
     tolerate_all: bool = False,
     tolerate_patterns: Optional[set] = None,
+    tolerate_java_deleted: bool = True,
+    tolerate_python_not_in_scope: bool = True,
 ) -> Dict[str, Any]:
-    """Fetch one endpoint pair, run dict_eq_match, return assembled entry.
+    """Fetch one endpoint pair, classify routing, run dict_eq_match, return entry.
 
-    When fixtures are supplied (offline mode), HTTP is skipped entirely
-    and the fixture JSON is treated as the parsed response body. This is
-    how the self-test gate runs without live Java/Python servers.
+    Routing classification (F-2 / Phase-C cutover): when the HTTP-status pair
+    matches a known Phase-C topology (Java handler deleted, Python-only or
+    Java-only) we tag ``routing_pattern`` and SKIP dict_eq. Otherwise dict_eq
+    runs as before and may produce REAL_BUG / Pattern A/B diverges.
+
+    When fixtures are supplied (offline mode), HTTP is skipped entirely and
+    the fixture JSON is treated as a parsed 200 response body. Routing
+    classification still consults the synthesised http codes so fixtures
+    representing 404 shells exercise the same path.
     """
     full_path = _attach_query(path, params)
 
@@ -126,9 +176,27 @@ def run_single(
         java_r = pair["java"]
         python_r = pair["python"]
 
-    # Run dict_eq only if both responses parsed successfully.
+    # Classify routing FIRST: when Phase-C deleted the Java handler the 404
+    # shell parses as JSON and dict_eq would generate dozens of bogus REAL_BUG
+    # entries comparing it against Python's real payload (F-2 finding).
+    routing_pattern: Optional[str] = None
+    if java_r["verdict"] != "network_error" and python_r["verdict"] != "network_error":
+        routing_pattern = classify_routing(
+            java_r["http"],
+            python_r["http"],
+            tolerate_java_deleted=tolerate_java_deleted,
+            tolerate_python_not_in_scope=tolerate_python_not_in_scope,
+        )
+
+    # Run dict_eq only if both responses parsed AND we're not in a routing
+    # pattern (the routing patterns intentionally compare different-shape
+    # envelopes — dict_eq output would be noise).
     de: Optional[Dict[str, Any]] = None
-    if java_r["data"] is not None and python_r["data"] is not None:
+    if (
+        routing_pattern is None
+        and java_r["data"] is not None
+        and python_r["data"] is not None
+    ):
         de = dict_eq.dict_eq_match(java_r["data"], python_r["data"])
         if tolerate_all or tolerate_patterns:
             de = dict_eq.apply_tolerance(
@@ -143,6 +211,7 @@ def run_single(
         "java": java_r,
         "python": python_r,
         "dict_eq": de,
+        "routing_pattern": routing_pattern,
     }
 
 
@@ -155,6 +224,8 @@ def run_batch(
     timeout: int = 20,
     tolerate_all: bool = False,
     tolerate_patterns: Optional[set] = None,
+    tolerate_java_deleted: bool = True,
+    tolerate_python_not_in_scope: bool = True,
 ) -> Dict[str, Any]:
     """Run parity gate over multiple endpoints, build aggregate report."""
     if java_token is None and java_base:
@@ -173,6 +244,8 @@ def run_batch(
             timeout=timeout,
             tolerate_all=tolerate_all,
             tolerate_patterns=tolerate_patterns,
+            tolerate_java_deleted=tolerate_java_deleted,
+            tolerate_python_not_in_scope=tolerate_python_not_in_scope,
         )
         results.append(entry)
 
@@ -245,8 +318,65 @@ def main(argv: Optional[List[str]] = None) -> int:
             "Comma-separated pattern letters to tolerate (e.g. 'B' or 'A,B'). "
             "Valid: A (int-collapse), A2 (trailing-zero, post-parse invisible), "
             "B (structural Java mock vs Python tenant envelope), "
-            "C (value placeholder, not auto-detected). "
-            "Overrides --tolerate-divergence when set."
+            "C (value placeholder, not auto-detected), "
+            "X (java_deleted), Y (both_gone), Z (python_not_in_scope). "
+            "Overrides --tolerate-divergence when set. "
+            "X/Y/Z are HTTP-layer — the canonical flags are "
+            "--tolerate-java-deleted and --tolerate-python-not-in-scope."
+        ),
+    )
+    # F-2 fix (2026-05-12 cohort sweep finding) — Phase-C cutover topology
+    # awareness. Defaults are ON because we ARE post-Phase-C — the previous
+    # default of 'compare every HTTP-mismatched body byte by byte' produced
+    # 4-7 false-positive REAL_BUG per row across the cohort sweep. The flags
+    # exist so a pre-Phase-C run (historical replay) can opt back out.
+    p.add_argument(
+        "--tolerate-java-deleted",
+        dest="tolerate_java_deleted",
+        action="store_true",
+        default=True,
+        help=(
+            "Treat Java 404 + Python 2xx as java_deleted (matched) and "
+            "Java 404 + Python 4xx as both_gone (logged, NOT REAL_BUG). "
+            "Default ON post-Phase-C. Pass --no-tolerate-java-deleted to "
+            "revert to strict http_mismatch verdict."
+        ),
+    )
+    p.add_argument(
+        "--no-tolerate-java-deleted",
+        dest="tolerate_java_deleted",
+        action="store_false",
+        help="Disable --tolerate-java-deleted (strict mode).",
+    )
+    p.add_argument(
+        "--tolerate-python-not-in-scope",
+        dest="tolerate_python_not_in_scope",
+        action="store_true",
+        default=True,
+        help=(
+            "Treat Python 404 + Java 2xx as python_not_in_scope (matched). "
+            "Java-only paths (/dashboard*, /smartbi-config/*) stay this way "
+            "by design — see 2026-05-12 cohort sweep §1 topology. Default ON."
+        ),
+    )
+    p.add_argument(
+        "--no-tolerate-python-not-in-scope",
+        dest="tolerate_python_not_in_scope",
+        action="store_false",
+        help="Disable --tolerate-python-not-in-scope (strict mode).",
+    )
+    # Task B — BG-aware Java port detection. Opt-in by flag because explicit
+    # --java-base http://...:10010 should keep working unchanged.
+    p.add_argument(
+        "--java-bg-fallback",
+        action="store_true",
+        default=False,
+        help=(
+            "Probe both Blue (10010) and Green (10020) Java ports and use "
+            "whichever answers /api/mobile/health with 200. Prevents 88/88 "
+            "false-positive 'Connection refused' when the BG slot flips mid-"
+            "task (PR #403 §6 hardening). Cached per-process. Only fires when "
+            "--java-base ends in :10010 or :10020."
         ),
     )
     args = p.parse_args(argv)
@@ -287,6 +417,15 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     tolerate_all = bool(args.tolerate_divergence) and tolerate_patterns is None
 
+    # Resolve BG slot before any live fetch. resolve_java_base is a no-op for
+    # fixture mode and for explicit non-BG ports.
+    resolved_java_base = args.java_base
+    if args.java_base and java_fixture is None:
+        resolved_java_base = fetch_endpoint.resolve_java_base(
+            args.java_base,
+            bg_fallback=args.java_bg_fallback,
+        )
+
     # Run.
     if java_fixture is not None:
         method, path, params = endpoints[0]
@@ -301,6 +440,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             python_fixture=python_fixture,
             tolerate_all=tolerate_all,
             tolerate_patterns=tolerate_patterns,
+            tolerate_java_deleted=args.tolerate_java_deleted,
+            tolerate_python_not_in_scope=args.tolerate_python_not_in_scope,
         )
         result = report.build_report(
             factory=args.factory,
@@ -312,11 +453,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         result = run_batch(
             args.factory,
             endpoints,
-            java_base=args.java_base,
+            java_base=resolved_java_base,
             python_base=args.python_base,
             timeout=args.timeout,
             tolerate_all=tolerate_all,
             tolerate_patterns=tolerate_patterns,
+            tolerate_java_deleted=args.tolerate_java_deleted,
+            tolerate_python_not_in_scope=args.tolerate_python_not_in_scope,
         )
 
     # Write output.
@@ -342,11 +485,23 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # Gate.
     rate = result["match_rate"]
+    routing_summary = ""
+    routing_total = (
+        result.get("total_java_deleted", 0)
+        + result.get("total_both_gone", 0)
+        + result.get("total_python_not_in_scope", 0)
+    )
+    if routing_total:
+        routing_summary = (
+            f", {result.get('total_java_deleted', 0)} java_deleted"
+            f", {result.get('total_both_gone', 0)} both_gone"
+            f", {result.get('total_python_not_in_scope', 0)} python_not_in_scope"
+        )
     print(
         f"\nmatch_rate={rate}% "
         f"({result['endpoints_matched']}/{result['endpoints_tested']} matched, "
         f"{result['total_real_bugs']} REAL_BUG, "
-        f"{result['total_pattern_a']} PATTERN_A tolerated)",
+        f"{result['total_pattern_a']} PATTERN_A tolerated{routing_summary})",
         file=sys.stderr,
     )
     if rate < args.gate_rate:

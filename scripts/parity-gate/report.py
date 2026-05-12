@@ -42,7 +42,7 @@ import datetime
 import html
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 def build_report(
@@ -56,7 +56,27 @@ def build_report(
     Args:
         results: list of dicts each with fields:
             endpoint, params, java (fetch result), python (fetch result),
-            dict_eq (None if fetch failed; dict_eq_match output otherwise)
+            dict_eq (None if fetch failed; dict_eq_match output otherwise),
+            routing_pattern (optional: "java_deleted" | "both_gone" |
+                "python_not_in_scope" — set by compare.classify_routing when
+                an HTTP mismatch is a known Phase-C cutover artefact, NOT a
+                regression).
+
+    Verdict semantics (post-Phase-C aware):
+        * match / diverge — body comparison ran and produced a result.
+        * java_deleted — Java 404 (handler intentionally removed in Phase C)
+          and Python served the path; counted as **matched** because the
+          migration is exactly what was expected.
+        * both_gone — Java 404 AND Python 4xx (e.g. 501 stub or 422 missing
+          param). Logged separately; NOT counted as matched or diverged. F-1
+          in the 2026-05-12 cohort sweep — latent coverage gap, not a
+          regression.
+        * python_not_in_scope — Python 404 and Java served the path
+          (dashboards, smartbi-config/thresholds remain Java-only). Counted
+          as matched on the Phase-C topology.
+        * http_mismatch — any other HTTP status disagreement (still a real
+          concern — investigate).
+        * java_error / python_error — network error on that side.
     """
     total = len(results)
     matched = 0
@@ -65,18 +85,35 @@ def build_report(
     total_pattern_a = 0
     total_pattern_b = 0
     total_pattern_b_contexts = 0
+    total_java_deleted = 0
+    total_both_gone = 0
+    total_python_not_in_scope = 0
     entries: List[Dict[str, Any]] = []
 
     for r in results:
         java_r = r["java"]
         python_r = r["python"]
         de = r.get("dict_eq")
+        routing_pattern = r.get("routing_pattern")
 
-        # Determine verdict for this endpoint.
+        # Determine verdict for this endpoint. Routing patterns take precedence
+        # over generic http_mismatch — when classify_routing tagged a known
+        # Phase-C topology, the HTTP mismatch is expected, not a regression.
         if java_r["verdict"] == "network_error":
             verdict = "java_error"
         elif python_r["verdict"] == "network_error":
             verdict = "python_error"
+        elif routing_pattern == "java_deleted":
+            verdict = "java_deleted"
+            matched += 1
+            total_java_deleted += 1
+        elif routing_pattern == "both_gone":
+            verdict = "both_gone"
+            total_both_gone += 1
+        elif routing_pattern == "python_not_in_scope":
+            verdict = "python_not_in_scope"
+            matched += 1
+            total_python_not_in_scope += 1
         elif java_r["http"] != python_r["http"]:
             verdict = "http_mismatch"
         elif de is None:
@@ -108,6 +145,7 @@ def build_report(
                 "endpoint": r["endpoint"],
                 "params": r.get("params", ""),
                 "verdict": verdict,
+                "routing_pattern": routing_pattern,
                 "java_http": java_r["http"],
                 "python_http": python_r["http"],
                 "java_size": java_r["size"],
@@ -133,6 +171,9 @@ def build_report(
         "total_pattern_a": total_pattern_a,
         "total_pattern_b": total_pattern_b,
         "endpoints_in_pattern_b_context": total_pattern_b_contexts,
+        "total_java_deleted": total_java_deleted,
+        "total_both_gone": total_both_gone,
+        "total_python_not_in_scope": total_python_not_in_scope,
         "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
         "results": entries,
     }
@@ -172,6 +213,9 @@ def _render_html(report: Dict[str, Any]) -> str:
             "python_error": "verdict-error",
             "http_mismatch": "verdict-error",
             "parse_error": "verdict-error",
+            "java_deleted": "verdict-routing",
+            "python_not_in_scope": "verdict-routing",
+            "both_gone": "verdict-routing-warn",
         }.get(r["verdict"], "")
 
         diverges_html = ""
@@ -242,6 +286,8 @@ th {{ background: #f6f8fa; font-weight: 600; }}
 .verdict-match {{ background: #dafbe1; }}
 .verdict-diverge {{ background: #fff8c5; }}
 .verdict-error {{ background: #ffebe9; }}
+.verdict-routing {{ background: #ddf4ff; }}
+.verdict-routing-warn {{ background: #fff1e5; }}
 .verdict {{ font-weight: 600; font-family: monospace; }}
 details {{ margin-top: 4px; }}
 summary {{ cursor: pointer; font-size: 12px; }}
@@ -255,7 +301,10 @@ summary.pattern-a {{ color: #6e7781; }}
   <div class="rate {rate_class}">{rate}% match</div>
   <div>{report['endpoints_matched']}/{report['endpoints_tested']} endpoints matched
        ({report['endpoints_diverged']} diverged · {report['total_real_bugs']} REAL_BUG
-       · {report['total_pattern_a']} PATTERN_A tolerated)</div>
+       · {report['total_pattern_a']} PATTERN_A tolerated
+       · {report.get('total_java_deleted', 0)} java_deleted
+       · {report.get('total_both_gone', 0)} both_gone
+       · {report.get('total_python_not_in_scope', 0)} python_not_in_scope)</div>
   <div>Java: <code>{java_base}</code> · Python: <code>{python_base}</code></div>
   <div>Generated: {report['timestamp']}</div>
   <div><small>Phase 2A standard: ≥99.945% dict-eq match (T6.1 dryrun bar).</small></div>

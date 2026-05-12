@@ -76,6 +76,47 @@ The generator is **deterministic** (seed=42 default) — same flags → same SQL
 
 ---
 
+## Phase-C routing-aware verdicts (F-2 fix, 2026-05-12)
+
+Post-Phase-C the Java side **intentionally** returns 404 for the 23 migrated SmartBI handlers. A naive Java↔Python dict-eq compare would treat the Spring 404 envelope vs Python's real 200 body as an enormous shape divergence (the cohort sweep reported 4-7 false-positive REAL_BUG per row). The harness now classifies HTTP-status pairs against the Phase-C topology *before* running dict-eq:
+
+| HTTP pair | Verdict | Counted as | Tolerance flag (default ON) |
+|---|---|---|---|
+| Java 404 + Python 2xx | `java_deleted` | matched (migration complete) | `--tolerate-java-deleted` |
+| Java 404 + Python 4xx/5xx | `both_gone` | logged separately (latent gap, e.g. F-1 `analysisType=overview`) | `--tolerate-java-deleted` |
+| Java 2xx + Python 404 | `python_not_in_scope` | matched (Java-only paths: `/dashboard*`, `/smartbi-config/*`) | `--tolerate-python-not-in-scope` |
+| any other status disagreement | `http_mismatch` | NOT matched — still a concern | — |
+
+Pass `--no-tolerate-java-deleted` to revert to strict `http_mismatch` (useful for pre-Phase-C historical replay).
+
+The report JSON gains `total_java_deleted`, `total_both_gone`, `total_python_not_in_scope` counters and each per-endpoint entry now includes a `routing_pattern` field.
+
+---
+
+## Blue-Green Java port detection (Task B, PR #403 §6)
+
+Java prod runs on **either** 10010 (blue) **or** 10020 (green) depending on which side `deploy-backend.sh --env prod` last activated. The harness can probe both `/api/mobile/health` endpoints and use whichever returns 200:
+
+```bash
+# Opt-in for live HTTP mode. No-op for --fixtures-* mode and for explicit
+# non-BG ports (e.g. :10011 test env stays put).
+python scripts/parity-gate/compare.py \
+  --java-base http://47.100.235.168:10010 \
+  --python-base http://47.100.235.168:8083 \
+  --java-bg-fallback \
+  ...
+
+# record-restaurant-goldens.sh defaults to JAVA_BG_FALLBACK=1.
+# Disable with:
+JAVA_BG_FALLBACK=0 ./scripts/parity-gate/record-restaurant-goldens.sh
+```
+
+The resolved port is cached per process so a 50-endpoint batch only probes once. If both ports refuse, the input URL is kept as-is and a WARN line goes to stderr — the actual fetch will surface a `network_error` verdict rather than this helper silently substituting a different host.
+
+Reference impl pattern: `scripts/t6-dryrun-compare.sh:99-126`.
+
+---
+
 ## What dict-eq tolerates as MATCH (Pattern A / A2)
 
 Per Rule 4, byte-shape divergence below is **expected** post-Python-cutover and counts as MATCH:
