@@ -17,9 +17,14 @@ Coverage:
 * **``_calculate_supplier_concentration`` (5 tests)** — Rule 10 division-by-zero
   guard, Rule 1 None-supplier skip, empty-batches edge, 46.55%% canary input.
 
-* **End-to-end Rule 12 (1 test)** — full ``_build_overview_metric_results``
-  pipeline with synthetic batches yielding exactly 46.55%% concentration.
-  Asserts ``formattedValue == "46.6%"`` (not ``"46.5%"``).
+* **End-to-end Rule 12 (6 tests)** — Mutation A (float-bridge banker's) + Mutation B
+  (HALF_EVEN default) divergent canaries against the centralized
+  ``_format_decimal_half_up`` helper at three sites:
+    * SUPPLIER_CONCENTRATION KPI formattedValue (line 877)
+    * PROCUREMENT_MOM_GROWTH KPI formattedValue (line 895)
+    * YELLOW supplier-risk AIInsight message (line 991)
+  46.55 input catches Mutation A (banker's regression); 46.45 catches Mutation B
+  (HALF_EVEN regression). Both must hold for the helper to be locked.
 
 * **``_calculate_mom_growth`` (4 tests)** — Rule 1 None handling (previous=None,
   current=None), Rule 10 abs(previous) for negative denominator.
@@ -370,6 +375,247 @@ async def test_overview_metric_results_concentration_46_45_half_up_vs_half_even_
     assert concentration["formattedValue"] != "46.4%", (
         "HALF_EVEN regression — line 874 must keep `rounding=ROUND_HALF_UP` "
         "(Decimal.quantize defaults to ROUND_HALF_EVEN if omitted)"
+    )
+
+
+# ============================================================
+# End-to-end Rule 12 — PROCUREMENT_MOM_GROWTH formattedValue (site 894)
+# ============================================================
+#
+# These tests mirror the supplier-concentration canaries above (line 269 / 316)
+# but target the MoM-growth display site refactored to centralized
+# ``_format_decimal_half_up(d, 1)`` (was inline ``mom_growth.quantize(...)`` +
+# float-bridge ``f"{float(mom_growth_display):+.1f}%"``).
+#
+# Two divergent canaries lock the centralized helper from regressing back to:
+#   * Mutation A — drop pre-quantize, use float-bridge banker's directly
+#     (``f"{float(mom_growth):+.1f}%"`` for 46.55 → "+46.5%" not "+46.6%")
+#   * Mutation B — replace helper with inline ``.quantize(Decimal("0.1"))``
+#     missing ``rounding=ROUND_HALF_UP`` (defaults to HALF_EVEN/banker's)
+#     (for 46.45 → "+46.4%" not "+46.5%")
+
+
+@pytest.mark.asyncio
+async def test_overview_metric_results_mom_growth_46_55_formats_as_plus_46_6(monkeypatch):
+    """End-to-end Rule 12 lock-down — MoM growth Mutation A canary (float-bridge).
+
+    Drives ``_build_overview_metric_results`` through the MoM path with current
+    total = 14655, previous total = 10000 → MoM = +46.55%%. The centralized
+    helper yields HALF_UP "46.6" → ``"+46.6%"`` (with manual sign prefix).
+
+    Catches the regression where the centralized helper call is "simplified"
+    back to a float-bridge such as ``f"{float(mom_growth):+.1f}%"``:
+      * ``float(Decimal("46.55"))`` = 46.549999... (IEEE 754) → ``:+.1f`` → "+46.5%"
+
+    46.55 is the float-bridge canary — it does NOT discriminate Decimal-layer
+    HALF_UP vs HALF_EVEN (both yield 46.6). The next test does that.
+    """
+    # Current period: 3 batches summing to 14655 (suppliers A/B/C non-degenerate
+    # so concentration metric is also present alongside MoM).
+    current_batches = [
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("8000")},
+        {"supplier_id": "B", "unit_price": Decimal("1"), "receipt_quantity": Decimal("4655")},
+        {"supplier_id": "C", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2000")},
+    ]
+    # Previous period: 1 batch summing to 10000.
+    previous_batches = [
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("10000")},
+    ]
+
+    # _build_overview_metric_results queries previous-period batches via
+    # _query_material_batches_in_range with shifted dates (_minus_months(1)).
+    # Route by start_date: current period gets current_batches, previous gets
+    # previous_batches (any pre-May 2026 → previous).
+    async def _fake_batches(factory_id, start_date, end_date):
+        if start_date >= date(2026, 5, 1):
+            return current_batches
+        return previous_batches
+
+    monkeypatch.setattr(mod, "_query_material_batches_in_range", _fake_batches)
+
+    result = await mod._build_overview_metric_results(
+        current_batches, "F001", date(2026, 5, 1), date(2026, 5, 31)
+    )
+
+    mom = next((m for m in result if m["metricCode"] == "PROCUREMENT_MOM_GROWTH"), None)
+    assert mom is not None, (
+        f"PROCUREMENT_MOM_GROWTH metric missing — previous_batches stub may have "
+        f"returned empty list. Metric codes: {[m['metricCode'] for m in result]}"
+    )
+    assert mom["formattedValue"] == "+46.6%", (
+        f"Rule 12 regression (Mutation A — float-bridge banker's) — expected "
+        f"'+46.6%' (HALF_UP via _format_decimal_half_up helper), got "
+        f"{mom['formattedValue']!r}. If this is '+46.5%', site 894 was refactored "
+        f"back to ``f\"{{float(mom_growth):+.1f}}%\"`` (or equivalent float-bridge "
+        f"without pre-quantize)."
+    )
+    # Banker's regression canary — should NEVER hold
+    assert mom["formattedValue"] != "+46.5%", (
+        "banker's regression — site 894 must route Decimal through "
+        "_format_decimal_half_up(mom_growth, 1), not float() bridge"
+    )
+
+
+@pytest.mark.asyncio
+async def test_overview_metric_results_mom_growth_46_45_half_up_vs_half_even_divergent(monkeypatch):
+    """End-to-end Rule 12 lock-down — MoM growth Mutation B canary (HALF_EVEN).
+
+    Closes the gap that the 46.55 canary above leaves open: a regression where
+    ``rounding=ROUND_HALF_UP`` is dropped (replaced by inline
+    ``.quantize(Decimal("0.1"))`` defaulting to ROUND_HALF_EVEN, banker's).
+
+    Drives ``_build_overview_metric_results`` with current=14645 / previous=10000
+    → MoM = +46.45%%:
+      * HALF_UP   → "46.5"  (always up on .5)
+      * HALF_EVEN → "46.4"  (banker's: 4 is even, round down)
+    """
+    current_batches = [
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("8000")},
+        {"supplier_id": "B", "unit_price": Decimal("1"), "receipt_quantity": Decimal("4645")},
+        {"supplier_id": "C", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2000")},
+    ]
+    previous_batches = [
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("10000")},
+    ]
+
+    async def _fake_batches(factory_id, start_date, end_date):
+        if start_date >= date(2026, 5, 1):
+            return current_batches
+        return previous_batches
+
+    monkeypatch.setattr(mod, "_query_material_batches_in_range", _fake_batches)
+
+    result = await mod._build_overview_metric_results(
+        current_batches, "F001", date(2026, 5, 1), date(2026, 5, 31)
+    )
+
+    mom = next((m for m in result if m["metricCode"] == "PROCUREMENT_MOM_GROWTH"), None)
+    assert mom is not None, (
+        f"PROCUREMENT_MOM_GROWTH metric missing — previous_batches stub may have "
+        f"returned empty list. Metric codes: {[m['metricCode'] for m in result]}"
+    )
+    assert mom["formattedValue"] == "+46.5%", (
+        f"Rule 12 regression (Mutation B — HALF_EVEN default) — expected "
+        f"'+46.5%' (HALF_UP via _format_decimal_half_up helper), got "
+        f"{mom['formattedValue']!r}. If this is '+46.4%', site 894 was refactored "
+        f"to ``.quantize(Decimal(\"0.1\"))`` without ``rounding=ROUND_HALF_UP`` and "
+        f"is now using Decimal.quantize default ROUND_HALF_EVEN (banker's)."
+    )
+    # HALF_EVEN regression canary — should NEVER hold
+    assert mom["formattedValue"] != "+46.4%", (
+        "HALF_EVEN regression — site 894 must route Decimal through "
+        "_format_decimal_half_up (which hard-codes rounding=ROUND_HALF_UP)"
+    )
+
+
+# ============================================================
+# End-to-end Rule 12 — AI insight message HALF_UP (site 990)
+# ============================================================
+#
+# Same Mutation A / Mutation B canary pair applied to ``_generate_ai_insights``
+# line 991 (YELLOW supplier-concentration message). After centralization this
+# site goes through ``_format_decimal_half_up`` like the KPI / MoM sites; tests
+# assert the f-string ``f"...{concentration_display}%..."`` embeds the HALF_UP
+# string ("46.6" / "46.5") rather than banker's ("46.5" / "46.4").
+#
+# We invoke ``_generate_ai_insights`` directly (it's a module-private async
+# function) rather than driving the full endpoint, because the YELLOW message
+# string is otherwise embedded in DashboardResponse.aiInsights which is a list
+# of dicts — direct-invoke is the most precise probe.
+
+
+@pytest.mark.asyncio
+async def test_generate_ai_insights_concentration_46_55_message_contains_46_6(monkeypatch):
+    """End-to-end Rule 12 lock-down — AI insight Mutation A canary (float-bridge).
+
+    Feeds a synthetic ``metric_results`` with SUPPLIER_CONCENTRATION value =
+    Decimal('46.55') (YELLOW range, > 40 < 60) and asserts the generated YELLOW
+    insight message embeds ``"46.6%"`` (HALF_UP via helper) — NOT ``"46.5%"``
+    (banker's via float-bridge).
+    """
+    metric_results = [
+        {
+            "metricCode":     "SUPPLIER_CONCENTRATION",
+            "metricName":     "供应商集中度",
+            "value":          Decimal("46.55"),
+            "unit":           "%",
+            "alertLevel":     "YELLOW",
+        }
+    ]
+    # Single-batch fixture for Check 2 (top supplier highlight) — non-empty so
+    # ``_query_supplier_by_id`` is invoked; we stub it to None so the message
+    # uses the "未知供应商" fallback (we don't assert on Check 2).
+    batches = [
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("100")},
+    ]
+
+    async def _fake_supplier_by_id(supplier_id, factory_id):
+        return None
+
+    monkeypatch.setattr(mod, "_query_supplier_by_id", _fake_supplier_by_id)
+
+    insights = await mod._generate_ai_insights("F001", batches, metric_results)
+
+    yellow = next((i for i in insights if i.get("level") == "YELLOW"), None)
+    assert yellow is not None, (
+        f"YELLOW supplier-risk insight missing — concentration=46.55 should fall "
+        f"in YELLOW range (>40, <60). Got levels: {[i.get('level') for i in insights]}"
+    )
+    assert "46.6%" in yellow["message"], (
+        f"Rule 12 regression (Mutation A — float-bridge banker's) — expected "
+        f"'46.6%' substring in YELLOW message (HALF_UP via "
+        f"_format_decimal_half_up), got message={yellow['message']!r}. "
+        f"If '46.5%' appears, site 990 was refactored back to float-bridge "
+        f"f-string banker's."
+    )
+    assert "46.5%" not in yellow["message"], (
+        f"banker's regression — site 990 message must use HALF_UP helper, got "
+        f"{yellow['message']!r}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_generate_ai_insights_concentration_46_45_half_up_vs_half_even_divergent(monkeypatch):
+    """End-to-end Rule 12 lock-down — AI insight Mutation B canary (HALF_EVEN).
+
+    Same divergent-canary strategy as site-874 / site-894 Mutation B: 46.45
+    discriminates HALF_UP ("46.5") from HALF_EVEN ("46.4"), catching the
+    regression where ``rounding=ROUND_HALF_UP`` is dropped at site 990.
+    """
+    metric_results = [
+        {
+            "metricCode":     "SUPPLIER_CONCENTRATION",
+            "metricName":     "供应商集中度",
+            "value":          Decimal("46.45"),
+            "unit":           "%",
+            "alertLevel":     "YELLOW",
+        }
+    ]
+    batches = [
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("100")},
+    ]
+
+    async def _fake_supplier_by_id(supplier_id, factory_id):
+        return None
+
+    monkeypatch.setattr(mod, "_query_supplier_by_id", _fake_supplier_by_id)
+
+    insights = await mod._generate_ai_insights("F001", batches, metric_results)
+
+    yellow = next((i for i in insights if i.get("level") == "YELLOW"), None)
+    assert yellow is not None, (
+        f"YELLOW supplier-risk insight missing — concentration=46.45 should fall "
+        f"in YELLOW range (>40, <60). Got levels: {[i.get('level') for i in insights]}"
+    )
+    assert "46.5%" in yellow["message"], (
+        f"Rule 12 regression (Mutation B — HALF_EVEN default) — expected "
+        f"'46.5%' substring (HALF_UP), got message={yellow['message']!r}. "
+        f"If '46.4%' appears, site 990 was refactored to inline "
+        f"``.quantize(Decimal(\"0.1\"))`` missing ``rounding=ROUND_HALF_UP``."
+    )
+    assert "46.4%" not in yellow["message"], (
+        f"HALF_EVEN regression — site 990 message must use HALF_UP helper, got "
+        f"{yellow['message']!r}"
     )
 
 
