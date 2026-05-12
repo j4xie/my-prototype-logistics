@@ -1,0 +1,26 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "salesperson",
+    "value": "张三",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 200,
+  "response": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "drillPath": "张三",
+      "data": [],
+      "level": 1,
+      "dimension": "salesperson"
+    },
+    "timestamp": "2026-05-13T04:00:48.088973012",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  },
+  "rawText": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"drillPath\":\"张三\",\"data\":[],\"level\":1,\"dimension\":\"salesperson\"},\"timestamp\":\"2026-05-13T04:00:48.088973012\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+}

@@ -1,0 +1,30 @@
+{
+  "url": "http://139.196.165.140:8097/api/mobile/F001/smart-bi/drill-down",
+  "requestBody": {
+    "dimension": "department",
+    "value": "sales",
+    "startDate": "2026-04-01",
+    "endDate": "2026-04-30"
+  },
+  "httpStatus": 403,
+  "response": {
+    "success": false,
+    "code": "FORBIDDEN",
+    "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读写] 权限",
+    "severity": "error",
+    "actionHint": "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [数据分析] 的 [读写] 权限, 或切换到有权限的账号重试",
+    "meta": {
+      "role": "warehouse_manager",
+      "module": "analytics",
+      "action": "read_write",
+      "requireAll": false,
+      "requiredPermissions": [
+        {
+          "module": "analytics",
+          "action": "read_write"
+        }
+      ]
+    }
+  },
+  "rawText": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 在 [数据分析] 模块无 [读写] 权限\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [数据分析] 的 [读写] 权限, 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"analytics\",\"action\":\"read_write\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"analytics\",\"action\":\"read_write\"}]}}"
+}
