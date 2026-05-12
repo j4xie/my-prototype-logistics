@@ -33,9 +33,23 @@
 -- ai_weekly_quota = 1000 per Steve dispatch — these are real customer chains
 -- expected to query heavily; entity default of 20 is too low.
 --
+-- P0 fix 2026-05-11 (chat1, post-PR #377):
+--   R_YUJIUJING_REAL name disambiguated from '御九井 日料' → '御九井 日料 (真实)'
+--   to avoid collision with existing R_YJJ_DEMO row in cretas_prod_db.factories
+--   (UNIQUE constraint ukrjab5dbtnnpf6t623u4t24ikq on factories.name).
+--   The initial migration apply crashed Java prod 10010 + test 10011 with
+--   `duplicate key value violates unique constraint`. Sister-sweep confirmed
+--   this was the only exact-string conflict among the 14 R_*_REAL roster
+--   (chat4 audit + chat1 P0 verification via prod psql query 2026-05-11).
+--   Flyway history was clean post-rollback (PostgreSQL transactional
+--   semantics rolled both the row INSERT and the history-table INSERT),
+--   so no `flyway repair` is required — Java picks up the corrected
+--   migration on next deploy.
+--
 -- Spec: docs/superpowers/specs/2026-05-11-phase-2d-silver-migration-and-factory-impl-spec.md §5.6
 -- Seed: backend/python/smartbi/database/migrations/V20260511_02__t6_6_etl_seed_14_real_chains.sql
 -- Audit: docs/qa-audits/2026-05-12-restaurant-data-readiness-prod-evidence.md
+-- Prior fix: PR #394 (file moved from migration-pg-converted/ → db/flyway/)
 
 INSERT INTO factories (
     id, name, type, level,
@@ -55,5 +69,6 @@ INSERT INTO factories (
     ('R_XINBASHU_REAL',       '鑫巴蜀',          'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_YONGHE_REAL',         '永和豆浆',        'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
     ('R_YOUZIYOUWEI_REAL',    '有滋有味',        'RESTAURANT', 0, true, false, 1000, NOW(), NOW()),
-    ('R_YUJIUJING_REAL',      '御九井 日料',     'RESTAURANT', 0, true, false, 1000, NOW(), NOW())
+    -- P0 fix: disambiguated from '御九井 日料' (collided with R_YJJ_DEMO).
+    ('R_YUJIUJING_REAL',      '御九井 日料 (真实)', 'RESTAURANT', 0, true, false, 1000, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;

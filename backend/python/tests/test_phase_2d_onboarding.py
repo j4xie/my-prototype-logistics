@@ -32,6 +32,11 @@ from smartbi_compat.tenant import TenantType
 # Migration file lives in the Java Flyway dir (cretas_prod_db target) because
 # factories table is in cretas_prod_db, not smartbi_prod_db. Computed relative
 # to the python backend test file so worktree-relative imports stay clean.
+#
+# PR #394 moved the file from db/migration-pg-converted/ → db/flyway/ and
+# repacked the YMD format from V2026_05_11_01 → V20260511_01 to match the
+# db/flyway/ dir's existing naming convention. This test path follows the
+# new canonical location.
 MIGRATION_PATH = (
     Path(__file__).resolve().parent.parent.parent
     / "java"
@@ -40,8 +45,8 @@ MIGRATION_PATH = (
     / "main"
     / "resources"
     / "db"
-    / "migration-pg-converted"
-    / "V2026_05_11_01__onboard_14_r_real_chains.sql"
+    / "flyway"
+    / "V20260511_01__onboard_14_r_real_chains.sql"
 )
 
 EXPECTED_FACTORY_IDS = {
