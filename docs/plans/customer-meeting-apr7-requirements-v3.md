@@ -458,7 +458,7 @@ interface EntitySchema {
 ### 10.1 关键文件路径清单
 
 **后端核心实体** (需要改):
-- `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/sales/SalesOrder.java` (加 taxBreakdown + 3 status + sales_order_id 关联)
+- `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/sales/SalesOrder.java` (加 3 status + sales_order_id 关联; 税率分组实际落在 `InvoiceRecord.tax_breakdown` JSONB — 见 §4.1 P0-3a)
 - `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/production/ProductionPlan.java` (加 sales_order_id 必填)
 - `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/production/ProductionReport.java` (加 pc_code + production_date)
 - `backend/java/cretas-api/src/main/java/com/cretas/aims/entity/inventory/BomItem.java` (加 material_group)
