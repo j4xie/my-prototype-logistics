@@ -288,9 +288,16 @@ public class MaterialBatch extends BaseEntity {
     }
 
     /**
-     * 获取总成本 (前端使用 totalCost)
+     * 获取总成本 (前端使用 totalCost). Price-sensitive — delegates to
+     * {@link #getTotalPrice()} which already returns {@code null} when
+     * {@code unitPrice} has been stripped. Marked {@code @PriceSensitive}
+     * so Jackson's {@code PriceSensitiveSerializerModifier} short-circuits
+     * the getter at serialization time for users lacking
+     * {@code procurement:price:view} — defense-in-depth alongside the
+     * delegate's defensive null guard. See PR #443 follow-up F3.
      */
     @Transient
+    @PriceSensitive
     public BigDecimal getTotalCost() {
         return getTotalPrice();
     }
