@@ -31,6 +31,7 @@ from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 # previously defined inline here, now reusable across all smartbi_compat
 # endpoints via single source of truth).
 from smartbi_compat._java_compat import (  # noqa: E402
+    _format_decimal_half_up,
     _sort_entries_java_iter_then_value_desc,
 )
 
@@ -867,15 +868,13 @@ async def _build_overview_metric_results(
     # Metric 4: 供应商集中度 (Java line 499-510) — has description
     concentration = _calculate_supplier_concentration(batches)
     concentration_alert = _determine_concentration_alert_level(concentration)
-    # Use Decimal.quantize HALF_UP for display formatting — Python f-string
-    # ":.1f" uses banker's rounding (46.55 → 46.5) but Java String.format
-    # "%.1f" uses HALF_UP (46.55 → 46.6). Rule 12 candidate per
-    # .claude/rules/python-java-port.md (graduation pending).
-    concentration_display = concentration.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    # Rule 12: centralized HALF_UP display via _format_decimal_half_up. Python
+    # f-string ":.1f" uses banker's (46.55 → "46.5"); helper goes Decimal-direct
+    # HALF_UP (46.55 → "46.6") mirroring Java String.format("%.1f", ...) semantic.
     metric_results.append(_metric_result_of(
         "SUPPLIER_CONCENTRATION", "供应商集中度",
         concentration.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP), "%",
-        formatted_value=f"{concentration_display}%",
+        formatted_value=f"{_format_decimal_half_up(concentration, 1)}%",
         alert_level=concentration_alert,
         description="最大供应商占比",
     ))
@@ -888,16 +887,17 @@ async def _build_overview_metric_results(
         previous_amount = _calculate_total_value(previous_batches)
         mom_growth = _calculate_mom_growth(total_amount, previous_amount)
         direction = _determine_change_direction(mom_growth)
-        # Rule 12: pre-quantize HALF_UP to scale-1 before f-string render to
-        # mirror Java String.format("%+.1f", ...). Plain f-string :+.1f via
-        # float() bridge uses banker's rounding (e.g. 46.55 → 46.5 vs Java 46.6).
-        mom_growth_display = mom_growth.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        # Rule 12: centralized HALF_UP display via _format_decimal_half_up,
+        # mirroring Java String.format("%+.1f", ...) semantic. Java's "+" sign
+        # for non-negative values is reproduced via manual prefix (helper preserves
+        # str(Decimal) which renders "-" for negatives but no leading "+").
+        mom_sign = "+" if mom_growth >= Decimal("0") else ""
         metric_results.append({
             "metricCode":      "PROCUREMENT_MOM_GROWTH",
             "metricName":      "环比增长",
             "value":           _decimal_to_number(
                 mom_growth.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)),
-            "formattedValue":  f"{float(mom_growth_display):+.1f}%",
+            "formattedValue":  f"{mom_sign}{_format_decimal_half_up(mom_growth, 1)}%",
             "unit":            "%",
             "changePercent":   _decimal_to_number(mom_growth),
             "changeDirection": direction,
@@ -985,9 +985,10 @@ async def _generate_ai_insights(
     )
     if concentration_metric is not None and concentration_metric.get("value") is not None:
         concentration = _to_decimal(concentration_metric["value"])
-        # Decimal.quantize HALF_UP mirrors Java String.format("%.1f", ...) — see
-        # _calculate_supplier_concentration KPI site above for Rule 12 rationale.
-        concentration_display = concentration.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        # Rule 12: centralized HALF_UP display via _format_decimal_half_up,
+        # mirroring Java String.format("%.1f", ...) semantic — see KPI site
+        # in _build_overview_metric_results for divergence rationale.
+        concentration_display = _format_decimal_half_up(concentration, 1)
         if concentration > _PROCUREMENT_CONCENTRATION_RED:
             insights.append({
                 "level":            "RED",
