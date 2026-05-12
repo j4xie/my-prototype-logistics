@@ -1,0 +1,126 @@
+{
+  "request": "/api/mobile/F001/smart-bi/analysis/inventory?startDate=2026-04-12&endDate=2026-05-12&analysisType=turnover",
+  "status": 200,
+  "body": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "endDate": "2026-05-12",
+      "ranking": [
+        {
+          "rank": 1,
+          "name": "RMT-F001-001",
+          "value": 293550,
+          "target": null,
+          "completionRate": null,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 2,
+          "name": "RMT-F001-002",
+          "value": 230000,
+          "target": null,
+          "completionRate": null,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 3,
+          "name": "RMT-F001-005",
+          "value": 72926.68,
+          "target": null,
+          "completionRate": null,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 4,
+          "name": "RMT-F001-003",
+          "value": 8000,
+          "target": null,
+          "completionRate": null,
+          "alertLevel": "GREEN"
+        }
+      ],
+      "metrics": [
+        {
+          "metricCode": "TURNOVER_RATE",
+          "metricName": "库存周转率",
+          "value": 0,
+          "formattedValue": "0.0 次/年",
+          "unit": "次/年",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "INVENTORY_DAYS",
+          "metricName": "库存天数",
+          "value": 999,
+          "formattedValue": "999 天",
+          "unit": "天",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "CONSUMPTION_AMOUNT",
+          "metricName": "期间消耗",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "INVENTORY_VALUE",
+          "metricName": "库存价值",
+          "value": 604476.68,
+          "formattedValue": null,
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "trendChart": {
+        "chartType": "LINE",
+        "title": "消耗趋势",
+        "seriesField": null,
+        "data": [
+          {
+            "month": "2026-04",
+            "consumption": 0
+          },
+          {
+            "month": "2026-05",
+            "consumption": 0
+          }
+        ],
+        "options": {
+          "showDataLabels": false,
+          "smooth": true
+        },
+        "xaxisField": "month",
+        "yaxisField": "consumption"
+      },
+      "startDate": "2026-04-12"
+    },
+    "timestamp": "2026-05-13T03:57:55.425444",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  }
+}

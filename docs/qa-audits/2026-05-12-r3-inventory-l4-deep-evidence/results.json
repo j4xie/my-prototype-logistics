@@ -1,0 +1,265 @@
+{
+  "spec": "docs/qa-specs/2026-05-12-smartbi-python-port-deep-e2e-spec.md",
+  "round": "R3",
+  "module": "analysis_inventory",
+  "startedAt": "2026-05-12T19:57:54.503Z",
+  "testEnv": "http://139.196.165.140:8097",
+  "finishedAt": "2026-05-12T19:59:16.438Z",
+  "totals": {
+    "total": 8,
+    "pass": 7,
+    "warn": 1,
+    "fail": 0
+  },
+  "depthBreakdown": {
+    "deep": 7,
+    "medium": 1,
+    "smoke": 0
+  },
+  "results": [
+    {
+      "layer": "L4",
+      "id": "API-1",
+      "name": "turnover_analysis",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 200,
+      "apiSuccess": true,
+      "metricsCount": 4,
+      "metricCodes": [
+        "TURNOVER_RATE",
+        "INVENTORY_DAYS",
+        "CONSUMPTION_AMOUNT",
+        "INVENTORY_VALUE"
+      ],
+      "turnoverRate": 0,
+      "turnoverAlert": "RED",
+      "rule7BoundaryConsistent": true,
+      "inventoryDays": 999,
+      "inventoryDaysAlert": "RED",
+      "rankingCount": 4,
+      "rule9Sampled": {
+        "top": 3,
+        "mid": 0,
+        "last": 2
+      },
+      "rule9RealNames": 5,
+      "rule9Pass": true,
+      "rule9SampleNames": [
+        "RMT-F001-001",
+        "RMT-F001-002",
+        "RMT-F001-005",
+        "RMT-F001-005",
+        "RMT-F001-003"
+      ],
+      "evidenceFile": "api1-turnover.json"
+    },
+    {
+      "layer": "L4",
+      "id": "API-2",
+      "name": "expiry_analysis",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 200,
+      "apiSuccess": true,
+      "metricsCount": 5,
+      "metricCodes": [
+        "EXPIRY_RISK_RATE",
+        "EXPIRING_COUNT",
+        "HIGH_RISK_COUNT",
+        "EXPIRED_COUNT",
+        "EXPIRING_VALUE"
+      ],
+      "expiryRiskRate": 0,
+      "expiryRiskAlert": "GREEN",
+      "expiringCount": 0,
+      "highRiskCount": 0,
+      "rule7BoundaryConsistent": true,
+      "rule1ZeroValueMetricPresent": true,
+      "rule1ZeroValueMetric": {
+        "code": "EXPIRY_RISK_RATE",
+        "value": 0,
+        "alert": "GREEN"
+      },
+      "expiringBatchesCount": 0,
+      "rule9DataAvailable": false,
+      "rule9Sampled": {
+        "top": 0,
+        "mid": 0,
+        "last": 0
+      },
+      "rule9RealNames": 0,
+      "rule9Pass": true,
+      "evidenceFile": "api2-expiry.json"
+    },
+    {
+      "layer": "L4",
+      "id": "API-3",
+      "name": "aging_analysis_rule1",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 200,
+      "apiSuccess": true,
+      "metricsCount": 3,
+      "metricCodes": [
+        "SLOW_MOVING_RATE",
+        "SLOW_MOVING_VALUE",
+        "AVG_AGING_DAYS"
+      ],
+      "slowMovingRate": 1.41,
+      "slowMovingAlert": "GREEN",
+      "slowMovingValue": 8550,
+      "avgAgingDays": 47,
+      "rule7BoundaryConsistent": true,
+      "segmentCount": 0,
+      "longAgingCount": 0,
+      "rule1ZeroValueMetricPresent": false,
+      "rule1ZeroValueMetric": null,
+      "rule1SlowRateZeroOrLow": true,
+      "rule9Sampled": {
+        "top": 0,
+        "mid": 0,
+        "last": 0
+      },
+      "rule9RealNames": 0,
+      "evidenceFile": "api3-aging.json"
+    },
+    {
+      "layer": "L4",
+      "id": "ERROR-1",
+      "name": "cross_factory_403",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 403,
+      "is4xx": true,
+      "message": "Cross-factory access denied: token factoryId=F001 URL factoryId=F002",
+      "hasMessage": true,
+      "expectedShape": "success=false + message non-empty",
+      "evidenceFile": "err1-cross-factory.json"
+    },
+    {
+      "layer": "L4",
+      "id": "ERROR-2",
+      "name": "future_date_handling",
+      "status": "PASS",
+      "depth": "medium",
+      "httpStatus": 200,
+      "apiSuccess": true,
+      "message": "操作成功",
+      "evidenceFile": "err2-future-date.json"
+    },
+    {
+      "layer": "L4",
+      "id": "UI-1",
+      "name": "warehouse_inventory_admin_full",
+      "status": "PASS",
+      "depth": "deep",
+      "rowsBefore": 20,
+      "rowsAfter": 20,
+      "delta": 0,
+      "headers": [
+        "批次号",
+        "材料类型",
+        "当前数量",
+        "单位",
+        "存储位置",
+        "状态",
+        "过期日期",
+        "更新时间",
+        "操作"
+      ],
+      "statsSample": [
+        "24批次总数库存总量低库存预警即将过期",
+        "24批次总数",
+        "库存总量",
+        "低库存预警"
+      ],
+      "rule9Sampled": 6,
+      "rule9RealNames": 6,
+      "rule9Pass": true,
+      "detailOpened": false,
+      "detailFieldsCount": 0,
+      "detailFieldsSample": [],
+      "consoleErrors": 0,
+      "apiErrorCount": 0,
+      "apiErrorSample": [],
+      "screenshots": [
+        "ui1-warehouse-inventory-admin.png",
+        "ui1-detail-dialog.png"
+      ]
+    },
+    {
+      "layer": "L4",
+      "id": "UI-2",
+      "name": "by_warehouse_admin",
+      "status": "WARN",
+      "depth": "deep",
+      "rowCount": 0,
+      "headers": [
+        "批次号",
+        "原料名称",
+        "当前数量",
+        "单位",
+        "仓库",
+        "存储位置",
+        "供应商",
+        "过期日期",
+        "状态",
+        "批次号",
+        "产品名称",
+        "生产数量",
+        "已发货",
+        "预留",
+        "可用数量",
+        "单位",
+        "存储位置",
+        "生产日期",
+        "过期日期",
+        "状态"
+      ],
+      "rule9Sampled": 0,
+      "sampledSample": [],
+      "inventoryApiCalls": [
+        {
+          "endpoint": "/F001/factory/warehouses",
+          "status": 200
+        },
+        {
+          "endpoint": "/F001/inventory/by-warehouse",
+          "status": 401
+        }
+      ],
+      "consoleErrors": 1,
+      "apiErrorCount": 1,
+      "apiErrorSample": [
+        {
+          "url": "http://139.196.165.140:8097/api/mobile/F001/inventory/by-warehouse?targetFactoryId=F001&warehouseId=ed0749e2-4ef7-4193-ad79-aa8dea4cb295",
+          "status": 401,
+          "endpoint": "/F001/inventory/by-warehouse"
+        }
+      ],
+      "screenshots": [
+        "ui2-by-warehouse-admin.png"
+      ]
+    },
+    {
+      "layer": "L4",
+      "id": "RBAC",
+      "name": "warehouse_strip_vs_admin",
+      "status": "PASS",
+      "depth": "deep",
+      "adminPriceColCount": 0,
+      "adminPriceColSample": [],
+      "adminHasRealNumbers": false,
+      "warehousePriceColCount": 0,
+      "warehousePriceColSample": [],
+      "warehouseLeakedRealNumber": false,
+      "leakDetail": null,
+      "note": "PR #467 may hide price columns entirely via column-level v-if; that is acceptable",
+      "screenshots": [
+        "rbac-admin-warehouse-inventory.png",
+        "rbac-warehouse-warehouse-inventory.png"
+      ]
+    }
+  ]
+}

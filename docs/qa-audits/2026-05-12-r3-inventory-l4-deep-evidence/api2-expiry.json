@@ -1,0 +1,125 @@
+{
+  "request": "/api/mobile/F001/smart-bi/analysis/inventory?startDate=2026-04-12&endDate=2026-05-12&analysisType=expiry",
+  "status": 200,
+  "body": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "riskAnalysis": [
+        {
+          "metricCode": "EXPIRY_RISK_RATE",
+          "metricName": "临期风险率",
+          "value": 0,
+          "formattedValue": "0.0%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "30天内临期库存占比"
+        },
+        {
+          "metricCode": "EXPIRING_COUNT",
+          "metricName": "临期批次数",
+          "value": 0,
+          "formattedValue": "0 批",
+          "unit": "批",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "HIGH_RISK_COUNT",
+          "metricName": "高风险批次",
+          "value": 0,
+          "formattedValue": "0 批",
+          "unit": "批",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "7天内过期"
+        },
+        {
+          "metricCode": "EXPIRED_COUNT",
+          "metricName": "已过期批次",
+          "value": 0,
+          "formattedValue": "0 批",
+          "unit": "批",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "EXPIRING_VALUE",
+          "metricName": "临期库存价值",
+          "value": 0,
+          "formattedValue": null,
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "endDate": "2026-05-12",
+      "riskChart": {
+        "chartType": "PIE",
+        "title": "临期风险分布",
+        "seriesField": null,
+        "data": [
+          {
+            "status": "正常（>30天）",
+            "value": 602970.2
+          },
+          {
+            "status": "关注（15-30天）",
+            "value": 0
+          },
+          {
+            "status": "预警（7-15天）",
+            "value": 0
+          },
+          {
+            "status": "紧急（<7天）",
+            "value": 0
+          },
+          {
+            "status": "无保质期",
+            "value": 1506.48
+          }
+        ],
+        "options": {
+          "showPercentage": true,
+          "showLegend": true,
+          "colors": [
+            "#52c41a",
+            "#faad14",
+            "#ff7a45",
+            "#ff4d4f",
+            "#8c8c8c"
+          ]
+        },
+        "xaxisField": "status",
+        "yaxisField": "value"
+      },
+      "expiringBatches": [],
+      "startDate": "2026-04-12"
+    },
+    "timestamp": "2026-05-13T03:57:55.646027",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  }
+}

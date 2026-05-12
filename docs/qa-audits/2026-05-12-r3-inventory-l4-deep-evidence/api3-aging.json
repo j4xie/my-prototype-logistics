@@ -1,0 +1,134 @@
+{
+  "request": "/api/mobile/F001/smart-bi/analysis/inventory?startDate=2026-04-12&endDate=2026-05-12&analysisType=aging",
+  "status": 200,
+  "body": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "agingMetrics": [
+        {
+          "metricCode": "SLOW_MOVING_RATE",
+          "metricName": "呆滞库存率",
+          "value": 1.41,
+          "formattedValue": "1.4%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "90天以上库龄占比"
+        },
+        {
+          "metricCode": "SLOW_MOVING_VALUE",
+          "metricName": "呆滞库存价值",
+          "value": 8550,
+          "formattedValue": null,
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "AVG_AGING_DAYS",
+          "metricName": "平均库龄",
+          "value": 47,
+          "formattedValue": null,
+          "unit": "天",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "endDate": "2026-05-12",
+      "longAgingBatches": [
+        {
+          "rank": 1,
+          "name": "MB-2025-001",
+          "value": 0,
+          "target": 138,
+          "completionRate": 350,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 2,
+          "name": "MB-2025-002",
+          "value": 0,
+          "target": 138,
+          "completionRate": 244,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 3,
+          "name": "MB-TEST-002",
+          "value": 2550,
+          "target": 137,
+          "completionRate": 100,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 4,
+          "name": "INT-TEST-BATCH-002",
+          "value": 1000,
+          "target": 133,
+          "completionRate": 40,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 5,
+          "name": "MB-TEST-20260102-001",
+          "value": 5000,
+          "target": 131,
+          "completionRate": 100,
+          "alertLevel": "RED"
+        }
+      ],
+      "agingChart": {
+        "chartType": "BAR",
+        "title": "库龄分布",
+        "seriesField": null,
+        "data": [
+          {
+            "aging": "0-30天",
+            "value": 595926.68
+          },
+          {
+            "aging": "31-60天",
+            "value": 0
+          },
+          {
+            "aging": "61-90天",
+            "value": 0
+          },
+          {
+            "aging": "90天以上",
+            "value": 8550
+          }
+        ],
+        "options": {
+          "showDataLabels": true,
+          "colors": [
+            "#52c41a",
+            "#1890ff",
+            "#faad14",
+            "#ff4d4f"
+          ]
+        },
+        "xaxisField": "aging",
+        "yaxisField": "value"
+      },
+      "startDate": "2026-04-12"
+    },
+    "timestamp": "2026-05-13T03:57:55.863701",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  }
+}
