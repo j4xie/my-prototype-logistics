@@ -31,12 +31,6 @@ const baseRoutes: RouteRecordRaw[] = [
     name: 'MobileOnly',
     component: () => import('@/views/error/mobile-only.vue'),
     meta: { requiresAuth: false, title: '请使用移动端' }
-  },
-  {
-    path: '/smart-bi/share/:token',
-    name: 'SmartBISharedView',
-    component: () => import('@/views/smart-bi/SharedView.vue'),
-    meta: { requiresAuth: false, title: '分享分析' }
   }
 ];
 
