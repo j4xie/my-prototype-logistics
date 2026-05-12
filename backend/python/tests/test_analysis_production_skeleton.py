@@ -248,8 +248,6 @@ def test_module_advertises_dispatch_helpers():
 #
 # Pattern mirrors gold-standard ``test_config_thresholds_pilot.py``.
 
-import os  # noqa: E402
-
 import jwt  # noqa: E402
 
 from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402

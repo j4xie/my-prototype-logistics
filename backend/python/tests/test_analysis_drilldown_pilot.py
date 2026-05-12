@@ -63,7 +63,6 @@ os.environ.setdefault("JWT_SECRET", "phase-2b3-drilldown-pilot-test-secret")
 from smartbi_compat._java_compat import _format_decimal_half_up  # noqa: E402
 from smartbi_compat.api import analysis_drilldown as mod  # noqa: E402
 from smartbi_compat.api.analysis_drilldown import (  # noqa: E402
-    DrilldownBusinessException,
     _build_kpi_card,
     _compute_drill_path,
     _default_date_range_this_month,

@@ -23,7 +23,7 @@ Coverage scope:
 from __future__ import annotations
 
 import os
-from datetime import date, datetime, time
+from datetime import date, datetime
 from decimal import Decimal
 
 import jwt

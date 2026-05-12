@@ -52,7 +52,6 @@ Coverage (Rule 1 / 4 / 6 / 7 / 8 / 9 / 10 / 12 per
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import Optional
