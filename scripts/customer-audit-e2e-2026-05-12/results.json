@@ -1,0 +1,575 @@
+{
+  "runAt": "2026-05-12T07:26:20.049Z",
+  "target": "http://139.196.165.140:8086",
+  "results": [
+    {
+      "scenario": "S1-requisitions-filter",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/restaurant/requisitions",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 748,
+        "bodyText": "\n    白垩纪AI Agent首页销售管理销售订单客户管理系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则菜品信息管理工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板异常预警进销存闭环总览餐饮运营运营分析运营总览菜品四象限门店对比经营与平台分析菜品毛利分析日常管理领料管理损耗管理配方管理盘点管理ETL 状态数据完整度智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志餐饮运营/领料管理/gml_admin工厂总监领料管理共 0 条🤖 AI 分析导出新建领料单领料总数0 单待审批0 单已审批0 单总记录数0至状态类型搜索重置领料单号日期类型状态菜品申请量实发量备注操作暂无领料记录，点击「新建领料单」创建共 0 条10条/页 1 前往页领料单详情\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: R_GML_DEMO 退出登录 2026 年5 月日一二三四五六2627282930123456789101112131415161718192021222324252627282930311234562026 年6 月日一二三四五六311234567891011121314151617181920212223242526272829301234567891011草稿已提交已审批已驳回按菜品BOM手动领料10条/页20条/页50条/页",
+        "statusSelectors": 3,
+        "filterClicked": true,
+        "optionShown": true
+      },
+      "ts": "2026-05-12T07:23:35.268Z"
+    },
+    {
+      "scenario": "S2-recipe-bom-yield-rate",
+      "status": "INFO",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/restaurant/recipes",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 611,
+        "bodyText": "\n    白垩纪AI Agent首页销售管理销售订单客户管理系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则菜品信息管理工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板异常预警进销存闭环总览餐饮运营运营分析运营总览菜品四象限门店对比经营与平台分析菜品毛利分析日常管理领料管理损耗管理配方管理盘点管理ETL 状态数据完整度智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志餐饮运营/配方管理/gml_admin工厂总监配方管理共 0 条🤖 AI 分析🧠 AI 录配方🚀 AI 批量录配方 99+📥 批量导入🔗 菜名对齐 99+导出新增配方配方总数0涉及菜品0有配方菜品0列表总数0按菜品筛选状态搜索重置菜品食材标准用量净料率主料/辅料状态备注操作暂无配方数据，点击「新增配方」添加共 0 条10条/页 1 前往页配方详情食材价格历史\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: R_GML_DEMO 退出登录 无数据启用停用10条/页20条/页50条/页",
+        "formOpened": false,
+        "yieldRateLabel": false,
+        "formFields": []
+      },
+      "ts": "2026-05-12T07:23:37.885Z"
+    },
+    {
+      "scenario": "S3-transfer-batch-current-stock",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/404",
+        "is403": false,
+        "is404": true,
+        "isLogin": false,
+        "bodyTextLen": 94,
+        "bodyText": "\n    404页面不存在抱歉，您访问的页面不存在或已被移除。返回上页返回首页\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n",
+        "tableHeaders": [],
+        "hasCurrentStockCol": false,
+        "dialogOpened": false,
+        "hasBatchSelect": false
+      },
+      "ts": "2026-05-12T07:24:19.270Z"
+    },
+    {
+      "scenario": "S5-inventory-by-warehouse",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/inventory/by-warehouse",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 869,
+        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析分仓库存查询/分仓库存查询/f006_admin工厂总监分仓库存查询按工厂 × 仓库查看当前快照工厂:六膳门食品科技仓库:总仓 (WH-LOG)搜索:刷新 原料库存  成品库存  总览 批次号原料名称当前数量单位仓库存储位置供应商过期日期状态该仓库暂无原料批次批次号产品名称生产数量已发货预留可用数量单位存储位置生产日期过期日期状态该仓库暂无成品批次请先选择工厂和仓库\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 六膳门食品科技F006总仓 (WH-LOG)线边仓 (WH-WKS)用户未登录",
+        "tableExists": true,
+        "factoryDropdownCount": 2,
+        "headers": [
+          "批次号",
+          "原料名称",
+          "当前数量",
+          "单位",
+          "仓库",
+          "存储位置",
+          "供应商",
+          "过期日期",
+          "状态",
+          "批次号",
+          "产品名称",
+          "生产数量",
+          "已发货",
+          "预留",
+          "可用数量",
+          "单位",
+          "存储位置",
+          "生产日期",
+          "过期日期",
+          "状态"
+        ]
+      },
+      "ts": "2026-05-12T07:24:23.732Z"
+    },
+    {
+      "scenario": "S6-sales-order-wh-log-label",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 119,
+        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析销售管理/销售订单/f006_admin工厂总监🧾 POS 交易概览Gold · finance_summary这里是「销售订单」管理 — 客户向我们下的订单（出货方向、应收账款） ⚠️ 如果你想录入的是我们向供应商下的订单（进货方向、应付账款），请到 采购管理 → 采购订单 创建。销售订单管理共 5 条记录 AI录入 新建销售订单全部订单 5未出库订单 4部分出库订单 未收款订单 4部分收款订单 已完成订单 按状态筛选搜索重置订单编号客户业务员下单日期总金额运费折扣状态操作SO-20260511-0001叮咚张六膳2026-05-11¥5,000.00--已确认详情取消出库开票税率分组开票收款SO-20260509-0001叮咚2026-05-09¥120,000.00--财务已批准详情SO-20260507-0001叮咚张六膳2026-05-07¥5,605,600.00--财务已批准详情SO-20260502-0001叮咚张六膳2026-05-02¥382,950.00--财务已批准详情SO-20260429-0001叮咚2026-04-29¥14,000.00--已取消详情共 5 条10条/页 1 前往页AI 智能创建销售单仅限销售单相关操作 使用教程 \n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 草稿已确认待财务审核财务已批准财务已驳回处理中部分发货已完成已取消10条/页20条/页50条/页",
+        "dialogOpened": true,
+        "hasWhLogText": false,
+        "hasZongCangText": false,
+        "hasXianBianCangText": false,
+        "bodyPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)操作选择产品13% 加工删除+ 添加行取消创建"
+      },
+      "ts": "2026-05-12T07:24:43.777Z"
+    },
+    {
+      "scenario": "S7-production-plan-page",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/production/plans",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 1553,
+        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析生产管理/生产计划/f006_admin工厂总监这里是「生产计划」管理 — 未来要做什么的「计划」（PENDING / 待开工状态，可调整数量、日期） ⚠️ 如果你想录入的是已开工的实际「批次」（IN_PROGRESS / COMPLETED，记录实际产量、消耗），请到 生产管理 → 生产批次 创建。计划批准后才会转为批次。生产计划管理共 6 条记录 下载模板  导入Excel  导出Excel  AI对话创建  新建计划 全部状态搜索重置计划编号产品类型客户工序批次日期计划数量实际数量计划日期状态预计工人指派主管来源创建时间操作PLAN-1778470417953-9BF17563叮咚好食光轻卤门腔（猪舌）120g叮咚拆包2026-05-121001002026-05-15已完成手动2026-05-11 11:33:37查看PLAN-1778296111890-BA2B3B0A叮咚好食光卤猪蹄(去大骨) 200g叮咚通用2026-05-101002026-05-10进行中手动2026-05-09 11:08:31查看完成取消PLAN-1778205679008-C932BDF2叮咚好食光轻卤门腔（猪舌）120g叮咚通用2026-05-105002026-05-09进行中手动2026-05-08 10:01:19查看完成取消PLAN-1778205235834-4120D8CC叮咚好食光轻卤门腔（猪舌）120g叮咚通用2026-05-085001002026-05-08已完成手动2026-05-08 09:53:55查看PP-AUTO-20260507-0002叮咚好食光轻卤门腔（猪舌）120g10012026-05-12进行中手动2026-05-07 11:36:53查看完成取消PP-AUTO-20260502-0001叮咚好食光纸片牛腱肉 80g2072026-05-02进行中手动2026-05-02 11:05:00查看完成取消共 6 条10条/页 1 前往页AI 智能创建生产计划仅限生产计划相关操作 使用教程 \n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 待执行进行中已完成已取消10条/页20条/页50条/页100条/页",
+        "startBtnCount": 0
+      },
+      "ts": "2026-05-12T07:24:46.745Z"
+    },
+    {
+      "scenario": "S8-purchase-order-pdf",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/procurement/orders",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 1304,
+        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析采购管理/采购订单/f006_admin工厂总监这里是「采购订单」管理 — 我们向供应商下的订单（进货方向、应付账款） ⚠️ 如果你想录入的是客户向我们下的订单（出货方向、应收账款），请到 销售管理 → 销售订单 创建。采购订单管理共 5 条记录 AI录入  新建采购订单至按状态筛选搜索重置订单编号供应商类型下单日期总金额状态操作PO-20260507-0003北京飞熊直接2026-05-07¥5,600.00部分收货详情PDFPO-20260507-0002北京飞熊直接2026-05-07¥2,500.00已完成详情PDFPO-20260507-0001北京飞熊直接2026-05-07¥2,350.00已取消详情PDFPO-20260502-0001北京飞熊直接2026-05-02¥20,610.00已完成详情PDFPO-20260429-0001北京飞熊直接2026-04-29¥18,500.00已取消详情PDF共 5 条10条/页 1 前往页AI 智能创建采购单仅限采购单相关操作 使用教程 \n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 2026 年5 月日一二三四五六2627282930123456789101112131415161718192021222324252627282930311234562026 年6 月日一二三四五六311234567891011121314151617181920212223242526272829301234567891011草稿已提交已审批部分收货已完成已取消已关闭10条/页20条/页50条/页",
+        "rowCount": 5,
+        "pdfBtnFound": true,
+        "pdfDownloaded": true,
+        "pdfUrl": "blob:http://139.196.165.140:8086/55f53489-2477-461f-97a3-1079647ff9c2",
+        "pdfNetwork": [
+          {
+            "scenario": "restaurant",
+            "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+            "status": 200,
+            "contentType": "application/javascript"
+          },
+          {
+            "scenario": "restaurant",
+            "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+            "status": 200,
+            "contentType": "application/javascript"
+          },
+          {
+            "scenario": "restaurant",
+            "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+            "status": 200,
+            "contentType": "application/javascript"
+          },
+          {
+            "scenario": "f006_admin",
+            "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+            "status": 200,
+            "contentType": "application/javascript"
+          },
+          {
+            "scenario": "f006_admin",
+            "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+            "status": 200,
+            "contentType": "application/javascript"
+          }
+        ]
+      },
+      "ts": "2026-05-12T07:24:50.315Z"
+    },
+    {
+      "scenario": "S9-receive-qty-column",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/procurement/receives",
+        "is403": false,
+        "is404": false,
+        "isLogin": false,
+        "bodyTextLen": 1565,
+        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析采购管理/采购入库/f006_admin工厂总监这里是「采购入库」管理 — 把供应商发来的物料正式收货登记，更新原料库存（采购订单的执行环节） ⚠️ 如果你想录入的是向供应商下的订单（金额、付款条款）。入库是采购订单的物流接收环节，请到 采购管理 → 采购订单 创建。采购入库管理刷新新建入库单入库流程新建入库单 → DRAFT 状态 → 点「确认入库」生成物料批次,自动更新库存。可关联采购订单或无单入库。入库单号状态采购订单供应商入库日期物料行数收货数量创建人创建时间操作RCV-20260507-4505已确认0ed28974-b428-4122-a376-fd0219073c12844d8c69-ed89-4a7f-b850-1749456d07772026-05-07150 kg2026/5/7 11:13:54详情RCV-20260507-1394草稿6705c5c8-149e-4779-96d8-959ffc7acbd8844d8c69-ed89-4a7f-b850-1749456d07772026-05-071100 kg2026/5/7 11:10:31详情确认入库RCV-20260507-0023已确认6705c5c8-149e-4779-96d8-959ffc7acbd8844d8c69-ed89-4a7f-b850-1749456d07772026-05-071100 kg2026/5/7 11:10:20详情RCV-20260507-6322草稿6705c5c8-149e-4779-96d8-959ffc7acbd8844d8c69-ed89-4a7f-b850-1749456d07772026-05-071100 kg2026/5/7 11:10:16详情确认入库RCV-20260502-4276已确认cd8d51eb-3fbe-4205-b709-9ab129a76782844d8c69-ed89-4a7f-b850-1749456d07772026-05-0212009.12 kg2026/5/2 11:00:04详情共 5 条20条/页 1 前往页\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 20条/页50条/页100条/页",
+        "headers": [
+          "入库单号",
+          "状态",
+          "采购订单",
+          "供应商",
+          "入库日期",
+          "物料行数",
+          "收货数量",
+          "创建人",
+          "创建时间",
+          "操作"
+        ],
+        "hasReceiveQtyCol": true,
+        "sampleCellText": "50 kg"
+      },
+      "ts": "2026-05-12T07:24:52.574Z"
+    },
+    {
+      "scenario": "S11-error-404",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/404",
+        "is403": false,
+        "is404": true,
+        "isLogin": false,
+        "bodyTextLen": 94,
+        "bodyText": "\n    404页面不存在抱歉，您访问的页面不存在或已被移除。返回上页返回首页\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n"
+      },
+      "ts": "2026-05-12T07:25:09.549Z"
+    },
+    {
+      "scenario": "S10-purchase-orders-price-strip-ui",
+      "status": "FAIL",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/procurement/orders",
+        "is403": false,
+        "headers": [
+          "订单编号",
+          "供应商",
+          "类型",
+          "下单日期",
+          "总金额",
+          "状态",
+          "操作"
+        ],
+        "hasPriceCol": true,
+        "note": "UI still shows price column for warehouse_manager — RBAC v-if not effective"
+      },
+      "ts": "2026-05-12T07:25:36.722Z"
+    },
+    {
+      "scenario": "S10-receives-price-strip-ui",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/procurement/receives",
+        "is403": false,
+        "headers": [
+          "入库单号",
+          "状态",
+          "采购订单",
+          "供应商",
+          "入库日期",
+          "物料行数",
+          "收货数量",
+          "创建人",
+          "创建时间",
+          "操作"
+        ],
+        "hasPriceCol": false,
+        "note": "UI hides price column ✓"
+      },
+      "ts": "2026-05-12T07:25:41.289Z"
+    },
+    {
+      "scenario": "S10-material-batches-price-strip-ui",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/404",
+        "is403": false,
+        "headers": [],
+        "hasPriceCol": false,
+        "note": "UI hides price column ✓"
+      },
+      "ts": "2026-05-12T07:26:00.499Z"
+    },
+    {
+      "scenario": "S10-sales-orders-price-strip-ui",
+      "status": "FAIL",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders",
+        "is403": false,
+        "headers": [
+          "订单编号",
+          "客户",
+          "业务员",
+          "下单日期",
+          "总金额",
+          "运费",
+          "折扣",
+          "状态",
+          "操作"
+        ],
+        "hasPriceCol": true,
+        "note": "UI still shows price column for warehouse_manager — RBAC v-if not effective"
+      },
+      "ts": "2026-05-12T07:26:19.965Z"
+    },
+    {
+      "scenario": "S10-RBAC-wire-roundtrip",
+      "status": "FAIL",
+      "evidence": {
+        "sniffedResponses": 9,
+        "priceKeyHits": [
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"totalAmount\"",
+            "valSnippet": "\"totalAmount\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"unitPrice\"",
+            "valSnippet": "\"unitPrice\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"taxAmount\"",
+            "valSnippet": "\"taxAmount\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"taxRate\"",
+            "valSnippet": "\"taxRate\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/raw-material-types/active",
+            "token": "\"totalValue\"",
+            "valSnippet": "\"totalValue\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/receives?page=1&size=20",
+            "token": "\"totalAmount\"",
+            "valSnippet": "\"totalAmount\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/receives?page=1&size=20",
+            "token": "\"unitPrice\"",
+            "valSnippet": "\"unitPrice\":null"
+          }
+        ],
+        "leakingHitsCount": 7,
+        "sampleLeak": [
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"totalAmount\"",
+            "valSnippet": "\"totalAmount\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"unitPrice\"",
+            "valSnippet": "\"unitPrice\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"taxAmount\"",
+            "valSnippet": "\"taxAmount\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+            "token": "\"taxRate\"",
+            "valSnippet": "\"taxRate\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/raw-material-types/active",
+            "token": "\"totalValue\"",
+            "valSnippet": "\"totalValue\":null"
+          }
+        ],
+        "rule11_wire_check": "price fields present with non-null values — leak detected"
+      },
+      "ts": "2026-05-12T07:26:19.966Z"
+    }
+  ],
+  "networkLogSize": 29,
+  "networkLog": [
+    {
+      "scenario": "restaurant",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "restaurant",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "restaurant",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
+      "status": 401,
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:21.163476502\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
+      "status": 401,
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:21.742083456\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
+      "status": 401,
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:21.978593185\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
+      "status": 401,
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:22.219418269\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders/0ed28974-b428-4122-a376-fd0219073c12/pdf",
+      "status": 200,
+      "contentType": "application/pdf"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/procurement/receives",
+      "status": 200,
+      "contentType": "text/html"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/receives?page=1&size=20",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "scenario": "f006_admin",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
+      "status": 500,
+      "body": "{\"code\":500,\"message\":\"系统处理异常，请稍后重试 (追踪码: 39AFF3AD)\",\"data\":null,\"timestamp\":\"2026-05-12T15:25:33.033220712\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/procurement/receives",
+      "status": 200,
+      "contentType": "text/html"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/receives?page=1&size=20",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=10",
+      "status": 500,
+      "body": "{\"code\":500,\"message\":\"系统处理异常，请稍后重试 (追踪码: 00D57286)\",\"data\":null,\"timestamp\":\"2026-05-12T15:26:01.473433449\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    }
+  ],
+  "consoleErrors": [
+    {
+      "scenario": "f006_admin",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "scenario": "f006_admin",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "scenario": "f006_admin",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "scenario": "f006_admin",
+      "text": "查询库存失败: ApiError: 用户未登录\n    at http://139.196.165.140:8086/assets/request-CnwlOzbJ.js:6:3366\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async j.request"
+    },
+    {
+      "scenario": "f006_admin",
+      "text": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "scenario": "f006_admin",
+      "text": "查询库存失败: ApiError: 用户未登录\n    at http://139.196.165.140:8086/assets/request-CnwlOzbJ.js:6:3366\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async j.request"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "text": "Failed to load resource: the server responded with a status of 500 ()"
+    },
+    {
+      "scenario": "f006_warehouse_mgr",
+      "text": "Failed to load resource: the server responded with a status of 500 ()"
+    }
+  ]
+}
