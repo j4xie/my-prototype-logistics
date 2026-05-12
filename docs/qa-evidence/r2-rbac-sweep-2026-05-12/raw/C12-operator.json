@@ -1,0 +1,111 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "period": null,
+    "startDate": null,
+    "endDate": null,
+    "kpiCards": [],
+    "metricCards": null,
+    "rankings": {
+      "region": [
+        {
+          "rank": 1,
+          "name": "江苏分部",
+          "value": 2344165.6,
+          "target": 2578582.16,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 2,
+          "name": "赣皖区域",
+          "value": 1741132.3,
+          "target": 1915245.53,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 3,
+          "name": "上海分部",
+          "value": 1656566.4,
+          "target": 1822223.04,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 4,
+          "name": "浙江分部",
+          "value": 1000924.3,
+          "target": 1101016.73,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        }
+      ]
+    },
+    "charts": {
+      "department_trend": {
+        "chartType": "LINE",
+        "title": "部门销售趋势对比",
+        "seriesField": "department",
+        "data": [
+          {
+            "period": "2026-W19",
+            "未知部门": 3659021.0
+          },
+          {
+            "period": "2026-W20",
+            "未知部门": 458618.6
+          },
+          {
+            "period": "2026-W21",
+            "未知部门": 1336053.8
+          },
+          {
+            "period": "2026-W22",
+            "未知部门": 1289095.2
+          }
+        ],
+        "options": {
+          "period": "WEEK",
+          "series": [
+            "未知部门"
+          ]
+        },
+        "yaxisField": "amount",
+        "xaxisField": "period"
+      }
+    },
+    "chartList": null,
+    "aiInsights": [
+      {
+        "level": "YELLOW",
+        "category": "数据状态",
+        "message": "当前时间范围内暂无销售数据",
+        "relatedEntity": null,
+        "actionSuggestion": "请上传销售数据或调整时间范围"
+      },
+      {
+        "level": "YELLOW",
+        "category": "数据状态",
+        "message": "当前时间范围内暂无销售数据",
+        "relatedEntity": null,
+        "actionSuggestion": "请上传销售数据或调整时间范围"
+      }
+    ],
+    "alerts": null,
+    "recommendations": null,
+    "suggestions": [
+      "请先上传销售数据以开始分析"
+    ],
+    "generatedAt": null,
+    "lastUpdated": "2026-05-13T02:01:50.462483117",
+    "fromCache": false,
+    "cacheExpireAt": null
+  },
+  "timestamp": "2026-05-13T02:04:55.22502567",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}

@@ -1,0 +1,23 @@
+{
+  "success": false,
+  "code": "FORBIDDEN",
+  "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+  "severity": "error",
+  "actionHint": "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [操作员] 开通 [采购管理] 的 [读写 / 读取] 权限, 或切换到有权限的账号重试",
+  "meta": {
+    "role": "operator",
+    "module": "procurement",
+    "action": "read_write",
+    "requireAll": false,
+    "requiredPermissions": [
+      {
+        "module": "procurement",
+        "action": "read_write"
+      },
+      {
+        "module": "procurement",
+        "action": "read"
+      }
+    ]
+  }
+}

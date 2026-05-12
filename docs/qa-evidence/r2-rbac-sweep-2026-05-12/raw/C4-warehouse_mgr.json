@@ -1,0 +1,10 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": [],
+  "timestamp": "2026-05-13T02:04:42.945960852",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
