@@ -269,6 +269,25 @@ public class PythonSmartBIConfig {
     private String configThresholdsEndpoint = "/api/mobile/smartbi-config/thresholds";
 
     /**
+     * 高管仪表盘端点 (Phase 2C Tier 2 PILOT — period-based).
+     * Mirror Java SmartBIDashboardController.getExecutiveDashboard line 156.
+     * Path template: {factoryId} substituted at call time.
+     */
+    private String dashboardExecutiveEndpoint = "/api/mobile/{factoryId}/smart-bi/dashboard/executive";
+
+    /**
+     * 高管仪表盘端点 (Phase 2C Tier 2 PILOT — custom date range).
+     * Mirror Java SmartBIDashboardController.getExecutiveDashboardCustomRange line 315.
+     */
+    private String dashboardExecutiveCustomEndpoint = "/api/mobile/{factoryId}/smart-bi/dashboard/executive/custom";
+
+    /**
+     * 统一复合仪表盘端点 (Phase 2C Tier 2 PILOT — composite of 4+2 sub-dashboards).
+     * Mirror Java SmartBIDashboardController.getUnifiedDashboard line 343.
+     */
+    private String dashboardUnifiedEndpoint = "/api/mobile/{factoryId}/smart-bi/dashboard";
+
+    /**
      * 财务数据提取端点
      */
     private String extractFinanceEndpoint = "/api/finance/extract";
@@ -556,6 +575,36 @@ public class PythonSmartBIConfig {
      */
     public String getConfigThresholdsReloadUrl() {
         return getFullUrl(configThresholdsEndpoint + "/reload");
+    }
+
+    /**
+     * 获取高管仪表盘 URL (period-based) with factoryId substituted.
+     *
+     * @param factoryId 工厂 / 门店 ID
+     * @return Fully qualified URL with path parameter substituted
+     */
+    public String getDashboardExecutiveUrl(String factoryId) {
+        return getFullUrl(dashboardExecutiveEndpoint.replace("{factoryId}", factoryId));
+    }
+
+    /**
+     * 获取高管仪表盘 URL (custom date range) with factoryId substituted.
+     *
+     * @param factoryId 工厂 / 门店 ID
+     * @return Fully qualified URL with path parameter substituted
+     */
+    public String getDashboardExecutiveCustomUrl(String factoryId) {
+        return getFullUrl(dashboardExecutiveCustomEndpoint.replace("{factoryId}", factoryId));
+    }
+
+    /**
+     * 获取统一复合仪表盘 URL with factoryId substituted.
+     *
+     * @param factoryId 工厂 / 门店 ID
+     * @return Fully qualified URL with path parameter substituted
+     */
+    public String getDashboardUnifiedUrl(String factoryId) {
+        return getFullUrl(dashboardUnifiedEndpoint.replace("{factoryId}", factoryId));
     }
 
     /**

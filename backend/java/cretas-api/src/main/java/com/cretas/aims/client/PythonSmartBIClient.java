@@ -1400,6 +1400,113 @@ public class PythonSmartBIClient {
     }
 
     /**
+     * 调用高管仪表盘端点 (Phase 2C Tier 2 PILOT, period-based).
+     *
+     * GET /api/mobile/{factoryId}/smart-bi/dashboard/executive with query param
+     * period={today,week,month,quarter,year}. Pilot scope per
+     * AGGRESSIVE-REVISED — single-primitive wrapper around sales overview.
+     * Zero-caller at ship time per PR #360 pattern; future Java callers
+     * forward through this method when migrating off
+     * SmartBIDashboardController.getExecutiveDashboard.
+     *
+     * @param factoryId           工厂 / 门店 ID
+     * @param period              today / week / month / quarter / year (null defaults to month)
+     * @param authorizationHeader 完整 "Bearer &lt;jwt&gt;" 头值; null 时不发送 (端点返回 401)
+     * @return 响应 Map; 服务不可用 / 异常时返回 null
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callDashboardExecutive(String factoryId,
+                                                    String period,
+                                                    String authorizationHeader) {
+        return callDashboardGetEndpoint(
+                config.getDashboardExecutiveUrl(factoryId),
+                period, null, null, authorizationHeader, "高管仪表盘");
+    }
+
+    /**
+     * 调用高管仪表盘端点 (Phase 2C Tier 2 PILOT, custom date range).
+     *
+     * GET /api/mobile/{factoryId}/smart-bi/dashboard/executive/custom with
+     * startDate / endDate query params. Mirrors Java
+     * SmartBIDashboardController.getExecutiveDashboardCustomRange line 315.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callDashboardExecutiveCustom(String factoryId,
+                                                          java.time.LocalDate startDate,
+                                                          java.time.LocalDate endDate,
+                                                          String authorizationHeader) {
+        return callDashboardGetEndpoint(
+                config.getDashboardExecutiveCustomUrl(factoryId),
+                null, startDate, endDate, authorizationHeader, "高管仪表盘(自定义范围)");
+    }
+
+    /**
+     * 调用统一复合仪表盘端点 (Phase 2C Tier 2 PILOT).
+     *
+     * GET /api/mobile/{factoryId}/smart-bi/dashboard with period query param.
+     * Pilot fanout: sales / finance / inventory / procurement + production +
+     * quality placeholders. Mirrors Java getUnifiedDashboard line 343.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callDashboardUnified(String factoryId,
+                                                  String period,
+                                                  String authorizationHeader) {
+        return callDashboardGetEndpoint(
+                config.getDashboardUnifiedUrl(factoryId),
+                period, null, null, authorizationHeader, "统一仪表盘");
+    }
+
+    /**
+     * 通用 GET-style dashboard 端点调用 (Phase 2C Tier 2 PILOT 共享).
+     *
+     * Mirrors {@link #callAnalysisGetEndpoint} shape but for dashboard endpoints
+     * which accept ``period`` (string) instead of ``analysisType``. Caller passes
+     * non-null period OR non-null startDate+endDate, not both.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> callDashboardGetEndpoint(String baseUrl,
+                                                       String period,
+                                                       java.time.LocalDate startDate,
+                                                       java.time.LocalDate endDate,
+                                                       String authorizationHeader,
+                                                       String operationName) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过{}", operationName);
+            return null;
+        }
+
+        HttpUrl parsed = HttpUrl.parse(baseUrl);
+        if (parsed == null) {
+            log.error("{} URL 解析失败: {}", operationName, baseUrl);
+            return null;
+        }
+        HttpUrl.Builder urlBuilder = parsed.newBuilder();
+        if (period != null && !period.isEmpty()) {
+            urlBuilder.addQueryParameter("period", period);
+        }
+        if (startDate != null) {
+            urlBuilder.addQueryParameter("startDate", startDate.toString());
+        }
+        if (endDate != null) {
+            urlBuilder.addQueryParameter("endDate", endDate.toString());
+        }
+
+        Request.Builder reqBuilder = new Request.Builder().url(urlBuilder.build()).get();
+        if (authorizationHeader != null && !authorizationHeader.isEmpty()) {
+            reqBuilder.header("Authorization", authorizationHeader);
+        }
+        Request httpRequest = reqBuilder.build();
+        log.info("调用 Python SmartBI {}: url={}", operationName, urlBuilder.build());
+
+        try {
+            return executeWithRetry(httpRequest, Map.class);
+        } catch (IOException | PythonServiceUnavailableException e) {
+            log.error("{}调用失败: {}", operationName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 通用 GET-style analysis 端点调用 (T6.6 Phase B Sub-A / Sub-B 共享).
      *
      * Mirrors the existing POST-based {@link #callAnalysisEndpoint} shape but
