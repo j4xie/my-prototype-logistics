@@ -10,12 +10,16 @@ import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.PurchaseReceiveRecord;
 import com.cretas.aims.service.MobileService;
+import com.cretas.aims.service.inventory.PurchaseOrderPdfService;
 import com.cretas.aims.service.inventory.PurchaseService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.annotation.RequirePermission;
@@ -23,6 +27,8 @@ import com.cretas.aims.annotation.RequirePermission;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import com.cretas.aims.annotation.RequireModule;
@@ -35,6 +41,7 @@ import com.cretas.aims.annotation.RequireModule;
 public class PurchaseController {
 
     private final PurchaseService purchaseService;
+    private final PurchaseOrderPdfService purchaseOrderPdfService;
     private final MobileService mobileService;
 
     // ==================== 采购订单 ====================
@@ -87,6 +94,42 @@ public class PurchaseController {
             @PathVariable @NotBlank String orderId) {
         PurchaseOrder order = purchaseService.getPurchaseOrderById(factoryId, orderId);
         return ApiResponse.success("查询成功", order);
+    }
+
+    /**
+     * 采购订单 PDF (供货单) 下载.
+     *
+     * <p>六扇门 May 7 2026 transcript 客户需求:
+     * <ul>
+     *   <li>"采购订单要有打印功能" — 供应商打印后送货员带过来。</li>
+     *   <li>"扫一下上面的拳运码" — PDF 含 Code128 一维条码 + QR 二维码 (内容 = orderNumber),
+     *       仓管员扫码进入入库流程。</li>
+     *   <li>"双方签字拍张照" — PDF 末尾留签收区。</li>
+     * </ul>
+     *
+     * <p>响应是 PDF 二进制流, 浏览器作为附件下载 (Content-Disposition: attachment)。
+     */
+    @GetMapping("/orders/{orderId}/pdf")
+    @Operation(summary = "下载采购订单 PDF (供货单)",
+            description = "生成包含 Code128 条码 + QR 二维码的 PDF 供货单, 供应商打印 / 仓管员扫码入库 (六扇门 May 7 transcript)")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
+    public ResponseEntity<byte[]> downloadOrderPdf(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        PurchaseOrder order = purchaseService.getPurchaseOrderById(factoryId, orderId);
+        byte[] pdfBytes = purchaseOrderPdfService.generatePurchaseOrderPdf(factoryId, orderId);
+
+        // 文件名 = 供货单_{订单号}.pdf, 含中文需 RFC 5987 编码
+        String filename = "供货单_" + (order.getOrderNumber() != null ? order.getOrderNumber() : orderId) + ".pdf";
+        String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"order.pdf\"; filename*=UTF-8''" + encoded);
+        headers.setContentLength(pdfBytes.length);
+        log.info("下载采购订单 PDF: factoryId={}, orderId={}, bytes={}", factoryId, orderId, pdfBytes.length);
+        return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
 
     @RequireModule("purchase_order")
