@@ -243,13 +243,21 @@ public class SalesOrder extends BaseEntity {
     @Transient
     public BigDecimal calculateTotalAmount() {
         if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        // Defensive: items[].getLineAmount() may return null when unitPrice stripped
+        // (@PriceSensitive). Filter nulls so reduce doesn't NPE on BigDecimal::add.
         return items.stream()
                 .map(SalesOrderItem::getLineAmount)
+                .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Transient
+    @PriceSensitive
     public BigDecimal getPayableAmount() {
+        // Defensive: totalAmount is @PriceSensitive — when stripped to null for
+        // warehouse_manager (PR #423 RBAC), this getter is still invoked by Jackson.
+        // Without this guard: NPE → HTTP 500 (P0 fix 2026-05-12).
+        if (totalAmount == null) return null;
         BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
         BigDecimal tax = taxAmount != null ? taxAmount : BigDecimal.ZERO;
         return totalAmount.subtract(discount).add(tax);
