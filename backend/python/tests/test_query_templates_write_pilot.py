@@ -33,7 +33,6 @@ sister ``test_datasource_pilot.py`` (Phase 2B-3 row 1).
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
 
 import jwt
 import pytest

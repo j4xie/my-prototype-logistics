@@ -133,9 +133,9 @@ fi
 PW_VER=$(cd "$E2E_DIR" && npx playwright --version 2>/dev/null)
 echo "  playwright: $PW_VER"
 
-# 1d. Backend health check (timeout 10s for pre-check)
+# 1d. Backend health check (timeout 90s for pre-check — Spring Boot cold start needs 30-90s)
 echo "  Checking backend health at ${BACKEND_URL}/api/mobile/health..."
-if ! bash "$SCRIPT_DIR/wait-for-health.sh" "${BACKEND_URL}/api/mobile/health" 10 2>/dev/null; then
+if ! bash "$SCRIPT_DIR/wait-for-health.sh" "${BACKEND_URL}/api/mobile/health" 90 2>/dev/null; then
     echo -e "${RED}ERROR: Backend not responding.${RESET}" >&2
     echo "  启动后端: cd backend/java/cretas-api && mvn spring-boot:run" >&2
     exit 1
