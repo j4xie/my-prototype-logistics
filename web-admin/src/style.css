@@ -624,3 +624,21 @@ textarea:focus-visible {
   transition: outline 0.2s ease;
   z-index: 10 !important;
 }
+
+/* ============================================================
+ * RBAC defense-in-depth 2026-05-13 (P1-D, PR #442 follow-up):
+ * .price-masked is applied to em-dash placeholders that fill in for
+ * @PriceSensitive fields stripped by backend ResponseAdvice / Jackson
+ * serializer for roles lacking procurement:price:view. The class is
+ * a semantic marker (used by static-Vue v-if defense in
+ * procurement/orders/list.vue + procurement/receives/list.vue +
+ * sales/orders/list.vue, AND by Canvas Dynamic SchemaTableRenderer
+ * after P1-D fix). Subtle muted styling avoids drawing attention while
+ * keeping the placeholder distinguishable from a legitimately empty
+ * cell on hover/zoom.
+ * ============================================================ */
+.price-masked {
+  color: var(--color-text-placeholder, #A0AEC0);
+  font-style: italic;
+  user-select: none;
+}

@@ -1140,6 +1140,13 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             if (schemaDef.containsKey("formatter")) extra.put("formatter", schemaDef.get("formatter"));
             if (schemaDef.containsKey("configurable")) extra.put("configurable", schemaDef.get("configurable"));
             if (schemaDef.containsKey("autoGenerate")) extra.put("autoGenerate", schemaDef.get("autoGenerate"));
+            // P1-D (PR #442 follow-up): plumb priceSensitive flag from module_schemas
+            // through to EffectiveField.extra so SchemaTableRenderer can render stripped
+            // null cells as em-dash with .price-masked class (mirrors static-Vue v-if
+            // defense from PR #423). Backend strip is unconditional via
+            // PriceFieldResponseAdvice / PriceSensitiveSerializerModifier; this flag
+            // only controls UI rendering of the resulting null cell value.
+            if (schemaDef.containsKey("priceSensitive")) extra.put("priceSensitive", schemaDef.get("priceSensitive"));
 
             result.add(EffectiveField.builder()
                     .code(code)
