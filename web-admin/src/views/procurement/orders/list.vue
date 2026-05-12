@@ -22,6 +22,27 @@ const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
+// PR #423/#443/#456/#457/#458 follow-up (P3, 2026-05-12):
+// Backend PriceFieldResponseAdvice + PriceSensitiveSerializerModifier strip
+// price fields to null for roles outside PermissionServiceImpl.PRICE_VIEW_ROLES.
+// E2E flagged that <span v-if="row.totalAmount != null"> still rendered the
+// column HEADER for warehouse_manager (cells empty, header visible → misleading).
+// Mirror the backend role whitelist here to hide the column entirely.
+// Whitelist source: backend/.../PermissionServiceImpl.java PRICE_VIEW_ROLES
+const PRICE_VIEW_ROLES = [
+  'factory_super_admin',
+  'platform_admin',
+  'procurement_manager',
+  'finance_manager',
+  'sales_manager',
+  'dispatcher',
+  'production_manager',
+  'restaurant_manager',
+  'permission_admin',
+  'department_admin',
+];
+const canViewPrice = computed(() => PRICE_VIEW_ROLES.includes(authStore.currentRole));
+
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
@@ -479,13 +500,22 @@ function handleAiFill(params: TableRow) {
           </template>
         </el-table-column>
         <el-table-column prop="orderDate" label="下单日期" width="120" />
-        <el-table-column prop="totalAmount" label="总金额" width="130" align="right">
-          <!--
-            RBAC defense-in-depth (PR #415 Option B 2026-05-12):
-            backend PriceFieldResponseAdvice strips totalAmount → null for roles
-            lacking procurement:price:view. The v-if guards the formatter so
-            mgr/inspector/operator see "—" instead of "¥0.00" (which could mislead).
-          -->
+        <!--
+          RBAC defense-in-depth (PR #415 Option B 2026-05-12 + P3 column-hide fix):
+          backend PriceFieldResponseAdvice strips totalAmount → null for roles
+          lacking procurement:price:view. v-if on the column itself hides BOTH
+          the header and cells for non-whitelisted roles (warehouse_manager etc).
+          Without v-if on <el-table-column>, Element Plus still renders the
+          column header even when every cell template returns nothing → E2E
+          flagged 总金额 header visible despite null cells (misleading UX).
+        -->
+        <el-table-column
+          v-if="canViewPrice"
+          prop="totalAmount"
+          label="总金额"
+          width="130"
+          align="right"
+        >
           <template #default="{ row }">
             <span v-if="row.totalAmount != null">{{ formatAmount(row.totalAmount) }}</span>
             <span v-else class="price-masked">—</span>
