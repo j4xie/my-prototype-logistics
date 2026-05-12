@@ -1,5 +1,5 @@
 {
-  "runAt": "2026-05-12T07:26:20.049Z",
+  "runAt": "2026-05-12T19:09:52.405Z",
   "target": "http://139.196.165.140:8086",
   "results": [
     {
@@ -16,7 +16,7 @@
         "filterClicked": true,
         "optionShown": true
       },
-      "ts": "2026-05-12T07:23:35.268Z"
+      "ts": "2026-05-12T19:06:49.751Z"
     },
     {
       "scenario": "S2-recipe-bom-yield-rate",
@@ -32,7 +32,7 @@
         "yieldRateLabel": false,
         "formFields": []
       },
-      "ts": "2026-05-12T07:23:37.885Z"
+      "ts": "2026-05-12T19:06:52.509Z"
     },
     {
       "scenario": "S3-transfer-batch-current-stock",
@@ -49,7 +49,7 @@
         "dialogOpened": false,
         "hasBatchSelect": false
       },
-      "ts": "2026-05-12T07:24:19.270Z"
+      "ts": "2026-05-12T19:07:41.128Z"
     },
     {
       "scenario": "S5-inventory-by-warehouse",
@@ -59,8 +59,8 @@
         "is403": false,
         "is404": false,
         "isLogin": false,
-        "bodyTextLen": 869,
-        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析分仓库存查询/分仓库存查询/f006_admin工厂总监分仓库存查询按工厂 × 仓库查看当前快照工厂:六膳门食品科技仓库:总仓 (WH-LOG)搜索:刷新 原料库存  成品库存  总览 批次号原料名称当前数量单位仓库存储位置供应商过期日期状态该仓库暂无原料批次批次号产品名称生产数量已发货预留可用数量单位存储位置生产日期过期日期状态该仓库暂无成品批次请先选择工厂和仓库\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 六膳门食品科技F006总仓 (WH-LOG)线边仓 (WH-WKS)用户未登录",
+        "bodyTextLen": 874,
+        "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析分仓库存查询/分仓库存查询/f006_admin工厂总监分仓库存查询按工厂 × 仓库查看当前快照工厂:六膳门食品科技仓库:总仓 (WH-LOG)搜索:刷新 原料库存  成品库存  总览 批次号原料名称当前数量单位仓库存储位置供应商过期日期状态该仓库暂无原料批次批次号产品名称生产数量已发货预留可用数量单位存储位置生产日期过期日期状态该仓库暂无成品批次请先选择工厂和仓库\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 六膳门食品科技F006总仓 (WH-LOG)线边仓 (WH-WKS)用户未登录用户未登录",
         "tableExists": true,
         "factoryDropdownCount": 2,
         "headers": [
@@ -86,7 +86,7 @@
           "状态"
         ]
       },
-      "ts": "2026-05-12T07:24:23.732Z"
+      "ts": "2026-05-12T19:07:56.856Z"
     },
     {
       "scenario": "S6-sales-order-wh-log-label",
@@ -104,7 +104,7 @@
         "hasXianBianCangText": false,
         "bodyPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)操作选择产品13% 加工删除+ 添加行取消创建"
       },
-      "ts": "2026-05-12T07:24:43.777Z"
+      "ts": "2026-05-12T19:08:19.083Z"
     },
     {
       "scenario": "S7-production-plan-page",
@@ -118,7 +118,7 @@
         "bodyText": "\n    白垩纪AI Agent首页生产管理生产批次生产计划转换率配置BOM成本管理报工审批BOM达成率分析工序投入产出对比物料需求单研发样品仓储管理原料类型字典 (新建原料)原料入库登记 (具体批次)出货管理盘点管理分仓库存查询物料均价趋势调拨单质量管理质检记录废弃处理质检标准采购管理采购订单采购入库供应商管理价格表管理销售管理销售订单成品库存客户管理出货记录车辆字典人事管理员工管理考勤管理白名单管理部门管理工种字典设备管理设备列表维护记录告警管理财务管理财务概览财务报表应收应付开票管理收款管理调整审批SKU毛利率分析系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则成品 / SKU (本厂生产)工序管理产品-工序配置工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置员工工牌生成行为校准数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板车间实时生产报表异常预警进销存闭环总览智能调度调度中心调度计划实时监控人员分配告警管理排产设置智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志生产分析生产数据分析人效分析生产管理/生产计划/f006_admin工厂总监这里是「生产计划」管理 — 未来要做什么的「计划」（PENDING / 待开工状态，可调整数量、日期） ⚠️ 如果你想录入的是已开工的实际「批次」（IN_PROGRESS / COMPLETED，记录实际产量、消耗），请到 生产管理 → 生产批次 创建。计划批准后才会转为批次。生产计划管理共 6 条记录 下载模板  导入Excel  导出Excel  AI对话创建  新建计划 全部状态搜索重置计划编号产品类型客户工序批次日期计划数量实际数量计划日期状态预计工人指派主管来源创建时间操作PLAN-1778470417953-9BF17563叮咚好食光轻卤门腔（猪舌）120g叮咚拆包2026-05-121001002026-05-15已完成手动2026-05-11 11:33:37查看PLAN-1778296111890-BA2B3B0A叮咚好食光卤猪蹄(去大骨) 200g叮咚通用2026-05-101002026-05-10进行中手动2026-05-09 11:08:31查看完成取消PLAN-1778205679008-C932BDF2叮咚好食光轻卤门腔（猪舌）120g叮咚通用2026-05-105002026-05-09进行中手动2026-05-08 10:01:19查看完成取消PLAN-1778205235834-4120D8CC叮咚好食光轻卤门腔（猪舌）120g叮咚通用2026-05-085001002026-05-08已完成手动2026-05-08 09:53:55查看PP-AUTO-20260507-0002叮咚好食光轻卤门腔（猪舌）120g10012026-05-12进行中手动2026-05-07 11:36:53查看完成取消PP-AUTO-20260502-0001叮咚好食光纸片牛腱肉 80g2072026-05-02进行中手动2026-05-02 11:05:00查看完成取消共 6 条10条/页 1 前往页AI 智能创建生产计划仅限生产计划相关操作 使用教程 \n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n 工厂: F006 退出登录 待执行进行中已完成已取消10条/页20条/页50条/页100条/页",
         "startBtnCount": 0
       },
-      "ts": "2026-05-12T07:24:46.745Z"
+      "ts": "2026-05-12T19:08:21.589Z"
     },
     {
       "scenario": "S8-purchase-order-pdf",
@@ -133,7 +133,7 @@
         "rowCount": 5,
         "pdfBtnFound": true,
         "pdfDownloaded": true,
-        "pdfUrl": "blob:http://139.196.165.140:8086/55f53489-2477-461f-97a3-1079647ff9c2",
+        "pdfUrl": "blob:http://139.196.165.140:8086/8a8387a6-eedf-4fd2-b675-e9f4aa5a05d4",
         "pdfNetwork": [
           {
             "scenario": "restaurant",
@@ -167,7 +167,7 @@
           }
         ]
       },
-      "ts": "2026-05-12T07:24:50.315Z"
+      "ts": "2026-05-12T19:08:24.671Z"
     },
     {
       "scenario": "S9-receive-qty-column",
@@ -194,7 +194,7 @@
         "hasReceiveQtyCol": true,
         "sampleCellText": "50 kg"
       },
-      "ts": "2026-05-12T07:24:52.574Z"
+      "ts": "2026-05-12T19:08:27.057Z"
     },
     {
       "scenario": "S11-error-404",
@@ -207,7 +207,7 @@
         "bodyTextLen": 94,
         "bodyText": "\n    404页面不存在抱歉，您访问的页面不存在或已被移除。返回上页返回首页\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n"
       },
-      "ts": "2026-05-12T07:25:09.549Z"
+      "ts": "2026-05-12T19:08:43.746Z"
     },
     {
       "scenario": "S10-purchase-orders-price-strip-ui",
@@ -227,7 +227,7 @@
         "hasPriceCol": true,
         "note": "UI still shows price column for warehouse_manager — RBAC v-if not effective"
       },
-      "ts": "2026-05-12T07:25:36.722Z"
+      "ts": "2026-05-12T19:09:04.676Z"
     },
     {
       "scenario": "S10-receives-price-strip-ui",
@@ -250,7 +250,7 @@
         "hasPriceCol": false,
         "note": "UI hides price column ✓"
       },
-      "ts": "2026-05-12T07:25:41.289Z"
+      "ts": "2026-05-12T19:09:09.722Z"
     },
     {
       "scenario": "S10-material-batches-price-strip-ui",
@@ -262,7 +262,7 @@
         "hasPriceCol": false,
         "note": "UI hides price column ✓"
       },
-      "ts": "2026-05-12T07:26:00.499Z"
+      "ts": "2026-05-12T19:09:29.163Z"
     },
     {
       "scenario": "S10-sales-orders-price-strip-ui",
@@ -284,7 +284,7 @@
         "hasPriceCol": true,
         "note": "UI still shows price column for warehouse_manager — RBAC v-if not effective"
       },
-      "ts": "2026-05-12T07:26:19.965Z"
+      "ts": "2026-05-12T19:09:52.310Z"
     },
     {
       "scenario": "S10-RBAC-wire-roundtrip",
@@ -318,17 +318,32 @@
             "valSnippet": "\"totalValue\":null"
           },
           {
-            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/receives?page=1&size=20",
+            "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
             "token": "\"totalAmount\"",
             "valSnippet": "\"totalAmount\":null"
           },
           {
-            "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/receives?page=1&size=20",
+            "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
             "token": "\"unitPrice\"",
             "valSnippet": "\"unitPrice\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
+            "token": "\"discountAmount\"",
+            "valSnippet": "\"discountAmount\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
+            "token": "\"discountRate\"",
+            "valSnippet": "\"discountRate\":null"
+          },
+          {
+            "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
+            "token": "\"taxAmount\"",
+            "valSnippet": "\"taxAmount\":null"
           }
         ],
-        "leakingHitsCount": 7,
+        "leakingHitsCount": 17,
         "sampleLeak": [
           {
             "url": "http://139.196.165.140:8086/api/mobile/F006/purchase/orders?page=1&size=10",
@@ -358,10 +373,10 @@
         ],
         "rule11_wire_check": "price fields present with non-null values — leak detected"
       },
-      "ts": "2026-05-12T07:26:19.966Z"
+      "ts": "2026-05-12T19:09:52.311Z"
     }
   ],
-  "networkLogSize": 29,
+  "networkLogSize": 27,
   "networkLog": [
     {
       "scenario": "restaurant",
@@ -403,25 +418,25 @@
       "scenario": "f006_admin",
       "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
       "status": 401,
-      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:21.163476502\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-13T03:07:47.325032204\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
     },
     {
       "scenario": "f006_admin",
       "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
       "status": 401,
-      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:21.742083456\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-13T03:07:48.127203961\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
     },
     {
       "scenario": "f006_admin",
       "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
       "status": 401,
-      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:21.978593185\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-13T03:07:50.101201614\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
     },
     {
       "scenario": "f006_admin",
       "url": "http://139.196.165.140:8086/api/mobile/F006/inventory/by-warehouse?targetFactoryId=F006&warehouseId=78339e2d-d34c-4b38-b4f9-977fd4a631c2",
       "status": 401,
-      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-12T15:24:22.219418269\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+      "body": "{\"code\":401,\"message\":\"用户未登录\",\"data\":null,\"timestamp\":\"2026-05-13T03:07:55.294042751\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
     },
     {
       "scenario": "f006_admin",
@@ -497,12 +512,6 @@
     },
     {
       "scenario": "f006_warehouse_mgr",
-      "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=100",
-      "status": 500,
-      "body": "{\"code\":500,\"message\":\"系统处理异常，请稍后重试 (追踪码: 39AFF3AD)\",\"data\":null,\"timestamp\":\"2026-05-12T15:25:33.033220712\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
-    },
-    {
-      "scenario": "f006_warehouse_mgr",
       "url": "http://139.196.165.140:8086/procurement/receives",
       "status": 200,
       "contentType": "text/html"
@@ -530,12 +539,6 @@
       "url": "http://139.196.165.140:8086/assets/pdf-lib-tCQ8n7IR.js",
       "status": 200,
       "contentType": "application/javascript"
-    },
-    {
-      "scenario": "f006_warehouse_mgr",
-      "url": "http://139.196.165.140:8086/api/mobile/F006/sales/orders?page=1&size=10",
-      "status": 500,
-      "body": "{\"code\":500,\"message\":\"系统处理异常，请稍后重试 (追踪码: 00D57286)\",\"data\":null,\"timestamp\":\"2026-05-12T15:26:01.473433449\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
     }
   ],
   "consoleErrors": [
@@ -553,7 +556,7 @@
     },
     {
       "scenario": "f006_admin",
-      "text": "查询库存失败: ApiError: 用户未登录\n    at http://139.196.165.140:8086/assets/request-CnwlOzbJ.js:6:3366\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async j.request"
+      "text": "查询库存失败: ApiError: 用户未登录\n    at http://139.196.165.140:8086/assets/request-BNEIohSS.js:6:3366\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async j.request"
     },
     {
       "scenario": "f006_admin",
@@ -561,15 +564,7 @@
     },
     {
       "scenario": "f006_admin",
-      "text": "查询库存失败: ApiError: 用户未登录\n    at http://139.196.165.140:8086/assets/request-CnwlOzbJ.js:6:3366\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async j.request"
-    },
-    {
-      "scenario": "f006_warehouse_mgr",
-      "text": "Failed to load resource: the server responded with a status of 500 ()"
-    },
-    {
-      "scenario": "f006_warehouse_mgr",
-      "text": "Failed to load resource: the server responded with a status of 500 ()"
+      "text": "查询库存失败: ApiError: 用户未登录\n    at http://139.196.165.140:8086/assets/request-BNEIohSS.js:6:3366\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async j.request"
     }
   ]
 }
