@@ -51,6 +51,17 @@ from smartbi_compat.api import datasource as mod  # noqa: E402
 from smartbi_compat.api.datasource import router  # noqa: E402
 from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+# This file covers all 5 /datasource endpoints
+# (upload/apply/preview/fields/history).
+pytestmark = [
+    pytest.mark.api_endpoint("datasource_upload"),
+    pytest.mark.api_endpoint("datasource_apply"),
+    pytest.mark.api_endpoint("datasource_preview"),
+    pytest.mark.api_endpoint("datasource_fields"),
+    pytest.mark.api_endpoint("datasource_history"),
+]
+
 
 # ============================================================
 # JWT + TestClient fixtures (mirror procurement / config_thresholds pilots)

@@ -40,6 +40,17 @@ from smartbi_compat.api.config_thresholds import (  # noqa: E402
 )
 from smartbi_compat.auth import JWT_ALGORITHM, PRIVILEGED_ROLES  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+# This file covers all 5 /smartbi-config/thresholds endpoints (list/create/update/
+# delete/reload).
+pytestmark = [
+    pytest.mark.api_endpoint("config_thresholds_list"),
+    pytest.mark.api_endpoint("config_thresholds_create"),
+    pytest.mark.api_endpoint("config_thresholds_update"),
+    pytest.mark.api_endpoint("config_thresholds_delete"),
+    pytest.mark.api_endpoint("config_thresholds_reload"),
+]
+
 
 # ============================================================
 # Fixtures
