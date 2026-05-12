@@ -1,0 +1,1038 @@
+[
+  {
+    "label": "analysis.list_query_templates",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/query-templates",
+    "http": 200,
+    "size": 4966,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":[{\"createdAt\":\"2026-05-12T15:23:14.666917\",\"updatedAt\":\"2026-05-12T15:23:14.666917\",\"deletedAt\":null,\"id\":48,\"factoryId\":\"F001\",\"name\":\"R1A_smoke_1778570594\",\"category\":\"finance\",\"description\":null,\"queryTemplate\":\"SELECT 1\",\"parameters\":\"{}\",\"deleted\":false},{\"createdAt\":\"2026-04-17T11:00:03.73145\",\"updatedAt\":\"2026-04-17T11:00:03.73145\",\"deletedAt\":null,\"id\":42,\"factoryId\":\"F001\",\"name\":\"R18 258 fix verify\",\"category\":\"自定义\",\"description\":\"Verify #258 fix\",\"queryTemplate\":\"列出本月 TOP 客户\",\"parameters\":\"[]\",\"deleted\":false},{\"createdAt\":\"2026-02-19T11:04:37.567",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis.list_datasources",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/list",
+    "http": 200,
+    "size": 9627,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":[{\"createdAt\":\"2026-04-16T16:01:39.650315\",\"updatedAt\":\"2026-04-16T16:01:39.650315\",\"deletedAt\":null,\"id\":13,\"name\":\"青花椒2约销量报表.csv\",\"sourceType\":\"EXCEL\",\"factoryId\":\"F001\",\"schemaVersion\":1,\"lastSchemaChange\":null,\"description\":\"SALES · 4052 行\",\"connectionConfig\":null,\"isActive\":true,\"code\":\"EXCEL_3910\",\"refreshInterval\":null,\"linkedUploadId\":3910,\"fieldDefinitions\":[],\"deleted\":false},{\"createdAt\":\"2026-04-17T01:01:35.807757\",\"updatedAt\":\"2026-04-17T01:01:35.807757\",\"deletedAt\":null,\"id\":18,\"name\":\"评价Q3-d1verify.xlsx\",\"sourceType\":\"EXCEL\",\"factoryId\":\"F001\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis.alerts",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/alerts",
+    "http": 200,
+    "size": 579,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":[{\"id\":\"d3e8273a-082b-41de-927e-ba64369e38d4\",\"level\":\"YELLOW\",\"category\":\"finance\",\"title\":\"成本有所超支\",\"message\":\"实际支出超预算 14.9%，需关注\",\"metric\":\"预算偏差率\",\"value\":14.91,\"threshold\":10,\"gapPercent\":null,\"suggestion\":\"建议优化支出结构，控制成本增长\",\"relatedEntityId\":null,\"relatedEntityName\":null,\"createdAt\":\"2026-05-12T15:23:44.817563\",\"levelName\":\"YELLOW\",\"urgent\":false}],\"timestamp\":\"2026-05-12T15:23:44.817895\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis.recommendations",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/recommendations",
+    "http": 200,
+    "size": 691,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":[{\"id\":\"ee41a4c5-03ed-4a29-b200-44a322d59b43\",\"type\":\"SALES_IMPROVEMENT\",\"title\":\"缩小销售团队业绩差距\",\"description\":\"销售员业绩差异较大，建议加强团队协作\",\"priority\":1,\"impact\":\"提升团队整体销售能力，增加总销售额\",\"actionItems\":[\"安排销冠 马兰娜 分享成功经验\",\"对业绩落后人员进行一对一辅导\",\"建立销售技能提升计划\"],\"relatedData\":{},\"targetId\":null,\"targetName\":null,\"createdAt\":\"2026-05-12T15:23:44.823403\",\"typeName\":\"销售提升\",\"highPriority\":true}],\"timestamp\":\"2026-05-12T15:23:44.824201\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_finance.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 7214,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"overview\":{\"period\":null,\"startDate\":null,\"endDate\":null,\"kpiCards\":[{\"key\":\"GROSS_PROFIT\",\"title\":\"毛利额\",\"value\":\"-1,774,716.78\",\"rawValue\":-1774716.78,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":\"销售收入减去销售成本\",\"targetValue\":null,\"completionRate\":null},{\"key\":\"GROSS_MARGIN\",\"title\":\"毛利率\",\"value\":\"N/A\",\"rawValue\":null,\"unit\":\"%\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"red\",\"compareText\":null,\"description\":\"毛利额占销售收入的比例\",\"targetValue\":null,\"completionRate\":null},{\"key\":\"NET_PROFIT\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_finance.budget-achievement",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance/budget-achievement?year=2026",
+    "http": 200,
+    "size": 2002,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"chartType\":\"LINE_BAR\",\"title\":\"2026年收入预算达成分析\",\"seriesField\":\"metric\",\"data\":[{\"month\":\"1月\",\"budget\":2334242,\"actual\":2412877,\"achievementRate\":103.37,\"variance\":78635,\"alertLevel\":\"YELLOW\"},{\"month\":\"2月\",\"budget\":2619129,\"actual\":2544000,\"achievementRate\":97.13,\"variance\":-75129,\"alertLevel\":\"GREEN\"},{\"month\":\"3月\",\"budget\":1176643,\"actual\":1154950,\"achievementRate\":98.16,\"variance\":-21693,\"alertLevel\":\"GREEN\"},{\"month\":\"4月\",\"budget\":1312462,\"actual\":1299327,\"achievementRate\":99,\"variance\":-13135,\"alertLevel\":\"GREEN\"},{\"month\":\"5月\",\"budget\":1294624,\"actual\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_finance.yoy-mom",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance/yoy-mom?periodType=MONTH&startPeriod=2026-01",
+    "http": 200,
+    "size": 875,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"chartType\":\"LINE_BAR\",\"title\":\"收入同比环比分析\",\"seriesField\":\"metric\",\"data\":[{\"period\":\"2026-01\",\"currentValue\":9920899.9,\"lastYearValue\":0,\"lastPeriodValue\":0,\"yoyGrowthRate\":0,\"momGrowthRate\":0,\"yoyChange\":9920899.9,\"momChange\":9920899.9}],\"options\":{\"yAxis\":[{\"position\":\"left\",\"name\":\"金额\"},{\"position\":\"right\",\"name\":\"增长率(%)\"}],\"series\":[{\"yAxisIndex\":0,\"type\":\"bar\",\"name\":\"本期\",\"color\":\"#5470c6\"},{\"yAxisIndex\":0,\"type\":\"bar\",\"name\":\"同期\",\"color\":\"#91cc75\"},{\"yAxisIndex\":1,\"type\":\"line\",\"name\":\"同比增长率\",\"color\":\"#ee6666\"},{\"yAxisIndex\":1,\"type\":\"line\",\"name\":\"环比增",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_finance.category-comparison",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance/category-comparison?year=2026&compareYear=2025",
+    "http": 200,
+    "size": 2026,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"chartType\":\"BAR\",\"title\":\"2026年 vs 2025年 品类结构对比\",\"seriesField\":\"year\",\"data\":[{\"category\":\"复合调味粉\",\"currentAmount\":15165215.2,\"compareAmount\":0,\"currentRatio\":16.95,\"compareRatio\":0,\"yoyGrowthRate\":100,\"ratioChange\":16.95,\"currentYear\":2026,\"compareYear\":2025},{\"category\":\"川味底料\",\"currentAmount\":14573984.6,\"compareAmount\":0,\"currentRatio\":16.29,\"compareRatio\":0,\"yoyGrowthRate\":100,\"ratioChange\":16.29,\"currentYear\":2026,\"compareYear\":2025},{\"category\":\"团餐\",\"currentAmount\":13945550.9,\"compareAmount\":0,\"currentRatio\":15.59,\"compareRatio\":0,\"yoyGrowthRate\":100,\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_sales.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 26345,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"overview\":{\"period\":null,\"startDate\":null,\"endDate\":null,\"kpiCards\":[{\"key\":\"SALES_AMOUNT\",\"title\":\"总销售额\",\"value\":\"32,149,261.20\",\"rawValue\":32149261.2,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"ORDER_COUNT\",\"title\":\"订单数\",\"value\":\"7\",\"rawValue\":7,\"unit\":\"单\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"AVG_ORDER_VALUE\",\"title\":\"客单价\",\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_inventory.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/inventory?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 4012,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"overview\":{\"period\":null,\"startDate\":null,\"endDate\":null,\"kpiCards\":[{\"key\":\"INVENTORY_VALUE\",\"title\":\"库存总值\",\"value\":\"604,476.68\",\"rawValue\":604476.68,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"BATCH_COUNT\",\"title\":\"库存批次\",\"value\":\"21\",\"rawValue\":21,\"unit\":\"批\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"TURNOVER_RATE\",\"title\":\"库存周转率\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_procurement.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/procurement?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 3682,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"overview\":{\"period\":null,\"startDate\":null,\"endDate\":null,\"kpiCards\":[{\"key\":\"PROCUREMENT_AMOUNT\",\"title\":\"采购总额\",\"value\":\"602,151.68\",\"rawValue\":602151.68,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"BATCH_COUNT\",\"title\":\"采购批次\",\"value\":\"17\",\"rawValue\":17,\"unit\":\"批\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"AVG_BATCH_AMOUNT\",\"title\":\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_region.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/region?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 3881,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"heatmap\":{\"chartType\":\"MAP\",\"title\":\"销售地理分布\",\"seriesField\":null,\"data\":[{\"province\":\"未分类\",\"value\":32149261.2,\"heatValue\":1,\"orderCount\":126,\"customerCount\":111,\"colorLevel\":\"HIGH\"}],\"options\":{\"roam\":true,\"visualMap\":{\"min\":0,\"calculable\":true,\"max\":32149261.2},\"mapType\":\"china\",\"showLabel\":true},\"xaxisField\":\"province\",\"yaxisField\":\"value\"},\"targetCompletion\":[{\"metricCode\":\"REGION_TARGET_江苏分部\",\"metricName\":\"江苏分部 目标完成\",\"value\":8717465.3,\"formattedValue\":\"8,717,465.30\",\"unit\":\"元\",\"changePercent\":90.91,\"changeDirection\":\"DOWN\",\"changeValue\":null,\"alertLevel",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_department.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/department?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 1692,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"completionRates\":[],\"efficiencyMatrix\":{\"chartType\":\"SCATTER\",\"title\":\"部门效率矩阵\",\"seriesField\":null,\"data\":[],\"options\":null,\"xaxisField\":null,\"yaxisField\":null},\"dateRange\":{\"startDate\":\"2026-01-01\",\"endDate\":\"2026-05-12\",\"granularity\":\"YEAR\",\"originalExpression\":\"2026-01-01 至 2026-05-12\",\"relative\":false,\"days\":132,\"valid\":true},\"generatedAt\":\"2026-05-12T07:23:45.150623\",\"ranking\":[],\"trendComparison\":{\"chartType\":\"LINE\",\"title\":\"部门销售趋势对比\",\"seriesField\":\"department\",\"data\":[{\"period\":\"2026-W01\",\"未知部门\":1265880.2},{\"period\":\"2026-W02\",\"未知部门\":3731392.4},{\"per",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_production.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/production?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 339,
+    "envelope_keys": [
+      "aiInsights",
+      "cacheExpireAt",
+      "charts",
+      "dataAvailability",
+      "endDate",
+      "fromCache",
+      "generatedAt",
+      "kpiCards",
+      "lastUpdated",
+      "period",
+      "rankings",
+      "recommendations",
+      "startDate",
+      "suggestions"
+    ],
+    "envelope_code": null,
+    "envelope_message": null,
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"period\":\"CUSTOM\",\"startDate\":\"2026-01-01\",\"endDate\":\"2026-05-12\",\"kpiCards\":[],\"rankings\":{},\"charts\":{},\"aiInsights\":[],\"recommendations\":[],\"suggestions\":[],\"generatedAt\":\"2026-05-12T15:23:45.156474\",\"lastUpdated\":\"2026-05-12T15:23:45.156474\",\"fromCache\":false,\"cacheExpireAt\":null,\"dataAvailability\":\"FACTORY_SILVER_PHASE_2D_PENDING\"}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_quality.composite",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/quality?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 339,
+    "envelope_keys": [
+      "aiInsights",
+      "cacheExpireAt",
+      "charts",
+      "dataAvailability",
+      "endDate",
+      "fromCache",
+      "generatedAt",
+      "kpiCards",
+      "lastUpdated",
+      "period",
+      "rankings",
+      "recommendations",
+      "startDate",
+      "suggestions"
+    ],
+    "envelope_code": null,
+    "envelope_message": null,
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"period\":\"CUSTOM\",\"startDate\":\"2026-01-01\",\"endDate\":\"2026-05-12\",\"kpiCards\":[],\"rankings\":{},\"charts\":{},\"aiInsights\":[],\"recommendations\":[],\"suggestions\":[],\"generatedAt\":\"2026-05-12T15:23:45.161514\",\"lastUpdated\":\"2026-05-12T15:23:45.161514\",\"fromCache\":false,\"cacheExpireAt\":null,\"dataAvailability\":\"FACTORY_SILVER_PHASE_2D_PENDING\"}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "analysis_drilldown.drill_down",
+    "method": "POST",
+    "path": "/api/mobile/F001/smart-bi/drill-down",
+    "http": 200,
+    "size": 700,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"drillPath\":\"全部\",\"data\":[{\"rank\":1,\"name\":\"浙江分部\",\"value\":9691474.2,\"target\":10726528.12,\"completionRate\":90.35,\"alertLevel\":\"GREEN\"},{\"rank\":2,\"name\":\"江苏分部\",\"value\":8717465.3,\"target\":9589211.83,\"completionRate\":90.91,\"alertLevel\":\"GREEN\"},{\"rank\":3,\"name\":\"赣皖区域\",\"value\":7200378.4,\"target\":8649286.58,\"completionRate\":83.25,\"alertLevel\":\"YELLOW\"},{\"rank\":4,\"name\":\"上海分部\",\"value\":6539943.3,\"target\":7193937.63,\"completionRate\":90.91,\"alertLevel\":\"GREEN\"}],\"level\":1,\"nextLevel\":\"province\",\"dimension\":\"region\"},\"timestamp\":\"2026-05-12T15:23:45.171306\",\"success\":t",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "config_thresholds.list",
+    "method": "GET",
+    "path": "/api/mobile/smartbi-config/thresholds",
+    "http": 404,
+    "size": 70,
+    "envelope_keys": [
+      "code",
+      "data",
+      "message",
+      "success"
+    ],
+    "envelope_code": "NOT_FOUND",
+    "envelope_message": "Not Found",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"success\":false,\"data\":null,\"message\":\"Not Found\",\"code\":\"NOT_FOUND\"}",
+    "pass_fail": "FAIL"
+  },
+  {
+    "label": "config_thresholds.create",
+    "method": "POST",
+    "path": "/api/mobile/smartbi-config/thresholds",
+    "http": 404,
+    "size": 70,
+    "envelope_keys": [
+      "code",
+      "data",
+      "message",
+      "success"
+    ],
+    "envelope_code": "NOT_FOUND",
+    "envelope_message": "Not Found",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      201
+    ],
+    "body_excerpt": "{\"success\":false,\"data\":null,\"message\":\"Not Found\",\"code\":\"NOT_FOUND\"}",
+    "pass_fail": "FAIL"
+  },
+  {
+    "label": "config_thresholds.update",
+    "method": "PUT",
+    "path": "/api/mobile/smartbi-config/thresholds/r1a-nonexistent-id",
+    "http": 404,
+    "size": 70,
+    "envelope_keys": [
+      "code",
+      "data",
+      "message",
+      "success"
+    ],
+    "envelope_code": "NOT_FOUND",
+    "envelope_message": "Not Found",
+    "rule9_sample": null,
+    "expected": [
+      404
+    ],
+    "body_excerpt": "{\"success\":false,\"data\":null,\"message\":\"Not Found\",\"code\":\"NOT_FOUND\"}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "config_thresholds.delete",
+    "method": "DELETE",
+    "path": "/api/mobile/smartbi-config/thresholds/r1a-nonexistent-id",
+    "http": 404,
+    "size": 70,
+    "envelope_keys": [
+      "code",
+      "data",
+      "message",
+      "success"
+    ],
+    "envelope_code": "NOT_FOUND",
+    "envelope_message": "Not Found",
+    "rule9_sample": null,
+    "expected": [
+      404
+    ],
+    "body_excerpt": "{\"success\":false,\"data\":null,\"message\":\"Not Found\",\"code\":\"NOT_FOUND\"}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "config_thresholds.reload",
+    "method": "POST",
+    "path": "/api/mobile/smartbi-config/thresholds/reload",
+    "http": 404,
+    "size": 70,
+    "envelope_keys": [
+      "code",
+      "data",
+      "message",
+      "success"
+    ],
+    "envelope_code": "NOT_FOUND",
+    "envelope_message": "Not Found",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"success\":false,\"data\":null,\"message\":\"Not Found\",\"code\":\"NOT_FOUND\"}",
+    "pass_fail": "FAIL"
+  },
+  {
+    "label": "dashboard_composite.executive",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/dashboard/executive?period=month",
+    "http": 200,
+    "size": 4581,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": {
+      "n": 5,
+      "rows": [
+        {
+          "idx": 0,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "SALES_AMOUNT",
+            "title": "总销售额",
+            "value": "6,742,788.60",
+            "rawValue": 6742788.6
+          }
+        },
+        {
+          "idx": 1,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "ORDER_COUNT",
+            "title": "订单数",
+            "value": "7",
+            "rawValue": 7
+          }
+        },
+        {
+          "idx": 2,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "AVG_ORDER_VALUE",
+            "title": "客单价",
+            "value": "963,255.51",
+            "rawValue": 963255.51
+          }
+        },
+        {
+          "idx": 3,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "TARGET_COMPLETION",
+            "title": "目标完成率",
+            "value": "90.9%",
+            "rawValue": 90.91
+          }
+        },
+        {
+          "idx": 4,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "MOM_GROWTH",
+            "title": "环比增长",
+            "value": "+10.6%",
+            "rawValue": 10.62
+          }
+        }
+      ]
+    },
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"period\":\"month\",\"startDate\":\"2026-05-01\",\"endDate\":\"2026-05-31\",\"kpiCards\":[{\"key\":\"SALES_AMOUNT\",\"title\":\"总销售额\",\"value\":\"6,742,788.60\",\"rawValue\":6742788.6,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"ORDER_COUNT\",\"title\":\"订单数\",\"value\":\"7\",\"rawValue\":7,\"unit\":\"单\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"AVG_ORDER_VALUE\",\"title\":\"客",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "dashboard_composite.executive_custom",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/dashboard/executive/custom?startDate=2026-01-01&endDate=2026-05-12",
+    "http": 200,
+    "size": 7692,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": {
+      "n": 5,
+      "rows": [
+        {
+          "idx": 0,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "SALES_AMOUNT",
+            "title": "总销售额",
+            "value": "32,149,261.20",
+            "rawValue": 32149261.2
+          }
+        },
+        {
+          "idx": 1,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "ORDER_COUNT",
+            "title": "订单数",
+            "value": "7",
+            "rawValue": 7
+          }
+        },
+        {
+          "idx": 2,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "AVG_ORDER_VALUE",
+            "title": "客单价",
+            "value": "4,592,751.60",
+            "rawValue": 4592751.6
+          }
+        },
+        {
+          "idx": 3,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "TARGET_COMPLETION",
+            "title": "目标完成率",
+            "value": "88.9%",
+            "rawValue": 88.91
+          }
+        },
+        {
+          "idx": 4,
+          "keys": [
+            "change",
+            "changeRate",
+            "compareText",
+            "completionRate",
+            "description",
+            "key",
+            "rawValue",
+            "status"
+          ],
+          "sample": {
+            "key": "MOM_GROWTH",
+            "title": "环比增长",
+            "value": "+30.4%",
+            "rawValue": 30.43
+          }
+        }
+      ]
+    },
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"period\":\"CUSTOM\",\"startDate\":\"2026-01-01\",\"endDate\":\"2026-05-12\",\"kpiCards\":[{\"key\":\"SALES_AMOUNT\",\"title\":\"总销售额\",\"value\":\"32,149,261.20\",\"rawValue\":32149261.2,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"ORDER_COUNT\",\"title\":\"订单数\",\"value\":\"7\",\"rawValue\":7,\"unit\":\"单\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"AVG_ORDER_VALUE\",\"title\"",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "dashboard_composite.unified",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/dashboard?period=month",
+    "http": 200,
+    "size": 16927,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"period\":\"month\",\"startDate\":\"2026-05-01\",\"endDate\":\"2026-05-31\",\"sales\":{\"period\":null,\"startDate\":null,\"endDate\":null,\"kpiCards\":[{\"key\":\"SALES_AMOUNT\",\"title\":\"总销售额\",\"value\":\"6,742,788.60\",\"rawValue\":6742788.6,\"unit\":\"元\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"completionRate\":null},{\"key\":\"ORDER_COUNT\",\"title\":\"订单数\",\"value\":\"7\",\"rawValue\":7,\"unit\":\"单\",\"change\":null,\"changeRate\":null,\"trend\":\"flat\",\"status\":\"green\",\"compareText\":null,\"description\":null,\"targetValue\":null,\"co",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "dashboard.data_date_range",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/data-date-range",
+    "http": 200,
+    "size": 305,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "Data date range detected",
+    "rule9_sample": null,
+    "expected": [
+      200
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"Data date range detected\",\"data\":{\"hasData\":true,\"startDate\":\"2026-01-01\",\"endDate\":\"2026-12-28\",\"granularity\":\"YEAR\",\"description\":\"数据范围 2026-01-01 至 2026-12-28\"},\"timestamp\":\"2026-05-12T15:23:45.244107\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "datasource.fields",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/1/fields",
+    "http": 200,
+    "size": 155,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      404
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":[],\"timestamp\":\"2026-05-12T15:23:45.250026\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "datasource.history",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/1/history?page=0&size=20",
+    "http": 200,
+    "size": 1147,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      404
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"content\":[{\"id\":2,\"datasourceId\":1,\"changeType\":\"FIELD_UPDATE\",\"versionBefore\":2,\"versionAfter\":3,\"oldSchema\":\"{}\",\"newSchema\":\"{}\",\"ddlExecuted\":null,\"createdBy\":null,\"changeDescription\":null,\"isReversible\":true,\"isApplied\":true,\"errorMessage\":null,\"createdAt\":\"2026-05-09T10:01:52.680348\",\"updatedAt\":\"2026-05-09T10:01:52.680348\",\"deletedAt\":null},{\"id\":1,\"datasourceId\":1,\"changeType\":\"FIELD_UPDATE\",\"versionBefore\":1,\"versionAfter\":2,\"oldSchema\":\"{}\",\"newSchema\":\"{}\",\"ddlExecuted\":null,\"createdBy\":null,\"changeDescription\":null,\"isReversible\":true,\"isApplie",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "datasource.upload",
+    "method": "POST",
+    "path": "/api/mobile/F001/smart-bi/datasource/upload",
+    "http": null,
+    "size": null,
+    "envelope_keys": null,
+    "pass_fail": "SKIP",
+    "note": "multipart upload — deferred to R5 boundary (per spec §5 Round 5)"
+  },
+  {
+    "label": "datasource.preview",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/1/preview",
+    "http": 200,
+    "size": 588,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      404
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"changes\":{\"datasourceName\":\"IL TEATRO（西餐厅）2月_商品销量报表.xlsx\",\"currentVersion\":3,\"newVersion\":3,\"addedFields\":[],\"removedFields\":[],\"modifiedFields\":[],\"hasChanges\":false,\"detectedAt\":\"2026-05-12T15:23:45.261295\",\"totalChanges\":0},\"suggestedMappings\":[],\"warningMessage\":null,\"requiresApproval\":false,\"affectedReportsCount\":0,\"affectedReportNames\":null,\"estimatedMigrationTime\":null,\"confirmationRequiredCount\":0},\"timestamp\":\"2026-05-12T15:23:45.261305\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "datasource.apply",
+    "method": "POST",
+    "path": "/api/mobile/F001/smart-bi/datasource/apply",
+    "http": 200,
+    "size": 167,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "Schema changes applied",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      400,
+      404,
+      422
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"Schema changes applied\",\"data\":null,\"timestamp\":\"2026-05-12T15:23:45.266848\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "query_templates_write.create",
+    "method": "POST",
+    "path": "/api/mobile/F001/smart-bi/query-templates",
+    "http": 200,
+    "size": 407,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "操作成功",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      201
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"createdAt\":\"2026-05-12T15:23:45.272163\",\"updatedAt\":\"2026-05-12T15:23:45.272163\",\"deletedAt\":null,\"id\":49,\"factoryId\":\"F001\",\"name\":\"R1A_smoke_create\",\"category\":\"finance\",\"description\":null,\"queryTemplate\":\"SELECT 1\",\"parameters\":\"{}\",\"deleted\":false},\"timestamp\":\"2026-05-12T15:23:45.273012\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "query_templates_write.update",
+    "method": "PUT",
+    "path": "/api/mobile/F001/smart-bi/query-templates/999999",
+    "http": 200,
+    "size": 163,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 400,
+    "envelope_message": "Template not found",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      404
+    ],
+    "body_excerpt": "{\"code\":400,\"message\":\"Template not found\",\"data\":null,\"timestamp\":\"2026-05-12T15:23:45.27844\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "query_templates_write.delete",
+    "method": "DELETE",
+    "path": "/api/mobile/F001/smart-bi/query-templates/999999",
+    "http": 200,
+    "size": 164,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 400,
+    "envelope_message": "Template not found",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      404
+    ],
+    "body_excerpt": "{\"code\":400,\"message\":\"Template not found\",\"data\":null,\"timestamp\":\"2026-05-12T15:23:45.283901\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  },
+  {
+    "label": "incentive_plan.get",
+    "method": "GET",
+    "path": "/api/mobile/F001/smart-bi/incentive-plan/staff/1",
+    "http": 200,
+    "size": 175,
+    "envelope_keys": [
+      "actionHint",
+      "code",
+      "data",
+      "hintTarget",
+      "message",
+      "severity",
+      "success",
+      "timestamp"
+    ],
+    "envelope_code": 200,
+    "envelope_message": "Unsupported target type: staff",
+    "rule9_sample": null,
+    "expected": [
+      200,
+      404
+    ],
+    "body_excerpt": "{\"code\":200,\"message\":\"Unsupported target type: staff\",\"data\":null,\"timestamp\":\"2026-05-12T15:23:45.28868\",\"success\":false,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+    "pass_fail": "PASS"
+  }
+]
