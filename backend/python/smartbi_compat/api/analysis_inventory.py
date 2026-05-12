@@ -1901,6 +1901,9 @@ async def get_inventory_analysis(
       analysisType=expiry    → expiry per-type (5-key envelope, PR-A Task 10)
       analysisType=aging     → aging per-type (5-key envelope, PR-A Task 11)
       analysisType empty     → default getInventoryHealth (501 in PR-A; PR-B real impl)
+      analysisType=overview  → alias for empty/default (F-1 follow-up,
+                               fixes UI dead-end where overview tab hit 501;
+                               default mode envelope is literally keyed `overview`)
       analysisType=other     → 501 envelope (un-ported)
     """
     if analysisType == "turnover":
@@ -1912,7 +1915,7 @@ async def get_inventory_analysis(
     if analysisType == "aging":
         result = await _get_aging_mode(auth.factory_id, startDate, endDate)
         return wrap_response(result)
-    if not analysisType:
+    if not analysisType or analysisType == "overview":
         # PR-B: default mode (getInventoryHealth + DashboardResponse wrapped)
         result = await _get_default_mode(auth.factory_id, startDate, endDate)
         return wrap_response(result)

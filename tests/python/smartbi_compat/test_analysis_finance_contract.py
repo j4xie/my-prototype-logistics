@@ -182,6 +182,74 @@ class TestAnalysisFinanceComposite:
             assert at in body["message"], f"expected '{at}' in message, got: {body['message'][:100]}"
 
 
+class TestAnalysisFinanceOverviewAlias:
+    """F-1 follow-up: analysisType=overview aliases the empty/composite branch.
+
+    Audit ref: docs/qa-audits/2026-05-12-smartbi-cohort-parity-sweep-results.md §5 F-1
+    — UI tab calling analysisType=overview previously hit a 501 stub because the
+    dispatcher fell through to the catchall. Java side was deleted in Phase C, so
+    aliasing to the composite (which IS the overview semantically) is the safe fix.
+
+    Mocking _get_comprehensive_finance_analysis lets us verify the routing
+    decision in isolation, independent of Gold/legacy/DB state.
+    """
+
+    def test_overview_alias_routes_to_composite(self, client, monkeypatch):
+        """analysisType=overview returns 200 + same payload as empty (sentinel mock)."""
+        from unittest.mock import AsyncMock
+
+        sentinel = {"_sentinel": "composite-routed", "ok": True}
+        mock_composite = AsyncMock(return_value=sentinel)
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._get_comprehensive_finance_analysis",
+            mock_composite,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=overview",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        body = resp.json()
+        assert body["success"] is True, f"expected success=true, got body={body}"
+        assert body["data"] == sentinel, "overview must route to composite (sentinel mismatch)"
+        assert mock_composite.await_count == 1, (
+            "composite must be awaited exactly once for analysisType=overview"
+        )
+
+    def test_overview_alias_shape_matches_empty(self, client, monkeypatch):
+        """Same sentinel returned for both analysisType=overview AND empty —
+        proves the two branches converge on _get_comprehensive_finance_analysis.
+        """
+        from unittest.mock import AsyncMock
+
+        sentinel = {"_sentinel": "shared-composite", "marker": 42}
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._get_comprehensive_finance_analysis",
+            AsyncMock(return_value=sentinel),
+        )
+
+        url_base = (
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31"
+        )
+        headers = {"Authorization": f"Bearer {_make_token('F999')}"}
+
+        resp_empty = client.get(url_base, headers=headers)
+        resp_overview = client.get(url_base + "&analysisType=overview", headers=headers)
+
+        assert resp_empty.status_code == 200
+        assert resp_overview.status_code == 200
+        body_empty = resp_empty.json()
+        body_overview = resp_overview.json()
+        assert body_empty["data"] == body_overview["data"] == sentinel
+        assert body_empty["success"] is body_overview["success"] is True
+        # Neither should look like the 501 catchall envelope.
+        assert body_empty.get("code") != 501
+        assert body_overview.get("code") != 501
+
+
 class TestAnalysisFinancePayable:
     """F999 byte-shape gate for payable per-type path (analysisType=payable, Phase E real impl)."""
 

@@ -3291,6 +3291,9 @@ async def get_finance_analysis(
 
     Branches:
       analysisType empty       → composite (6-key Map via getComprehensiveAnalysis)
+      analysisType=overview    → alias for empty/composite (F-1 follow-up,
+                                 fixes UI dead-end where overview tab hit 501;
+                                 Java side gone post-Phase-C, no parity concern)
       analysisType=payable     → payable per-type (4-key shape, real impl Phase E)
       analysisType=profit      → profit per-type (PR #21 + #22 sales fallback)
       analysisType=cost        → cost per-type (PR #25 structure + trend)
@@ -3300,7 +3303,7 @@ async def get_finance_analysis(
     """
     range_ = DateRange.custom(startDate, endDate)
 
-    if not analysisType:
+    if not analysisType or analysisType == "overview":
         result = await _get_comprehensive_finance_analysis(auth.factory_id, range_)
         return wrap_response(result)
 
