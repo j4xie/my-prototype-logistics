@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -49,8 +50,9 @@ public class BatchWorkSession extends BaseEntity {
     @Column(name = "work_minutes")
     private Integer workMinutes;  // 可为空，checkout时计算
 
+    @PriceSensitive
     @Column(name = "labor_cost", precision = 10, scale = 2)
-    private BigDecimal laborCost;  // 可为空，checkout时计算
+    private BigDecimal laborCost;  // 可为空，checkout时计算; stripped for non-procurement:price:view roles (PR #455 BUG-2 sweep)
 
     // 新增字段：支持主管分配模式
     @Column(name = "check_in_time")

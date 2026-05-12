@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.bom;
 
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +39,7 @@ public class BomCostSummaryDTO {
     /**
      * 原辅料成本合计
      */
+    @PriceSensitive
     private BigDecimal materialCostTotal;
 
     // ============ 人工成本 ============
@@ -50,6 +52,7 @@ public class BomCostSummaryDTO {
     /**
      * 人工成本合计
      */
+    @PriceSensitive
     private BigDecimal laborCostTotal;
 
     // ============ 均摊费用 ============
@@ -62,6 +65,7 @@ public class BomCostSummaryDTO {
     /**
      * 均摊费用合计
      */
+    @PriceSensitive
     private BigDecimal overheadCostTotal;
 
     // ============ 总成本 ============
@@ -69,6 +73,7 @@ public class BomCostSummaryDTO {
     /**
      * 总成本 = 原辅料成本 + 人工成本 + 均摊费用
      */
+    @PriceSensitive
     private BigDecimal totalCost;
 
     /**
@@ -117,6 +122,7 @@ public class BomCostSummaryDTO {
         /**
          * 单价
          */
+        @PriceSensitive
         private BigDecimal unitPrice;
 
         /**
@@ -127,6 +133,7 @@ public class BomCostSummaryDTO {
         /**
          * 小计 = 实际用量 * 单价
          */
+        @PriceSensitive
         private BigDecimal subtotal;
     }
 
@@ -151,6 +158,7 @@ public class BomCostSummaryDTO {
         /**
          * 单价
          */
+        @PriceSensitive
         private BigDecimal unitPrice;
 
         /**
@@ -166,6 +174,7 @@ public class BomCostSummaryDTO {
         /**
          * 小计 = 单价 * 操作量
          */
+        @PriceSensitive
         private BigDecimal subtotal;
     }
 
@@ -190,6 +199,7 @@ public class BomCostSummaryDTO {
         /**
          * 单价/费率
          */
+        @PriceSensitive
         private BigDecimal unitPrice;
 
         /**
@@ -205,6 +215,7 @@ public class BomCostSummaryDTO {
         /**
          * 小计 = 单价 * 分摊比例
          */
+        @PriceSensitive
         private BigDecimal subtotal;
     }
 }

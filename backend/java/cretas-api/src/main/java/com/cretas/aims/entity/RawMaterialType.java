@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -156,7 +157,11 @@ public class RawMaterialType extends BaseEntity {
      * 单价
      * <p>原材料的参考单价，用于成本估算</p>
      * <p>精度：10位整数，2位小数</p>
+     *
+     * <p>Stripped to {@code null} for roles lacking {@code procurement:price:view}
+     * (PR #455 BUG-2 sweep — sister to {@link com.cretas.aims.entity.bom.BomItem#unitPrice}).
      */
+    @PriceSensitive
     @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
 

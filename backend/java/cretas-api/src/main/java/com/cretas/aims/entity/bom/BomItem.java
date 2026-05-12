@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.bom;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -83,7 +84,11 @@ public class BomItem extends BaseEntity {
 
     /**
      * 单价 (含税/不含税取决于tax_rate)
+     *
+     * <p>Stripped to {@code null} for roles lacking {@code procurement:price:view}
+     * (warehouse_manager, operator, quality_inspector). See PR #455 BUG-2 follow-up.
      */
+    @PriceSensitive
     @Column(name = "unit_price", precision = 15, scale = 4)
     private BigDecimal unitPrice;
 

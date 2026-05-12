@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.bom;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -51,8 +52,12 @@ public class OverheadCostConfig extends BaseEntity {
     private String category;
 
     /**
-     * 单价/费率
+     * 单价/费率.
+     *
+     * <p>Overhead rate is supplier-cost-equivalent: stripped to {@code null} for roles lacking
+     * {@code procurement:price:view}. Mirrors {@link BomItem#unitPrice} (PR #455 BUG-2 sweep).
      */
+    @PriceSensitive
     @Column(name = "unit_price", nullable = false, precision = 15, scale = 4)
     private BigDecimal unitPrice;
 

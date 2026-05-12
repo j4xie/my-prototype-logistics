@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
@@ -52,10 +53,12 @@ public class EmployeeWorkSession extends BaseEntity {
     private Integer actualWorkMinutes;
     @Column(name = "status", nullable = false, length = 20)
     private String status = "active"; // active, completed
+    @PriceSensitive
     @Column(name = "hourly_rate", precision = 10, scale = 2)
-    private BigDecimal hourlyRate;
+    private BigDecimal hourlyRate;  // stripped for non-procurement:price:view roles (PR #455 BUG-2 sweep)
+    @PriceSensitive
     @Column(name = "labor_cost", precision = 10, scale = 2)
-    private BigDecimal laborCost;
+    private BigDecimal laborCost;  // stripped for non-procurement:price:view roles (PR #455 BUG-2 sweep)
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     // 关联关系 (使用 @JsonIgnore 避免循环引用)
