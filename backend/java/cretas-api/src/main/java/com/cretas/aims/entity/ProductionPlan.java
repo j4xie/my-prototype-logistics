@@ -4,6 +4,7 @@ import com.cretas.aims.entity.enums.MixedBatchType;
 import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -84,21 +85,29 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "is_fully_matched")
     private Boolean isFullyMatched = false;  // 是否完全匹配
 
-    // 成本相关字段
+    // 成本相关字段 (@PriceSensitive — stripped for roles lacking procurement:price:view)
+    @PriceSensitive
     @Column(name = "estimated_material_cost", precision = 10, scale = 2)
     private BigDecimal estimatedMaterialCost;
+    @PriceSensitive
     @Column(name = "actual_material_cost", precision = 10, scale = 2)
     private BigDecimal actualMaterialCost;
+    @PriceSensitive
     @Column(name = "estimated_labor_cost", precision = 10, scale = 2)
     private BigDecimal estimatedLaborCost;
+    @PriceSensitive
     @Column(name = "actual_labor_cost", precision = 10, scale = 2)
     private BigDecimal actualLaborCost;
+    @PriceSensitive
     @Column(name = "estimated_equipment_cost", precision = 10, scale = 2)
     private BigDecimal estimatedEquipmentCost;
+    @PriceSensitive
     @Column(name = "actual_equipment_cost", precision = 10, scale = 2)
     private BigDecimal actualEquipmentCost;
+    @PriceSensitive
     @Column(name = "estimated_other_cost", precision = 10, scale = 2)
     private BigDecimal estimatedOtherCost;
+    @PriceSensitive
     @Column(name = "actual_other_cost", precision = 10, scale = 2)
     private BigDecimal actualOtherCost;
     @Column(name = "created_by", nullable = false)

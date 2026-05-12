@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
@@ -124,18 +125,21 @@ public class DisposalRecord extends BaseEntity {
     /**
      * 预估损失金额
      */
+    @PriceSensitive
     @Column(name = "estimated_loss", precision = 12, scale = 2)
     private BigDecimal estimatedLoss;
 
     /**
      * 实际损失金额
      */
+    @PriceSensitive
     @Column(name = "actual_loss", precision = 12, scale = 2)
     private BigDecimal actualLoss;
 
     /**
      * 回收价值（如果可回收）
      */
+    @PriceSensitive
     @Column(name = "recovery_value", precision = 12, scale = 2)
     private BigDecimal recoveryValue;
 
@@ -192,10 +196,20 @@ public class DisposalRecord extends BaseEntity {
 
     /**
      * 计算净损失（扣除回收价值）
+     *
+     * <p>Defensive null guard — all three inputs ({@code actualLoss}, {@code estimatedLoss},
+     * {@code recoveryValue}) are {@code @PriceSensitive}, stripped to {@code null} for
+     * roles lacking {@code procurement:price:view}. Return {@code null} (not
+     * {@code ZERO}) when both loss inputs are absent — ZERO would leak a "no loss"
+     * signal to warehouse_manager.
      */
     @Transient
+    @PriceSensitive
     public BigDecimal getNetLoss() {
-        BigDecimal loss = actualLoss != null ? actualLoss : (estimatedLoss != null ? estimatedLoss : BigDecimal.ZERO);
+        BigDecimal loss = actualLoss != null ? actualLoss : estimatedLoss;
+        if (loss == null) {
+            return null;
+        }
         BigDecimal recovery = recoveryValue != null ? recoveryValue : BigDecimal.ZERO;
         return loss.subtract(recovery);
     }
