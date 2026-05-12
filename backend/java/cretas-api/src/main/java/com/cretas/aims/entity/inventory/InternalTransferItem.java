@@ -2,6 +2,7 @@ package com.cretas.aims.entity.inventory;
 
 import com.cretas.aims.entity.BaseEntity;
 import com.cretas.aims.entity.enums.TransferItemType;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
@@ -108,9 +109,12 @@ public class InternalTransferItem extends BaseEntity {
 
     // ==================== 计算属性 ====================
 
+    /** 行金额 = 数量 × 单价. Price-sensitive: returns null when unitPrice stripped. */
     @Transient
+    @PriceSensitive
     public BigDecimal getLineAmount() {
-        if (unitPrice == null || quantity == null) return BigDecimal.ZERO;
+        // Defensive null guard — unitPrice may be @PriceSensitive-stripped for warehouse_manager.
+        if (unitPrice == null || quantity == null) return null;
         return quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
     }
 }
