@@ -1,0 +1,15 @@
+=== BEFORE: /admin/list rv=1.0.0 production ===
+{"bundles":[]}
+=== BEFORE: /api/ota/manifest rv=1.0.0 channel=production ===
+HTTP/1.1 404 Not Found
+Server: nginx
+Date: Tue, 12 May 2026 16:24:55 GMT
+Content-Type: application/json
+Content-Length: 70
+Connection: keep-alive
+x-correlation-id: 87748c6f-049b-42d9-b1c0-5774cee6ae21
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
+
+{"error":"No bundle for runtime_version='1.0.0' channel='production'"}

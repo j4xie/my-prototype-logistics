@@ -1,0 +1,11 @@
+--19876eac8b4209306bf6bf39c93be0a0
+Content-Disposition: form-data; name="manifest"
+Content-Type: application/json; charset=utf-8
+
+{"id":"1aa3688a-b06e-c485-7887-b328bf17b274","createdAt":"2026-05-12T16:19:34.000Z","runtimeVersion":"0.0.0-smoke","assets":[{"hash":"_dalJu7wdo_AXlcxlH84Hhird0OwD2Fj20Z2N7d_I1A","key":"41ea69646ffd857dac84a4489df3a159","fileExtension":".txt","contentType":"text/plain","url":"https://ota.cretaceousfuture.com/api/ota/assets?asset=updates%2F0.0.0-smoke%2Fstaging%2F1778602773381%2Fassets%2Fmarker.txt&runtimeVersion=0.0.0-smoke&platform=android"}],"launchAsset":{"hash":"iokDVGmZ24HV_5tRkhbDg8hsBRT7HgxPLwSw0RlguB8","key":"419b9598fb2a5ff1c05b29be7dfb00ab","fileExtension":".bundle","contentType":"application/javascript","url":"https://ota.cretaceousfuture.com/api/ota/assets?asset=updates%2F0.0.0-smoke%2Fstaging%2F1778602773381%2Fbundles%2Findex-smoke.hbc&runtimeVersion=0.0.0-smoke&platform=android"},"metadata":{},"extra":{"expoClient":{"name":"CretasFoodTrace","slug":"CretasFoodTrace","version":"0.0.0-smoke"}}}
+--19876eac8b4209306bf6bf39c93be0a0
+Content-Disposition: form-data; name="extensions"
+Content-Type: application/json
+
+{"assetRequestHeaders":{}}
+--19876eac8b4209306bf6bf39c93be0a0--

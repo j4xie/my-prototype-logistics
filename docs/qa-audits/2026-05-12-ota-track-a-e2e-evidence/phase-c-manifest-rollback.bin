@@ -1,0 +1,20 @@
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 12 May 2026 16:38:14 GMT
+Content-Type: multipart/mixed; boundary=4d21873c8d7643f3ac03c72345a9e638
+Content-Length: 259
+Connection: keep-alive
+expo-protocol-version: 1
+expo-sfv-version: 0
+cache-control: private, max-age=0
+x-correlation-id: a7b2c392-73eb-415a-bf8f-31df0b5ed24c
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
+
+--4d21873c8d7643f3ac03c72345a9e638
+Content-Disposition: form-data; name="directive"
+Content-Type: application/json; charset=utf-8
+
+{"type":"rollBackToEmbedded","parameters":{"commitTime":"2026-05-12T16:37:58.720Z"}}
+--4d21873c8d7643f3ac03c72345a9e638--

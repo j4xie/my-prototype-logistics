@@ -1,0 +1,7 @@
+[prune] found 5 bundles for 1.0.0/production; keeping newest 3
+[prune] deleting /www/wwwroot/ota/updates/1.0.0/production/1778603319100
+[prune] deleting /www/wwwroot/ota/updates/1.0.0/production/1778603319000
+[prune] ✓ kept newest 3, removed 2
+1778603319105
+1778603319106
+1778603319107
