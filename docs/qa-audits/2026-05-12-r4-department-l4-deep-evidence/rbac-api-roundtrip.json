@@ -1,0 +1,20 @@
+{
+  "request": "/api/mobile/F001/smart-bi/analysis/department?startDate=2026-04-12&endDate=2026-05-12",
+  "admin": {
+    "status": 200,
+    "success": true,
+    "dataKeys": [
+      "completionRates",
+      "efficiencyMatrix",
+      "dateRange",
+      "generatedAt",
+      "ranking",
+      "trendComparison"
+    ]
+  },
+  "warehouse": {
+    "status": 200,
+    "success": true,
+    "message": "操作成功"
+  }
+}

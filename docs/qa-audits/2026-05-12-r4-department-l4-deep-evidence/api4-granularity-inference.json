@@ -1,0 +1,31 @@
+{
+  "probes": [
+    {
+      "name": "30d-MONTH",
+      "daysBack": 30,
+      "days": 31,
+      "expected": "MONTH",
+      "actual": "MONTH",
+      "match": true,
+      "status": 200
+    },
+    {
+      "name": "90d-QUARTER",
+      "daysBack": 90,
+      "days": 91,
+      "expected": "QUARTER",
+      "actual": "QUARTER",
+      "match": true,
+      "status": 200
+    },
+    {
+      "name": "365d-YEAR",
+      "daysBack": 365,
+      "days": 366,
+      "expected": "YEAR",
+      "actual": "YEAR",
+      "match": true,
+      "status": 200
+    }
+  ]
+}
