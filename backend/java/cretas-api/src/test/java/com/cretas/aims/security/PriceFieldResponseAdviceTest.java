@@ -753,6 +753,9 @@ class PriceFieldResponseAdviceTest {
         run(transfer);
         assertEquals(new BigDecimal("8888.00"), transfer.getTotalAmount());
         assertEquals(new BigDecimal("10.00"), transfer.getItems().get(0).getUnitPrice());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // PR #443 follow-up — F3 (MaterialBatch.getTotalCost annotation)
     //                     F5 (permissionService exception → fail-CLOSED)
     // 2026-05-12
