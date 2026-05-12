@@ -51,6 +51,28 @@ const factoryId = computed(() => authStore.factoryId);
 const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
+// PR #423/#443/#456/#457/#458 follow-up (P3, 2026-05-12):
+// Backend PriceFieldResponseAdvice + PriceSensitiveSerializerModifier strip
+// price fields to null for roles outside PermissionServiceImpl.PRICE_VIEW_ROLES.
+// E2E flagged that <span v-if="row.totalAmount != null"> still rendered the
+// column HEADERS 总金额 / 运费 / 折扣 for warehouse_manager (cells empty,
+// headers visible → misleading). Mirror the backend role whitelist here to
+// hide the columns entirely.
+// Whitelist source: backend/.../PermissionServiceImpl.java PRICE_VIEW_ROLES
+const PRICE_VIEW_ROLES = [
+  'factory_super_admin',
+  'platform_admin',
+  'procurement_manager',
+  'finance_manager',
+  'sales_manager',
+  'dispatcher',
+  'production_manager',
+  'restaurant_manager',
+  'permission_admin',
+  'department_admin',
+];
+const canViewPrice = computed(() => PRICE_VIEW_ROLES.includes(authStore.currentRole));
+
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
@@ -716,22 +738,43 @@ async function submitQuickPayment() {
         </el-table-column>
         <el-table-column prop="salesperson" label="业务员" width="100" show-overflow-tooltip />
         <el-table-column prop="orderDate" label="下单日期" width="120" />
-        <el-table-column prop="totalAmount" label="总金额" width="130" align="right">
-          <!--
-            RBAC defense-in-depth (PR #415 Option B 2026-05-12):
-            backend PriceFieldResponseAdvice strips totalAmount / discountAmount / taxAmount
-            to null for roles lacking procurement:price:view. v-if guards rendering
-            so non-finance roles see "—" instead of misleading "¥0.00".
-          -->
+        <!--
+          RBAC defense-in-depth (PR #415 Option B 2026-05-12 + P3 column-hide fix):
+          backend PriceFieldResponseAdvice strips totalAmount / discountAmount /
+          taxAmount / shippingFee to null for roles lacking procurement:price:view.
+          v-if on the column itself hides BOTH the header and cells for
+          non-whitelisted roles (warehouse_manager etc). Without v-if on
+          <el-table-column>, Element Plus still renders 总金额 / 运费 / 折扣
+          headers even when all cells are null/blank — E2E flagged misleading UX.
+        -->
+        <el-table-column
+          v-if="canViewPrice"
+          prop="totalAmount"
+          label="总金额"
+          width="130"
+          align="right"
+        >
           <template #default="{ row }">
             <span v-if="row.totalAmount != null">{{ formatAmount(row.totalAmount) }}</span>
             <span v-else class="price-masked">—</span>
           </template>
         </el-table-column>
-        <el-table-column prop="shippingFee" label="运费" width="100" align="right">
+        <el-table-column
+          v-if="canViewPrice"
+          prop="shippingFee"
+          label="运费"
+          width="100"
+          align="right"
+        >
           <template #default="{ row }">{{ row.shippingFee ? formatAmount(row.shippingFee) : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="discountAmount" label="折扣" width="100" align="right">
+        <el-table-column
+          v-if="canViewPrice"
+          prop="discountAmount"
+          label="折扣"
+          width="100"
+          align="right"
+        >
           <template #default="{ row }">
             <span v-if="row.discountAmount != null && row.discountAmount">{{ formatAmount(row.discountAmount) }}</span>
             <span v-else>-</span>
