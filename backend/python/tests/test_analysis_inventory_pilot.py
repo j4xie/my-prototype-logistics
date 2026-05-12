@@ -50,6 +50,9 @@ from smartbi_compat.api.analysis_inventory import (  # noqa: E402
 from smartbi_compat.api.analysis_finance import _decimal_to_number  # noqa: E402
 from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+pytestmark = [pytest.mark.api_endpoint("analysis_inventory")]
+
 
 # ============================================================
 # Fixtures — JWT, TestClient, mock row helpers

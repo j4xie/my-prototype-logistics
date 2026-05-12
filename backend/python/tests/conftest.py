@@ -288,3 +288,133 @@ async def c_provenance_pool():
         yield p
     finally:
         await p.close()
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Phase 2B-final — semantic endpoint coverage gate (Option B).
+#
+# Spec: docs/qa-audits/2026-05-12-python-migration-test-coverage-audit.md §6
+#
+# Every migrated endpoint in ``backend/python/smartbi_compat/api/`` must
+# have ≥3 tests bearing ``@pytest.mark.api_endpoint("<name>")`` (happy +
+# boundary + error per the §5 backfill template). Tag a test file by
+# adding to its top, after the imports::
+#
+#     pytestmark = [pytest.mark.api_endpoint("analysis_inventory")]
+#
+# Multi-endpoint files list each marker explicitly so the gate counts
+# every endpoint independently::
+#
+#     pytestmark = [
+#         pytest.mark.api_endpoint("datasource_upload"),
+#         pytest.mark.api_endpoint("datasource_preview"),
+#         ...
+#     ]
+#
+# Activation: the gate is **OFF by default** (Phase 2B backfill still in
+# flight). Activate in a follow-up PR by setting the env var in the CI
+# workflow once all 13 backfill chats have shipped::
+#
+#     env:
+#       CRETAS_TEST_ENDPOINT_GATE: "1"
+#
+# Local one-off check: ``CRETAS_TEST_ENDPOINT_GATE=1 pytest tests/``.
+# ═════════════════════════════════════════════════════════════════════
+import collections  # noqa: E402
+
+# Canonical 34 migrated endpoints — keep this list in sync with
+# ``@router.<verb>(...)`` decorators in ``smartbi_compat/api/*.py``.
+KNOWN_ENDPOINTS = frozenset({
+    # analysis.py — 4 read endpoints
+    "analysis_query_templates_list",
+    "analysis_datasource_list",
+    "analysis_alerts",
+    "analysis_recommendations",
+    # analysis_finance.py — composite + 3 sub-paths
+    "analysis_finance",
+    "analysis_finance_budget_achievement",
+    "analysis_finance_yoy_mom",
+    "analysis_finance_category_comparison",
+    # Single-endpoint analysis modules
+    "analysis_department",
+    "analysis_drilldown",
+    "analysis_inventory",
+    "analysis_procurement",
+    "analysis_production",
+    "analysis_quality",
+    "analysis_region",
+    "analysis_sales",
+    # config_thresholds.py — CRUD + reload
+    "config_thresholds_list",
+    "config_thresholds_create",
+    "config_thresholds_update",
+    "config_thresholds_delete",
+    "config_thresholds_reload",
+    # dashboard.py — single endpoint
+    "dashboard_data_date_range",
+    # dashboard_composite.py — 3 endpoints
+    "dashboard_composite_executive",
+    "dashboard_composite_executive_custom",
+    "dashboard_composite_main",
+    # datasource.py — 5 endpoints
+    "datasource_fields",
+    "datasource_history",
+    "datasource_upload",
+    "datasource_preview",
+    "datasource_apply",
+    # incentive_plan.py — single endpoint
+    "incentive_plan",
+    # query_templates_write.py — POST/PUT/DELETE
+    "query_templates_create",
+    "query_templates_update",
+    "query_templates_delete",
+})
+assert len(KNOWN_ENDPOINTS) == 34, (
+    f"KNOWN_ENDPOINTS size {len(KNOWN_ENDPOINTS)}, expected 34 — "
+    "update audit §1 + this set together"
+)
+
+_ENDPOINT_GATE_ENV = "CRETAS_TEST_ENDPOINT_GATE"
+_MIN_TESTS_PER_ENDPOINT = 3
+
+
+def pytest_collection_modifyitems(config, items):
+    """Endpoint coverage gate (Option B).
+
+    Counts ``api_endpoint`` markers across collected test items; when the
+    env var is set to ``"1"`` and any endpoint in ``KNOWN_ENDPOINTS`` has
+    fewer than ``_MIN_TESTS_PER_ENDPOINT`` tests, fail collection. Also
+    reports markers that don't appear in ``KNOWN_ENDPOINTS`` (typo
+    catcher).
+    """
+    if os.environ.get(_ENDPOINT_GATE_ENV) != "1":
+        return
+
+    counts: collections.Counter = collections.Counter()
+    for item in items:
+        for marker in item.iter_markers(name="api_endpoint"):
+            if not marker.args:
+                continue
+            counts[marker.args[0]] += 1
+
+    missing = sorted(
+        e for e in KNOWN_ENDPOINTS if counts.get(e, 0) < _MIN_TESTS_PER_ENDPOINT
+    )
+    unknown = sorted(set(counts) - KNOWN_ENDPOINTS)
+
+    parts = []
+    if missing:
+        parts.append(
+            f"{len(missing)} endpoint(s) have <{_MIN_TESTS_PER_ENDPOINT} tests: "
+            f"{missing}"
+        )
+    if unknown:
+        parts.append(
+            f"{len(unknown)} unknown endpoint marker(s) (typo or "
+            f"missing from KNOWN_ENDPOINTS in conftest.py): {unknown}"
+        )
+    if parts:
+        pytest.exit(
+            "Phase 2B endpoint coverage gate FAILED — " + "; ".join(parts),
+            returncode=1,
+        )

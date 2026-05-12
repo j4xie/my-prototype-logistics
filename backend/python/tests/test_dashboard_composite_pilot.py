@@ -28,6 +28,16 @@ import pytest
 from smartbi_compat.api import dashboard_composite as dc
 from smartbi_compat.date_range import DateRange
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+# This file covers all 3 /dashboard composite endpoints via the
+# `_build_executive_dashboard` / `_build_unified_dashboard` build functions
+# the endpoints delegate to (executive / executive/custom / dashboard).
+pytestmark = [
+    pytest.mark.api_endpoint("dashboard_composite_executive"),
+    pytest.mark.api_endpoint("dashboard_composite_executive_custom"),
+    pytest.mark.api_endpoint("dashboard_composite_main"),
+]
+
 
 # ============================================================
 # _resolve_period

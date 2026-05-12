@@ -87,6 +87,9 @@ from smartbi_compat.api.analysis_department import (  # noqa: E402
 )
 from smartbi_compat.auth import JWT_ALGORITHM  # noqa: E402
 
+# Phase 2B endpoint coverage marker (see conftest.py KNOWN_ENDPOINTS).
+pytestmark = [pytest.mark.api_endpoint("analysis_department")]
+
 
 JWT_SECRET = "phase-2b2-dept-pilot-test-secret"
 
