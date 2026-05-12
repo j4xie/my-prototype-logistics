@@ -1223,6 +1223,8 @@ try:
     app.include_router(smartbi_compat_incentive_plan.router, tags=["SmartBI Compat: Incentive Plan"])
     from smartbi_compat.api import query_templates_write as smartbi_compat_query_templates_write
     app.include_router(smartbi_compat_query_templates_write.router, tags=["SmartBI Compat: Query Templates Write"])
+    from smartbi_compat.api import config_thresholds as smartbi_compat_config_thresholds
+    app.include_router(smartbi_compat_config_thresholds.router, tags=["SmartBI Compat: Config Thresholds"])
     _smartbi_compat_available = True
     logger.info("SmartBI compat routes registered (Phase 2A)")
 except ImportError as e:
