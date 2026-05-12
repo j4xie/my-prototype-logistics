@@ -9,6 +9,7 @@ import com.cretas.aims.dto.batch.WorkerCheckoutDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.dto.processing.CreateMaterialReceiptRequest;
 import com.cretas.aims.dto.processing.CreateProductionBatchRequest;
 import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
 import com.cretas.aims.dto.quality.*;
@@ -298,8 +299,10 @@ public class ProcessingController {
     public ApiResponse<MaterialBatch> createMaterialReceipt(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestHeader(value = "Authorization", required = false) @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...") String authorization,
-            @RequestBody @Parameter(description = "原材料批次信息") MaterialBatch materialBatch) {
-        log.info("原材料接收: factoryId={}, batchNumber={}", factoryId, materialBatch.getBatchNumber());
+            @Valid @RequestBody @Parameter(description = "原材料接收请求") CreateMaterialReceiptRequest request) {
+        log.info("原材料接收: factoryId={}, batchNumber={}", factoryId, request.getBatchNumber());
+
+        MaterialBatch materialBatch = toMaterialBatch(request);
 
         // 获取当前用户ID（如果提供了token）
         Long userId = null;
@@ -944,7 +947,7 @@ public class ProcessingController {
         return ApiResponse.success(result);
     }
 
-    // ========== Request DTO → Entity mappers (Rule 17.1 cleanup, PR #370, Issue #384 batch 3) ==========
+    // ========== Request DTO → Entity mappers (Rule 17.1 cleanup, PR #370, Issue #384 batches 3+4) ==========
 
     /**
      * Map {@link CreateProductionBatchRequest} → {@link ProductionBatch} entity.
@@ -988,6 +991,56 @@ public class ProcessingController {
             b.setPhotoRequired(r.getPhotoRequired());
         }
         b.setSopConfigId(r.getSopConfigId());
+        if (r.getCustomFields() != null) {
+            b.setCustomFields(r.getCustomFields());
+        }
+        return b;
+    }
+
+    /**
+     * Map {@link CreateMaterialReceiptRequest} → {@link MaterialBatch} entity.
+     *
+     * <p>This mapper deliberately does <strong>not</strong> apply any
+     * defaults: {@link com.cretas.aims.service.impl.ProcessingServiceImpl#createMaterialReceipt}
+     * is the single owner of the defaulting logic (factoryId from path,
+     * status=AVAILABLE, usedQuantity=ZERO, reservedQuantity=ZERO,
+     * quantityUnit from materialType-or-"公斤", weightPerUnit=ONE,
+     * unitPrice=ZERO, purchaseDate synced from receiptDate). Duplicating
+     * those defaults here would create two sources of truth and risk drift;
+     * we just propagate user-provided fields and let the service finish
+     * the work.
+     *
+     * <p>Auto-managed by service / controller path-variable / DB:
+     * {@code id}, {@code factoryId}, {@code status}, {@code usedQuantity},
+     * {@code reservedQuantity}, {@code purchaseDate}, {@code createdAt},
+     * {@code updatedAt}, {@code deletedAt}, {@code version},
+     * {@code createdBy} (set above from JWT token), {@code lastUsedAt}.
+     *
+     * <p>FE wire format aliases are resolved by Jackson via {@code @JsonAlias}
+     * on the DTO (quantity → receiptQuantity, receivedDate → receiptDate,
+     * unit → quantityUnit), so the mapper just propagates the resolved
+     * fields onto the entity.
+     */
+    private static MaterialBatch toMaterialBatch(CreateMaterialReceiptRequest r) {
+        MaterialBatch b = new MaterialBatch();
+        b.setBatchNumber(r.getBatchNumber());
+        b.setMaterialTypeId(r.getMaterialTypeId());
+        b.setSupplierId(r.getSupplierId());
+        b.setReceiptDate(r.getReceiptDate());
+        b.setProductionDate(r.getProductionDate());
+        b.setExpireDate(r.getExpireDate());
+        b.setReceiptQuantity(r.getReceiptQuantity());
+        if (r.getQuantityUnit() != null) {
+            b.setQuantityUnit(r.getQuantityUnit());
+        }
+        b.setWeightPerUnit(r.getWeightPerUnit());
+        b.setUnitPrice(r.getUnitPrice());
+        b.setStorageLocation(r.getStorageLocation());
+        b.setQualityCertificate(r.getQualityCertificate());
+        b.setNotes(r.getNotes());
+        if (r.getWarehouseId() != null) {
+            b.setWarehouseId(r.getWarehouseId());
+        }
         if (r.getCustomFields() != null) {
             b.setCustomFields(r.getCustomFields());
         }
