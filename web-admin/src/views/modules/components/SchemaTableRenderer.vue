@@ -130,6 +130,23 @@ function getStatusLabel(status: string): string {
 function isStatusField(field: EffectiveField): boolean {
   return field.code === 'status' || field.extra?.formatter === 'status'
 }
+
+/**
+ * P1-D (PR #442 follow-up): RBAC defense-in-depth check used by the table cell template.
+ * Mirrors the static-Vue ``v-if="row.totalAmount != null"`` pattern from
+ * ``procurement/orders/list.vue`` line 489-491 etc., so warehouse / quality_inspector /
+ * operator roles see "—" (em-dash) for stripped price columns instead of formatter
+ * fallback "-" (hyphen-minus). Backend strip lands as null via
+ * ``PriceFieldResponseAdvice`` (PR #423) + ``PriceSensitiveSerializerModifier`` (PR #443).
+ *
+ * The flag is sourced from ``field.extra.priceSensitive`` (set per-column in the
+ * module_schemas seed migration, see V20260513_01).
+ */
+function isPriceSensitiveNull(row: Record<string, unknown>, field: EffectiveField): boolean {
+  if (field.extra?.priceSensitive !== true) return false
+  const value = resolveDisplayValue(row, field)
+  return value === null || value === undefined
+}
 </script>
 
 <template>
@@ -163,6 +180,19 @@ function isStatusField(field: EffectiveField): boolean {
           >
             {{ getStatusLabel(String(row[field.code] || '')) }}
           </el-tag>
+          <!--
+            P1-D (PR #442 follow-up): mirror the static-Vue v-if defense from
+            procurement/orders/list.vue + procurement/receives/list.vue + sales/orders/list.vue.
+            Backend PriceFieldResponseAdvice (PR #423) + PriceSensitiveSerializerModifier (PR #443)
+            already strip @PriceSensitive fields to null for roles lacking procurement:price:view —
+            this branch renders the stripped null as em-dash "—" with .price-masked class so the
+            UX matches the legacy hardcoded-template defense path. Without this branch the cell
+            would fall through to formatCell() which returns "-" (hyphen-minus) without semantic class.
+          -->
+          <span
+            v-else-if="isPriceSensitiveNull(row, field)"
+            class="price-masked"
+          >—</span>
           <!-- 其他字段用 formatter; reference 字段优先显示 joined name (Bug I) -->
           <span v-else>{{ formatCell(resolveDisplayValue(row, field), field) }}</span>
         </template>
