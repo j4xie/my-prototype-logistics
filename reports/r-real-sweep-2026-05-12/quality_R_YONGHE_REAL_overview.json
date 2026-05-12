@@ -1,0 +1,658 @@
+{
+  "factory": "R_YONGHE_REAL",
+  "java_base": "http://localhost:10020",
+  "python_base": "http://localhost:8083",
+  "endpoints_tested": 1,
+  "endpoints_matched": 1,
+  "endpoints_diverged": 0,
+  "match_rate": 100.0,
+  "total_real_bugs": 0,
+  "total_pattern_a": 0,
+  "total_pattern_b": 17,
+  "endpoints_in_pattern_b_context": 1,
+  "timestamp": "2026-05-12T10:56:44",
+  "results": [
+    {
+      "endpoint": "/api/mobile/{factory_id}/smart-bi/analysis/quality",
+      "params": "analysisType=overview&startDate=2026-01-01&endDate=2026-01-31",
+      "verdict": "match",
+      "java_http": 200,
+      "python_http": 200,
+      "java_size": 7576,
+      "python_size": 889,
+      "java_lat_s": 0.006,
+      "python_lat_s": 0.004,
+      "java_error": null,
+      "python_error": null,
+      "dict_eq": {
+        "match": true,
+        "total_leaves": 8,
+        "matched_leaves": 8,
+        "pattern_b_context": true,
+        "diverges": [],
+        "tolerated_byte_diffs": [
+          {
+            "path": "data.tenantType",
+            "java": "<missing>",
+            "python": "RESTAURANT",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.aiInsights",
+            "java": [
+              {
+                "level": "YELLOW",
+                "category": "FPY",
+                "message": "首次通过率为 95.31%，有提升空间",
+                "relatedEntity": null,
+                "actionSuggestion": "建议关注主要不良类型，制定质量改进计划"
+              },
+              {
+                "level": "RED",
+                "category": "客户投诉",
+                "message": "客户投诉数达到 368 件，需要重点关注",
+                "relatedEntity": null,
+                "actionSuggestion": "建议分析投诉原因，制定客户投诉处理和预防措施"
+              }
+            ],
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.alerts",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.chartList",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.charts",
+            "java": {
+              "quality_trend": {
+                "chartType": "LINE",
+                "title": "质量趋势",
+                "seriesField": "metric",
+                "data": [
+                  {
+                    "date": "2026-01-01",
+                    "fpy": 95.41,
+                    "defectRate": 4.59,
+                    "totalInspections": 2286
+                  },
+                  {
+                    "date": "2026-01-02",
+                    "fpy": 94.43,
+                    "defectRate": 5.57,
+                    "totalInspections": 2873
+                  },
+                  {
+                    "date": "2026-01-03",
+                    "fpy": 95.7,
+                    "defectRate": 4.3,
+                    "totalInspections": 2348
+                  },
+                  {
+                    "date": "2026-01-04",
+                    "fpy": 95.14,
+                    "defectRate": 4.86,
+                    "totalInspections": 2386
+                  },
+                  {
+                    "date": "2026-01-05",
+                    "fpy": 94.8,
+                    "defectRate": 5.2,
+                    "totalInspections": 2441
+                  },
+                  {
+                    "date": "2026-01-06",
+                    "fpy": 95.93,
+                    "defectRate": 4.07,
+                    "totalInspections": 2382
+                  },
+                  {
+                    "date": "2026-01-07",
+                    "fpy": 95.67,
+                    "defectRate": 4.33,
+                    "totalInspections": 2377
+                  },
+                  {
+                    "date": "2026-01-08",
+                    "fpy": 95.21,
+                    "defectRate": 4.79,
+                    "totalInspections": 2275
+                  },
+                  {
+                    "date": "2026-01-09",
+                    "fpy": 94.01,
+                    "defectRate": 5.99,
+                    "totalInspections": 2289
+                  },
+                  {
+                    "date": "2026-01-10",
+                    "fpy": 95.6,
+                    "defectRate": 4.4,
+                    "totalInspections": 2525
+                  },
+                  {
+                    "date": "2026-01-11",
+                    "fpy": 95.63,
+                    "defectRate": 4.37,
+                    "totalInspections": 1947
+                  },
+                  {
+                    "date": "2026-01-12",
+                    "fpy": 96.41,
+                    "defectRate": 3.59,
+                    "totalInspections": 2229
+                  },
+                  {
+                    "date": "2026-01-13",
+                    "fpy": 95.15,
+                    "defectRate": 4.85,
+                    "totalInspections": 2724
+                  },
+                  {
+                    "date": "2026-01-14",
+                    "fpy": 95.33,
+                    "defectRate": 4.67,
+                    "totalInspections": 2120
+                  },
+                  {
+                    "date": "2026-01-15",
+                    "fpy": 94.98,
+                    "defectRate": 5.02,
+                    "totalInspections": 2612
+                  },
+                  {
+                    "date": "2026-01-16",
+                    "fpy": 95.76,
+                    "defectRate": 4.24,
+                    "totalInspections": 2526
+                  },
+                  {
+                    "date": "2026-01-17",
+                    "fpy": 95.5,
+                    "defectRate": 4.5,
+                    "totalInspections": 2443
+                  },
+                  {
+                    "date": "2026-01-18",
+                    "fpy": 95.33,
+                    "defectRate": 4.67,
+                    "totalInspections": 2226
+                  },
+                  {
+                    "date": "2026-01-19",
+                    "fpy": 95.9,
+                    "defectRate": 4.1,
+                    "totalInspections": 2559
+                  },
+                  {
+                    "date": "2026-01-20",
+                    "fpy": 95.69,
+                    "defectRate": 4.31,
+                    "totalInspections": 2156
+                  },
+                  {
+                    "date": "2026-01-21",
+                    "fpy": 95.28,
+                    "defectRate": 4.72,
+                    "totalInspections": 2456
+                  },
+                  {
+                    "date": "2026-01-22",
+                    "fpy": 95.43,
+                    "defectRate": 4.57,
+                    "totalInspections": 2536
+                  },
+                  {
+                    "date": "2026-01-23",
+                    "fpy": 94.95,
+                    "defectRate": 5.05,
+                    "totalInspections": 2338
+                  },
+                  {
+                    "date": "2026-01-24",
+                    "fpy": 94.5,
+                    "defectRate": 5.5,
+                    "totalInspections": 2455
+                  },
+                  {
+                    "date": "2026-01-25",
+                    "fpy": 95.75,
+                    "defectRate": 4.25,
+                    "totalInspections": 2280
+                  },
+                  {
+                    "date": "2026-01-26",
+                    "fpy": 95.73,
+                    "defectRate": 4.27,
+                    "totalInspections": 2317
+                  },
+                  {
+                    "date": "2026-01-27",
+                    "fpy": 95.21,
+                    "defectRate": 4.79,
+                    "totalInspections": 2505
+                  },
+                  {
+                    "date": "2026-01-28",
+                    "fpy": 94.75,
+                    "defectRate": 5.25,
+                    "totalInspections": 2094
+                  },
+                  {
+                    "date": "2026-01-29",
+                    "fpy": 94.57,
+                    "defectRate": 5.43,
+                    "totalInspections": 2303
+                  },
+                  {
+                    "date": "2026-01-30",
+                    "fpy": 95.13,
+                    "defectRate": 4.87,
+                    "totalInspections": 2299
+                  },
+                  {
+                    "date": "2026-01-31",
+                    "fpy": 95.93,
+                    "defectRate": 4.07,
+                    "totalInspections": 2188
+                  }
+                ],
+                "options": {
+                  "showLegend": true,
+                  "multiLine": true,
+                  "yAxisMax": 100
+                },
+                "xaxisField": "date",
+                "yaxisField": "fpy"
+              },
+              "defect_pareto": {
+                "chartType": "BAR",
+                "title": "不良类型帕累托分析",
+                "seriesField": "metric",
+                "data": [
+                  {
+                    "defectType": "材料缺陷",
+                    "count": 962,
+                    "percentage": 27.89,
+                    "cumulative": 27.89
+                  },
+                  {
+                    "defectType": "外观缺陷",
+                    "count": 730,
+                    "percentage": 21.17,
+                    "cumulative": 49.06
+                  },
+                  {
+                    "defectType": "功能故障",
+                    "count": 639,
+                    "percentage": 18.53,
+                    "cumulative": 67.59
+                  },
+                  {
+                    "defectType": "装配不良",
+                    "count": 617,
+                    "percentage": 17.89,
+                    "cumulative": 85.48
+                  },
+                  {
+                    "defectType": "尺寸偏差",
+                    "count": 501,
+                    "percentage": 14.53,
+                    "cumulative": 100.01
+                  }
+                ],
+                "options": {
+                  "showCumulativeLine": true,
+                  "showPercentage": true
+                },
+                "xaxisField": "defectType",
+                "yaxisField": "count"
+              },
+              "quality_cost_distribution": {
+                "chartType": "PIE",
+                "title": "质量成本分布",
+                "seriesField": null,
+                "data": [
+                  {
+                    "category": "返工成本",
+                    "cost": 43197.0
+                  },
+                  {
+                    "category": "报废成本",
+                    "cost": 119783.0
+                  }
+                ],
+                "options": {
+                  "showPercentage": true,
+                  "showLegend": true
+                },
+                "xaxisField": "category",
+                "yaxisField": "cost"
+              },
+              "product_line_quality": {
+                "chartType": "BAR",
+                "title": "产线质量对比",
+                "seriesField": "metric",
+                "data": [
+                  {
+                    "productionLine": "产线D",
+                    "fpy": 95.43,
+                    "defectRate": 4.57
+                  },
+                  {
+                    "productionLine": "产线B",
+                    "fpy": 95.42,
+                    "defectRate": 4.58
+                  },
+                  {
+                    "productionLine": "产线C",
+                    "fpy": 95.21,
+                    "defectRate": 4.79
+                  },
+                  {
+                    "productionLine": "产线A",
+                    "fpy": 95.18,
+                    "defectRate": 4.82
+                  }
+                ],
+                "options": {
+                  "showLegend": true,
+                  "grouped": true
+                },
+                "xaxisField": "productionLine",
+                "yaxisField": "fpy"
+              }
+            },
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.endDate",
+            "java": "2026-01-31",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.fromCache",
+            "java": false,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.kpiCards",
+            "java": [
+              {
+                "key": "FPY",
+                "title": "首次通过率 (FPY)",
+                "value": "95.31%",
+                "rawValue": 95.31,
+                "unit": "%",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "yellow",
+                "compareText": null,
+                "description": "首次检验通过数 / 总检验数",
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "DEFECT_RATE",
+                "title": "不良率",
+                "value": "4.69%",
+                "rawValue": 4.69,
+                "unit": "%",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "yellow",
+                "compareText": null,
+                "description": "不良品数 / 总检验数",
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "REWORK_COST",
+                "title": "返工成本",
+                "value": "43,197.00",
+                "rawValue": 43197.0,
+                "unit": "元",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "green",
+                "compareText": null,
+                "description": null,
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "SCRAP_COST",
+                "title": "报废成本",
+                "value": "119,783.00",
+                "rawValue": 119783.0,
+                "unit": "元",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "green",
+                "compareText": null,
+                "description": null,
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "TOTAL_QUALITY_COST",
+                "title": "质量成本总计",
+                "value": "162,980.00",
+                "rawValue": 162980.0,
+                "unit": "元",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "green",
+                "compareText": null,
+                "description": null,
+                "targetValue": null,
+                "completionRate": null
+              },
+              {
+                "key": "CUSTOMER_COMPLAINT_COUNT",
+                "title": "客户投诉数",
+                "value": "368 件",
+                "rawValue": 368,
+                "unit": "件",
+                "change": null,
+                "changeRate": null,
+                "trend": "flat",
+                "status": "red",
+                "compareText": null,
+                "description": null,
+                "targetValue": null,
+                "completionRate": null
+              }
+            ],
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.metricCards",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.period",
+            "java": "CUSTOM",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.rankings",
+            "java": {
+              "defect_type": [
+                {
+                  "rank": 1,
+                  "name": "材料缺陷",
+                  "value": 962,
+                  "target": null,
+                  "completionRate": 27.89,
+                  "alertLevel": "RED"
+                },
+                {
+                  "rank": 2,
+                  "name": "外观缺陷",
+                  "value": 730,
+                  "target": null,
+                  "completionRate": 21.17,
+                  "alertLevel": "RED"
+                },
+                {
+                  "rank": 3,
+                  "name": "功能故障",
+                  "value": 639,
+                  "target": null,
+                  "completionRate": 18.53,
+                  "alertLevel": "RED"
+                },
+                {
+                  "rank": 4,
+                  "name": "装配不良",
+                  "value": 617,
+                  "target": null,
+                  "completionRate": 17.89,
+                  "alertLevel": "GREEN"
+                },
+                {
+                  "rank": 5,
+                  "name": "尺寸偏差",
+                  "value": 501,
+                  "target": null,
+                  "completionRate": 14.53,
+                  "alertLevel": "GREEN"
+                }
+              ],
+              "product_line": [
+                {
+                  "rank": 1,
+                  "name": "产线D",
+                  "value": 95.43,
+                  "target": 98,
+                  "completionRate": 97.38,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 2,
+                  "name": "产线B",
+                  "value": 95.42,
+                  "target": 98,
+                  "completionRate": 97.37,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 3,
+                  "name": "产线C",
+                  "value": 95.21,
+                  "target": 98,
+                  "completionRate": 97.15,
+                  "alertLevel": "YELLOW"
+                },
+                {
+                  "rank": 4,
+                  "name": "产线A",
+                  "value": 95.18,
+                  "target": 98,
+                  "completionRate": 97.12,
+                  "alertLevel": "YELLOW"
+                }
+              ]
+            },
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.recommendations",
+            "java": null,
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.startDate",
+            "java": "2026-01-01",
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.suggestions",
+            "java": [
+              "主要不良类型为：材料缺陷、外观缺陷、功能故障，建议优先改善",
+              "返工率较高，建议评估返工工艺，考虑是否可通过工艺改进降低返工率",
+              "报废成本高于返工成本，建议评估是否可以通过返工挽救更多不良品"
+            ],
+            "python": "<missing>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.kpis",
+            "java": "<missing>",
+            "python": [
+              {
+                "metricCode": "FOOD_SAFETY_INCIDENT_RATE",
+                "value": null,
+                "unit": "incidents_per_period",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "MISSING_FOOD_SAFETY_INCIDENT_LOG"
+              },
+              {
+                "metricCode": "COMPLAINT_RATE",
+                "value": null,
+                "unit": "%",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "NO_REVIEW_DATA_FOR_CHAIN"
+              },
+              {
+                "metricCode": "DISH_RETURN_RATE",
+                "value": null,
+                "unit": "%",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "NO_POS_DATA_FOR_PERIOD"
+              },
+              {
+                "metricCode": "WASTAGE_RATE",
+                "value": null,
+                "unit": "%",
+                "trend": null,
+                "alertLevel": null,
+                "dataAvailability": "WASTAGE_NOT_TRACKED"
+              }
+            ],
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.recentChanges",
+            "java": "<missing>",
+            "python": [],
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.overview.summary",
+            "java": "<missing>",
+            "python": "Restaurant quality analytics (R_YONGHE_REAL)",
+            "classification": "PATTERN_B_STRUCTURAL"
+          }
+        ]
+      }
+    }
+  ]
+}

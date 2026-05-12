@@ -1,0 +1,62 @@
+{
+  "factory": "R_JINCHUAN_HG_REAL",
+  "java_base": "http://localhost:10020",
+  "python_base": "http://localhost:8083",
+  "endpoints_tested": 1,
+  "endpoints_matched": 1,
+  "endpoints_diverged": 0,
+  "match_rate": 100.0,
+  "total_real_bugs": 0,
+  "total_pattern_a": 0,
+  "total_pattern_b": 4,
+  "endpoints_in_pattern_b_context": 1,
+  "timestamp": "2026-05-12T10:56:41",
+  "results": [
+    {
+      "endpoint": "/api/mobile/{factory_id}/smart-bi/analysis/production",
+      "params": "analysisType=equipment&startDate=2026-01-01&endDate=2026-01-31",
+      "verdict": "match",
+      "java_http": 200,
+      "python_http": 200,
+      "java_size": 2356,
+      "python_size": 273,
+      "java_lat_s": 0.008,
+      "python_lat_s": 0.004,
+      "java_error": null,
+      "python_error": null,
+      "dict_eq": {
+        "match": true,
+        "total_leaves": 9,
+        "matched_leaves": 8,
+        "pattern_b_context": true,
+        "diverges": [],
+        "tolerated_byte_diffs": [
+          {
+            "path": "data.tenantType",
+            "java": "<missing>",
+            "python": "RESTAURANT",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.downtimeChart",
+            "java": "<dict>",
+            "python": null,
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.metrics",
+            "java": "<list len=5>",
+            "python": "<list len=0>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          },
+          {
+            "path": "data.ranking",
+            "java": "<list len=5>",
+            "python": "<list len=0>",
+            "classification": "PATTERN_B_STRUCTURAL"
+          }
+        ]
+      }
+    }
+  ]
+}
