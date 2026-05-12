@@ -19,7 +19,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Strips fields annotated with {@link PriceSensitive} from response bodies
@@ -81,6 +84,138 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
 
     /** Package prefix of project-owned classes — only descend into these to avoid jdk/lib introspection. */
     private static final String PROJECT_PACKAGE = "com.cretas.aims";
+
+    // ───────── Nested-Map key-pattern stripping (P0 PR #470 root-cause fix, 2026-05-12) ─────────
+    //
+    // SmartBI analysis endpoints return Map<String, Object> payloads (rankings,
+    // charts, heatmap, aiInsights, kpiCards, …) where price-bearing values live
+    // under semantic key names rather than annotated entity fields. The reflective
+    // walk above only nulls @PriceSensitive fields — Map entries have no
+    // annotations, so they slipped through. PR #470 (chat1 R3 finance-l4-deep audit)
+    // documents 8+ leaking endpoints.
+    //
+    // This pass complements (does not replace) the field-stripping above:
+    //   1. While walking a Map<String, Object>, we track the ancestor key path.
+    //   2. If the current key is a known "price value key" AND the path contains
+    //      a recognized "price container" segment, replace the value with null.
+    //   3. The key 'formattedValue' is treated as price data anywhere (never
+    //      occurs as a non-monetary identifier in our codebase) — without this
+    //      bypass, sibling fields like {value: null, formattedValue: "23M"} keep
+    //      leaking after value-stripping.
+    //   4. For aiInsights[].message-like text, amount-shaped substrings
+    //      (e.g. "23,075,969.60", "¥2,440,637.80", "1.2万") are replaced with
+    //      "[REDACTED]" so embedded numbers don't slip through prose.
+    //   5. Under "dynamic-key" containers (trendComparison.data[]) where the
+    //      Map key IS the department / region name, numeric values are nulled.
+    //
+    // Precision guard: outside a price-container path we do NOT touch keys like
+    // 'value' or 'amount' — they're too ambiguous (could be a count, enum, etc.).
+
+    /** Keys whose value is price data when nested under a price-container path. */
+    private static final Set<String> PRICE_VALUE_KEYS = Set.of(
+            "value",
+            "target",
+            "currentSales",
+            "previousSales",
+            "currentRevenue",
+            "previousRevenue",
+            "completionRate",
+            "grossMargin",
+            "netMargin",
+            "grossProfit",
+            "netProfit",
+            "amount",
+            "revenue",
+            "profit",
+            "sales",
+            "totalAmount",
+            "totalValue",
+            "growth",
+            "growthRate"
+    );
+
+    /**
+     * Keys that always carry price data, regardless of ancestor path. The
+     * 'formattedValue' name is a Cretas SmartBI convention for the
+     * display-formatted twin of a numeric metric, so it is never a non-monetary
+     * field.
+     */
+    private static final Set<String> ALWAYS_PRICE_KEYS = Set.of(
+            "formattedValue"
+    );
+
+    /**
+     * Path segments that indicate the current sub-graph contains price-bearing
+     * values. Match is case-insensitive and supports the {@code *Ranking}
+     * suffix family (salespersonRanking, customerRanking, productRanking,
+     * supplierRanking, regionRanking, …) plus singular {@code ranking}.
+     */
+    private static final Pattern PRICE_CONTAINER_PATH_REGEX = Pattern.compile(
+            "(?i)^(" +
+                    "rankings?" +
+                    "|.*Ranking" +
+                    "|charts?" +
+                    "|heatmap" +
+                    "|opportunityScores" +
+                    "|targetCompletion" +
+                    "|trendComparison" +
+                    "|trendChart" +
+                    "|trendData" +
+                    "|kpiCards?" +
+                    "|metrics" +
+                    "|aiInsights" +
+                    "|insights" +
+                    "|roi|ROI" +
+                    "|performance" +
+                    "|categoryDistribution" +
+                    "|productCategoryDistribution" +
+                    "|agingBuckets?" +
+                    "|inventoryValuation" +
+                    ")$"
+    );
+
+    /** Path segments where dynamic Map keys (e.g. department name) are the column header for numeric price data. */
+    private static final Pattern DYNAMIC_KEY_PRICE_CONTAINER_REGEX = Pattern.compile(
+            "(?i)^(trendComparison|trendChart|crosstab|pivot)$"
+    );
+
+    /** Path segments where text values may embed monetary amounts that need redaction. */
+    private static final Pattern AI_INSIGHT_PATH_REGEX = Pattern.compile(
+            "(?i)^(aiInsights|insights|llmInsights|narrative|narratives)$"
+    );
+
+    /** Keys whose String value should have amount substrings redacted under AI_INSIGHT path. */
+    private static final Set<String> AI_INSIGHT_TEXT_KEYS = Set.of(
+            "message",
+            "description",
+            "summary",
+            "narrative",
+            "explanation",
+            "detail",
+            "content"
+    );
+
+    /** Keys we preserve under dynamic-key containers (timestamps, identifiers, counts). */
+    private static final Set<String> DYNAMIC_KEY_PRESERVE_KEYS = Set.of(
+            "rank", "count", "date", "name", "id", "label", "key", "type",
+            "status", "category", "period", "groupBy", "startDate", "endDate",
+            "factoryId", "year", "month", "week", "day", "quarter", "x", "y"
+    );
+
+    /**
+     * Amount-shaped substring detector for AI-insight text redaction. Matches:
+     *   • Currency-prefixed: ¥1,234.56 / ￥123 / $1,000
+     *   • Comma-grouped: 1,234,567.89 (≥1 comma group required to avoid plain "123")
+     *   • Suffix-units: 1.2万 / 23亿 / 5000 元 / 1234 RMB / 999 CNY
+     */
+    private static final Pattern AMOUNT_PATTERN = Pattern.compile(
+            "[¥￥$]\\s*[0-9]+(?:[,.][0-9]+)*"
+                    + "|[0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]+)?"
+                    + "|[0-9]+(?:\\.[0-9]+)?\\s*(?:元|万|亿|RMB|CNY)"
+    );
+
+    /** Sentinel inserted in AI-insight text to replace matched amount substrings. */
+    private static final String REDACTED_AMOUNT_PLACEHOLDER = "[REDACTED]";
 
     @Autowired
     private PermissionService permissionService;
@@ -142,7 +277,7 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
 
         // User lacks price view permission — strip @PriceSensitive fields recursively.
         try {
-            stripPriceFields(body, new IdentityHashMap<>());
+            stripPriceFields(body, new IdentityHashMap<>(), new ArrayDeque<>());
         } catch (Exception e) {
             // Defensive: never fail the response on a stripping error. Log and
             // pass through the body — admin-role parity preserved (no regression).
@@ -167,8 +302,14 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
      * Recursively visit the response body graph and null-out any field annotated
      * with {@link PriceSensitive}. Visits collections (List/Set), maps and
      * nested project objects. Skips JDK types (String, Number, Date, etc).
+     *
+     * <p>The {@code pathStack} parameter tracks ancestor Map keys / collection
+     * descents so the Map-walking branch can apply path-aware key-pattern
+     * stripping for SmartBI analysis payloads (PR #470 root-cause fix).
      */
-    private void stripPriceFields(Object obj, IdentityHashMap<Object, Boolean> visited) {
+    private void stripPriceFields(Object obj,
+                                   IdentityHashMap<Object, Boolean> visited,
+                                   Deque<String> pathStack) {
         if (obj == null) {
             return;
         }
@@ -182,16 +323,18 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
         // their contents are what we care about).
         if (obj instanceof Collection<?>) {
             for (Object item : (Collection<?>) obj) {
-                stripPriceFields(item, visited);
+                stripPriceFields(item, visited, pathStack);
             }
             return;
         }
 
-        // Map — recurse into values (keys are typically String / primitive)
+        // Map — walk entries with path-aware key-pattern stripping. Each entry's
+        // key is pushed onto pathStack so descendants can detect their ancestor
+        // context (e.g. "we're inside salespersonRanking"). Falls back to plain
+        // value-recursion when the key/path combination doesn't match a
+        // price-pattern.
         if (obj instanceof Map<?, ?>) {
-            for (Object value : ((Map<?, ?>) obj).values()) {
-                stripPriceFields(value, visited);
-            }
+            walkMapForKeyPatternStripping((Map<?, ?>) obj, visited, pathStack);
             return;
         }
 
@@ -199,7 +342,7 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
         if (clazz.isArray() && !clazz.getComponentType().isPrimitive()) {
             Object[] arr = (Object[]) obj;
             for (Object item : arr) {
-                stripPriceFields(item, visited);
+                stripPriceFields(item, visited, pathStack);
             }
             return;
         }
@@ -222,7 +365,7 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
         if (CLEAN_CLASSES.contains(clazz)) {
             // Class has no @PriceSensitive fields anywhere — still descend
             // into non-primitive fields (graph may contain dirty children)
-            descendChildren(obj, clazz, visited);
+            descendChildren(obj, clazz, visited, pathStack);
             return;
         }
 
@@ -235,11 +378,132 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
             }
         }
 
-        descendChildren(obj, clazz, visited);
+        descendChildren(obj, clazz, visited, pathStack);
+    }
+
+    /**
+     * Iterate a Map's entries and apply PR #470 key-pattern stripping rules.
+     * When a Map is immutable, individual entry mutations are silently skipped
+     * (graceful degrade — better to leak than to 500 the entire response).
+     */
+    @SuppressWarnings("unchecked")
+    private void walkMapForKeyPatternStripping(Map<?, ?> rawMap,
+                                                IdentityHashMap<Object, Boolean> visited,
+                                                Deque<String> pathStack) {
+        boolean inPriceContainer = pathContainsPriceContainer(pathStack);
+        boolean inAIInsight = pathContainsAIInsight(pathStack);
+        boolean inDynamicContainer = pathContainsDynamicPriceContainer(pathStack);
+
+        // Iterate via entrySet so we can mutate values in-place.
+        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+            String key = entry.getKey() == null ? "" : String.valueOf(entry.getKey());
+            Object value = entry.getValue();
+
+            pathStack.push(key);
+            try {
+                // Rule 1 — keys that are always price-data regardless of path
+                // (formattedValue is Cretas-specific naming, never non-monetary).
+                if (ALWAYS_PRICE_KEYS.contains(key) && isLeafScalar(value)) {
+                    trySetEntryNull((Map.Entry<Object, Object>) entry, "ALWAYS_PRICE_KEY");
+                    continue;
+                }
+
+                // Rule 2 — known price-value keys inside a price-container path.
+                if (inPriceContainer && PRICE_VALUE_KEYS.contains(key) && isLeafScalar(value)) {
+                    trySetEntryNull((Map.Entry<Object, Object>) entry, "PRICE_VALUE_KEY in container");
+                    continue;
+                }
+
+                // Rule 3 — AI-insight prose: redact amount-shaped substrings.
+                if (inAIInsight && AI_INSIGHT_TEXT_KEYS.contains(key) && value instanceof String) {
+                    String redacted = redactAmounts((String) value);
+                    if (!redacted.equals(value)) {
+                        trySetEntryValue((Map.Entry<Object, Object>) entry, redacted, "AI_INSIGHT_REDACT");
+                    }
+                    continue;
+                }
+
+                // Rule 4 — dynamic-key containers (trendComparison.data[].deptName).
+                // Null any numeric value whose key isn't an obvious identifier/timestamp.
+                if (inDynamicContainer && value instanceof Number
+                        && !DYNAMIC_KEY_PRESERVE_KEYS.contains(key)) {
+                    trySetEntryNull((Map.Entry<Object, Object>) entry, "DYNAMIC_KEY_NUMERIC");
+                    continue;
+                }
+
+                // Default — recurse normally with the updated path.
+                stripPriceFields(value, visited, pathStack);
+            } finally {
+                pathStack.pop();
+            }
+        }
+    }
+
+    /** Returns true when any ancestor key path segment matches a price-container token. */
+    private boolean pathContainsPriceContainer(Deque<String> pathStack) {
+        for (String seg : pathStack) {
+            if (seg != null && PRICE_CONTAINER_PATH_REGEX.matcher(seg).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Returns true when any ancestor segment is an AI-insight container. */
+    private boolean pathContainsAIInsight(Deque<String> pathStack) {
+        for (String seg : pathStack) {
+            if (seg != null && AI_INSIGHT_PATH_REGEX.matcher(seg).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Returns true when any ancestor segment is a dynamic-key price container. */
+    private boolean pathContainsDynamicPriceContainer(Deque<String> pathStack) {
+        for (String seg : pathStack) {
+            if (seg != null && DYNAMIC_KEY_PRICE_CONTAINER_REGEX.matcher(seg).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Replace amount-shaped substrings with the redaction placeholder. */
+    private String redactAmounts(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        return AMOUNT_PATTERN.matcher(text).replaceAll(REDACTED_AMOUNT_PLACEHOLDER);
+    }
+
+    /** Set entry value to null; swallow {@link UnsupportedOperationException} for immutable maps. */
+    private void trySetEntryNull(Map.Entry<Object, Object> entry, String reason) {
+        trySetEntryValue(entry, null, reason);
+    }
+
+    /** Set entry value; swallow {@link UnsupportedOperationException} for immutable maps. */
+    private void trySetEntryValue(Map.Entry<Object, Object> entry, Object newValue, String reason) {
+        try {
+            entry.setValue(newValue);
+        } catch (UnsupportedOperationException e) {
+            log.debug("Cannot redact key '{}' (immutable map, reason={}): {}",
+                    entry.getKey(), reason, e.getMessage());
+        }
+    }
+
+    /** Returns true for values where in-place null replacement is safe — strings, numbers, booleans (not maps/lists/objects). */
+    private boolean isLeafScalar(Object v) {
+        if (v == null) {
+            return true; // already null — setting to null is a no-op, but harmless
+        }
+        return v instanceof Number || v instanceof CharSequence || v instanceof Boolean;
     }
 
     /** Walk reference fields of a project class and recurse into each non-null value. */
-    private void descendChildren(Object obj, Class<?> clazz, IdentityHashMap<Object, Boolean> visited) {
+    private void descendChildren(Object obj, Class<?> clazz,
+                                  IdentityHashMap<Object, Boolean> visited,
+                                  Deque<String> pathStack) {
         // Walk all fields (including inherited up to Object). Recurse into project objects + containers.
         Class<?> walk = clazz;
         while (walk != null && walk != Object.class) {
@@ -256,7 +520,12 @@ public class PriceFieldResponseAdvice implements ResponseBodyAdvice<Object> {
                 try {
                     Object child = f.get(obj);
                     if (child != null) {
-                        stripPriceFields(child, visited);
+                        pathStack.push(f.getName());
+                        try {
+                            stripPriceFields(child, visited, pathStack);
+                        } finally {
+                            pathStack.pop();
+                        }
                     }
                 } catch (IllegalAccessException e) {
                     log.debug("Failed to access field {}.{}: {}", walk.getSimpleName(), f.getName(), e.getMessage());
