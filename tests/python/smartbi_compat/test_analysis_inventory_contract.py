@@ -338,6 +338,74 @@ class TestAnalysisInventoryDefaultMode:
         assert insight["relatedEntity"] is None
 
 
+class TestAnalysisInventoryOverviewAlias:
+    """F-1 follow-up: analysisType=overview aliases the empty/default branch.
+
+    Audit ref: docs/qa-audits/2026-05-12-smartbi-cohort-parity-sweep-results.md §5 F-1
+    — UI tab calling analysisType=overview previously hit a 501 stub because the
+    dispatcher fell through to the catchall. The default mode envelope is literally
+    keyed `overview` (see _get_default_mode line 1876-1886), so this alias is
+    semantically the same thing under a different request shape.
+
+    Mocking _get_default_mode lets us verify the routing decision in isolation.
+    """
+
+    def test_overview_alias_routes_to_default_mode(self, client, monkeypatch):
+        """analysisType=overview returns 200 + same payload as empty (sentinel mock)."""
+        from unittest.mock import AsyncMock
+
+        sentinel = {"_sentinel": "default-mode-routed", "overview": {}, "endDate": "x", "startDate": "y"}
+        mock_default = AsyncMock(return_value=sentinel)
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_inventory._get_default_mode",
+            mock_default,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/inventory"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=overview",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        body = resp.json()
+        assert body["success"] is True, f"expected success=true, got body={body}"
+        assert body["data"] == sentinel, "overview must route to default_mode (sentinel mismatch)"
+        assert mock_default.await_count == 1, (
+            "default_mode must be awaited exactly once for analysisType=overview"
+        )
+
+    def test_overview_alias_shape_matches_empty(self, client, monkeypatch):
+        """Same sentinel returned for both analysisType=overview AND empty —
+        proves the two branches converge on _get_default_mode.
+        """
+        from unittest.mock import AsyncMock
+
+        sentinel = {"_sentinel": "shared-default", "marker": 7}
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_inventory._get_default_mode",
+            AsyncMock(return_value=sentinel),
+        )
+
+        url_base = (
+            "/api/mobile/F999/smart-bi/analysis/inventory"
+            "?startDate=2025-01-01&endDate=2025-12-31"
+        )
+        headers = {"Authorization": f"Bearer {_make_token('F999')}"}
+
+        resp_empty = client.get(url_base, headers=headers)
+        resp_overview = client.get(url_base + "&analysisType=overview", headers=headers)
+
+        assert resp_empty.status_code == 200
+        assert resp_overview.status_code == 200
+        body_empty = resp_empty.json()
+        body_overview = resp_overview.json()
+        assert body_empty["data"] == body_overview["data"] == sentinel
+        assert body_empty["success"] is body_overview["success"] is True
+        # Neither should look like the 501 catchall envelope.
+        assert body_empty.get("code") != 501
+        assert body_overview.get("code") != 501
+
+
 # ============================================================
 # PR-C: Arithmetic depth tests (12 classes per spec §5.3)
 # ============================================================
