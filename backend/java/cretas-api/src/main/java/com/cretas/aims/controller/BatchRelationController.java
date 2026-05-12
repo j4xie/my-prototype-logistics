@@ -1,5 +1,7 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.batch.CreateBatchRelationRequest;
+import com.cretas.aims.dto.batch.UpdateBatchRelationRequest;
 import com.cretas.aims.entity.BatchRelation;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.BatchRelationService;
@@ -7,6 +9,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -215,8 +218,9 @@ public class BatchRelationController {
     public ResponseEntity<?> createBatchRelation(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long userId,
-            @RequestBody @Parameter(description = "关联信息") BatchRelation batchRelation) {
+            @Valid @RequestBody @Parameter(description = "关联信息") CreateBatchRelationRequest request) {
         try {
+            BatchRelation batchRelation = toBatchRelation(request);
             batchRelation.setFactoryId(factoryId);
             batchRelation.setOperatorId(userId);
             BatchRelation created = batchRelationService.createBatchRelation(batchRelation);
@@ -244,8 +248,9 @@ public class BatchRelationController {
     public ResponseEntity<?> updateBatchRelation(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @PathVariable @Parameter(description = "关联ID") String id,
-            @RequestBody @Parameter(description = "更新数据") BatchRelation updateData) {
+            @Valid @RequestBody @Parameter(description = "更新数据") UpdateBatchRelationRequest request) {
         try {
+            BatchRelation updateData = toUpdateBatchRelation(request);
             BatchRelation updated = batchRelationService.updateBatchRelation(id, updateData);
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -311,5 +316,56 @@ public class BatchRelationController {
                 "message", ErrorSanitizer.sanitize(e)
             ));
         }
+    }
+
+    // ===================================================================
+    // Rule 17.1 — wire→entity mappers (Issue #384 batch 5).
+    // Mapper deliberately does NOT replicate service-owned defaults:
+    //   - factoryId from @PathVariable (set in createBatchRelation)
+    //   - operatorId from @RequestAttribute("userId") (set in createBatchRelation)
+    //   - id default UUID.randomUUID() when absent (service-owned)
+    //   - relationType default "INPUT" (service-owned)
+    //   - verified default false (service-owned)
+    //   - usedAt default LocalDateTime.now() (service-owned)
+    // ===================================================================
+
+    /**
+     * Map {@link CreateBatchRelationRequest} → {@link BatchRelation}.
+     *
+     * <p>Auto-managed by service / controller @RequestAttribute / DB:
+     * {@code factoryId}, {@code operatorId}, {@code id} (UUID fallback only),
+     * {@code relationType} (INPUT fallback), {@code verified} (forced false),
+     * {@code usedAt} (now fallback only), {@code verifiedAt} / {@code verifiedBy}
+     * (set later via verifyRelation), {@code createdAt}, {@code updatedAt},
+     * {@code deletedAt}.
+     */
+    private static BatchRelation toBatchRelation(CreateBatchRelationRequest r) {
+        BatchRelation b = new BatchRelation();
+        b.setId(r.getId());
+        b.setProductionBatchId(r.getProductionBatchId());
+        b.setMaterialBatchId(r.getMaterialBatchId());
+        b.setRelationType(r.getRelationType());
+        b.setQuantityUsed(r.getQuantityUsed());
+        b.setUnit(r.getUnit());
+        b.setUsedAt(r.getUsedAt());
+        b.setStage(r.getStage());
+        b.setRemarks(r.getRemarks());
+        return b;
+    }
+
+    /**
+     * Map {@link UpdateBatchRelationRequest} → partial {@link BatchRelation}.
+     *
+     * <p>The resulting entity carries only the mutable fields. Service
+     * iterates each field with an {@code if (... != null)} guard, so leaving
+     * a wire field absent preserves the existing DB value.
+     */
+    private static BatchRelation toUpdateBatchRelation(UpdateBatchRelationRequest r) {
+        BatchRelation b = new BatchRelation();
+        b.setQuantityUsed(r.getQuantityUsed());
+        b.setUnit(r.getUnit());
+        b.setStage(r.getStage());
+        b.setRemarks(r.getRemarks());
+        return b;
     }
 }
