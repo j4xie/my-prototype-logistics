@@ -5,6 +5,7 @@ import com.cretas.aims.dto.report.CostVarianceReportDTO;
 import com.cretas.aims.dto.report.KpiMetricsDTO;
 import com.cretas.aims.dto.report.OeeReportDTO;
 import com.cretas.aims.dto.report.ProductionByProductDTO;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.ReportService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +35,7 @@ import java.util.Map;
 public class ReportController {
 
     private final ReportService reportService;
+    private final PriceMaskResolver priceMaskResolver;
 
     // ============================================================
     // Dashboard 统一入口 (委托 ProcessingService)
@@ -300,7 +302,9 @@ public class ReportController {
      * 导出报表为Excel
      */
     @GetMapping("/export/excel")
-    @Operation(summary = "导出Excel报表", description = "导出指定类型的报表为Excel文件")
+    @Operation(summary = "导出Excel报表",
+            description = "导出指定类型的报表为Excel文件. RBAC: maskPrice wired through (PR P0-C sweep), "
+                    + "当前 stub 返 'not yet implemented' 不漏价格; 当 stub 替换为真实 export 时, 财务/成本/销售 类金额列 mask 为 '—'.")
     public void exportExcelReport(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam @Parameter(description = "报表类型") String reportType,
@@ -308,22 +312,27 @@ public class ReportController {
             @Parameter(description = "开始日期") LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             @Parameter(description = "结束日期") LocalDate endDate,
+            @RequestHeader("Authorization") String authorization,
             HttpServletResponse response) {
-        log.info("导出Excel报表: factoryId={}, type={}, startDate={}, endDate={}",
-                factoryId, reportType, startDate, endDate);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): mirror PR #450 pattern.
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
+        log.info("导出Excel报表: factoryId={}, type={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, reportType, startDate, endDate, maskPrice);
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition",
                 String.format("attachment; filename=\"report_%s_%s.xlsx\"", reportType, LocalDate.now()));
 
-        reportService.exportReportAsExcel(factoryId, reportType, startDate, endDate, response);
+        reportService.exportReportAsExcel(factoryId, reportType, startDate, endDate, maskPrice, response);
     }
 
     /**
      * 导出报表为PDF
      */
     @GetMapping("/export/pdf")
-    @Operation(summary = "导出PDF报表", description = "导出指定类型的报表为PDF文件")
+    @Operation(summary = "导出PDF报表",
+            description = "导出指定类型的报表为PDF文件. RBAC: see exportExcelReport above.")
     public void exportPdfReport(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam @Parameter(description = "报表类型") String reportType,
@@ -331,15 +340,19 @@ public class ReportController {
             @Parameter(description = "开始日期") LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             @Parameter(description = "结束日期") LocalDate endDate,
+            @RequestHeader("Authorization") String authorization,
             HttpServletResponse response) {
-        log.info("导出PDF报表: factoryId={}, type={}, startDate={}, endDate={}",
-                factoryId, reportType, startDate, endDate);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): mirror PR #450 pattern.
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
+        log.info("导出PDF报表: factoryId={}, type={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, reportType, startDate, endDate, maskPrice);
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition",
                 String.format("attachment; filename=\"report_%s_%s.pdf\"", reportType, LocalDate.now()));
 
-        reportService.exportReportAsPdf(factoryId, reportType, startDate, endDate, response);
+        reportService.exportReportAsPdf(factoryId, reportType, startDate, endDate, maskPrice, response);
     }
 
     /**

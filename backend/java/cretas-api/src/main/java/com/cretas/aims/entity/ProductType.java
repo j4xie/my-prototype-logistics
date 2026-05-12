@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -56,6 +57,7 @@ public class ProductType extends BaseEntity {
     private String category;
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
+    @PriceSensitive
     @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
     @Column(name = "production_time_minutes")
@@ -208,6 +210,7 @@ public class ProductType extends BaseEntity {
     private String settlementMethod;
 
     /** 含税单价 */
+    @PriceSensitive
     @Column(name = "tax_included_unit_price", precision = 15, scale = 4)
     private java.math.BigDecimal taxIncludedUnitPrice;
 

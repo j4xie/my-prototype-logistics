@@ -7,6 +7,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.*;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.MaterialBatchService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
@@ -112,6 +113,7 @@ public class MaterialBatchController {
 
     private final MaterialBatchService materialBatchService;
     private final MobileService mobileService;
+    private final PriceMaskResolver priceMaskResolver;
 
     /**
      * 创建原材料批次（入库）
@@ -1000,17 +1002,24 @@ public class MaterialBatchController {
      * 导出库存报表
      */
     @GetMapping("/export")
-    @Operation(summary = "导出库存报表")
+    @Operation(summary = "导出库存报表",
+            description = "导出原材料批次库存报表为Excel文件。"
+                    + "RBAC: 无 procurement:price:view 权限的角色, Excel 中 采购单价 / 库存价值 列显示 '—'.")
     public byte[] exportInventoryReport(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "开始日期", example = "2025-01-01")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "结束日期", example = "2025-01-31")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestHeader("Authorization") String authorization) {
 
-        log.info("导出库存报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
-        return materialBatchService.exportInventoryReport(factoryId, startDate, endDate);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): mirror PR #450 pattern.
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
+        log.info("导出库存报表: factoryId={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, startDate, endDate, maskPrice);
+        return materialBatchService.exportInventoryReport(factoryId, startDate, endDate, maskPrice);
     }
 
     /**

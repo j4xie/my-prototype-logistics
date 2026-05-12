@@ -839,7 +839,12 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     }
 
     @Override
-    public byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate) {
+    public byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate,
+                                        boolean maskPrice) {
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): maskPrice parameter wired
+        // through but currently no-op — ProductionPlanImportDTO has no cost/price
+        // columns. When export is extended to include actualMaterialCost / laborCost /
+        // etc., honor maskPrice by swapping to a masked DTO. PR #450 sweep matrix row 9.
         List<ProductionPlan> plans = productionPlanRepository.findByFactoryId(factoryId);
         // Filter by date range using expectedCompletionDate
         List<ProductionPlanImportDTO> exportData = plans.stream()

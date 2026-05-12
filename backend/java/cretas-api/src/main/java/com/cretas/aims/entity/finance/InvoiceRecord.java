@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.finance;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import com.cretas.aims.entity.enums.InvoiceStatus;
 import com.cretas.aims.entity.enums.InvoiceType;
 import lombok.*;
@@ -61,14 +62,17 @@ public class InvoiceRecord extends BaseEntity {
     private String customerName;
 
     /** 不含税金额 (各税率小计之和) */
+    @PriceSensitive
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
     /** 税额 (各税率小计之和) */
+    @PriceSensitive
     @Column(name = "tax_amount", precision = 15, scale = 2)
     private BigDecimal taxAmount;
 
     /** 价税合计 */
+    @PriceSensitive
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
@@ -98,8 +102,10 @@ public class InvoiceRecord extends BaseEntity {
         /** 税率百分比, 如 9.00 / 13.00 */
         private BigDecimal taxRate;
         /** 该税率下的不含税金额合计 */
+        @PriceSensitive
         private BigDecimal taxableAmount;
         /** 该税率下的税额合计 = taxableAmount × taxRate / 100 */
+        @PriceSensitive
         private BigDecimal taxAmount;
         /** 该税率涉及的订单行数 */
         private Integer lineCount;

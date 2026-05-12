@@ -24,14 +24,34 @@ public interface ReportExportService {
     byte[] exportReportToPDF(String factoryId, String reportType, Map<String, Object> parameters);
 
     /**
-     * 导出报表为 Excel (HttpServletResponse 流式)
+     * 导出报表为 Excel (HttpServletResponse 流式).
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): {@code maskPrice}=true 时
+     * 财务/成本/销售 类报表的金额列以 "—" 占位. 当前实现为 stub ("not yet implemented"),
+     * 参数 wired through 以便未来实现自动 honor mask.
      */
     void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                             HttpServletResponse response);
+                             boolean maskPrice, HttpServletResponse response);
 
     /**
-     * 导出报表为 PDF (HttpServletResponse 流式)
+     * 导出报表为 PDF (HttpServletResponse 流式).
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): see {@link #exportReportAsExcel}.
      */
     void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                           HttpServletResponse response);
+                           boolean maskPrice, HttpServletResponse response);
+
+    /** @deprecated callers must pass {@code maskPrice} (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate,
+                                     LocalDate endDate, HttpServletResponse response) {
+        exportReportAsExcel(factoryId, reportType, startDate, endDate, false, response);
+    }
+
+    /** @deprecated callers must pass {@code maskPrice} (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate,
+                                   LocalDate endDate, HttpServletResponse response) {
+        exportReportAsPdf(factoryId, reportType, startDate, endDate, false, response);
+    }
 }

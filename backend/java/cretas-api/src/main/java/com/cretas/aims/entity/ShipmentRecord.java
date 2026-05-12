@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
@@ -54,8 +55,10 @@ public class ShipmentRecord extends BaseEntity {
     @NotBlank(message = "单位不能为空")
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
+    @PriceSensitive
     @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
+    @PriceSensitive
     @Column(name = "total_amount", precision = 10, scale = 2)
     private BigDecimal totalAmount;
     @NotNull(message = "发货日期不能为空")

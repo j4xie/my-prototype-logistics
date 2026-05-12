@@ -8,6 +8,7 @@ import com.cretas.aims.dto.supplier.CreateSupplierRequest;
 import com.cretas.aims.dto.supplier.UpdateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.SupplierService;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -50,6 +51,7 @@ public class SupplierController {
 
     private final SupplierService supplierService;
     private final MobileService mobileService;
+    private final PriceMaskResolver priceMaskResolver;
 
     /**
      * 创建供应商
@@ -305,13 +307,19 @@ public class SupplierController {
      * 导出供应商列表
      */
     @GetMapping("/export")
-    @Operation(summary = "导出供应商列表", description = "将工厂所有供应商信息导出为Excel文件")
+    @Operation(summary = "导出供应商列表",
+            description = "将工厂所有供应商信息导出为Excel文件。"
+                    + "RBAC: 无 procurement:price:view 权限的角色, Excel 中 信用额度 列显示 '—'.")
     public ResponseEntity<byte[]> exportSupplierList(
             @Parameter(description = "工厂ID", example = "F001", required = true)
-            @PathVariable @NotBlank String factoryId) {
+            @PathVariable @NotBlank String factoryId,
+            @RequestHeader("Authorization") String authorization) {
 
-        log.info("导出供应商列表: factoryId={}", factoryId);
-        byte[] excelBytes = supplierService.exportSupplierList(factoryId);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): mirror PR #450 pattern.
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
+        log.info("导出供应商列表: factoryId={}, maskPrice={}", factoryId, maskPrice);
+        byte[] excelBytes = supplierService.exportSupplierList(factoryId, maskPrice);
 
         // 生成文件名（包含时间戳）
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));

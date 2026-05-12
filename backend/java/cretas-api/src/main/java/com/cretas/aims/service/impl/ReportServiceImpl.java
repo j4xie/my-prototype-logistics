@@ -121,14 +121,14 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                                    HttpServletResponse response) {
-        reportExportService.exportReportAsExcel(factoryId, reportType, startDate, endDate, response);
+                                    boolean maskPrice, HttpServletResponse response) {
+        reportExportService.exportReportAsExcel(factoryId, reportType, startDate, endDate, maskPrice, response);
     }
 
     @Override
     public void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                                  HttpServletResponse response) {
-        reportExportService.exportReportAsPdf(factoryId, reportType, startDate, endDate, response);
+                                  boolean maskPrice, HttpServletResponse response) {
+        reportExportService.exportReportAsPdf(factoryId, reportType, startDate, endDate, maskPrice, response);
     }
 
     // ==================== 实时 & KPI ====================

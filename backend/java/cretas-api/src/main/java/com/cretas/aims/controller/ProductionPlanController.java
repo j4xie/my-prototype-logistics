@@ -12,6 +12,7 @@ import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.orchestration.ProductionWorkflowOrchestrator;
@@ -61,6 +62,7 @@ public class ProductionPlanController {
     private final ProductionPlanRepository planRepository;
     private final ProductionWorkflowOrchestrator workflowOrchestrator;
     private final SalesOrderRepository salesOrderRepository;
+    private final PriceMaskResolver priceMaskResolver;
 
     /**
      * 创建生产计划
@@ -459,7 +461,9 @@ public class ProductionPlanController {
      * 导出生产计划
      */
     @GetMapping("/export")
-    @Operation(summary = "导出生产计划")
+    @Operation(summary = "导出生产计划",
+            description = "导出生产计划为Excel。RBAC: maskPrice 参数 wired through (PR P0-C sweep), "
+                    + "当前 ProductionPlanImportDTO 不含 cost 列, 所以 no-op; 当未来 export 加 actualMaterialCost 等列时即生效.")
     public void exportProductionPlans(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -467,10 +471,15 @@ public class ProductionPlanController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "结束日期", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestHeader("Authorization") String authorization,
             HttpServletResponse response) throws IOException {
 
-        log.info("导出生产计划: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
-        byte[] data = productionPlanService.exportProductionPlans(factoryId, startDate, endDate);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): mirror PR #450 pattern.
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
+        log.info("导出生产计划: factoryId={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, startDate, endDate, maskPrice);
+        byte[] data = productionPlanService.exportProductionPlans(factoryId, startDate, endDate, maskPrice);
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=production-plans.xlsx");
         response.getOutputStream().write(data);

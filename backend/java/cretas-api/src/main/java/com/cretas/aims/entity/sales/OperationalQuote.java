@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.sales;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -91,6 +92,7 @@ public class OperationalQuote extends BaseEntity {
     private String quoteType;
 
     /** 单价 (含税) */
+    @PriceSensitive
     @Column(name = "unit_price", precision = 15, scale = 2)
     private BigDecimal unitPrice;
 
@@ -103,10 +105,12 @@ public class OperationalQuote extends BaseEntity {
     private BigDecimal minOrderQty;
 
     /** 成本单价 (BOM 成本快照, 内部参考, 不展示给客户) */
+    @PriceSensitive
     @Column(name = "cost_price", precision = 15, scale = 2)
     private BigDecimal costPrice;
 
     /** 毛利率 (内部) */
+    @PriceSensitive
     @Column(name = "margin_rate", precision = 6, scale = 4)
     private BigDecimal marginRate;
 

@@ -101,9 +101,27 @@ public interface ProductionPlanService {
       */
     List<ProductionPlanDTO> batchCreateProductionPlans(String factoryId, List<CreateProductionPlanRequest> requests, Long userId);
      /**
-     * 导出生产计划
-      */
-    byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate);
+     * 导出生产计划 (Excel).
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): {@code maskPrice} 参数
+     * 已 wired through 但目前 {@code ProductionPlanImportDTO} 不含 cost/price 列 (产品/
+     * 数量/日期/优先级/产线/工人数/主管/订单号/备注), 故该参数当前 no-op. 当未来 export 加上
+     * actualMaterialCost / laborCost / equipmentCost / otherCost / totalCost 等列时,
+     * 该参数即可用于在 maskPrice=true 时把这些列替换为 "—". 见 PR #450 sweep matrix 行 9.
+     *
+     * @param factoryId  工厂 ID
+     * @param startDate  起始日期
+     * @param endDate    结束日期
+     * @param maskPrice  {@code true} → mask cost columns (future); {@code false} → real values
+     */
+    byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate,
+                                 boolean maskPrice);
+
+    /** @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default byte[] exportProductionPlans(String factoryId, LocalDate startDate, LocalDate endDate) {
+        return exportProductionPlans(factoryId, startDate, endDate, false);
+    }
      /**
      * Excel批量导入生产计划
       */

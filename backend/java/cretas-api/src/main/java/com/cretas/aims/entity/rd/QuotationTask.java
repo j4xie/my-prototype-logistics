@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.rd;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -52,24 +53,31 @@ public class QuotationTask extends BaseEntity {
     @Column(name = "status", nullable = false, length = 32)
     private String status;
 
+    @PriceSensitive
     @Column(name = "material_cost", precision = 15, scale = 2)
     private BigDecimal materialCost;
 
+    @PriceSensitive
     @Column(name = "labor_cost", precision = 15, scale = 2)
     private BigDecimal laborCost;
 
+    @PriceSensitive
     @Column(name = "overhead_cost", precision = 15, scale = 2)
     private BigDecimal overheadCost;
 
+    @PriceSensitive
     @Column(name = "total_cost", precision = 15, scale = 2)
     private BigDecimal totalCost;
 
+    @PriceSensitive
     @Column(name = "suggested_price", precision = 15, scale = 2)
     private BigDecimal suggestedPrice;
 
+    @PriceSensitive
     @Column(name = "final_price", precision = 15, scale = 2)
     private BigDecimal finalPrice;
 
+    @PriceSensitive
     @Column(name = "profit_margin", precision = 5, scale = 2)
     private BigDecimal profitMargin;
 
