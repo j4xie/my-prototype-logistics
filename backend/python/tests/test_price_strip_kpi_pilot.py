@@ -278,7 +278,7 @@ def test_idempotent():
     body = {
         "totalAmount": 999,
         "kpiCards": [{"key": "revenue", "title": "营收", "value": "999元",
-                       "rawValue": Decimal("999"), "unit": "元"}],
+                      "rawValue": Decimal("999"), "unit": "元"}],
     }
     once = strip_price_for_role(body, "warehouse_manager")
     snapshot = {

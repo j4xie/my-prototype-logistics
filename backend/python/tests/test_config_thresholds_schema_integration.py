@@ -19,7 +19,6 @@ Migration: ``backend/python/smartbi/database/migrations/V20260513_02__create_sma
 """
 from __future__ import annotations
 
-import os
 import pytest
 import pytest_asyncio
 

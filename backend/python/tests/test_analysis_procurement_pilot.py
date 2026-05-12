@@ -514,9 +514,12 @@ async def test_endpoint_deep_overview_46_55_concentration_full_kpi_assertions(cl
     """
     synthetic_batches = [
         # 46.55% concentration fixture (A: 4655 of 10000 total)
-        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("4655"), "created_at": date(2026, 5, 10)},
-        {"supplier_id": "B", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2700"), "created_at": date(2026, 5, 12)},
-        {"supplier_id": "C", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2645"), "created_at": date(2026, 5, 15)},
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("4655"),
+         "created_at": date(2026, 5, 10)},
+        {"supplier_id": "B", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2700"),
+         "created_at": date(2026, 5, 12)},
+        {"supplier_id": "C", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2645"),
+         "created_at": date(2026, 5, 15)},
     ]
 
     async def _fake_batches(factory_id, start_date, end_date):
@@ -596,9 +599,12 @@ async def test_endpoint_rbac_warehouse_manager_strips_money_keeps_concentration(
     """
     synthetic_batches = [
         # Same 46.55% canary
-        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("4655"), "created_at": date(2026, 5, 10)},
-        {"supplier_id": "B", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2700"), "created_at": date(2026, 5, 12)},
-        {"supplier_id": "C", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2645"), "created_at": date(2026, 5, 15)},
+        {"supplier_id": "A", "unit_price": Decimal("1"), "receipt_quantity": Decimal("4655"),
+         "created_at": date(2026, 5, 10)},
+        {"supplier_id": "B", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2700"),
+         "created_at": date(2026, 5, 12)},
+        {"supplier_id": "C", "unit_price": Decimal("1"), "receipt_quantity": Decimal("2645"),
+         "created_at": date(2026, 5, 15)},
     ]
 
     async def _fake_batches(factory_id, start_date, end_date):
@@ -697,11 +703,16 @@ async def test_endpoint_supplier_ranking_mode_returns_sorted_top_n(client, monke
     Lombok @Builder field set [rank, name, value, target, completionRate, alertLevel].
     """
     synthetic_batches = [
-        {"supplier_id": "S1", "unit_price": Decimal("1"), "receipt_quantity": Decimal("5000"), "created_at": date(2026, 5, 10)},
-        {"supplier_id": "S2", "unit_price": Decimal("1"), "receipt_quantity": Decimal("3000"), "created_at": date(2026, 5, 12)},
-        {"supplier_id": "S3", "unit_price": Decimal("1"), "receipt_quantity": Decimal("1500"), "created_at": date(2026, 5, 15)},
-        {"supplier_id": "S4", "unit_price": Decimal("1"), "receipt_quantity": Decimal("400"),  "created_at": date(2026, 5, 17)},
-        {"supplier_id": "S5", "unit_price": Decimal("1"), "receipt_quantity": Decimal("100"),  "created_at": date(2026, 5, 20)},
+        {"supplier_id": "S1", "unit_price": Decimal("1"), "receipt_quantity": Decimal("5000"),
+         "created_at": date(2026, 5, 10)},
+        {"supplier_id": "S2", "unit_price": Decimal("1"), "receipt_quantity": Decimal("3000"),
+         "created_at": date(2026, 5, 12)},
+        {"supplier_id": "S3", "unit_price": Decimal("1"), "receipt_quantity": Decimal("1500"),
+         "created_at": date(2026, 5, 15)},
+        {"supplier_id": "S4", "unit_price": Decimal("1"), "receipt_quantity": Decimal("400"),
+         "created_at": date(2026, 5, 17)},
+        {"supplier_id": "S5", "unit_price": Decimal("1"), "receipt_quantity": Decimal("100"),
+         "created_at": date(2026, 5, 20)},
     ]
 
     async def _fake_batches(factory_id, start_date, end_date):
