@@ -218,6 +218,26 @@ const FACTORY_TYPE_MODULE_FILTER: Record<string, Partial<ModulePermissions>> = {
   // HEADQUARTERS / CENTRAL_KITCHEN / BRANCH: 不做限制，保留角色原始权限
 };
 
+/**
+ * Roles allowed to view price fields (totalAmount/unitPrice/taxAmount/freightAmount/
+ * discountAmount/etc). Mirrors backend `PermissionServiceImpl.PRICE_VIEW_ROLES`
+ * for `procurement:price:view`. Backend strips price values to null for any role
+ * outside this list; frontend uses it to hide entire column headers (otherwise
+ * Element Plus renders empty columns → misleading UX).
+ */
+const PRICE_VIEW_ROLES: ReadonlySet<string> = new Set([
+  'factory_super_admin',
+  'platform_admin',
+  'procurement_manager',
+  'finance_manager',
+  'sales_manager',
+  'dispatcher',
+  'production_manager',
+  'restaurant_manager',
+  'permission_admin',
+  'department_admin',
+]);
+
 export const usePermissionStore = defineStore('permission', () => {
   // State
   const loadedRoutes = ref<string[]>([]);
@@ -364,6 +384,13 @@ export const usePermissionStore = defineStore('permission', () => {
     return canWrite('analytics');
   }
 
+  /**
+   * Whether current role may see price fields (mirrors backend
+   * `procurement:price:view` permission). Used by list views to hide entire
+   * price columns for non-whitelisted roles (warehouse_manager etc).
+   */
+  const canViewPrice = computed((): boolean => PRICE_VIEW_ROLES.has(currentRole.value));
+
   function addLoadedRoute(routeName: string) {
     if (!loadedRoutes.value.includes(routeName)) {
       loadedRoutes.value.push(routeName);
@@ -391,6 +418,7 @@ export const usePermissionStore = defineStore('permission', () => {
     getAccessibleModules,
     canAccessSmartBI,
     canWriteSmartBI,
+    canViewPrice,
     addLoadedRoute,
     clearLoadedRoutes
   };
