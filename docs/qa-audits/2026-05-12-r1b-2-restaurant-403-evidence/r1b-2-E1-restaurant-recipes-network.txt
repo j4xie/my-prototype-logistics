@@ -1,0 +1,9 @@
+[GET] http://139.196.165.140:8097/vite.svg => [200] OK
+[GET] http://139.196.165.140:8097/api/admin/role-permissions => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F002/canvas/role-module-override => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F002/config/disabled-modules => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F002/restaurant/recipes?page=1&size=10 => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F002/product-types/active => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F002/raw-material-types/active => [200] 
+[GET] http://139.196.165.140:8097/api/mobile/F002/restaurant/recipes/summary => [200] 
+[GET] http://139.196.165.140:8097/smartbi-api/api/smartbi/restaurant-ops/unmatched-dishes => [200] OK
