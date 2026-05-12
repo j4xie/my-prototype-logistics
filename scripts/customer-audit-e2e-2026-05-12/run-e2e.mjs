@@ -404,7 +404,9 @@ async function s10RBACPriceStrip(page) {
     }
   }
   // PASS if all hits are `null` or no hits
-  const leakingHits = hits.filter((h) => !h.valSnippet.includes(': null'));
+  // NOTE: regex tolerant of whitespace — Java Jackson default serialization is `:null` (no space),
+  // while pretty-printed JSON / some libs emit `: null` (with space). Match both.
+  const leakingHits = hits.filter((h) => !/:\s*null\b/.test(h.valSnippet));
   record('S10-RBAC-wire-roundtrip', leakingHits.length === 0 ? 'PASS' : 'FAIL', {
     sniffedResponses: sniff.length,
     priceKeyHits: hits.slice(0, 10),
