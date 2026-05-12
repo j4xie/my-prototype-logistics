@@ -480,8 +480,6 @@ async def materialize_daily_order_type_meal(
 
 ### 6.8 V20260513_02 — Upload dedup
 
-### 6.8 V20260513_02 — Upload dedup
-
 ```sql
 -- backend/python/smartbi/database/migrations/V20260513_02__upload_dedup.sql
 ALTER TABLE smart_bi_pg_excel_uploads
