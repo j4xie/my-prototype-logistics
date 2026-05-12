@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Where;
@@ -83,8 +84,10 @@ public class Customer extends BaseEntity {
     private String businessLicense;
     @Column(name = "payment_terms", length = 200)
     private String paymentTerms;
+    @PriceSensitive
     @Column(name = "credit_limit", precision = 12, scale = 2)
     private java.math.BigDecimal creditLimit;
+    @PriceSensitive
     @Column(name = "current_balance", precision = 12, scale = 2)
     private java.math.BigDecimal currentBalance = java.math.BigDecimal.ZERO;
     @Column(name = "rating")

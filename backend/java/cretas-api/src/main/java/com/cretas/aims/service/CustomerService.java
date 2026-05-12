@@ -85,9 +85,24 @@ public interface CustomerService {
       */
     boolean checkCustomerCodeExists(String factoryId, String customerCode);
      /**
-     * 导出客户列表
+     * 导出客户列表 (Excel).
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): {@code maskPrice}=true 时
+     * 信用额度 / 当前余额 列以 "—" 占位, 通过 {@link com.cretas.aims.dto.customer.CustomerMaskedExportDTO}
+     * 渲染. 调用方应基于 {@code !permissionService.hasPermission(user, "procurement:price:view")}
+     * 决定该参数。默认 (no-arg overload) 视为 admin 完整访问, 仅供内部 callers 使用。
+     *
+     * @param factoryId  工厂 ID
+     * @param maskPrice  {@code true} → 信用额度 / 当前余额 显示 "—"; {@code false} → 真实数值
+     * @return Excel 字节内容
       */
-    byte[] exportCustomerList(String factoryId);
+    byte[] exportCustomerList(String factoryId, boolean maskPrice);
+
+    /** @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default byte[] exportCustomerList(String factoryId) {
+        return exportCustomerList(factoryId, false);
+    }
 
     /**
      * 生成客户导入模板

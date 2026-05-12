@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.finance;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import com.cretas.aims.entity.enums.ArApApprovalStatus;
 import com.cretas.aims.entity.enums.ArApTransactionType;
 import com.cretas.aims.entity.enums.CounterpartyType;
@@ -95,10 +96,12 @@ public class ArApTransaction extends BaseEntity {
     private Long posOrderSyncId;
 
     /** 交易金额（正数：挂账/增加应收应付；负数：付款/冲减应收应付） */
+    @PriceSensitive
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
     /** 交易后余额快照 */
+    @PriceSensitive
     @Column(name = "balance_after", nullable = false, precision = 15, scale = 2)
     private BigDecimal balanceAfter;
 

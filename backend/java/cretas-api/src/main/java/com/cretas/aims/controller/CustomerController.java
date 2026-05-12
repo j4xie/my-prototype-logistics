@@ -7,6 +7,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.CustomerService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
@@ -52,6 +53,7 @@ public class CustomerController {
 
     private final CustomerService customerService;
     private final MobileService mobileService;
+    private final PriceMaskResolver priceMaskResolver;
 
     /**
      * 创建客户
@@ -352,13 +354,22 @@ public class CustomerController {
      * 导出客户列表
      */
     @GetMapping("/export")
-    @Operation(summary = "导出客户列表", description = "将工厂的所有客户数据导出为Excel文件，文件名包含时间戳")
+    @Operation(summary = "导出客户列表",
+            description = "将工厂的所有客户数据导出为Excel文件，文件名包含时间戳。"
+                    + "RBAC: 无 procurement:price:view 权限的角色, Excel 中 信用额度 / 当前余额 列显示 '—'.")
     public ResponseEntity<byte[]> exportCustomerList(
             @Parameter(description = "工厂ID", example = "F001", required = true)
-            @PathVariable @NotBlank String factoryId) {
+            @PathVariable @NotBlank String factoryId,
+            @RequestHeader("Authorization") String authorization) {
 
-        log.info("导出客户列表: factoryId={}", factoryId);
-        byte[] excelBytes = customerService.exportCustomerList(factoryId);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): PriceFieldResponseAdvice (PR #423)
+        // 只处理 JSON body, 不 walk byte[] Excel — chat2 PR #450 sweep matrix marked this
+        // endpoint vulnerable (creditLimit + currentBalance cols 9/10). Mirror PR #450 pattern:
+        // resolve user, gate via PermissionService, pass mask flag to service.
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
+        log.info("导出客户列表: factoryId={}, maskPrice={}", factoryId, maskPrice);
+        byte[] excelBytes = customerService.exportCustomerList(factoryId, maskPrice);
 
         // 生成文件名（包含时间戳）
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));

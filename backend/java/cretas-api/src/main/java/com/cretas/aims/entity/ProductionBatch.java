@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.entity.enums.QualityStatus;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.AllArgsConstructor;
@@ -165,31 +166,37 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 原料成本
       */
+    @PriceSensitive
     @Column(name = "material_cost", precision = 12, scale = 2)
     private BigDecimal materialCost;
      /**
       * 人工成本
       */
+    @PriceSensitive
     @Column(name = "labor_cost", precision = 12, scale = 2)
     private BigDecimal laborCost;
      /**
       * 设备成本
       */
+    @PriceSensitive
     @Column(name = "equipment_cost", precision = 12, scale = 2)
     private BigDecimal equipmentCost;
      /**
       * 其他成本
       */
+    @PriceSensitive
     @Column(name = "other_cost", precision = 12, scale = 2)
     private BigDecimal otherCost;
      /**
       * 总成本
       */
+    @PriceSensitive
     @Column(name = "total_cost", precision = 12, scale = 2)
     private BigDecimal totalCost;
      /**
       * 单位成本
       */
+    @PriceSensitive
     @Column(name = "unit_cost", precision = 12, scale = 4)
     private BigDecimal unitCost;
      /**

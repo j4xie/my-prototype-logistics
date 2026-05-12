@@ -771,7 +771,12 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     public byte[] exportInventoryReport(String factoryId) {
-        return exportInventoryReport(factoryId, null, null);
+        return exportInventoryReport(factoryId, null, null, false);
+    }
+
+    @Override
+    public byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate) {
+        return exportInventoryReport(factoryId, startDate, endDate, false);
     }
 
     @Override
@@ -804,8 +809,10 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     }
 
     @Override
-    public byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate) {
-        log.info("开始导出库存报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+    public byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate,
+                                        boolean maskPrice) {
+        log.info("开始导出库存报表: factoryId={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, startDate, endDate, maskPrice);
 
         // 使用分页查询避免内存问题，每页1000条
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10000);
@@ -830,9 +837,17 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 .map(this::convertToExportDTO)
                 .collect(Collectors.toList());
 
-        log.info("准备导出 {} 条批次记录", exportData.size());
+        log.info("准备导出 {} 条批次记录, maskPrice={}", exportData.size(), maskPrice);
 
-        // 使用ExcelUtil生成Excel文件
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): mask purchasePrice + inventoryValue
+        // via masked DTO when caller lacks procurement:price:view.
+        if (maskPrice) {
+            List<com.cretas.aims.dto.material.MaterialBatchMaskedExportDTO> maskedData = exportData.stream()
+                    .map(com.cretas.aims.dto.material.MaterialBatchMaskedExportDTO::fromExportDTO)
+                    .collect(Collectors.toList());
+            return excelUtil.exportToExcel(maskedData,
+                    com.cretas.aims.dto.material.MaterialBatchMaskedExportDTO.class, "库存报表");
+        }
         return excelUtil.exportToExcel(exportData, MaterialBatchExportDTO.class, "库存报表");
     }
 

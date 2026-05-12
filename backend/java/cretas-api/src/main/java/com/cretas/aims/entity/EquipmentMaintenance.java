@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -46,6 +47,7 @@ public class EquipmentMaintenance extends BaseEntity {
     private LocalDateTime endTime;
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+    @PriceSensitive
     @Column(name = "cost", precision = 10, scale = 2)
     private BigDecimal cost;
     @Column(name = "performed_by", length = 100)

@@ -123,10 +123,35 @@ public interface ReportService {
      * 获取预测报表（带类型）
       */
     Map<String, Object> getForecastReport(String factoryId, String type, Integer days);
+    /**
+     * 导出报表为 Excel.
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): {@code maskPrice}=true 时
+     * 财务/成本/销售 类报表的金额列以 "—" 占位. 调用方 (ReportController) 通过
+     * {@link com.cretas.aims.security.PriceMaskResolver} 决定该参数.
+     */
     void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                            HttpServletResponse response);
+                            boolean maskPrice, HttpServletResponse response);
+
+    /** @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate,
+                                     LocalDate endDate, HttpServletResponse response) {
+        exportReportAsExcel(factoryId, reportType, startDate, endDate, false, response);
+    }
+
+    /**
+     * 导出报表为 PDF. RBAC: 见 {@link #exportReportAsExcel}.
+     */
     void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
-                          HttpServletResponse response);
+                          boolean maskPrice, HttpServletResponse response);
+
+    /** @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate,
+                                   LocalDate endDate, HttpServletResponse response) {
+        exportReportAsPdf(factoryId, reportType, startDate, endDate, false, response);
+    }
      /**
      * 获取实时数据
       */

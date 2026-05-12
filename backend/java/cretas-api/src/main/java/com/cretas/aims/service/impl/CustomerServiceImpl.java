@@ -330,8 +330,8 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public byte[] exportCustomerList(String factoryId) {
-        log.info("导出客户列表: factoryId={}", factoryId);
+    public byte[] exportCustomerList(String factoryId, boolean maskPrice) {
+        log.info("导出客户列表: factoryId={}, maskPrice={}", factoryId, maskPrice);
 
         // 查询所有客户
         List<Customer> customers = customerRepository.findByFactoryId(factoryId);
@@ -341,19 +341,32 @@ public class CustomerServiceImpl implements CustomerService {
                 .map(customerMapper::toDTO)
                 .collect(Collectors.toList());
 
-        // 转换为Excel导出DTO
-        List<com.cretas.aims.dto.customer.CustomerExportDTO> exportDTOs = customerDTOs.stream()
-                .map(com.cretas.aims.dto.customer.CustomerExportDTO::fromCustomerDTO)
-                .collect(Collectors.toList());
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): warehouse_manager 等无
+        // procurement:price:view 权限的角色, 信用额度 / 当前余额 列以 "—" 占位 (mirrors
+        // PR #450 PDF strip pattern, parallel to PriceFieldResponseAdvice JSON strip).
+        byte[] excelBytes;
+        if (maskPrice) {
+            List<com.cretas.aims.dto.customer.CustomerMaskedExportDTO> maskedDTOs = customerDTOs.stream()
+                    .map(com.cretas.aims.dto.customer.CustomerMaskedExportDTO::fromCustomerDTO)
+                    .collect(Collectors.toList());
+            excelBytes = excelUtil.exportToExcel(
+                    maskedDTOs,
+                    com.cretas.aims.dto.customer.CustomerMaskedExportDTO.class,
+                    "客户列表"
+            );
+        } else {
+            List<com.cretas.aims.dto.customer.CustomerExportDTO> exportDTOs = customerDTOs.stream()
+                    .map(com.cretas.aims.dto.customer.CustomerExportDTO::fromCustomerDTO)
+                    .collect(Collectors.toList());
+            excelBytes = excelUtil.exportToExcel(
+                    exportDTOs,
+                    com.cretas.aims.dto.customer.CustomerExportDTO.class,
+                    "客户列表"
+            );
+        }
 
-        // 生成Excel文件
-        byte[] excelBytes = excelUtil.exportToExcel(
-                exportDTOs,
-                com.cretas.aims.dto.customer.CustomerExportDTO.class,
-                "客户列表"
-        );
-
-        log.info("客户列表导出成功: factoryId={}, count={}", factoryId, customers.size());
+        log.info("客户列表导出成功: factoryId={}, count={}, maskPrice={}",
+                factoryId, customers.size(), maskPrice);
         return excelBytes;
     }
 

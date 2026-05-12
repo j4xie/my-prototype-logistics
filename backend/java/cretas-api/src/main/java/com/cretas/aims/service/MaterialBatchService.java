@@ -101,9 +101,15 @@ public interface MaterialBatchService {
       */
     List<MaterialBatchDTO> batchCreateMaterialBatches(String factoryId, List<CreateMaterialBatchRequest> requests, Long userId);
      /**
-     * 导出库存报表
+     * 导出库存报表 (Excel).
+     *
+     * @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask).
+     *             Kept for binary-compat with existing internal callers.
       */
-    byte[] exportInventoryReport(String factoryId);
+    @Deprecated
+    default byte[] exportInventoryReport(String factoryId) {
+        return exportInventoryReport(factoryId, null, null, false);
+    }
      /**
      * 获取批次使用记录
       */
@@ -117,9 +123,28 @@ public interface MaterialBatchService {
       */
     void autoCheckAndUpdateExpiredBatches();
      /**
-     * 导出库存报表（带日期范围）
+     * 导出库存报表（带日期范围）.
+     *
+     * @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask).
       */
-    byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate);
+    @Deprecated
+    default byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate) {
+        return exportInventoryReport(factoryId, startDate, endDate, false);
+    }
+
+    /**
+     * 导出库存报表 (Excel) with RBAC price-mask flag.
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): {@code maskPrice}=true 时
+     * 采购单价 / 库存价值 列以 "—" 占位, 通过 {@link com.cretas.aims.dto.material.MaterialBatchMaskedExportDTO}
+     * 渲染.
+     *
+     * @param factoryId  工厂 ID
+     * @param startDate  起始日期 (可选, null = 不限)
+     * @param endDate    结束日期 (可选, null = 不限)
+     * @param maskPrice  {@code true} → 采购单价 / 库存价值 显示 "—"; {@code false} → 真实数值
+     */
+    byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate, boolean maskPrice);
      /**
      * 按材料类型获取批次
       */

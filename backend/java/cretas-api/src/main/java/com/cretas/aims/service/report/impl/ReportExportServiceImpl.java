@@ -176,9 +176,14 @@ public class ReportExportServiceImpl implements ReportExportService {
 
     @Override
     public void exportReportAsExcel(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
+                                    boolean maskPrice,
                                     jakarta.servlet.http.HttpServletResponse response) {
-        log.info("导出Excel报表: factoryId={}, type={}, startDate={}, endDate={}",
-                factoryId, reportType, startDate, endDate);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): maskPrice wired through;
+        // current impl is a stub returning a placeholder string, so no real prices
+        // leak today. When the stub is replaced with a real export, swap to a
+        // masked DTO / cell-replacement strategy mirroring CustomerService + PR #450.
+        log.info("导出Excel报表: factoryId={}, type={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, reportType, startDate, endDate, maskPrice);
         try {
             response.setContentType("application/vnd.ms-excel");
             response.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
@@ -190,9 +195,11 @@ public class ReportExportServiceImpl implements ReportExportService {
 
     @Override
     public void exportReportAsPdf(String factoryId, String reportType, LocalDate startDate, LocalDate endDate,
+                                  boolean maskPrice,
                                   jakarta.servlet.http.HttpServletResponse response) {
-        log.info("导出PDF报表: factoryId={}, type={}, startDate={}, endDate={}",
-                factoryId, reportType, startDate, endDate);
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): see exportReportAsExcel above.
+        log.info("导出PDF报表: factoryId={}, type={}, startDate={}, endDate={}, maskPrice={}",
+                factoryId, reportType, startDate, endDate, maskPrice);
         try {
             response.setContentType("application/pdf");
             response.setHeader("Content-Disposition", "attachment; filename=report.pdf");

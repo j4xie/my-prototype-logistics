@@ -73,9 +73,22 @@ public interface SupplierService {
       */
     boolean checkSupplierCodeExists(String factoryId, String supplierCode);
      /**
-     * 导出供应商列表
+     * 导出供应商列表 (Excel).
+     *
+     * <p>RBAC defense-in-depth (PR P0-C sweep, 2026-05-12): {@code maskPrice}=true 时
+     * 信用额度 列以 "—" 占位, 通过 {@link com.cretas.aims.dto.supplier.SupplierMaskedExportDTO} 渲染.
+     *
+     * @param factoryId  工厂 ID
+     * @param maskPrice  {@code true} → 信用额度 显示 "—"; {@code false} → 真实数值
+     * @return Excel 字节内容
       */
-    byte[] exportSupplierList(String factoryId);
+    byte[] exportSupplierList(String factoryId, boolean maskPrice);
+
+    /** @deprecated callers must pass {@code maskPrice} explicitly (RBAC). Defaults to admin (no mask). */
+    @Deprecated
+    default byte[] exportSupplierList(String factoryId) {
+        return exportSupplierList(factoryId, false);
+    }
 
     /**
      * 生成供应商导入模板

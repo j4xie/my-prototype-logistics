@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.finance;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.security.PriceSensitive;
 import com.cretas.aims.entity.enums.PaymentMethod;
 import com.cretas.aims.entity.enums.PaymentRecordStatus;
 import lombok.*;
@@ -58,6 +59,7 @@ public class PaymentRecord extends BaseEntity {
     @Column(name = "customer_name", length = 200)
     private String customerName;
 
+    @PriceSensitive
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 

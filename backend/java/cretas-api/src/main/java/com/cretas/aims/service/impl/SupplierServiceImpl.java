@@ -271,8 +271,8 @@ public class SupplierServiceImpl implements SupplierService {
         return supplierRepository.existsByFactoryIdAndSupplierCode(factoryId, supplierCode);
     }
     @Override
-    public byte[] exportSupplierList(String factoryId) {
-        log.info("导出供应商列表: factoryId={}", factoryId);
+    public byte[] exportSupplierList(String factoryId, boolean maskPrice) {
+        log.info("导出供应商列表: factoryId={}, maskPrice={}", factoryId, maskPrice);
 
         // 查询所有供应商
         List<Supplier> suppliers = supplierRepository.findByFactoryId(factoryId);
@@ -282,19 +282,31 @@ public class SupplierServiceImpl implements SupplierService {
                 .map(supplierMapper::toDTO)
                 .collect(Collectors.toList());
 
-        // 转换为Excel导出DTO
-        List<com.cretas.aims.dto.supplier.SupplierExportDTO> exportDTOs = supplierDTOs.stream()
-                .map(com.cretas.aims.dto.supplier.SupplierExportDTO::fromSupplierDTO)
-                .collect(Collectors.toList());
+        // RBAC defense-in-depth (P0-C sweep, 2026-05-12): no procurement:price:view →
+        // 信用额度 col masked to "—" via SupplierMaskedExportDTO.
+        byte[] excelBytes;
+        if (maskPrice) {
+            List<com.cretas.aims.dto.supplier.SupplierMaskedExportDTO> maskedDTOs = supplierDTOs.stream()
+                    .map(com.cretas.aims.dto.supplier.SupplierMaskedExportDTO::fromSupplierDTO)
+                    .collect(Collectors.toList());
+            excelBytes = excelUtil.exportToExcel(
+                    maskedDTOs,
+                    com.cretas.aims.dto.supplier.SupplierMaskedExportDTO.class,
+                    "供应商列表"
+            );
+        } else {
+            List<com.cretas.aims.dto.supplier.SupplierExportDTO> exportDTOs = supplierDTOs.stream()
+                    .map(com.cretas.aims.dto.supplier.SupplierExportDTO::fromSupplierDTO)
+                    .collect(Collectors.toList());
+            excelBytes = excelUtil.exportToExcel(
+                    exportDTOs,
+                    com.cretas.aims.dto.supplier.SupplierExportDTO.class,
+                    "供应商列表"
+            );
+        }
 
-        // 生成Excel文件
-        byte[] excelBytes = excelUtil.exportToExcel(
-                exportDTOs,
-                com.cretas.aims.dto.supplier.SupplierExportDTO.class,
-                "供应商列表"
-        );
-
-        log.info("供应商列表导出成功: factoryId={}, count={}", factoryId, suppliers.size());
+        log.info("供应商列表导出成功: factoryId={}, count={}, maskPrice={}",
+                factoryId, suppliers.size(), maskPrice);
         return excelBytes;
     }
 
