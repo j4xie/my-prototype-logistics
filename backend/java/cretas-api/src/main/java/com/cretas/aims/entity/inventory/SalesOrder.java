@@ -6,6 +6,7 @@ import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.dto.sales.ExtraFeeItem;
+import com.cretas.aims.security.PriceSensitive;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
@@ -90,12 +91,15 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "delivery_address")
     private String deliveryAddress;
 
+    @PriceSensitive
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
+    @PriceSensitive
     @Column(name = "discount_amount", precision = 15, scale = 2)
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
+    @PriceSensitive
     @Column(name = "tax_amount", precision = 15, scale = 2)
     private BigDecimal taxAmount = BigDecimal.ZERO;
 

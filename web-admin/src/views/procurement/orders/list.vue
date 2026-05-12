@@ -480,7 +480,16 @@ function handleAiFill(params: TableRow) {
         </el-table-column>
         <el-table-column prop="orderDate" label="下单日期" width="120" />
         <el-table-column prop="totalAmount" label="总金额" width="130" align="right">
-          <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
+          <!--
+            RBAC defense-in-depth (PR #415 Option B 2026-05-12):
+            backend PriceFieldResponseAdvice strips totalAmount → null for roles
+            lacking procurement:price:view. The v-if guards the formatter so
+            mgr/inspector/operator see "—" instead of "¥0.00" (which could mislead).
+          -->
+          <template #default="{ row }">
+            <span v-if="row.totalAmount != null">{{ formatAmount(row.totalAmount) }}</span>
+            <span v-else class="price-masked">—</span>
+          </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="110" align="center">
           <template #default="{ row }">
