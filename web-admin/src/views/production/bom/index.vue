@@ -266,7 +266,11 @@ async function submitBomForm() {
     if (isBomEdit.value && bomForm.value.id) {
       response = await put(`/${factoryId.value}/bom/items/${bomForm.value.id}`, bomForm.value);
     } else {
-      response = await post(`/${factoryId.value}/bom/items`, bomForm.value);
+      // BUG-4 fix (depth-e2e qa-v2.4, PR #370): strip phantom `id: null` from POST body.
+      // handleAddBomItem 设 `id: null` 给 form 一致性, 但 POST 不应携带 id (Jackson 当前默默 drop,
+      // 但在未来 FAIL_ON_UNKNOWN_PROPERTIES strict mode 会爆 400).
+      const { id, ...payload } = bomForm.value;
+      response = await post(`/${factoryId.value}/bom/items`, payload);
     }
     if (response.success) {
       ElMessage.success(isBomEdit.value ? 'Updated successfully' : 'Added successfully');

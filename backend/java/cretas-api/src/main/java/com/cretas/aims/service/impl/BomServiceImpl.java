@@ -118,6 +118,18 @@ public class BomServiceImpl implements BomService {
         log.info("保存BOM项目: factoryId={}, productTypeId={}, materialTypeId={}",
             bomItem.getFactoryId(), bomItem.getProductTypeId(), bomItem.getMaterialTypeId());
 
+        // BUG-3 fix (depth-e2e qa-v2.4, PR #370): standardQuantity 必须 > 0
+        // 之前 entity / canvas validator 都未拦截 standardQuantity=0, 产生无意义 BOM 行.
+        // 服务端 hard-rule 拒绝, 比依赖 canvas data-driven 规则更可靠 (validationRuleEvaluator
+        // 可能未配置, 此处确保所有 factory 都有保护).
+        if (bomItem.getStandardQuantity() == null
+                || bomItem.getStandardQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new com.cretas.aims.exception.BusinessException(400,
+                    "成品克数必须大于 0 (当前: "
+                            + (bomItem.getStandardQuantity() == null ? "null" : bomItem.getStandardQuantity())
+                            + ")");
+        }
+
         // Canvas V2: DB-driven validation (runs before defaults so rules like "#yieldRate > 0" can catch invalid user input)
         String operation = (bomItem.getId() == null) ? "CREATE" : "UPDATE";
         runBomValidation(bomItem.getFactoryId(), operation, bomItem);

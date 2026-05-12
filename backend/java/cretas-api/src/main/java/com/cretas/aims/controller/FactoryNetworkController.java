@@ -3,7 +3,6 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.platform.FactoryDTO;
 import com.cretas.aims.service.FactoryService;
-import com.cretas.aims.utils.FactoryAccessValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
@@ -45,7 +44,6 @@ import java.util.Set;
 public class FactoryNetworkController {
 
     private final FactoryService factoryService;
-    private final FactoryAccessValidator factoryAccessValidator;
 
     /**
      * 获取当前工厂的可见工厂网络.
@@ -60,8 +58,15 @@ public class FactoryNetworkController {
     @Operation(summary = "获取可见工厂列表", description = "供调拨等场景的调入方下拉使用; 多租户边界强制校验")
     public ApiResponse<List<FactoryNetworkEntry>> getNetwork(
             @PathVariable @NotBlank String factoryId) {
-        // Multi-tenancy gate: token's factoryId must match path factoryId (or be platform admin)
-        factoryAccessValidator.validateAccess(factoryId);
+        // BUG-2 fix (depth-e2e qa-v2.4, PR #370): factoryAccessValidator.validateAccess(factoryId)
+        // 之前在这里调用, 但该 validator 依赖 SecurityContextHolder, 而项目实际使用 JwtAuthInterceptor
+        // 将 userId 写入 request attributes (未填充 SecurityContextHolder), 导致 SecurityUtils.getCurrentUserId()
+        // 返 null → AuthenticationException("用户未登录") = 401, 即便用户合法登录且 path factoryId 匹配 token.
+        //
+        // 多租户边界已经由 JwtAuthInterceptor.preHandle 强制 (line 167-185): 跨工厂访问返 403,
+        // 未登录返 401. 此处 redundant 调用反而是 401 的来源.
+        //
+        // 修复: 移除 redundant 调用. 下游 try/catch 已经做 graceful fallback (空列表/stub entry).
 
         log.info("获取可见工厂网络: factoryId={}", factoryId);
 
