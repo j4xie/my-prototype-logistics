@@ -1,0 +1,434 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "overview": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [
+        {
+          "key": "GROSS_PROFIT",
+          "title": "毛利额",
+          "value": null,
+          "rawValue": null,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "销售收入减去销售成本",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "GROSS_MARGIN",
+          "title": "毛利率",
+          "value": null,
+          "rawValue": null,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "red",
+          "compareText": null,
+          "description": "毛利额占销售收入的比例",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "NET_PROFIT",
+          "title": "净利润",
+          "value": null,
+          "rawValue": null,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "毛利减去各项费用后的利润",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "NET_MARGIN",
+          "title": "净利率",
+          "value": null,
+          "rawValue": null,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "净利润占销售收入的比例",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "ROI",
+          "title": "投入产出比",
+          "value": "0.00%",
+          "rawValue": 0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "yellow",
+          "compareText": null,
+          "description": "毛利额与成本的比率",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "AR_BALANCE",
+          "title": "应收余额",
+          "value": null,
+          "rawValue": null,
+          "unit": "元",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "尚未收回的应收账款总额",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "COLLECTION_RATE",
+          "title": "回款率",
+          "value": "0.00%",
+          "rawValue": 0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "red",
+          "compareText": null,
+          "description": "已回款金额占应收总额的比例",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "AGING_30_RATIO",
+          "title": "30天以上账龄占比",
+          "value": "0.00%",
+          "rawValue": 0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "账龄超过30天的应收款占比",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "AGING_60_RATIO",
+          "title": "60天以上账龄占比",
+          "value": "0.00%",
+          "rawValue": 0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "账龄超过60天的应收款占比",
+          "targetValue": null,
+          "completionRate": null
+        },
+        {
+          "key": "AGING_90_RATIO",
+          "title": "90天以上账龄占比",
+          "value": "0.00%",
+          "rawValue": 0,
+          "unit": "%",
+          "change": null,
+          "changeRate": null,
+          "trend": "flat",
+          "status": "green",
+          "compareText": null,
+          "description": "账龄超过90天的高风险应收款占比",
+          "targetValue": null,
+          "completionRate": null
+        }
+      ],
+      "metricCards": null,
+      "rankings": {
+        "overdue_customers": []
+      },
+      "charts": {
+        "利润趋势分析": {
+          "chartType": "LINE_BAR",
+          "title": "利润趋势分析",
+          "seriesField": "metric",
+          "data": [],
+          "options": {
+            "yAxis": [
+              {
+                "name": "金额",
+                "position": "left"
+              },
+              {
+                "name": "毛利率(%)",
+                "position": "right"
+              }
+            ],
+            "series": [
+              {
+                "type": "bar",
+                "yAxisIndex": 0,
+                "name": "营业收入"
+              },
+              {
+                "type": "bar",
+                "yAxisIndex": 0,
+                "name": "营业成本"
+              },
+              {
+                "type": "bar",
+                "yAxisIndex": 0,
+                "name": "毛利额"
+              },
+              {
+                "type": "line",
+                "yAxisIndex": 0,
+                "name": "净利润"
+              },
+              {
+                "type": "line",
+                "yAxisIndex": 1,
+                "name": "毛利率"
+              }
+            ]
+          },
+          "xaxisField": "period",
+          "yaxisField": "grossProfit"
+        },
+        "成本结构分析": {
+          "chartType": "PIE",
+          "title": "成本结构分析",
+          "seriesField": null,
+          "data": [],
+          "options": {
+            "showPercentage": true,
+            "colors": [
+              "#5470c6",
+              "#91cc75",
+              "#fac858"
+            ]
+          },
+          "xaxisField": "category",
+          "yaxisField": "value"
+        },
+        "应收账款账龄分布": {
+          "chartType": "BAR",
+          "title": "应收账款账龄分布",
+          "seriesField": null,
+          "data": [
+            {
+              "agingBucket": "0-30天",
+              "amount": null,
+              "percentage": 0,
+              "alertLevel": "GREEN"
+            },
+            {
+              "agingBucket": "31-60天",
+              "amount": null,
+              "percentage": 0,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "agingBucket": "61-90天",
+              "amount": null,
+              "percentage": 0,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "agingBucket": "90天以上",
+              "amount": null,
+              "percentage": 0,
+              "alertLevel": "RED"
+            }
+          ],
+          "options": {
+            "colors": [
+              "#91cc75",
+              "#fac858",
+              "#ee6666",
+              "#c23531"
+            ],
+            "showAlert": true
+          },
+          "xaxisField": "agingBucket",
+          "yaxisField": "amount"
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "RED",
+          "category": "毛利率偏低",
+          "message": "当前毛利率为 0.00%，低于行业标准15%，建议审视成本结构和定价策略。",
+          "relatedEntity": "GROSS_MARGIN",
+          "actionSuggestion": "审视产品定价策略，优化采购成本"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "建议审视产品定价策略，优化采购成本以提升毛利率",
+        "建议加强应收账款管理，缩短回款周期"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-05-12T18:04:53.889574",
+      "fromCache": false,
+      "cacheExpireAt": null
+    },
+    "costStructure": {
+      "chartType": "PIE",
+      "title": "成本结构分析",
+      "seriesField": null,
+      "data": [],
+      "options": {
+        "showPercentage": true,
+        "colors": [
+          "#5470c6",
+          "#91cc75",
+          "#fac858"
+        ]
+      },
+      "xaxisField": "category",
+      "yaxisField": "value"
+    },
+    "dateRange": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "granularity": "YEAR",
+      "originalExpression": "2025-01-01 至 2025-12-31",
+      "relative": false,
+      "days": 365,
+      "valid": true
+    },
+    "generatedAt": "2026-05-12T18:04:53.890186",
+    "profitMetrics": [
+      {
+        "metricCode": "GROSS_PROFIT",
+        "metricName": "毛利额",
+        "value": null,
+        "formattedValue": "0.00",
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "销售收入减去销售成本"
+      },
+      {
+        "metricCode": "GROSS_MARGIN",
+        "metricName": "毛利率",
+        "value": null,
+        "formattedValue": "0.00%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "RED",
+        "dimensionValue": null,
+        "description": "毛利额占销售收入的比例"
+      },
+      {
+        "metricCode": "NET_PROFIT",
+        "metricName": "净利润",
+        "value": null,
+        "formattedValue": "N/A",
+        "unit": "元",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "毛利减去各项费用后的利润"
+      },
+      {
+        "metricCode": "NET_MARGIN",
+        "metricName": "净利率",
+        "value": null,
+        "formattedValue": "N/A",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "GREEN",
+        "dimensionValue": null,
+        "description": "净利润占销售收入的比例"
+      },
+      {
+        "metricCode": "ROI",
+        "metricName": "投入产出比",
+        "value": 0,
+        "formattedValue": "0.00%",
+        "unit": "%",
+        "changePercent": null,
+        "changeDirection": null,
+        "changeValue": null,
+        "alertLevel": "YELLOW",
+        "dimensionValue": null,
+        "description": "毛利额与成本的比率"
+      }
+    ],
+    "receivableAging": {
+      "chartType": "BAR",
+      "title": "应收账款账龄分布",
+      "seriesField": null,
+      "data": [
+        {
+          "agingBucket": "0-30天",
+          "amount": null,
+          "percentage": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "agingBucket": "31-60天",
+          "amount": null,
+          "percentage": 0,
+          "alertLevel": "YELLOW"
+        },
+        {
+          "agingBucket": "61-90天",
+          "amount": null,
+          "percentage": 0,
+          "alertLevel": "YELLOW"
+        },
+        {
+          "agingBucket": "90天以上",
+          "amount": null,
+          "percentage": 0,
+          "alertLevel": "RED"
+        }
+      ],
+      "options": {
+        "colors": [
+          "#91cc75",
+          "#fac858",
+          "#ee6666",
+          "#c23531"
+        ],
+        "showAlert": true
+      },
+      "xaxisField": "agingBucket",
+      "yaxisField": "amount"
+    }
+  },
+  "timestamp": "2026-05-13T02:04:53.890737",
+  "success": true,
+  "actionHint": null,
+  "severity": null,
+  "hintTarget": null
+}
