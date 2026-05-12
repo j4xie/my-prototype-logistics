@@ -7,6 +7,13 @@ an empty-envelope placeholder marked ``FACTORY_SILVER_PHASE_2D_PENDING``;
 the assertions below now lock the new envelope contract instead of a
 ``NotImplementedError`` raise.
 
+Phase 2B-1 (chat-2B-qual-upgrade, 2026-05-12) appends 3 direct
+endpoint-contract tests at the bottom of this file to graduate
+``analysis_quality`` API coverage from ⚠️ partial (transitive-only) to
+✅ full per audit doc §2.2 + §4.2. These exercise the FastAPI router
+end-to-end with a mocked DB pool, asserting envelope shape + auth
+boundaries + cross-factory denial.
+
 Surviving contracts (chat-B2 + Phase 2D must preserve):
 
 * Factory dispatcher returns the Phase 2D empty envelope tagged with
@@ -25,18 +32,28 @@ Surviving contracts (chat-B2 + Phase 2D must preserve):
   chip-badge rendering depends on these exact strings.
 
 Spec: docs/superpowers/specs/2026-05-12-t6-6-sub-b-quality-impl-spec.md
+Audit:  docs/qa-audits/2026-05-12-python-migration-test-coverage-audit.md §4.2
 Sibling: backend/python/tests/test_analysis_production_skeleton.py
 """
 from __future__ import annotations
 
 import inspect
+import os
 from datetime import date
+from decimal import Decimal
+from time import time
 
-import pytest
+# JWT_SECRET must be set before ``smartbi_compat.auth`` import — the
+# auth module reads it at request time via ``os.environ.get`` so a
+# setdefault here is sufficient for the TestClient round-trips below.
+os.environ.setdefault("JWT_SECRET", "phase-2b-qual-upgrade-test-secret")
 
-from smartbi_compat import tenant as tenant_module
-from smartbi_compat.api import analysis_quality
-from smartbi_compat.api.analysis_quality import (
+import jwt as jwt_lib  # noqa: E402
+import pytest  # noqa: E402
+
+from smartbi_compat import tenant as tenant_module  # noqa: E402
+from smartbi_compat.api import analysis_quality  # noqa: E402
+from smartbi_compat.api.analysis_quality import (  # noqa: E402
     FACTORY_PHASE_2D_PENDING_MARKER,
     _factory_quality_dispatch,
     _restaurant_quality_dispatch,
@@ -237,3 +254,223 @@ def test_data_availability_vocab_has_exactly_five_markers():
 def test_data_availability_vocab_contains_marker(marker):
     """All 5 controlled-vocab markers (spec §4) exposed for chat-B2 import."""
     assert marker in _RESTAURANT_DATA_AVAILABILITY_VOCAB
+
+
+# ============================================================
+# Phase 2B-1 — Direct endpoint contract tests (⚠️ → ✅ upgrade)
+# ============================================================
+#
+# Mirrors the §4.1 production 3-test pattern from
+# ``docs/qa-audits/2026-05-12-python-migration-test-coverage-audit.md``:
+#
+#   1. happy path → 200 + wrapped envelope + Rule 4 numeric N3
+#   2. missing JWT → 401
+#   3. cross-factory token vs URL → 403
+#
+# The happy-path test wires a mocked asyncpg pool through both
+# ``get_cretas_pool`` (used by the router for tenant detection) and
+# ``get_pg_pool`` (used by the restaurant dispatcher for the N2/N3/N4
+# queries). N3 ``DISH_RETURN_RATE`` carries a numeric value derived from
+# ``Decimal("34.5") / Decimal("1000") * 100`` which exercises Rule 4
+# ``_decimal_to_number`` end-to-end on the wire.
+
+_JWT_SECRET = "phase-2b-qual-upgrade-test-secret"
+
+
+def _make_test_token(
+    *, factory_id="R_QINGHUAJIAO_REAL", role="factory_super_admin", exp_offset=3600
+) -> str:
+    payload: dict = {
+        "userId": 22,
+        "username": "alice",
+        "role": role,
+        "exp": int(time()) + exp_offset,
+    }
+    if factory_id is not None:
+        payload["factoryId"] = factory_id
+    return jwt_lib.encode(payload, _JWT_SECRET, algorithm="HS256")
+
+
+def _auth_header_endpoint(**kwargs) -> dict:
+    return {"Authorization": f"Bearer {_make_test_token(**kwargs)}"}
+
+
+class _EndpointFakeConn:
+    """asyncpg.Connection stub dispatching by SQL substring.
+
+    Single conn services both tenant detection (cretas_db ``factories``
+    row) and the restaurant N2/N3/N4 query helpers — the router holds
+    one conn for the tenant lookup and the restaurant dispatcher
+    re-acquires from the same pool fixture for the metric queries.
+    """
+
+    def __init__(
+        self,
+        *,
+        factory_type: str = "RESTAURANT",
+        complaint: dict | None = None,
+        return_rate: dict | None = None,
+        wastage: dict | None = None,
+    ):
+        self._factory_type = factory_type
+        self._complaint = complaint
+        self._return_rate = return_rate
+        self._wastage = wastage
+
+    async def fetchrow(self, sql: str, *args):
+        sql_lower = sql.lower()
+        if "from factories" in sql_lower:
+            return {"type": self._factory_type}
+        if "restaurant_reviews" in sql_lower:
+            return self._complaint
+        if "fact_pos_item" in sql_lower:
+            return self._return_rate
+        if "fact_restaurant_wastage" in sql_lower:
+            return self._wastage
+        return None
+
+
+class _EndpointFakePool:
+    """asyncpg.Pool stub yielding a shared conn from ``acquire()``."""
+
+    def __init__(self, conn: _EndpointFakeConn):
+        self._conn = conn
+
+    def acquire(self):
+        pool_self = self
+
+        class _Ctx:
+            async def __aenter__(_self):
+                return pool_self._conn
+
+            async def __aexit__(_self, *_):
+                return False
+
+        return _Ctx()
+
+
+@pytest.fixture
+def client_endpoint_restaurant(monkeypatch):
+    """TestClient wired with mocks so the RESTAURANT branch emits numeric N3.
+
+    The synthetic data shape mirrors the R_QINGHUAJIAO_REAL pilot in
+    ``test_analysis_quality_restaurant.py`` (100 reviews / 15 complaints
+    / 1000 sales-qty / 34.5 returns / no wastage rows).
+    """
+    import smartbi.config
+
+    conn = _EndpointFakeConn(
+        factory_type="RESTAURANT",
+        complaint={"total_reviews": 100, "complaint_count": 15},
+        return_rate={
+            "total_sales_qty": Decimal("1000"),
+            "total_return_qty": Decimal("34.5"),
+        },
+        wastage={
+            "total_wastage_cost": Decimal("0"),
+            "total_requisition_cost": Decimal("0"),
+            "wastage_row_count": 0,
+        },
+    )
+    pool = _EndpointFakePool(conn)
+
+    async def fake_get_cretas_pool():
+        return pool
+
+    async def fake_get_pg_pool():
+        return pool
+
+    monkeypatch.setattr(smartbi.config, "get_cretas_pool", fake_get_cretas_pool)
+    monkeypatch.setattr(smartbi.config, "get_pg_pool", fake_get_pg_pool)
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    app = FastAPI()
+    app.include_router(router)
+    return TestClient(app)
+
+
+@pytest.fixture
+def client_endpoint_factory(monkeypatch):
+    """TestClient for auth-only assertions — cretas pool acquisition fails
+    so the router falls back to the FACTORY branch's Phase 2D envelope.
+
+    Used by the 401 / 403 tests where the assertion fires before any DB
+    work (the auth Depend runs first); the fallback keeps any reachable
+    handler from raising on a missing pool.
+    """
+    import smartbi.config
+
+    async def fake_get_cretas_pool():
+        raise RuntimeError("pool unavailable in auth-only test")
+
+    monkeypatch.setattr(smartbi.config, "get_cretas_pool", fake_get_cretas_pool)
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    app = FastAPI()
+    app.include_router(router)
+    return TestClient(app)
+
+
+def test_quality_endpoint_returns_full_envelope(client_endpoint_restaurant):
+    """Happy path — RESTAURANT branch returns wrapped envelope + Rule 4 numeric.
+
+    Per audit §4.2 mirroring §4.1 production: GET with valid factory →
+    200 + wrap_response envelope (``data``/``success``/``code``/...) +
+    restaurant 4-metric shape. Additionally asserts Rule 4
+    ``_decimal_to_number`` emits a numeric (int|float) — not str — for
+    ``DISH_RETURN_RATE.value`` (34.5/1000 × 100 = 3.45%), exercising the
+    BigDecimal → number serialization end-to-end through the FastAPI
+    JSON encoder.
+    """
+    r = client_endpoint_restaurant.get(
+        "/api/mobile/R_QINGHUAJIAO_REAL/smart-bi/analysis/quality",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-31"},
+        headers=_auth_header_endpoint(factory_id="R_QINGHUAJIAO_REAL"),
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["success"] is True
+    assert "data" in body
+    data = body["data"]
+    assert data["tenantType"] == "RESTAURANT"
+    assert data["startDate"] == "2026-05-01"
+    assert data["endDate"] == "2026-05-31"
+    assert "metrics" in data and len(data["metrics"]) == 4
+    metric_codes = [m["metricCode"] for m in data["metrics"]]
+    assert metric_codes == [
+        "FOOD_SAFETY_INCIDENT_RATE",
+        "COMPLAINT_RATE",
+        "DISH_RETURN_RATE",
+        "WASTAGE_RATE",
+    ]
+    # Rule 4 — _decimal_to_number must serialize as numeric, not str
+    n3 = data["metrics"][2]
+    assert isinstance(n3["value"], (int, float)), (
+        "Rule 4 _decimal_to_number must emit numeric for DISH_RETURN_RATE.value, "
+        f"got {type(n3['value']).__name__}: {n3['value']!r}"
+    )
+    # 34.5 / 1000 * 100 = 3.45% (float branch — non-integral Decimal)
+    assert n3["value"] == 3.45
+
+
+def test_quality_endpoint_requires_jwt(client_endpoint_factory):
+    """No Authorization header → 401 (verify_jwt_and_factory Depend)."""
+    r = client_endpoint_factory.get(
+        "/api/mobile/F001/smart-bi/analysis/quality",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-31"},
+    )
+    assert r.status_code == 401, r.text
+
+
+def test_quality_endpoint_cross_factory_denied(client_endpoint_factory):
+    """Token factoryId=F001 calling F002 URL → 403."""
+    r = client_endpoint_factory.get(
+        "/api/mobile/F002/smart-bi/analysis/quality",
+        params={"startDate": "2026-05-01", "endDate": "2026-05-31"},
+        headers=_auth_header_endpoint(factory_id="F001"),
+    )
+    assert r.status_code == 403, r.text
