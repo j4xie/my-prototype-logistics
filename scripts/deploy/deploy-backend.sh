@@ -781,13 +781,32 @@ deploy_jar() {
     sleep 1
     wait 2>/dev/null || true
 
+    # 重新读取 winner 文件 (subshell-scope fix):
+    # upload_r2 / upload_rsync 等在后台 subshell 里 echo "$METHOD" > winner,
+    # 但父 shell 的 $WINNER 变量只在 polling loop 里更新. 如果一个 uploader
+    # 在 polling timeout 之后 / kill -9 之前 (line 762-768) 刚好 flush 了 winner 文件,
+    # $WINNER 会是空字符串但磁盘上 winner 文件存在 → 误报"所有上传方式都失败".
+    # 在 wait 后重读 winner 文件可消除这个 race.
+    if [ -z "$WINNER" ] && [ -f "$UPLOAD_STATUS_DIR/winner" ]; then
+        WINNER=$(cat "$UPLOAD_STATUS_DIR/winner" 2>/dev/null)
+        [ -n "$WINNER" ] && echo "   ℹ️  上传胜出方 (post-wait race-fix 检测): $WINNER"
+    fi
+
     # 清理服务器上的临时文件 (保留 winner 的 $JAR_NAME)
     ssh -o ConnectTimeout=5 $SERVER "rm -f $REMOTE_TMP/${JAR_NAME}.rsync $REMOTE_TMP/${JAR_NAME}.rsync_z $REMOTE_TMP/${JAR_NAME}.oss $REMOTE_TMP/${JAR_NAME}.r2 $REMOTE_TMP/${JAR_NAME}.github_direct $REMOTE_TMP/${JAR_NAME}.gh_* 2>/dev/null; true" 2>/dev/null || true
 
     if [ -z "$WINNER" ]; then
-        echo ""
-        echo "❌ 所有上传方式都失败或超时"
-        exit 1
+        # 最后的兜底: 即使本地 winner flag 缺失, 远程 jar 若存在且 MD5 匹配, 视为上传成功
+        # (防御 winner 文件被 kill -9 之前 race 掉但 server-side jar 已落地的极端 case)
+        REMOTE_MD5_CHECK=$(ssh -o ConnectTimeout=5 $SERVER "[ -f $REMOTE_TMP/$JAR_NAME ] && md5sum $REMOTE_TMP/$JAR_NAME | cut -d' ' -f1" 2>/dev/null)
+        if [ -n "$REMOTE_MD5_CHECK" ] && [ "$REMOTE_MD5_CHECK" = "$LOCAL_MD5" ]; then
+            WINNER="unknown (post-wait MD5 verified)"
+            echo "   ℹ️  上传方式未记录 winner 但服务器 jar MD5 匹配,视为成功"
+        else
+            echo ""
+            echo "❌ 所有上传方式都失败或超时"
+            exit 1
+        fi
     fi
 
     # 计算速度 (兼容不同系统)
