@@ -250,6 +250,10 @@ public class SalesOrder extends BaseEntity {
 
     @Transient
     public BigDecimal getPayableAmount() {
+        // PR #423 hardening: PriceFieldResponseAdvice strips totalAmount to null for
+        // roles without procurement:price:view. Derived getter must mirror that strip
+        // — otherwise Jackson NPEs on subtract(...) when serializing for those roles.
+        if (totalAmount == null) return null;
         BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
         BigDecimal tax = taxAmount != null ? taxAmount : BigDecimal.ZERO;
         return totalAmount.subtract(discount).add(tax);
