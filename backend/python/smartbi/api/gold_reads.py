@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
-from typing import Optional
+from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from smartbi.config import get_pg_pool
 from smartbi.gold import (
@@ -31,10 +31,54 @@ from smartbi.gold import (
     top_products,
 )
 from smartbi.tenant_ctx import get_factory_id
+from smartbi_compat._rbac_strip import PRICE_VIEW_ROLES, strip_price_for_role
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/gold", tags=["Gold Reads"])
+
+
+# Gold-specific money keys not matched by the shared `_MONEY_PATTERN`. The
+# shared regex deliberately excludes bare ``value`` / ``per`` tokens to avoid
+# false-positives like ``store_count`` / ``items_per_bill``; in Gold response
+# shapes ``avg_bill_value`` (元/单) and ``avg_per_capita`` (元/客) are
+# unambiguously monetary so we strip them here as a thin local extension.
+_GOLD_EXTRA_MONEY_KEYS: frozenset[str] = frozenset({
+    "avg_bill_value",
+    "avg_per_capita",
+})
+
+
+def _get_role(request: Request) -> Optional[str]:
+    """Role string set by JWTAuthMiddleware (auth_middleware.py)."""
+    return getattr(request.state, "role", None)
+
+
+def _strip_extras(node: Any) -> None:
+    """Depth-first null of gold-specific money keys not caught by the shared regex."""
+    if isinstance(node, dict):
+        for k, v in list(node.items()):
+            if k in _GOLD_EXTRA_MONEY_KEYS and not isinstance(v, (dict, list)):
+                node[k] = None
+            else:
+                _strip_extras(v)
+    elif isinstance(node, list):
+        for item in node:
+            _strip_extras(item)
+
+
+def _apply_rbac_strip(result: Any, role: Optional[str]) -> Any:
+    """Mirror PR #435 pattern for the Gold layer.
+
+    Whitelisted roles (PRICE_VIEW_ROLES) get the raw payload; everyone else
+    gets monetary fields nulled in place. Returns the same ``result`` reference
+    for caller convenience.
+    """
+    if role and role in PRICE_VIEW_ROLES:
+        return result
+    strip_price_for_role(result, role)
+    _strip_extras(result)
+    return result
 
 
 def _parse_date(s: str, field: str) -> date:
@@ -71,6 +115,7 @@ def _parse_range(start_date: str, end_date: str) -> tuple:
 
 @router.get("/finance-summary")
 async def get_finance_summary(
+    request: Request,
     start_date: str = Query(..., description="YYYY-MM-DD inclusive"),
     end_date: str = Query(..., description="YYYY-MM-DD inclusive"),
     factory_id: Optional[str] = Query(None, description="belt-and-suspenders; defaults to JWT tenant"),
@@ -87,9 +132,10 @@ async def get_finance_summary(
     start, end = _parse_range(start_date, end_date)
     pool = await get_pg_pool()
     try:
-        return await finance_summary(
+        result = await finance_summary(
             pool, fid, (start, end), top_n_stores=top_n_stores,
         )
+        return _apply_rbac_strip(result, _get_role(request))
     except Exception as e:
         logger.exception("finance-summary failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
@@ -97,6 +143,7 @@ async def get_finance_summary(
 
 @router.get("/daily-trend")
 async def get_daily_trend(
+    request: Request,
     start_date: str = Query(..., description="YYYY-MM-DD inclusive"),
     end_date: str = Query(..., description="YYYY-MM-DD inclusive"),
     factory_id: Optional[str] = Query(None),
@@ -106,7 +153,8 @@ async def get_daily_trend(
     start, end = _parse_range(start_date, end_date)
     pool = await get_pg_pool()
     try:
-        return await daily_trend(pool, fid, (start, end))
+        result = await daily_trend(pool, fid, (start, end))
+        return _apply_rbac_strip(result, _get_role(request))
     except Exception as e:
         logger.exception("daily-trend failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
@@ -114,6 +162,7 @@ async def get_daily_trend(
 
 @router.get("/top-products")
 async def get_top_products(
+    request: Request,
     start_date: str = Query(...),
     end_date: str = Query(...),
     factory_id: Optional[str] = Query(None),
@@ -125,7 +174,8 @@ async def get_top_products(
     start, end = _parse_range(start_date, end_date)
     pool = await get_pg_pool()
     try:
-        return await top_products(pool, fid, (start, end), top_n=top_n)
+        result = await top_products(pool, fid, (start, end), top_n=top_n)
+        return _apply_rbac_strip(result, _get_role(request))
     except Exception as e:
         logger.exception("top-products failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
@@ -133,6 +183,7 @@ async def get_top_products(
 
 @router.get("/channel-breakdown")
 async def get_channel_breakdown(
+    request: Request,
     start_date: str = Query(...),
     end_date: str = Query(...),
     factory_id: Optional[str] = Query(None),
@@ -144,7 +195,8 @@ async def get_channel_breakdown(
     start, end = _parse_range(start_date, end_date)
     pool = await get_pg_pool()
     try:
-        return await channel_breakdown(pool, fid, (start, end), top_n=top_n)
+        result = await channel_breakdown(pool, fid, (start, end), top_n=top_n)
+        return _apply_rbac_strip(result, _get_role(request))
     except Exception as e:
         logger.exception("channel-breakdown failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
@@ -152,6 +204,7 @@ async def get_channel_breakdown(
 
 @router.get("/discount-breakdown")
 async def get_discount_breakdown(
+    request: Request,
     start_date: str = Query(...),
     end_date: str = Query(...),
     factory_id: Optional[str] = Query(None),
@@ -163,7 +216,8 @@ async def get_discount_breakdown(
     start, end = _parse_range(start_date, end_date)
     pool = await get_pg_pool()
     try:
-        return await discount_breakdown(pool, fid, (start, end), top_n=top_n)
+        result = await discount_breakdown(pool, fid, (start, end), top_n=top_n)
+        return _apply_rbac_strip(result, _get_role(request))
     except Exception as e:
         logger.exception("discount-breakdown failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
@@ -258,6 +312,7 @@ async def _query_analysis_results_batch(
 
 @router.get("/analysis-results")
 async def get_analysis_results(
+    request: Request,
     upload_id: Optional[int] = Query(None, description="Pin to one upload; omit to resolve latest per code"),
     template_code: Optional[str] = Query(None, description="Single template; alias for template_codes=<code>"),
     template_codes: Optional[str] = Query(None, description="CSV of template codes (1..20)"),
@@ -298,9 +353,10 @@ async def get_analysis_results(
                 detail=f"template_codes max 20 per call, got {len(codes_list)}",
             )
         try:
-            return await _query_analysis_results_batch(
+            result = await _query_analysis_results_batch(
                 pool, fid, codes_list, upload_id,
             )
+            return _apply_rbac_strip(result, _get_role(request))
         except HTTPException:
             raise
         except Exception as e:
@@ -331,7 +387,10 @@ async def get_analysis_results(
                 """,
                 fid, upload_id,
             )
-            return {"items": [_row_to_result(r) for r in rows]}
+            return _apply_rbac_strip(
+                {"items": [_row_to_result(r) for r in rows]},
+                _get_role(request),
+            )
     except Exception as e:
         logger.exception("analysis-results by-upload failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Analysis read failed: {e}")
@@ -373,6 +432,7 @@ def _row_to_result(row) -> dict:
 
 @router.get("/kpi-summary")
 async def get_kpi_summary(
+    request: Request,
     start_date: str = Query(...),
     end_date: str = Query(...),
     factory_id: Optional[str] = Query(None),
@@ -383,7 +443,8 @@ async def get_kpi_summary(
     start, end = _parse_range(start_date, end_date)
     pool = await get_pg_pool()
     try:
-        return await kpi_summary(pool, fid, (start, end))
+        result = await kpi_summary(pool, fid, (start, end))
+        return _apply_rbac_strip(result, _get_role(request))
     except Exception as e:
         logger.exception("kpi-summary failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
