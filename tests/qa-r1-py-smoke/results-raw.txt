@@ -1,0 +1,111 @@
+=== finance-composite ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/finance?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.577578|size=2712
+SAMPLE: {"code":200,"message":"操作成功","data":{"overview":{"period":null,"startDate":null,"endDate":null,"kpiCards":[],"metricCards":null,"rankings":{},"charts":{},"chartList":null,"aiInsights":[],"alerts":null,"recommendations":null,"suggestions":[],"generatedAt":null,"lastUpdated":"2026-05-13T03:52:40.470334","fromCache":false,"cacheExpireAt":null},"costStructure":{"chartType":"PIE","title":"成�
+
+=== finance-budget-achievement ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/finance/budget-achievement?startDate=2026-04-01&endDate=2026-05-01
+META:|status=422|time=0.976915|size=90
+SAMPLE: {"detail":[{"type":"missing","loc":["query","year"],"msg":"Field required","input":null}]}
+
+=== finance-yoy-mom ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/finance/yoy-mom?startDate=2026-04-01&endDate=2026-05-01&periodType=MONTH
+META:|status=422|time=0.444582|size=97
+SAMPLE: {"detail":[{"type":"missing","loc":["query","startPeriod"],"msg":"Field required","input":null}]}
+
+=== finance-category-comparison ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/finance/category-comparison?startDate=2026-04-01&endDate=2026-05-01
+META:|status=422|time=0.459041|size=175
+SAMPLE: {"detail":[{"type":"missing","loc":["query","year"],"msg":"Field required","input":null},{"type":"missing","loc":["query","compareYear"],"msg":"Field required","input":null}]}
+
+=== analysis-sales ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.459922|size=1140
+SAMPLE: {"code":200,"message":"操作成功","data":{"overview":{"period":null,"startDate":null,"endDate":null,"kpiCards":[],"metricCards":null,"rankings":{},"charts":{},"chartList":null,"aiInsights":[{"level":"YELLOW","category":"数据状态","message":"当前时间范围内暂无销售数据","relatedEntity":null,"actionSuggestion":"请上传销售数据或调整时间范围"}],"alerts":null,"recommend
+
+=== analysis-inventory ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/inventory?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.457372|size=3352
+SAMPLE: {"code":200,"message":"操作成功","data":{"overview":{"period":null,"startDate":null,"endDate":null,"kpiCards":[{"key":"INVENTORY_VALUE","title":"库存总值","value":"141,926.54","rawValue":141926.54,"unit":"元","change":null,"changeRate":null,"trend":"flat","status":"green","compareText":null,"description":null,"targetValue":null,"completionRate":null},{"key":"BATCH_COUNT","title":"库存�
+
+=== analysis-procurement ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/procurement?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.425255|size=730
+SAMPLE: {"code":200,"message":"操作成功","data":{"overview":{"period":null,"startDate":null,"endDate":null,"kpiCards":[],"metricCards":null,"rankings":{},"charts":{},"chartList":null,"aiInsights":[{"level":"YELLOW","category":"数据状态","message":"当前时间范围内暂无采购数据","relatedEntity":null,"actionSuggestion":"请调整时间范围或录入采购数据"}],"alerts":null,"recommend
+
+=== analysis-region ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/region?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.510564|size=566
+SAMPLE: {"code":200,"message":"操作成功","data":{"heatmap":{"chartType":"MAP","title":"销售地理分布","seriesField":null,"data":[],"options":null,"xaxisField":null,"yaxisField":null},"targetCompletion":[],"dateRange":{"startDate":"2026-04-01","endDate":"2026-05-01","granularity":"MONTH","originalExpression":"2026-04-01 至 2026-05-01","relative":false,"days":31,"valid":true},"opportunityScores":[
+
+=== analysis-department ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/department?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.427578|size=710
+SAMPLE: {"code":200,"message":"操作成功","data":{"completionRates":[],"efficiencyMatrix":{"chartType":"SCATTER","title":"部门效率矩阵","seriesField":null,"data":[],"options":null,"xaxisField":null,"yaxisField":null},"dateRange":{"startDate":"2026-04-01","endDate":"2026-05-01","granularity":"MONTH","originalExpression":"2026-04-01 至 2026-05-01","relative":false,"days":31,"valid":true},"generate
+
+=== analysis-drilldown-post ===
+PATH: POST /api/mobile/F006/smart-bi/drill-down
+META:|status=000|time=2.717423|size=0
+SAMPLE: {"code":415,"message":"不支持的 Content-Type (application/x-www-form-urlencoded;charset=UTF-8), 请改用: [application/json, application/*+json]","data":null,"timestamp":"2026-05-13T11:52:49.796083465","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+__META__|status=415|time=0.450878|size=275
+
+=== query-templates-list ===
+PATH: GET /api/mobile/F006/smart-bi/query-templates
+META:|status=404|time=0.466381|size=173
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:52:53.643644835","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
+=== datasource-list ===
+PATH: GET /api/mobile/F006/smart-bi/datasource/list
+META:|status=404|time=0.466731|size=173
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:52:54.525014662","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
+=== alerts ===
+PATH: GET /api/mobile/F006/smart-bi/alerts
+META:|status=404|time=0.507283|size=173
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:52:55.503195652","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
+=== recommendations ===
+PATH: GET /api/mobile/F006/smart-bi/recommendations
+META:|status=404|time=0.442769|size=172
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:52:56.37056103","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
+=== analysis-production ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/production?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.477789|size=6953
+SAMPLE: {"code":200,"message":"操作成功","data":{"overview":{"period":"CUSTOM","startDate":"2026-04-01","endDate":"2026-05-01","kpiCards":[{"key":"OEE","title":"综合设备效率 (OEE)","value":"79.7%","rawValue":79.75,"unit":"%","change":null,"changeRate":null,"trend":"flat","status":"yellow","compareText":null,"description":"OEE = 可用性 x 性能 x 质量","targetValue":null,"completionRate":nul
+
+=== analysis-quality ===
+PATH: GET /api/mobile/F006/smart-bi/analysis/quality?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.484489|size=7575
+SAMPLE: {"code":200,"message":"操作成功","data":{"overview":{"period":"CUSTOM","startDate":"2026-04-01","endDate":"2026-05-01","kpiCards":[{"key":"FPY","title":"首次通过率 (FPY)","value":"95.53%","rawValue":95.53,"unit":"%","change":null,"changeRate":null,"trend":"flat","status":"yellow","compareText":null,"description":"首次检验通过数 / 总检验数","targetValue":null,"completionRate":nu
+
+=== config-thresholds-list ===
+PATH: GET /api/mobile/smartbi-config/thresholds
+META:|status=200|time=0.420192|size=2579
+SAMPLE: {"code":200,"message":"操作成功","data":[{"createdAt":"2026-01-22T00:22:34","updatedAt":"2026-02-11T12:25:33.759038","deletedAt":null,"id":"64b5bbd8-f6e5-11f0-955b-00163e35af14","thresholdType":"FINANCE","metricCode":"interest_coverage","warningValue":null,"criticalValue":null,"comparisonOperator":"LESS_THAN","unit":null,"description":null,"factoryId":null,"isActive":true,"deleted":false},{"cr
+
+=== dashboard-executive ===
+PATH: GET /api/mobile/F006/smart-bi/dashboard/executive?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.534097|size=1011
+SAMPLE: {"code":200,"message":"操作成功","data":{"period":null,"startDate":null,"endDate":null,"kpiCards":[],"metricCards":null,"rankings":{},"charts":{"department_trend":{"chartType":"LINE","title":"部门销售趋势对比","seriesField":null,"data":[],"options":null,"xaxisField":null,"yaxisField":null}},"chartList":null,"aiInsights":[{"level":"YELLOW","category":"数据状态","message":"当前时�
+
+=== dashboard ===
+PATH: GET /api/mobile/F006/smart-bi/dashboard?startDate=2026-04-01&endDate=2026-05-01
+META:|status=200|time=0.782281|size=21787
+SAMPLE: {"code":200,"message":"操作成功","data":{"period":"month","startDate":"2026-05-01","endDate":"2026-05-31","sales":{"period":null,"startDate":null,"endDate":null,"kpiCards":[],"metricCards":null,"rankings":{},"charts":{"department_trend":{"chartType":"LINE","title":"部门销售趋势对比","seriesField":null,"data":[],"options":null,"xaxisField":null,"yaxisField":null}},"chartList":null,"aiIn
+
+=== dashboard-data-date-range ===
+PATH: GET /api/mobile/F006/smart-bi/data-date-range
+META:|status=404|time=0.495796|size=173
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:53:02.620689543","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
+=== datasource-fields-missing-id ===
+PATH: GET /api/mobile/F006/smart-bi/datasource/0/fields
+META:|status=404|time=0.438632|size=173
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:53:03.625943641","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
+=== incentive-plan-missing-id ===
+PATH: GET /api/mobile/F006/smart-bi/incentive-plan/PERSON/0
+META:|status=404|time=0.443627|size=173
+SAMPLE: {"code":404,"message":"请求的资源不存在","data":null,"timestamp":"2026-05-13T11:53:04.642934988","success":false,"actionHint":null,"severity":null,"hintTarget":null}
+
