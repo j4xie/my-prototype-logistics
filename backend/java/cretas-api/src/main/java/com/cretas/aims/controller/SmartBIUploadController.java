@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.util.NormalizedFilenameMultipartFile;
 
 /**
  * SmartBI Upload Controller
@@ -56,6 +57,17 @@ public class SmartBIUploadController {
      */
     private static final long MAX_UPLOAD_BYTES = 300L * 1024 * 1024;
 
+    /**
+     * T-R5-1 (R5 audit §1 B1, 2026-05-12): Sync /upload route blocks the Tomcat
+     * worker thread on Python `parseExcel` until the request body is fully
+     * streamed and parsed. With 100 MB junk content this was observed to hang
+     * 300 s+ with no terminating error — a DoS surface (one curl holds a worker
+     * + a Python parse worker for 5 minutes). Reject early at 50 MB on /upload
+     * (sync); larger files must use /upload-and-analyze which already routes to
+     * Python async parse (line 204, `LARGE_FILE_ASYNC_BYTES`).
+     */
+    private static final long MAX_SYNC_UPLOAD_BYTES = 50L * 1024 * 1024;
+
     private final ExcelDynamicParserService excelParserService;
     private final SmartBIUploadFlowService uploadFlowService;
     private final PythonSmartBIClient pythonClient;
@@ -73,6 +85,24 @@ public class SmartBIUploadController {
         String msg = String.format(
                 "文件过大 (%.2f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
                 mb, limitMb);
+        return ResponseEntity.ok(ApiResponse.error(msg));
+    }
+
+    /**
+     * T-R5-1: tighter cap for the synchronous /upload path so junk binary
+     * uploads can't tie up a worker thread for 5 minutes. Routes user to the
+     * async /upload-and-analyze endpoint which already supports >50 MB via the
+     * Python async parse path.
+     */
+    private ResponseEntity<ApiResponse<?>> rejectIfTooLargeForSyncUpload(MultipartFile file) {
+        if (file == null || file.getSize() <= MAX_SYNC_UPLOAD_BYTES) return null;
+        double mb = file.getSize() / 1024.0 / 1024.0;
+        long limitMb = MAX_SYNC_UPLOAD_BYTES / 1024 / 1024;
+        log.warn("Sync /upload rejected — exceeds {}MB sync cap: name={} size={} bytes",
+                limitMb, file.getOriginalFilename(), file.getSize());
+        String msg = String.format(
+                "文件过大 (%.2f MB)，同步 /upload 仅支持 %d MB 以内。请改用异步路径 /upload-and-analyze (支持最大 %d MB)。",
+                mb, limitMb, MAX_UPLOAD_BYTES / 1024 / 1024);
         return ResponseEntity.ok(ApiResponse.error(msg));
     }
 
@@ -119,6 +149,12 @@ public class SmartBIUploadController {
             @Parameter(description = "Row label column index for transpose") @RequestParam(required = false, defaultValue = "0") Integer rowLabelColumn,
             @Parameter(description = "Header row count for transpose") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount) {
 
+        // T-R5-2: defend against Tomcat ISO-8859-1 multipart filename mojibake.
+        // Even with the application*.properties UTF-8 fix, an in-flight request
+        // during a deploy window can still hit the old behavior — wrap once here
+        // so downstream services (parseExcel, executeUploadFlow) see a clean name.
+        file = new NormalizedFilenameMultipartFile(file);
+
         log.info("Upload Excel: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, transpose={}",
                 factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, transpose);
 
@@ -127,6 +163,14 @@ public class SmartBIUploadController {
             // unchecked cast: ApiResponse<?> 与 ApiResponse<ExcelParseResponse> 在错误分支只用 message 字段
             @SuppressWarnings({"unchecked", "rawtypes"})
             ResponseEntity typed = sizeReject;
+            return typed;
+        }
+
+        // T-R5-1: drop sync /upload cap to 50MB so junk binary can't hang a worker.
+        ResponseEntity<ApiResponse<?>> syncReject = rejectIfTooLargeForSyncUpload(file);
+        if (syncReject != null) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ResponseEntity typed = syncReject;
             return typed;
         }
 
@@ -183,6 +227,9 @@ public class SmartBIUploadController {
             // Bug #25b (2026-04-18): multi-stacked-table region bounds (0-indexed, inclusive)
             @Parameter(description = "Selected region start row (Bug #25b)") @RequestParam(required = false) Integer selectedRegionStart,
             @Parameter(description = "Selected region end row (Bug #25b)") @RequestParam(required = false) Integer selectedRegionEnd) {
+
+        // T-R5-2: normalize filename for the async route too (same persistence target).
+        file = new NormalizedFilenameMultipartFile(file);
 
         log.info("Upload and analyze: factoryId={}, fileName={}, dataType={}, autoConfirm={}, region=[{},{}]",
                 factoryId, file.getOriginalFilename(), dataType, autoConfirm,

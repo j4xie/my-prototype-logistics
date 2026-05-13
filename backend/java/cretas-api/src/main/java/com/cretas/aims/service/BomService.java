@@ -127,6 +127,23 @@ public interface BomService {
     OverheadCostConfig saveOverheadCost(OverheadCostConfig config);
 
     /**
+     * 部分更新均摊费用配置 (PUT semantics: load-existing → merge non-null fields → save).
+     *
+     * <p>R5 audit §3 BUG#1 (T-R5-3, 2026-05-12): previously the PUT controller did
+     * a blind {@code repo.save(body)}, dropping audit columns (createdAt, version,
+     * deletedAt) to NULL whenever the client payload omitted them. Now we
+     * select-then-merge so any DB-only or audit field stays intact.
+     *
+     * @param factoryId 工厂ID (path var, tenant scope)
+     * @param id        费用配置ID (path var)
+     * @param body      部分字段更新; null 字段表示"保持当前值"
+     * @return 合并并保存后的配置
+     * @throws com.cretas.aims.exception.EntityNotFoundException 当记录不存在
+     * @throws com.cretas.aims.exception.BusinessException       当 factoryId 跨租户
+     */
+    OverheadCostConfig updateOverheadCost(String factoryId, Long id, OverheadCostConfig body);
+
+    /**
      * 删除均摊费用配置
      *
      * @param id 配置ID

@@ -61,9 +61,15 @@ public interface MaterialBatchService {
       */
     List<MaterialBatchDTO> getMaterialBatchesBySupplier(String factoryId, String supplierId);
      /**
-     * 调整批次数量
+     * 按 delta 调整批次数量 (newQuantity = current + adjustmentQuantity).
+     *
+     * <p>R5 audit §3 BUG#2 (T-R5-4, 2026-05-12): renamed from {@code adjustBatchQuantity}
+     * to make the delta semantic explicit at the API boundary. Callers wanting
+     * to <em>set</em> a batch to an absolute quantity must use the 5-arg
+     * {@link #adjustBatchQuantity(String, String, BigDecimal, String, Long)}
+     * overload (ABSOLUTE math).
       */
-    MaterialBatchDTO adjustBatchQuantity(String factoryId, String batchId, BigDecimal adjustmentQuantity, String reason);
+    MaterialBatchDTO applyBatchQuantityDelta(String factoryId, String batchId, BigDecimal adjustmentQuantity, String reason);
      /**
      * 标记批次过期
       */
@@ -164,7 +170,12 @@ public interface MaterialBatchService {
       */
     MaterialBatchDTO useBatchMaterial(String factoryId, String batchId, BigDecimal quantity, String productionPlanId);
      /**
-     * 调整批次数量（带操作人）
+     * 设置批次数量到绝对值 (newQuantity = param, NOT current + param).
+     *
+     * <p>R5 audit §3 BUG#2 (T-R5-4, 2026-05-12): this is the ABSOLUTE overload —
+     * the param is the desired post-update quantity, not a delta. For delta math
+     * (e.g. "consume 3 kg" / "add 5 kg" / "clear via -current"), call
+     * {@link #applyBatchQuantityDelta(String, String, BigDecimal, String)}.
       */
     MaterialBatchDTO adjustBatchQuantity(String factoryId, String batchId, BigDecimal newQuantity, String reason, Long adjustedBy);
      /**
