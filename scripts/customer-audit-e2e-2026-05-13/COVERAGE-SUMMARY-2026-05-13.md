@@ -7,12 +7,33 @@
 
 ## Headline
 
-| Metric | Before push | iter 2 | iter 3 | iter 4 | iter 5 | **iter 6 (post-PR #517 merge)** |
-|---|---|---|---|---|---|---|
-| Verified state (PASS + gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | 33/51 = 64.7% | 37/51 = 72.5% | **38/51 = 74.5%** |
-| Strict PASS only | 6 (11.8%) | 24 (47.1%) | 27 (52.9%) | 29 (56.9%) | 33 (64.7%) | **33 (64.7%)** |
-| Confirmed gaps | 1 (T-RTA) | 4 | 4 | 4 | 4 | **5** (T-RTA, T4-B4, T4-D4, T2-5b, **T4-D1**) |
-| Plus PARTIAL | — | — | 36/51 = 70.6% | 37/51 = 72.5% | 41/51 = 80.4% | **42/51 = 82.4%** |
+| Metric | Before push | iter 2 | iter 3 | iter 4 | iter 5 | iter 6 (PR #517) | **iter 7 (post 9-PR deploy)** |
+|---|---|---|---|---|---|---|---|
+| Verified state (PASS + gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | 33/51 = 64.7% | 37/51 = 72.5% | 38/51 = 74.5% | **38/51 = 74.5%** |
+| Strict PASS only | 6 (11.8%) | 24 (47.1%) | 27 (52.9%) | 29 (56.9%) | 33 (64.7%) | 33 (64.7%) | **37 (72.5%)** |
+| Confirmed gaps | 1 (T-RTA) | 4 | 4 | 4 | 4 | 5 | **1** (T4-D4 conditional — data not present) |
+| Plus PARTIAL | — | — | 36/51 = 70.6% | 37/51 = 72.5% | 41/51 = 80.4% | 42/51 = 82.4% | **41/51 = 80.4%** |
+
+### Iter 7 (FINAL — post-deploy of all 9 F006 PRs)
+
+Re-ran 35-scenario coverage suite on prod 139:8086 after all 9 F006 PRs merged + deployed: PASS=29 / FAIL=1 / PARTIAL=2 / INFO=3 / ERROR=0 (vs iter 6's 26/4/2/3/0).
+
+**4 confirmed-gap → PASS reversals** (verified post-deploy):
+- T4-D1 销售订单 dialog 来源仓库 column (after #547 merge)
+- T4-B4 调拨 dialog 现有库存 column (after #545 merge)
+- T2-5b 移动均价 column on material-types (after #541 merge)
+- T3-2 抄码品 — F006 prod now has rows with `spec='抄码'` (data condition naturally resolved)
+
+**T-RTA** PASS via separate run-e2e.mjs S-T-RTA-return scenario (after #549 frontend deploy + router /sales/returns live).
+
+**T4-D4 remains coverage FAIL despite #542 deploy**: feature code present (consumption section in batch detail.vue), but F006 prod batches in current data lack populated consumption records → `v-if="consumptions.length > 0"` hides section → coverage grep finds nothing. Same conditional pattern as T3-2 was (now resolved with data). NOT a code defect.
+
+### Final F006 session deliverables (sign-off snapshot)
+
+- **9 PRs merged**: #517 / #527 / #528 / #535 / #541 / #542 / #545 / #547 / #549
+- **14 GitHub issues filed; 12 CLOSED**; only #538 (test-env-seed cross-team) + #553 (T4-D5 follow-up) remain
+- **Memory rule graduated**: `feedback_grep_source_before_e2e_verdict` HARD
+- **Coverage achievement**: 3.9% → **72.5% strict PASS / 80.4% with PARTIAL**
 
 ### Iter 6 (post-PR #517 merge) deliverables
 
