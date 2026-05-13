@@ -168,6 +168,16 @@ request.interceptors.response.use(
   (response: AxiosResponse) => {
     const data = response.data;
 
+    // Opt-out: blob downloads needing custom response headers (e.g. X-Cache-Hit,
+    // X-Gold-Materialized-At from /api/smartbi/.../revenue-report/generate) must
+    // bypass the envelope unwrap below. Callers set `_keepResponse: true` to
+    // receive the raw AxiosResponse — preserves both `.data` (blob) and
+    // `.headers` (with backend-set custom headers).
+    const cfg0 = response.config as { _keepResponse?: boolean };
+    if (cfg0._keepResponse) {
+      return response;
+    }
+
     // Defensive: reject HTML responses that leaked through (routing misconfiguration).
     // When an API URL hits a non-proxied path, Vite SPA fallback returns index.html
     // with 200 OK. Without this guard, axios returns {success:true, data:"<HTML>"}
