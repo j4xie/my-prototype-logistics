@@ -444,10 +444,19 @@ async def _async_worker_impl(
             if _file_kind == 'excel':
                 # pd.read_excel auto-detects xlsx vs xls via openpyxl/xlrd; no encoding arg.
                 return pd.read_excel(tmp_path, nrows=100, skiprows=skip), None
+            # First try utf-8-sig + engine=python — handles 二维火 POS exports
+            # (UTF-8 BOM + \r-only line endings); see spec §5 / Task B3 +
+            # test_revenue_report_csv_encoding.py
             try:
-                return pd.read_csv(tmp_path, nrows=100, skiprows=skip), None
+                return pd.read_csv(
+                    tmp_path, nrows=100, skiprows=skip,
+                    encoding='utf-8-sig', engine='python',
+                ), 'utf-8-sig'
             except UnicodeDecodeError:
-                return pd.read_csv(tmp_path, nrows=100, skiprows=skip, encoding='gbk'), 'gbk'
+                return pd.read_csv(
+                    tmp_path, nrows=100, skiprows=skip,
+                    encoding='gbk', engine='python',
+                ), 'gbk'
 
         # --- Step 1: probe + title-row skip ---
         csv_skiprows = 0
@@ -595,9 +604,12 @@ async def _async_worker_impl(
                 skiprows=csv_skiprows,
                 usecols=real_cols_idx,
                 chunksize=CHUNK_SIZE,
+                # engine='python' to handle \r-only line endings (二维火); see Task B3.
+                engine='python',
             )
-            if encoding:
-                read_kwargs["encoding"] = encoding
+            # Encoding picked by _probe() above: 'utf-8-sig' (二维火) or 'gbk' (legacy).
+            # Default to utf-8-sig if probe gave nothing (handles BOM safely).
+            read_kwargs["encoding"] = encoding or "utf-8-sig"
 
             try:
                 chunks_iter = pd.read_csv(**read_kwargs)
