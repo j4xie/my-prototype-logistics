@@ -514,6 +514,7 @@ public class SmartBIUploadController {
 
     // ==================== Upload History & Data Preview ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/uploads")
     @Operation(summary = "Get upload history", description = "Get uploaded Excel files for the factory (paginated, lightweight)")
     public ResponseEntity<ApiResponse<?>> getUploadHistory(
@@ -582,6 +583,7 @@ public class SmartBIUploadController {
         return body;
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/uploads/{uploadId}/fields")
     @Operation(summary = "Get upload fields", description = "Get field definitions for uploaded data")
     public ResponseEntity<ApiResponse<List<DynamicAnalysisService.FieldDefinitionDTO>>> getUploadFields(
@@ -604,6 +606,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/uploads/{uploadId}/data")
     @Operation(summary = "Get upload data", description = "Paginated view of persisted Excel data rows")
     public ResponseEntity<ApiResponse<TableDataResponse>> getUploadData(
@@ -650,6 +653,7 @@ public class SmartBIUploadController {
 
     // ==================== Field Definition Backfill ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/uploads-missing-fields")
     @Operation(summary = "Diagnose missing field definitions", description = "Count uploads missing field definitions")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getUploadsMissingFields(
