@@ -932,8 +932,11 @@ async function handleQuickPayFull() {
     return ElMessage.info('订单已全额收款, 无需再收');
   }
   try {
+    // formatAmount already prepends ¥ — do NOT add another (reviewer Important #1).
+    // paymentDate: omit → backend defaults to server-local today (avoids UTC-midnight
+    // drift where Asia/Shanghai 23:30 click would land on tomorrow's UTC date).
     await ElMessageBox.confirm(
-      `应收余额 ¥${formatAmount(remaining)}, 收款方式默认 银行转账, 日期 ${new Date().toISOString().slice(0, 10)}. 一键登记?`,
+      `应收余额 ${formatAmount(remaining)}, 收款方式默认 银行转账, 系统按今日记录. 一键登记?`,
       '一键收款确认',
       { type: 'warning' }
     );
@@ -944,8 +947,8 @@ async function handleQuickPayFull() {
       salesOrderId: orderId.value,
       amount: remaining,
       paymentMethod: 'BANK_TRANSFER',
-      paymentDate: new Date().toISOString().slice(0, 10),
-      paymentReference: '',
+      paymentDate: null, // let backend default to server-today (reviewer M2: avoid UTC drift)
+      paymentReference: null, // no reference recorded for quick-pay path (reviewer M4)
       remark: '一键收款 (全额, 默认方式)',
       receiptUrl: null,
     });
