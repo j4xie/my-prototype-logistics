@@ -186,6 +186,7 @@ public class SmartBIDashboardController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/dashboard/executive/insights")
     @Operation(summary = "Get LLM insights for dashboard", description = "Async-loaded LLM insights, called after main dashboard renders")
     public ResponseEntity<ApiResponse<java.util.List<AIInsight>>> getDashboardLLMInsights(
@@ -207,6 +208,7 @@ public class SmartBIDashboardController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/dashboard/executive/insights/custom")
     @Operation(summary = "Agent layer LLM insights (custom range)",
                description = "Week 5: AgentOrchestrator returns Gold-backed insights for an arbitrary date range. Falls back to empty list if Python Agent layer is disabled or unreachable.")
@@ -241,6 +243,7 @@ public class SmartBIDashboardController {
      * Response content-type: text/event-stream. Events are JSON per spec
      * in AgentOrchestrator.stream_insight (meta / delta / done / error).
      */
+    @RequirePermission({"analytics:read"})
     @GetMapping(value = "/dashboard/executive/insights/custom/stream",
                 produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Streaming LLM insights (SSE)",
@@ -313,6 +316,7 @@ public class SmartBIDashboardController {
         return emitter;
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/dashboard/executive/custom")
     @Operation(summary = "Get custom date range dashboard", description = "Executive dashboard with specified date range")
     public ResponseEntity<ApiResponse<DashboardResponse>> getExecutiveDashboardCustomRange(
@@ -341,6 +345,7 @@ public class SmartBIDashboardController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/dashboard")
     @Operation(summary = "Get unified dashboard", description = "Aggregate all analysis dimensions into one-stop overview")
     public ResponseEntity<ApiResponse<UnifiedDashboardResponse>> getUnifiedDashboard(
@@ -427,6 +432,7 @@ public class SmartBIDashboardController {
      * Returns only KPI cards without charts or AI insights.
      * Ideal for dashboard loading where only headline numbers are needed.
      */
+    @RequirePermission({"analytics:read"})
     @GetMapping("/analysis/dynamic/kpis")
     @Operation(summary = "Get KPIs only", description = "Lightweight endpoint returning only KPI cards, no charts or AI insights")
     public ResponseEntity<ApiResponse<java.util.List<java.util.Map<String, Object>>>> getKPIsOnly(
@@ -451,6 +457,7 @@ public class SmartBIDashboardController {
 
     // ==================== Dynamic Data Analysis ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/analysis/dynamic")
     @Operation(summary = "Dynamic data analysis", description = "Analyze uploaded Excel data, returns KPI cards, charts, and AI insights")
     public ResponseEntity<ApiResponse<DynamicAnalysisService.DashboardResponse>> analyzeDynamicData(

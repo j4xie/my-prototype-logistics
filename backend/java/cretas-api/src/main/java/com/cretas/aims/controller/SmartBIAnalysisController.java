@@ -77,6 +77,7 @@ public class SmartBIAnalysisController {
 
     // ==================== Production Analysis ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/analysis/production")
     @Operation(summary = "Get production analysis", description = "Get production OEE analysis data")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getProductionAnalysis(
@@ -116,6 +117,7 @@ public class SmartBIAnalysisController {
 
     // ==================== Quality Analysis ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/analysis/quality")
     @Operation(summary = "Get quality analysis", description = "Get quality management analysis data")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getQualityAnalysis(
