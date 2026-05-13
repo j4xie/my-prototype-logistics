@@ -73,6 +73,9 @@ class CanonicalRow:
     order_type: Optional[str] = None
     channel_origin: Optional[str] = None
     customer_count: Optional[int] = None
+    # meal_period (Task C4) — populates fact_pos_transaction.meal_period;
+    # feeds materialize_daily_order_type_meal() Gold aggregation.
+    meal_period: Optional[str] = None
 
     # Optional bill-level aggregates
     gross_amount: Optional[Decimal] = None
@@ -132,7 +135,7 @@ INSERT INTO fact_pos_transaction (
     date, time,
     gross_amount, discount_amount, tax_amount, net_amount, actual_receive,
     customer_count, avg_per_capita,
-    table_no, order_type, channel_origin,
+    table_no, order_type, channel_origin, meal_period,
     item_count, has_discount
 )
 VALUES (
@@ -140,8 +143,8 @@ VALUES (
     $7, $8,
     $9, $10, $11, $12, $13,
     $14, $15,
-    $16, $17, $18,
-    $19, $20
+    $16, $17, $18, $19,
+    $20, $21
 )
 ON CONFLICT (factory_id, source_type, store_id, source_bill_no) DO NOTHING
 RETURNING id
@@ -198,7 +201,7 @@ class SilverNormalizer:
                     row.gross_amount, row.discount_amount, row.tax_amount,
                     row.net_amount, row.actual_receive,
                     row.customer_count, row.avg_per_capita,
-                    row.table_no, row.order_type, row.channel_origin,
+                    row.table_no, row.order_type, row.channel_origin, row.meal_period,
                     item_count, has_discount,
                 )
                 if txn_id is None:

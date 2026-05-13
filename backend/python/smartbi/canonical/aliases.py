@@ -92,6 +92,12 @@ ALIAS_TO_ATTR: Dict[str, str] = {
     "order_type": "order_type",
     "订单类型": "order_type",
 
+    # meal_period (Task C4 — QHJ revenue report) — populates fact_pos_transaction.meal_period
+    "meal_period": "meal_period",
+    "班次": "meal_period",
+    "市段": "meal_period",
+    "午晚市": "meal_period",
+
     "channel_origin": "channel_origin",
     "来源": "channel_origin",
     "订单来源": "channel_origin",
