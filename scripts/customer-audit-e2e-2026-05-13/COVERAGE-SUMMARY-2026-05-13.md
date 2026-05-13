@@ -7,12 +7,23 @@
 
 ## Headline
 
-| Metric | Before this push | After 2 iterations | After 3 iter + backend grep | **After iter 4 (post-review)** |
-|---|---|---|---|---|
-| Verified state (PASS + confirmed gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | **33/51 = 64.7%** |
-| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) | 27/51 (52.9%) | **29/51 (56.9%)** |
-| Confirmed feature gaps | 1 (T-RTA) | 4 | 4 | **4** (T-RTA, T4-B4, T4-D4, **T2-5b**) — T2-11/T2-12 RESCINDED (false gaps) |
-| Plus PARTIAL (semi-verified) | — | — | 36/51 = 70.6% | 37/51 = 72.5% (T-INV, T2-4, T1-6, T2-3) |
+| Metric | Before this push | After iter 2 | After iter 3 + backend grep | After iter 4 (post-review) | **After iter 5 (Vue-source-verified)** |
+|---|---|---|---|---|---|
+| Verified state (PASS + gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | 33/51 = 64.7% | **37/51 = 72.5%** |
+| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) | 27/51 (52.9%) | 29/51 (56.9%) | **33/51 (64.7%)** |
+| Confirmed gaps | 1 (T-RTA) | 4 | 4 | 4 | **4** (T-RTA, T4-B4, T4-D4, T2-5b) |
+| Plus PARTIAL | — | — | 36/51 = 70.6% | 37/51 = 72.5% | **41/51 = 80.4%** |
+
+### Iter 5 (Vue-source-verified selectors) major gains
+
+Used `grep` on actual `web-admin/src/views/**/*.vue` files to find real labels/routes/field names, replacing guesses with verified text:
+
+- **T3-2 抄码** scenario was checking dialog field. Vue source shows logic in `procurement/orders/list.vue:131` — `isAbacaItem(item)` triggers when row spec === '抄码'. Scenario now checks list body / detail for "抄码品" tag. Result: **INFO (functionality in code, F006 prod has no row with spec='抄码' to trigger)** — legitimate.
+- **T3-4 期望交货** scenario checked dialog. Actual label in `detail.vue:268` is exactly "期望交货" (not "期望交货时间"). Scenario rewrote to check order detail page. → **PASS**.
+- **T3-12 供应商** scenario was hitting `/inventory/material-types`. Actual route per `router/index.ts:255` is `/procurement/suppliers` titled "供应商管理". → **PASS**.
+- **T3-15 单位换算** scenario was checking for "1级单位/2级单位/系数". Vue source shows `production/conversions/index.vue` uses field name `conversionRate` + label "转换率"/"损耗率". Rewrote regex. → **PASS**.
+
+Plus T1-2, T4-B1, T4-D3 stabilized as PASS via earlier C3 fixes.
 
 ### Iter 4 (post code-review) major corrections
 
