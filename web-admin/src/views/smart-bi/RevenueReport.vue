@@ -26,7 +26,7 @@ import {
   type UploadResultItem,
   type AuditLogEntry,
 } from '@/api/smartbi/revenue-report';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '@/store/modules/auth';
 import SmartBIUploader from '@/components/smartbi/SmartBIUploader.vue';
 
 const authStore = useAuthStore();
