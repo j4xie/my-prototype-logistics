@@ -35,6 +35,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/price-lists")
 @RequiredArgsConstructor
+@RequirePermission({"procurement:price:view"})
 @Tag(name = "价格表管理", description = "总部统一定价管理")
 public class PriceListController {
 

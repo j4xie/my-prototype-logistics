@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.report.CostVarianceReportDTO;
 import com.cretas.aims.dto.report.KpiMetricsDTO;
@@ -31,6 +32,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/reports")
 @RequiredArgsConstructor
+@RequirePermission({"finance:read", "finance:read_write", "procurement:price:view"})
 @Tag(name = "报表统计管理")
 public class ReportController {
 

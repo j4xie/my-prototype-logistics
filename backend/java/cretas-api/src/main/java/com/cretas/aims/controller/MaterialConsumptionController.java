@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.exception.BusinessException;
 
 /**
@@ -45,6 +46,7 @@ import com.cretas.aims.exception.BusinessException;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/processing/material-consumptions")
 @RequiredArgsConstructor
+@RequirePermission({"procurement:price:view"})
 @Tag(name = "原材料消耗记录管理", description = "原材料消耗记录查询API")
 public class MaterialConsumptionController {
 
