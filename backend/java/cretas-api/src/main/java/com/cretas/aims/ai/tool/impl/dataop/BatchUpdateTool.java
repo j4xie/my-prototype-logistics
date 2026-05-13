@@ -157,6 +157,7 @@ public class BatchUpdateTool extends AbstractBusinessTool {
         String status = getString(params, "status");
         BigDecimal quantity = getBigDecimal(params, "quantity");
         String reason = getString(params, "reason");
+        Long userId = getUserId(context);
 
         // 先验证批次是否存在
         MaterialBatchDTO existing = materialBatchService.getMaterialBatchById(factoryId, batchId);
@@ -178,9 +179,14 @@ public class BatchUpdateTool extends AbstractBusinessTool {
         }
 
         // 2. 调整数量
+        // T-R5-4 (R5 audit §3 BUG#2, 2026-05-12): parameter description is
+        // "更新后的数量" (ABSOLUTE / final quantity), so we must call the 5-arg
+        // adjustBatchQuantity overload that sets newQuantity = param. Previously
+        // routed to the 4-arg delta overload, so LLM passing quantity=50 ran
+        // current + 50 — silent data corruption.
         if (quantity != null) {
             String adjustReason = reason != null ? reason : "AI工具调整";
-            updated = materialBatchService.adjustBatchQuantity(factoryId, batchId, quantity, adjustReason);
+            updated = materialBatchService.adjustBatchQuantity(factoryId, batchId, quantity, adjustReason, userId);
             updatedFields.put("quantity", quantity);
         }
 

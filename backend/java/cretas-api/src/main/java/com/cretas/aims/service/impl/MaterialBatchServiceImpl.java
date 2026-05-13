@@ -506,7 +506,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     @Transactional
-    public MaterialBatchDTO adjustBatchQuantity(String factoryId, String batchId, BigDecimal adjustmentQuantity, String reason) {
+    public MaterialBatchDTO applyBatchQuantityDelta(String factoryId, String batchId, BigDecimal adjustmentQuantity, String reason) {
         MaterialBatch batch = materialBatchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次", "id", batchId));
 
@@ -988,8 +988,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // W-03 defense (Round 7): reject negative newQuantity before it reaches the
         // receipt_quantity arithmetic — otherwise it propagated to a DB constraint
-        // and surfaced as a generic 500. Matches the guard in the older
-        // adjustBatchQuantity(4-arg) overload.
+        // and surfaced as a generic 500. Matches the guard in applyBatchQuantityDelta
+        // (the 4-arg DELTA overload, renamed T-R5-4 / 2026-05-12).
         if (newQuantity == null || newQuantity.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessException(400, "调整后数量不能为负数")
                     .withHint("请检查输入数量, 必须 ≥ 0");

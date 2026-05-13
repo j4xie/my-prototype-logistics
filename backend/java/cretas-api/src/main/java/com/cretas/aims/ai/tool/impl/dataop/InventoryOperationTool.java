@@ -122,7 +122,9 @@ public class InventoryOperationTool extends AbstractBusinessTool {
 
                 BigDecimal currentQty = current.getCurrentQuantity();
                 if (currentQty != null && currentQty.compareTo(BigDecimal.ZERO) > 0) {
-                    materialBatchService.adjustBatchQuantity(factoryId, batchId,
+                    // T-R5-4: CLEAR is explicit DELTA math (current + (-current) = 0),
+                    // so call the renamed delta overload.
+                    materialBatchService.applyBatchQuantityDelta(factoryId, batchId,
                             currentQty.negate(), "AI工具清零操作");
                 }
 
