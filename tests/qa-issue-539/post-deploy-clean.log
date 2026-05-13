@@ -1,0 +1,85 @@
+=== Post-deploy verify — Issue #539 / PR #544 ===
+Thu May 14 04:08:22 AM CST 2026
+
+=== Service deploy timestamp ===
+ActiveEnterTimestamp=Thu 2026-05-14 04:03:10 CST
+
+=== /www/wwwroot/cretas/python-prod.log — file size ===
+-rw-r--r-- 1 root root 18M May 14 04:08 /www/wwwroot/cretas/python-prod.log
+
+=== Failure count POST-DEPLOY (lines from first 04:03:xx onward) ===
+0
+
+=== Successful ETL runs POST-DEPLOY (count) ===
+66
+
+=== Each previously-failing tenant ran ETL successfully POST-DEPLOY? (distinct list) ===
+materialized gold for F002
+materialized gold for R001
+materialized gold for R_DONGMENKOU_REAL
+materialized gold for RES_3101_001
+materialized gold for RES_3101_002
+materialized gold for RES_3101_003
+materialized gold for RES_3101_004
+materialized gold for RES_3101_005
+materialized gold for RES_3101_006
+materialized gold for RES_3101_007
+materialized gold for RES_3101_008
+materialized gold for RES_3101_009
+materialized gold for RES_GML_001
+materialized gold for R_GML_DEMO
+materialized gold for R_HONGDEJI_REAL
+materialized gold for R_HUOGUO_GENERIC_REAL
+materialized gold for R_ILTEATRO_REAL
+materialized gold for R_JINCHUAN_HG_REAL
+materialized gold for R_JINRINIUSHI_REAL
+materialized gold for R_LINJIAYAN_REAL
+materialized gold for R_QINGHUAJIAO_REAL
+materialized gold for R_SHANGMA_HG_REAL
+materialized gold for R_XIMAXIANG_REAL
+materialized gold for R_XINBASHU_REAL
+materialized gold for R_XMX_CHAIN
+materialized gold for R_XMX_FRESH
+materialized gold for R_XMX_FRESH2
+materialized gold for R_XMX_FRESH3
+materialized gold for R_YHDJ_DEMO
+materialized gold for R_YJJ_DEMO
+materialized gold for R_YONGHE_REAL
+materialized gold for R_YOUZIYOUWEI_REAL
+materialized gold for R_YUJIUJING_REAL
+
+=== Sample R_QINGHUAJIAO_REAL post-deploy ETL log line (PROOF) ===
+2026-05-14 04:03:47,496 - smartbi.gold.restaurant_ops_etl - INFO - [-] - [etl] materialized gold for R_QINGHUAJIAO_REAL: {'requisition_qty': 0, 'requisition_cost': 0, 'wastage_qty': 0, 'wastage_cost_by_type': 0, 'stock_shortage': 0, 'daily_totals': 0, 'product_cost': 0}
+2026-05-14 04:03:47,624 - smartbi.gold.restaurant_ops_etl - INFO - [-] - [etl] materialized gold for R_QINGHUAJIAO_REAL: {'requisition_qty': 0, 'requisition_cost': 0, 'wastage_qty': 0, 'wastage_cost_by_type': 0, 'stock_shortage': 0, 'daily_totals': 0, 'product_cost': 0}
+
+=== Gold tables current state — 3 tables written by materialize_gold_daily_ops ===
+-- agg_restaurant_daily_totals --
+  factory_id  | rows |       last_computed        
+--------------+------+----------------------------
+ F002         |   12 | 2026-05-14 04:03:47.547606
+ RES_3101_009 |    6 | 2026-05-14 04:03:47.582349
+ R_XMX_CHAIN  |    8 | 2026-05-14 04:03:47.595619
+(3 rows)
+
+-- agg_restaurant_product_cost --
+  factory_id  | rows |       last_computed        
+--------------+------+----------------------------
+ F002         |    8 | 2026-05-14 04:03:47.547606
+ RES_3101_009 |  136 | 2026-05-14 04:03:47.582349
+ R_XMX_CHAIN  |    9 | 2026-05-14 04:03:47.595619
+(3 rows)
+
+-- agg_restaurant_daily_ops --
+  factory_id  | rows |       last_computed        
+--------------+------+----------------------------
+ F002         |   58 | 2026-05-14 04:03:47.547606
+ RES_3101_009 |   18 | 2026-05-14 04:03:47.582349
+ R_XMX_CHAIN  |   44 | 2026-05-14 04:03:47.595619
+(3 rows)
+
+
+=== Cross-check — MO-mentioned agg_daily_order_type_meal (separate POS ETL path, not in scope of #539) ===
+ factory_id | rows | max_date | last_computed 
+------------+------+----------+---------------
+(0 rows)
+
