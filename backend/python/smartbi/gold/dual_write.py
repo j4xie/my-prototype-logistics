@@ -109,6 +109,16 @@ async def run_silver_dual_write(
                 pipeline.normalize.duplicates_skipped if pipeline else 0,
                 pipeline.trigger.total_rows_upserted if pipeline else 0,
             )
+
+            # Task D2 — QHJ revenue report Gold aggregator.
+            # After bills land in fact_pos_transaction, refresh
+            # agg_daily_order_type_meal for the just-inserted date range.
+            # Cache_key (revenue_report:...:{computed_at}) flips on the UPSERT,
+            # so the next /generate or /prepare returns fresh data.
+            await _materialize_qhj_revenue_gold(
+                pool, factory_id, upload_id,
+            )
+
             return stats
         finally:
             reset_factory_id(token)
@@ -120,3 +130,50 @@ async def run_silver_dual_write(
             exc_info=True,
         )
         return None
+
+
+async def _materialize_qhj_revenue_gold(
+    pool: "asyncpg.Pool",
+    factory_id: str,
+    upload_id: int,
+) -> None:
+    """Refresh agg_daily_order_type_meal for the upload's actual date range.
+
+    Spec §6.7 / Task D2. Reads min/max date from fact_pos_transaction WHERE
+    upload_id = $1, then calls materialize_daily_order_type_meal() for that
+    window. Never raises — Gold refresh failure must not affect dual-write
+    success.
+    """
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT MIN(date) AS min_date, MAX(date) AS max_date
+                FROM fact_pos_transaction
+                WHERE upload_id = $1 AND factory_id = $2
+                """,
+                upload_id, factory_id,
+            )
+        if not row or row["min_date"] is None or row["max_date"] is None:
+            logger.debug(
+                "[qhj-gold] upload=%d factory=%s: no fact rows, skip aggregator",
+                upload_id, factory_id,
+            )
+            return
+
+        from smartbi.services.materialized_analytics.daily_order_type_meal import (
+            materialize_daily_order_type_meal,
+        )
+        affected = await materialize_daily_order_type_meal(
+            pool, factory_id, row["min_date"], row["max_date"],
+        )
+        logger.info(
+            "[qhj-gold] upload=%d factory=%s: agg_daily_order_type_meal "
+            "upserts=%d range=[%s..%s]",
+            upload_id, factory_id, affected, row["min_date"], row["max_date"],
+        )
+    except Exception as e:
+        logger.warning(
+            "[qhj-gold] upload=%d factory=%s aggregator failed (non-fatal): %s",
+            upload_id, factory_id, e, exc_info=True,
+        )
