@@ -1,7 +1,8 @@
 """Audit tests for free-quota fallback in common/llm_router.py.
 
-Goal: verify the new SLOT_MODELS dict + DEFAULT_CHAIN ([b, a, zhipu, deepseek])
-auto-detect model exhaustion and switch to the next provider as expected.
+Goal: verify the SLOT_MODELS dict + DEFAULT_CHAIN
+([aliyun_b, aliyun_a, zhipu, aliyun_a_deepseek]) auto-detect model
+exhaustion and switch to the next provider as expected.
 
 These mock httpx so no real API calls happen — pure routing-logic verification.
 
@@ -11,6 +12,12 @@ Failure-trigger cases per `_is_quota_exhausted`:
 - 429 (any body)                                        → rate-limited / quota
 - Other status codes                                    → still falls through
                                                           (treated as transient)
+
+History:
+- Initial chain pre-#577: [aliyun_b, aliyun_a, zhipu, deepseek-official]
+- Post-#578: 5-provider with aliyun_a_deepseek inserted before deepseek-official
+- Post-#580 Option 2 (this file's current shape): 4-provider, deepseek-official
+  dropped since aliyun_a_deepseek covers DeepSeek-class quality on free tier.
 """
 from __future__ import annotations
 
@@ -46,28 +53,37 @@ class _ScriptedClient:
     """httpx-AsyncClient stand-in that returns a queued sequence of responses
     based on which provider's base_url is hit. Lets tests assert which providers
     were tried and in what order.
+
+    Note: `aliyun_a` and `aliyun_a_deepseek` share the same DashScope endpoint
+    AND the same API key. We differentiate by the `model` name in the request
+    payload — DeepSeek-class models route to `aliyun_a_deepseek`, qwen-*
+    models route to `aliyun_a`.
     """
 
     def __init__(self, route_responses: Dict[str, MagicMock]):
         self.route_responses = route_responses
-        self.call_log: List[Tuple[str, str]] = []  # (account-host, model)
+        self.call_log: List[Tuple[str, str]] = []  # (account, model)
 
     async def post(self, url: str, headers=None, json=None, timeout=None):
-        # Find which account this URL belongs to by host substring
+        model = (json or {}).get("model", "?")
+        # Find which account this URL+model belongs to
         account = None
         if "dashscope.aliyuncs.com" in url:
-            # Both aliyun_a + aliyun_b share host; differentiate by api_key in headers
+            # Differentiate aliyun_a vs aliyun_b by api_key, then split
+            # aliyun_a vs aliyun_a_deepseek by model class.
             api_key = (headers or {}).get("Authorization", "")
             if "key_b" in api_key:
                 account = "aliyun_b"
             elif "key_a" in api_key:
-                account = "aliyun_a"
+                # Same endpoint+key serves both `aliyun_a` (qwen-*) and
+                # `aliyun_a_deepseek` (deepseek-*). Route by model name.
+                if model.startswith("deepseek-"):
+                    account = "aliyun_a_deepseek"
+                else:
+                    account = "aliyun_a"
         elif "open.bigmodel.cn" in url:
             account = "zhipu"
-        elif "api.deepseek.com" in url:
-            account = "deepseek"
 
-        model = (json or {}).get("model", "?")
         self.call_log.append((account or "unknown", model))
 
         if account in self.route_responses:
@@ -80,7 +96,6 @@ def _patch_provider_keys(monkeypatch):
     monkeypatch.setenv("LLM_ALIYUN_A_API_KEY", "key_a_fake")
     monkeypatch.setenv("LLM_ALIYUN_B_API_KEY", "key_b_fake")
     monkeypatch.setenv("LLM_ZHIPU_API_KEY", "key_zhipu_fake")
-    monkeypatch.setenv("LLM_DEEPSEEK_API_KEY", "key_deepseek_fake")
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -108,10 +123,10 @@ async def test_b_quota_exhausted_falls_back_to_a(monkeypatch):
     # Verify both providers were tried in correct order
     accounts_tried = [a for a, _ in client.call_log]
     assert accounts_tried == ["aliyun_b", "aliyun_a"]
-    # Verify the new model names were used
+    # Verify the new model names were used (post-PR-#578 picks)
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[0] == "qwen3.6-flash"  # aliyun_b CHAT model (free, version-pinned)
-    assert models_tried[1] == "qwen3.5-plus-2026-04-20"  # aliyun_a CHAT model (free, post-fix)
+    assert models_tried[0] == "qwen-max"             # aliyun_b CHAT
+    assert models_tried[1] == "qwen3.6-max-preview"  # aliyun_a CHAT
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -134,8 +149,8 @@ async def test_429_triggers_fallback(monkeypatch):
     accounts_tried = [a for a, _ in client.call_log]
     assert accounts_tried == ["aliyun_b", "aliyun_a"]
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[0] == "qwen-turbo"  # NEW: was qwen-turbo-1101 (broken)
-    assert models_tried[1] == "qwen3.5-122b-a10b"  # aliyun_a MAPPER
+    assert models_tried[0] == "qwen3.5-122b-a10b"   # aliyun_b MAPPER (post-#578)
+    assert models_tried[1] == "qwen3.5-122b-a10b"   # aliyun_a MAPPER
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -159,23 +174,52 @@ async def test_full_cascade_to_zhipu(monkeypatch):
     accounts_tried = [a for a, _ in client.call_log]
     assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu"]
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[0] == "deepseek-r1"           # NEW: was deepseek-v3.2-exp (broken)
-    assert models_tried[1] == "qwen3.5-397b-a17b"     # unchanged
-    assert models_tried[2] == "glm-4.5-air"           # unchanged
+    assert models_tried[0] == "qwen3.5-397b-a17b"   # aliyun_b REASONING (post-#578)
+    assert models_tried[1] == "qwen3.5-397b-a17b"   # aliyun_a REASONING
+    assert models_tried[2] == "glm-4.5-air"         # zhipu REASONING
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 4: All providers exhausted → RuntimeError
+# Test 4: Full cascade to aliyun_a_deepseek (4th and final provider)
+# ────────────────────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_cascade_to_aliyun_a_deepseek(monkeypatch):
+    """When aliyun_b/aliyun_a/zhipu all exhaust, chain reaches the 4th
+    provider — aliyun_a_deepseek — which routes deepseek-v4-pro via the
+    DashScope free pool.
+    """
+    _patch_provider_keys(monkeypatch)
+
+    success_payload = {"choices": [{"message": {"content": "ok ds"}}]}
+    client = _ScriptedClient({
+        "aliyun_b":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
+        "aliyun_a":          _fake_response(429),
+        "zhipu":             _fake_response(429),
+        "aliyun_a_deepseek": _fake_response(200, json_payload=success_payload),
+    })
+    monkeypatch.setattr(llm_router, "get_llm_http_client", lambda: client)
+
+    result = await call_chain(SLOT.CHAT, {"messages": []})
+
+    assert result == success_payload
+    accounts_tried = [a for a, _ in client.call_log]
+    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
+    models_tried = [m for _, m in client.call_log]
+    assert models_tried[3] == "deepseek-v4-pro"
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Test 5: All providers exhausted → RuntimeError
 # ────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_all_exhausted_raises(monkeypatch):
     _patch_provider_keys(monkeypatch)
 
     client = _ScriptedClient({
-        "aliyun_b": _fake_response(403, body='AllocationQuota.FreeTierOnly'),
-        "aliyun_a": _fake_response(403, body='AllocationQuota.FreeTierOnly'),
-        "zhipu":    _fake_response(429),
-        "deepseek": _fake_response(403, body='AllocationQuota'),
+        "aliyun_b":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
+        "aliyun_a":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
+        "zhipu":             _fake_response(429),
+        "aliyun_a_deepseek": _fake_response(403, body='AllocationQuota'),
     })
     monkeypatch.setattr(llm_router, "get_llm_http_client", lambda: client)
 
@@ -184,11 +228,11 @@ async def test_all_exhausted_raises(monkeypatch):
 
     # Verify all 4 providers in chain order were tried
     accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
+    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 5: Non-quota 5xx error also walks chain (transient-error path)
+# Test 6: Non-quota 5xx error also walks chain (transient-error path)
 # ────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_5xx_also_falls_through(monkeypatch):
@@ -208,59 +252,73 @@ async def test_5xx_also_falls_through(monkeypatch):
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 6: Verify NEW chain order is b → a → zhipu → deepseek
-#         (this is the headline fix — was deepseek → a → zhipu → b before)
+# Test 7: Verify chain order is the 4-provider all-free chain
 # ────────────────────────────────────────────────────────────────────────
-def test_default_chain_order_is_free_first():
-    assert llm_router.DEFAULT_CHAIN == ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
+def test_default_chain_order_is_4_free_providers():
+    assert llm_router.DEFAULT_CHAIN == [
+        "aliyun_b",
+        "aliyun_a",
+        "zhipu",
+        "aliyun_a_deepseek",
+    ]
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 7: Verify all NEW model picks are free-quota SKUs per audit
+# Test 8: Verify all SLOT_MODELS picks (current state per PR #578 + #580)
 # ────────────────────────────────────────────────────────────────────────
-def test_new_slot_models_match_free_audit():
-    """Sanity check: each model in SLOT_MODELS for aliyun_b/aliyun_a matches
-    the free-quota audit done on bailian.console May 9 2026.
+def test_slot_models_match_current_audit():
+    """Sanity check: each model in SLOT_MODELS matches the May 13 2026 audit
+    (live-probe + Steve console-screenshot fused — see
+    tests/qa-llm-quota/audit-matrix.md).
     """
     sm = llm_router.SLOT_MODELS
 
-    # aliyun_b — free-quota mine
-    assert sm[SLOT.CHAT]["aliyun_b"] == "qwen3.6-flash"
-    assert sm[SLOT.INSIGHTS]["aliyun_b"] == "qwen3.6-flash"
+    # aliyun_b
+    assert sm[SLOT.CHAT]["aliyun_b"] == "qwen-max"
+    assert sm[SLOT.INSIGHTS]["aliyun_b"] == "qwen3.6-35b-a3b"
     assert sm[SLOT.CHART]["aliyun_b"] == "glm-5"
-    assert sm[SLOT.MAPPER]["aliyun_b"] == "qwen-turbo"
-    assert sm[SLOT.REASONING]["aliyun_b"] == "deepseek-r1"
-    assert sm[SLOT.VL]["aliyun_b"] == "qwen-vl-plus-2025-05-07"
+    assert sm[SLOT.MAPPER]["aliyun_b"] == "qwen3.5-122b-a10b"
+    assert sm[SLOT.REASONING]["aliyun_b"] == "qwen3.5-397b-a17b"
+    assert sm[SLOT.VL]["aliyun_b"] == "qwen3-vl-plus-2025-12-19"
     assert sm[SLOT.REVIEW]["aliyun_b"] == "deepseek-r1-distill-qwen-32b"
 
-    # aliyun_a — only version-suffixed SKUs are free
-    assert sm[SLOT.CHAT]["aliyun_a"] == "qwen3.5-plus-2026-04-20"
-    assert sm[SLOT.INSIGHTS]["aliyun_a"] == "qwen3.6-flash-2026-04-16"
+    # aliyun_a
+    assert sm[SLOT.CHAT]["aliyun_a"] == "qwen3.6-max-preview"
+    assert sm[SLOT.INSIGHTS]["aliyun_a"] == "qwen3.6-35b-a3b"
     assert sm[SLOT.CHART]["aliyun_a"] == "glm-5"
     assert sm[SLOT.MAPPER]["aliyun_a"] == "qwen3.5-122b-a10b"
     assert sm[SLOT.REASONING]["aliyun_a"] == "qwen3.5-397b-a17b"
-    assert sm[SLOT.VL]["aliyun_a"] == "qwen3-vl-flash"
+    assert sm[SLOT.VL]["aliyun_a"] == "qwen3-vl-plus-2025-12-19"
     assert sm[SLOT.REVIEW]["aliyun_a"] == "qwen3.5-397b-a17b"
 
-    # No bare PAID aliases left in aliyun_a/aliyun_b configs
-    for slot, providers in sm.items():
-        for acc in ("aliyun_a", "aliyun_b"):
-            m = providers.get(acc)
-            if m is None:
-                continue
-            # Bare aliases known to be PAID on aliyun_a (audit May 9 2026):
-            # qwen-plus / qwen-turbo-1101 / deepseek-v3.2 / deepseek-v3.2-exp / deepseek-v3
-            assert m not in {
-                "qwen-plus",
-                "qwen-turbo-1101",
-                "deepseek-v3.2",
-                "deepseek-v3.2-exp",
-                "deepseek-v3",
-            }, f"{slot.value}/{acc}: {m} is a known PAID/missing SKU per audit"
+    # zhipu (all on glm-4.5-air pool except VL on glm-4.6v)
+    for slot in (SLOT.CHAT, SLOT.INSIGHTS, SLOT.CHART, SLOT.MAPPER, SLOT.REASONING, SLOT.REVIEW):
+        assert sm[slot]["zhipu"] == "glm-4.5-air", f"{slot.value}/zhipu wrong"
+    assert sm[SLOT.VL]["zhipu"] == "glm-4.6v"
+
+    # aliyun_a_deepseek (deepseek-v4-pro everywhere except VL/REVIEW which are None)
+    for slot in (SLOT.CHAT, SLOT.INSIGHTS, SLOT.CHART, SLOT.MAPPER, SLOT.REASONING):
+        assert sm[slot]["aliyun_a_deepseek"] == "deepseek-v4-pro", f"{slot.value}/aliyun_a_deepseek wrong"
+    assert sm[SLOT.VL]["aliyun_a_deepseek"] is None
+    assert sm[SLOT.REVIEW]["aliyun_a_deepseek"] is None
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 8: _is_quota_exhausted detection matrix
+# Test 9: No deepseek-official chain entry remains (post-#580 Option 2)
+# ────────────────────────────────────────────────────────────────────────
+def test_no_deepseek_official_anywhere():
+    """Ensure deepseek-official was fully removed in #580 Option 2 — no
+    SLOT key, no chain entry, no _provider_config mapping.
+    """
+    assert "deepseek" not in llm_router.DEFAULT_CHAIN
+    for slot, providers in llm_router.SLOT_MODELS.items():
+        assert "deepseek" not in providers, f"{slot.value} still has 'deepseek' key"
+    url, key = llm_router._provider_config("deepseek")
+    assert url == "" and key == "", "_provider_config('deepseek') should return empty tuple"
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Test 10: _is_quota_exhausted detection matrix
 # ────────────────────────────────────────────────────────────────────────
 def test_quota_exhausted_detection():
     is_q = llm_router._is_quota_exhausted
@@ -281,12 +339,15 @@ def test_quota_exhausted_detection():
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 8b: 402 'Insufficient Balance' counts as quota exhaustion (issue #581)
+# Test 11: 402 'Insufficient Balance' counts as quota exhaustion (issue #581)
 # ────────────────────────────────────────────────────────────────────────
 def test_402_insufficient_balance_is_quota_exhausted():
-    """DeepSeek-official balance-0 returns 402 + body 'Insufficient Balance'.
-    Predicate must flag this as quota exhausted so the chain logs WARNING and
-    falls back cleanly instead of surfacing as generic ERROR."""
+    """402 + body 'Insufficient Balance' must flag as quota exhausted so the
+    chain logs WARNING and falls back cleanly instead of surfacing as generic
+    ERROR. Historically this was DeepSeek-official's balance-0 shape (#581);
+    after #580 Option 2 deepseek-official is no longer in the chain, but the
+    detection stays as defensive infra for any future provider that returns
+    this shape."""
     is_q = llm_router._is_quota_exhausted
 
     # The exact DeepSeek shape: JSON body with the Insufficient Balance message.
@@ -296,7 +357,7 @@ def test_402_insufficient_balance_is_quota_exhausted():
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 8c: 402 must NOT trigger fallback on unrelated bodies / wrong codes
+# Test 12: 402 must NOT trigger fallback on unrelated bodies / wrong codes
 # ────────────────────────────────────────────────────────────────────────
 def test_402_other_cases_not_quota_exhausted():
     """Regression guard: only 402 + 'Insufficient Balance' substring counts.
@@ -312,74 +373,3 @@ def test_402_other_cases_not_quota_exhausted():
     assert not is_q(200, "Insufficient Balance")
     assert not is_q(500, "Insufficient Balance")
     assert not is_q(401, "Insufficient Balance")
-
-
-# ────────────────────────────────────────────────────────────────────────
-# Test 9: DeepSeek monthly USD cap removes it from chain when over budget
-# ────────────────────────────────────────────────────────────────────────
-@pytest.mark.asyncio
-async def test_deepseek_skipped_when_over_budget(monkeypatch):
-    """When MTD spend exceeds LLM_DEEPSEEK_MAX_USD_PER_MONTH, deepseek is
-    skipped exactly like a circuit-breaker open state — the chain still
-    succeeds via earlier providers, fails cleanly only if every other
-    provider also exhausts."""
-    from common import llm_budget
-
-    _patch_provider_keys(monkeypatch)
-    monkeypatch.setenv("LLM_DEEPSEEK_MAX_USD_PER_MONTH", "0.50")
-    llm_budget.reset_for_tests()
-    # Push MTD past cap and pin the cache so over_budget skips DB
-    import time
-    llm_budget._cached_cost_usd = 1.0
-    llm_budget._cached_at = time.time()
-
-    # Every free provider exhausts so we'd normally fall to deepseek.
-    client = _ScriptedClient({
-        "aliyun_b": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
-        "aliyun_a": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
-        "zhipu":    _fake_response(429),
-        # deepseek would respond 200 if asked, but budget gate prevents the call.
-        "deepseek": _fake_response(200, json_payload={"choices": [{"message": {"content": "x"}}]}),
-    })
-    monkeypatch.setattr(llm_router, "get_llm_http_client", lambda: client)
-
-    with pytest.raises(RuntimeError) as exc:
-        await call_chain(SLOT.CHAT, {"messages": []})
-
-    # deepseek should NOT have been called — gate skipped it
-    accounts_tried = [a for a, _ in client.call_log]
-    assert "deepseek" not in accounts_tried
-    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu"]
-    # Error message records the budget reason
-    assert "budget_exceeded" in str(exc.value)
-
-
-@pytest.mark.asyncio
-async def test_deepseek_used_when_under_budget(monkeypatch):
-    """Sanity: under-budget MTD doesn't accidentally skip deepseek."""
-    from common import llm_budget
-
-    _patch_provider_keys(monkeypatch)
-    monkeypatch.setenv("LLM_DEEPSEEK_MAX_USD_PER_MONTH", "10.00")
-    llm_budget.reset_for_tests()
-    import time
-    llm_budget._cached_cost_usd = 0.05  # well under $10 cap
-    llm_budget._cached_at = time.time()
-
-    deepseek_payload = {
-        "choices": [{"message": {"content": "ds"}}],
-        "usage": {"prompt_tokens": 100, "completion_tokens": 50},
-    }
-    client = _ScriptedClient({
-        "aliyun_b": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
-        "aliyun_a": _fake_response(403, body="AllocationQuota.FreeTierOnly"),
-        "zhipu":    _fake_response(429),
-        "deepseek": _fake_response(200, json_payload=deepseek_payload),
-    })
-    monkeypatch.setattr(llm_router, "get_llm_http_client", lambda: client)
-
-    result = await call_chain(SLOT.CHAT, {"messages": []})
-
-    assert result == deepseek_payload
-    accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]

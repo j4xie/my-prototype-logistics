@@ -239,11 +239,12 @@ async def test_llm_success_path_consumes_tokens_and_caches(pool):
 async def test_llm_failure_returns_degraded(pool):
     """Upstream HTTP 500 → degraded response, no token consumption.
 
-    Note (Apr 25 E2a): call_chain treats non-200 / non-403/429 as falling
-    through to next provider, then RuntimeError if all exhaust. With only
-    aliyun_b mock-keyed, the chain runs aliyun_b once → falls to aliyun_a
-    (no key, skip) → zhipu (no key, skip) → deepseek (no key, skip) →
-    RuntimeError. Orchestrator catches and returns degraded.
+    Note (Apr 25 E2a, updated #580): call_chain treats non-200 / non-403/429
+    as falling through to next provider, then RuntimeError if all exhaust.
+    With only aliyun_b mock-keyed, the chain runs aliyun_b once → falls to
+    aliyun_a (no key, skip) → zhipu (no key, skip) →
+    aliyun_a_deepseek (no key, skip) → RuntimeError. Orchestrator catches
+    and returns degraded.
     """
     await _reset_tenant(pool, _TENANT)
 

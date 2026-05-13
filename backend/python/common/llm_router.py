@@ -1,7 +1,7 @@
 """
 Multi-provider LLM router with 403 AllocationQuota.FreeTierOnly fallback.
 
-Chain (priority order): aliyun_b → aliyun_a → zhipu → deepseek
+Chain (priority order): aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
 
 No client-side quota estimation — we rely on Aliyun's 免费额度用完即停 toggle
 which returns 403 when free quota exhausts. This is the HARD guarantee that
@@ -37,19 +37,19 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import httpx
 
-from common.llm_budget import deepseek_over_budget, record_local
 from common.llm_client import get_llm_http_client
 
 logger = logging.getLogger(__name__)
 
 
 def _log_cache_and_record_budget(slot_value: str, account: str, model: str, body: Dict[str, Any]) -> None:
-    """Parse usage from a successful response: log cache-hit ratio + record
-    DeepSeek MTD spend. Mirrors the streaming path's [cache] log line so
-    observability is uniform across both paths.
+    """Parse usage from a successful response: log cache-hit ratio. Mirrors
+    the streaming path's [cache] log line so observability is uniform across
+    both paths.
 
-    DeepSeek emits both `prompt_tokens_details.cached_tokens` and the legacy
-    `prompt_cache_hit_tokens`; DashScope emits the former only. Read both.
+    DashScope emits `prompt_tokens_details.cached_tokens`; we read it
+    defensively along with the legacy `prompt_cache_hit_tokens` field that
+    older providers used.
     """
     try:
         usage = (body or {}).get("usage") or {}
@@ -67,17 +67,15 @@ def _log_cache_and_record_budget(slot_value: str, account: str, model: str, body
                 f"[cache] slot={slot_value} via {account}/{model}: "
                 f"prompt={prompt_total} cached={cached} ({pct}%) completion={completion}"
             )
-        if account == "deepseek":
-            record_local(model, prompt_total, completion, cached)
     except Exception as e:
         logger.debug(f"[cache] parse failed (non-fatal): {e}")
 
 
 # ─── Per-account circuit breaker (J1 — Apr 24 2026) ───
-# When aliyun_b/glm-5 rate-limits, every chart-recommend currently pays the
-# full cascade (aliyun_b → aliyun_a → zhipu → deepseek = 28s observed in prod).
-# After CB_THRESHOLD consecutive failures of a provider, skip it for
-# CB_COOLDOWN seconds. Resets on first success or after cooldown expires.
+# When aliyun_b/glm-5 rate-limits, every chart-recommend used to pay the full
+# cascade (~28s observed in prod). After CB_THRESHOLD consecutive failures of
+# a provider, skip it for CB_COOLDOWN seconds. Resets on first success or
+# after cooldown expires.
 _CB_FAILURES: Dict[str, int] = {}        # provider name → consecutive failure count
 _CB_LAST_FAIL: Dict[str, float] = {}     # provider name → unix ts of last failure
 _CB_LOCK = Lock()
@@ -147,44 +145,38 @@ class SLOT(str, Enum):
 
 
 # ─── Slot → per-provider model name ───
-# May 13 2026 mid-month re-audit — fuses two sources:
+# May 13 2026 mid-month re-audit + #580 Option 2 simplification.
 #
-#   1. Live SKU probe vs prod keys (tests/qa-llm-quota/audit-matrix.md):
-#      EXHAUSTED — aliyun_b qwen3.6-flash (was CHAT/INSIGHTS primary),
-#                  aliyun_a qwen3.6-flash-2026-04-16 + qwen3-vl-flash,
-#                  zhipu glm-4-plus (and entire 通用池: glm-4-air/3-turbo/4),
-#                  deepseek-official ALL SKUs (account balance 0).
-#      STILL OK  — aliyun_b: qwen-flash, qwen-turbo, qwen3.6-35b-a3b, glm-5,
-#                            deepseek-r1, deepseek-r1-distill-qwen-32b,
-#                            qwen-vl-plus-2025-05-07.
-#                  aliyun_a: qwen3.5-plus-2026-04-20 (log ReadTimeout was
-#                            transient), qwen-flash, qwen3.5-plus,
-#                            qwen3.5-122b-a10b, qwen3.5-397b-a17b, glm-5,
-#                            qwen3.5-flash.
-#                  zhipu   : glm-4-flash, glm-4.5-air.
+# Audit sources (per `tests/qa-llm-quota/audit-matrix.md`):
+#   1. Live SKU probe vs prod keys.
+#   2. Steve console-screenshot audit (Aliyun bailian + Zhipu open.bigmodel).
 #
-#   2. Steve console-screenshot audit (Aliyun bailian + Zhipu open.bigmodel):
-#      qwen-max 1M intact on B, qwen3.6-max-preview 999K on A,
-#      qwen3-vl-plus-2025-12-19 1M on both,
-#      glm-4.5-air 6.5M + glm-4.6v 6M are **model-specific independent pools**
-#      on Zhipu — NOT depleted by 通用池. Switching zhipu CHAT/INSIGHTS to
-#      glm-4.5-air recovers that slot without recharging the main pool.
-#      deepseek-v4-pro 999K free on Aliyun-A's DashScope compatible-mode
-#      endpoint (the SAME endpoint as aliyun_a, just a different model).
+# Working free SKUs in use:
+#   aliyun_b: qwen-max (CHAT), qwen3.6-35b-a3b (INSIGHTS), glm-5 (CHART),
+#             qwen3.5-122b-a10b (MAPPER), qwen3.5-397b-a17b (REASONING),
+#             qwen3-vl-plus-2025-12-19 (VL), deepseek-r1-distill-qwen-32b (REVIEW)
+#   aliyun_a: qwen3.6-max-preview (CHAT), qwen3.6-35b-a3b (INSIGHTS),
+#             glm-5 (CHART), qwen3.5-122b-a10b (MAPPER),
+#             qwen3.5-397b-a17b (REASONING + REVIEW),
+#             qwen3-vl-plus-2025-12-19 (VL)
+#   zhipu   : glm-4.5-air (most slots — 6.5M model-specific pool, NOT in 通用池),
+#             glm-4.6v (VL — 6M model-specific pool)
+#   aliyun_a_deepseek: deepseek-v4-pro (5 slots; None for VL/REVIEW).
+#                      Same endpoint+key as aliyun_a, different model class.
+#                      DashScope-hosted deepseek-v4-pro has its own free pool
+#                      (~999K/month on Aliyun-A per Steve audit), independent
+#                      of the qwen-* pool that aliyun_a consumes.
 #
-# May-9-era note "bare aliases on A are PAID" no longer holds — bare qwen-flash
-# on A returned 200 May 13. Aliyun may have rotated free-tier policy. Keep
-# version-suffixed picks where they already work; only switch where broken.
+# Chain — 4 providers, all free:
+#   aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
 #
-# Chain change: added a 5th provider `aliyun_a_deepseek` between zhipu and
-# deepseek-official. It uses aliyun_a's API key against the same DashScope
-# compatible-mode base_url, but routes deepseek-v4-pro (DashScope-hosted)
-# which has 999K free quota on Aliyun-A. This restores deepseek-class quality
-# without depending on the deepseek-official balance.
-#
-# REVIEW slot keeps May-9 picks (all live-verified working). It sets
-# aliyun_a_deepseek=None so the new chain entry is skipped cleanly for review
-# (per Steve audit: review slot is fine, don't churn).
+# Why no DeepSeek-official tail any more (#580 Option 2): account balance 0
+# across all SKUs, 402 fell through "Other errors" path but never reached a
+# next provider (end of chain), making the 5th slot a no-op. With
+# `aliyun_a_deepseek` already covering DeepSeek-class quality via free quota,
+# DeepSeek-official is redundant. Removed (see #580, PR docs/issue-580-…).
+# If a paid cross-vendor fallback is needed again, top up DeepSeek balance
+# + re-add `"deepseek"` chain entry — entire removal was 1 file.
 #
 # Triggered by prod incident "All providers exhausted for chat" 2026-05-13.
 #
@@ -193,61 +185,47 @@ class SLOT(str, Enum):
 # added that case so the chain logs WARNING quota-exhausted instead of generic
 # ERROR before exhausting cleanly.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
-    # CRITICAL: deepseek-v4 default `thinking.type=enabled` adds ~5s of
-    # invisible reasoning before visible answer + truncates output. We force
-    # `thinking: {"type": "disabled"}` in _normalize_payload_for_provider
-    # for the deepseek-official provider. Reasoning slots opt-in by NOT
-    # setting that key. DeepSeek models routed via aliyun_b (DashScope
-    # compatible-mode) are NOT touched by that hook — DashScope handles
-    # thinking semantics itself per its own API contract.
     SLOT.CHAT: {
-        "aliyun_b":          "qwen-max",                  # Steve screenshot: B free 1M intact (replaces qwen3.6-flash 403)  # noqa: E501
-        "aliyun_a":          "qwen3.6-max-preview",       # Steve screenshot: A free 999K intact (was qwen3.5-plus, still works but max-preview has more headroom)  # noqa: E501
-        "zhipu":             "glm-4.5-air",               # Steve screenshot: 6.5M independent pool (NOT in 通用池 which is 0)  # noqa: E501
-        "aliyun_a_deepseek": "deepseek-v4-pro",           # NEW: DashScope-hosted, free 999K on aliyun_a key
-        "deepseek":          "deepseek-v4-pro",           # paid last-resort (account balance 0 May 13, falls through harmlessly)  # noqa: E501
+        "aliyun_b":          "qwen-max",                  # Steve screenshot: B free 1M intact
+        "aliyun_a":          "qwen3.6-max-preview",       # Steve screenshot: A free 999K intact
+        "zhipu":             "glm-4.5-air",               # 6.5M independent pool (NOT in 通用池 which is 0)
+        "aliyun_a_deepseek": "deepseek-v4-pro",           # DashScope-hosted, free 999K on aliyun_a key
     },
     SLOT.INSIGHTS: {
         "aliyun_b":          "qwen3.6-35b-a3b",           # Steve screenshot: 816K intact (live-probe also 200 OK)
         "aliyun_a":          "qwen3.6-35b-a3b",           # Steve screenshot: 998K intact
         "zhipu":             "glm-4.5-air",               # 6.5M independent pool
         "aliyun_a_deepseek": "deepseek-v4-pro",
-        "deepseek":          "deepseek-v4-pro",
     },
     SLOT.CHART: {
-        "aliyun_b":          "glm-5",                     # Both audits agree: 875K intact B
+        "aliyun_b":          "glm-5",                     # 875K intact B
         "aliyun_a":          "glm-5",                     # 886K intact A (expires 2026/05/17 — re-check before then)
-        "zhipu":             "glm-4.5-air",               # unchanged
+        "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
-        "deepseek":          "deepseek-v4-pro",
     },
     SLOT.MAPPER: {
-        "aliyun_b":          "qwen3.5-122b-a10b",         # Steve screenshot: 998K intact (was qwen-turbo, also works)
-        "aliyun_a":          "qwen3.5-122b-a10b",         # unchanged, 998K
-        "zhipu":             "glm-4.5-air",               # unchanged
+        "aliyun_b":          "qwen3.5-122b-a10b",         # 998K intact
+        "aliyun_a":          "qwen3.5-122b-a10b",         # 998K
+        "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
-        "deepseek":          "deepseek-v4-pro",
     },
     SLOT.REASONING: {
-        "aliyun_b":          "qwen3.5-397b-a17b",         # Steve screenshot: 974K intact (was deepseek-r1, also OK)
-        "aliyun_a":          "qwen3.5-397b-a17b",         # unchanged, 998K
-        "zhipu":             "glm-4.5-air",               # unchanged
+        "aliyun_b":          "qwen3.5-397b-a17b",         # 974K intact
+        "aliyun_a":          "qwen3.5-397b-a17b",         # 998K
+        "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
-        "deepseek":          "deepseek-v4-pro",           # paid reasoning-grade
     },
     SLOT.VL: {
-        "aliyun_b":          "qwen3-vl-plus-2025-12-19",  # Steve screenshot: 1M intact (was qwen-vl-plus-2025-05-07 still OK, but newer version has higher quota headroom)  # noqa: E501
-        "aliyun_a":          "qwen3-vl-plus-2025-12-19",  # Steve screenshot: 1M intact on A
+        "aliyun_b":          "qwen3-vl-plus-2025-12-19",  # 1M intact
+        "aliyun_a":          "qwen3-vl-plus-2025-12-19",  # 1M intact on A
         "zhipu":             "glm-4.6v",                  # ⚠️ payload format incompatible with image_url (zhipu needs different shape); 6M independent pool exists but call site must adapt  # noqa: E501
         "aliyun_a_deepseek": None,                        # DashScope has no DeepSeek VL — skip cleanly
-        "deepseek":          None,                        # DeepSeek-official has no VL model
     },
     SLOT.REVIEW: {
-        "aliyun_b":          "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13 (unchanged — review slot fine per Steve)  # noqa: E501
-        "aliyun_a":          "qwen3.5-397b-a17b",             # ✅ A free OK May 13 (unchanged)
-        "zhipu":             "glm-4.5-air",                   # unchanged
-        "aliyun_a_deepseek": None,                            # Steve: leave REVIEW alone; skip new chain entry cleanly  # noqa: E501
-        "deepseek":          "deepseek-v4-pro",               # unchanged
+        "aliyun_b":          "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13
+        "aliyun_a":          "qwen3.5-397b-a17b",             # ✅ A free OK May 13
+        "zhipu":             "glm-4.5-air",
+        "aliyun_a_deepseek": None,                            # Skip new chain entry cleanly for REVIEW
     },
 }
 
@@ -263,9 +241,8 @@ def _provider_config(account: str) -> Tuple[str, str]:
         # SLOT_MODELS routes DeepSeek-class SKUs (deepseek-v4-pro) here. DashScope
         # compatible-mode hosts those models with their own free-quota pool
         # (~999K intact on Steve's screenshot 2026-05-13) — independent of the
-        # qwen-* quota that the `aliyun_a` slot consumes. This lets the chain
-        # reach deepseek-grade quality without depending on DeepSeek-official's
-        # balance (which is 0 across all SKUs as of May 13).
+        # qwen-* quota that the `aliyun_a` slot consumes. After #580 Option 2
+        # this is now the SOLE DeepSeek-class entry in the chain.
         "aliyun_a_deepseek": (
             os.getenv("LLM_ALIYUN_A_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             os.getenv("LLM_ALIYUN_A_API_KEY") or os.getenv("LLM_API_KEY", ""),
@@ -278,36 +255,31 @@ def _provider_config(account: str) -> Tuple[str, str]:
             os.getenv("LLM_ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"),
             os.getenv("LLM_ZHIPU_API_KEY", ""),
         ),
-        "deepseek": (
-            os.getenv("LLM_DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
-            os.getenv("LLM_DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY", ""),
-        ),
     }
     return mapping.get(account, ("", ""))
 
 
-# May 9 2026 free-first re-order: bailian.console audit confirmed aliyun_b
-# is a free-quota mine (~all SKUs have 1M tokens/month free, vector tab even
-# has 20M async-embed). Per-SLOT model picks above were also fixed to use
-# free SKUs.
-# Chain order: free providers first (b > a > zhipu) → paid official last.
-# Each provider's 403/AllocationQuota.FreeTierOnly + 429 still triggers
-# fallback per `_is_quota_exhausted`, so prod safety unchanged when free
-# quotas exhaust mid-month — chain naturally walks to paid tail.
+# Chain order — all 4 providers on free tier:
+#   aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
 #
-# May 13 2026 mid-month re-audit (PR fix/llm-router-quota-switch):
-# Picks were refreshed after prod log reported all 4 providers exhausted
-# for CHAT slot. Several version-suffixed SKUs exhausted free quota
-# mid-month and were swapped to alternate working SKUs on the same
-# provider. Chain grew from 4 → 5: `aliyun_a_deepseek` inserted between
-# zhipu and deepseek-official. It shares the aliyun_a endpoint+key but
-# routes deepseek-v4-pro via DashScope (independent free pool ~999K on
-# Steve's screenshot 2026-05-13). This keeps a deepseek-class quality
-# tier reachable while DeepSeek-official balance is 0. SLOT entries for
-# REVIEW/VL set `aliyun_a_deepseek=None` so the chain skips it cleanly
-# where it doesn't apply. Re-audit recommended ~every 2 weeks or when
-# "All providers exhausted" log line reappears.
-DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek", "deepseek"]
+# Each provider's 403/AllocationQuota.FreeTierOnly + 429 triggers fallback
+# per `_is_quota_exhausted`. After a full cascade exhausts the chain raises
+# RuntimeError; callers handle this (e.g., agent_orchestrator returns a
+# degraded response).
+#
+# History:
+#   - May 9 2026 (free-first re-order, PR #215): chain ordered free → paid
+#     to avoid the $19.49/12-day DeepSeek-official cost incident.
+#   - May 13 2026 (PR #577 + #578): mid-month SKU refresh after prod incident
+#     "All providers exhausted for chat". Added `aliyun_a_deepseek` 5th entry
+#     routing deepseek-v4-pro via DashScope free quota.
+#   - May 13 2026 (#580 Option 2, this commit): dropped deepseek-official
+#     5th slot since `aliyun_a_deepseek` already covers DeepSeek-class
+#     quality on free tier and deepseek-official balance is 0 anyway.
+#
+# Re-audit recommended ~every 2 weeks or whenever "All providers exhausted"
+# log line reappears (per `tests/qa-llm-quota/audit-matrix.md` cadence note).
+DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
 
 
 def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
@@ -328,24 +300,13 @@ def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
 def _normalize_payload_for_provider(payload: Dict[str, Any], account: str) -> Dict[str, Any]:
     """Adjust payload per provider's accepted schema.
 
-    Apr 27 2026: DeepSeek V4 (api-docs.deepseek.com) defaults thinking.type
-    to "enabled" with reasoning_effort "high". On v4-flash that adds ~5s of
-    invisible reasoning before the visible answer (observed: 8.2s LLM with
-    only 25-76 char visible output vs 3.8s + 449 chars on v3 alias).
-    For chat/insights slots we want thinking OFF — explicit answer first.
-
-    Also: DashScope/Aliyun-style payloads use `enable_thinking` (which we
-    historically set everywhere) but DeepSeek's API doesn't recognize that
-    key. Strip it so DeepSeek doesn't 400 — and replace with the official
-    `thinking: {"type": "disabled"}` form.
+    Currently a passthrough — all 4 chain providers (aliyun_b / aliyun_a /
+    zhipu / aliyun_a_deepseek) reach DashScope or Zhipu compatible-mode
+    endpoints, which handle thinking semantics natively. The earlier
+    DeepSeek-official `thinking.type=disabled` injection was removed when
+    deepseek-official was dropped from the chain (#580 Option 2).
     """
-    out = {**payload}
-    if account == "deepseek":
-        out.pop("enable_thinking", None)
-        # Caller must explicitly opt into thinking for v4 reasoner-style use.
-        # Default OFF for chat-class fast paths.
-        out.setdefault("thinking", {"type": "disabled"})
-    return out
+    return {**payload}
 
 
 async def call_chain(
@@ -358,9 +319,8 @@ async def call_chain(
     Call LLM via provider chain with automatic fallback on 403 FreeTierOnly / 429.
 
     Per-call timeout: 30s default (Apr 28 2026 optimization, was 120s).
-    Worst-case full chain (4 providers) = 120s instead of 480s. DeepSeek-flash
-    typical 5-15s, qwen-plus 15-30s, so 30s is comfortable margin while
-    failing fast on overloaded providers.
+    Worst-case full 4-provider cascade = 120s. qwen-plus typical 15-30s, so
+    30s is comfortable margin while failing fast on overloaded providers.
 
     The payload's `model` field is OVERWRITTEN per-provider based on SLOT_MODELS.
     Other fields (messages, temperature, max_tokens, etc.) are preserved.
@@ -384,11 +344,6 @@ async def call_chain(
                 f"(circuit breaker open, cooldown {CB_COOLDOWN}s)"
             )
             errors.append(f"{account}: cb_open")
-            continue
-
-        # Monthly USD budget gate — defense-in-depth for paid deepseek slot
-        if account == "deepseek" and await deepseek_over_budget():
-            errors.append(f"{account}: budget_exceeded")
             continue
 
         base_url, api_key = _provider_config(account)
@@ -535,11 +490,6 @@ async def call_chain_stream(
             errors.append(f"{account}: cb_open")
             continue
 
-        # Monthly USD budget gate — defense-in-depth for paid deepseek slot
-        if account == "deepseek" and await deepseek_over_budget():
-            errors.append(f"{account}: budget_exceeded")
-            continue
-
         base_url, api_key = _provider_config(account)
         if not api_key:
             logger.debug(f"[llm_router_stream] {account}: no API key, skip")
@@ -634,8 +584,6 @@ async def call_chain_stream(
                                 f"prompt={prompt_total} cached={cached} ({pct}%) "
                                 f"completion={completion}"
                             )
-                        if account == "deepseek":
-                            record_local(model, prompt_total, completion, cached)
                         if total:
                             yield {"type": "usage", "tokens": total}
                 # Successful stream — record CB success and return
