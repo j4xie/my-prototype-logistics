@@ -20,6 +20,10 @@ const canViewPrice = computed(() => permissionStore.canViewPrice);
 const loading = ref(false);
 const batch = ref<TableRow | null>(null);
 const timeline = ref<TableRow[]>([]);
+// T4-D4 (issue #533): F006 customer wants 原料消耗记录 visible on batch detail.
+// Backend endpoint /processing/material-consumptions/batch/{productionBatchId} (MaterialConsumptionController:151)
+// returns the consumption rows for this batch's production plan.
+const consumptions = ref<TableRow[]>([]);
 
 onMounted(() => {
   loadData();
@@ -37,6 +41,9 @@ async function loadData() {
 
     if (batchRes.status === 'fulfilled' && batchRes.value.success) {
       batch.value = batchRes.value.data;
+      // Once we know productionBatchId (= batchId), load consumption records.
+      // Endpoint path uses productionBatchId param name; for batches, batchId === productionBatchId.
+      await loadConsumptions();
     } else {
       ElMessage.error('加载批次详情失败');
     }
@@ -49,6 +56,18 @@ async function loadData() {
     console.error('加载失败:', error);
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadConsumptions() {
+  if (!factoryId.value || !batchId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/processing/material-consumptions/batch/${batchId.value}`);
+    if (res.success && res.data) {
+      consumptions.value = Array.isArray(res.data) ? res.data : (res.data.content || []);
+    }
+  } catch {
+    // Interceptor shows toast. Consumption block gracefully hides via v-if length check.
   }
 }
 
@@ -275,6 +294,40 @@ function getTimelineIcon(type: string) {
           </el-descriptions>
         </el-card>
 
+        <!-- T4-D4 (issue #533): F006 customer asked for raw_material consumption visibility on
+             batch detail. Backend /processing/material-consumptions/batch/{id} (MaterialConsumption-
+             Controller:151) returns enriched rows; this card renders them. Field names verified against
+             enrichConsumptionWithMaps response Map (post-review fix for reviewer C1/I1/I2/I3/I4). -->
+        <el-card v-if="consumptions.length > 0" shadow="never" class="detail-card">
+          <template #header>
+            <span class="section-title">原料消耗记录</span>
+            <span class="section-meta">共 {{ consumptions.length }} 条</span>
+          </template>
+          <el-table :data="consumptions" border stripe size="small" style="width: 100%">
+            <el-table-column prop="materialTypeName" label="原料" min-width="180" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.materialTypeName || row.materialTypeId || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="batchNumber" label="批次号" min-width="160" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.batchNumber || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="quantity" label="消耗数量" width="120" align="right">
+              <template #default="{ row }">{{ formatNum(row.quantity) }}</template>
+            </el-table-column>
+            <el-table-column prop="unit" label="单位" width="80" align="center">
+              <template #default="{ row }">{{ row.unit || '-' }}</template>
+            </el-table-column>
+            <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="110" align="right">
+              <template #default="{ row }">{{ formatCost(row.unitPrice) }}</template>
+            </el-table-column>
+            <el-table-column v-if="canViewPrice" prop="totalCost" label="小计" width="120" align="right">
+              <template #default="{ row }">{{ formatCost(row.totalCost) }}</template>
+            </el-table-column>
+            <el-table-column prop="consumptionTime" label="消耗时间" width="160">
+              <template #default="{ row }">{{ formatDateTime(row.consumedAt || row.consumptionTime || row.createdAt) }}</template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+
         <!-- Timeline -->
         <el-card v-if="timeline.length > 0" shadow="never" class="detail-card">
           <template #header>
@@ -380,6 +433,12 @@ function getTimelineIcon(type: string) {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-color-primary, #303133);
+}
+
+.section-meta {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 12px;
 }
 
 .cost-total {
