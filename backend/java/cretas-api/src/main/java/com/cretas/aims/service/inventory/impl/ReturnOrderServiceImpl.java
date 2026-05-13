@@ -4,12 +4,15 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateReturnOrderRequest;
 import com.cretas.aims.entity.enums.ReturnOrderStatus;
 import com.cretas.aims.entity.enums.ReturnType;
+import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.ReturnOrder;
 import com.cretas.aims.entity.inventory.ReturnOrderItem;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderItemRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderRepository;
+import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.finance.ArApService;
 import com.cretas.aims.service.inventory.ReturnOrderService;
 import org.slf4j.Logger;
@@ -36,6 +39,15 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     private final ReturnOrderItemRepository returnOrderItemRepository;
     private final ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    // T-RTA Phase C (issue #571): create DEFECTIVE FinishedGoodsBatch in WH-LOG on
+    // sales return completion (with-goods path). @Autowired(required=false) so prior
+    // wiring still works if these beans aren't available in some test contexts.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FinishedGoodsBatchRepository finishedGoodsBatchRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private WarehouseResolver warehouseResolver;
 
     /** Round 11 T2 — Canvas Integration Template hook 1: DB-driven validation. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -301,15 +313,52 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
             } catch (Exception e) {
                 log.error("退货AR/AP冲减失败 (有货 completion path): returnOrderId={}", returnOrderId, e);
             }
-            // TODO Phase C (separate follow-up ticket): 库存入库 to WH-LOG with 不良品 status flag.
-            //   - Find/create MaterialBatch (PURCHASE_RETURN) or FinishedGoodsBatch (SALES_RETURN)
-            //     with status='DEFECTIVE' or similar new enum value
-            //   - Link batchId back to the ReturnOrderItem for traceability
-            //   - May need new column FinishedGoodsBatch.qualityStatus or similar
-            //   - Customer's "不良品" semantics: 调拨/销售/生产 should NOT pick these batches
-            //     unless explicit override (e.g. for 二次销售 or 处理).
-            //   See issue #571 PR body for design considerations.
-            log.warn("退货单完成(有货): inventory inbound to WH-LOG with 不良品 status NOT YET IMPLEMENTED (Phase C scope, issue #571). Status flipped to COMPLETED + AR冲减 done, but stock 仍未增加.");
+            // T-RTA Phase C (issue #571): SALES_RETURN with-goods → create DEFECTIVE
+            // FinishedGoodsBatch in WH-LOG. status='DEFECTIVE' auto-excludes from existing
+            // `WHERE status='AVAILABLE'` queries (调拨/销售/生产 pickers), so no schema or
+            // repository refactor needed. PURCHASE_RETURN 不良品入库 暂不实现 (MaterialBatch
+            // path different, covered by separate ticket if needed).
+            if (order.getReturnType() == ReturnType.SALES_RETURN
+                    && finishedGoodsBatchRepository != null && warehouseResolver != null) {
+                try {
+                    String whLogId = warehouseResolver.resolveLogisticsId(factoryId);
+                    int itemIdx = 0;
+                    for (ReturnOrderItem item : order.getItems()) {
+                        itemIdx++;
+                        if (item.getProductTypeId() == null || item.getQuantity() == null
+                                || item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                            continue;
+                        }
+                        FinishedGoodsBatch batch = new FinishedGoodsBatch();
+                        batch.setFactoryId(factoryId);
+                        batch.setBatchNumber("RTN-" + order.getReturnNumber() + "-" + itemIdx);
+                        batch.setProductTypeId(item.getProductTypeId());
+                        batch.setProductName(item.getItemName());
+                        batch.setProducedQuantity(item.getQuantity());
+                        batch.setShippedQuantity(BigDecimal.ZERO);
+                        batch.setReservedQuantity(BigDecimal.ZERO);
+                        batch.setUnit("件");
+                        batch.setUnitPrice(item.getUnitPrice());
+                        batch.setProductionDate(LocalDate.now());
+                        batch.setWarehouseId(whLogId);
+                        batch.setStatus("DEFECTIVE");
+                        batch.setCreatedBy(order.getApprovedBy());
+                        batch.setRemark("销售退货入库(不良品) - " + order.getReturnNumber()
+                                + " - 原因: " + (item.getReason() != null ? item.getReason() : order.getReason()));
+                        finishedGoodsBatchRepository.save(batch);
+                    }
+                    log.info("销售退货 不良品入库完成: returnNumber={}, items={}, warehouse=WH-LOG",
+                            order.getReturnNumber(),
+                            order.getItems() != null ? order.getItems().size() : 0);
+                } catch (Exception e) {
+                    // Non-blocking — AR/AP 冲减 + status flip 必须生效. 库存入库失败仅影响 traceability,
+                    // 仓管员可手动补录. Phase C 之后再发现失败模式, 加监控/告警 ticket.
+                    log.error("销售退货 不良品入库失败 (status flip + AR冲减 仍生效): returnOrderId={}",
+                            returnOrderId, e);
+                }
+            } else if (order.getReturnType() == ReturnType.PURCHASE_RETURN) {
+                log.info("采购退货完成(有货): MaterialBatch 不良品入库 暂未实现 (Phase C scope limited to SALES_RETURN, issue #571).");
+            }
         }
 
         order.setStatus(ReturnOrderStatus.COMPLETED);
