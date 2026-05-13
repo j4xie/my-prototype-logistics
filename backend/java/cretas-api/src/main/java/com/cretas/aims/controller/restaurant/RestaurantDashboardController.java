@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.annotation.RequirePermission;
 
 /**
  * 餐饮 Dashboard 聚合 Controller
@@ -27,6 +28,7 @@ public class RestaurantDashboardController {
 
     private final RestaurantDashboardServiceImpl dashboardService;
 
+    @RequirePermission({"procurement:price:view", "finance:read", "finance:read_write"})
     @GetMapping("/summary")
     @Operation(summary = "餐饮看板汇总", description = "聚合领料、损耗、盘点等核心指标")
     public ApiResponse<Map<String, Object>> summary(

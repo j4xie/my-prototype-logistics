@@ -193,6 +193,7 @@ public class WastageRecordController {
 
     // ==================== 统计 ====================
 
+    @RequirePermission({"procurement:price:view", "finance:read", "finance:read_write"})
     @GetMapping("/statistics")
     @Operation(summary = "损耗统计", description = "按损耗类型和食材统计损耗数量与金额")
     public ApiResponse<Map<String, Object>> statistics(

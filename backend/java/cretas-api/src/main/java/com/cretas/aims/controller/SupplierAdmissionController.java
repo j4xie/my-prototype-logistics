@@ -340,6 +340,7 @@ public class SupplierAdmissionController {
      * @param supplierId 供应商ID
      * @return 综合评估报告
      */
+    @RequirePermission({"procurement:price:view"})
     @GetMapping("/report/{supplierId}")
     @Operation(summary = "获取供应商详细评估报告", description = "获取供应商的综合评估报告，包含准入评估、供货能力、历史记录等信息")
     public ResponseEntity<Map<String, Object>> getSupplierReport(
