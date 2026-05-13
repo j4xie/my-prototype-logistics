@@ -160,9 +160,15 @@ public class RevenueReportGenerateTool extends AbstractBusinessTool {
             fileKb,
             cacheHit ? "，缓存命中" : ""
         );
-        return buildSimpleResult(message, Map.of(
-            "download_url", data.getOrDefault("download_url", ""),
-            "summary", summary
-        ));
+        // Thread the preview data through so Vue AI Chat can render charts
+        // inline in the bubble (top 7 stores × 3 blocks).
+        Map<String, Object> resultData = new HashMap<>();
+        resultData.put("download_url", data.getOrDefault("download_url", ""));
+        resultData.put("summary", summary);
+        Object preview = data.get("preview");
+        if (preview != null) {
+            resultData.put("preview", preview);
+        }
+        return buildSimpleResult(message, resultData);
     }
 }
