@@ -147,42 +147,46 @@ class SLOT(str, Enum):
 
 
 # ─── Slot → per-provider model name ───
-# May 13 2026 mid-month re-audit (after prod incident "All providers exhausted
-# for chat"): live SKU probe vs prod keys (audit matrix in
-# tests/qa-llm-quota/audit-matrix.md).
+# May 13 2026 mid-month re-audit — fuses two sources:
 #
-# Exhausted (403/429/402) on May 13:
-#   - aliyun_b: qwen3.6-flash, qwen3.5-flash, qwen-plus  (free 1M used up)
-#   - aliyun_a: qwen3.6-flash-2026-04-16, qwen3-vl-flash (free 1M used up)
-#   - zhipu:    glm-4-plus, glm-4-air, glm-3-turbo, glm-4 (entire pool 余额 0)
-#   - deepseek: ALL SKUs (account balance 0)
+#   1. Live SKU probe vs prod keys (tests/qa-llm-quota/audit-matrix.md):
+#      EXHAUSTED — aliyun_b qwen3.6-flash (was CHAT/INSIGHTS primary),
+#                  aliyun_a qwen3.6-flash-2026-04-16 + qwen3-vl-flash,
+#                  zhipu glm-4-plus (and entire 通用池: glm-4-air/3-turbo/4),
+#                  deepseek-official ALL SKUs (account balance 0).
+#      STILL OK  — aliyun_b: qwen-flash, qwen-turbo, qwen3.6-35b-a3b, glm-5,
+#                            deepseek-r1, deepseek-r1-distill-qwen-32b,
+#                            qwen-vl-plus-2025-05-07.
+#                  aliyun_a: qwen3.5-plus-2026-04-20 (log ReadTimeout was
+#                            transient), qwen-flash, qwen3.5-plus,
+#                            qwen3.5-122b-a10b, qwen3.5-397b-a17b, glm-5,
+#                            qwen3.5-flash.
+#                  zhipu   : glm-4-flash, glm-4.5-air.
 #
-# Still working (verified 200):
-#   - aliyun_b: qwen-flash, qwen-turbo, qwen3.6-35b-a3b, glm-5, deepseek-r1,
-#               deepseek-r1-distill-qwen-32b, qwen-vl-plus-2025-05-07
-#   - aliyun_a: qwen3.5-plus-2026-04-20 (log "ReadTimeout" was transient),
-#               qwen-flash, qwen3.5-plus, qwen3.5-122b-a10b, qwen3.5-397b-a17b,
-#               glm-5, qwen3.5-flash
-#   - zhipu:    glm-4-flash, glm-4.5-air
+#   2. Steve console-screenshot audit (Aliyun bailian + Zhipu open.bigmodel):
+#      qwen-max 1M intact on B, qwen3.6-max-preview 999K on A,
+#      qwen3-vl-plus-2025-12-19 1M on both,
+#      glm-4.5-air 6.5M + glm-4.6v 6M are **model-specific independent pools**
+#      on Zhipu — NOT depleted by 通用池. Switching zhipu CHAT/INSIGHTS to
+#      glm-4.5-air recovers that slot without recharging the main pool.
+#      deepseek-v4-pro 999K free on Aliyun-A's DashScope compatible-mode
+#      endpoint (the SAME endpoint as aliyun_a, just a different model).
 #
-# Changes vs May 9 picks:
-#   CHAT/INSIGHTS aliyun_b: qwen3.6-flash → qwen-flash (free still active)
-#   INSIGHTS aliyun_a:      qwen3.6-flash-2026-04-16 → qwen3.5-flash
-#   CHAT/INSIGHTS zhipu:    glm-4-plus → glm-4-flash
-#   VL aliyun_a:            qwen3-vl-flash → qwen-vl-plus-2025-05-07 (DashScope
-#                            compatible-mode lets same SKU id work on both
-#                            accounts; A's flash VL exhausted)
+# May-9-era note "bare aliases on A are PAID" no longer holds — bare qwen-flash
+# on A returned 200 May 13. Aliyun may have rotated free-tier policy. Keep
+# version-suffixed picks where they already work; only switch where broken.
 #
-# May 9 note about "bare aliases on A are PAID" no longer holds — bare
-# qwen-flash on A returned 200 with no payment-required error on May 13. Aliyun
-# may have rotated free-tier policy. Keep version-suffixed picks where they
-# already work to avoid churn; only switch where the version-suffix SKU broke.
+# Chain change: added a 5th provider `aliyun_a_deepseek` between zhipu and
+# deepseek-official. It uses aliyun_a's API key against the same DashScope
+# compatible-mode base_url, but routes deepseek-v4-pro (DashScope-hosted)
+# which has 999K free quota on Aliyun-A. This restores deepseek-class quality
+# without depending on the deepseek-official balance.
 #
-# Chain order unchanged: free providers first (b > a > zhipu) → paid official
-# last. Each provider's 403/429 still triggers fallback per
-# `_is_quota_exhausted`. DeepSeek-official is balance-0 across all SKUs but
-# 402 falls through "Other errors" path harmlessly to next provider (which is
-# end-of-chain, so the chain just exhausts cleanly).
+# REVIEW slot keeps May-9 picks (all live-verified working). It sets
+# aliyun_a_deepseek=None so the new chain entry is skipped cleanly for review
+# (per Steve audit: review slot is fine, don't churn).
+#
+# Triggered by prod incident "All providers exhausted for chat" 2026-05-13.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     # CRITICAL: deepseek-v4 default `thinking.type=enabled` adds ~5s of
     # invisible reasoning before visible answer + truncates output. We force
@@ -192,46 +196,53 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     # compatible-mode) are NOT touched by that hook — DashScope handles
     # thinking semantics itself per its own API contract.
     SLOT.CHAT: {
-        "aliyun_b": "qwen-flash",                  # ✅ B free OK May 13 (was qwen3.6-flash 403)
-        "aliyun_a": "qwen3.5-plus-2026-04-20",     # ✅ A free OK May 13 (log ReadTimeout was transient)
-        "zhipu":    "glm-4-flash",                 # ✅ zhipu free OK May 13 (was glm-4-plus 429)
-        "deepseek": "deepseek-v4-flash",           # paid last-resort (balance 0 May 13)
+        "aliyun_b":          "qwen-max",                  # Steve screenshot: B free 1M intact (replaces qwen3.6-flash 403)  # noqa: E501
+        "aliyun_a":          "qwen3.6-max-preview",       # Steve screenshot: A free 999K intact (was qwen3.5-plus, still works but max-preview has more headroom)  # noqa: E501
+        "zhipu":             "glm-4.5-air",               # Steve screenshot: 6.5M independent pool (NOT in 通用池 which is 0)  # noqa: E501
+        "aliyun_a_deepseek": "deepseek-v4-pro",           # NEW: DashScope-hosted, free 999K on aliyun_a key
+        "deepseek":          "deepseek-v4-pro",           # paid last-resort (account balance 0 May 13, falls through harmlessly)  # noqa: E501
     },
     SLOT.INSIGHTS: {
-        "aliyun_b": "qwen-flash",                  # ✅ B free OK May 13 (was qwen3.6-flash 403)
-        "aliyun_a": "qwen3.5-flash",               # ✅ A free OK May 13 (was qwen3.6-flash-2026-04-16 403)
-        "zhipu":    "glm-4-flash",                 # ✅ zhipu free OK May 13 (was glm-4-plus 429)
-        "deepseek": "deepseek-v4-flash",
+        "aliyun_b":          "qwen3.6-35b-a3b",           # Steve screenshot: 816K intact (live-probe also 200 OK)
+        "aliyun_a":          "qwen3.6-35b-a3b",           # Steve screenshot: 998K intact
+        "zhipu":             "glm-4.5-air",               # 6.5M independent pool
+        "aliyun_a_deepseek": "deepseek-v4-pro",
+        "deepseek":          "deepseek-v4-pro",
     },
     SLOT.CHART: {
-        "aliyun_b": "glm-5",                        # ✅ B free OK May 13 (unchanged)
-        "aliyun_a": "glm-5",                        # ✅ A free OK May 13 (unchanged, expires 2026/05/17)
-        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
-        "deepseek": "deepseek-v4-flash",
+        "aliyun_b":          "glm-5",                     # Both audits agree: 875K intact B
+        "aliyun_a":          "glm-5",                     # 886K intact A (expires 2026/05/17 — re-check before then)
+        "zhipu":             "glm-4.5-air",               # unchanged
+        "aliyun_a_deepseek": "deepseek-v4-pro",
+        "deepseek":          "deepseek-v4-pro",
     },
     SLOT.MAPPER: {
-        "aliyun_b": "qwen-turbo",                  # ✅ B free OK May 13 (unchanged)
-        "aliyun_a": "qwen3.5-122b-a10b",           # ✅ A free OK May 13 (unchanged)
-        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
-        "deepseek": "deepseek-v4-flash",
+        "aliyun_b":          "qwen3.5-122b-a10b",         # Steve screenshot: 998K intact (was qwen-turbo, also works)
+        "aliyun_a":          "qwen3.5-122b-a10b",         # unchanged, 998K
+        "zhipu":             "glm-4.5-air",               # unchanged
+        "aliyun_a_deepseek": "deepseek-v4-pro",
+        "deepseek":          "deepseek-v4-pro",
     },
     SLOT.REASONING: {
-        "aliyun_b": "deepseek-r1",                 # ✅ B free OK May 13 (unchanged)
-        "aliyun_a": "qwen3.5-397b-a17b",           # ✅ A free OK May 13 (unchanged)
-        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
-        "deepseek": "deepseek-v4-pro",             # paid reasoning-grade
+        "aliyun_b":          "qwen3.5-397b-a17b",         # Steve screenshot: 974K intact (was deepseek-r1, also OK)
+        "aliyun_a":          "qwen3.5-397b-a17b",         # unchanged, 998K
+        "zhipu":             "glm-4.5-air",               # unchanged
+        "aliyun_a_deepseek": "deepseek-v4-pro",
+        "deepseek":          "deepseek-v4-pro",           # paid reasoning-grade
     },
     SLOT.VL: {
-        "aliyun_b": "qwen-vl-plus-2025-05-07",     # ✅ B free OK May 13 (unchanged)
-        "aliyun_a": "qwen-vl-plus-2025-05-07",     # ✅ A free OK May 13 (was qwen3-vl-flash 403; same SKU id works on both accts via DashScope compat-mode)  # noqa: E501
-        "zhipu":    "glm-4.6v",                     # ⚠️ payload format incompatible with image_url (zhipu needs different shape)  # noqa: E501
-        "deepseek": None,                           # DeepSeek has no VL model
+        "aliyun_b":          "qwen3-vl-plus-2025-12-19",  # Steve screenshot: 1M intact (was qwen-vl-plus-2025-05-07 still OK, but newer version has higher quota headroom)  # noqa: E501
+        "aliyun_a":          "qwen3-vl-plus-2025-12-19",  # Steve screenshot: 1M intact on A
+        "zhipu":             "glm-4.6v",                  # ⚠️ payload format incompatible with image_url (zhipu needs different shape); 6M independent pool exists but call site must adapt  # noqa: E501
+        "aliyun_a_deepseek": None,                        # DashScope has no DeepSeek VL — skip cleanly
+        "deepseek":          None,                        # DeepSeek-official has no VL model
     },
     SLOT.REVIEW: {
-        "aliyun_b": "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13 (unchanged)
-        "aliyun_a": "qwen3.5-397b-a17b",            # ✅ A free OK May 13 (unchanged)
-        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
-        "deepseek": "deepseek-v4-pro",
+        "aliyun_b":          "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13 (unchanged — review slot fine per Steve)  # noqa: E501
+        "aliyun_a":          "qwen3.5-397b-a17b",             # ✅ A free OK May 13 (unchanged)
+        "zhipu":             "glm-4.5-air",                   # unchanged
+        "aliyun_a_deepseek": None,                            # Steve: leave REVIEW alone; skip new chain entry cleanly  # noqa: E501
+        "deepseek":          "deepseek-v4-pro",               # unchanged
     },
 }
 
@@ -240,6 +251,17 @@ def _provider_config(account: str) -> Tuple[str, str]:
     """Return (base_url, api_key) for a provider account."""
     mapping = {
         "aliyun_a": (
+            os.getenv("LLM_ALIYUN_A_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            os.getenv("LLM_ALIYUN_A_API_KEY") or os.getenv("LLM_API_KEY", ""),
+        ),
+        # aliyun_a_deepseek (May 13 2026): same endpoint + key as aliyun_a, but
+        # SLOT_MODELS routes DeepSeek-class SKUs (deepseek-v4-pro) here. DashScope
+        # compatible-mode hosts those models with their own free-quota pool
+        # (~999K intact on Steve's screenshot 2026-05-13) — independent of the
+        # qwen-* quota that the `aliyun_a` slot consumes. This lets the chain
+        # reach deepseek-grade quality without depending on DeepSeek-official's
+        # balance (which is 0 across all SKUs as of May 13).
+        "aliyun_a_deepseek": (
             os.getenv("LLM_ALIYUN_A_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             os.getenv("LLM_ALIYUN_A_API_KEY") or os.getenv("LLM_API_KEY", ""),
         ),
@@ -272,9 +294,15 @@ def _provider_config(account: str) -> Tuple[str, str]:
 # Picks were refreshed after prod log reported all 4 providers exhausted
 # for CHAT slot. Several version-suffixed SKUs exhausted free quota
 # mid-month and were swapped to alternate working SKUs on the same
-# provider. Chain order unchanged. Re-audit recommended ~every 2 weeks or
-# when "All providers exhausted" log line reappears.
-DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
+# provider. Chain grew from 4 → 5: `aliyun_a_deepseek` inserted between
+# zhipu and deepseek-official. It shares the aliyun_a endpoint+key but
+# routes deepseek-v4-pro via DashScope (independent free pool ~999K on
+# Steve's screenshot 2026-05-13). This keeps a deepseek-class quality
+# tier reachable while DeepSeek-official balance is 0. SLOT entries for
+# REVIEW/VL set `aliyun_a_deepseek=None` so the chain skips it cleanly
+# where it doesn't apply. Re-audit recommended ~every 2 weeks or when
+# "All providers exhausted" log line reappears.
+DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek", "deepseek"]
 
 
 def _is_quota_exhausted(status_code: int, body_text: str) -> bool:

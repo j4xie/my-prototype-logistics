@@ -123,3 +123,65 @@ journalctl -u cretas-python -f | grep -E '\[llm_router\]'
 Expected: `[llm_router] slot=chat OK via aliyun_b/qwen-flash` log line appears, "All providers exhausted" error gone.
 
 If still seeing exhaustion, re-run audit — quota status changes hour-to-hour as other systems consume.
+
+---
+
+## MO Merge — Steve Console Screenshot Audit (supersedes table above)
+
+After the live probe (above) Steve provided console-screenshot evidence of additional SKUs whose free quota is **intact**, on the same prod-key accounts. Decision: build on the live-probe baseline + apply MO overrides where Steve's screenshot shows more headroom (`qwen-max` 1M, `qwen3.6-max-preview` 999K, etc.) or a cleaner pool (`glm-4.5-air` 6.5M independent — NOT in zhipu's depleted 通用池).
+
+Steve confirmed the screenshot is from the same prod-key accounts as the live probe, so the un-probed SKUs are trusted (skip extra live-probe round). Final picks below.
+
+### Final SLOT × Provider table (this is what ships)
+
+Chain extended 4 → 5: `aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek → deepseek`. The new entry `aliyun_a_deepseek` reuses aliyun_a's API key + DashScope endpoint but routes `deepseek-v4-pro` (DashScope-hosted, separate ~999K free pool).
+
+| SLOT | aliyun_b | aliyun_a | zhipu | aliyun_a_deepseek (NEW) | deepseek (official) |
+|---|---|---|---|---|---|
+| CHAT | `qwen-max` (1M) | `qwen3.6-max-preview` (999K) | `glm-4.5-air` (6.5M pool) | `deepseek-v4-pro` (999K DashScope) | `deepseek-v4-pro` (paid, balance 0) |
+| INSIGHTS | `qwen3.6-35b-a3b` (816K, live ✓) | `qwen3.6-35b-a3b` (998K) | `glm-4.5-air` | `deepseek-v4-pro` | `deepseek-v4-pro` |
+| CHART | `glm-5` (875K, live ✓) | `glm-5` (886K, live ✓) | `glm-4.5-air` | `deepseek-v4-pro` | `deepseek-v4-pro` |
+| MAPPER | `qwen3.5-122b-a10b` (998K) | `qwen3.5-122b-a10b` (998K, live ✓) | `glm-4.5-air` | `deepseek-v4-pro` | `deepseek-v4-pro` |
+| REASONING | `qwen3.5-397b-a17b` (974K) | `qwen3.5-397b-a17b` (998K, live ✓) | `glm-4.5-air` | `deepseek-v4-pro` | `deepseek-v4-pro` |
+| VL | `qwen3-vl-plus-2025-12-19` (1M) | `qwen3-vl-plus-2025-12-19` (1M) | `glm-4.6v` (6M pool, payload incompat) | `None` (no DS VL) | `None` (no DS VL) |
+| REVIEW (unchanged) | `deepseek-r1-distill-qwen-32b` | `qwen3.5-397b-a17b` | `glm-4.5-air` | `None` (skip) | `deepseek-v4-pro` |
+
+### Deltas vs live-probe baseline (rows above this section)
+
+| SLOT/Acct | Live-probe pick | Final (MO merge) pick | Why MO trumps |
+|---|---|---|---|
+| CHAT/aliyun_b | `qwen-flash` | `qwen-max` | Screenshot: 1M free intact; max-class quality preferred |
+| CHAT/aliyun_a | `qwen3.5-plus-2026-04-20` | `qwen3.6-max-preview` | Screenshot: 999K free intact; newer max version |
+| CHAT/zhipu | `glm-4-flash` | `glm-4.5-air` | Screenshot: 6.5M independent pool; better model |
+| INSIGHTS/aliyun_b | `qwen-flash` | `qwen3.6-35b-a3b` | Screenshot: 816K; better-suited for insight gen than flash |
+| INSIGHTS/aliyun_a | `qwen3.5-flash` | `qwen3.6-35b-a3b` | Screenshot: 998K; consistency with B |
+| INSIGHTS/zhipu | `glm-4-flash` | `glm-4.5-air` | Same 6.5M pool reason as CHAT |
+| MAPPER/aliyun_b | `qwen-turbo` | `qwen3.5-122b-a10b` | Screenshot: 998K; consistency with A |
+| REASONING/aliyun_b | `deepseek-r1` | `qwen3.5-397b-a17b` | Screenshot: 974K; consistency with A |
+| VL/aliyun_b | `qwen-vl-plus-2025-05-07` | `qwen3-vl-plus-2025-12-19` | Screenshot: 1M; newer version |
+| VL/aliyun_a | `qwen-vl-plus-2025-05-07` | `qwen3-vl-plus-2025-12-19` | Same as B |
+| ALL non-VL/REVIEW + new column | (chain stopped at deepseek-official) | `aliyun_a_deepseek` inserted | Routes `deepseek-v4-pro` via DashScope free pool (999K) so chain doesn't dead-end at deepseek-official balance 0 |
+
+### Avoided SKUs (per Steve audit)
+
+- `qwen3.6-flash` on aliyun_b — 403 quota (live-probe confirmed)
+- `qwen3.5-plus-2026-04-20` on aliyun_a — transient timeout (live-probe), MO picks newer max-preview as belt-and-suspenders
+- `glm-4-plus` on zhipu — 429 (通用池 0 balance, live-probe confirmed; MO confirms by routing around the depleted pool)
+- `deepseek-v4-flash` on deepseek-official — 402 (live-probe confirmed); MO swaps to `deepseek-v4-pro` for tail consistency even though both will 402 until balance recharged
+
+### Post-deploy expected behavior
+
+Look for these log lines in `journalctl -u cretas-python -f` after deploy:
+
+```
+[llm_router] slot=chat OK via aliyun_b/qwen-max
+[llm_router] slot=insights OK via aliyun_b/qwen3.6-35b-a3b
+[llm_router] slot=chart OK via aliyun_b/glm-5
+[llm_router] slot=vl OK via aliyun_b/qwen3-vl-plus-2025-12-19
+```
+
+The previous `[llm_router] All providers exhausted for chat:` error should be gone. If a slot still exhausts B, the new chain walks A → zhipu → aliyun_a_deepseek → deepseek-official in order.
+
+### Re-audit cadence
+
+Free quota resets monthly per Aliyun's billing cycle. Re-run `/tmp/audit-llm.sh` style probe ~every 2 weeks, or whenever the "All providers exhausted" log line reappears, to catch SKUs that exhausted mid-month.
