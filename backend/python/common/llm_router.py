@@ -147,12 +147,42 @@ class SLOT(str, Enum):
 
 
 # ─── Slot → per-provider model name ───
-# May 9 2026 free-quota audit: aliyun_b is the free-quota mine
-# (~all 1M tokens/month per SKU). aliyun_a has free quota only on
-# version-suffixed SKUs — bare aliases like `qwen-plus`/`qwen-turbo`/
-# `qwen-flash` route to PAID SKUs on A. DeepSeek-official is paid API
-# (no free tier). Net: chain free providers first, deepseek-official last.
-# Audit evidence: docs/superpowers/dispatch + bailian.console screenshots.
+# May 13 2026 mid-month re-audit (after prod incident "All providers exhausted
+# for chat"): live SKU probe vs prod keys (audit matrix in
+# tests/qa-llm-quota/audit-matrix.md).
+#
+# Exhausted (403/429/402) on May 13:
+#   - aliyun_b: qwen3.6-flash, qwen3.5-flash, qwen-plus  (free 1M used up)
+#   - aliyun_a: qwen3.6-flash-2026-04-16, qwen3-vl-flash (free 1M used up)
+#   - zhipu:    glm-4-plus, glm-4-air, glm-3-turbo, glm-4 (entire pool 余额 0)
+#   - deepseek: ALL SKUs (account balance 0)
+#
+# Still working (verified 200):
+#   - aliyun_b: qwen-flash, qwen-turbo, qwen3.6-35b-a3b, glm-5, deepseek-r1,
+#               deepseek-r1-distill-qwen-32b, qwen-vl-plus-2025-05-07
+#   - aliyun_a: qwen3.5-plus-2026-04-20 (log "ReadTimeout" was transient),
+#               qwen-flash, qwen3.5-plus, qwen3.5-122b-a10b, qwen3.5-397b-a17b,
+#               glm-5, qwen3.5-flash
+#   - zhipu:    glm-4-flash, glm-4.5-air
+#
+# Changes vs May 9 picks:
+#   CHAT/INSIGHTS aliyun_b: qwen3.6-flash → qwen-flash (free still active)
+#   INSIGHTS aliyun_a:      qwen3.6-flash-2026-04-16 → qwen3.5-flash
+#   CHAT/INSIGHTS zhipu:    glm-4-plus → glm-4-flash
+#   VL aliyun_a:            qwen3-vl-flash → qwen-vl-plus-2025-05-07 (DashScope
+#                            compatible-mode lets same SKU id work on both
+#                            accounts; A's flash VL exhausted)
+#
+# May 9 note about "bare aliases on A are PAID" no longer holds — bare
+# qwen-flash on A returned 200 with no payment-required error on May 13. Aliyun
+# may have rotated free-tier policy. Keep version-suffixed picks where they
+# already work to avoid churn; only switch where the version-suffix SKU broke.
+#
+# Chain order unchanged: free providers first (b > a > zhipu) → paid official
+# last. Each provider's 403/429 still triggers fallback per
+# `_is_quota_exhausted`. DeepSeek-official is balance-0 across all SKUs but
+# 402 falls through "Other errors" path harmlessly to next provider (which is
+# end-of-chain, so the chain just exhausts cleanly).
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     # CRITICAL: deepseek-v4 default `thinking.type=enabled` adds ~5s of
     # invisible reasoning before visible answer + truncates output. We force
@@ -162,45 +192,45 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     # compatible-mode) are NOT touched by that hook — DashScope handles
     # thinking semantics itself per its own API contract.
     SLOT.CHAT: {
-        "aliyun_b": "qwen3.6-flash",               # ✅ B free 997K/1M (version-pinned per audit)
-        "aliyun_a": "qwen3.5-plus-2026-04-20",     # ✅ A free 999K/1M (bare qwen-plus is PAID on A)
-        "zhipu":    "glm-4-plus",
-        "deepseek": "deepseek-v4-flash",           # paid last-resort
+        "aliyun_b": "qwen-flash",                  # ✅ B free OK May 13 (was qwen3.6-flash 403)
+        "aliyun_a": "qwen3.5-plus-2026-04-20",     # ✅ A free OK May 13 (log ReadTimeout was transient)
+        "zhipu":    "glm-4-flash",                 # ✅ zhipu free OK May 13 (was glm-4-plus 429)
+        "deepseek": "deepseek-v4-flash",           # paid last-resort (balance 0 May 13)
     },
     SLOT.INSIGHTS: {
-        "aliyun_b": "qwen3.6-flash",               # ✅ B free 997K/1M
-        "aliyun_a": "qwen3.6-flash-2026-04-16",    # ✅ A free 972K/1M
-        "zhipu":    "glm-4-plus",
+        "aliyun_b": "qwen-flash",                  # ✅ B free OK May 13 (was qwen3.6-flash 403)
+        "aliyun_a": "qwen3.5-flash",               # ✅ A free OK May 13 (was qwen3.6-flash-2026-04-16 403)
+        "zhipu":    "glm-4-flash",                 # ✅ zhipu free OK May 13 (was glm-4-plus 429)
         "deepseek": "deepseek-v4-flash",
     },
     SLOT.CHART: {
-        "aliyun_b": "glm-5",                        # ✅ B free 875K/1M
-        "aliyun_a": "glm-5",                        # ✅ A free 886K/1M (expires 2026/05/17)
-        "zhipu":    "glm-4.5-air",
+        "aliyun_b": "glm-5",                        # ✅ B free OK May 13 (unchanged)
+        "aliyun_a": "glm-5",                        # ✅ A free OK May 13 (unchanged, expires 2026/05/17)
+        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
         "deepseek": "deepseek-v4-flash",
     },
     SLOT.MAPPER: {
-        "aliyun_b": "qwen-turbo",                  # ✅ B free 999K/1M (was qwen-turbo-1101 — that SKU not on B)
-        "aliyun_a": "qwen3.5-122b-a10b",           # ✅ A free 576K/1M
-        "zhipu":    "glm-4.5-air",
+        "aliyun_b": "qwen-turbo",                  # ✅ B free OK May 13 (unchanged)
+        "aliyun_a": "qwen3.5-122b-a10b",           # ✅ A free OK May 13 (unchanged)
+        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
         "deepseek": "deepseek-v4-flash",
     },
     SLOT.REASONING: {
-        "aliyun_b": "deepseek-r1",                 # ✅ B free 1M/1M (was deepseek-v3.2-exp — that SKU is "不支持开启" on百炼)
-        "aliyun_a": "qwen3.5-397b-a17b",           # ✅ A free 974K/1M
-        "zhipu":    "glm-4.5-air",
+        "aliyun_b": "deepseek-r1",                 # ✅ B free OK May 13 (unchanged)
+        "aliyun_a": "qwen3.5-397b-a17b",           # ✅ A free OK May 13 (unchanged)
+        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
         "deepseek": "deepseek-v4-pro",             # paid reasoning-grade
     },
     SLOT.VL: {
-        "aliyun_b": "qwen-vl-plus-2025-05-07",     # ✅ B free 1M/1M (May 9 smoke caught typo: was qwen3-vl-plus-* which 404s)  # noqa: E501
-        "aliyun_a": "qwen3-vl-flash",              # ⚠️ A may exhaust mid-month (smoke saw 403 on May 9); chain auto-fallback handles  # noqa: E501
+        "aliyun_b": "qwen-vl-plus-2025-05-07",     # ✅ B free OK May 13 (unchanged)
+        "aliyun_a": "qwen-vl-plus-2025-05-07",     # ✅ A free OK May 13 (was qwen3-vl-flash 403; same SKU id works on both accts via DashScope compat-mode)  # noqa: E501
         "zhipu":    "glm-4.6v",                     # ⚠️ payload format incompatible with image_url (zhipu needs different shape)  # noqa: E501
         "deepseek": None,                           # DeepSeek has no VL model
     },
     SLOT.REVIEW: {
-        "aliyun_b": "deepseek-r1-distill-qwen-32b",  # ✅ B free 1M/1M (was deepseek-v3.2 — not on百炼)
-        "aliyun_a": "qwen3.5-397b-a17b",            # ✅ A free 974K/1M (was deepseek-v3 — not free on A)
-        "zhipu":    "glm-4.5-air",
+        "aliyun_b": "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13 (unchanged)
+        "aliyun_a": "qwen3.5-397b-a17b",            # ✅ A free OK May 13 (unchanged)
+        "zhipu":    "glm-4.5-air",                  # ✅ zhipu OK May 13 (unchanged)
         "deepseek": "deepseek-v4-pro",
     },
 }
@@ -232,13 +262,18 @@ def _provider_config(account: str) -> Tuple[str, str]:
 # May 9 2026 free-first re-order: bailian.console audit confirmed aliyun_b
 # is a free-quota mine (~all SKUs have 1M tokens/month free, vector tab even
 # has 20M async-embed). Per-SLOT model picks above were also fixed to use
-# free SKUs (was: qwen-plus/qwen-turbo-1101/deepseek-v3.2-exp etc which are
-# PAID on百炼 — only version-suffixed SKUs grant free quota on A; bare
-# aliases on B happen to grant free, opposite of A).
+# free SKUs.
 # Chain order: free providers first (b > a > zhipu) → paid official last.
 # Each provider's 403/AllocationQuota.FreeTierOnly + 429 still triggers
 # fallback per `_is_quota_exhausted`, so prod safety unchanged when free
 # quotas exhaust mid-month — chain naturally walks to paid tail.
+#
+# May 13 2026 mid-month re-audit (PR fix/llm-router-quota-switch):
+# Picks were refreshed after prod log reported all 4 providers exhausted
+# for CHAT slot. Several version-suffixed SKUs exhausted free quota
+# mid-month and were swapped to alternate working SKUs on the same
+# provider. Chain order unchanged. Re-audit recommended ~every 2 weeks or
+# when "All providers exhausted" log line reappears.
 DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
 
 
