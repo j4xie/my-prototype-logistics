@@ -61,6 +61,20 @@ public class SalesDeliveryItem extends BaseEntity {
     @Column(name = "finished_goods_batch_id", length = 191)
     private String finishedGoodsBatchId;
 
+    /**
+     * 来源仓库 code — T4-D5 (issue #553): preserved from SalesOrderItem.sourceWarehouseCode
+     * when the delivery is created. Currently stored only (no display path yet on delivery
+     * detail — sales order detail.vue:1060 already displays the upstream order field).
+     * Reserved for future intelligent batch allocation; existing FinishedGoodsBatch
+     * allocation logic does NOT yet filter by this column (follow-up scope, gated by PRD
+     * decisions on fallback/split behavior when picked warehouse has insufficient stock).
+     *
+     * <p>UI maps via {@code utils/warehouse.ts:warehouseDisplayLabel} — WH-LOG → 总仓,
+     * WH-WKS → 线边仓. Migration: {@code V20260514_02__add_sales_delivery_item_source_warehouse_code.sql}
+     */
+    @Column(name = "source_warehouse_code", length = 20)
+    private String sourceWarehouseCode;
+
     @Column(name = "remark", length = 500)
     private String remark;
 

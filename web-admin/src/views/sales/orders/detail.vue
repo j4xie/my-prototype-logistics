@@ -341,6 +341,11 @@ function openDeliveryDialog() {
       deliveredQuantity: it.quantity - (it.deliveredQuantity || 0),
       unit: it.unit,
       unitPrice: it.unitPrice,
+      // T4-D5 (issue #553): propagate per-line source warehouse code from the
+      // sales order item. Backend SalesServiceImpl.createDeliveryRecord stores
+      // it on SalesDeliveryItem; allocation logic doesn't filter yet but the
+      // hint is preserved for reporting + future intelligent picking.
+      sourceWarehouseCode: it.sourceWarehouseCode || '',
     })),
   };
   deliveryDialogVisible.value = true;
@@ -915,6 +920,46 @@ async function handleCreatePayment() {
   } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
+
+// T-INV (issue: F006 客户反馈 — "一键收款"): one-click full-amount payment record.
+// Customer's transcript wording was "一键收" — the 登记收款 dialog already auto-fills
+// remaining amount, so a true "一键" UX is dialog-less: confirm modal → POST.
+// Skips dialog form entirely; uses 默认 BANK_TRANSFER + today's date + no receipt.
+async function handleQuickPayFull() {
+  if (submitting.value) return;
+  const remaining = computedRemainingAmount();
+  if (remaining <= 0) {
+    return ElMessage.info('订单已全额收款, 无需再收');
+  }
+  try {
+    // formatAmount already prepends ¥ — do NOT add another (reviewer Important #1).
+    // paymentDate: omit → backend defaults to server-local today (avoids UTC-midnight
+    // drift where Asia/Shanghai 23:30 click would land on tomorrow's UTC date).
+    await ElMessageBox.confirm(
+      `应收余额 ${formatAmount(remaining)}, 收款方式默认 银行转账, 系统按今日记录. 一键登记?`,
+      '一键收款确认',
+      { type: 'warning' }
+    );
+  } catch { return; }
+  submitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/finance/payments/record`, {
+      salesOrderId: orderId.value,
+      amount: remaining,
+      paymentMethod: 'BANK_TRANSFER',
+      paymentDate: null, // let backend default to server-today (reviewer M2: avoid UTC drift)
+      paymentReference: null, // no reference recorded for quick-pay path (reviewer M4)
+      remark: '一键收款 (全额, 默认方式)',
+      receiptUrl: null,
+    });
+    if (res.success) {
+      ElMessage.success('一键收款已登记');
+      loadPayments();
+      loadOrder();
+    } else { ElMessage.error(res.message || '创建失败'); }
+  } catch (e) { handleCatchError(e, '一键收款失败, 请检查网络'); }
+  finally { submitting.value = false; }
+}
 </script>
 
 <template>
@@ -1185,6 +1230,10 @@ async function handleCreatePayment() {
               <el-button v-if="canWrite" type="primary" @click="openPaymentDialog">
                 + 登记收款
               </el-button>
+              <!-- T-INV (F006 客户反馈): 一键收款 shortcut — only shown when remaining > 0.
+                   Auto-fills remaining amount + BANK_TRANSFER + today; bypasses dialog form. -->
+              <el-button v-if="canWrite && computedRemainingAmount() > 0" type="success"
+                         :loading="submitting" @click="handleQuickPayFull">一键收款 (全额)</el-button>
               <span v-if="canViewPrice" class="tab-hint">订单总额 {{ formatAmount(order.totalAmount) }} / 已收 {{ formatAmount(order.paidAmount || 0) }} / 待收 {{ formatAmount(computedRemainingAmount()) }}</span>
             </div>
 
