@@ -82,35 +82,22 @@ const SCENARIOS = [
       if (!newBtn) return { verdict: 'FAIL', reason: '新建销售订单 button not found after 12s wait' };
       await newBtn.click();
       await page.waitForTimeout(1500);
-      // Click "添加行" to add a product row
-      const addRowBtn = await page.$('button:has-text("添加行"), button:has-text("+ 添加行")');
-      if (!addRowBtn) {
-        const dialogText = await page.textContent('.el-dialog').catch(() => '');
-        return { verdict: 'INFO', reason: '添加行 button not visible — may be default-shown row', dialogPreview: dialogText.slice(0, 400) };
-      }
-      await addRowBtn.click();
-      await page.waitForTimeout(1000);
-      // Click the product select in the new row
-      const productSelect = await page.$('.el-table .el-select');
-      if (!productSelect) {
-        const dialogText = await page.textContent('.el-dialog').catch(() => '');
-        return { verdict: 'INFO', reason: 'product select not found', dialogPreview: dialogText.slice(0, 400) };
-      }
-      await productSelect.click();
-      await page.waitForTimeout(1500);
-      // Pick first option
-      const firstOpt = await page.$('.el-select-dropdown__item');
-      if (firstOpt) await firstOpt.click();
-      await page.waitForTimeout(2000);
-      // Now look for batch source dropdown / labels
+      // Per source-grep (sales/orders/list.vue:925-955): dialog 列结构 =
+      // 品名 / 规格 / 下单数量 / 单位 / 单价 / 箱数 / 税率(%) / 操作.
+      // 无 仓库 / batch source column. utils/warehouse.ts warehouseDisplayLabel
+      // exists but NOT imported in this view. Verify via dialog text scan.
       const dialogText = await page.textContent('.el-dialog').catch(() => '');
+      const hasWarehouseCol = /仓库|batch.*source|批次源|来源仓/.test(dialogText);
       const hasZongCang = dialogText.includes('总仓') || dialogText.includes('WH-LOG');
       const hasXianBianCang = dialogText.includes('线边仓') || dialogText.includes('WH-WKS');
       return {
-        verdict: hasZongCang || hasXianBianCang ? 'PASS' : 'FAIL',
+        hasWarehouseCol,
         hasZongCang,
         hasXianBianCang,
-        dialogPreview: dialogText.slice(0, 600),
+        dialogColumnsPreview: dialogText.slice(0, 600),
+        verdict: (hasZongCang || hasXianBianCang || hasWarehouseCol)
+          ? 'PASS'
+          : 'FAIL — F006 销售订单 dialog 无仓库/总仓/线边仓 column. utils/warehouse.ts 存在但未 import 到 sales/orders/list.vue. Customer ask T4-D1 not implemented.',
       };
     },
   },

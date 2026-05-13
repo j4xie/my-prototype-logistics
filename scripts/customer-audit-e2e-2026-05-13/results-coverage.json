@@ -1,5 +1,5 @@
 {
-  "runAt": "2026-05-13T18:14:13.163Z",
+  "runAt": "2026-05-13T18:36:45.288Z",
   "target": "http://139.196.165.140:8086",
   "scenariosTotal": 35,
   "byGroup": {
@@ -9,11 +9,11 @@
     "E": 3
   },
   "statusCounts": {
-    "PASS": 25,
-    "FAIL": 3,
+    "PASS": 26,
+    "FAIL": 4,
     "PARTIAL": 2,
-    "INFO": 4,
-    "ERROR": 1
+    "INFO": 3,
+    "ERROR": 0
   },
   "results": [
     {
@@ -21,13 +21,15 @@
       "group": "E",
       "priority": "P1-followup",
       "account": "f006_admin",
-      "status": "INFO",
+      "status": "FAIL — F006 销售订单 dialog 无仓库/总仓/线边仓 column. utils/warehouse.ts 存在但未 import 到 sales/orders/list.vue. Customer ask T4-D1 not implemented.",
       "evidence": {
-        "verdict": "INFO",
-        "reason": "product select not found",
-        "dialogPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)操作选择产品13% 加工删除选择产品13% 加工删除+ 添加行取消创建"
+        "hasWarehouseCol": false,
+        "hasZongCang": false,
+        "hasXianBianCang": false,
+        "dialogColumnsPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)操作选择产品13% 加工删除+ 添加行取消创建",
+        "verdict": "FAIL — F006 销售订单 dialog 无仓库/总仓/线边仓 column. utils/warehouse.ts 存在但未 import 到 sales/orders/list.vue. Customer ask T4-D1 not implemented."
       },
-      "ts": "2026-05-13T18:03:54.874Z"
+      "ts": "2026-05-13T18:26:41.756Z"
     },
     {
       "scenario": "S-COV-T4-D4-rpf-manual",
@@ -41,7 +43,7 @@
         "hasRpf": false,
         "verdict": "FAIL"
       },
-      "ts": "2026-05-13T18:04:12.839Z"
+      "ts": "2026-05-13T18:26:58.426Z"
     },
     {
       "scenario": "S-COV-T-INV-scope-clarify",
@@ -56,7 +58,7 @@
         "hasFinanceApprove": false,
         "verdict": "PARTIAL — 收款入口存在但 label 不是\"一键\""
       },
-      "ts": "2026-05-13T18:04:37.407Z"
+      "ts": "2026-05-13T18:27:18.144Z"
     },
     {
       "scenario": "S-COV-T1-1-plan-page",
@@ -69,7 +71,7 @@
         "rowCount": 6,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:04:52.841Z"
+      "ts": "2026-05-13T18:27:33.310Z"
     },
     {
       "scenario": "S-COV-T1-2-ai-create-plan",
@@ -83,7 +85,7 @@
         "hasContextualAi": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:05:07.741Z"
+      "ts": "2026-05-13T18:27:49.088Z"
     },
     {
       "scenario": "S-COV-T1-3-by-process",
@@ -112,7 +114,7 @@
         "hasProcessCol": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:05:22.857Z"
+      "ts": "2026-05-13T18:28:04.037Z"
     },
     {
       "scenario": "S-COV-T1-5-shift-report",
@@ -126,7 +128,7 @@
         "hasReport": false,
         "verdict": "INFO — 未找到报工页面 (可能在 RN App / 小程序)"
       },
-      "ts": "2026-05-13T18:05:37.722Z"
+      "ts": "2026-05-13T18:28:18.542Z"
     },
     {
       "scenario": "S-COV-T2-1-ai-skill-registry",
@@ -139,7 +141,7 @@
         "hasAiAgent": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:05:54.149Z"
+      "ts": "2026-05-13T18:28:32.247Z"
     },
     {
       "scenario": "S-COV-T2-2-modules-nav",
@@ -160,7 +162,7 @@
         "matched": 6,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:06:09.929Z"
+      "ts": "2026-05-13T18:28:46.446Z"
     },
     {
       "scenario": "S-COV-T2-4-rpf-chain-list",
@@ -178,7 +180,7 @@
         },
         "verdict": "PARTIAL"
       },
-      "ts": "2026-05-13T18:06:34.988Z"
+      "ts": "2026-05-13T18:29:06.732Z"
     },
     {
       "scenario": "S-COV-T2-5-finance-link",
@@ -194,7 +196,7 @@
         },
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:06:50.854Z"
+      "ts": "2026-05-13T18:29:24.175Z"
     },
     {
       "scenario": "S-COV-T2-6-llm-chat",
@@ -210,7 +212,7 @@
         "hasAiBtn": false,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:07:05.097Z"
+      "ts": "2026-05-13T18:29:38.924Z"
     },
     {
       "scenario": "S-COV-T2-7-skill-config",
@@ -223,7 +225,7 @@
         "landed": null,
         "verdict": "INFO — Skill 配置可能不暴露给前端 (后端 DB 配置)"
       },
-      "ts": "2026-05-13T18:07:20.257Z"
+      "ts": "2026-05-13T18:29:53.682Z"
     },
     {
       "scenario": "S-COV-T2-8-cross-module-ai",
@@ -236,7 +238,7 @@
         "landed": "/smart-bi",
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:07:36.870Z"
+      "ts": "2026-05-13T18:30:09.731Z"
     },
     {
       "scenario": "S-COV-T2-9-bom-add-material",
@@ -249,7 +251,7 @@
         "hasBomMgmt": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:07:52.090Z"
+      "ts": "2026-05-13T18:30:26.219Z"
     },
     {
       "scenario": "S-COV-T3-1-box-auto",
@@ -262,7 +264,7 @@
         "hasBoxCount": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:08:08.571Z"
+      "ts": "2026-05-13T18:30:43.423Z"
     },
     {
       "scenario": "S-COV-T3-2-abaca",
@@ -275,7 +277,7 @@
         "foundAbacaInList": false,
         "verdict": "INFO — F006 当前订单中无规格=\"抄码\"的行 (功能实现 in code @ list.vue:131, 但 prod 数据未触发)"
       },
-      "ts": "2026-05-13T18:08:27.933Z"
+      "ts": "2026-05-13T18:31:02.810Z"
     },
     {
       "scenario": "S-COV-T3-3-three-price",
@@ -288,7 +290,7 @@
         "has3Price": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:08:45.710Z"
+      "ts": "2026-05-13T18:31:19.056Z"
     },
     {
       "scenario": "S-COV-T3-4-expected-arrival",
@@ -300,7 +302,7 @@
         "hasInDetail": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:09:09.119Z"
+      "ts": "2026-05-13T18:31:36.559Z"
     },
     {
       "scenario": "S-COV-T3-5-approval-config",
@@ -314,7 +316,7 @@
         "hasApprovalConfig": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:09:25.480Z"
+      "ts": "2026-05-13T18:31:50.403Z"
     },
     {
       "scenario": "S-COV-T3-10-sales-unit-price",
@@ -327,7 +329,7 @@
         "priceInputCount": 3,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:09:43.408Z"
+      "ts": "2026-05-13T18:32:09.363Z"
     },
     {
       "scenario": "S-COV-T3-12-material-supplier",
@@ -341,7 +343,7 @@
         "hasSupplierMgmt": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:09:59.644Z"
+      "ts": "2026-05-13T18:32:23.721Z"
     },
     {
       "scenario": "S-COV-T3-15-unit-conv",
@@ -355,7 +357,7 @@
         "hasUnits": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:10:13.933Z"
+      "ts": "2026-05-13T18:32:38.756Z"
     },
     {
       "scenario": "S-COV-T4-B1-process-dropdown",
@@ -367,7 +369,7 @@
         "hasProcess": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:10:32.846Z"
+      "ts": "2026-05-13T18:32:56.356Z"
     },
     {
       "scenario": "S-COV-T4-B7-dialog-width",
@@ -379,7 +381,7 @@
         "widthPx": 1024,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:10:49.507Z"
+      "ts": "2026-05-13T18:33:28.750Z"
     },
     {
       "scenario": "S-COV-T4-B8-bom-binding",
@@ -392,7 +394,7 @@
         "hasMaterials": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:11:07.271Z"
+      "ts": "2026-05-13T18:33:46.344Z"
     },
     {
       "scenario": "S-COV-T4-D3-g-kg-conv",
@@ -406,7 +408,7 @@
         "hasUnits": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:11:22.014Z"
+      "ts": "2026-05-13T18:34:01.871Z"
     },
     {
       "scenario": "S-COV-T2-10-yield-rate",
@@ -421,18 +423,42 @@
         "dialogPreviewHead": "",
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:11:47.284Z"
+      "ts": "2026-05-13T18:34:26.075Z"
     },
     {
       "scenario": "S-COV-T3-9-rbac-warehouse-mgr-list",
       "group": "B",
       "priority": "P1-retest",
       "account": "f006_warehouse_mgr",
-      "status": "ERROR",
+      "status": "PASS",
       "evidence": {
-        "error": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://139.196.165.140:8086/procurement/orders\", waiting until \"load\"\u001b[22m\n"
+        "results": {
+          "/procurement/orders": {
+            "headers": [
+              "订单编号",
+              "供应商",
+              "类型",
+              "下单日期",
+              "状态",
+              "操作"
+            ],
+            "hasPrice": false
+          },
+          "/sales/orders": {
+            "headers": [
+              "订单编号",
+              "客户",
+              "业务员",
+              "下单日期",
+              "状态",
+              "操作"
+            ],
+            "hasPrice": false
+          }
+        },
+        "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:12:32.329Z"
+      "ts": "2026-05-13T18:34:56.718Z"
     },
     {
       "scenario": "S-COV-T4-B4-stock-col",
@@ -445,7 +471,7 @@
         "dialogPreview": "手动新建调拨单使用场景无生产计划时手动创建（领用 / 研发 / 互调 / 分部退总仓 等）。创建后为 DRAFT 状态,需走 申请→审批→发货→签收 流程。调拨类型分部→总部 (BRANCH_TO_HQ)调出方调入方六膳门食品科技 (F006)调拨日期调出仓库调入仓库预计到货备注 / 原因0 / 5000调拨物料添加物料类型物料数量单位单价行备注操作原料/食材选择物料删除取消创建",
         "verdict": "FAIL"
       },
-      "ts": "2026-05-13T18:12:51.540Z"
+      "ts": "2026-05-13T18:35:16.368Z"
     },
     {
       "scenario": "S-COV-T4-B9-manual-transfer",
@@ -458,7 +484,7 @@
         "hasManualText": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:13:06.101Z"
+      "ts": "2026-05-13T18:35:31.596Z"
     },
     {
       "scenario": "S-COV-T2-5b-moving-avg-price",
@@ -472,7 +498,7 @@
         "hasAvgPrice": false,
         "verdict": "FAIL"
       },
-      "ts": "2026-05-13T18:13:20.473Z"
+      "ts": "2026-05-13T18:35:45.214Z"
     },
     {
       "scenario": "S-COV-T2-11-yield-analysis",
@@ -486,7 +512,7 @@
         "hasYieldRpt": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:13:36.822Z"
+      "ts": "2026-05-13T18:35:59.680Z"
     },
     {
       "scenario": "S-COV-T2-12-sku-margin",
@@ -500,7 +526,7 @@
         "hasMargin": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:13:58.896Z"
+      "ts": "2026-05-13T18:36:13.992Z"
     },
     {
       "scenario": "S-COV-T3-8b-receive-no-price",
@@ -509,23 +535,12 @@
       "account": "f006_warehouse_mgr",
       "status": "PASS",
       "evidence": {
-        "headers": [
-          "入库单号",
-          "状态",
-          "采购订单",
-          "供应商",
-          "入库日期",
-          "物料行数",
-          "收货数量",
-          "创建人",
-          "创建时间",
-          "操作"
-        ],
+        "headers": [],
         "hasPrice": false,
         "hasPhotoCol": false,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T18:14:13.086Z"
+      "ts": "2026-05-13T18:36:45.207Z"
     }
   ]
 }
