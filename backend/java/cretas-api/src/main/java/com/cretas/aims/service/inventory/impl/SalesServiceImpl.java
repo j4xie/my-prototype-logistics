@@ -623,6 +623,10 @@ public class SalesServiceImpl implements SalesService {
             item.setDeliveredQuantity(itemDTO.getDeliveredQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
+            // T4-D5 (issue #553): propagate source warehouse code from the request DTO.
+            // Inventory allocation logic does NOT yet filter by this column — that's
+            // deferred follow-up. This line is the data-contract propagation only.
+            item.setSourceWarehouseCode(itemDTO.getSourceWarehouseCode());
             item.setRemark(itemDTO.getRemark());
             record.getItems().add(item);
 

@@ -341,6 +341,11 @@ function openDeliveryDialog() {
       deliveredQuantity: it.quantity - (it.deliveredQuantity || 0),
       unit: it.unit,
       unitPrice: it.unitPrice,
+      // T4-D5 (issue #553): propagate per-line source warehouse code from the
+      // sales order item. Backend SalesServiceImpl.createDeliveryRecord stores
+      // it on SalesDeliveryItem; allocation logic doesn't filter yet but the
+      // hint is preserved for reporting + future intelligent picking.
+      sourceWarehouseCode: it.sourceWarehouseCode || '',
     })),
   };
   deliveryDialogVisible.value = true;

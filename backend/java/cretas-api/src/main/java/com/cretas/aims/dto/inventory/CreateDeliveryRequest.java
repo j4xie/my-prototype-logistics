@@ -77,6 +77,16 @@ public class CreateDeliveryRequest {
 
         private BigDecimal unitPrice;
 
+        /**
+         * T4-D5 (issue #553): WH-LOG (总仓) / WH-WKS (线边仓) — source warehouse
+         * code preserved from the originating SalesOrderItem. Nullable for legacy
+         * 无单出库 path + drafts. SalesServiceImpl.createDeliveryRecord propagates
+         * this directly to SalesDeliveryItem.sourceWarehouseCode without filtering
+         * inventory allocation (allocation refactor deferred per PR #553 scope).
+         */
+        @Size(max = 20, message = "来源仓库code长度不能超过20")
+        private String sourceWarehouseCode;
+
         @Size(max = 5000, message = "备注长度不能超过5000个字符")
         private String remark;
     }
