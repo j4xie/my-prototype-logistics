@@ -94,6 +94,15 @@ pytestmark = [pytest.mark.api_endpoint("analysis_department")]
 JWT_SECRET = "phase-2b2-dept-pilot-test-secret"
 
 
+@pytest.fixture(autouse=True)
+def _jwt_env(monkeypatch):
+    """Force JWT_SECRET to our value for the duration of each test —
+    survives import-order collisions with sister test_analysis_*_pilot
+    files that set their own secret at module load."""
+    monkeypatch.setenv("JWT_SECRET", JWT_SECRET)
+    yield
+
+
 # ============================================================
 # Fixtures — JWT, TestClient, row helpers
 # ============================================================
