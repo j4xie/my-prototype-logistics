@@ -36,6 +36,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -354,7 +356,12 @@ public class ReferenceDataController {
     }
 
     /** 原材料查找 (bom.materialTypeId 等). Apr 25 2026 audit: bom DYNAMIC mode active vulnerable
-     *  — old schema pointed at /material-types (404, real path is /raw-material-types). */
+     *  — old schema pointed at /material-types (404, real path is /raw-material-types).
+     *
+     *  T4-B4 (issue #540 backend prerequisite for #532, 2026-05-13): bulk-load currentStock per
+     *  material via MaterialBatchRepository.sumQuantityByMaterialType so the transfer/list.vue
+     *  manual-create dialog can show "现有库存" inline next to 调拨数量. Single query (GROUP BY) —
+     *  no N+1. NULL → emit 0 to keep frontend display deterministic. */
     @GetMapping("/materials")
     @Operation(summary = "原材料查找")
     public ApiResponse<Map<String, Object>> findMaterials(
@@ -370,6 +377,16 @@ public class ReferenceDataController {
         Page<RawMaterialType> result = (esc == null || esc.isBlank())
                 ? materialTypeRepository.findByFactoryIdAndIsActiveTrue(factoryId, pageable)
                 : materialTypeRepository.searchActiveMaterialTypes(factoryId, esc, pageable);
+
+        // T4-B4 (issue #540): single bulk query for per-material currentStock (avoids N+1).
+        // sumQuantityByMaterialType returns List<Object[]>{materialTypeId, sum}.
+        Map<String, BigDecimal> stockMap = new HashMap<>();
+        for (Object[] row : materialBatchRepository.sumQuantityByMaterialType(factoryId)) {
+            if (row[0] != null && row[1] != null) {
+                stockMap.put((String) row[0], (BigDecimal) row[1]);
+            }
+        }
+
         List<Map<String, Object>> content = result.getContent().stream()
                 .map(m -> {
                     Map<String, Object> mp = new LinkedHashMap<>();
@@ -378,6 +395,9 @@ public class ReferenceDataController {
                     mp.put("code", m.getCode());
                     mp.put("unit", m.getUnit());
                     mp.put("category", m.getCategory());
+                    // T4-B4: deterministic 0 fallback when no AVAILABLE batches (rather than null,
+                    // so frontend can always render number — empty inventory is meaningful).
+                    mp.put("currentStock", stockMap.getOrDefault(m.getId(), BigDecimal.ZERO));
                     return mp;
                 })
                 .collect(Collectors.toList());
