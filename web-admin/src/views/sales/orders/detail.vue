@@ -890,12 +890,13 @@ async function handleCreatePayment() {
             </el-descriptions>
 
             <h3 style="margin: 20px 0 12px">{{ label('product') }}明细</h3>
-            <el-table :data="order.items || []" border stripe>
-              <el-table-column prop="productName" :label="label('product')" min-width="150" />
-              <el-table-column prop="specification" label="规格" width="120" show-overflow-tooltip>
+            <!-- T3-13 fix (issue #524): widen 规格 + 产品 columns + scroll-x fallback to prevent 成品详情规格列盖住. -->
+            <el-table :data="order.items || []" border stripe style="width: 100%" :scrollbar-always-on="true">
+              <el-table-column prop="productName" :label="label('product')" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="specification" label="规格" min-width="180" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.specification || '-' }}</template>
               </el-table-column>
-              <el-table-column prop="quantity" label="订单数量" width="100" align="right" />
+              <el-table-column prop="quantity" label="订单数量" width="110" align="right" />
               <el-table-column prop="unit" label="单位" width="80" align="center" />
               <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
                 <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
