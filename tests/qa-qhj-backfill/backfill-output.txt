@@ -1,0 +1,27 @@
+=== Step 2: Backfill execution — HALTED ===
+
+Status: NOT RUN.
+
+Reason: pre-check (Step 1) returned 0 rows in fact_pos_transaction for
+factory_id='R_QINGHUAJIAO_REAL' across ALL dates (not just 2025-01-01..2025-12-31).
+
+Per the dispatch brief:
+  "如果 0 rows, ping organizer — 没原始数据就没法 backfill,
+   客户得自己 upload Excel 才能看 report."
+
+Aggregator behavior with empty source (script would have produced):
+  INSERT INTO agg_daily_order_type_meal ...
+  SELECT ... FROM fact_pos_transaction
+   WHERE factory_id='R_QINGHUAJIAO_REAL'
+     AND date BETWEEN '2025-01-01' AND '2025-12-31'
+   GROUP BY ...
+  ON CONFLICT (...) DO UPDATE SET ...;
+  → would return "INSERT 0 0" (no rows affected, no error)
+
+Decision: SKIP the run. Running with 0 source rows is harmless (idempotent UPSERT
+with empty SELECT) but produces no useful output and wastes a deploy artifact.
+
+Customer (青花椒) must upload Excel for any historical period via the
+/smart-bi/revenue-report uploader before the report can show data. The dual_write
+hook on subsequent fact_pos_transaction inserts will then populate
+agg_daily_order_type_meal automatically without needing this backfill script.

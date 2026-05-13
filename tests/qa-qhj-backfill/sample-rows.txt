@@ -1,0 +1,4 @@
+=== Step 4: Sample 3 Gold rows — N/A ===
+
+Skipped because Step 2 (backfill) was halted on 0 source rows.
+Gold table for R_QINGHUAJIAO_REAL is empty (pre-check.txt §1e).
