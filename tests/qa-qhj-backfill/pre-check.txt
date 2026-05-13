@@ -1,0 +1,37 @@
+=== Step 1a: Pre-check fact_pos_transaction for R_QINGHUAJIAO_REAL 2025-01-01..2025-12-31 (target range) ===
+ row_count | earliest | latest 
+-----------+----------+--------
+         0 |          | 
+(1 row)
+
+
+=== Step 1b: Pre-check fact_pos_transaction for R_QINGHUAJIAO_REAL — ALL DATES ===
+ total_rows | earliest | latest 
+------------+----------+--------
+          0 |          | 
+(1 row)
+
+
+=== Step 1c: All factory_ids with POS data ===
+  factory_id  |  rows  |  earliest  |   latest   
+--------------+--------+------------+------------
+ F001         | 140541 | 2025-01-01 | 2025-12-31
+ RES_3101_009 | 140541 | 2025-01-01 | 2025-12-31
+ R_GML_DEMO   |  16213 | 2026-01-15 | 2026-01-15
+ R_XMX_CHAIN  |    141 | 2026-02-15 | 2026-02-15
+(4 rows)
+
+
+=== Step 1d: Factory registry — confirm R_QINGHUAJIAO_REAL exists ===
+         id         |  name  
+--------------------+--------
+ R_QINGHUAJIAO_REAL | 青花椒
+(1 row)
+
+
+=== Step 1e: Gold table current state for R_QINGHUAJIAO_REAL ===
+ gold_rows | earliest | latest 
+-----------+----------+--------
+         0 |          | 
+(1 row)
+

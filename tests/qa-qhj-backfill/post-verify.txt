@@ -1,0 +1,7 @@
+=== Step 3: Post-backfill verify — N/A ===
+
+Skipped because Step 2 (backfill) was halted on 0 source rows.
+
+Gold table current state confirmed in pre-check.txt §1e:
+  agg_daily_order_type_meal WHERE factory_id='R_QINGHUAJIAO_REAL'
+  → 0 rows (consistent with empty source).
