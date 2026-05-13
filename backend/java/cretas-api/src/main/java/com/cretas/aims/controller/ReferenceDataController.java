@@ -19,6 +19,7 @@ import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.sales.OperationalQuoteRepository;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.sales.impl.OperationalQuoteServiceImpl;
 import com.cretas.aims.util.SqlLikeEscaper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -73,6 +75,7 @@ public class ReferenceDataController {
     private final SalesOrderRepository salesOrderRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final MaterialBatchRepository materialBatchRepository;
+    private final PriceMaskResolver priceMaskResolver;
 
     /** Salesperson-eligible roles (department name fallback also applied). */
     private static final Set<String> SALES_ROLES = Set.of(
@@ -208,11 +211,22 @@ public class ReferenceDataController {
      * C-6 (2026-05-09): 加 boxConversionCoefficient 给 sales_order DYNAMIC 用的 P1-2 箱数自动算.
      * spec: docs/superpowers/specs/2026-05-09-canvas-c6-sales-order-dynamic-migration.md
      * frontend ReferenceSelector projectFields 把它写到 row._boxConversionCoefficient,
-     * boxQuantity computed 表达式 quantity / _boxConversionCoefficient 用. */
+     * boxQuantity computed 表达式 quantity / _boxConversionCoefficient 用.
+     *
+     * <p>RBAC (PR #488 §F2, 2026-05-12): {@code unitPrice} is gated via
+     * {@link PriceMaskResolver#shouldMaskPrice(String)} — callers without
+     * {@code procurement:price:view} get a response without the {@code unitPrice} key
+     * (omit, NOT null — preserves Canvas DYNAMIC dropdown behavior). Hand-built
+     * {@code Map<String, Object>} responses bypass {@code PriceFieldResponseAdvice} reflective
+     * field-strip (Map keys aren't in {@code PRICE_VALUE_KEYS} fallback). Any future
+     * price-bearing field added here MUST be gated by {@code maskPrice}. */
     @GetMapping("/products/{id}")
     @Operation(summary = "按 ID 查单个产品")
-    public ApiResponse<Map<String, Object>> getProduct(@PathVariable String factoryId,
-                                                       @PathVariable String id) {
+    public ApiResponse<Map<String, Object>> getProduct(
+            @PathVariable String factoryId,
+            @PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
         return productTypeRepository.findById(id)
                 .filter(p -> factoryId.equals(p.getFactoryId()))
                 .map(p -> {
@@ -222,7 +236,9 @@ public class ReferenceDataController {
                     m.put("code", p.getCode());
                     m.put("specification", p.getSpecification());
                     m.put("unit", p.getUnit());
-                    m.put("unitPrice", p.getUnitPrice());
+                    if (!maskPrice) {
+                        m.put("unitPrice", p.getUnitPrice());
+                    }
                     m.put("boxConversionCoefficient", p.getBoxConversionCoefficient());
                     return m;
                 })
@@ -291,14 +307,24 @@ public class ReferenceDataController {
         return wrap(content, result.getTotalElements());
     }
 
-    /** 产品/SKU 查找 (订单明细 productTypeId). */
+    /** 产品/SKU 查找 (订单明细 productTypeId).
+     *
+     * <p>RBAC (PR #488 §F2, 2026-05-12): {@code unitPrice} is gated via
+     * {@link PriceMaskResolver#shouldMaskPrice(String)} — callers without
+     * {@code procurement:price:view} get a response without the {@code unitPrice} key
+     * (omit, NOT null — preserves Canvas DYNAMIC dropdown behavior). Hand-built
+     * {@code Map<String, Object>} responses bypass {@code PriceFieldResponseAdvice} reflective
+     * field-strip (Map keys aren't in {@code PRICE_VALUE_KEYS} fallback). Any future
+     * price-bearing field added here MUST be gated by {@code maskPrice}. */
     @GetMapping("/products")
     @Operation(summary = "产品查找")
     public ApiResponse<Map<String, Object>> findProducts(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int size) {
+            @RequestParam(defaultValue = "50") int size,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
         // R10 CRIT-2 fix: JPQL push-down (see findCustomers).
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
                 Math.max(page - 1, 0), clampSize(size),
@@ -315,7 +341,9 @@ public class ReferenceDataController {
                     m.put("code", p.getCode());
                     m.put("specification", p.getSpecification());
                     m.put("unit", p.getUnit());
-                    m.put("unitPrice", p.getUnitPrice());
+                    if (!maskPrice) {
+                        m.put("unitPrice", p.getUnitPrice());
+                    }
                     // C-6 (2026-05-09): 加 boxConversionCoefficient 给 sales_order DYNAMIC P1-2.
                     // spec: docs/superpowers/specs/2026-05-09-canvas-c6-sales-order-dynamic-migration.md
                     m.put("boxConversionCoefficient", p.getBoxConversionCoefficient());
