@@ -1,0 +1,89 @@
+{
+  "runAt": "2026-05-12T21:22:03.763Z",
+  "target": "http://139.196.165.140:8086",
+  "scenariosTotal": 5,
+  "results": [
+    {
+      "scenario": "S-RBAC-1-retest",
+      "priority": "P0",
+      "account": "f006_warehouse_mgr",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/procurement/orders",
+        "headers": [
+          "订单编号",
+          "供应商",
+          "类型",
+          "下单日期",
+          "状态",
+          "操作"
+        ],
+        "hasPriceCol": false,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-12T21:21:18.926Z"
+    },
+    {
+      "scenario": "S-RBAC-4-retest",
+      "priority": "P0",
+      "account": "f006_warehouse_mgr",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders",
+        "headers": [
+          "订单编号",
+          "客户",
+          "业务员",
+          "下单日期",
+          "状态",
+          "操作"
+        ],
+        "hasPriceCol": false,
+        "apiStatuses": [
+          200
+        ],
+        "has500": false,
+        "priceLeaks": 0,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-12T21:21:33.290Z"
+    },
+    {
+      "scenario": "S-RBAC-sales500-rootcause",
+      "priority": "P0",
+      "account": null,
+      "status": "MANUAL",
+      "evidence": {
+        "verdict": "MANUAL",
+        "instructions": "ssh root@47.100.235.168 \"grep -E '39AFF3AD|00D57286' /www/wwwroot/cretas/cretas-prod.log | head -50\"",
+        "expected": "Stack trace identifying NPE source (PR #443 @PriceSensitive METHOD trigger). Should be resolved by PR #458 hardening."
+      },
+      "ts": "2026-05-12T21:21:33.297Z"
+    },
+    {
+      "scenario": "S-RBAC-pdf-warehouse",
+      "priority": "P0",
+      "account": "f006_warehouse_mgr",
+      "status": "INFO",
+      "evidence": {
+        "verdict": "INFO",
+        "filename": "供货单_PO-20260507-0003.pdf",
+        "sizeBytes": 3574,
+        "manualCheck": "Open D:\\Temp\\playwright-artifacts-GZtBZA\\b6560110-c6fd-48f2-9897-e6f142b3cdf5 and verify no '总金额/单价/税额' present"
+      },
+      "ts": "2026-05-12T21:21:49.464Z"
+    },
+    {
+      "scenario": "S-RBAC-excel-warehouse",
+      "priority": "P0",
+      "account": "f006_warehouse_mgr",
+      "status": "INFO",
+      "evidence": {
+        "verdict": "INFO",
+        "excelBtnsFound": 0,
+        "note": "No Excel export button — may be hidden by role"
+      },
+      "ts": "2026-05-12T21:22:03.421Z"
+    }
+  ]
+}
