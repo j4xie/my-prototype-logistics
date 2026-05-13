@@ -1,0 +1,128 @@
+# Text diff (PyMuPDF + raw stream decode)
+
+## PyMuPDF extracted text — ADMIN
+```
+供货单 / 采购订单
+ 
+供应商信息
+ 
+货品明细
+ 
+备注
+ 
+reg r3
+ 
+ 
+签收 (送货员 / 仓管员 双方签字)
+ 
+ 
+本单据由 Cretas 食品溯源系统自动生成。仓管员扫描右上角条码即可进入入库流程。
+采购方: 测试工厂
+订单编号: PO-20260507-0005
+下单日期: 2026-05-07
+期望交货: 2026-05-07
+PO-20260507-0005
+PO-20260507-0005
+供应商
+PO_SUP_061102
+联系人
+联系人
+联系电话
+13800000000
+地址
+addr
+序号
+原料名称 / 规格
+数量
+单位
+箱数
+单价
+小计
+1
+墨鱼
+100
+kg
+-
+30
+3000
+合计
+3000
+送货员签字: ____________________
+日期: __________
+仓管员签字: ____________________
+日期: __________
+
+```
+
+## PyMuPDF extracted text — WAREHOUSE
+```
+供货单 / 采购订单
+ 
+供应商信息
+ 
+货品明细
+ 
+备注
+ 
+reg r3
+ 
+ 
+签收 (送货员 / 仓管员 双方签字)
+ 
+ 
+本单据由 Cretas 食品溯源系统自动生成。仓管员扫描右上角条码即可进入入库流程。
+采购方: 测试工厂
+订单编号: PO-20260507-0005
+下单日期: 2026-05-07
+期望交货: 2026-05-07
+PO-20260507-0005
+PO-20260507-0005
+供应商
+PO_SUP_061102
+联系人
+联系人
+联系电话
+13800000000
+地址
+addr
+序号
+原料名称 / 规格
+数量
+单位
+箱数
+单价
+小计
+1
+墨鱼
+100
+kg
+-
+—
+—
+合计
+—
+送货员签字: ____________________
+日期: __________
+仓管员签字: ____________________
+日期: __________
+
+```
+
+## Numeric tokens
+admin   numbers (18): ['20260507', '0005', '2026', '05', '07', '2026', '05', '07', '20260507', '0005', '20260507', '0005', '13800000000', '1', '100', '30', '3000', '3000']
+warehouse numbers (15): ['20260507', '0005', '2026', '05', '07', '2026', '05', '07', '20260507', '0005', '20260507', '0005', '13800000000', '1', '100']
+
+## Price-leak check
+  '30': admin=1× warehouse=0×  → ✅ STRIPPED — admin has it, warehouse does NOT
+  '3000': admin=2× warehouse=0×  → ✅ STRIPPED — admin has it, warehouse does NOT
+
+## Decompressed stream comparison
+admin   streams: 3 (sizes: [119, 4947, 1103])
+warehouse streams: 3 (sizes: [119, 4927, 1103])
+
+  stream #1: IDENTICAL (119B)
+  stream #2: DIFFERS  admin=4947B warehouse=4927B  delta=+20B
+    first_diff_offset=4263  last_diff_offset=4926
+    admin   @first_diff: b'.65 Tm\n/F2 10 Tf\n(\x00-)Tj\nET\nBT\n1 0 0 1 471.05 493.65 Tm\n/F2 10 Tf\n(\x003\x000)Tj\nET\nBT\n1 0 0 1 536.52 493.65 Tm\n/F2 10 Tf\n(\x003\x000'
+    warehouse @first_diff: b'.65 Tm\n/F2 10 Tf\n(\x00-)Tj\nET\nBT\n1 0 0 1 470.29 493.65 Tm\n/F2 10 Tf\n( \x14)Tj\nET\nBT\n1 0 0 1 545 493.65 Tm\n/F2 10 Tf\n( \x14)Tj\nET\n'
+  stream #3: IDENTICAL (1103B)

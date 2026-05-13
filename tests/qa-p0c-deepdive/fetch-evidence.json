@@ -1,0 +1,179 @@
+{
+  "startedAt": "2026-05-13T04:48:25.911Z",
+  "env": "http://139.196.165.140:8097",
+  "factoryId": "F001",
+  "roles": [
+    {
+      "role": "admin",
+      "username": "factory_admin1",
+      "loginResult": "OK",
+      "pdfMeta": {
+        "ok": true,
+        "status": 200,
+        "size": 3611,
+        "headStr": "%PDF-1.4\n%����\n4",
+        "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders/1af43c4a-7403-44f6-9f8f-cf9c31dbdb29/pdf",
+        "latencyMs": 285,
+        "contentType": "application/pdf;charset=UTF-8",
+        "contentDisposition": "attachment; filename=\"order.pdf\"; filename*=UTF-8''%E4%BE%9B%E8%B4%A7%E5%8D%95_PO-20260507-0005.pdf"
+      }
+    },
+    {
+      "role": "warehouse",
+      "username": "warehouse_mgr1",
+      "loginResult": "OK",
+      "pdfMeta": {
+        "ok": true,
+        "status": 200,
+        "size": 3609,
+        "headStr": "%PDF-1.4\n%����\n4",
+        "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders/1af43c4a-7403-44f6-9f8f-cf9c31dbdb29/pdf",
+        "latencyMs": 304,
+        "contentType": "application/pdf;charset=UTF-8",
+        "contentDisposition": "attachment; filename=\"order.pdf\"; filename*=UTF-8''%E4%BE%9B%E8%B4%A7%E5%8D%95_PO-20260507-0005.pdf"
+      }
+    }
+  ],
+  "adminLogin": "OK",
+  "adminOrderList": {
+    "tokenLen": 259,
+    "count": 18,
+    "items": [
+      {
+        "id": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+        "orderNumber": "PO-20260507-0005",
+        "status": "COMPLETED",
+        "totalAmount": 3000,
+        "itemCount": 1
+      },
+      {
+        "id": "7a7ddf18-2d9b-4cff-b494-47381079d979",
+        "orderNumber": "PO-20260507-0004",
+        "status": "COMPLETED",
+        "totalAmount": 4000,
+        "itemCount": 1
+      },
+      {
+        "id": "387fa421-3baa-4864-ae77-2c26aa1a74c2",
+        "orderNumber": "PO-20260507-0003",
+        "status": "COMPLETED",
+        "totalAmount": 5000,
+        "itemCount": 1
+      },
+      {
+        "id": "617f69ba-e866-412b-96f9-4e274bcec46d",
+        "orderNumber": "PO-20260507-0002",
+        "status": "COMPLETED",
+        "totalAmount": 4000,
+        "itemCount": 1
+      },
+      {
+        "id": "48b77374-e027-4598-a79e-56d3fc4cce3b",
+        "orderNumber": "PO-20260507-0001",
+        "status": "COMPLETED",
+        "totalAmount": 5000,
+        "itemCount": 1
+      },
+      {
+        "id": "9c603c17-daad-4070-9498-ef81d0230768",
+        "orderNumber": "PO-20260424-0007",
+        "status": "DRAFT",
+        "totalAmount": 1000,
+        "itemCount": 1
+      },
+      {
+        "id": "73cbfee4-96ce-418b-9b7a-5834be967c58",
+        "orderNumber": "PO-20260424-0006",
+        "status": "DRAFT",
+        "totalAmount": 1000,
+        "itemCount": 1
+      },
+      {
+        "id": "bcdff756-69d1-438c-9844-bfd76e10fbde",
+        "orderNumber": "PO-20260424-0005",
+        "status": "DRAFT",
+        "totalAmount": 200,
+        "itemCount": 1
+      },
+      {
+        "id": "318f4182-d842-4c8a-886b-4ad3345e5053",
+        "orderNumber": "PO-20260424-0004",
+        "status": "DRAFT",
+        "totalAmount": 10,
+        "itemCount": 1
+      },
+      {
+        "id": "e67d0595-7fa3-44f0-a8d7-4cc070b32688",
+        "orderNumber": "PO-20260424-0003",
+        "status": "DRAFT",
+        "totalAmount": 10,
+        "itemCount": 1
+      },
+      {
+        "id": "e2d50f3b-3886-4be5-b708-4c05dfef5b5a",
+        "orderNumber": "PO-20260424-0002",
+        "status": "DRAFT",
+        "totalAmount": 155,
+        "itemCount": 1
+      },
+      {
+        "id": "3f45be8e-274d-4b4a-8142-ff6775a3bc06",
+        "orderNumber": "PO-20260424-0001",
+        "status": "DRAFT",
+        "totalAmount": 155,
+        "itemCount": 1
+      },
+      {
+        "id": "PO-F001-202502-001",
+        "orderNumber": "PO-202502-001",
+        "status": "COMPLETED",
+        "totalAmount": 92000,
+        "itemCount": 3
+      },
+      {
+        "id": "PO-F001-202501-003",
+        "orderNumber": "PO-202501-003",
+        "status": "COMPLETED",
+        "totalAmount": 28000,
+        "itemCount": 1
+      },
+      {
+        "id": "PO-F001-202501-001",
+        "orderNumber": "PO-202501-001",
+        "status": "COMPLETED",
+        "totalAmount": 85000,
+        "itemCount": 3
+      },
+      {
+        "id": "PO-F001-202501-002",
+        "orderNumber": "PO-202501-002",
+        "status": "COMPLETED",
+        "totalAmount": 62000,
+        "itemCount": 2
+      },
+      {
+        "id": "PO-F001-202502-003",
+        "orderNumber": "PO-202502-003",
+        "status": "COMPLETED",
+        "totalAmount": 38000,
+        "itemCount": 2
+      },
+      {
+        "id": "PO-F001-202502-002",
+        "orderNumber": "PO-202502-002",
+        "status": "PARTIAL_RECEIVED",
+        "totalAmount": 45000,
+        "itemCount": 2
+      }
+    ]
+  },
+  "target": {
+    "id": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+    "orderNumber": "PO-20260507-0005",
+    "status": "COMPLETED",
+    "totalAmount": 3000,
+    "itemCount": 1
+  },
+  "whLogin": "OK",
+  "finishedAt": "2026-05-13T04:49:09.893Z"
+}
