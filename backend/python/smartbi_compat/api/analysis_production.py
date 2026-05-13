@@ -43,6 +43,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
 
+from smartbi_compat._rbac_role import require_analytics_read
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.schema_compat import _java_isoformat, wrap_response
@@ -450,7 +452,7 @@ async def get_production_analysis(
         None,
         description="oee / efficiency / equipment / overview (omit for overview)",
     ),
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> Any:
     """Production analysis polymorphic endpoint (Q-DEC-8 Option A).
 
@@ -487,9 +489,12 @@ async def get_production_analysis(
 
     if tenant.is_restaurant_tenant:
         # Restaurant dispatch already returns a wrap_response() envelope.
-        return await _restaurant_production_dispatch(
+        envelope = await _restaurant_production_dispatch(
             factory_id, startDate, endDate, analysisType
         )
+        if isinstance(envelope, dict):
+            strip_price_for_role(envelope.get("data"), auth.role)
+        return envelope
     # Factory dispatch returns the raw inner dict per its Phase 2D contract
     # (test_factory_stub.py locks the shape). Wrap at the router boundary so
     # HTTP responses mirror Java ``ResponseEntity.ok(ApiResponse.success(result))``
@@ -498,4 +503,4 @@ async def get_production_analysis(
     raw = await _factory_production_dispatch(
         factory_id, startDate, endDate, analysisType
     )
-    return wrap_response(raw)
+    return wrap_response(strip_price_for_role(raw, auth.role))

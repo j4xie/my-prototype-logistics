@@ -25,6 +25,7 @@ from smartbi_compat.api.analysis_finance import (  # noqa: E402
     _utc_now_iso,            # ISO timestamp for generatedAt (volatile, stripped)
 )
 from smartbi_compat._rbac_role import require_analytics_read  # noqa: E402
+from smartbi_compat._rbac_strip import strip_price_for_role  # noqa: E402
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 
@@ -691,4 +692,4 @@ async def get_department_analysis(
     code in prod.
     """
     result = await _get_department_analysis(factory_id, startDate, endDate)
-    return wrap_response(result)
+    return wrap_response(strip_price_for_role(result, auth.role))
