@@ -5,8 +5,12 @@
  *
  * This is a presentational component: the parent owns the upload logic and passes state via props.
  * The component emits events for user actions (file change, upload click).
+ *
+ * Supports BOTH single-file (default) and multi-file modes via `maxCount`/`accept` props.
+ * Multi-file mode added 2026-05-13 for QHJ revenue report (Phase I). Pattern mirrors
+ * AttachmentUploader.vue's `maxCount` + `isMultiple` computed approach.
  */
-import { ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { UploadFilled, Upload, Loading, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue';
 import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
 
@@ -25,26 +29,55 @@ const props = defineProps<{
   historyLoading: boolean;
   /** Whether an upload is in progress */
   uploading: boolean;
-  /** Upload progress percentage 0-100 */
-  uploadProgress: number;
+  /**
+   * Max number of files. 1 = single (default; legacy single-file behavior);
+   * >1 = multi w/ cap; 0 = unlimited (per Element Plus el-upload :limit semantics).
+   * When >1 or 0, the component emits `filesChange` with the full array instead of `fileChange`.
+   */
+  maxCount?: number;
+  /** Comma-separated accept list. Default: '.xlsx,.xls,.csv'. */
+  accept?: string;
+  /** Upload progress percentage 0-100 (optional in multi-file mode) */
+  uploadProgress?: number;
   /** Upload status for the progress bar */
   uploadStatus?: 'success' | 'exception' | 'warning';
-  /** Current progress message text */
-  progressText: string;
-  /** Per-sheet progress items */
-  sheetProgressList: SheetProgress[];
+  /** Current progress message text (optional in multi-file mode) */
+  progressText?: string;
+  /** Per-sheet progress items (SSE single-file mode; empty array hides the panel) */
+  sheetProgressList?: SheetProgress[];
   /** Total sheet count for progress display */
-  totalSheetCount: number;
+  totalSheetCount?: number;
   /** Completed sheet count for progress display */
-  completedSheetCount: number;
+  completedSheetCount?: number;
   /** Dictionary hit count */
-  dictionaryHits: number;
+  dictionaryHits?: number;
   /** LLM analyzed field count */
-  llmAnalyzedFields: number;
+  llmAnalyzedFields?: number;
 }>();
 
+// Defaults for optional props (Vue 3 props don't directly support defaults
+// with TypeScript-style defineProps; use computed/withDefaults-equivalent inline).
+const maxCountResolved = computed(() => props.maxCount ?? 1);
+const acceptResolved = computed(() => props.accept ?? '.xlsx,.xls,.csv');
+const uploadProgressResolved = computed(() => props.uploadProgress ?? 0);
+const uploadStatusResolved = computed(() => props.uploadStatus);
+const progressTextResolved = computed(() => props.progressText ?? '');
+const sheetProgressListResolved = computed(() => props.sheetProgressList ?? []);
+const totalSheetCountResolved = computed(() => props.totalSheetCount ?? 0);
+const completedSheetCountResolved = computed(() => props.completedSheetCount ?? 0);
+const dictionaryHitsResolved = computed(() => props.dictionaryHits ?? 0);
+const llmAnalyzedFieldsResolved = computed(() => props.llmAnalyzedFields ?? 0);
+
+/** Multi-file mode iff maxCount != 1 (i.e., explicitly multi or unlimited). */
+const isMultiple = computed(() => maxCountResolved.value !== 1);
+
 const emit = defineEmits<{
+  /** Single-file mode (maxCount === 1) — fires once per change with that file. */
   (e: 'fileChange', file: UploadFile): void;
+  /** Multi-file mode (maxCount !== 1) — fires after each change w/ the full current list. */
+  (e: 'filesChange', files: UploadUserFile[]): void;
+  /** Multi-file mode — fires when user removes a file from the list. */
+  (e: 'fileRemove', file: UploadFile, files: UploadUserFile[]): void;
   (e: 'upload'): void;
 }>();
 
@@ -52,8 +85,27 @@ const uploadRef = ref<UploadInstance>();
 const fileList = ref<UploadUserFile[]>([]);
 
 function handleFileChange(file: UploadFile) {
-  fileList.value = [file];
-  emit('fileChange', file);
+  if (isMultiple.value) {
+    // el-upload fires on-change ONCE PER FILE when user picks N files at once,
+    // so we append. Dedup by uid in case of double-fire.
+    if (!fileList.value.some((f) => f.uid === file.uid)) {
+      fileList.value = [...fileList.value, file];
+    }
+    emit('filesChange', fileList.value);
+  } else {
+    // Legacy single-file: replace fileList + emit single-file signature unchanged.
+    fileList.value = [file];
+    emit('fileChange', file);
+  }
+}
+
+function handleRemove(file: UploadFile, _files: UploadFile[]) {
+  // Sync removal from el-upload UI back to our managed fileList.
+  fileList.value = fileList.value.filter((f) => f.uid !== file.uid);
+  emit('fileRemove', file, fileList.value);
+  if (isMultiple.value) {
+    emit('filesChange', fileList.value);
+  }
 }
 
 function handleUploadClick() {
@@ -84,18 +136,30 @@ defineExpose({ resetFileList });
         class="upload-dragger"
         drag
         :auto-upload="false"
-        :limit="1"
-        accept=".xlsx,.xls,.csv"
+        :multiple="isMultiple"
+        :limit="maxCountResolved"
+        :accept="acceptResolved"
         :on-change="handleFileChange"
+        :on-remove="handleRemove"
         :file-list="fileList"
       >
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">
-          拖拽 Excel 或 CSV 文件到此处或 <em>点击上传</em>
+          <template v-if="isMultiple">
+            拖拽多个文件到此处或 <em>点击上传</em>
+          </template>
+          <template v-else>
+            拖拽 Excel 或 CSV 文件到此处或 <em>点击上传</em>
+          </template>
         </div>
         <template #tip>
           <div class="el-upload__tip">
-            支持 .xlsx、.xls、.csv 格式，文件大小不超过 50MB
+            <template v-if="isMultiple">
+              支持 {{ acceptResolved }}<template v-if="maxCountResolved > 1">，最多 {{ maxCountResolved }} 个文件</template>
+            </template>
+            <template v-else>
+              支持 .xlsx、.xls、.csv 格式，文件大小不超过 50MB
+            </template>
           </div>
         </template>
       </el-upload>
@@ -116,26 +180,26 @@ defineExpose({ resetFileList });
     <el-empty v-else description="暂无分析数据，请联系管理员上传 Excel 文件" />
   </div>
 
-  <!-- Upload progress (SSE streaming) -->
+  <!-- Upload progress (SSE streaming; sheetProgressList drives detail panel) -->
   <div v-if="uploading" class="progress-section">
-    <el-progress :percentage="uploadProgress" :status="uploadStatus" :stroke-width="20" striped striped-flow />
-    <p class="progress-text">{{ progressText }}</p>
+    <el-progress :percentage="uploadProgressResolved" :status="uploadStatusResolved" :stroke-width="20" striped striped-flow />
+    <p class="progress-text">{{ progressTextResolved }}</p>
 
-    <!-- Detailed progress panel -->
-    <div v-if="sheetProgressList.length > 0" class="sheet-progress-panel">
+    <!-- Detailed progress panel — only shown when SSE sheet progress is provided -->
+    <div v-if="sheetProgressListResolved.length > 0" class="sheet-progress-panel">
       <div class="progress-header">
-        <span>Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
-        <el-tag v-if="dictionaryHits > 0" type="success" size="small">
-          字典命中: {{ dictionaryHits }}
+        <span>Sheet 处理进度 ({{ completedSheetCountResolved }}/{{ totalSheetCountResolved }})</span>
+        <el-tag v-if="dictionaryHitsResolved > 0" type="success" size="small">
+          字典命中: {{ dictionaryHitsResolved }}
         </el-tag>
-        <el-tag v-if="llmAnalyzedFields > 0" type="warning" size="small">
-          LLM分析: {{ llmAnalyzedFields }}
+        <el-tag v-if="llmAnalyzedFieldsResolved > 0" type="warning" size="small">
+          LLM分析: {{ llmAnalyzedFieldsResolved }}
         </el-tag>
       </div>
 
       <div class="sheet-progress-list">
         <div
-          v-for="sheet in sheetProgressList"
+          v-for="sheet in sheetProgressListResolved"
           :key="sheet.sheetIndex"
           class="sheet-progress-item"
           :class="{ 'is-complete': sheet.status === 'complete', 'is-failed': sheet.status === 'failed' }"

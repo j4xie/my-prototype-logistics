@@ -1,89 +1,172 @@
 {
-  "runAt": "2026-05-12T21:22:03.763Z",
+  "runAt": "2026-05-13T04:38:18.725Z",
   "target": "http://139.196.165.140:8086",
-  "scenariosTotal": 5,
+  "scenariosTotal": 12,
   "results": [
     {
-      "scenario": "S-RBAC-1-retest",
-      "priority": "P0",
-      "account": "f006_warehouse_mgr",
-      "status": "PASS",
+      "scenario": "S-T-B2-batch-select",
+      "priority": "P1",
+      "account": "f006_admin",
+      "status": "INFO",
       "evidence": {
-        "url": "http://139.196.165.140:8086/procurement/orders",
+        "url": "http://139.196.165.140:8086/transfer/list",
+        "is404": false,
         "headers": [
-          "订单编号",
-          "供应商",
+          "调拨编号",
+          "方向",
           "类型",
-          "下单日期",
+          "调出方",
+          "调入方",
+          "调拨日期",
+          "金额",
           "状态",
           "操作"
         ],
-        "hasPriceCol": false,
-        "verdict": "PASS"
+        "hasCurrentStockCol": false,
+        "rowCount": 2,
+        "verdict": "INFO"
       },
-      "ts": "2026-05-12T21:21:18.926Z"
+      "ts": "2026-05-13T04:34:40.101Z"
     },
     {
-      "scenario": "S-RBAC-4-retest",
-      "priority": "P0",
-      "account": "f006_warehouse_mgr",
+      "scenario": "S-T-B5-inv-load",
+      "priority": "P1",
+      "account": "f006_admin",
       "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/inventory/by-warehouse",
+        "apiCalls": 3,
+        "has401": false,
+        "has200": true,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-13T04:34:58.348Z"
+    },
+    {
+      "scenario": "S-T-D1-dialog",
+      "priority": "P1",
+      "account": "f006_admin",
+      "status": "FAIL — D1 label missing",
       "evidence": {
         "url": "http://139.196.165.140:8086/sales/orders",
-        "headers": [
-          "订单编号",
-          "客户",
-          "业务员",
-          "下单日期",
-          "状态",
-          "操作"
-        ],
-        "hasPriceCol": false,
-        "apiStatuses": [
-          200
-        ],
-        "has500": false,
-        "priceLeaks": 0,
-        "verdict": "PASS"
+        "hasZongCang": false,
+        "hasXianBianCang": false,
+        "hasWhLog": false,
+        "verdict": "FAIL — D1 label missing"
       },
-      "ts": "2026-05-12T21:21:33.290Z"
+      "ts": "2026-05-13T04:35:20.513Z"
     },
     {
-      "scenario": "S-RBAC-sales500-rootcause",
-      "priority": "P0",
-      "account": null,
+      "scenario": "S-T-D2-form",
+      "priority": "P1",
+      "account": "gml_admin",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/restaurant/recipes",
+        "formOpened": true,
+        "yieldRateLabel": true,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-13T04:36:03.926Z"
+    },
+    {
+      "scenario": "S-T-B3-fourtuple",
+      "priority": "P1",
+      "account": "f006_admin",
       "status": "MANUAL",
       "evidence": {
         "verdict": "MANUAL",
-        "instructions": "ssh root@47.100.235.168 \"grep -E '39AFF3AD|00D57286' /www/wwwroot/cretas/cretas-prod.log | head -50\"",
-        "expected": "Stack trace identifying NPE source (PR #443 @PriceSensitive METHOD trigger). Should be resolved by PR #458 hardening."
+        "env": "TEST",
+        "instructions": "\n⚠ RUN ON TEST ENV ONLY — NOT prod (session is read-only on prod).\n   Backend test API: http://47.100.235.168:10011 (Java) + :8084 (Python)\n   Web-admin test UI: TBD — see B4.0 grep result (web-admin-test on 139)\n1. Login as warehouse_mgr1 / factory_admin1 (F001 test seed) — NOT f006_admin (prod-only account)\n2. API: POST http://47.100.235.168:10011/api/mobile/F001/production/plans (create PENDING with material > available)\n3. API: POST http://47.100.235.168:10011/api/mobile/F001/production/plans/{id}/start\n4. Verify response:\n   - HTTP 400 with code = INSUFFICIENT_STOCK\n   - body.message has actionable text\n   - body.actionHint set\n   - body.severity = WARN or ERROR\n5. UI: check toast + sticky panel both shown\n"
       },
-      "ts": "2026-05-12T21:21:33.297Z"
+      "ts": "2026-05-13T04:36:04.065Z"
     },
     {
-      "scenario": "S-RBAC-pdf-warehouse",
-      "priority": "P0",
-      "account": "f006_warehouse_mgr",
+      "scenario": "S-T-D4-rpf",
+      "priority": "P1",
+      "account": "f006_admin",
       "status": "INFO",
       "evidence": {
+        "url": "http://139.196.165.140:8086/production/batches",
+        "rowCount": 1,
         "verdict": "INFO",
-        "filename": "供货单_PO-20260507-0003.pdf",
-        "sizeBytes": 3574,
-        "manualCheck": "Open D:\\Temp\\playwright-artifacts-GZtBZA\\b6560110-c6fd-48f2-9897-e6f142b3cdf5 and verify no '总金额/单价/税额' present"
+        "manualCheck": "Click a completed batch → 详情 → verify raw_material consumption records visible"
       },
-      "ts": "2026-05-12T21:21:49.464Z"
+      "ts": "2026-05-13T04:36:21.798Z"
     },
     {
-      "scenario": "S-RBAC-excel-warehouse",
-      "priority": "P0",
-      "account": "f006_warehouse_mgr",
+      "scenario": "S-T-D5-wh-log-fulfill",
+      "priority": "P1",
+      "account": "f006_admin",
+      "status": "MANUAL",
+      "evidence": {
+        "verdict": "MANUAL",
+        "env": "TEST",
+        "instructions": "\n⚠ RUN ON TEST ENV ONLY — step 4 confirms outbound (write op).\n   Backend test API: http://47.100.235.168:10011 (Java)\n1. Login as factory_admin1 (F001 test seed)\n2. Navigate to /sales/orders (test UI URL TBD per B4.0) → select first 已批准 F001 order → 详情 → 发货\n3. In 发货 dialog, batch source dropdown should include WH-LOG (总仓)\n4. Confirm send (writes to TEST DB only), then verify outbound record source === WH-LOG\n"
+      },
+      "ts": "2026-05-13T04:36:21.947Z"
+    },
+    {
+      "scenario": "S-T-RTA-return",
+      "priority": "P1",
+      "account": "f006_admin",
+      "status": "FAIL — no 退货/售后 entry visible",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders",
+        "hasReturnEntry": false,
+        "verdict": "FAIL — no 退货/售后 entry visible",
+        "manualCheck": "If entry exists, test 申请退货 → 有食物 (库存调整) and 无食物 (财务退款) both work"
+      },
+      "ts": "2026-05-13T04:36:39.314Z"
+    },
+    {
+      "scenario": "S-T-INV-collect",
+      "priority": "P1",
+      "account": "f006_admin",
       "status": "INFO",
       "evidence": {
-        "verdict": "INFO",
-        "excelBtnsFound": 0,
-        "note": "No Excel export button — may be hidden by role"
+        "url": "http://139.196.165.140:8086/finance/payments",
+        "hasOneClickConfirm": false,
+        "verdict": "INFO"
       },
-      "ts": "2026-05-12T21:22:03.421Z"
+      "ts": "2026-05-13T04:36:58.889Z"
+    },
+    {
+      "scenario": "S-T-3-11-est-cost",
+      "priority": "P1",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders/fe70dbb9-5f83-4965-9db1-fec56d8b22ed",
+        "hasEstCost": false,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-13T04:37:34.657Z"
+    },
+    {
+      "scenario": "S-T-3-14-3price",
+      "priority": "P1",
+      "account": "f006_admin",
+      "status": "MANUAL",
+      "evidence": {
+        "verdict": "MANUAL",
+        "env": "TEST",
+        "instructions": "\n⚠ RUN ON TEST ENV ONLY — step 2 writes a new purchase order.\n   Backend test API: http://47.100.235.168:10011 (Java)\n1. Login as factory_admin1 (F001 test seed)\n2. /procurement/orders (test UI URL TBD per B4.0) → 新建采购订单 (any new SKU on F001)\n3. 立即看三价对比: should include the new entry without page refresh\n4. If still stale → P2 ticket valid\n"
+      },
+      "ts": "2026-05-13T04:37:34.811Z"
+    },
+    {
+      "scenario": "S-T-wire-rerun",
+      "priority": "P1",
+      "account": "f006_warehouse_mgr",
+      "status": "PASS — 0 wire leak",
+      "evidence": {
+        "apiResponses": 13,
+        "leakCount": 0,
+        "sampleLeaks": [],
+        "verdict": "PASS — 0 wire leak"
+      },
+      "ts": "2026-05-13T04:38:18.662Z"
     }
   ]
 }

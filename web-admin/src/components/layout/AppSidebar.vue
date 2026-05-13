@@ -286,6 +286,9 @@ const menuConfig: MenuItem[] = [
       // -- 预定义报表 --
       { path: '/smart-bi/sales', title: '销售数据分析', icon: 'Sell', module: 'analytics', groupLabel: '预定义报表' },
       { path: '/smart-bi/finance', title: '财务数据分析', icon: 'Money', module: 'analytics' },
+      // QHJ 收入管理报表 (Phase I) — restaurant tenants only (青花椒 / R_*_REAL chains).
+      { path: '/smart-bi/revenue-report', title: '收入管理报表', icon: 'Money', module: 'analytics',
+        hideForFactoryTypes: ['FACTORY'] },
       // -- 数据管理 --
       { path: '/smart-bi/upload', title: 'Excel上传', icon: 'Upload', module: 'analytics', groupLabel: '数据管理' },
       { path: '/smart-bi/query-templates', title: '查询模板', icon: 'Tickets', module: 'analytics' },
