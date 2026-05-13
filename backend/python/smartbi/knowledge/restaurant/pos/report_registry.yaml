@@ -1,0 +1,29 @@
+# 二维火 POS 报表分类注册表
+#
+# Spec: docs/qa-specs/2026-05-12-qhj-revenue-report-design.md §5.1 + Appendix A
+#
+# 用途: pos_router.py 通过文件名中文关键词 → writer 派发。
+# 嗅探顺序: filename strip 前缀 → 关键词匹配 → 未匹配则 ShapeDetector 兜底.
+#
+# 添加新 POS 厂商: 加同级 `keruyun:` / `meituan:` 块. 各厂商 filename pattern 不冲突即可.
+
+2dfire:
+  filename_keywords:
+    - keyword: "营业概况报表"
+      writer: daily_summary_writer
+      grain: "store × day"
+    - keyword: "堂食外卖占比表"
+      writer: meal_split_writer
+      grain: "store × period × order_type"
+    - keyword: "区域销售报表"
+      writer: region_summary_writer
+      grain: "region × period"
+    - keyword: "详细日报表"
+      writer: bill_flow_writer
+      grain: "transaction"
+    - keyword: "订单付款方式汇总"
+      writer: bill_flow_writer
+      grain: "transaction"
+    - keyword: "商品销售明细表"
+      writer: product_summary_writer
+      grain: "product × period"
