@@ -848,9 +848,12 @@ const SCENARIOS = [
     group: 'D',
     priority: 'P1-missed',
     account: 'f006_admin',
-    description: 'T2-5b 移动平均价/动态定价: 原料字典含 movingAvgPrice 或 物料均价趋势页',
+    description: 'T2-5b 移动平均价/动态定价: 物料类型页含 movingAvgPrice 列 (PR #541) 或物料均价趋势页',
     run: async (page) => {
-      const candidates = ['/inventory/material-price-trend', '/inventory/avg-price', '/inventory/materials'];
+      // Per PR #541 reviewer I1: /warehouse/material-types now has 移动均价 column (gated by canViewPrice).
+      // Source: web-admin/src/router/index.ts:131-133 + RawMaterialTypeServiceImpl:282 convertToDTO.
+      // Keep legacy candidates as fallback in case a dedicated trend page ships later.
+      const candidates = ['/warehouse/material-types', '/inventory/material-price-trend', '/inventory/avg-price', '/inventory/materials'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -858,11 +861,12 @@ const SCENARIOS = [
         await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
         if (!/\/404/.test(page.url())) {
           landed = c;
-          bodyText = await page.textContent('body');
+          bodyText = (await page.textContent('body')) || '';
           break;
         }
       }
-      const hasAvgPrice = /移动平均|均价|MovingAvg/.test(bodyText);
+      // Match both the column header ("移动均价") and DTO key ("movingAvgPrice") for robustness across renderings.
+      const hasAvgPrice = /移动均价|移动平均|均价|MovingAvg|movingAvgPrice/.test(bodyText);
       return {
         url: page.url(),
         landed,
