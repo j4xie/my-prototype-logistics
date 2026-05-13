@@ -1,0 +1,91 @@
+182289:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182290:2026-05-14 03:20:08,213 - main - WARNING - [-] - [restaurant-etl] R_GML_DEMO errors=['gold: syntax error at or near ":"']
+182291:2026-05-14 03:20:08,214 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_YHDJ_DEMO
+182308:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182309:2026-05-14 03:20:08,214 - main - WARNING - [-] - [restaurant-etl] R_YHDJ_DEMO errors=['gold: syntax error at or near ":"']
+182310:2026-05-14 03:20:08,215 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_XMX_FRESH
+182327:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182328:2026-05-14 03:20:08,215 - main - WARNING - [-] - [restaurant-etl] R_XMX_FRESH errors=['gold: syntax error at or near ":"']
+182329:2026-05-14 03:20:08,216 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_XMX_FRESH2
+182346:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182347:2026-05-14 03:20:08,216 - main - WARNING - [-] - [restaurant-etl] R_XMX_FRESH2 errors=['gold: syntax error at or near ":"']
+182348:2026-05-14 03:20:08,217 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_XMX_FRESH3
+182365:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182366:2026-05-14 03:20:08,217 - main - WARNING - [-] - [restaurant-etl] R_XMX_FRESH3 errors=['gold: syntax error at or near ":"']
+182367:2026-05-14 03:20:08,218 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for RES_GML_001
+182384:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182385:2026-05-14 03:20:08,218 - main - WARNING - [-] - [restaurant-etl] RES_GML_001 errors=['gold: syntax error at or near ":"']
+182386:2026-05-14 03:20:08,219 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_ILTEATRO_REAL
+182403:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182404:2026-05-14 03:20:08,220 - main - WARNING - [-] - [restaurant-etl] R_ILTEATRO_REAL errors=['gold: syntax error at or near ":"']
+182405:2026-05-14 03:20:08,221 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_JINCHUAN_HG_REAL
+182422:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182423:2026-05-14 03:20:08,221 - main - WARNING - [-] - [restaurant-etl] R_JINCHUAN_HG_REAL errors=['gold: syntax error at or near ":"']
+182424:2026-05-14 03:20:08,222 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_JINRINIUSHI_REAL
+182441:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182442:2026-05-14 03:20:08,222 - main - WARNING - [-] - [restaurant-etl] R_JINRINIUSHI_REAL errors=['gold: syntax error at or near ":"']
+182443:2026-05-14 03:20:08,224 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_LINJIAYAN_REAL
+182460:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182461:2026-05-14 03:20:08,224 - main - WARNING - [-] - [restaurant-etl] R_LINJIAYAN_REAL errors=['gold: syntax error at or near ":"']
+182462:2026-05-14 03:20:08,225 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_QINGHUAJIAO_REAL
+182479:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182480:2026-05-14 03:20:08,225 - main - WARNING - [-] - [restaurant-etl] R_QINGHUAJIAO_REAL errors=['gold: syntax error at or near ":"']
+182481:2026-05-14 03:20:08,227 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_XIMAXIANG_REAL
+182498:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182499:2026-05-14 03:20:08,227 - main - WARNING - [-] - [restaurant-etl] R_XIMAXIANG_REAL errors=['gold: syntax error at or near ":"']
+182500:2026-05-14 03:20:08,229 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_XINBASHU_REAL
+182517:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182518:2026-05-14 03:20:08,229 - main - WARNING - [-] - [restaurant-etl] R_XINBASHU_REAL errors=['gold: syntax error at or near ":"']
+182519:2026-05-14 03:20:08,230 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_YONGHE_REAL
+182536:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182537:2026-05-14 03:20:08,230 - main - WARNING - [-] - [restaurant-etl] R_YONGHE_REAL errors=['gold: syntax error at or near ":"']
+182538:2026-05-14 03:20:08,231 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_YOUZIYOUWEI_REAL
+182555:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182556:2026-05-14 03:20:08,231 - main - WARNING - [-] - [restaurant-etl] R_YOUZIYOUWEI_REAL errors=['gold: syntax error at or near ":"']
+182557:2026-05-14 03:20:08,233 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_YUJIUJING_REAL
+182574:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182575:2026-05-14 03:20:08,233 - main - WARNING - [-] - [restaurant-etl] R_YUJIUJING_REAL errors=['gold: syntax error at or near ":"']
+182576:2026-05-14 03:20:08,234 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_SHANGMA_HG_REAL
+182593:asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182594:2026-05-14 03:20:08,234 - main - WARNING - [-] - [restaurant-etl] R_SHANGMA_HG_REAL errors=['gold: syntax error at or near ":"']
+---
+179451-    r7 = await conn.execute(_AGG_PRODUCT_COST_SQL, factory_id)
+179452-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 352, in execute
+179453-    _, status, _ = await self._execute(
+179454-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 1864, in _execute
+--
+180399-asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+180400-2026-05-14 03:12:08,025 - main - WARNING - [-] - [restaurant-etl] R_LINJIAYAN_REAL errors=['gold: syntax error at or near ":"']
+180401:2026-05-14 03:12:08,026 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_QINGHUAJIAO_REAL
+180402-Traceback (most recent call last):
+180403-  File "/www/wwwroot/cretas/code/backend/python/smartbi/gold/restaurant_ops_etl.py", line 791, in run_full_etl
+180404-    gold = await materialize_gold_daily_ops(smartbi_pool, factory_id)
+180405-  File "/www/wwwroot/cretas/code/backend/python/smartbi/gold/restaurant_ops_etl.py", line 727, in materialize_gold_daily_ops
+180406-    r7 = await conn.execute(_AGG_PRODUCT_COST_SQL, factory_id)
+180407-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 352, in execute
+180408-    _, status, _ = await self._execute(
+180409-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 1864, in _execute
+--
+181826-  File "asyncpg/protocol/protocol.pyx", line 165, in prepare
+181827-asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+181828:2026-05-14 03:20:08,140 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_QINGHUAJIAO_REAL
+181829-Traceback (most recent call last):
+181830-  File "/www/wwwroot/cretas/code/backend/python/smartbi/gold/restaurant_ops_etl.py", line 791, in run_full_etl
+181831-    gold = await materialize_gold_daily_ops(smartbi_pool, factory_id)
+181832-  File "/www/wwwroot/cretas/code/backend/python/smartbi/gold/restaurant_ops_etl.py", line 727, in materialize_gold_daily_ops
+181833-    r7 = await conn.execute(_AGG_PRODUCT_COST_SQL, factory_id)
+181834-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 352, in execute
+181835-    _, status, _ = await self._execute(
+181836-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 1864, in _execute
+--
+182460-asyncpg.exceptions.PostgresSyntaxError: syntax error at or near ":"
+182461-2026-05-14 03:20:08,224 - main - WARNING - [-] - [restaurant-etl] R_LINJIAYAN_REAL errors=['gold: syntax error at or near ":"']
+182462:2026-05-14 03:20:08,225 - smartbi.gold.restaurant_ops_etl - ERROR - [-] - [etl] gold materialize failed for R_QINGHUAJIAO_REAL
+182463-Traceback (most recent call last):
+182464-  File "/www/wwwroot/cretas/code/backend/python/smartbi/gold/restaurant_ops_etl.py", line 791, in run_full_etl
+182465-    gold = await materialize_gold_daily_ops(smartbi_pool, factory_id)
+182466-  File "/www/wwwroot/cretas/code/backend/python/smartbi/gold/restaurant_ops_etl.py", line 727, in materialize_gold_daily_ops
+182467-    r7 = await conn.execute(_AGG_PRODUCT_COST_SQL, factory_id)
+182468-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 352, in execute
+182469-    _, status, _ = await self._execute(
+182470-  File "/www/wwwroot/cretas/code/backend/python/venv38/lib64/python3.8/site-packages/asyncpg/connection.py", line 1864, in _execute

@@ -539,7 +539,10 @@ INSERT INTO agg_restaurant_product_cost (
 SELECT $1::varchar, 0 AS product_id,
        COALESCE(r.product_source_pk, '') AS product_source_pk,
        COALESCE(SUM(r.line_cost), 0)::NUMERIC(14,4) AS food_cost,
-       (ARRAY_AGG(r.ingredient_id ORDER BY r.is_main_ingredient DESC, r.line_cost DESC NULLS LAST))[1] AS main_ingredient_id,  # noqa: E501
+       (ARRAY_AGG(
+           r.ingredient_id
+           ORDER BY r.is_main_ingredient DESC, r.line_cost DESC NULLS LAST
+       ))[1] AS main_ingredient_id,
        COUNT(*)::int AS ingredient_count,
        bool_and(r.line_cost IS NOT NULL) AS has_price_data,
        1, NOW()
