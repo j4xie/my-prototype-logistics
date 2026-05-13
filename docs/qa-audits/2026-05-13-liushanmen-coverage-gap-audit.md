@@ -7,13 +7,20 @@
 **Source-of-truth**:
 - 4 transcripts: `docs/会议内容/客户会议/六扇门第{一,二,三,四}*.md` (第三/四次仍在 OPEN PR #400 + #406)
 - prior audit: `docs/qa-audits/2026-05-12-final-customer-audit-e2e.md` (PR #434, 14 scenarios)
-- ⚠ **Transcripts 第三/四次** 仍在 OPEN PR #400 + #406 (not on main). 复现引用行号:
+- ⚠ **Transcripts 第三/四次 access procedure (audit-trail durability note, added 2026-05-13)**:
+  PR #400 (六扇门第三次 May 7 part1/part2) 与 PR #406 (六扇门第四次 May 10) 仍 **OPEN**
+  且预计长期保持 OPEN — 含客户敏感商业讨论, 不适合 long-term merge 到公开 main。
+  本审计文档的 T-prefix ask 引用行号绑定到 PR head ref 的 transcript SHA。复现步骤:
   ```bash
+  # Required: gh CLI 认证 + 仓库读权限
   git fetch origin pull/400/head:pr-400-transcripts && git fetch origin pull/406/head:pr-406-transcript
   git show pr-400-transcripts:docs/会议内容/客户会议/六扇门第三次-May7-part1.md
   git show pr-400-transcripts:docs/会议内容/客户会议/六扇门第三次-May7-part2.md
   git show pr-406-transcript:docs/会议内容/客户会议/六扇门第四次-May10.md
   ```
+  **若 PR #400/#406 被 GitHub auto-GC (closed-without-merge 6+ months)**: transcript SHAs
+  仍可通过 `gh pr view <N> --json files --jq '.files[].path'` + 单独 fetch 该 SHA 获得;
+  内部 backup 在 `C:\Users\Steve\.tmp-transcripts\` (本地 dev box, 不入仓库).
 - E2E results: `scripts/customer-audit-e2e-2026-05-12/results.json`
 - 后续补丁: PR #443/#455/#456/#457/#458/#463/#464/#466/#467
 - 评估范围: ❌ 只读 prod, 不重跑已 GREEN 的 S1/S5/S7/S8/S9/S10-wire/S11
