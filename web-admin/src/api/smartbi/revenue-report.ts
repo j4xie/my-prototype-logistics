@@ -6,16 +6,23 @@
  *
  * Per project convention:
  *   - Snake_case JSON keys (mirror Python Pydantic models)
- *   - getSmartBIBasePath() includes /${factoryId} so callers don't repeat it
+ *   - Python endpoints live at /api/smartbi/{factory}/* — NOT the Java
+ *     /api/mobile/{factory}/smart-bi/* path. We override axios baseURL='' to
+ *     bypass the default '/api/mobile' prefix and call Python directly.
  *   - Blob downloads use responseType:'blob' so axios interceptor doesn't try
  *     to JSON-parse the body
  *   - Custom response headers (X-Cache-Hit etc.) require CORS expose_headers
  *     in main.py (Phase G2)
  */
 import request from '@/api/request';
-import { getSmartBIBasePath } from './common';
+import { getFactoryId } from './common';
 
-const BASE = () => `${getSmartBIBasePath()}/revenue-report`;
+const BASE = () => `/api/smartbi/${getFactoryId()}/revenue-report`;
+
+// Python endpoints are NOT under axios' default /api/mobile baseURL.
+// Passing baseURL: '' tells axios to use the absolute path verbatim, so the
+// browser hits /api/smartbi/... which nginx routes to Python 8083/8084.
+const PY = { baseURL: '' };
 
 // ─── Type contracts (mirror Python) ─────────────────────────────────────
 
@@ -81,6 +88,7 @@ export async function uploadPosFiles(files: File[]): Promise<UploadResponse> {
   const fd = new FormData();
   files.forEach((f) => fd.append('files', f));
   const res = await request.post(`${BASE()}/upload`, fd, {
+    ...PY,
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 600_000, // 10 min — large CSVs
   });
@@ -92,7 +100,7 @@ export async function uploadPosFiles(files: File[]): Promise<UploadResponse> {
  * Used by the AI Chat LLM Tool path; UI can also use to pre-warm cache.
  */
 export async function prepare(params: RevenueReportParams) {
-  const res = await request.post(`${BASE()}/prepare`, params);
+  const res = await request.post(`${BASE()}/prepare`, params, PY);
   return res.data as PrepareResponse;
 }
 
@@ -107,6 +115,7 @@ export async function generateAndDownload(params: RevenueReportParams): Promise<
   isStale: boolean;
 }> {
   const res = await request.post(`${BASE()}/generate`, params, {
+    ...PY,
     responseType: 'blob',
   });
   return {
@@ -122,6 +131,7 @@ export async function listStores(
   excludeClosed = true,
 ): Promise<StoreEntry[]> {
   const res = await request.get(`${BASE()}/stores`, {
+    ...PY,
     params: { exclude_closed: excludeClosed },
   });
   return (res.data as StoreEntry[]) ?? [];
@@ -129,6 +139,7 @@ export async function listStores(
 
 export async function getAuditLog(limit = 20): Promise<AuditLogEntry[]> {
   const res = await request.get(`${BASE()}/audit-log`, {
+    ...PY,
     params: { limit },
   });
   return (res.data as AuditLogEntry[]) ?? [];
