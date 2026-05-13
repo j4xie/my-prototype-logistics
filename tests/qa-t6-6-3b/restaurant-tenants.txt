@@ -1,0 +1,46 @@
+T6.6.3b Canary — Restaurant tenants in scope (this PR)
+=======================================================
+
+Cutover scope: SINGLE tenant only (canary, mirror 3a pattern).
+
+Tenant: R_QINGHUAJIAO_REAL
+DB row (from cretas_prod_db.factories):
+  id        = R_QINGHUAJIAO_REAL
+  name      = 青花椒
+  is_active = t
+
+Active users for this factory:
+  $ psql -d cretas_prod_db -c "SELECT username FROM users WHERE factory_id='R_QINGHUAJIAO_REAL' AND is_active=true"
+  → 0 rows
+
+MO→DB reconciliation
+====================
+The dispatching MO described qhj_prod / 123456 as an R_QINGHUAJIAO_REAL user that
+would enable web-admin smoke (the "key difference from 3a"). DB lookup contradicts:
+
+  $ psql -d cretas_prod_db -c "SELECT username, factory_id, is_active FROM users WHERE username='qhj_prod'"
+   username | factory_id   | is_active
+  ----------+--------------+-----------
+   qhj_prod | RES_3101_009 | t
+
+qhj_prod is an active user of RES_3101_009 (which is already in the existing Phase 2A
+factory whitelist for finance/sales/etc.). RES_3101_009's analysis/(production|quality)
+endpoints are NOT in scope for this PR (3b is R_QINGHUAJIAO_REAL only).
+
+Implication for web-admin smoke (MO Step 5):
+  Cannot perform manual login smoke for R_QINGHUAJIAO_REAL because no user account exists.
+  Flagged to organizer for follow-up:
+    - Either provision an R_QINGHUAJIAO_REAL test user (e.g. r_qhj_admin / 123456)
+      and rerun the smoke post-merge
+    - Or wait for 青花椒 real-customer onboarding to land users
+
+Per Steve's GO answer pre-apply: stick with R_QINGHUAJIAO_REAL per spec, skip smoke
+(same situation as 3a). Active-E2E via unauthenticated curl + Python access-log
+presence remains sufficient for routing verification (4/4 PASS — see evidence.md).
+
+Out of scope (3c / Phase 2D)
+----------------------------
+- All other restaurant tenants (R_GML_DEMO, R_XMX_*, R_YHDJ_DEMO, R_YJJ_DEMO,
+  R_ILTEATRO_REAL is 3a-already-LIVE, RES_3101_00x etc.) → T6.6.3c full cascade
+- F00x / FOOD_3101_* / MEAT_3101_* / etc. (factory tenants) → Phase 2D
+- T6.6.4 X-SmartBI-Deprecated header on Java fallback → separate spec step
