@@ -20,6 +20,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete as DeleteIcon, Search, Refresh, Lock } from '@element-plus/icons-vue';
+import { formatAmount } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
 
@@ -27,6 +28,8 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
+// T2-5b (issue #534): expose movingAvgPrice — gate by canViewPrice RBAC
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -337,6 +340,14 @@ function handleSizeChange(size: number) {
         <el-table-column prop="storageType" label="储存类型" width="100" />
         <el-table-column prop="shelfLifeDays" label="保质期 (天)" width="120">
           <template #default="{ row }">{{ row.shelfLifeDays ?? '-' }}</template>
+        </el-table-column>
+        <!-- T2-5b (issue #534): F006 客户反馈 — expose 移动均价 (RawMaterialTypeDTO.movingAvgPrice)
+             gated by canViewPrice RBAC (per PR #443/#467 price-field policy) -->
+        <el-table-column v-if="canViewPrice" prop="movingAvgPrice" label="移动均价" width="120" align="right">
+          <template #default="{ row }">
+            <span v-if="row.movingAvgPrice != null">{{ formatAmount(row.movingAvgPrice) }}</span>
+            <span v-else style="color: #c0c4cc">-</span>
+          </template>
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
