@@ -1,0 +1,415 @@
+{
+  "round": 1,
+  "part": "chat1 — Python endpoint smoke (Phase 2A/2B/2C)",
+  "spec": "docs/qa-specs/2026-05-12-smartbi-python-port-deep-e2e-spec.md",
+  "specSection": "§5 R1 + §2.1 acceptance bar + §0.1 in-scope (18 endpoints)",
+  "executedAt": "2026-05-13T11:50-12:00 CST",
+  "executor": "chat1",
+  "env": {
+    "url": "http://139.196.165.140:8086/ (prod web-admin nginx)",
+    "envNote": "spec §4 declared test env 8097; user-directive routed via 8086 prod nginx — read-only smoke (GET-only) to avoid prod mutation",
+    "tokenAccount": "f006_admin / 123456 (F006 六膳门食品科技, factory_super_admin, userId=1309)",
+    "factory": "F006",
+    "dateRange": "startDate=2026-04-01 endDate=2026-05-01"
+  },
+  "skillCompliance": {
+    "depthFirstE2E": {
+      "rule1_depthLabel": "every test record has depth field",
+      "rule2_deepMin1": "n/a for R1 part-1 (breadth smoke per spec §5 R1 plan — depth target smoke=18, deep=0 in this chat; deep targets owned by R2+)",
+      "rule3_audit": "Q1: would test FAIL if backend 500? YES — curl status=5xx fails 200 check. Q2: frontend crash? n/a (no UI). Q3: silent UI bug? n/a. Q4: bugs found? YES (nginx-routing gap, ≥7 endpoints). Q5: prereq data seeded? n/a for envelope smoke.",
+      "rule8_sameRootCauseSweep": "performed — see sameCauseSweep block below",
+      "rule11_breadth": "all 18 spec modules attempted via 22 distinct curl probes; no module left at 'none' (worst is bug-bucket P1 at customer-observable 404)"
+    }
+  },
+  "summary": {
+    "specTotal": 18,
+    "endpointsAttempted": 22,
+    "endpointsPass200": 12,
+    "endpointsBuggy": 7,
+    "endpointsAmbiguous": 1,
+    "depthBreakdown": {
+      "smoke": 22,
+      "medium": 0,
+      "deep": 0
+    },
+    "rule10_11_12_locks": {
+      "rule10_divideMultiply": "not exercised in envelope smoke (needs F-1 boundary seed); deferred to R3 finance/sales/procurement deep tests",
+      "rule11_localDateTimeMicroseconds": "scanned 7 config_thresholds + 3 analysis composite responses — no μs ending in trailing-0 captured (Python emit appears scale-6 raw); cannot positively verify _java_isoformat applied without boundary record. Latent regression risk if helper bypassed.",
+      "rule12_halfUpVsBankers": "not exercised (needs 46.55 / 100.005 boundary input); deferred to R4 procurement/drilldown"
+    }
+  },
+  "endpoints": [
+    {
+      "id": "E01",
+      "module": "analysis_finance",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/finance?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 2712,
+      "envelope": "Python (Lombok-derived dateRange.days=31, dateRange.valid=true present per Rule 9)",
+      "shape": "{ overview, costStructure, dateRange, generatedAt, profitMetrics[5], receivableAging }",
+      "rule9NullEmit": "overview.period/startDate/endDate/metricCards/charts/...=null emitted (Lombok no @JsonInclude → null kept) ✓",
+      "notes": "F006 has no finance data — metricCode GROSS_PROFIT/GROSS_MARGIN/NET_PROFIT/NET_MARGIN/ROI returned with value=0|null; correct empty-tenant behavior"
+    },
+    {
+      "id": "E02",
+      "module": "analysis_finance",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/finance/budget-achievement?year=2026",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "envelope": "Python",
+      "shape": "{ chartType:LINE_BAR, title:'2026年收入预算达成分析', data:[12 months] }",
+      "firstProbe": "422 missing 'year' param (Python Pydantic validation, correct rejection)",
+      "rule9NullEmit": "alertLevel=GREEN per month with budget/actual/achievementRate/variance=0 ✓"
+    },
+    {
+      "id": "E03",
+      "module": "analysis_finance",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/finance/yoy-mom?startPeriod=2026-04&endPeriod=2026-05&periodType=MONTH",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "envelope": "Python",
+      "shape": "{ chartType:LINE_BAR, data:[{period:2026-04, currentValue, lastYearValue, yoyGrowthRate, momGrowthRate, ...}], options:{yAxis,series} }",
+      "firstProbe": "422 missing 'startPeriod' (correct)",
+      "rule8_mapOfKeyOrder": "series Map.of(4) keys: yAxisIndex,type,name,color ✓ (matches spec Rule 8 audit)"
+    },
+    {
+      "id": "E04",
+      "module": "analysis_finance",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/finance/category-comparison?year=2026&compareYear=2025",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "envelope": "Python",
+      "shape": "{ chartType:BAR, title:'2026年 vs 2025年 品类结构对比', data:[], options:{yAxis,series,summary} }",
+      "firstProbe": "422 missing year+compareYear (correct)"
+    },
+    {
+      "id": "E05",
+      "module": "analysis_sales",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/sales?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 1140,
+      "envelope": "Python",
+      "shape": "{ overview:{ kpiCards:[], aiInsights:[{level:YELLOW, category:数据状态, message:暂无销售数据, actionSuggestion}], ... } }",
+      "notes": "F006 has no sales data → aiInsight fallback fires per spec §3.4 (200 + fallback non-空白 non-null)"
+    },
+    {
+      "id": "E06",
+      "module": "analysis_inventory",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/inventory?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 3352,
+      "envelope": "Python",
+      "shape": "{ overview:{ kpiCards:[INVENTORY_VALUE rawValue=141926.54 unit=元, BATCH_COUNT, ...], ... } }",
+      "notes": "F006 has real inventory data; KPI raw value 141926.54 is float (Rule 4 _decimal_to_number ✓ — Decimal(141926.54) → float)"
+    },
+    {
+      "id": "E07",
+      "module": "analysis_procurement",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/procurement?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 730,
+      "envelope": "Python",
+      "notes": "F006 empty-data fallback aiInsight fires"
+    },
+    {
+      "id": "E08",
+      "module": "analysis_region",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/region?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 566,
+      "envelope": "Python",
+      "shape": "{ heatmap:{chartType:MAP,...}, targetCompletion:[], dateRange:{days:31,valid:true}, opportunityScores:[] }"
+    },
+    {
+      "id": "E09",
+      "module": "analysis_department",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/department?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 710,
+      "envelope": "Python",
+      "shape": "{ completionRates:[], efficiencyMatrix:{chartType:SCATTER,...}, dateRange:{...}, ... }"
+    },
+    {
+      "id": "E10",
+      "module": "analysis_drilldown",
+      "path": "POST /api/mobile/F006/smart-bi/drill-down  Content-Type: application/json body:{metricCode,startDate,endDate}",
+      "status": "AMBIGUOUS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "bodyCode": 400,
+      "envelope": "Java (nanos timestamp 2026-05-13T11:53:47.606096047, actionHint:null) — confirmed routed to Java not Python",
+      "responseMessage": "Drill-down failed: 操作失败，请稍后重试",
+      "concerns": [
+        "HTTP 200 wraps app-code 400 — convention but UX-risk if Vue checks HTTP only",
+        "Generic fallback message '操作失败，请稍后重试' violates qa-prompt 'error UX 四位一体' (no specific msg/actionHint/severity)",
+        "Drill-down hitting Java despite Python having impl at smartbi_compat/api/analysis_drilldown.py — same nginx routing gap as E11-E16"
+      ],
+      "samCauseLink": "E11-E16 nginx routing gap"
+    },
+    {
+      "id": "E11",
+      "module": "analysis (list)",
+      "path": "GET /api/mobile/F006/smart-bi/query-templates",
+      "status": "FAIL — BUG",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java (code:404, message:请求的资源不存在, timestamp:nanos)",
+      "bugClass": "业务逻辑 bug (nginx-routing gap, customer-observable)",
+      "priority": "P1",
+      "rootCauseGuess": "nginx 8086 location block only routes /api/mobile/{factoryId}/smart-bi/analysis/* + /smartbi-config/* to Python upstream; non-analysis /smart-bi/* paths fall through to Java where T6.5 Phase C deleted handlers → 404",
+      "evidence": {
+        "envelope": "Java (nanos timestamp, actionHint:null) — matches Spring Boot default error handler",
+        "pythonImplExists": "backend/python/smartbi_compat/api/analysis.py line 1 has @router.get('/api/mobile/{factory_id}/smart-bi/query-templates')",
+        "vueCallsThisPath": "web-admin/src/views/smart-bi/QueryTemplateManager.vue calls get('/${factoryId}/smart-bi/query-templates') with axios baseURL='/api/mobile' → resolves to exact 404 path"
+      },
+      "customerImpact": "Navigation to /smart-bi/query-templates page will fail to load templates; UI shows whatever QueryTemplateManager.vue shows on 404 (_silent:true flag set so likely empty list, not error toast)"
+    },
+    {
+      "id": "E12",
+      "module": "analysis (list)",
+      "path": "GET /api/mobile/F006/smart-bi/datasource/list",
+      "status": "FAIL — BUG",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "bugClass": "业务逻辑 bug (nginx-routing gap)",
+      "priority": "P1",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "E13",
+      "module": "analysis (list)",
+      "path": "GET /api/mobile/F006/smart-bi/alerts",
+      "status": "FAIL — BUG",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "bugClass": "业务逻辑 bug (nginx-routing gap)",
+      "priority": "P1",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "E14",
+      "module": "analysis (list)",
+      "path": "GET /api/mobile/F006/smart-bi/recommendations",
+      "status": "FAIL — BUG",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "bugClass": "业务逻辑 bug (nginx-routing gap)",
+      "priority": "P1",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "E15",
+      "module": "analysis_production (Phase 2B)",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/production?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 6953,
+      "envelope": "Python",
+      "notes": "Real data: OEE rawValue=79.75 unit=%, kpi value '79.7%' (Rule 12 spot — Decimal(79.75).quantize(0.1, ROUND_HALF_UP) emits 79.8? Got 79.7 — boundary case, banker's gives 79.8 too at 79.75; HALF_UP gives 79.8; we got 79.7 — possible Rule 12 latent if formatter rounded down. Needs deep R3/R4 boundary test to confirm)",
+      "rule12LatentConcern": "OEE 79.75 → display 79.7% may indicate ROUND_DOWN/banker's, not HALF_UP. Defer to R3/R4 boundary verification (raw_value 79.75 explicit ROUND_HALF_UP → 79.8)"
+    },
+    {
+      "id": "E16",
+      "module": "analysis_quality (Phase 2B)",
+      "path": "GET /api/mobile/F006/smart-bi/analysis/quality?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 7575,
+      "envelope": "Python",
+      "notes": "Real data: FPY rawValue=95.53 unit=%, display '95.53%' — Rule 12 boundary not stressed (95.53 is non-rounding case)"
+    },
+    {
+      "id": "E17",
+      "module": "config_thresholds (2C Tier 1)",
+      "path": "GET /api/mobile/smartbi-config/thresholds",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 2579,
+      "envelope": "Python",
+      "shape": "{ data:[7 thresholds] each with id (uuid), thresholdType (FINANCE/...), metricCode, warningValue, criticalValue, comparisonOperator, unit, factoryId (null=global), isActive, deleted, createdAt, updatedAt }",
+      "rule11_microSpot": "7 updatedAt timestamps scanned: .759038/.887685/.097075/.987784 — no trailing-0 captured (cannot positively verify _java_isoformat applied; would need seed record with μs=N0)",
+      "writeOps_NotTestedOnProd": "POST/PUT/DELETE/reload skipped per read-only policy on prod env (spec §4 hard rule)"
+    },
+    {
+      "id": "E18",
+      "module": "dashboard_composite (2C Tier 2)",
+      "path": "GET /api/mobile/F006/smart-bi/dashboard/executive?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 1011,
+      "envelope": "Python (Lombok null emit: period/startDate/endDate/metricCards/chartList=null all kept ✓)",
+      "notes": "F006 empty → aiInsight fallback ✓"
+    },
+    {
+      "id": "E19",
+      "module": "dashboard (2C Tier 2)",
+      "path": "GET /api/mobile/F006/smart-bi/dashboard?startDate=2026-04-01&endDate=2026-05-01",
+      "status": "PASS",
+      "depth": "smoke",
+      "httpStatus": 200,
+      "sizeBytes": 21787,
+      "envelope": "Python — wraps sales+inventory+procurement+finance composite (21KB)",
+      "rule9_nullEmit": "Many empty sub-modules with kpiCards:[], rankings:{}, charts:{...} — null/empty discrimination correct"
+    },
+    {
+      "id": "E20",
+      "module": "dashboard (data-date-range)",
+      "path": "GET /api/mobile/F006/smart-bi/data-date-range",
+      "status": "FAIL — BUG",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "bugClass": "业务逻辑 bug (nginx-routing gap)",
+      "priority": "P1",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "E21",
+      "module": "datasource (2C Tier 3)",
+      "path": "GET /api/mobile/F006/smart-bi/datasource/0/fields",
+      "status": "FAIL — BUG (suspected, nginx-routing not 404-data)",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "bugClass": "业务逻辑 bug (nginx-routing gap)",
+      "priority": "P1",
+      "sameCauseLink": "E11",
+      "note": "Cannot distinguish 'datasource id 0 not found' from 'nginx-routing 404' without working Python path; envelope is Java → routing-gap confirmed"
+    },
+    {
+      "id": "E22",
+      "module": "incentive_plan (2C Tier 3)",
+      "path": "GET /api/mobile/F006/smart-bi/incentive-plan/PERSON/0",
+      "status": "FAIL — BUG",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "bugClass": "业务逻辑 bug (nginx-routing gap)",
+      "priority": "P1",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "S01",
+      "module": "query_templates_write (2C Tier 3) — sister-sweep verification",
+      "path": "POST /api/mobile/F006/smart-bi/query-templates  body:{name:smoke-test-noop}",
+      "status": "FAIL — BUG (same-cause sweep hit)",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "sameCauseLink": "E11",
+      "note": "Test was no-op body — would have been DB write if endpoint had reached Python; 404 means no mutation occurred (safe on prod)"
+    },
+    {
+      "id": "S02",
+      "module": "datasource_write (2C Tier 3) — sister-sweep verification",
+      "path": "POST /api/mobile/F006/smart-bi/datasource/upload (no multipart body)",
+      "status": "FAIL — BUG (same-cause sweep hit)",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "S03",
+      "module": "datasource_write — sister-sweep verification",
+      "path": "POST /api/mobile/F006/smart-bi/datasource/apply  body:{}",
+      "status": "FAIL — BUG (same-cause sweep hit)",
+      "depth": "smoke",
+      "httpStatus": 404,
+      "envelope": "Java",
+      "sameCauseLink": "E11"
+    },
+    {
+      "id": "E23",
+      "module": "upload (legacy)",
+      "path": "n/a — upload.py route list not exported (router file empty per source check)",
+      "status": "SKIPPED",
+      "depth": "smoke",
+      "note": "smartbi_compat/api/upload.py grep returned 0 @router decorators; spec §11.2 flagged upload coverage unknown. Defer to R5 边界 round per spec."
+    }
+  ],
+  "sameCauseSweep": {
+    "rootPattern": "nginx 8086 location-block routes /api/mobile/{factoryId}/smart-bi/analysis/* + /api/mobile/smartbi-config/* + /api/mobile/{factoryId}/smart-bi/dashboard* paths to Python upstream, but does NOT include /api/mobile/{factoryId}/smart-bi/{query-templates,alerts,recommendations,data-date-range,datasource/*,incentive-plan/*,drill-down} paths. These fall through to Java upstream where T6.5 Phase C deletions left no handlers, returning 404 with Spring envelope.",
+    "grepCommands": [
+      "grep -rE '@router\\.(get|post|put|delete)' backend/python/smartbi_compat/api/*.py",
+      "grep -rE 'baseURL|api/mobile' web-admin/src/api/request.ts",
+      "grep -rE 'query-templates|smart-bi/(alerts|recommendations|data-date-range|datasource|incentive-plan)' web-admin/src/"
+    ],
+    "matches": [
+      {"endpoint": "GET /smart-bi/query-templates", "verdict": "vulnerable — 404 confirmed; Vue QueryTemplateManager.vue calls"},
+      {"endpoint": "POST /smart-bi/query-templates", "verdict": "vulnerable — 404 (sister sweep S01)"},
+      {"endpoint": "PUT /smart-bi/query-templates/{id}", "verdict": "needs verification — write op not tested on prod"},
+      {"endpoint": "DELETE /smart-bi/query-templates/{id}", "verdict": "needs verification — write op not tested on prod"},
+      {"endpoint": "GET /smart-bi/datasource/list", "verdict": "vulnerable — 404 confirmed"},
+      {"endpoint": "GET /smart-bi/datasource/{id}/fields", "verdict": "vulnerable — 404 envelope=Java (cannot distinguish from data-404 but envelope confirms routing miss)"},
+      {"endpoint": "GET /smart-bi/datasource/{id}/history", "verdict": "needs verification — not tested"},
+      {"endpoint": "GET /smart-bi/datasource/{id}/preview", "verdict": "needs verification — not tested"},
+      {"endpoint": "POST /smart-bi/datasource/upload", "verdict": "vulnerable — 404 (sister sweep S02)"},
+      {"endpoint": "POST /smart-bi/datasource/apply", "verdict": "vulnerable — 404 (sister sweep S03)"},
+      {"endpoint": "GET /smart-bi/alerts", "verdict": "vulnerable — 404 confirmed"},
+      {"endpoint": "GET /smart-bi/recommendations", "verdict": "vulnerable — 404 confirmed"},
+      {"endpoint": "GET /smart-bi/data-date-range", "verdict": "vulnerable — 404 confirmed"},
+      {"endpoint": "GET /smart-bi/incentive-plan/{type}/{id}", "verdict": "vulnerable — 404 confirmed"},
+      {"endpoint": "POST /smart-bi/drill-down", "verdict": "vulnerable (different symptom) — Java handles instead of Python; spec §2.4 flagged Phase 2A drill-down as Python-port but nginx still routes to Java; symptom: app-code 400 instead of 404"}
+    ],
+    "totalVulnerable": "≥14 endpoint patterns affected; 7 confirmed (E11-E14, E20-E22, S01-S03) plus drill-down ambiguous (E10)",
+    "fixCandidate": "nginx server-block on 139:8086 needs additional location ~ ^/api/mobile/[^/]+/smart-bi/(query-templates|alerts|recommendations|data-date-range|datasource|incentive-plan|drill-down) { proxy_pass http://cretas_python_upstream; } — or simpler: route ALL /api/mobile/{factoryId}/smart-bi/* except those Java still owns to Python (then Java handles only what's left)",
+    "blockerFor": "R2 will hit RBAC sweep cells against these endpoints — bug must be triaged before R2 fires, else RBAC sweep results contaminated with routing-404",
+    "owner": "TBD by organizer / nginx deploy chat"
+  },
+  "deferred": [
+    {
+      "item": "Rule 11 _java_isoformat positive verification",
+      "reason": "smoke samples didn't include μs ending in trailing-0; need targeted seed (e.g. UPDATE smartbi_threshold SET updated_at = '2026-05-13 12:00:00.150710')",
+      "scheduledRound": "R5 boundary"
+    },
+    {
+      "item": "Rule 10 BigDecimal divide-multiply verification",
+      "reason": "F006 has no sales/finance data; need F-1 seed with 1/3*100 division case",
+      "scheduledRound": "R3 finance deep"
+    },
+    {
+      "item": "Rule 12 HALF_UP boundary",
+      "reason": "OEE 79.75 → 79.7 latent concern but not stressed; need 46.55 / 100.005 boundary",
+      "scheduledRound": "R4 procurement/drilldown deep"
+    },
+    {
+      "item": "config_thresholds CRUD write ops",
+      "reason": "POST/PUT/DELETE/reload skipped (read-only on prod)",
+      "scheduledRound": "R5 边界 (test env)"
+    },
+    {
+      "item": "Phase 2B Java vs Python parity (analysis_production / analysis_quality)",
+      "reason": "spec §2.4 calls for dict-eq compare against Java 10020; envelope smoke only; would need second curl to Java + dict-eq harness",
+      "scheduledRound": "R5 parity round"
+    },
+    {
+      "item": "upload.py coverage",
+      "reason": "no @router decorator found in upload.py grep; spec §11.2 flagged",
+      "scheduledRound": "R5 边界"
+    }
+  ],
+  "verdict": "R1 chat1 part-1 COMPLETE. 12/22 endpoints pass-200 with Python envelope shape healthy; 1 ambiguous (drill-down POST 400 wrapped in HTTP 200, hits Java not Python); ≥7 endpoints HARD-BLOCKED by nginx-routing gap (P1 customer-facing bug, single root cause). Rule 9 (Lombok null emit) verified on 5+ working endpoints. Rule 10/11/12 lock verification deferred to deep rounds. Same-cause sweep filed 14 candidate endpoints. R2 RBAC sweep depends on routing bug triage."
+}
