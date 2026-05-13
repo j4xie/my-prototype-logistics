@@ -1,0 +1,58 @@
+[
+  {
+    "processName": "装框",
+    "category": "包装",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  },
+  {
+    "processName": "装盒",
+    "category": "包装",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  },
+  {
+    "processName": "分切",
+    "category": "加工",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  },
+  {
+    "processName": "拆骨",
+    "category": "加工",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  },
+  {
+    "processName": "卤制",
+    "category": "加工",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  },
+  {
+    "processName": "分割",
+    "category": "前处理",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  },
+  {
+    "processName": "拆包",
+    "category": "前处理",
+    "tasks": 2,
+    "totalInput": 200.0,
+    "totalOutput": 0.0,
+    "yieldRate": 0.0
+  }
+]
