@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.util.NormalizedFilenameMultipartFile;
 
 /**
  * SmartBI Upload Controller
@@ -148,6 +149,12 @@ public class SmartBIUploadController {
             @Parameter(description = "Row label column index for transpose") @RequestParam(required = false, defaultValue = "0") Integer rowLabelColumn,
             @Parameter(description = "Header row count for transpose") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount) {
 
+        // T-R5-2: defend against Tomcat ISO-8859-1 multipart filename mojibake.
+        // Even with the application*.properties UTF-8 fix, an in-flight request
+        // during a deploy window can still hit the old behavior — wrap once here
+        // so downstream services (parseExcel, executeUploadFlow) see a clean name.
+        file = new NormalizedFilenameMultipartFile(file);
+
         log.info("Upload Excel: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, transpose={}",
                 factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, transpose);
 
@@ -220,6 +227,9 @@ public class SmartBIUploadController {
             // Bug #25b (2026-04-18): multi-stacked-table region bounds (0-indexed, inclusive)
             @Parameter(description = "Selected region start row (Bug #25b)") @RequestParam(required = false) Integer selectedRegionStart,
             @Parameter(description = "Selected region end row (Bug #25b)") @RequestParam(required = false) Integer selectedRegionEnd) {
+
+        // T-R5-2: normalize filename for the async route too (same persistence target).
+        file = new NormalizedFilenameMultipartFile(file);
 
         log.info("Upload and analyze: factoryId={}, fileName={}, dataType={}, autoConfirm={}, region=[{},{}]",
                 factoryId, file.getOriginalFilename(), dataType, autoConfirm,
