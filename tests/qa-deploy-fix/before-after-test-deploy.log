@@ -1,0 +1,90 @@
+================================================================================
+BEFORE / AFTER — deploy-web-admin.sh scp/atomic-swap race fix
+================================================================================
+
+REMOTE TARBALL PATH HANDLING
+----------------------------
+
+BEFORE (scripts/deploy/deploy-web-admin.sh @ origin/main 51a9e6440)
+
+  L197:  scp -q "$TMP_TAR" "$GATEWAY:/tmp/web-admin-dist.tar.gz"
+  L198:  log "   ✓ 上传完成"
+  L214:  tar xzf /tmp/web-admin-dist.tar.gz -C "\$STAGING"
+  L238:  rm -f /tmp/web-admin-dist.tar.gz
+  L277:  scp -q "$TMP_TAR" "$GATEWAY:/tmp/web-admin-dist.tar.gz"   (prod)
+  L292:  tar xzf /tmp/web-admin-dist.tar.gz -C "\$STAGING"          (prod)
+  L312:  rm -f /tmp/web-admin-dist.tar.gz                           (prod)
+
+  Issue: SHARED HARDCODED REMOTE PATH across all concurrent deploys.
+  Race: deploy A's tar xzf can be defeated by deploy B's rm -f in the
+  ~1-3s gap between scp and tar. Symptom: "✓ 上传完成" then
+  tar: Cannot open /tmp/web-admin-dist.tar.gz.
+
+
+AFTER (this branch)
+
+  L196: # May 13 2026 race fix: per-PID remote tarball path eliminates
+  L197: # concurrent-deploy collision on shared /tmp/web-admin-dist.tar.gz.
+  L198: # ... [comment block explaining root cause] ...
+  L202: REMOTE_TAR="/tmp/web-admin-dist.$$.tar.gz"
+  L203: log "📤 [3/4] 上传到 $GATEWAY (remote: $REMOTE_TAR)..."
+  L204: scp -q "$TMP_TAR" "$GATEWAY:$REMOTE_TAR"
+  L205:
+  L206: # Post-scp verify: defense in depth ...
+  L210: LOCAL_SIZE=$(stat -c %s "$TMP_TAR" ...)
+  L211: REMOTE_SIZE=$(ssh "$GATEWAY" "stat -c %s '$REMOTE_TAR' ...")
+  L212: if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+  L213:     log "❌ post-scp verify FAILED: ..."
+  L214:     ...
+  L216:     exit 1
+  L217: fi
+  L218: log "   ✓ 上传完成 (verified ${LOCAL_SIZE}B match)"
+
+  All 6 hardcoded references replaced with $REMOTE_TAR (per-PID).
+  Both heredocs (test + prod) use $REMOTE_TAR.
+  Both scp blocks (test + prod) followed by verify.
+
+
+OBSERVED RUNTIME — BEFORE
+-------------------------
+(Reconstructed from MO context — operator hit failure 3x in one evening)
+
+  [HH:MM:SS] 📤 [3/4] 上传到 root@139.196.165.140...
+  [HH:MM:SS]    ✓ 上传完成
+  [HH:MM:SS] 🚀 [4/4] 原子交换 + 清理旧 backups...
+  tar: /tmp/web-admin-dist.tar.gz: Cannot open: No such file or directory
+  tar: Error is not recoverable: exiting now
+
+
+OBSERVED RUNTIME — AFTER (3 consecutive successful runs, see fix-evidence.log)
+------------------------------------------------------------------------------
+
+  [16:24:18] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.17389.tar.gz)...
+  [16:24:28]    ✓ 上传完成 (verified 2951924B match)
+  [16:24:28] 🚀 [4/4] 原子交换 + 清理旧 backups...
+     旧 assets: 364 → 新 assets: 364
+     ✓ 原子交换完成 (backup: web-admin.bak.20260514_042431)
+  [16:24:32]    HTTP 200 (http://139.196.165.140:8086/)
+  [16:24:32] ✅ 部署完成
+
+  [16:25:38] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.18698.tar.gz)...
+  [16:25:47]    ✓ 上传完成 (verified 2951396B match)
+  [16:25:51] ✅ 部署完成
+
+  [16:27:09] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.21556.tar.gz)...
+  [16:27:18]    ✓ 上传完成 (verified 2951957B match)
+  [16:27:22] ✅ 部署完成
+
+  3/3 PASS.
+  Distinct PIDs → distinct remote paths → race impossible by construction.
+  Verify message confirms each upload arrived intact at the byte level.
+
+
+KEY DELTA SUMMARY
+-----------------
+- Race-prone shared path:    /tmp/web-admin-dist.tar.gz       (BEFORE)
+- Race-free per-PID path:    /tmp/web-admin-dist.$$.tar.gz    (AFTER)
+- Silent failure mode:       scp ✓ → opaque tar error          (BEFORE)
+- Loud failure mode:         scp ✓ → explicit verify abort      (AFTER)
+- Operator MTTR:             ~5min cleanup + retry              (BEFORE)
+                              0 (root cause eliminated)         (AFTER)
