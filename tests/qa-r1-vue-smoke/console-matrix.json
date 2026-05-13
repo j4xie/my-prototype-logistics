@@ -1,0 +1,303 @@
+{
+  "target": "http://139.196.165.140:8086",
+  "ranAt": "2026-05-13T04:00:56.352Z",
+  "legend": {
+    "consoleError": "console.error count after noise filter",
+    "consoleWarning": "[Vue warn] / other warnings after noise filter",
+    "pageError": "uncaught JS exception count",
+    "apiFailure": "response status >= 400 on /api/* count",
+    "errorToast": "visible .el-message--error after mount + networkidle",
+    "mountVisible": ".app-main visible within 12s"
+  },
+  "rows": [
+    {
+      "page": "SmartBIDashboard",
+      "path": "/smart-bi/dashboard",
+      "consoleError": 2,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 1,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "[capability] fetch failed, falling back to permissive mode: Error: capability fetch failed: 503\n    at http://139.196.165.140:8086/assets/useCapability-BH8h3KUW.js:1:4523"
+      ],
+      "sampleApiFailures": [
+        {
+          "url": "http://139.196.165.140:8086/smartbi-api/api/smartbi/capability/F006",
+          "status": 503
+        }
+      ]
+    },
+    {
+      "page": "SmartBIFinance",
+      "path": "/smart-bi/finance",
+      "consoleError": 2,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 1,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [
+        "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+        "[capability] fetch failed, falling back to permissive mode: Error: capability fetch failed: 503\n    at http://139.196.165.140:8086/assets/useCapability-BH8h3KUW.js:1:4523"
+      ],
+      "sampleApiFailures": [
+        {
+          "url": "http://139.196.165.140:8086/smartbi-api/api/smartbi/capability/F006",
+          "status": 503
+        }
+      ]
+    },
+    {
+      "page": "SmartBISales",
+      "path": "/smart-bi/sales",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIQuery",
+      "path": "/smart-bi/query",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIQueryTemplates",
+      "path": "/smart-bi/query-templates",
+      "consoleError": 2,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 1,
+      "errorToast": true,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()",
+        "加载模板失败: ApiError: 请求的接口不存在 (GET /F006/smart-bi/query-templates)。可能是后端未上线该功能,或当前账号无权访问。\n    at http://139.196.165.140:8086/assets/request-C6nZUK6v.js:6:2494\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async O (http://139.196.165.140:8086/assets/QueryTemplateManager-CdZ8LAlT.js:1:5137)\n    at j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:2078)\n    at async O (http://139.196.165.140:8086/assets/QueryTemplateManager-CdZ8LAlT.js:1:5137)"
+      ],
+      "sampleApiFailures": [
+        {
+          "url": "http://139.196.165.140:8086/api/mobile/F006/smart-bi/query-templates",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "page": "SmartBIAnalysis",
+      "path": "/smart-bi/analysis",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIExcelUpload",
+      "path": "/smart-bi/upload",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIDataCompleteness",
+      "path": "/smart-bi/data-completeness",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIFoodKBFeedback",
+      "path": "/smart-bi/food-kb-feedback",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIFallbackLog",
+      "path": "/smart-bi/fallback-log",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBICalibration",
+      "path": "/smart-bi/calibration",
+      "consoleError": 3,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 2,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()",
+        "[失败] Error: 请求的资源不存在\n    at http://139.196.165.140:8086/assets/calibration-DJnStFQz.js:1:402\n    at async j.request (http://139.196.165.140:8086/assets/index-B9ygI19o.js:5:1982)\n    at async T (http://139.196.165.140:8086/assets/CalibrationListView-bAccmwkm.js:1:2478)\n    at async Promise.all (index 1)\n    at async http://139.196.165.140:8086/assets/CalibrationListView-bAccmwkm.js:1:2294",
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ],
+      "sampleApiFailures": [
+        {
+          "url": "http://139.196.165.140:8086/api/admin/calibration/statistics?factoryId=F006",
+          "status": 404
+        },
+        {
+          "url": "http://139.196.165.140:8086/api/admin/calibration/sessions?page=0&size=10&factoryId=F006",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "page": "FinancialDashboardPBI",
+      "path": "/smart-bi/financial-dashboard",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIWhatIf",
+      "path": "/smart-bi/whatif",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIRestaurantV2",
+      "path": "/smart-bi/restaurant-v2",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIGoldPreview",
+      "path": "/smart-bi/gold-preview",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIConfig",
+      "path": "/system/smartbi-config",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIDataSources",
+      "path": "/system/smartbi-config/data-sources",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    },
+    {
+      "page": "SmartBIChartTemplates",
+      "path": "/system/smartbi-config/chart-templates",
+      "consoleError": 0,
+      "consoleWarning": 0,
+      "pageError": 0,
+      "apiFailure": 0,
+      "errorToast": false,
+      "mountVisible": true,
+      "redirectedTo": null,
+      "rendered": true,
+      "sampleConsoleErrors": [],
+      "sampleApiFailures": []
+    }
+  ]
+}
