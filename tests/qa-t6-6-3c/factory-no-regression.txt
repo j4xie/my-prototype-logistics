@@ -1,0 +1,50 @@
+T6.6.3c Full Cascade — Factory-tenant no-regression evidence
+=============================================================
+
+Goal: confirm factory tenants (F006 as canary) still hit Java for the SAME two
+endpoints after the broad-regex replacement of 3a + 3b. The new regex covers
+only `R_*`, `RES_*`, and `R\d+` prefixes — factory IDs (F* / FOOD_* / MEAT_* /
+OTHER_* / TEST_*) must NOT match.
+
+Strategy: curl F006 /analysis/production + /analysis/quality after 3c reload.
+Expect: response shape = Java envelope (188 B), NOT Python (96 B). Confirmed
+also via absence from python-prod.log post-curl.
+
+Apply timestamp: 20260514_033550 (UTC 2026-05-13T19:35:50Z)
+Reload time:     2026-05-13T19:36:45Z
+
+--- F006 /analysis/production post-3c-reload ---
+HTTP=401 size=188
+body shape: Java envelope (compact, full envelope w/ severity/actionHint/timestamp)
+
+--- F006 /analysis/quality post-3c-reload ---
+HTTP=401 size=188
+body shape: same Java envelope as production
+
+--- Python log grep (post-reload window, F006 production/quality) ---
+$ ssh 47 'tail -50 /www/wwwroot/cretas/python-prod.log | grep -E "F006.*analysis/(production|quality)"'
+PASS — F006 production/quality not in Python log (Java handled)
+
+→ Conclusion: PASS. F006 (factory tenant) for these two endpoints remains on Java
+   after the 3c broad-regex replacement. The regex `^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/...`
+   does NOT match `F006` (no R/RES prefix, no R\d pattern), so F006 falls through
+   to the location / catch-all → Java upstream.
+
+Cross-check sanity (size signature):
+- All 14 restaurant probes → size 96 (Python)
+- F006 production+quality      → size 188 (Java)
+- Same nginx instance, factory_id prefix determines upstream selection ✓
+
+
+Other factory-tenant patterns NOT exercised but covered by same regex logic:
+- F001 ~ F046 → won't match R_*/RES_*/R\d+ → Java (catch-all)
+- FOOD_3101_*  → won't match → Java
+- MEAT_3101_*  → won't match → Java
+- OTHER_3101_001 → won't match → Java
+- TEST_0000_001 → won't match → Java
+
+Phase 2A finance route still working for both restaurant and factory paths:
+- R_ILTEATRO_REAL /analysis/finance → 401 (188 B Java-mirror, Python)
+- F006             /analysis/finance → 401 (96 B Python short shape; pre-existing
+                                            parity quirk, NOT a 3c regression;
+                                            see issue #530)
