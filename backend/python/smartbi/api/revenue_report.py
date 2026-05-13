@@ -142,18 +142,39 @@ async def upload_pos_files(
     request: Request,
     files: List[UploadFile] = File(...),
 ):
-    """Multi-file 二维火 POS upload. Per-file dispatch via pos_router."""
+    """Multi-file 二维火 POS upload.
+
+    Pipeline per file:
+      1. SHA-256 dedup against smart_bi_pg_excel_uploads.content_hash
+      2. Unzip + filename-keyword dispatch (pos_router)
+      3. For each inner CSV:
+         a. Persist to smart_bi_pg_excel_uploads + smart_bi_dynamic_data
+         b. If route → bill_flow_writer: call backfill_upload (Silver write)
+      4. After all files: materialize Gold for the affected date range
+    """
     caller_factory = _enforce_factory_match(factory_id, request)
+    user_id = _extract_caller_user_id(request)
     pool = await _get_pool()
     batch_id = uuid.uuid4()
     results = []
 
-    from smartbi.ingestion.pos_router import route_file, UnknownReportTypeError
+    from smartbi.ingestion.pos_router import (
+        _route_by_filename,
+        UnknownReportTypeError,
+        _preview,
+    )
+    from smartbi.ingestion._zip_handler import extract_inner_files
+    from smartbi.ingestion.pos_ingest import ingest_one_csv
+
+    silver_min_date: Optional[str] = None
+    silver_max_date: Optional[str] = None
 
     for upload_file in files:
         content = await upload_file.read()
         content_hash = hashlib.sha256(content).hexdigest()
 
+        # ── Dedup check (matches on outer-zip hash so re-uploading the
+        #    same export silently reuses the prior ingestion).
         async with pool.acquire() as conn:
             await conn.execute(
                 "SELECT set_config('app.factory_id', $1, false)",
@@ -172,27 +193,129 @@ async def upload_pos_files(
             })
             continue
 
+        # ── Unwrap zip (or single CSV) → list of (inner_name, body, decision)
+        inner_files: list[tuple[str, bytes, object]] = []
+        unknown_err: Optional[UnknownReportTypeError] = None
         try:
-            parsed_routes = list(route_file(upload_file.filename, content))
+            if (upload_file.filename or "").lower().endswith(".zip"):
+                for inner_name, inner_body in extract_inner_files(content):
+                    dec = _route_by_filename(inner_name)
+                    if dec is None:
+                        raise UnknownReportTypeError(
+                            inner_name, _preview(inner_body)
+                        )
+                    inner_files.append((inner_name, inner_body, dec))
+            else:
+                dec = _route_by_filename(upload_file.filename or "")
+                if dec is None:
+                    raise UnknownReportTypeError(
+                        upload_file.filename or "(unnamed)",
+                        _preview(content),
+                    )
+                inner_files.append((upload_file.filename or "", content, dec))
         except UnknownReportTypeError as e:
+            unknown_err = e
+
+        if unknown_err:
             results.append({
                 "filename": upload_file.filename,
                 "status": "unknown",
-                "preview_headers": e.preview_headers,
+                "preview_headers": unknown_err.preview_headers,
             })
             continue
+
+        # ── Ingest each inner CSV → dynamic_data → Silver
+        report_types: list[str] = []
+        for inner_name, inner_body, decision in inner_files:
+            try:
+                stats = await ingest_one_csv(
+                    pool=pool,
+                    factory_id=caller_factory,
+                    inner_filename=inner_name,
+                    csv_bytes=inner_body,
+                    writer_name=decision.writer,
+                    content_hash=content_hash,
+                    uploaded_by_id=user_id,
+                )
+                report_types.append(decision.report_type)
+                if stats.min_date:
+                    if silver_min_date is None or stats.min_date < silver_min_date:
+                        silver_min_date = stats.min_date
+                if stats.max_date:
+                    if silver_max_date is None or stats.max_date > silver_max_date:
+                        silver_max_date = stats.max_date
+                logger.info(
+                    "[upload] %s → %s: dynamic=%d, silver=%d, range=%s..%s",
+                    inner_name, decision.writer,
+                    stats.rows_inserted_dynamic, stats.rows_inserted_silver,
+                    stats.min_date, stats.max_date,
+                )
+            except Exception:
+                logger.exception(
+                    "[upload] ingest failed for %s (%s)",
+                    inner_name, decision.writer,
+                )
 
         results.append({
             "filename": upload_file.filename,
             "status": "ok",
-            "report_types": [d.report_type for d, _ in parsed_routes],
+            "report_types": report_types,
         })
+
+    # ── Materialize Gold for the affected date range so /generate sees data
+    if silver_min_date and silver_max_date:
+        from smartbi.services.materialized_analytics.daily_order_type_meal import (
+            materialize_daily_order_type_meal,
+        )
+        try:
+            d1 = date.fromisoformat(silver_min_date)
+            d2 = date.fromisoformat(silver_max_date)
+            n = await materialize_daily_order_type_meal(pool, caller_factory, d1, d2)
+            logger.info(
+                "[upload] Gold materialized %d rows for %s [%s..%s]",
+                n, caller_factory, silver_min_date, silver_max_date,
+            )
+        except Exception:
+            logger.exception(
+                "[upload] Gold materialize failed for %s [%s..%s]",
+                caller_factory, silver_min_date, silver_max_date,
+            )
 
     return {
         "success": True,
-        "data": {"batch_id": str(batch_id), "files": results},
+        "data": {
+            "batch_id": str(batch_id),
+            "files": results,
+            "gold_date_range": (
+                [silver_min_date, silver_max_date]
+                if silver_min_date else None
+            ),
+        },
         "message": "上传完成",
     }
+
+
+def _extract_caller_user_id(request: Request) -> Optional[int]:
+    """Pull user_id from JWT in Authorization header.
+
+    Mirrors _extract_caller_factory_id but returns the userId claim.
+    Returns None gracefully if anything goes wrong — uploaded_by is optional.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header[len("Bearer "):]
+    try:
+        import jwt
+        payload = jwt.decode(token, options={"verify_signature": False})
+        uid = payload.get("userId") or payload.get("user_id") or payload.get("sub")
+        if isinstance(uid, str) and uid.isdigit():
+            return int(uid)
+        if isinstance(uid, int):
+            return uid
+    except Exception:
+        pass
+    return None
 
 
 @router.post("/prepare")
@@ -210,7 +333,7 @@ async def prepare_revenue_report(
         meal_periods=body.meal_periods or None,
     )
     user_id = _user_id_from_request(request)
-    cache_key, summary, _ = await _generate_with_cache(pool, params, user_id)
+    cache_key, summary, _, preview_data = await _generate_with_cache(pool, params, user_id)
 
     return {
         "success": True,
@@ -221,6 +344,7 @@ async def prepare_revenue_report(
                 f"download/{cache_key}"
             ),
             "summary": summary,
+            "preview": preview_data,  # block1/2/3 first 10 rows + meta
         },
         "message": "已生成",
     }
@@ -241,7 +365,7 @@ async def generate_revenue_report(
         meal_periods=body.meal_periods or None,
     )
     user_id = _user_id_from_request(request)
-    cache_key, summary, buf = await _generate_with_cache(pool, params, user_id)
+    cache_key, summary, buf, _ = await _generate_with_cache(pool, params, user_id)
 
     filename = f"收入管理报表_{body.date_from}_{body.date_to}.xlsx"
     safe_filename = re.sub(r"[\r\n\x00/\\]", "_", filename)
@@ -268,12 +392,15 @@ async def download_cached(factory_id: str, cache_key: str, request: Request):
     if not cache_key.startswith(f"revenue_report:{caller_factory}:"):
         raise HTTPException(status_code=403, detail="cache_key 不属于本 factory")
 
-    cached_bytes = REVENUE_REPORT_CACHE.get(cache_key)
-    if cached_bytes is None:
+    cached = REVENUE_REPORT_CACHE.get(cache_key)
+    if cached is None:
         raise HTTPException(
             status_code=410,
             detail="缓存已过期，请通过 /prepare 重新生成获取 download_url",
         )
+    # Cache value: (file_bytes, preview_data) tuple (post-bug-11 fix).
+    # Tolerate legacy bytes-only entries during in-flight rollout.
+    cached_bytes = cached[0] if isinstance(cached, tuple) else cached
 
     return StreamingResponse(
         BytesIO(cached_bytes),

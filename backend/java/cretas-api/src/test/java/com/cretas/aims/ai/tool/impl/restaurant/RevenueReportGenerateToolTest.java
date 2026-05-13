@@ -51,7 +51,11 @@ class RevenueReportGenerateToolTest {
     }
 
     @Test
-    void schemaHasRequiredDateFields() {
+    void schemaDeclaresDateFields_asOptional() {
+        // Tool resolves Chinese date phrases ('本月'/'上月') internally + defaults
+        // to current month when args omitted, so date_from/date_to are NOT in
+        // `required`. The properties are still declared so LLM knows the args
+        // exist; just not required to provide them.
         Map<String, Object> schema = tool.getParametersSchema();
         assertEquals("object", schema.get("type"));
         @SuppressWarnings("unchecked")
@@ -62,8 +66,10 @@ class RevenueReportGenerateToolTest {
         assertNotNull(props.get("meal_periods"));
         @SuppressWarnings("unchecked")
         List<String> required = (List<String>) schema.get("required");
-        assertTrue(required.contains("date_from"));
-        assertTrue(required.contains("date_to"));
+        assertFalse(required.contains("date_from"),
+            "date_from must NOT be required (Tool resolves Chinese phrases / defaults)");
+        assertFalse(required.contains("date_to"),
+            "date_to must NOT be required (Tool resolves Chinese phrases / defaults)");
     }
 
     // ─── Happy path ─────────────────────────────────────────────────────

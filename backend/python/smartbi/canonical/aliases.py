@@ -45,6 +45,8 @@ ALIAS_TO_ATTR: Dict[str, str] = {
     "transaction_date": "date",
     "交易日期": "date",
     "order_date": "date",
+    "开单时间": "date",  # 二维火 详细日报表 — timestamp string e.g. "2025-11-14 18:31:48"
+    "结账时间": "date",  # 二维火 alternative
 
     # staff
     "staff_name": "staff_name",

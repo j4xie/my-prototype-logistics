@@ -6862,6 +6862,28 @@ public class IntentKnowledgeBase {
         restaurantPhraseMapping.put("收入变化", "RESTAURANT_REVENUE_TREND");
         restaurantPhraseMapping.put("日营业汇总", "RESTAURANT_REVENUE_TREND");
 
+        // REVENUE_REPORT_GENERATE — QHJ 收入管理报表 (Phase I, 2026-05-13)
+        // 4 张表 xlsx: 可比同比 + 环比 + 堂食外卖占比 + 客单人数分析
+        // 走 revenue_report_generate Tool → Python /prepare → 返回 download_url
+        restaurantPhraseMapping.put("收入管理报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("生成收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("生成收入管理报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("导出收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("导出收入管理报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("下载收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("下载收入管理报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("拉收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("拉一份收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("门店收入报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("门店收入分析", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("门店收入分析报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("营业收入分析", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("堂食外卖占比报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("客单人数分析", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("环比报表", "REVENUE_REPORT_GENERATE");
+        restaurantPhraseMapping.put("同比报表", "REVENUE_REPORT_GENERATE");
+
         // RESTAURANT_ORDER_STATISTICS — 订单统计
         restaurantPhraseMapping.put("接了多少单", "RESTAURANT_ORDER_STATISTICS");
         restaurantPhraseMapping.put("今天出了多少单", "RESTAURANT_ORDER_STATISTICS");
