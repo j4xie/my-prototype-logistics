@@ -1117,8 +1117,11 @@ deploy_jar() {
 
     # 防御性检查: 部署 prod 时也 ping test (反之亦然), 发现另一环境挂了就警告
     if [[ "$DEPLOY_ENV" == "prod" ]]; then
-        OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
-            "http://${SERVER_IP}:10011/api/mobile/health" 2>/dev/null)
+        # SSH 到 47 走 loopback (10011 SG 仅放行 139/32, 本地 curl 永远 timeout → 旧版 exit 28).
+        # `|| echo "000"` 双重保险: ssh/curl 任一失败都不让 set -e 杀整个 deploy.
+        OTHER_STATUS=$(ssh -o ConnectTimeout=5 $SERVER \
+            "curl -s -o /dev/null --max-time 5 -w '%{http_code}' http://127.0.0.1:10011/api/mobile/health" \
+            2>/dev/null || echo "000")
         if [ "$OTHER_STATUS" != "200" ]; then
             echo ""
             echo "   ⚠️  [防御检查] test 10011 异常 (HTTP $OTHER_STATUS)"

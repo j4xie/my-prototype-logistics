@@ -1,0 +1,92 @@
+Fix evidence — deploy-backend.sh "exit 28 cosmetic" bug
+=========================================================
+Date: 2026-05-13
+Branch: fix/deploy-backend-defensive-ping
+Files changed: scripts/deploy/deploy-backend.sh (one block, lines 1119-1124)
+
+Approach chosen: Option A (SSH-side curl via loopback)
+------------------------------------------------------
+The MO offered two options:
+  A) SSH to 47 and curl 127.0.0.1:10011 — restores actual defensive value.
+  B) `|| true` on the local curl — silences the exit but turns the
+     "test 10011 异常" warning into permanent noise on every prod deploy
+     (since SG-blocked local curl always returns HTTP 000 != 200).
+
+Option A picked because:
+  - Symmetric with the existing test→prod cross-check at line 1136, which
+    already SSHes to GATEWAY for the cross-environment health probe.
+  - 47:loopback is unfiltered by SG (SG rules apply to ingress from
+    external IPs, not loopback), so the check actually exercises test
+    10011 instead of producing a permanent false warning.
+  - Defense-in-depth `|| echo "000"` inside the command sub also handles
+    SSH itself failing (key, network, etc), so a transient SSH issue
+    won't fail the deploy either.
+
+Patch
+-----
+  - OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+  -     "http://${SERVER_IP}:10011/api/mobile/health" 2>/dev/null)
+  + OTHER_STATUS=$(ssh -o ConnectTimeout=5 $SERVER \
+  +     "curl -s -o /dev/null --max-time 5 -w '%{http_code}' \
+  +      http://127.0.0.1:10011/api/mobile/health" \
+  +     2>/dev/null || echo "000")
+
+Verification 1: syntax
+----------------------
+$ bash -n scripts/deploy/deploy-backend.sh && echo SYNTAX_OK
+SYNTAX_OK
+
+Verification 2: before-fix pattern still reproduces exit 28
+-----------------------------------------------------------
+$ bash -c 'set -e; VAR=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 \
+    "http://47.100.235.168:10011/api/mobile/health" 2>/dev/null); \
+    echo "REACHED if-check"' ; echo "exit=$?"
+exit=28
+(The "REACHED if-check" line never prints.)
+
+Verification 3: after-fix pattern exits 0 even on worst-case SSH failure
+-------------------------------------------------------------------------
+$ bash -c 'set -e; OTHER_STATUS=$(ssh -o ConnectTimeout=2 \
+    -o StrictHostKeyChecking=no root@127.0.0.1 \
+    "curl -s -o /dev/null --max-time 2 -w %{http_code} \
+     http://127.0.0.1:10011/api/mobile/health" 2>/dev/null || echo "000"); \
+    echo "REACHED if-check, OTHER_STATUS=$OTHER_STATUS"; \
+    if [ "$OTHER_STATUS" != "200" ]; then echo "warning prints (as designed)"; fi' \
+    ; echo "exit=$?"
+REACHED if-check, OTHER_STATUS=000
+warning prints (as designed)
+exit=0
+
+This is the worst case (SSH server unreachable at 127.0.0.1:22 on local).
+In real prod-deploy, SSH to 47 succeeds and the curl returns 200 or a real
+HTTP code, so the warning fires only when test 10011 is _actually_ sick.
+
+Real-prod sanity (manual, not run in this PR)
+---------------------------------------------
+$ ssh root@47.100.235.168 "curl -s -o /dev/null --max-time 5 \
+    -w '%{http_code}' http://127.0.0.1:10011/api/mobile/health"
+200
+(Test environment 10011 is currently healthy → returns 200, defensive
+warning will not trigger after deploy.)
+
+Latent same-class risk (NOT fixed in this PR)
+---------------------------------------------
+Lines 1095 and 1136 use the same `VAR=$(ssh ... curl ...)` pattern
+without `|| echo "000"` fallback. If SSH to GATEWAY (139) ever fails
+during a deploy, `set -e` will terminate the script with SSH's exit
+code (likely 255) — the same root-cause class as exit 28 here.
+
+In practice these have not failed because:
+  - GATEWAY (139) is internal control-plane reachable and reliable.
+  - The curl runs via nginx upstream from a whitelisted source.
+
+Recommendation: in a follow-up PR, sweep both sites to add
+`|| echo "000"` for defense-in-depth and consistency. Out of scope for
+this PR (PR title is narrowly "exit 28 cosmetic from Java prod defensive
+ping").
+
+Sister-sweep grep (for the follow-up PR):
+$ grep -n 'OTHER_STATUS=$(ssh\|PROD_STATUS=$(ssh' scripts/deploy/deploy-backend.sh
+  1095: PROD_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null ...")
+  1122: OTHER_STATUS=$(ssh -o ConnectTimeout=5 $SERVER "..." || echo "000")   [FIXED]
+  1136: OTHER_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null ...")
