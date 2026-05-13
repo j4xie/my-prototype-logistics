@@ -89,6 +89,22 @@ public class SalesOrderItem extends BaseEntity {
     @Column(name = "box_quantity", precision = 15, scale = 2)
     private BigDecimal boxQuantity;
 
+    /**
+     * 来源仓库 code (T4-D1, issue #525): WH-LOG (总仓) / WH-WKS (线边仓).
+     *
+     * <p>F006 客户反馈 (第四次会议 702-732): 成品会调回总仓, 总仓再安排发货.
+     * Sales order line items record which warehouse to ship from. UI uses
+     * {@code utils/warehouse.ts:warehouseDisplayLabel} for the human label.
+     *
+     * <p>Nullable: legacy rows + drafts where user hasn't picked yet.
+     * Migration: {@code V20260514_01__add_sales_order_item_source_warehouse_code.sql}
+     *
+     * <p>Downstream linkage (T4-D5, separate ticket): outbound shipment logic
+     * to honor this field when deducting inventory from the chosen warehouse.
+     */
+    @Column(name = "source_warehouse_code", length = 20)
+    private String sourceWarehouseCode;
+
     /** 成本小计 = 数量 × 成本单价. Price-sensitive: returns null when costUnitPrice stripped. */
     @Transient
     @PriceSensitive
