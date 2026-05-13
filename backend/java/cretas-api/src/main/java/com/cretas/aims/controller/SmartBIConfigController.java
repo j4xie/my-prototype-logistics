@@ -56,6 +56,7 @@ public class SmartBIConfigController {
 
     // ==================== 意图配置 ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/intents")
     @Operation(summary = "获取意图配置列表", description = "获取所有意图配置，可按分类筛选")
     public ResponseEntity<ApiResponse<List<AiIntentConfig>>> listIntents(
@@ -150,6 +151,7 @@ public class SmartBIConfigController {
 
     // ==================== 告警阈值 ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/thresholds")
     @Operation(summary = "获取告警阈值列表", description = "获取所有告警阈值配置，可按类型筛选")
     public ResponseEntity<ApiResponse<List<SmartBiAlertThreshold>>> listThresholds(
@@ -245,6 +247,7 @@ public class SmartBIConfigController {
 
     // ==================== 激励规则 ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/incentive-rules")
     @Operation(summary = "获取激励规则列表", description = "获取所有激励规则配置，可按规则代码筛选")
     public ResponseEntity<ApiResponse<List<SmartBiIncentiveRule>>> listIncentiveRules(
@@ -340,6 +343,7 @@ public class SmartBIConfigController {
 
     // ==================== 字段映射 ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/field-mappings")
     @Operation(summary = "获取字段映射列表", description = "获取所有字段映射配置，可按字典类型筛选")
     public ResponseEntity<ApiResponse<List<SmartBiDictionary>>> listFieldMappings(
@@ -435,6 +439,7 @@ public class SmartBIConfigController {
 
     // ==================== 指标公式 ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/metric-formulas")
     @Operation(summary = "获取指标公式列表", description = "获取所有指标公式配置，可按公式类型筛选")
     public ResponseEntity<ApiResponse<List<SmartBiMetricFormula>>> listMetricFormulas(
@@ -529,6 +534,7 @@ public class SmartBIConfigController {
 
     // ==================== 图表模板 ====================
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/chart-templates")
     @Operation(summary = "获取图表模板列表", description = "获取所有图表模板配置，可按分类或图表类型筛选")
     public ResponseEntity<ApiResponse<List<SmartBiChartTemplate>>> listChartTemplates(
@@ -547,6 +553,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/chart-templates/{code}")
     @Operation(summary = "获取指定图表模板", description = "根据模板代码获取图表模板，支持工厂级覆盖")
     public ResponseEntity<ApiResponse<SmartBiChartTemplate>> getChartTemplate(
@@ -645,6 +652,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/chart-templates/recommend")
     @Operation(summary = "推荐图表类型", description = "根据数据特征推荐最适合的图表类型")
     public ResponseEntity<ApiResponse<Map<String, Object>>> recommendChart(
@@ -668,6 +676,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/chart-templates/for-metric/{metricCode}")
     @Operation(summary = "获取指标适用的图表模板", description = "获取指定指标可用的所有图表模板")
     public ResponseEntity<ApiResponse<List<SmartBiChartTemplate>>> getChartTemplatesForMetric(
@@ -718,6 +727,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/status")
     @Operation(summary = "获取配置状态", description = "获取所有配置的状态摘要（数量、缓存大小、最后更新时间等）")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getConfigStatus() {
@@ -747,6 +757,7 @@ public class SmartBIConfigController {
         return body;
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/data-sources")
     @Operation(summary = "数据源列表", description = "分页 + 过滤 (按 keyword/type/isActive)")
     public ResponseEntity<ApiResponse<Map<String, Object>>> listDataSources(
@@ -765,6 +776,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read"})
     @GetMapping("/data-sources/{id}")
     @Operation(summary = "单个数据源详情")
     public ResponseEntity<ApiResponse<DataSourceDTO>> getDataSource(
