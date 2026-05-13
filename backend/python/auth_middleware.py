@@ -27,6 +27,11 @@ from fastapi import Request
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from smartbi_compat._auth_envelope import (
+    build_unauthorized_body,
+    is_smartbi_java_envelope_path,
+)
+
 logger = logging.getLogger(__name__)
 
 # Paths that do NOT require authentication
@@ -162,11 +167,17 @@ class JWTAuthMiddleware:
         # Extract Bearer token
         auth_header = headers.get("authorization", "")
         if not auth_header.startswith("Bearer "):
-            await self._send_json_response(send, 401, {
-                "success": False,
-                "message": "Missing or invalid Authorization header",
-                "code": "UNAUTHORIZED",
-            })
+            if is_smartbi_java_envelope_path(path):
+                # Issue #530: 3 SmartBI analysis endpoints emit Java-mirrored
+                # 188B envelope so customer frontend axios interceptor sees a
+                # uniform shape across Python and Java upstreams.
+                await self._send_smartbi_unauthorized(send)
+            else:
+                await self._send_json_response(send, 401, {
+                    "success": False,
+                    "message": "Missing or invalid Authorization header",
+                    "code": "UNAUTHORIZED",
+                })
             return
 
         token = auth_header[7:]  # Strip "Bearer "
@@ -174,11 +185,14 @@ class JWTAuthMiddleware:
         # Verify JWT
         claims = self._verify_token(token)
         if claims is None:
-            await self._send_json_response(send, 401, {
-                "success": False,
-                "message": "Invalid or expired token",
-                "code": "TOKEN_INVALID",
-            })
+            if is_smartbi_java_envelope_path(path):
+                await self._send_smartbi_unauthorized(send)
+            else:
+                await self._send_json_response(send, 401, {
+                    "success": False,
+                    "message": "Invalid or expired token",
+                    "code": "TOKEN_INVALID",
+                })
             return
 
         # Inject claims into scope state for downstream access via request.state
@@ -249,6 +263,32 @@ class JWTAuthMiddleware:
             "status": status_code,
             "headers": [
                 [b"content-type", b"application/json"],
+                [b"access-control-allow-origin", b"*"],
+            ],
+        })
+        await send({
+            "type": "http.response.body",
+            "body": body_bytes,
+        })
+
+    @staticmethod
+    async def _send_smartbi_unauthorized(send: Send):
+        """Send the Java-mirrored 188-byte 401 envelope (issue #530).
+
+        Compact separators + ensure_ascii=False so the on-wire bytes match
+        Jackson's default output (no inter-token spaces, raw UTF-8 Chinese).
+        Content-type advertises UTF-8 charset for clients that key off it.
+        """
+        body_bytes = json.dumps(
+            build_unauthorized_body(),
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        await send({
+            "type": "http.response.start",
+            "status": 401,
+            "headers": [
+                [b"content-type", b"application/json; charset=utf-8"],
                 [b"access-control-allow-origin", b"*"],
             ],
         })
