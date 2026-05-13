@@ -19,6 +19,7 @@ const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
@@ -265,8 +266,8 @@ async function confirmReceive(receiveId: string) {
           <el-descriptions-item label="采购类型">{{ order.purchaseType === 'DIRECT' ? '直接采购' : order.purchaseType === 'URGENT' ? '紧急采购' : '总部统采' }}</el-descriptions-item>
           <el-descriptions-item label="下单日期">{{ order.orderDate }}</el-descriptions-item>
           <el-descriptions-item label="期望交货">{{ order.expectedDeliveryDate || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="总金额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
-          <el-descriptions-item label="税额">{{ formatAmount(order.taxAmount) }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="总金额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="税额">{{ formatAmount(order.taxAmount) }}</el-descriptions-item>
           <el-descriptions-item label="审批人">{{ order.approvedBy || '-' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="3">{{ order.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
@@ -282,18 +283,18 @@ async function confirmReceive(receiveId: string) {
             <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
           </el-table-column>
           <el-table-column prop="unit" label="单位" width="80" align="center" />
-          <el-table-column prop="unitPrice" label="单价" width="120" align="right">
+          <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="120" align="right">
             <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
           </el-table-column>
           <el-table-column label="已收货" width="120" align="right">
             <template #default="{ row }">{{ row.receivedQuantity || 0 }}</template>
           </el-table-column>
-          <el-table-column label="小计" width="130" align="right">
+          <el-table-column v-if="canViewPrice" label="小计" width="130" align="right">
             <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
           </el-table-column>
         </el-table>
 
-        <el-collapse style="margin: 20px 0 12px" @change="(val: string[]) => { if (val.includes('price')) loadPriceComparison(); }">
+        <el-collapse v-if="canViewPrice" style="margin: 20px 0 12px" @change="(val: string[]) => { if (val.includes('price')) loadPriceComparison(); }">
           <el-collapse-item title="三价对比分析" name="price">
             <div v-loading="priceLoading">
               <el-alert v-if="priceComparisons.some(p => p.priceAlert)" type="warning" :closable="false" show-icon style="margin-bottom: 12px">
@@ -344,7 +345,7 @@ async function confirmReceive(receiveId: string) {
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="totalAmount" label="金额" width="130" align="right">
+          <el-table-column v-if="canViewPrice" prop="totalAmount" label="金额" width="130" align="right">
             <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="120" align="center">
@@ -365,7 +366,7 @@ async function confirmReceive(receiveId: string) {
           </template>
         </el-table-column>
         <el-table-column prop="unit" label="单位" width="80" align="center" />
-        <el-table-column prop="unitPrice" label="单价" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="120" align="right">
           <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
         </el-table-column>
       </el-table>
