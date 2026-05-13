@@ -341,6 +341,29 @@ public class BomServiceImpl implements BomService {
 
     @Override
     @Transactional
+    public OverheadCostConfig updateOverheadCost(String factoryId, Long id, OverheadCostConfig body) {
+        log.info("更新均摊费用配置: factoryId={}, id={}", factoryId, id);
+        OverheadCostConfig existing = overheadCostConfigRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("OverheadCostConfig", id.toString()));
+        if (!factoryId.equals(existing.getFactoryId())) {
+            throw new com.cretas.aims.exception.BusinessException(403, "无权操作该均摊费用配置")
+                    .withHint("请确认费用配置归属或切换工厂账号");
+        }
+        // T-R5-3: select-then-merge — non-null body fields override; null fields preserve existing.
+        if (body.getName() != null) existing.setName(body.getName());
+        if (body.getCategory() != null) existing.setCategory(body.getCategory());
+        if (body.getUnitPrice() != null) existing.setUnitPrice(body.getUnitPrice());
+        if (body.getPriceUnit() != null) existing.setPriceUnit(body.getPriceUnit());
+        if (body.getAllocationMethod() != null) existing.setAllocationMethod(body.getAllocationMethod());
+        if (body.getAllocationRate() != null) existing.setAllocationRate(body.getAllocationRate());
+        if (body.getIsActive() != null) existing.setIsActive(body.getIsActive());
+        if (body.getSortOrder() != null) existing.setSortOrder(body.getSortOrder());
+        if (body.getRemark() != null) existing.setRemark(body.getRemark());
+        return overheadCostConfigRepository.save(existing);
+    }
+
+    @Override
+    @Transactional
     public void deleteOverheadCost(Long id) {
         log.info("删除均摊费用配置: id={}", id);
         OverheadCostConfig config = overheadCostConfigRepository.findById(id)

@@ -210,9 +210,11 @@ public class BomController {
             @PathVariable @Parameter(description = "均摊费用ID") Long id,
             @RequestBody OverheadCostConfig config) {
         log.info("Updating overhead cost: factoryId={}, id={}", factoryId, id);
-        config.setId(id);
-        config.setFactoryId(factoryId);
-        return ApiResponse.success(bomService.saveOverheadCost(config));
+        // T-R5-3 (R5 audit §3 BUG#1, 2026-05-12): was a blind save(body) that
+        // dropped DB-only audit columns (createdAt/version) to NULL on partial
+        // payloads. Service now select-then-merge — only client-supplied fields
+        // are overwritten; everything else stays.
+        return ApiResponse.success(bomService.updateOverheadCost(factoryId, id, config));
     }
 
     @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
