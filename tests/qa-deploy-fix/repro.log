@@ -1,0 +1,110 @@
+================================================================================
+REPRO INVESTIGATION — deploy-web-admin.sh scp/atomic-swap race
+Date: 2026-05-13
+Branch: fix/deploy-web-admin-atomic-swap-race
+Investigator: chat2 dispatched per MO
+================================================================================
+
+ORIGINAL FAILURE MODE (per MO context, observed 3x in one evening)
+------------------------------------------------------------------
+- "[3/4] 上传到 139" prints "✓ 上传完成"
+- Immediately after, "[4/4] atomic swap" heredoc fails with:
+    tar: /tmp/web-admin-dist.tar.gz: Cannot open: No such file or directory
+- Manual scp + atomic-swap chain works 100% (serial, single-threaded)
+- Recovery: cleanup + retry. scp ~100s for 3MB.
+
+
+HYPOTHESIS RANKING & ELIMINATION
+--------------------------------
+H1: scp -q silent failure with set -e not catching
+    REJECTED — script line 31 has `set -e`. If scp returned non-zero, bash
+    would exit IMMEDIATELY after scp (line 197), NEVER printing "✓ 上传完成"
+    on line 198. Yet the "✓" message is observed. So scp returned exit 0.
+
+H2: /tmp on 139 has parallel cleaner deleting tarball mid-flight
+    REJECTED — server forensics:
+      - systemd-tmpfiles-clean.timer is DAILY (next: 17h from check time)
+      - No cron.d/* or cron.daily/* references to tmp cleanup
+      - /tmp on /dev/vda3 ext4 (regular FS, not tmpfs) — durable file
+      - 15G free on / partition — no disk pressure
+      A daily cleanup cannot kill a 3MB file 1-3s after it lands.
+
+H3: ssh ControlMaster session mux issue
+    REJECTED — no ~/.ssh/config exists on operator machine. ControlMaster
+    is OFF. Each ssh/scp opens a fresh connection.
+
+H4: File buffering (sync barrier missing post-scp)
+    REJECTED — /tmp is ext4 on a regular block device. scp closes its
+    SSH channel after completion; sshd flushes the file. The next ssh
+    connection opens a fresh file handle and would see the file. No
+    NFS, no weird caching layer.
+
+H5 (NEW, identified during analysis): Concurrent-deploy collision on shared
+    remote path /tmp/web-admin-dist.tar.gz
+    ACCEPTED — the script uses a HARDCODED, NON-UNIQUE remote path.
+    All 5 hardcoded references in the original script:
+        L197: scp -q "$TMP_TAR" "$GATEWAY:/tmp/web-admin-dist.tar.gz"
+        L214: tar xzf /tmp/web-admin-dist.tar.gz   (test heredoc)
+        L238: rm -f /tmp/web-admin-dist.tar.gz     (test cleanup)
+        L277: scp -q ... :/tmp/web-admin-dist.tar.gz   (prod)
+        L292: tar xzf /tmp/web-admin-dist.tar.gz   (prod heredoc)
+        L312: rm -f /tmp/web-admin-dist.tar.gz     (prod cleanup)
+
+    Race timeline that produces the observed symptom:
+        T+0.0s  Deploy A: scp succeeds, file at /tmp/web-admin-dist.tar.gz
+        T+0.5s  Deploy A: prints "✓ 上传完成"
+        T+1.0s  Deploy B: scp succeeds (overwrites same file)
+        T+1.2s  Deploy B: heredoc tar+swap completes
+        T+1.5s  Deploy B: heredoc rm -f /tmp/web-admin-dist.tar.gz
+        T+1.8s  Deploy A: heredoc tar xzf /tmp/web-admin-dist.tar.gz
+                          → "Cannot open: No such file or directory"
+
+    Matches symptom EXACTLY:
+      - "✓ 上传完成" prints (scp DID succeed at A's T+0.5s)
+      - tar fails (B's rm beat A's tar in the ~1-3s gap)
+      - Manual single-threaded works (no concurrent deploy)
+      - 30-50% failure rate matches typical interleaving probability when
+        2-3 deploys fire in close succession during a busy day
+
+
+SERIAL REPRO: NOT POSSIBLE
+--------------------------
+The race requires 2+ concurrent deploys. A single sequential invocation
+CANNOT trigger it because there's no second process to rm the file.
+This is consistent with operator's observation: "Manual scp + atomic
+swap 100% works."
+
+WHY THE BUG SURFACED MAY 13 SPECIFICALLY
+----------------------------------------
+Per MEMORY.md (May 13 organizer session):
+- "~45 PRs" merged in one day
+- "6+ prod deploys"
+- "0 concurrent-edit incidents post-round 3" (concurrency was top-of-mind)
+- "Disk-full incident (~160GB freed by removing 199 stale worktrees)"
+
+A busy organizer day with rapid back-to-back deploys + multiple worktrees
+made the previously-latent race finally visible. Until May 13, deploys
+were serial enough that two deploys' [scp...tar...rm] windows didn't
+overlap.
+
+
+FIX DESIGN
+----------
+1. Per-PID remote path: REMOTE_TAR="/tmp/web-admin-dist.$$.tar.gz"
+   - $$ = bash PID of the deploy script
+   - Each deploy gets its own unique remote tarball
+   - Concurrent deploys can no longer rm each other's files
+   - Eliminates the root cause completely
+
+2. Post-scp verify (defense-in-depth):
+   - LOCAL_SIZE  = stat -c %s "$TMP_TAR"
+   - REMOTE_SIZE = ssh ... stat -c %s "$REMOTE_TAR"  (or "MISSING")
+   - If mismatch → abort BEFORE atomic-swap heredoc with clear error
+   - Catches future failure modes (partial transfer, /tmp full,
+     misconfiguration) with a precise error instead of opaque
+     "Cannot open" downstream
+
+Fix scope: 6 hardcoded path references replaced with $REMOTE_TAR;
+2 verify blocks added (one for test path, one for --env all prod path).
+No retry loop (intentional — eliminating the root cause makes retry
+unnecessary; can add later if a different transient mode appears).

@@ -1,0 +1,5 @@
+[NEG-TEST] Created local file: /tmp/verify-test.23675.tar.gz (63 bytes)
+[NEG-TEST] scp completed
+[NEG-TEST] simulated race: remote file deleted
+[NEG-TEST] verify check: local=63 remote=MISSING
+[NEG-TEST] ✓ POST-SCP VERIFY CORRECTLY DETECTED THE RACE (would abort deploy)

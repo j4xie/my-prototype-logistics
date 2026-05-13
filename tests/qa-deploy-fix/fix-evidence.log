@@ -1,0 +1,76 @@
+================================================================================
+FIX EVIDENCE — 3 sequential happy-path deploys + 1 negative race-simulation test
+Date: 2026-05-13
+Branch: fix/deploy-web-admin-atomic-swap-race
+Target: --env test (139.196.165.140:/www/wwwroot/web-admin-test/)
+================================================================================
+
+HAPPY PATH — 3 SEQUENTIAL DEPLOYS (full logs in run1.log, run2.log, run3.log)
+----------------------------------------------------------------------------
+
+RUN 1 — PID 17389
+  [16:24:18] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.17389.tar.gz)...
+  [16:24:28]    ✓ 上传完成 (verified 2951924B match)
+  [16:24:28] 🚀 [4/4] 原子交换 + 清理旧 backups...
+     旧 assets: 364 → 新 assets: 364
+     ✓ 原子交换完成 (backup: web-admin.bak.20260514_042431)
+  [16:24:32]    HTTP 200 (http://139.196.165.140:8086/)
+  [16:24:32] ✅ 部署完成
+  Total: 56s
+
+RUN 2 — PID 18698 (different from run 1)
+  [16:25:38] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.18698.tar.gz)...
+  [16:25:47]    ✓ 上传完成 (verified 2951396B match)
+  [16:25:47] 🚀 [4/4] 原子交换 + 清理旧 backups...
+     旧 assets: 364 → 新 assets: 364
+     ✓ 原子交换完成 (backup: web-admin.bak.20260514_042550)
+  [16:25:51]    HTTP 200 (http://139.196.165.140:8086/)
+  [16:25:51] ✅ 部署完成
+  Total: 55s
+
+RUN 3 — PID 21556 (different from runs 1 & 2)
+  [16:27:09] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.21556.tar.gz)...
+  [16:27:18]    ✓ 上传完成 (verified 2951957B match)
+  [16:27:18] 🚀 [4/4] 原子交换 + 清理旧 backups...
+     旧 assets: 364 → 新 assets: 364
+     ✓ 原子交换完成 (backup: web-admin.bak.20260514_042722)
+  [16:27:22]    HTTP 200 (http://139.196.165.140:8086/)
+  [16:27:22] ✅ 部署完成
+  Total: 66s
+
+HAPPY-PATH SUMMARY
+  3/3 PASS
+  Distinct PIDs (17389 / 18698 / 21556) → distinct remote tarball paths
+    /tmp/web-admin-dist.17389.tar.gz
+    /tmp/web-admin-dist.18698.tar.gz
+    /tmp/web-admin-dist.21556.tar.gz
+  Even if these had run concurrently, no collision possible.
+
+
+NEGATIVE TEST — RACE SIMULATION (full log in negative-test.log)
+---------------------------------------------------------------
+Simulated the original race by:
+  1. scp a dummy file to a unique remote path
+  2. immediately ssh + rm the remote file (simulates a concurrent
+     deploy's heredoc cleanup at line 238)
+  3. run the EXACT verify logic from the fixed deploy script
+
+  [NEG-TEST] Created local file: /tmp/verify-test.23675.tar.gz (63 bytes)
+  [NEG-TEST] scp completed
+  [NEG-TEST] simulated race: remote file deleted
+  [NEG-TEST] verify check: local=63 remote=MISSING
+  [NEG-TEST] ✓ POST-SCP VERIFY CORRECTLY DETECTED THE RACE (would abort deploy)
+
+NEGATIVE-TEST OUTCOME
+  ✓ Verify logic correctly reports `remote=MISSING` when remote file vanishes
+  ✓ Would abort deploy with clear error before opaque "tar: Cannot open"
+  ✓ Defense-in-depth confirmed working
+
+
+CONCLUSION
+----------
+- Happy path: 3/3 PASS, per-PID isolation working
+- Race detection: 1/1 PASS, post-scp verify catches the original failure
+- Both layers of the fix demonstrably function
+
+Fix verified. Ready for PR.

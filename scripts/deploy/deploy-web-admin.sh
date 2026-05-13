@@ -193,9 +193,28 @@ if [ "$DRY_RUN" = "1" ]; then
 fi
 
 # ==================== 3. 上传 ====================
-log "📤 [3/4] 上传到 $GATEWAY..."
-scp -q "$TMP_TAR" "$GATEWAY:/tmp/web-admin-dist.tar.gz"
-log "   ✓ 上传完成"
+# May 13 2026 race fix: per-PID remote tarball path eliminates concurrent-deploy
+# collision on shared /tmp/web-admin-dist.tar.gz. Symptom hit 3x in one evening:
+# scp printed "✓ 上传完成", then atomic-swap heredoc tar xzf failed with
+# "Cannot open /tmp/web-admin-dist.tar.gz" — because a parallel deploy's heredoc
+# rm -f (line ~238) deleted the shared file in the ~1-3s gap between scp and
+# this script's own heredoc. Per-PID path means each deploy owns its own tarball.
+REMOTE_TAR="/tmp/web-admin-dist.$$.tar.gz"
+log "📤 [3/4] 上传到 $GATEWAY (remote: $REMOTE_TAR)..."
+scp -q "$TMP_TAR" "$GATEWAY:$REMOTE_TAR"
+
+# Post-scp verify: defense in depth. If scp ever silently mis-writes (partial
+# transfer, wrong dest, /tmp full), tar xzf fails downstream with confusing
+# "Cannot open" — opaque to operator. Catch here with explicit size match.
+LOCAL_SIZE=$(stat -c %s "$TMP_TAR" 2>/dev/null || stat -f %z "$TMP_TAR" 2>/dev/null || echo "0")
+REMOTE_SIZE=$(ssh "$GATEWAY" "stat -c %s '$REMOTE_TAR' 2>/dev/null || echo MISSING" | tr -d '\r\n')
+if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+    log "❌ post-scp verify FAILED: local=${LOCAL_SIZE}B remote=${REMOTE_SIZE}"
+    log "   Remote file missing/partial/wrong-size. Aborting before atomic-swap."
+    ssh "$GATEWAY" "rm -f '$REMOTE_TAR'" 2>/dev/null || true
+    exit 1
+fi
+log "   ✓ 上传完成 (verified ${LOCAL_SIZE}B match)"
 
 # ==================== 4. 原子部署 + 旧版本清理 ====================
 log "🚀 [4/4] 原子交换 + 清理旧 backups..."
@@ -211,7 +230,7 @@ mkdir -p "\$BACKUP_DIR"
 # 解压到 staging
 rm -rf "\$STAGING"
 mkdir -p "\$STAGING"
-tar xzf /tmp/web-admin-dist.tar.gz -C "\$STAGING"
+tar xzf "$REMOTE_TAR" -C "\$STAGING"
 
 # 记录旧 assets 数量 (用于对比)
 OLD_ASSET_COUNT=0
@@ -235,7 +254,7 @@ ls -1dt "\$BACKUP_DIR"/web-admin.bak.* 2>/dev/null | tail -n +$(($BACKUP_KEEP + 
 done
 
 # 清理 tmp
-rm -f /tmp/web-admin-dist.tar.gz
+rm -f "$REMOTE_TAR"
 
 echo "   ✓ index.html mtime: \$(stat -c '%y' "\$CURRENT/index.html" 2>/dev/null | cut -d. -f1)"
 REMOTE_DEPLOY
@@ -266,16 +285,25 @@ if [ "$ENV" = "all" ]; then
         exit 0
     fi
 
-    # 重新打包 + 上传 (test 那次已 rm'd /tmp/web-admin-dist.tar.gz)
+    # 重新打包 + 上传 (test 那次已 rm'd $REMOTE_TAR via heredoc cleanup)
     log "📦 [prod 1/3] 重新打包..."
     cd "$PROJECT_ROOT/web-admin/dist"
     tar czf "$TMP_TAR" .
     cd "$PROJECT_ROOT"
     log "   ✓ Tarball: $(du -h "$TMP_TAR" | awk '{print $1}')"
 
-    log "📤 [prod 2/3] 上传 prod..."
-    scp -q "$TMP_TAR" "$GATEWAY:/tmp/web-admin-dist.tar.gz"
-    log "   ✓ 上传完成"
+    log "📤 [prod 2/3] 上传 prod (remote: $REMOTE_TAR)..."
+    scp -q "$TMP_TAR" "$GATEWAY:$REMOTE_TAR"
+
+    # Post-scp verify (mirror of test path — same race-fix rationale)
+    LOCAL_SIZE=$(stat -c %s "$TMP_TAR" 2>/dev/null || stat -f %z "$TMP_TAR" 2>/dev/null || echo "0")
+    REMOTE_SIZE=$(ssh "$GATEWAY" "stat -c %s '$REMOTE_TAR' 2>/dev/null || echo MISSING" | tr -d '\r\n')
+    if [ "$REMOTE_SIZE" != "$LOCAL_SIZE" ]; then
+        log "❌ prod post-scp verify FAILED: local=${LOCAL_SIZE}B remote=${REMOTE_SIZE}"
+        ssh "$GATEWAY" "rm -f '$REMOTE_TAR'" 2>/dev/null || true
+        exit 1
+    fi
+    log "   ✓ 上传完成 (verified ${LOCAL_SIZE}B match)"
 
     log "🚀 [prod 3/3] 原子交换 prod..."
     REMOTE_PATH="/www/wwwroot/web-admin"  # prod target
@@ -289,7 +317,7 @@ BACKUP_DIR="$REMOTE_BACKUP_DIR"
 mkdir -p "\$BACKUP_DIR"
 rm -rf "\$STAGING"
 mkdir -p "\$STAGING"
-tar xzf /tmp/web-admin-dist.tar.gz -C "\$STAGING"
+tar xzf "$REMOTE_TAR" -C "\$STAGING"
 
 OLD_ASSET_COUNT=0
 if [ -d "\$CURRENT/assets" ]; then
@@ -309,7 +337,7 @@ ls -1dt "\$BACKUP_DIR"/web-admin.bak.* 2>/dev/null | tail -n +$(($BACKUP_KEEP + 
     echo "   - removed: \$(basename \$old)"
 done
 
-rm -f /tmp/web-admin-dist.tar.gz
+rm -f "$REMOTE_TAR"
 echo "   ✓ Prod index.html mtime: \$(stat -c '%y' "\$CURRENT/index.html" 2>/dev/null | cut -d. -f1)"
 REMOTE_DEPLOY_PROD
     rm -f "$TMP_TAR"

@@ -1,0 +1,23 @@
+[16:26:16] [0/4] Git sync pre-check...
+[16:26:17] [WARN] Current branch is 'fix/deploy-web-admin-atomic-swap-race' (not main). Verify intended deploy source.
+[16:26:17] [WARN] Working tree has uncommitted changes — deploy will use local working tree state
+🧪 TEST 部署 (默认): /www/wwwroot/web-admin-test (139:8097)
+[16:26:17] 📦 [1/4] 本地构建 web-admin...
+(!) Some chunks are larger than 800 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 47.83s[39m
+[16:27:08]    ✓ 构建完成: 364 个 assets, 9.4M
+[16:27:08] 📦 [2/4] 打包 tarball...
+[16:27:09]    ✓ Tarball: 2.9M
+[16:27:09] 📤 [3/4] 上传到 root@139.196.165.140 (remote: /tmp/web-admin-dist.21556.tar.gz)...
+[16:27:18]    ✓ 上传完成 (verified 2951957B match)
+[16:27:18] 🚀 [4/4] 原子交换 + 清理旧 backups...
+   旧 assets: 364 → 新 assets: 364
+   ✓ 原子交换完成 (backup: web-admin.bak.20260514_042722)
+   - removed: web-admin.bak.20260514_042640
+   ✓ index.html mtime: 2026-05-14 04:27:06
+[16:27:22] 🔍 验证...
+[16:27:22]    HTTP 200 (http://139.196.165.140:8086/)
+[16:27:22] ✅ 部署完成
