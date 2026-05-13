@@ -61,10 +61,23 @@ export interface GenerateSummary {
   is_stale: boolean;
 }
 
+export interface PreviewData {
+  block1_yoy: Array<Record<string, unknown>>;     // 可比同比 first N rows
+  block2_mom: Array<Record<string, unknown>>;     // 环比 first N rows
+  block3_meal_split: Array<Record<string, unknown>>;  // 堂食外卖占比 first N rows
+  meta: {
+    date_from?: string;
+    date_to?: string;
+    yoy_available?: boolean;
+    yoy_note?: string | null;
+  };
+}
+
 export interface PrepareResponse {
   cache_key: string;
   download_url: string;
   summary: GenerateSummary;
+  preview?: PreviewData;
 }
 
 export interface StoreEntry {

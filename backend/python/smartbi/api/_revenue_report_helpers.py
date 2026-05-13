@@ -96,10 +96,29 @@ async def _query_gold_freshness(pool, factory_id: str, params: RevenueReportPara
     return gold_max.isoformat() if gold_max else "no-data"
 
 
+def _build_preview_data(template_data: dict, limit: int = 10) -> dict:
+    """Trim block data to top N rows per table for inline preview.
+
+    /prepare returns this so the Vue page can render <el-table> previews
+    without round-tripping the full xlsx. Limit=10 keeps payload <50KB
+    even for 50-store factories.
+    """
+    return {
+        "block1_yoy": (template_data.get("block1_yoy") or [])[:limit],
+        "block2_mom": (template_data.get("block2_mom") or [])[:limit],
+        "block3_meal_split": (template_data.get("block3_meal_split") or [])[:limit],
+        "meta": template_data.get("meta", {}),
+    }
+
+
 async def _generate_with_cache(
     pool, params: RevenueReportParams, user_id: str,
-) -> tuple[str, dict, BytesIO]:
-    """Returns (cache_key, summary_dict, BytesIO of xlsx).
+) -> tuple[str, dict, BytesIO, dict]:
+    """Returns (cache_key, summary_dict, BytesIO of xlsx, preview_data dict).
+
+    preview_data has block1/2/3 trimmed to first 10 rows + meta — used by
+    /prepare to render inline tables in the Vue page (so the user sees the
+    converted 3-table layout BEFORE downloading the full xlsx).
 
     Spec §11.3 metric semantics:
       cache hit  → cache_hit_counter.inc only
@@ -110,8 +129,11 @@ async def _generate_with_cache(
     gold_ts = await _query_gold_freshness(pool, params.factory_id, params)
     cache_key = compute_cache_key(params, gold_ts)
 
-    cached_bytes = REVENUE_REPORT_CACHE.get(cache_key)
-    if cached_bytes is not None:
+    cached = REVENUE_REPORT_CACHE.get(cache_key)
+    # Cache value shape: (file_bytes, preview_data) tuple. Legacy entries
+    # may still be raw bytes — treat them as "preview missing" and recompute.
+    if isinstance(cached, tuple) and len(cached) == 2:
+        cached_bytes, cached_preview = cached
         REPORT_CACHE_HIT.labels(report_type="qhj_revenue_v1").inc()
         summary = {
             "store_count": len(params.store_ids),
@@ -126,7 +148,7 @@ async def _generate_with_cache(
             duration_ms=int((time.time() - t0) * 1000),
             status="ok",
         )
-        return cache_key, summary, BytesIO(cached_bytes)
+        return cache_key, summary, BytesIO(cached_bytes), cached_preview
 
     REPORT_CACHE_MISS.labels(report_type="qhj_revenue_v1").inc()
 
@@ -135,6 +157,7 @@ async def _generate_with_cache(
         template_result = await compute_qhj_revenue_report(pool, params)
         renderer = RENDERERS["qhj_revenue_v1"]
         buf = renderer(template_result.data, labels=LABELS["zh-CN"])
+        preview_data = _build_preview_data(template_result.data)
     except Exception as e:
         REPORT_GEN_ERRORS.labels(type=type(e).__name__).inc()
         await _log_audit(
@@ -150,7 +173,7 @@ async def _generate_with_cache(
         time.time() - t0
     )
 
-    REVENUE_REPORT_CACHE[cache_key] = file_bytes
+    REVENUE_REPORT_CACHE[cache_key] = (file_bytes, preview_data)
 
     summary = {
         "store_count": len(params.store_ids),
@@ -165,7 +188,7 @@ async def _generate_with_cache(
         duration_ms=int((time.time() - t0) * 1000),
         status="ok",
     )
-    return cache_key, summary, BytesIO(file_bytes)
+    return cache_key, summary, BytesIO(file_bytes), preview_data
 
 
 # ─── audit log ──────────────────────────────────────────────────────────

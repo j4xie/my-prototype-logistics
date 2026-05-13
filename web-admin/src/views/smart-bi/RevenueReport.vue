@@ -73,6 +73,28 @@ const previewSummary = ref<{
   is_stale: boolean;
 } | null>(null);
 
+interface PreviewBlockRow { [key: string]: unknown }
+const previewBlocks = ref<{
+  block1_yoy: PreviewBlockRow[];
+  block2_mom: PreviewBlockRow[];
+  block3_meal_split: PreviewBlockRow[];
+  meta?: { yoy_available?: boolean; yoy_note?: string | null };
+} | null>(null);
+
+// Format helpers for preview cells.
+function fmtAmount(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtRatio(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return (n * 100).toFixed(2) + '%';
+}
+
 // ─── Audit log tab ────────────────────────────────────────────────────
 const auditRows = ref<AuditLogEntry[]>([]);
 const auditLoading = ref(false);
@@ -242,6 +264,14 @@ async function handlePreview() {
   try {
     const res = await prepare(params);
     previewSummary.value = res.summary;
+    previewBlocks.value = res.preview
+      ? {
+          block1_yoy: res.preview.block1_yoy as PreviewBlockRow[],
+          block2_mom: res.preview.block2_mom as PreviewBlockRow[],
+          block3_meal_split: res.preview.block3_meal_split as PreviewBlockRow[],
+          meta: res.preview.meta,
+        }
+      : null;
     ElMessage.success(
       `数据已生成${res.summary.cache_hit ? '（缓存命中）' : ''}，` +
         `点 "下载 Excel" 获取文件`,
@@ -275,7 +305,12 @@ async function handleDownload() {
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    // Chrome requires the anchor to be IN THE DOM before .click() for
+    // the `download` attribute to be respected. Without appendChild,
+    // Chrome falls back to the Blob URL's UUID as the filename.
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 
     lastDownloadInfo.value = {
@@ -506,6 +541,98 @@ function fmtDuration(ms: number | null | undefined) {
             <div class="summary-row">
               <span class="summary-label">缓存命中：</span>
               <strong>{{ previewSummary.cache_hit ? '是' : '否' }}</strong>
+            </div>
+          </div>
+
+          <!-- ─── 3 preview tables (first 10 rows per block) ─── -->
+          <div v-if="previewBlocks" class="preview-blocks" style="margin-top:24px">
+            <!-- 表 1: 可比同比 -->
+            <div class="preview-block">
+              <h4 class="preview-title">表 1: 可比同比 (前 10 行)</h4>
+              <div v-if="previewBlocks.meta?.yoy_note" class="preview-note">
+                ℹ️ {{ previewBlocks.meta.yoy_note }}
+              </div>
+              <el-table :data="previewBlocks.block1_yoy" stripe size="small" border max-height="350">
+                <el-table-column prop="store_name" label="门店名称" min-width="180" />
+                <el-table-column label="汇总实际收入" align="center">
+                  <el-table-column prop="total" label="本期" align="right" min-width="100">
+                    <template #default="{ row }">{{ fmtAmount(row.total) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="prev_total" label="去年同期" align="right" min-width="100">
+                    <template #default="{ row }">{{ fmtAmount(row.prev_total) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="total_ratio" label="同比率" align="right" min-width="90">
+                    <template #default="{ row }">{{ fmtRatio(row.total_ratio) }}</template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column label="堂食" align="center">
+                  <el-table-column prop="dine_in" label="本期" align="right" min-width="100">
+                    <template #default="{ row }">{{ fmtAmount(row.dine_in) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="dine_in_ratio" label="同比率" align="right" min-width="90">
+                    <template #default="{ row }">{{ fmtRatio(row.dine_in_ratio) }}</template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column label="外卖" align="center">
+                  <el-table-column prop="takeout" label="本期" align="right" min-width="100">
+                    <template #default="{ row }">{{ fmtAmount(row.takeout) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="takeout_ratio" label="同比率" align="right" min-width="90">
+                    <template #default="{ row }">{{ fmtRatio(row.takeout_ratio) }}</template>
+                  </el-table-column>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <!-- 表 2: 环比 -->
+            <div class="preview-block" style="margin-top:20px">
+              <h4 class="preview-title">表 2: 环比 (前 10 行)</h4>
+              <el-table :data="previewBlocks.block2_mom" stripe size="small" border max-height="350">
+                <el-table-column prop="store_name" label="门店名称" min-width="180" />
+                <el-table-column label="汇总实际收入" align="center">
+                  <el-table-column prop="total" label="本期" align="right" min-width="100">
+                    <template #default="{ row }">{{ fmtAmount(row.total) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="prev_total" label="环比" align="right" min-width="100">
+                    <template #default="{ row }">{{ fmtAmount(row.prev_total) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="total_ratio" label="环比率" align="right" min-width="90">
+                    <template #default="{ row }">{{ fmtRatio(row.total_ratio) }}</template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column prop="dine_in_ratio" label="堂食环比率" align="right" min-width="100">
+                  <template #default="{ row }">{{ fmtRatio(row.dine_in_ratio) }}</template>
+                </el-table-column>
+                <el-table-column prop="takeout_ratio" label="外卖环比率" align="right" min-width="100">
+                  <template #default="{ row }">{{ fmtRatio(row.takeout_ratio) }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <!-- 表 3: 堂食外卖占比 -->
+            <div class="preview-block" style="margin-top:20px">
+              <h4 class="preview-title">表 3: 堂食外卖占比 (前 10 行)</h4>
+              <el-table :data="previewBlocks.block3_meal_split" stripe size="small" border max-height="350">
+                <el-table-column prop="store_name" label="门店名称" min-width="180" />
+                <el-table-column prop="dine_in_revenue" label="实际收入堂食" align="right" min-width="120">
+                  <template #default="{ row }">{{ fmtAmount(row.dine_in_revenue) }}</template>
+                </el-table-column>
+                <el-table-column prop="takeout_revenue" label="实际收入外卖" align="right" min-width="120">
+                  <template #default="{ row }">{{ fmtAmount(row.takeout_revenue) }}</template>
+                </el-table-column>
+                <el-table-column prop="revenue_ratio" label="收入比例" align="right" min-width="100">
+                  <template #default="{ row }">{{ fmtRatio(row.revenue_ratio) }}</template>
+                </el-table-column>
+                <el-table-column prop="dine_in_bills" label="客单量堂食" align="right" min-width="100" />
+                <el-table-column prop="takeout_bills" label="客单量外卖" align="right" min-width="100" />
+                <el-table-column prop="bill_ratio" label="客单比例" align="right" min-width="100">
+                  <template #default="{ row }">{{ fmtRatio(row.bill_ratio) }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <div style="margin-top:12px;color:#86909c;font-size:13px">
+              💡 仅显示前 10 行；点 "下载 Excel" 获取完整报表 (含 客单人数分析 4 表全部数据)
             </div>
           </div>
         </section>
