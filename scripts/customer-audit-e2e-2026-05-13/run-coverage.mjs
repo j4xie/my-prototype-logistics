@@ -2,11 +2,11 @@
 /**
  * 六扇门 (F006) 51-ask coverage push - autonomous F006 agent session 2026-05-13
  *
- * Covers 32 unverified asks from audit doc §2:
- *   - Group A: 23 ◯ LIVE-only (skip T1-4 + T4-B6 — RN scope)
+ * Covers 35 unverified asks from audit doc §2:
+ *   - Group A: 24 ◯ LIVE-only (skip T1-4 — RN scope only; T4-B6 is 🔴 not ◯)
  *   - Group B: 4 🟡 weak-evidence re-tests
  *   - Group D: 4 ⛔ audit-missed
- *   - Group E quick wins: T4-D1 deeper / T4-D4 manual nav / T-INV scope clarify
+ *   - Group E quick wins (3): T4-D1 deeper / T4-D4 manual nav / T-INV scope clarify
  *
  * 跑法:
  *   node run-coverage.mjs --all                        # 全部 32 scenarios
@@ -180,10 +180,11 @@ const SCENARIOS = [
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
       const rowCount = await page.$$eval('tbody tr', (els) => els.length).catch(() => 0);
       const is404 = /\/404/.test(page.url());
+      // C3 fix: PASS requires actual data rendered (rowCount > 0), not just non-404
       return {
         url: page.url(),
         rowCount,
-        verdict: is404 ? 'FAIL — 404' : (rowCount >= 0 ? 'PASS' : 'INFO'),
+        verdict: is404 ? 'FAIL — 404' : (rowCount > 0 ? 'PASS' : 'INFO — page renders but no data rows'),
       };
     },
   },
@@ -192,16 +193,23 @@ const SCENARIOS = [
     group: 'A',
     priority: 'P2',
     account: 'f006_admin',
-    description: 'T1-2 AI 对话引导创建生产计划: 入口按钮存在',
+    description: 'T1-2 AI 对话引导创建生产计划: 入口按钮存在 (页面内, 非全局浮窗)',
     run: async (page) => {
       await page.goto(`${TARGET}/production/plans`);
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-      const bodyText = await page.textContent('body');
-      const hasAiBtn = /AI.*?(创建|生成|对话|引导)|对话.*?创建|智能.*?创建/.test(bodyText || '');
+      // C3 fix: regex was too loose — body text alone matches global AI floating button.
+      // Require a button-like element inside the page-content area, not just body text.
+      const aiCreateBtn = await page.$('.app-main button:has-text("AI"), .content button:has-text("AI"), .el-main button:has-text("智能创建"), .el-main button:has-text("AI 创建")').catch(() => null);
+      const aiCreateText = await page.$('.el-main, .app-main').then(async (el) => {
+        if (!el) return '';
+        return (await el.textContent()) || '';
+      }).catch(() => '');
+      const hasContextualAi = /AI.*?(创建|生成|对话)|对话.*?创建/.test(aiCreateText);
       return {
         url: page.url(),
-        hasAiBtn,
-        verdict: hasAiBtn ? 'PASS' : 'INFO — AI 入口可能在其他页面或 AI Agent 全局触发',
+        hasAiCreateBtn: !!aiCreateBtn,
+        hasContextualAi,
+        verdict: (aiCreateBtn || hasContextualAi) ? 'PASS' : 'INFO — AI 入口可能仅在 AI Agent 全局触发, 页面内未提供专门按钮',
       };
     },
   },
@@ -343,23 +351,23 @@ const SCENARIOS = [
     group: 'A',
     priority: 'P2',
     account: 'f006_admin',
-    description: 'T2-6 大模型理解: AI 对话浮窗/入口/输入框存在',
+    description: 'T2-6 大模型理解: AI 对话浮窗/入口/输入框存在 (require interactive element, not just text)',
     run: async (page) => {
       await page.goto(`${TARGET}/`);
       await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
-      // Try multiple AI-related elements (floating chat, header AI button, page-level chat panel)
+      // C3 fix: require an actual interactive element (input/button), not just body text mention
       const inputs = await page.$$('input[placeholder*="问"], input[placeholder*="对话"], textarea[placeholder*="提"], textarea[placeholder*="问"]').catch(() => []);
       const aiFloat = await page.$('.ai-agent-floating, .ai-chat-trigger, .floating-ai-btn, [class*="ai-agent"], [class*="ai-float"]').catch(() => null);
-      const bodyText = await page.textContent('body');
-      const hasAiChat = /AI Agent|AI 对话|智能对话|问问 AI|AI 助手/.test(bodyText || '');
       const hasHeaderAi = await page.$('header [class*="ai"], header [class*="agent"], .el-header [class*="ai"]').catch(() => null);
+      const aiBtn = await page.$('button:has-text("AI Agent"), button:has-text("AI 助手"), button:has-text("智能助手")').catch(() => null);
+      const hasInteractiveAi = inputs.length > 0 || !!aiFloat || !!hasHeaderAi || !!aiBtn;
       return {
         url: page.url(),
         inputCount: inputs.length,
         hasAiFloat: !!aiFloat,
         hasHeaderAi: !!hasHeaderAi,
-        hasAiChat,
-        verdict: (inputs.length > 0 || aiFloat || hasHeaderAi || hasAiChat) ? 'PASS' : 'INFO',
+        hasAiBtn: !!aiBtn,
+        verdict: hasInteractiveAi ? 'PASS' : 'INFO — AI 文字可见但无可交互的入口元素',
       };
     },
   },
@@ -422,11 +430,13 @@ const SCENARIOS = [
       await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
       const is404 = /\/404/.test(page.url());
       if (is404) return { verdict: 'FAIL — /production/bom 404' };
-      const bodyText = await page.textContent('body');
+      const bodyText = (await page.textContent('body')) || '';
+      const hasBomMgmt = /BOM|配方|物料清单/.test(bodyText);
+      // C3 fix: verdict must use computed signal, not hardcoded PASS
       return {
         url: page.url(),
-        hasBomMgmt: /BOM|配方|物料清单/.test(bodyText),
-        verdict: 'PASS',
+        hasBomMgmt,
+        verdict: hasBomMgmt ? 'PASS' : 'INFO — page rendered but BOM/配方 text not detected',
       };
     },
   },
@@ -535,11 +545,13 @@ const SCENARIOS = [
           break;
         }
       }
+      const hasApprovalConfig = /审批链|approval chain/i.test(bodyText);
+      // C3 fix: verdict must AND landing with content check
       return {
         url: page.url(),
         landed,
-        hasApprovalConfig: /审批链|approval chain/i.test(bodyText),
-        verdict: landed ? 'PASS' : 'FAIL — no approval config page found',
+        hasApprovalConfig,
+        verdict: !landed ? 'FAIL — no approval config page found' : (hasApprovalConfig ? 'PASS' : 'INFO — page landed but 审批链 text not detected'),
       };
     },
   },
@@ -598,9 +610,9 @@ const SCENARIOS = [
     group: 'A',
     priority: 'P2',
     account: 'f006_admin',
-    description: 'T3-15 一二级单位转换: 原料字典含 1级单位/2级单位/系数',
+    description: 'T3-15 一二级单位转换: F006 转换率配置页 /production/conversions',
     run: async (page) => {
-      const candidates = ['/inventory/material-types', '/inventory/materials', '/material', '/system/dictionary'];
+      const candidates = ['/production/conversions', '/inventory/material-types', '/inventory/materials', '/system/dictionary'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -691,10 +703,10 @@ const SCENARIOS = [
     group: 'A',
     priority: 'P2',
     account: 'f006_admin',
-    description: 'T4-D3 g↔kg 1:1000 换算: 餐饮配方 / BOM 含克/千克单位',
-    account: 'gml_admin',
+    description: 'T4-D3 g↔kg 1:1000 换算: F006 工厂 BOM/转换率 含克/千克单位',
     run: async (page) => {
-      const candidates = ['/restaurant/recipes', '/production/bom', '/recipe', '/inventory/material-types'];
+      // F006 是食品工厂, 不是餐饮 — 走 /production/conversions (单位换算配置) + /production/bom
+      const candidates = ['/production/conversions', '/production/bom', '/inventory/material-types'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -702,7 +714,7 @@ const SCENARIOS = [
         await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
         if (!/\/404/.test(page.url())) {
           landed = c;
-          bodyText = await page.textContent('body');
+          bodyText = (await page.textContent('body')) || '';
           break;
         }
       }
@@ -711,7 +723,7 @@ const SCENARIOS = [
         url: page.url(),
         landed,
         hasUnits,
-        verdict: landed && hasUnits ? 'PASS' : 'INFO',
+        verdict: landed && hasUnits ? 'PASS' : (landed ? 'INFO — page rendered but no g/kg unit text' : 'FAIL — no candidate route works'),
       };
     },
   },
@@ -724,21 +736,29 @@ const SCENARIOS = [
     group: 'B',
     priority: 'P1-retest',
     account: 'f006_admin',
-    description: 'T2-10 极低用量辅料 yield-rate: 餐饮配方 form 含净料率 (re-test of S2)',
-    account: 'gml_admin',
+    description: 'T2-10 极低用量辅料 yield-rate: F006 工厂 BOM 含出成率/净料率 (PR #297)',
     run: async (page) => {
-      // gml_admin is restaurant account (R_GML_DEMO); f006 is food factory
-      await page.goto(`${TARGET}/restaurant/recipes`);
-      await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
-      const newBtn = await waitForAnyBtn(page, ['button:has-text("新增配方")', 'button:has-text("+ 新增")', 'button:has-text("新建")'], 12000);
-      if (!newBtn) return { verdict: 'INFO — no 新增配方 button after 12s' };
-      await newBtn.click();
-      await page.waitForTimeout(2000);
-      const dialogText = await page.textContent('.el-dialog').catch(() => '');
-      const hasYield = /净料率|出成率|yield/.test(dialogText);
+      // F006 是食品工厂 — 验证 /production/bom 含 出成率/净料率/yield 字段
+      await page.goto(`${TARGET}/production/bom`);
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      const bodyText = (await page.textContent('body')) || '';
+      const hasYieldInList = /出成率|净料率|yield/i.test(bodyText);
+      // Also try opening new/edit dialog
+      const newBtn = await waitForAnyBtn(page, ['button:has-text("新建")', 'button:has-text("新增")', 'button:has-text("+ 新建")'], 8000);
+      let hasYieldInDialog = false;
+      let dialogPreview = '';
+      if (newBtn) {
+        await newBtn.click();
+        await page.waitForTimeout(2000);
+        dialogPreview = (await page.textContent('.el-dialog').catch(() => '')) || '';
+        hasYieldInDialog = /出成率|净料率|yield/i.test(dialogPreview);
+      }
       return {
-        hasYield,
-        verdict: hasYield ? 'PASS' : 'FAIL',
+        url: page.url(),
+        hasYieldInList,
+        hasYieldInDialog,
+        dialogPreviewHead: dialogPreview.slice(0, 300),
+        verdict: (hasYieldInList || hasYieldInDialog) ? 'PASS' : 'FAIL — F006 BOM 未见 yield/出成率/净料率',
       };
     },
   },
@@ -778,11 +798,19 @@ const SCENARIOS = [
       if (!newBtn) return { verdict: 'INFO — no 新建 button after 12s' };
       await newBtn.click();
       await page.waitForTimeout(2500);
+      // C2 fix: must click "添加物料" first to add a material row, only then does "现有库存" column appear
+      const addMaterialBtn = await waitForAnyBtn(page, ['button:has-text("添加物料")', 'button:has-text("+ 添加物料")', 'button:has-text("添加")'], 8000);
+      if (!addMaterialBtn) {
+        const dialogText = await page.textContent('.el-dialog').catch(() => '');
+        return { verdict: 'INFO — dialog opened but no 添加物料 button found', dialogPreview: dialogText.slice(0, 400) };
+      }
+      await addMaterialBtn.click();
+      await page.waitForTimeout(2000);
       const dialogText = await page.textContent('.el-dialog').catch(() => '');
       const hasStock = /现有库存/.test(dialogText);
       return {
         hasStock,
-        dialogPreview: dialogText.slice(0, 600),
+        dialogPreview: dialogText.slice(0, 800),
         verdict: hasStock ? 'PASS' : 'FAIL',
       };
     },
@@ -845,7 +873,7 @@ const SCENARIOS = [
     account: 'f006_admin',
     description: 'T2-11 工序投入产出 + 出成率分析: 生产分析页',
     run: async (page) => {
-      const candidates = ['/production/yield-analysis', '/production/efficiency', '/production/analytics', '/生产分析'];
+      const candidates = ['/production/process-io', '/production-analytics/production', '/production-analytics/efficiency'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -873,7 +901,7 @@ const SCENARIOS = [
     account: 'f006_admin',
     description: 'T2-12 SKU 毛利率分析页: /finance/sku-margin-analysis',
     run: async (page) => {
-      const candidates = ['/finance/sku-margin-analysis', '/finance/sku-profit', '/finance/profit-analysis'];
+      const candidates = ['/finance/sku-margin', '/finance/sku-margin-analysis', '/finance/sku-profit'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {

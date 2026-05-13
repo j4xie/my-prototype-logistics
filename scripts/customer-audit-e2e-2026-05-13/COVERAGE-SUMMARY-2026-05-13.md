@@ -7,12 +7,21 @@
 
 ## Headline
 
-| Metric | Before this push | After 2 iterations | After 3 iterations + backend grep |
-|---|---|---|---|
-| Verified state (PASS + confirmed gap) | **7/51 = 13.7%** | 28/51 = 54.9% | **31/51 = 60.8%** |
-| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) | 27/51 (52.9%) |
-| Confirmed feature gaps | 1 (T-RTA) | 4 | **4** (T-RTA, T4-B4, T2-11, T2-12) |
-| Plus PARTIAL (semi-verified) | — | — | 36/51 = 70.6% (+5 partial: T-INV, T2-4, T2-5b, T1-6, T2-3) |
+| Metric | Before this push | After 2 iterations | After 3 iter + backend grep | **After iter 4 (post-review)** |
+|---|---|---|---|---|
+| Verified state (PASS + confirmed gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | **33/51 = 64.7%** |
+| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) | 27/51 (52.9%) | **29/51 (56.9%)** |
+| Confirmed feature gaps | 1 (T-RTA) | 4 | 4 | **4** (T-RTA, T4-B4, T4-D4, **T2-5b**) — T2-11/T2-12 RESCINDED (false gaps) |
+| Plus PARTIAL (semi-verified) | — | — | 36/51 = 70.6% | 37/51 = 72.5% (T-INV, T2-4, T1-6, T2-3) |
+
+### Iter 4 (post code-review) major corrections
+
+1. **F006 scope discipline restored**: T2-10 (yield-rate) and T4-D3 (g↔kg) were previously tested via `gml_admin` (restaurant account R_GML_DEMO) — that verifies the feature exists in RESTAURANT module but NOT in F006 factory experience. Rescoped both to `f006_admin` + F006 factory routes (`/production/bom` for T2-10; `/production/conversions` for T4-D3). Both PASS — F006 BOM does have 出成率/净料率 and 克/千克 unit conversion.
+2. **Reviewer C1 (Critical) fix**: T2-11 工序分析 page route was wrong (`/production/yield-analysis` does not exist; actual `/production/process-io` per `web-admin/src/router/index.ts:109`). T2-12 SKU margin route was wrong (`/finance/sku-margin-analysis` does not exist; actual `/finance/sku-margin` per `:422`). Both flipped from "confirmed gap" → PASS. 2 false-gap claims rescinded.
+3. **Reviewer C2 (Critical) fix**: T4-B4 调拨 "现有库存" column now clicks 添加物料 button before checking — still FAIL even after row added. Genuine gap confirmed (PR #295 ship-claim does NOT match prod reality on F006).
+4. **Reviewer C3 (Critical) fixes**: vacuous PASS verdicts tightened in T1-1 (rowCount > 0, not ≥ 0), T2-9 (use computed hasBomMgmt), T3-5 (AND landing with hasApprovalConfig), T1-2 (require contextual element not body text), T2-6 (require actual interactive AI element).
+5. **New T4-D4 verdict**: was INFO, now FAIL — F006 batch detail does NOT show raw_material consumption records (confirmed gap).
+6. **New T2-5b verdict**: was PARTIAL, now FAIL — F006 has no moving-avg-price page (confirmed gap).
 
 ## What got verified
 

@@ -1,5 +1,5 @@
 {
-  "runAt": "2026-05-13T15:37:07.275Z",
+  "runAt": "2026-05-13T16:30:24.513Z",
   "target": "http://139.196.165.140:8086",
   "scenariosTotal": 35,
   "byGroup": {
@@ -9,10 +9,10 @@
     "E": 3
   },
   "statusCounts": {
-    "PASS": 17,
-    "FAIL": 5,
-    "PARTIAL": 2,
-    "INFO": 9,
+    "PASS": 21,
+    "FAIL": 3,
+    "PARTIAL": 1,
+    "INFO": 8,
     "ERROR": 2
   },
   "results": [
@@ -27,7 +27,7 @@
         "reason": "product select not found",
         "dialogPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)操作选择产品13% 加工删除选择产品13% 加工删除+ 添加行取消创建"
       },
-      "ts": "2026-05-13T15:23:58.669Z"
+      "ts": "2026-05-13T16:17:38.710Z"
     },
     {
       "scenario": "S-COV-T4-D4-rpf-manual",
@@ -41,7 +41,7 @@
         "hasRpf": false,
         "verdict": "FAIL"
       },
-      "ts": "2026-05-13T15:24:19.059Z"
+      "ts": "2026-05-13T16:17:58.108Z"
     },
     {
       "scenario": "S-COV-T-INV-scope-clarify",
@@ -56,7 +56,7 @@
         "hasFinanceApprove": false,
         "verdict": "PARTIAL — 收款入口存在但 label 不是\"一键\""
       },
-      "ts": "2026-05-13T15:24:38.839Z"
+      "ts": "2026-05-13T16:18:21.130Z"
     },
     {
       "scenario": "S-COV-T1-1-plan-page",
@@ -69,34 +69,47 @@
         "rowCount": 6,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:24:58.897Z"
+      "ts": "2026-05-13T16:18:39.027Z"
     },
     {
       "scenario": "S-COV-T1-2-ai-create-plan",
       "group": "A",
       "priority": "P2",
       "account": "f006_admin",
-      "status": "PASS",
+      "status": "ERROR",
       "evidence": {
-        "url": "http://139.196.165.140:8086/production/plans",
-        "hasAiBtn": true,
-        "verdict": "PASS"
+        "error": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://139.196.165.140:8086/production/plans\", waiting until \"load\"\u001b[22m\n"
       },
-      "ts": "2026-05-13T15:25:17.108Z"
+      "ts": "2026-05-13T16:19:09.128Z"
     },
     {
       "scenario": "S-COV-T1-3-by-process",
       "group": "A",
       "priority": "P2",
       "account": "f006_admin",
-      "status": "INFO — 工序字段可能在详情或弹窗中",
+      "status": "PASS",
       "evidence": {
         "url": "http://139.196.165.140:8086/production/plans",
-        "headers": [],
-        "hasProcessCol": false,
-        "verdict": "INFO — 工序字段可能在详情或弹窗中"
+        "headers": [
+          "计划编号",
+          "产品类型",
+          "客户",
+          "工序",
+          "批次日期",
+          "计划数量",
+          "实际数量",
+          "计划日期",
+          "状态",
+          "预计工人",
+          "指派主管",
+          "来源",
+          "创建时间",
+          "操作"
+        ],
+        "hasProcessCol": true,
+        "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:25:40.508Z"
+      "ts": "2026-05-13T16:19:32.175Z"
     },
     {
       "scenario": "S-COV-T1-5-shift-report",
@@ -110,7 +123,7 @@
         "hasReport": false,
         "verdict": "INFO — 未找到报工页面 (可能在 RN App / 小程序)"
       },
-      "ts": "2026-05-13T15:25:59.506Z"
+      "ts": "2026-05-13T16:19:51.190Z"
     },
     {
       "scenario": "S-COV-T2-1-ai-skill-registry",
@@ -123,7 +136,7 @@
         "hasAiAgent": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:26:16.716Z"
+      "ts": "2026-05-13T16:20:08.383Z"
     },
     {
       "scenario": "S-COV-T2-2-modules-nav",
@@ -144,25 +157,18 @@
         "matched": 6,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:26:34.136Z"
+      "ts": "2026-05-13T16:20:24.082Z"
     },
     {
       "scenario": "S-COV-T2-4-rpf-chain-list",
       "group": "A",
       "priority": "P2",
       "account": "f006_admin",
-      "status": "PARTIAL",
+      "status": "ERROR",
       "evidence": {
-        "results": {
-          "/rd/samples": true,
-          "/procurement/orders": true,
-          "/procurement/receives": true,
-          "/inventory/batches": false,
-          "/production/plans": true
-        },
-        "verdict": "PARTIAL"
+        "error": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://139.196.165.140:8086/rd/samples\", waiting until \"load\"\u001b[22m\n"
       },
-      "ts": "2026-05-13T15:26:59.555Z"
+      "ts": "2026-05-13T16:20:54.193Z"
     },
     {
       "scenario": "S-COV-T2-5-finance-link",
@@ -178,7 +184,7 @@
         },
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:27:27.848Z"
+      "ts": "2026-05-13T16:21:13.749Z"
     },
     {
       "scenario": "S-COV-T2-6-llm-chat",
@@ -187,14 +193,14 @@
       "account": "f006_admin",
       "status": "PASS",
       "evidence": {
-        "url": "http://139.196.165.140:8086/",
+        "url": "http://139.196.165.140:8086/dashboard",
         "inputCount": 0,
         "hasAiFloat": false,
-        "hasHeaderAi": false,
-        "hasAiChat": true,
+        "hasHeaderAi": true,
+        "hasAiBtn": false,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:27:56.070Z"
+      "ts": "2026-05-13T16:21:28.976Z"
     },
     {
       "scenario": "S-COV-T2-7-skill-config",
@@ -207,7 +213,7 @@
         "landed": null,
         "verdict": "INFO — Skill 配置可能不暴露给前端 (后端 DB 配置)"
       },
-      "ts": "2026-05-13T15:28:14.974Z"
+      "ts": "2026-05-13T16:21:48.011Z"
     },
     {
       "scenario": "S-COV-T2-8-cross-module-ai",
@@ -216,11 +222,11 @@
       "account": "f006_admin",
       "status": "PASS",
       "evidence": {
-        "url": "http://139.196.165.140:8086/smart-bi/dashboard",
+        "url": "http://139.196.165.140:8086/smart-bi",
         "landed": "/smart-bi",
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:28:32.524Z"
+      "ts": "2026-05-13T16:22:05.719Z"
     },
     {
       "scenario": "S-COV-T2-9-bom-add-material",
@@ -233,7 +239,7 @@
         "hasBomMgmt": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:28:50.889Z"
+      "ts": "2026-05-13T16:22:37.342Z"
     },
     {
       "scenario": "S-COV-T3-1-box-auto",
@@ -246,7 +252,7 @@
         "hasBoxCount": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:29:09.561Z"
+      "ts": "2026-05-13T16:23:05.326Z"
     },
     {
       "scenario": "S-COV-T3-2-abaca",
@@ -259,7 +265,7 @@
         "dialogPreview": "新建采购订单供应商请选择采购类型直接采购总部统采紧急采购关联销售订单可选 - 选择关联的销售订单期望交货备注原材料明细原料名称规格数量单位单价箱数操作选择原料kg删除+ 添加行取消创建",
         "verdict": "INFO — 抄码 may be inside 规格 dropdown not shown in label"
       },
-      "ts": "2026-05-13T15:29:34.395Z"
+      "ts": "2026-05-13T16:23:24.108Z"
     },
     {
       "scenario": "S-COV-T3-3-three-price",
@@ -272,18 +278,19 @@
         "has3Price": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:29:57.130Z"
+      "ts": "2026-05-13T16:23:43.318Z"
     },
     {
       "scenario": "S-COV-T3-4-expected-arrival",
       "group": "A",
       "priority": "P2",
       "account": "f006_admin",
-      "status": "ERROR",
+      "status": "INFO",
       "evidence": {
-        "error": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://139.196.165.140:8086/procurement/orders\", waiting until \"load\"\u001b[22m\n"
+        "hasField": false,
+        "verdict": "INFO"
       },
-      "ts": "2026-05-13T15:30:27.242Z"
+      "ts": "2026-05-13T16:24:01.653Z"
     },
     {
       "scenario": "S-COV-T3-5-approval-config",
@@ -294,10 +301,10 @@
       "evidence": {
         "url": "http://139.196.165.140:8086/system/approval-chains",
         "landed": "/system/approval-chains",
-        "hasApprovalConfig": false,
+        "hasApprovalConfig": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:30:44.812Z"
+      "ts": "2026-05-13T16:24:19.590Z"
     },
     {
       "scenario": "S-COV-T3-10-sales-unit-price",
@@ -310,7 +317,7 @@
         "priceInputCount": 3,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:31:07.790Z"
+      "ts": "2026-05-13T16:24:41.739Z"
     },
     {
       "scenario": "S-COV-T3-12-material-supplier",
@@ -324,7 +331,7 @@
         "hasSupplierCol": false,
         "verdict": "INFO"
       },
-      "ts": "2026-05-13T15:31:25.577Z"
+      "ts": "2026-05-13T16:25:08.762Z"
     },
     {
       "scenario": "S-COV-T3-15-unit-conv",
@@ -333,12 +340,12 @@
       "account": "f006_admin",
       "status": "INFO",
       "evidence": {
-        "url": "http://139.196.165.140:8086/inventory/material-types",
-        "landed": "/inventory/material-types",
+        "url": "http://139.196.165.140:8086/production/bom?tab=conversion",
+        "landed": "/production/conversions",
         "hasUnits": false,
         "verdict": "INFO"
       },
-      "ts": "2026-05-13T15:31:40.163Z"
+      "ts": "2026-05-13T16:25:26.343Z"
     },
     {
       "scenario": "S-COV-T4-B1-process-dropdown",
@@ -350,7 +357,7 @@
         "hasProcess": false,
         "verdict": "INFO"
       },
-      "ts": "2026-05-13T15:32:49.606Z"
+      "ts": "2026-05-13T16:26:29.492Z"
     },
     {
       "scenario": "S-COV-T4-B7-dialog-width",
@@ -362,44 +369,49 @@
         "widthPx": 1024,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:33:16.859Z"
+      "ts": "2026-05-13T16:26:50.985Z"
     },
     {
       "scenario": "S-COV-T4-B8-bom-binding",
       "group": "A",
       "priority": "P2",
       "account": "f006_admin",
-      "status": "ERROR",
+      "status": "PASS",
       "evidence": {
-        "error": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://139.196.165.140:8086/production/bom\", waiting until \"load\"\u001b[22m\n"
+        "url": "http://139.196.165.140:8086/production/bom",
+        "hasMaterials": true,
+        "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:33:46.959Z"
+      "ts": "2026-05-13T16:27:10.311Z"
     },
     {
       "scenario": "S-COV-T4-D3-g-kg-conv",
       "group": "A",
       "priority": "P2",
-      "account": "gml_admin",
-      "status": "INFO",
+      "account": "f006_admin",
+      "status": "PASS",
       "evidence": {
-        "url": "http://139.196.165.140:8086/restaurant/recipes",
-        "landed": "/restaurant/recipes",
-        "hasUnits": false,
-        "verdict": "INFO"
+        "url": "http://139.196.165.140:8086/production/bom?tab=conversion",
+        "landed": "/production/conversions",
+        "hasUnits": true,
+        "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:34:22.896Z"
+      "ts": "2026-05-13T16:27:27.868Z"
     },
     {
       "scenario": "S-COV-T2-10-yield-rate",
       "group": "B",
       "priority": "P1-retest",
-      "account": "gml_admin",
+      "account": "f006_admin",
       "status": "PASS",
       "evidence": {
-        "hasYield": true,
+        "url": "http://139.196.165.140:8086/production/bom",
+        "hasYieldInList": true,
+        "hasYieldInDialog": false,
+        "dialogPreviewHead": "",
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:34:42.562Z"
+      "ts": "2026-05-13T16:27:59.596Z"
     },
     {
       "scenario": "S-COV-T3-9-rbac-warehouse-mgr-list",
@@ -434,7 +446,7 @@
         },
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:35:22.983Z"
+      "ts": "2026-05-13T16:28:43.899Z"
     },
     {
       "scenario": "S-COV-T4-B4-stock-col",
@@ -444,10 +456,10 @@
       "status": "FAIL",
       "evidence": {
         "hasStock": false,
-        "dialogPreview": "手动新建调拨单使用场景无生产计划时手动创建（领用 / 研发 / 互调 / 分部退总仓 等）。创建后为 DRAFT 状态,需走 申请→审批→发货→签收 流程。调拨类型分部→总部 (BRANCH_TO_HQ)调出方调入方六膳门食品科技 (F006)调拨日期调出仓库调入仓库预计到货备注 / 原因0 / 5000调拨物料添加物料类型物料数量单位单价行备注操作点击「添加物料」开始取消创建",
+        "dialogPreview": "手动新建调拨单使用场景无生产计划时手动创建（领用 / 研发 / 互调 / 分部退总仓 等）。创建后为 DRAFT 状态,需走 申请→审批→发货→签收 流程。调拨类型分部→总部 (BRANCH_TO_HQ)调出方调入方六膳门食品科技 (F006)调拨日期调出仓库调入仓库预计到货备注 / 原因0 / 5000调拨物料添加物料类型物料数量单位单价行备注操作原料/食材选择物料删除取消创建",
         "verdict": "FAIL"
       },
-      "ts": "2026-05-13T15:35:41.446Z"
+      "ts": "2026-05-13T16:29:06.966Z"
     },
     {
       "scenario": "S-COV-T4-B9-manual-transfer",
@@ -460,7 +472,7 @@
         "hasManualText": true,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:35:57.514Z"
+      "ts": "2026-05-13T16:29:21.829Z"
     },
     {
       "scenario": "S-COV-T2-5b-moving-avg-price",
@@ -474,35 +486,35 @@
         "hasAvgPrice": false,
         "verdict": "FAIL"
       },
-      "ts": "2026-05-13T15:36:14.149Z"
+      "ts": "2026-05-13T16:29:37.565Z"
     },
     {
       "scenario": "S-COV-T2-11-yield-analysis",
       "group": "D",
       "priority": "P1-missed",
       "account": "f006_admin",
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": {
-        "url": "http://139.196.165.140:8086/404",
-        "landed": null,
-        "hasYieldRpt": false,
-        "verdict": "FAIL"
+        "url": "http://139.196.165.140:8086/production/process-io",
+        "landed": "/production/process-io",
+        "hasYieldRpt": true,
+        "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:36:31.630Z"
+      "ts": "2026-05-13T16:29:53.102Z"
     },
     {
       "scenario": "S-COV-T2-12-sku-margin",
       "group": "D",
       "priority": "P1-missed",
       "account": "f006_admin",
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": {
-        "url": "http://139.196.165.140:8086/404",
-        "landed": null,
-        "hasMargin": false,
-        "verdict": "FAIL"
+        "url": "http://139.196.165.140:8086/finance/sku-margin",
+        "landed": "/finance/sku-margin",
+        "hasMargin": true,
+        "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:36:49.168Z"
+      "ts": "2026-05-13T16:30:09.007Z"
     },
     {
       "scenario": "S-COV-T3-8b-receive-no-price",
@@ -527,7 +539,7 @@
         "hasPhotoCol": false,
         "verdict": "PASS"
       },
-      "ts": "2026-05-13T15:37:07.213Z"
+      "ts": "2026-05-13T16:30:24.430Z"
     }
   ]
 }
