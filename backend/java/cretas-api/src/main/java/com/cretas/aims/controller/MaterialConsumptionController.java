@@ -4,9 +4,11 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.MaterialConsumption;
 import com.cretas.aims.entity.MaterialBatch;
+import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
+import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.BatchConsumptionService;
@@ -53,6 +55,9 @@ public class MaterialConsumptionController {
 
     private final MaterialConsumptionRepository consumptionRepository;
     private final MaterialBatchRepository materialBatchRepository;
+    // T4-D4 (issue #533) fix C1: enrich materialTypeName for frontend display
+    // (raw consumption Map only had materialTypeId UUID — frontend showed "-")
+    private final RawMaterialTypeRepository rawMaterialTypeRepository;
     private final UserRepository userRepository;
     private final BatchConsumptionService batchConsumptionService;
     private final PriceMaskResolver priceMaskResolver;
@@ -443,6 +448,19 @@ public class MaterialConsumptionController {
                 materialBatchRepository.findAllById(batchIds).stream()
                         .collect(Collectors.toMap(MaterialBatch::getId, Function.identity()));
 
+        // T4-D4 (issue #533) fix C1: 批量查询原材料类型 → enrich materialTypeName for display.
+        // Collect from consumption directly + fall back to batch's materialTypeId (mirrors
+        // enrichConsumptionWithMaps line 514-518 ordering).
+        Set<String> materialTypeIds = consumptions.stream()
+                .map(c -> c.getMaterialTypeId() != null ? c.getMaterialTypeId()
+                        : (c.getBatchId() != null && batchMap.get(c.getBatchId()) != null
+                                ? batchMap.get(c.getBatchId()).getMaterialTypeId() : null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, RawMaterialType> materialTypeMap = materialTypeIds.isEmpty() ? Collections.emptyMap() :
+                rawMaterialTypeRepository.findAllById(materialTypeIds).stream()
+                        .collect(Collectors.toMap(RawMaterialType::getId, Function.identity()));
+
         // 批量查询记录人信息
         Set<Long> userIds = consumptions.stream()
                 .map(MaterialConsumption::getRecordedBy)
@@ -454,7 +472,7 @@ public class MaterialConsumptionController {
 
         // 使用预加载的 Map 进行丰富
         return consumptions.stream()
-                .map(c -> enrichConsumptionWithMaps(c, batchMap, userMap, maskPrice))
+                .map(c -> enrichConsumptionWithMaps(c, batchMap, materialTypeMap, userMap, maskPrice))
                 .collect(Collectors.toList());
     }
 
@@ -483,6 +501,7 @@ public class MaterialConsumptionController {
     private Map<String, Object> enrichConsumptionWithMaps(
             MaterialConsumption c,
             Map<String, MaterialBatch> batchMap,
+            Map<String, RawMaterialType> materialTypeMap,
             Map<Long, User> userMap,
             boolean maskPrice) {
 
@@ -506,15 +525,29 @@ public class MaterialConsumptionController {
         map.put("createdAt", c.getCreatedAt());
         map.put("updatedAt", c.getUpdatedAt());
 
-        // 添加原材料批次名称（从预加载的 Map 中获取）
+        // 添加原材料批次信息 (T4-D4 issue #533 fix: 加 unit 从 batch.quantityUnit)
+        String resolvedMaterialTypeId = c.getMaterialTypeId();
         if (c.getBatchId() != null) {
             MaterialBatch batch = batchMap.get(c.getBatchId());
             if (batch != null) {
                 map.put("batchNumber", batch.getBatchNumber());
-                if (c.getMaterialTypeId() == null) {
-                    map.put("materialTypeId", batch.getMaterialTypeId());
-                } else {
-                    map.put("materialTypeId", c.getMaterialTypeId());
+                map.put("unit", batch.getQuantityUnit()); // T4-D4 fix I5: was missing, frontend rendered "-"
+                if (resolvedMaterialTypeId == null) {
+                    resolvedMaterialTypeId = batch.getMaterialTypeId();
+                }
+            }
+        }
+        map.put("materialTypeId", resolvedMaterialTypeId);
+
+        // T4-D4 issue #533 fix C1: enrich materialTypeName for frontend display.
+        // Previously emitted only materialTypeId (UUID) — frontend's 原料 column rendered "-" for all rows.
+        if (resolvedMaterialTypeId != null) {
+            RawMaterialType materialType = materialTypeMap.get(resolvedMaterialTypeId);
+            if (materialType != null) {
+                map.put("materialTypeName", materialType.getName());
+                // Fallback unit if batch lookup didn't populate it (e.g., batch missing or quantityUnit null).
+                if (!map.containsKey("unit") && materialType.getUnit() != null) {
+                    map.put("unit", materialType.getUnit());
                 }
             }
         }

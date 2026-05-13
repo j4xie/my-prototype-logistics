@@ -295,36 +295,35 @@ function getTimelineIcon(type: string) {
         </el-card>
 
         <!-- T4-D4 (issue #533): F006 customer asked for raw_material consumption visibility on
-             batch detail. Backend /processing/material-consumptions/batch/{id} already exposes the data;
-             only this UI block was missing. -->
+             batch detail. Backend /processing/material-consumptions/batch/{id} (MaterialConsumption-
+             Controller:151) returns enriched rows; this card renders them. Field names verified against
+             enrichConsumptionWithMaps response Map (post-review fix for reviewer C1/I1/I2/I3/I4). -->
         <el-card v-if="consumptions.length > 0" shadow="never" class="detail-card">
           <template #header>
             <span class="section-title">原料消耗记录</span>
-            <span style="font-size: 13px; color: #909399; margin-left: 12px;">共 {{ consumptions.length }} 条 · RPF Path A/B</span>
+            <span class="section-meta">共 {{ consumptions.length }} 条</span>
           </template>
           <el-table :data="consumptions" border stripe size="small" style="width: 100%">
-            <el-table-column prop="materialName" label="原料" min-width="180" show-overflow-tooltip>
-              <template #default="{ row }">
-                {{ row.materialName || row.rawMaterialName || row.materialTypeName || '-' }}
-              </template>
+            <el-table-column prop="materialTypeName" label="原料" min-width="180" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.materialTypeName || row.materialTypeId || '-' }}</template>
             </el-table-column>
             <el-table-column prop="batchNumber" label="批次号" min-width="160" show-overflow-tooltip>
-              <template #default="{ row }">{{ row.batchNumber || row.materialBatchNumber || '-' }}</template>
+              <template #default="{ row }">{{ row.batchNumber || '-' }}</template>
             </el-table-column>
             <el-table-column prop="quantity" label="消耗数量" width="120" align="right">
-              <template #default="{ row }">{{ formatNum(row.quantity || row.consumedQuantity) }}</template>
+              <template #default="{ row }">{{ formatNum(row.quantity) }}</template>
             </el-table-column>
             <el-table-column prop="unit" label="单位" width="80" align="center">
               <template #default="{ row }">{{ row.unit || '-' }}</template>
             </el-table-column>
-            <el-table-column v-if="canViewPrice" prop="unitCost" label="单价" width="110" align="right">
-              <template #default="{ row }">{{ formatCost(row.unitCost) }}</template>
+            <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="110" align="right">
+              <template #default="{ row }">{{ formatCost(row.unitPrice) }}</template>
             </el-table-column>
             <el-table-column v-if="canViewPrice" prop="totalCost" label="小计" width="120" align="right">
               <template #default="{ row }">{{ formatCost(row.totalCost) }}</template>
             </el-table-column>
-            <el-table-column prop="consumedAt" label="消耗时间" width="160">
-              <template #default="{ row }">{{ formatDateTime(row.consumedAt || row.createdAt) }}</template>
+            <el-table-column prop="consumptionTime" label="消耗时间" width="160">
+              <template #default="{ row }">{{ formatDateTime(row.consumedAt || row.consumptionTime || row.createdAt) }}</template>
             </el-table-column>
           </el-table>
         </el-card>
@@ -434,6 +433,12 @@ function getTimelineIcon(type: string) {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-color-primary, #303133);
+}
+
+.section-meta {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 12px;
 }
 
 .cost-total {
