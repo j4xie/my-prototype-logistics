@@ -99,7 +99,12 @@ class ReferenceDataControllerTest {
     void findProducts_usesActiveFilteredQuery() {
         when(productTypeRepository.findByFactoryIdAndIsActiveTrue(eq("F001"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
-        controller.findProducts("F001", "", 1, 50);
+        // Audit fix 2026-05-13: findProducts signature gained `authorization` arg
+        // (PR #443 §F2 price-mask resolver) but this test wasn't updated → ALL
+        // recent F006 PRs (#549/#560/#562/#564) have java-build-test=FAILURE
+        // because of this single stale call. Passing null is fine (priceMaskResolver
+        // tolerates null Authorization header).
+        controller.findProducts("F001", "", 1, 50, null);
         verify(productTypeRepository).findByFactoryIdAndIsActiveTrue(eq("F001"), any(Pageable.class));
         verify(productTypeRepository, never()).findByFactoryId(eq("F001"), any(Pageable.class));
     }
