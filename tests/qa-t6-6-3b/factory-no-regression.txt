@@ -1,0 +1,37 @@
+T6.6.3b Canary — Factory-tenant no-regression evidence
+======================================================
+
+Goal: confirm factory tenants (F006) still hit Java for the SAME two endpoints
+after adding the R_QINGHUAJIAO_REAL whitelist. Verifies the 3b block doesn't
+accidentally widen the regex to factory tenants.
+
+Strategy: curl F006 /analysis/production + /analysis/quality after 3b reload.
+Expect: NO matching entry in python-prod.log post-curl (Java handled it).
+
+Apply timestamp: 20260514_031948 (UTC 2026-05-13T19:19:48Z)
+Reload time:     2026-05-13T19:21:48Z
+
+--- F006 /analysis/production post-3b-reload ---
+HTTP=401 size=188 ttfb=0.017452s
+body: {"success":false,"code":401,"message":"未授权，请先登录","severity":"error","actionHint":"会话已过期或未登录, 请重新登录","timestamp":"2026-05-14T03:21:48.920141028"}
+shape: Java envelope (188 B, compact, full envelope, severity/actionHint/timestamp present)
+
+--- Python log grep for F006 production/quality (last 60s window) ---
+$ ssh 47 'tail -200 /www/wwwroot/cretas/python-prod.log | grep -E "F006.*analysis/(production|quality)"'
+(empty — no matches)
+
+→ Conclusion: PASS. F006 (factory tenant) for these two endpoints remains on Java.
+   T6.6.3b explicit regex `^/api/mobile/R_QINGHUAJIAO_REAL/...` correctly matches
+   the canary tenant only; F006 falls through to the catch-all `/api/mobile/` →
+   Java upstream. No factory-tenant regression.
+
+Cross-check sanity:
+- R_QINGHUAJIAO_REAL /analysis/production size = 96 B  (Python shape — proves 3b cutover)
+- R_ILTEATRO_REAL    /analysis/production size = 96 B  (Python shape — proves 3a still LIVE)
+- F006               /analysis/production size = 188 B (Java envelope — proves no regression)
+- Same endpoint, same nginx instance, different factory_id → different upstream selection ✓
+
+3a no-regression cross-check:
+- Probe 4 (R_ILTEATRO_REAL /production) returned Python (96 B) → 3a's R_ILTEATRO_REAL
+  whitelist block was NOT clobbered by my 3b additions. Two independent location
+  blocks coexist in priority order.
