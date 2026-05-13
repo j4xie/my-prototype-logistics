@@ -102,6 +102,19 @@ const smartBIRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/smart-bi/GoldPreview.vue'),
         meta: { requiresAuth: true, title: 'Gold 预览', icon: 'Cpu', module: 'analytics' },
       },
+      // QHJ 收入管理报表 (青花椒 / R_*_REAL restaurant chains; Phase I, 2026-05-13)
+      {
+        path: 'revenue-report',
+        name: 'SmartBIRevenueReport',
+        component: () => import('@/views/smart-bi/RevenueReport.vue'),
+        meta: {
+          requiresAuth: true,
+          title: '收入管理报表',
+          icon: 'Money',
+          module: 'analytics',
+          hideForFactoryTypes: ['FACTORY'],  // restaurant tenants only
+        },
+      },
     ],
   },
 ];
