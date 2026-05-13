@@ -24,8 +24,8 @@ LABELS = {
         "actual_revenue":    "实际收入",
         "no_data":           "—",
         "no_yoy_data":       "需要 2024 数据",
-        # Block 3 specific
-        "revenue_ratio":     "营业额占比",
+        # Block 3 specific (label aligned to reference xlsx: 收入比例)
+        "revenue_ratio":     "收入比例",
         "bill_ratio_label":  "客单比例",
         "bill_count_label":  "客单量",
         # Block 4 columns

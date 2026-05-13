@@ -24,6 +24,12 @@ const BASE = () => `/api/smartbi/${getFactoryId()}/revenue-report`;
 // browser hits /api/smartbi/... which nginx routes to Python 8083/8084.
 const PY = { baseURL: '' };
 
+// For /generate: response interceptor unwraps res.data by default, losing
+// res.headers. _keepResponse=true makes the interceptor return the raw
+// AxiosResponse so we can read X-Cache-Hit / X-Gold-Materialized-At /
+// X-Store-Count / X-Is-Stale (set by main.py CORS expose_headers).
+const PY_BLOB = { baseURL: '', responseType: 'blob' as const, _keepResponse: true };
+
 // ─── Type contracts (mirror Python) ─────────────────────────────────────
 
 export interface UploadResultItem {
@@ -114,16 +120,16 @@ export async function generateAndDownload(params: RevenueReportParams): Promise<
   storeCount: number;
   isStale: boolean;
 }> {
-  const res = await request.post(`${BASE()}/generate`, params, {
-    ...PY,
-    responseType: 'blob',
-  });
+  // PY_BLOB sets _keepResponse: true so we get raw AxiosResponse with .headers.
+  const res = await request.post(`${BASE()}/generate`, params, PY_BLOB);
+  // Axios lowercases all response header names regardless of server casing.
+  const h = (res as { headers: Record<string, string> }).headers || {};
   return {
-    blob: res.data as Blob,
-    cacheHit: (res.headers['x-cache-hit'] as string) === 'true',
-    goldMaterializedAt: (res.headers['x-gold-materialized-at'] as string) || '',
-    storeCount: parseInt((res.headers['x-store-count'] as string) || '0', 10),
-    isStale: (res.headers['x-is-stale'] as string) === 'true',
+    blob: (res as { data: Blob }).data,
+    cacheHit: h['x-cache-hit'] === 'true',
+    goldMaterializedAt: h['x-gold-materialized-at'] || '',
+    storeCount: parseInt(h['x-store-count'] || '0', 10),
+    isStale: h['x-is-stale'] === 'true',
   };
 }
 
