@@ -237,9 +237,80 @@ async def _compute_block3_meal_split(pool, params: RevenueReportParams) -> list[
     return out
 
 
+_BLOCK4_SQL = """
+WITH bill_items AS (
+  SELECT t.id AS txn_id,
+         t.customer_count,
+         t.actual_receive,
+         (SELECT COALESCE(SUM(i.qty), 0)
+          FROM fact_pos_item i
+          WHERE i.transaction_id = t.id) AS items_per_bill
+  FROM fact_pos_transaction t
+  WHERE t.factory_id = $1 AND t.store_id = $2
+    AND t.date BETWEEN $3 AND $4
+    AND t.customer_count IS NOT NULL AND t.customer_count > 0
+    AND (CARDINALITY($5::text[]) = 0 OR TRIM(t.meal_period) = ANY($5))
+),
+totals AS (
+  SELECT COUNT(*) AS total_bills,
+         SUM(actual_receive) AS total_revenue
+  FROM bill_items
+)
+SELECT
+  bi.customer_count                                            AS diner_count,
+  COUNT(*)                                                     AS bill_count,
+  ROUND(COUNT(*)::numeric / NULLIF(t.total_bills, 0), 3)       AS bill_ratio,
+  SUM(bi.items_per_bill)                                       AS total_items,
+  ROUND(SUM(bi.items_per_bill) / NULLIF(COUNT(*), 0), 1)       AS avg_items_per_bill,
+  SUM(bi.actual_receive)                                       AS revenue,
+  -- 实际人均 v1: 实收额 / 客流量 (= 实收 / (customer_count × bill_count))
+  ROUND(SUM(bi.actual_receive) /
+        NULLIF(bi.customer_count * COUNT(*), 0), 0)            AS revenue_per_diner,
+  -- 实际人均 v2: 实收额 / 点单份数
+  ROUND(SUM(bi.actual_receive) /
+        NULLIF(SUM(bi.items_per_bill), 0), 0)                  AS revenue_per_item,
+  ROUND(SUM(bi.actual_receive) /
+        NULLIF(t.total_revenue, 0), 3)                         AS revenue_ratio
+FROM bill_items bi
+CROSS JOIN totals t
+GROUP BY bi.customer_count, t.total_bills, t.total_revenue
+ORDER BY bi.customer_count
+"""
+
+
 async def _compute_block4_diner_dist(
     pool, params: RevenueReportParams, sem: asyncio.Semaphore,
 ) -> list[dict]:
-    """Block 4: 客单人数分析 (per-store distribution by customer_count)."""
-    # Filled in Task E5.
-    return []
+    """Block 4: 客单人数分析 (per-store distribution by customer_count).
+
+    Fires N concurrent per-store queries under the shared semaphore to
+    cap pool contention. Each query joins fact_pos_transaction with the
+    per-bill item subquery from fact_pos_item.
+    """
+    meal = list(params.meal_periods or [])
+
+    async def one_store(store_id: int) -> dict:
+        async with sem:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, false)",
+                    params.factory_id,
+                )
+                store_name = await conn.fetchval(
+                    "SELECT name FROM dim_store "
+                    "WHERE factory_id = $1 AND store_id = $2",
+                    params.factory_id, store_id,
+                )
+                rows = await conn.fetch(
+                    _BLOCK4_SQL,
+                    params.factory_id, store_id,
+                    params.date_from, params.date_to, meal,
+                )
+        return {
+            "store_id": store_id,
+            "store_name": store_name or f"store_{store_id}",
+            "date_range": f"{params.date_from} ~ {params.date_to}",
+            "distribution": [dict(r) for r in rows],
+        }
+
+    return await asyncio.gather(*(one_store(sid) for sid in params.store_ids))
