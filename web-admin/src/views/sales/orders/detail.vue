@@ -9,6 +9,8 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
+// T4-D1 (issue #525): F006 customer asked for 来源仓库 (总仓/线边仓) per line item.
+import { warehouseDisplayLabel } from '@/utils/warehouse';
 import type { TableRow } from '@/types/api';
 
 const route = useRoute();
@@ -915,6 +917,12 @@ async function handleCreatePayment() {
               </el-table-column>
               <el-table-column label="已发货" width="100" align="right">
                 <template #default="{ row }">{{ row.deliveredQuantity || 0 }}</template>
+              </el-table-column>
+              <!-- T4-D1 (issue #525): 来源仓库 — F006 customer wants to see 总仓/线边仓 label per line.
+                   Backend: sales_order_items.source_warehouse_code (V20260514_01 migration).
+                   Label mapping via utils/warehouse.ts: WH-LOG → 总仓, WH-WKS → 线边仓. -->
+              <el-table-column label="来源仓库" width="120">
+                <template #default="{ row }">{{ warehouseDisplayLabel(row.sourceWarehouseCode) }}</template>
               </el-table-column>
               <el-table-column v-if="canViewPrice" label="销售小计" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>

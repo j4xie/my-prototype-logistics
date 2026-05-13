@@ -125,6 +125,9 @@ interface OrderItem {
   taxRate: number;
   specification?: string;
   boxQuantity?: number | null;
+  // T4-D1 (issue #525): source warehouse code per line. Persists to sales_order_items.source_warehouse_code.
+  // Optional/empty for legacy rows + drafts. UI label via utils/warehouse.ts:warehouseDisplayLabel.
+  sourceWarehouseCode?: string;
 }
 
 const form = ref({
@@ -305,7 +308,7 @@ async function loadSalesEmployees() {
   } catch { /* silently fail — user can still type manually */ }
 }
 
-function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }); }
+function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13, sourceWarehouseCode: '' }); }
 function removeItem(idx: number) { if (form.value.items.length > 1) form.value.items.splice(idx, 1); }
 
 function onProductSelect(item: TableRow, productId: string) {
@@ -931,6 +934,9 @@ async function submitQuickPayment() {
           <span style="width: 100px">单价</span>
           <span style="width: 80px">箱数</span>
           <span style="width: 90px" title="税率 (开票 G1 按此分组): 9=原料, 13=加工, 6=服务">税率(%)</span>
+          <!-- T4-D1 (issue #525): 来源仓库 — F006 客户反馈 "成品会调回总仓, 总仓再安排发货".
+               Customer wants to record per-line source warehouse (WH-LOG 总仓 / WH-WKS 线边仓). -->
+          <span style="width: 110px">来源仓库</span>
           <span style="width: 40px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
@@ -950,6 +956,11 @@ async function submitQuickPayment() {
             <el-option :value="6" label="6% 服务" />
             <el-option :value="9" label="9% 原料" />
             <el-option :value="13" label="13% 加工" />
+          </el-select>
+          <!-- T4-D1 (issue #525): 来源仓库 select — labels 总仓 / 线边仓 per utils/warehouse.ts. -->
+          <el-select v-model="item.sourceWarehouseCode" placeholder="选择" clearable style="width: 110px" size="default">
+            <el-option label="总仓 (WH-LOG)" value="WH-LOG" />
+            <el-option label="线边仓 (WH-WKS)" value="WH-WKS" />
           </el-select>
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
         </div>
