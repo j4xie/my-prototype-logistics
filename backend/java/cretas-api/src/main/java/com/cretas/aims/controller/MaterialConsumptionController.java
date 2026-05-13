@@ -8,6 +8,7 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.BatchConsumptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -54,9 +55,20 @@ public class MaterialConsumptionController {
     private final MaterialBatchRepository materialBatchRepository;
     private final UserRepository userRepository;
     private final BatchConsumptionService batchConsumptionService;
+    private final PriceMaskResolver priceMaskResolver;
 
     /**
      * 1. 获取消耗记录列表（分页）
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): {@code unitPrice} 和 {@code totalCost}
+     * via {@link #enrichConsumptionWithMaps} are gated by
+     * {@link PriceMaskResolver#shouldMaskPrice(String)}. Callers without
+     * {@code procurement:price:view} get a response with those keys omitted (NOT null).
+     * The class-level {@code @RequirePermission("procurement:price:view")} already gates
+     * access at module-permission scope; this per-field gate is defense-in-depth — survives
+     * any future class-annotation removal. Hand-built {@code Map<String, Object>} responses
+     * bypass {@code PriceFieldResponseAdvice} reflective field-strip. Any future
+     * price-bearing field added here MUST be gated by {@code maskPrice}.
      */
     @GetMapping
     @Operation(summary = "获取消耗记录列表", description = "分页查询原材料消耗记录")
@@ -65,10 +77,13 @@ public class MaterialConsumptionController {
             @RequestParam(required = false) @Parameter(description = "生产批次ID") Long productionBatchId,
             @RequestParam(required = false) @Parameter(description = "原材料批次ID") String batchId,
             @RequestParam(defaultValue = "1") @Parameter(description = "页码") int page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页数量") int size) {
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页数量") int size,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取消耗记录列表: factoryId={}, productionBatchId={}, batchId={}",
                 factoryId, productionBatchId, batchId);
+
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
 
         // 使用数据库层分页+过滤，避免全表加载
         Pageable pageable = PageRequest.of(page - 1, size);
@@ -83,7 +98,7 @@ public class MaterialConsumptionController {
             dbPage = consumptionRepository.findByFactoryIdOrderByConsumptionTimeDesc(factoryId, pageable);
         }
 
-        List<Map<String, Object>> enrichedContent = enrichConsumptions(dbPage.getContent());
+        List<Map<String, Object>> enrichedContent = enrichConsumptions(dbPage.getContent(), maskPrice);
 
         PageResponse<Map<String, Object>> pageResponse = new PageResponse<>();
         pageResponse.setContent(enrichedContent);
@@ -100,14 +115,19 @@ public class MaterialConsumptionController {
 
     /**
      * 2. 获取单条消耗记录详情
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): see {@link #getConsumptions} JavaDoc.
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取消耗记录详情", description = "根据ID获取单条消耗记录")
     public ApiResponse<Map<String, Object>> getConsumptionById(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "记录ID") Integer id) {
+            @PathVariable @Parameter(description = "记录ID") Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取消耗记录详情: factoryId={}, id={}", factoryId, id);
+
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
 
         Optional<MaterialConsumption> optConsumption = consumptionRepository.findById(id);
         if (optConsumption.isEmpty()) {
@@ -119,20 +139,25 @@ public class MaterialConsumptionController {
             throw new BusinessException(403, "无权访问该记录");
         }
 
-        Map<String, Object> enriched = enrichConsumption(consumption);
+        Map<String, Object> enriched = enrichConsumption(consumption, maskPrice);
         return ApiResponse.success(enriched);
     }
 
     /**
      * 3. 获取生产批次的消耗记录
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): see {@link #getConsumptions} JavaDoc.
      */
     @GetMapping("/batch/{productionBatchId}")
     @Operation(summary = "获取生产批次的消耗记录", description = "根据生产批次ID查询所有消耗记录")
     public ApiResponse<List<Map<String, Object>>> getConsumptionsByBatch(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "生产批次ID") Long productionBatchId) {
+            @PathVariable @Parameter(description = "生产批次ID") Long productionBatchId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取生产批次消耗记录: factoryId={}, productionBatchId={}", factoryId, productionBatchId);
+
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
 
         List<MaterialConsumption> consumptions = consumptionRepository.findByProductionBatchId(productionBatchId);
 
@@ -141,29 +166,36 @@ public class MaterialConsumptionController {
                 .filter(c -> factoryId.equals(c.getFactoryId()))
                 .collect(Collectors.toList());
 
-        List<Map<String, Object>> enriched = enrichConsumptions(consumptions);
+        List<Map<String, Object>> enriched = enrichConsumptions(consumptions, maskPrice);
         return ApiResponse.success(enriched);
     }
 
     /**
      * 4. 获取原材料批次的消耗记录
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): see {@link #getConsumptions} JavaDoc.
      */
     @GetMapping("/material-batch/{batchId}")
     @Operation(summary = "获取原材料批次的消耗记录", description = "根据原材料批次ID查询所有消耗记录")
     public ApiResponse<List<Map<String, Object>>> getConsumptionsByMaterialBatch(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "原材料批次ID") String batchId) {
+            @PathVariable @Parameter(description = "原材料批次ID") String batchId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取原材料批次消耗记录: factoryId={}, batchId={}", factoryId, batchId);
 
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
+
         List<MaterialConsumption> consumptions = consumptionRepository.findByFactoryIdAndBatchId(factoryId, batchId);
 
-        List<Map<String, Object>> enriched = enrichConsumptions(consumptions);
+        List<Map<String, Object>> enriched = enrichConsumptions(consumptions, maskPrice);
         return ApiResponse.success(enriched);
     }
 
     /**
      * 5. 获取时间范围内的消耗记录
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): see {@link #getConsumptions} JavaDoc.
      */
     @GetMapping("/time-range")
     @Operation(summary = "获取时间范围消耗记录", description = "根据时间范围查询消耗记录")
@@ -172,10 +204,13 @@ public class MaterialConsumptionController {
             @RequestParam @Parameter(description = "开始日期")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @Parameter(description = "结束日期")
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取时间范围消耗记录: factoryId={}, startDate={}, endDate={}",
                 factoryId, startDate, endDate);
+
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
 
         LocalDateTime startTime = startDate.atStartOfDay();
         LocalDateTime endTime = endDate.atTime(LocalTime.MAX);
@@ -183,12 +218,16 @@ public class MaterialConsumptionController {
         List<MaterialConsumption> consumptions = consumptionRepository.findByTimeRange(
                 factoryId, startTime, endTime);
 
-        List<Map<String, Object>> enriched = enrichConsumptions(consumptions);
+        List<Map<String, Object>> enriched = enrichConsumptions(consumptions, maskPrice);
         return ApiResponse.success(enriched);
     }
 
     /**
      * 6. 获取消耗统计
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): {@code totalCost} 和 byMaterialType
+     * 的 {@code cost} 字段 are gated by {@link PriceMaskResolver#shouldMaskPrice(String)}.
+     * Callers without {@code procurement:price:view} get a response with those keys omitted.
      */
     @GetMapping("/stats")
     @Operation(summary = "获取消耗统计", description = "获取原材料消耗统计数据")
@@ -198,9 +237,12 @@ public class MaterialConsumptionController {
             @RequestParam(required = false) @Parameter(description = "开始日期")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @Parameter(description = "结束日期")
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取消耗统计: factoryId={}, productionBatchId={}", factoryId, productionBatchId);
+
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
 
         List<MaterialConsumption> consumptions;
 
@@ -268,14 +310,18 @@ public class MaterialConsumptionController {
                     Map<String, Object> item = new HashMap<>();
                     item.put("materialTypeName", e.getKey());
                     item.put("quantity", e.getValue().get("quantity"));
-                    item.put("cost", e.getValue().get("cost"));
+                    if (!maskPrice) {
+                        item.put("cost", e.getValue().get("cost"));
+                    }
                     return item;
                 })
                 .collect(Collectors.toList());
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalQuantity", totalQuantity);
-        stats.put("totalCost", totalCost);
+        if (!maskPrice) {
+            stats.put("totalCost", totalCost);
+        }
         stats.put("consumptionCount", consumptions.size());
         stats.put("byMaterialType", byMaterialTypeList);
 
@@ -284,14 +330,21 @@ public class MaterialConsumptionController {
 
     /**
      * 7. 获取生产批次的消耗成本汇总
+     *
+     * <p>RBAC (PR #488 §F2 sister sweep, 2026-05-12): {@code totalCost} is gated by
+     * {@link PriceMaskResolver#shouldMaskPrice(String)}. Callers without
+     * {@code procurement:price:view} get a response with the {@code totalCost} key omitted.
      */
     @GetMapping("/batch/{productionBatchId}/cost")
     @Operation(summary = "获取批次消耗成本", description = "获取生产批次的原材料消耗成本汇总")
     public ApiResponse<Map<String, Object>> getBatchConsumptionCost(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "生产批次ID") Long productionBatchId) {
+            @PathVariable @Parameter(description = "生产批次ID") Long productionBatchId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
 
         log.info("获取批次消耗成本: factoryId={}, productionBatchId={}", factoryId, productionBatchId);
+
+        boolean maskPrice = priceMaskResolver.shouldMaskPrice(authorization);
 
         List<MaterialConsumption> consumptions = consumptionRepository.findByProductionBatchId(productionBatchId);
 
@@ -311,7 +364,9 @@ public class MaterialConsumptionController {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("totalCost", totalCost);
+        if (!maskPrice) {
+            result.put("totalCost", totalCost);
+        }
         result.put("totalQuantity", totalQuantity);
         result.put("recordCount", consumptions.size());
 
@@ -369,8 +424,12 @@ public class MaterialConsumptionController {
     /**
      * 丰富消耗记录列表（添加关联信息）
      * 优化：使用批量查询避免 N+1 问题
+     *
+     * @param consumptions 待丰富的消耗记录列表
+     * @param maskPrice    {@code true} → 输出 Map 中省略 {@code unitPrice}/{@code totalCost} 键
+     *                     (PR #488 §F2 sister sweep, 2026-05-12)
      */
-    private List<Map<String, Object>> enrichConsumptions(List<MaterialConsumption> consumptions) {
+    private List<Map<String, Object>> enrichConsumptions(List<MaterialConsumption> consumptions, boolean maskPrice) {
         if (consumptions.isEmpty()) {
             return Collections.emptyList();
         }
@@ -395,7 +454,7 @@ public class MaterialConsumptionController {
 
         // 使用预加载的 Map 进行丰富
         return consumptions.stream()
-                .map(c -> enrichConsumptionWithMaps(c, batchMap, userMap))
+                .map(c -> enrichConsumptionWithMaps(c, batchMap, userMap, maskPrice))
                 .collect(Collectors.toList());
     }
 
@@ -403,20 +462,29 @@ public class MaterialConsumptionController {
      * 丰富单条消耗记录（添加关联信息）
      * 用于单条记录查询场景
      * 注意：单条记录查询场景下，直接查询是可接受的，因为只有 1-2 次查询
+     *
+     * @param c         待丰富的消耗记录
+     * @param maskPrice {@code true} → 输出 Map 中省略 {@code unitPrice}/{@code totalCost} 键
+     *                  (PR #488 §F2 sister sweep, 2026-05-12)
      */
-    private Map<String, Object> enrichConsumption(MaterialConsumption c) {
+    private Map<String, Object> enrichConsumption(MaterialConsumption c, boolean maskPrice) {
         // 对于单条记录，使用 enrichConsumptions 批量方法以保持一致性
-        List<Map<String, Object>> result = enrichConsumptions(Collections.singletonList(c));
+        List<Map<String, Object>> result = enrichConsumptions(Collections.singletonList(c), maskPrice);
         return result.isEmpty() ? new HashMap<>() : result.get(0);
     }
 
     /**
      * 使用预加载的 Map 丰富消耗记录
+     *
+     * <p>PR #488 §F2 sister sweep (2026-05-12): when {@code maskPrice} is {@code true},
+     * {@code unitPrice} and {@code totalCost} keys are omitted entirely (not put-null).
+     * Any future price-bearing field added here MUST be gated by {@code maskPrice}.
      */
     private Map<String, Object> enrichConsumptionWithMaps(
             MaterialConsumption c,
             Map<String, MaterialBatch> batchMap,
-            Map<Long, User> userMap) {
+            Map<Long, User> userMap,
+            boolean maskPrice) {
 
         Map<String, Object> map = new HashMap<>();
         map.put("id", c.getId());
@@ -425,8 +493,10 @@ public class MaterialConsumptionController {
         map.put("productionBatchId", c.getProductionBatchId());
         map.put("batchId", c.getBatchId());
         map.put("quantity", c.getQuantity());
-        map.put("unitPrice", c.getUnitPrice());
-        map.put("totalCost", c.getTotalCost());
+        if (!maskPrice) {
+            map.put("unitPrice", c.getUnitPrice());
+            map.put("totalCost", c.getTotalCost());
+        }
         map.put("consumptionTime", c.getConsumptionTime());
         map.put("consumedAt", c.getConsumedAt());
         map.put("recordedBy", c.getRecordedBy());
