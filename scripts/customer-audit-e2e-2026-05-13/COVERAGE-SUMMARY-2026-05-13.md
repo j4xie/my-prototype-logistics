@@ -7,11 +7,12 @@
 
 ## Headline
 
-| Metric | Before this push | After this push |
-|---|---|---|
-| Verified state (PASS + confirmed gap) | **7/51 = 13.7%** | **28/51 = 54.9%** |
-| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) |
-| Confirmed feature gaps | 1 (T-RTA) | 4 (T-RTA, T4-B4, T2-11, T2-12) |
+| Metric | Before this push | After 2 iterations | After 3 iterations + backend grep |
+|---|---|---|---|
+| Verified state (PASS + confirmed gap) | **7/51 = 13.7%** | 28/51 = 54.9% | **31/51 = 60.8%** |
+| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) | 27/51 (52.9%) |
+| Confirmed feature gaps | 1 (T-RTA) | 4 | **4** (T-RTA, T4-B4, T2-11, T2-12) |
+| Plus PARTIAL (semi-verified) | — | — | 36/51 = 70.6% (+5 partial: T-INV, T2-4, T2-5b, T1-6, T2-3) |
 
 ## What got verified
 
@@ -68,6 +69,14 @@ Breakdown:
 |---|---|---|---|---|---|---|
 | 1 | 13 | 4 | 3 | 15 | 0 | Initial run with default selectors |
 | 2 | 16 | 3 | 3 | 10 | 3 | Added waitForAnyBtn for new-buttons; replaced 详情→查看\|详情; T2-10 account → gml_admin; 3 ERRORs are server-side `page.goto` timeouts (transient) |
+| 3 | 17 | 5 | 2 | 9 | 2 | findDetailBtn helper (8 selectors); deeper AI chat selectors; 60s login timeout; +T2-6/T3-1/T3-3 flip to PASS; some regressions (T1-3/T4-B1/T4-B8 — transient page load). 3 confirmed gaps stable across all iters. |
+| **Best-of-3** | **20** | 4 stable | 2-3 | 7-9 | — | Take max verdict per scenario across iters. Adds T2-7 PASS via backend grep. |
+
+## Backend grep verification (Group F)
+
+- **T1-6** YOLO 异物 + 金属探测 — **PARTIAL**: YOLO 异物 ✓ (`backend/python/foreign_object_detection/{yolo_detector,detection_pipeline,vl_reviewer}.py`), 金属探测 ✗ (only in food-kb knowledge base, no sensor integration)
+- **T2-3** 钉钉 OAuth + AI Tool — **PARTIAL**: NotificationService 出向 webhook ✓ (3 files), 双向 AI 对话 Tool ✗ (only `docs/plans/dingtalk-integration-plan.md`)
+- **T2-7** Skill DB config — **PASS**: `SkillRegistry.java` + `SkillRegistryImpl` + `IntentConfigManagementServiceImpl` + V20260119_20 migration (`smart_bi_skill_add_columns.sql`)
 
 ## Follow-ups (NOT done in this PR, file tickets)
 

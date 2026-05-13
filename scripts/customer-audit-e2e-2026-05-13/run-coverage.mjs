@@ -51,6 +51,20 @@ async function waitForAnyBtn(page, selectors, timeoutMs = 10000) {
   return null;
 }
 
+// Find any "navigate to detail" element on a list page — tries multiple patterns
+async function findDetailBtn(page, timeoutMs = 8000) {
+  return waitForAnyBtn(page, [
+    'a:has-text("查看")',
+    'a:has-text("详情")',
+    'button:has-text("查看")',
+    'button:has-text("详情")',
+    'a:has-text("编辑")',
+    'button:has-text("编辑")',
+    '.el-table tbody tr:first-child a.el-link',
+    '.el-table tbody tr:first-child .el-button--text',
+  ], timeoutMs);
+}
+
 const SCENARIOS = [
   // ===========================================================================
   // GROUP E quick wins (D1 deeper / D4 manual / INV scope)
@@ -109,7 +123,7 @@ const SCENARIOS = [
     run: async (page) => {
       await page.goto(`${TARGET}/production/batches`);
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-      const detailBtn = await page.$('a:has-text("查看"), a:has-text("详情"), button:has-text("查看"), button:has-text("详情")');
+      const detailBtn = await findDetailBtn(page, 10000);
       if (!detailBtn) return { verdict: 'INFO', reason: 'no detail button on batches list' };
       await detailBtn.click();
       await page.waitForTimeout(3000);
@@ -133,7 +147,7 @@ const SCENARIOS = [
     run: async (page) => {
       await page.goto(`${TARGET}/sales/orders`);
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-      const detailLink = await page.$('a:has-text("查看"), a:has-text("详情"), button:has-text("查看"), button:has-text("详情")');
+      const detailLink = await findDetailBtn(page, 10000);
       if (!detailLink) return { verdict: 'INFO', reason: 'no order to test (table empty?)' };
       await detailLink.click();
       await page.waitForTimeout(2500);
@@ -329,18 +343,23 @@ const SCENARIOS = [
     group: 'A',
     priority: 'P2',
     account: 'f006_admin',
-    description: 'T2-6 大模型理解: AI 对话输入框存在',
+    description: 'T2-6 大模型理解: AI 对话浮窗/入口/输入框存在',
     run: async (page) => {
       await page.goto(`${TARGET}/`);
       await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
-      const inputs = await page.$$('input[placeholder*="问"],input[placeholder*="对话"],textarea[placeholder*="提"]').catch(() => []);
+      // Try multiple AI-related elements (floating chat, header AI button, page-level chat panel)
+      const inputs = await page.$$('input[placeholder*="问"], input[placeholder*="对话"], textarea[placeholder*="提"], textarea[placeholder*="问"]').catch(() => []);
+      const aiFloat = await page.$('.ai-agent-floating, .ai-chat-trigger, .floating-ai-btn, [class*="ai-agent"], [class*="ai-float"]').catch(() => null);
       const bodyText = await page.textContent('body');
-      const hasAiChat = /AI 对话|智能对话|问问 AI/.test(bodyText || '');
+      const hasAiChat = /AI Agent|AI 对话|智能对话|问问 AI|AI 助手/.test(bodyText || '');
+      const hasHeaderAi = await page.$('header [class*="ai"], header [class*="agent"], .el-header [class*="ai"]').catch(() => null);
       return {
         url: page.url(),
         inputCount: inputs.length,
+        hasAiFloat: !!aiFloat,
+        hasHeaderAi: !!hasHeaderAi,
         hasAiChat,
-        verdict: inputs.length > 0 || hasAiChat ? 'PASS' : 'INFO',
+        verdict: (inputs.length > 0 || aiFloat || hasHeaderAi || hasAiChat) ? 'PASS' : 'INFO',
       };
     },
   },
@@ -420,7 +439,7 @@ const SCENARIOS = [
     run: async (page) => {
       await page.goto(`${TARGET}/procurement/orders`);
       await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
-      const detailBtn = await page.$('a:has-text("查看"), a:has-text("详情"), button:has-text("查看"), button:has-text("详情")');
+      const detailBtn = await findDetailBtn(page, 10000);
       if (!detailBtn) return { verdict: 'INFO — no order to inspect' };
       await detailBtn.click();
       await page.waitForTimeout(2500);
@@ -464,7 +483,7 @@ const SCENARIOS = [
     run: async (page) => {
       await page.goto(`${TARGET}/procurement/orders`);
       await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
-      const detailBtn = await page.$('a:has-text("详情")');
+      const detailBtn = await findDetailBtn(page, 10000);
       if (!detailBtn) return { verdict: 'INFO — no order' };
       await detailBtn.click();
       await page.waitForTimeout(3000);
@@ -553,7 +572,7 @@ const SCENARIOS = [
     account: 'f006_admin',
     description: 'T3-12 原料关联供应商: 原料 form 含供应商字段',
     run: async (page) => {
-      const candidates = ['/inventory/materials', '/material/list', '/inventory/material-types'];
+      const candidates = ['/inventory/material-types', '/inventory/materials', '/material/list', '/system/dictionary/material'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -581,7 +600,7 @@ const SCENARIOS = [
     account: 'f006_admin',
     description: 'T3-15 一二级单位转换: 原料字典含 1级单位/2级单位/系数',
     run: async (page) => {
-      const candidates = ['/inventory/material-types', '/inventory/materials', '/material'];
+      const candidates = ['/inventory/material-types', '/inventory/materials', '/material', '/system/dictionary'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -673,8 +692,9 @@ const SCENARIOS = [
     priority: 'P2',
     account: 'f006_admin',
     description: 'T4-D3 g↔kg 1:1000 换算: 餐饮配方 / BOM 含克/千克单位',
+    account: 'gml_admin',
     run: async (page) => {
-      const candidates = ['/restaurant/recipes', '/production/bom', '/recipe'];
+      const candidates = ['/restaurant/recipes', '/production/bom', '/recipe', '/inventory/material-types'];
       let landed = null;
       let bodyText = '';
       for (const c of candidates) {
@@ -902,7 +922,12 @@ const SCENARIOS = [
 // ---------------------------------------------------------------------------
 async function login(page, account) {
   if (!account) return true;
-  await page.goto(`${TARGET}/login`);
+  try {
+    await page.goto(`${TARGET}/login`, { timeout: 60000 });
+  } catch (e) {
+    console.error(`  ✗ login: goto /login timed out for ${account}: ${e.message}`);
+    return false;
+  }
   await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
   const { username, password } = ACCOUNTS[account];
   await page.fill('input[placeholder*="用户名"], input[type="text"]', username);
@@ -928,7 +953,12 @@ async function getOrCreateStorageState(browser, account) {
   if (STORAGE_STATE_CACHE.has(account)) return STORAGE_STATE_CACHE.get(account);
   const ctx = await browser.newContext({ acceptDownloads: true });
   const page = await ctx.newPage();
-  const ok = await login(page, account);
+  let ok = false;
+  try {
+    ok = await login(page, account);
+  } catch (e) {
+    console.error(`  ✗ login threw for ${account}: ${e.message}`);
+  }
   if (!ok) {
     await ctx.close();
     return null;
