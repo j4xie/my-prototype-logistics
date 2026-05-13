@@ -1,0 +1,1043 @@
+{
+  "round": "R1-part3-chat3",
+  "spec": "docs/qa-specs/2026-05-12-smartbi-python-port-deep-e2e-spec.md §3.2",
+  "env": "http://139.196.165.140:8097",
+  "startedAt": "2026-05-13T04:23:03.141Z",
+  "finishedAt": "2026-05-13T04:24:17.540Z",
+  "branch": "qa/r1-customer-facing-deep",
+  "cellCount": 8,
+  "depthBreakdown": {
+    "smoke": 0,
+    "medium": 6,
+    "deep": 2
+  },
+  "pass": 8,
+  "fail": 0,
+  "sessions": [
+    {
+      "user": "factory_admin1",
+      "role": "factory_super_admin",
+      "cells": [
+        {
+          "cellId": "procurement_orders-factory_admin1",
+          "role": "factory_admin1",
+          "page": "/procurement/orders",
+          "pr": "#423+#413",
+          "depth": "medium",
+          "ts": "2026-05-13T04:23:25.179Z",
+          "navResult": "OK",
+          "list": {
+            "headers": [
+              "订单编号",
+              "供应商",
+              "类型",
+              "下单日期",
+              "总金额",
+              "状态",
+              "操作"
+            ],
+            "rows": [
+              {
+                "订单编号": "PO-20260507-0005",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "总金额": "¥3,000.00",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0004",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "总金额": "¥4,000.00",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0003",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "总金额": "¥5,000.00",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0002",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "总金额": "¥4,000.00",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0001",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "总金额": "¥5,000.00",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              }
+            ],
+            "rowCount": 5,
+            "totalMaskedSpans": 0
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646205432
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646205859
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/purchase_order/effective",
+              "status": 200,
+              "ts": 1778646207057
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646207061
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/raw-material-types/active",
+              "status": 200,
+              "ts": 1778646207066
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/suppliers?page=1&size=100",
+              "status": 200,
+              "ts": 1778646207066
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders?page=1&size=10",
+              "status": 200,
+              "ts": 1778646207091
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=100",
+              "status": 200,
+              "ts": 1778646207734
+            }
+          ],
+          "consoleErrors": [],
+          "errorApiCalls": [],
+          "durationMs": 4005,
+          "verdict": "PASS"
+        },
+        {
+          "cellId": "procurement_receives-factory_admin1",
+          "role": "factory_admin1",
+          "page": "/procurement/receives",
+          "pr": "#423+#414",
+          "depth": "medium",
+          "ts": "2026-05-13T04:23:29.184Z",
+          "navResult": "OK",
+          "list": {
+            "headers": [
+              "入库单号",
+              "状态",
+              "采购订单",
+              "供应商",
+              "入库日期",
+              "物料行数",
+              "收货数量",
+              "创建人",
+              "创建时间",
+              "操作"
+            ],
+            "rows": [
+              {
+                "入库单号": "RCV-20260507-5392",
+                "状态": "已确认",
+                "采购订单": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "100 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:19:25",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-5212",
+                "状态": "已确认",
+                "采购订单": "7a7ddf18-2d9b-4cff-b494-47381079d979",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "50 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:19:25",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-4929",
+                "状态": "已确认",
+                "采购订单": "387fa421-3baa-4864-ae77-2c26aa1a74c2",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "100 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:19:24",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-3718",
+                "状态": "已确认",
+                "采购订单": "617f69ba-e866-412b-96f9-4e274bcec46d",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "50 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:03:43",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-3318",
+                "状态": "已确认",
+                "采购订单": "48b77374-e027-4598-a79e-56d3fc4cce3b",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "100 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:03:03",
+                "操作": "详情",
+                "_maskedSpans": []
+              }
+            ],
+            "rowCount": 5,
+            "totalMaskedSpans": 0
+          },
+          "detail": {
+            "opened": true,
+            "dialogData": [
+              {
+                "headers": [
+                  "物料名称",
+                  "到货数量",
+                  "单位",
+                  "单价",
+                  "质检",
+                  "备注"
+                ],
+                "rows": [
+                  {
+                    "物料名称": "墨鱼",
+                    "到货数量": "100",
+                    "单位": "kg",
+                    "单价": "30",
+                    "质检": "",
+                    "备注": "",
+                    "_maskedSpans": []
+                  }
+                ]
+              }
+            ]
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646209826
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/reference-data/purchase-orders?usage=receivable",
+              "status": 200,
+              "ts": 1778646210565
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646210566
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/reference-data/materials?usage=active",
+              "status": 200,
+              "ts": 1778646210573
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/receives?page=1&size=20",
+              "status": 200,
+              "ts": 1778646210644
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/reference-data/suppliers?usage=active",
+              "status": 200,
+              "ts": 1778646211063
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/receives/9a5a5370-c8ef-4487-bd23-b3907ff8284e",
+              "status": 200,
+              "ts": 1778646212927
+            }
+          ],
+          "consoleErrors": [],
+          "errorApiCalls": [],
+          "durationMs": 6074,
+          "verdict": "PASS"
+        },
+        {
+          "cellId": "sales_orders-factory_admin1",
+          "role": "factory_admin1",
+          "page": "/sales/orders",
+          "pr": "#423",
+          "depth": "medium",
+          "ts": "2026-05-13T04:23:35.258Z",
+          "navResult": "OK",
+          "list": {
+            "headers": [
+              "#",
+              "订单号",
+              "客户",
+              "下单日期",
+              "要求交货日期",
+              "订单总金额",
+              "状态",
+              "操作"
+            ],
+            "rows": [
+              {
+                "#": "1",
+                "订单号": "SO-20260428-0002",
+                "客户": "批量客户1",
+                "下单日期": "2026-04-27",
+                "要求交货日期": "-",
+                "订单总金额": "¥5,000.00",
+                "状态": "已取消",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "#": "2",
+                "订单号": "SO-20260428-0001",
+                "客户": "批量客户1",
+                "下单日期": "2026-04-27",
+                "要求交货日期": "-",
+                "订单总金额": "¥1,000.00",
+                "状态": "财务通过",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "#": "3",
+                "订单号": "SO-20260426-0005",
+                "客户": "JSON导入客户1",
+                "下单日期": "2026-04-25",
+                "要求交货日期": "-",
+                "订单总金额": "¥255.00",
+                "状态": "草稿",
+                "操作": "确认订单取消 详情",
+                "_maskedSpans": []
+              },
+              {
+                "#": "4",
+                "订单号": "SO-20260426-0004",
+                "客户": "JSON导入客户1",
+                "下单日期": "2026-04-25",
+                "要求交货日期": "-",
+                "订单总金额": "¥255.00",
+                "状态": "草稿",
+                "操作": "确认订单取消 详情",
+                "_maskedSpans": []
+              },
+              {
+                "#": "5",
+                "订单号": "SO-20260426-0003",
+                "客户": "JSON导入客户1",
+                "下单日期": "2026-04-25",
+                "要求交货日期": "-",
+                "订单总金额": "¥255.00",
+                "状态": "草稿",
+                "操作": "确认订单取消 详情",
+                "_maskedSpans": []
+              }
+            ],
+            "rowCount": 5,
+            "totalMaskedSpans": 0
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646215891
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646216168
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/sales_order/effective",
+              "status": 200,
+              "ts": 1778646216170
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/customers?page=1&size=100",
+              "status": 200,
+              "ts": 1778646216171
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=10",
+              "status": 200,
+              "ts": 1778646216171
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/product-types/active",
+              "status": 200,
+              "ts": 1778646216197
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/users?page=1&size=200",
+              "status": 200,
+              "ts": 1778646216450
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=20",
+              "status": 200,
+              "ts": 1778646217193
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/sales_order/effective",
+              "status": 200,
+              "ts": 1778646217684
+            }
+          ],
+          "consoleErrors": [],
+          "errorApiCalls": [],
+          "durationMs": 3420,
+          "verdict": "PASS"
+        },
+        {
+          "cellId": "pdf-deep-factory_admin1",
+          "role": "factory_admin1",
+          "page": "/procurement/orders",
+          "pr": "#413+#423",
+          "depth": "deep",
+          "ts": "2026-05-13T04:23:38.678Z",
+          "tokenAndIds": {
+            "tokenLen": 259,
+            "ids": [
+              {
+                "id": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+                "orderNumber": "PO-20260507-0005",
+                "status": "COMPLETED"
+              },
+              {
+                "id": "7a7ddf18-2d9b-4cff-b494-47381079d979",
+                "orderNumber": "PO-20260507-0004",
+                "status": "COMPLETED"
+              },
+              {
+                "id": "387fa421-3baa-4864-ae77-2c26aa1a74c2",
+                "orderNumber": "PO-20260507-0003",
+                "status": "COMPLETED"
+              }
+            ]
+          },
+          "targetOrder": {
+            "id": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+            "orderNumber": "PO-20260507-0005",
+            "status": "COMPLETED"
+          },
+          "download": {
+            "ok": true,
+            "status": 200,
+            "size": 3611,
+            "headHex": "25 50 44 46 2d 31 2e 34",
+            "headStr": "%PDF-1.4",
+            "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders/1af43c4a-7403-44f6-9f8f-cf9c31dbdb29/pdf",
+            "pdfPath": "C:\\Users\\Steve\\cretas-r1-cf-deep\\tests\\qa-r1-cf-deep/pdfs/pdf-deep-factory_admin1-PO-20260507-0005.pdf",
+            "containsPrice": false,
+            "priceSnippets": []
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646219307
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/suppliers?page=1&size=100",
+              "status": 200,
+              "ts": 1778646219340
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/purchase_order/effective",
+              "status": 200,
+              "ts": 1778646219391
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders?page=1&size=10",
+              "status": 200,
+              "ts": 1778646219413
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/raw-material-types/active",
+              "status": 200,
+              "ts": 1778646219597
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=100",
+              "status": 200,
+              "ts": 1778646219630
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646219762
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders?page=1&size=3",
+              "status": 200,
+              "ts": 1778646221808
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders/1af43c4a-7403-44f6-9f8f-cf9c31dbdb29/pdf",
+              "status": 200,
+              "ts": 1778646222379
+            }
+          ],
+          "errorApiCalls": [],
+          "durationMs": 3703,
+          "verdict": "PASS"
+        }
+      ],
+      "loginResult": "OK",
+      "loginDurationMs": 21830
+    },
+    {
+      "user": "warehouse_mgr1",
+      "role": "warehouse_manager",
+      "cells": [
+        {
+          "cellId": "procurement_orders-warehouse_mgr1",
+          "role": "warehouse_mgr1",
+          "page": "/procurement/orders",
+          "pr": "#423+#413",
+          "depth": "medium",
+          "ts": "2026-05-13T04:24:00.065Z",
+          "navResult": "OK",
+          "list": {
+            "headers": [
+              "订单编号",
+              "供应商",
+              "类型",
+              "下单日期",
+              "状态",
+              "操作"
+            ],
+            "rows": [
+              {
+                "订单编号": "PO-20260507-0005",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0004",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0003",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0002",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              },
+              {
+                "订单编号": "PO-20260507-0001",
+                "供应商": "PO_SUP_061102",
+                "类型": "直接",
+                "下单日期": "2026-05-07",
+                "状态": "已完成",
+                "操作": "详情PDF",
+                "_maskedSpans": []
+              }
+            ],
+            "rowCount": 5,
+            "totalMaskedSpans": 0
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646240217
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646240698
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/purchase_order/effective",
+              "status": 200,
+              "ts": 1778646241896
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/raw-material-types/active",
+              "status": 200,
+              "ts": 1778646241902
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646241904
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders?page=1&size=10",
+              "status": 200,
+              "ts": 1778646241933
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=100",
+              "status": 200,
+              "ts": 1778646241934
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/suppliers?page=1&size=100",
+              "status": 200,
+              "ts": 1778646242234
+            }
+          ],
+          "consoleErrors": [],
+          "errorApiCalls": [],
+          "durationMs": 3937,
+          "verdict": "PASS"
+        },
+        {
+          "cellId": "procurement_receives-warehouse_mgr1",
+          "role": "warehouse_mgr1",
+          "page": "/procurement/receives",
+          "pr": "#423+#414",
+          "depth": "medium",
+          "ts": "2026-05-13T04:24:04.002Z",
+          "navResult": "OK",
+          "list": {
+            "headers": [
+              "入库单号",
+              "状态",
+              "采购订单",
+              "供应商",
+              "入库日期",
+              "物料行数",
+              "收货数量",
+              "创建人",
+              "创建时间",
+              "操作"
+            ],
+            "rows": [
+              {
+                "入库单号": "RCV-20260507-5392",
+                "状态": "已确认",
+                "采购订单": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "100 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:19:25",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-5212",
+                "状态": "已确认",
+                "采购订单": "7a7ddf18-2d9b-4cff-b494-47381079d979",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "50 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:19:25",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-4929",
+                "状态": "已确认",
+                "采购订单": "387fa421-3baa-4864-ae77-2c26aa1a74c2",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "100 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:19:24",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-3718",
+                "状态": "已确认",
+                "采购订单": "617f69ba-e866-412b-96f9-4e274bcec46d",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "50 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:03:43",
+                "操作": "详情",
+                "_maskedSpans": []
+              },
+              {
+                "入库单号": "RCV-20260507-3318",
+                "状态": "已确认",
+                "采购订单": "48b77374-e027-4598-a79e-56d3fc4cce3b",
+                "供应商": "caa7d438-e9ce-4a2f-ab3b-9768deaa1b24",
+                "入库日期": "2026-05-07",
+                "物料行数": "1",
+                "收货数量": "100 kg",
+                "创建人": "",
+                "创建时间": "2026/5/7 12:03:03",
+                "操作": "详情",
+                "_maskedSpans": []
+              }
+            ],
+            "rowCount": 5,
+            "totalMaskedSpans": 0
+          },
+          "detail": {
+            "opened": true,
+            "dialogData": [
+              {
+                "headers": [
+                  "物料名称",
+                  "到货数量",
+                  "单位",
+                  "单价",
+                  "质检",
+                  "备注"
+                ],
+                "rows": [
+                  {
+                    "物料名称": "墨鱼",
+                    "到货数量": "100",
+                    "单位": "kg",
+                    "单价": "—",
+                    "质检": "",
+                    "备注": "",
+                    "_maskedSpans": [
+                      "—"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646245166
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/reference-data/materials?usage=active",
+              "status": 200,
+              "ts": 1778646245522
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/reference-data/purchase-orders?usage=receivable",
+              "status": 200,
+              "ts": 1778646245522
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/reference-data/suppliers?usage=active",
+              "status": 200,
+              "ts": 1778646245523
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/receives?page=1&size=20",
+              "status": 200,
+              "ts": 1778646245568
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646245575
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/receives/9a5a5370-c8ef-4487-bd23-b3907ff8284e",
+              "status": 200,
+              "ts": 1778646247716
+            }
+          ],
+          "consoleErrors": [],
+          "errorApiCalls": [],
+          "durationMs": 5979,
+          "verdict": "PASS"
+        },
+        {
+          "cellId": "sales_orders-warehouse_mgr1",
+          "role": "warehouse_mgr1",
+          "page": "/sales/orders",
+          "pr": "#423",
+          "depth": "medium",
+          "ts": "2026-05-13T04:24:09.981Z",
+          "navResult": "OK",
+          "list": {
+            "headers": [
+              "#",
+              "订单号",
+              "客户",
+              "下单日期",
+              "要求交货日期",
+              "订单总金额",
+              "状态",
+              "操作"
+            ],
+            "rows": [
+              {
+                "#": "1",
+                "订单号": "SO-20260428-0002",
+                "客户": "批量客户1",
+                "下单日期": "2026-04-27",
+                "要求交货日期": "-",
+                "订单总金额": "—",
+                "状态": "已取消",
+                "操作": "详情",
+                "_maskedSpans": [
+                  "—"
+                ]
+              },
+              {
+                "#": "2",
+                "订单号": "SO-20260428-0001",
+                "客户": "批量客户1",
+                "下单日期": "2026-04-27",
+                "要求交货日期": "-",
+                "订单总金额": "—",
+                "状态": "财务通过",
+                "操作": "详情",
+                "_maskedSpans": [
+                  "—"
+                ]
+              },
+              {
+                "#": "3",
+                "订单号": "SO-20260426-0005",
+                "客户": "JSON导入客户1",
+                "下单日期": "2026-04-25",
+                "要求交货日期": "-",
+                "订单总金额": "—",
+                "状态": "草稿",
+                "操作": "确认订单取消 详情",
+                "_maskedSpans": [
+                  "—"
+                ]
+              },
+              {
+                "#": "4",
+                "订单号": "SO-20260426-0004",
+                "客户": "JSON导入客户1",
+                "下单日期": "2026-04-25",
+                "要求交货日期": "-",
+                "订单总金额": "—",
+                "状态": "草稿",
+                "操作": "确认订单取消 详情",
+                "_maskedSpans": [
+                  "—"
+                ]
+              },
+              {
+                "#": "5",
+                "订单号": "SO-20260426-0003",
+                "客户": "JSON导入客户1",
+                "下单日期": "2026-04-25",
+                "要求交货日期": "-",
+                "订单总金额": "—",
+                "状态": "草稿",
+                "操作": "确认订单取消 详情",
+                "_maskedSpans": [
+                  "—"
+                ]
+              }
+            ],
+            "rowCount": 5,
+            "totalMaskedSpans": 5
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646250897
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=10",
+              "status": 200,
+              "ts": 1778646250898
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646251126
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/sales_order/effective",
+              "status": 200,
+              "ts": 1778646251131
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/customers?page=1&size=100",
+              "status": 200,
+              "ts": 1778646251187
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/product-types/active",
+              "status": 200,
+              "ts": 1778646251196
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/sales_order/effective",
+              "status": 200,
+              "ts": 1778646251713
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=20",
+              "status": 200,
+              "ts": 1778646251805
+            }
+          ],
+          "consoleErrors": [],
+          "errorApiCalls": [],
+          "durationMs": 3903,
+          "verdict": "PASS"
+        },
+        {
+          "cellId": "pdf-deep-warehouse_mgr1",
+          "role": "warehouse_mgr1",
+          "page": "/procurement/orders",
+          "pr": "#413+#423",
+          "depth": "deep",
+          "ts": "2026-05-13T04:24:13.884Z",
+          "tokenAndIds": {
+            "tokenLen": 259,
+            "ids": [
+              {
+                "id": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+                "orderNumber": "PO-20260507-0005",
+                "status": "COMPLETED"
+              },
+              {
+                "id": "7a7ddf18-2d9b-4cff-b494-47381079d979",
+                "orderNumber": "PO-20260507-0004",
+                "status": "COMPLETED"
+              },
+              {
+                "id": "387fa421-3baa-4864-ae77-2c26aa1a74c2",
+                "orderNumber": "PO-20260507-0003",
+                "status": "COMPLETED"
+              }
+            ]
+          },
+          "targetOrder": {
+            "id": "1af43c4a-7403-44f6-9f8f-cf9c31dbdb29",
+            "orderNumber": "PO-20260507-0005",
+            "status": "COMPLETED"
+          },
+          "download": {
+            "ok": true,
+            "status": 200,
+            "size": 3609,
+            "headHex": "25 50 44 46 2d 31 2e 34",
+            "headStr": "%PDF-1.4",
+            "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders/1af43c4a-7403-44f6-9f8f-cf9c31dbdb29/pdf",
+            "pdfPath": "C:\\Users\\Steve\\cretas-r1-cf-deep\\tests\\qa-r1-cf-deep/pdfs/pdf-deep-warehouse_mgr1-PO-20260507-0005.pdf",
+            "containsPrice": false,
+            "priceSnippets": []
+          },
+          "apiCalls": [
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/canvas/role-module-override",
+              "status": 200,
+              "ts": 1778646254480
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/modules/purchase_order/effective",
+              "status": 200,
+              "ts": 1778646254572
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/suppliers?page=1&size=100",
+              "status": 200,
+              "ts": 1778646254573
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders?page=1&size=10",
+              "status": 200,
+              "ts": 1778646254590
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/raw-material-types/active",
+              "status": 200,
+              "ts": 1778646254771
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/config/disabled-modules",
+              "status": 200,
+              "ts": 1778646255013
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/sales/orders?page=1&size=100",
+              "status": 200,
+              "ts": 1778646255288
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders?page=1&size=3",
+              "status": 200,
+              "ts": 1778646257025
+            },
+            {
+              "url": "http://139.196.165.140:8097/api/mobile/F001/purchase/orders/1af43c4a-7403-44f6-9f8f-cf9c31dbdb29/pdf",
+              "status": 200,
+              "ts": 1778646257350
+            }
+          ],
+          "errorApiCalls": [],
+          "durationMs": 3467,
+          "verdict": "PASS"
+        }
+      ],
+      "loginResult": "OK",
+      "loginDurationMs": 17631
+    }
+  ]
+}
