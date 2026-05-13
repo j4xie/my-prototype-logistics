@@ -7,12 +7,28 @@
 
 ## Headline
 
-| Metric | Before this push | After iter 2 | After iter 3 + backend grep | After iter 4 (post-review) | **After iter 5 (Vue-source-verified)** |
-|---|---|---|---|---|---|
-| Verified state (PASS + gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | 33/51 = 64.7% | **37/51 = 72.5%** |
-| Strict PASS only | 6/51 (11.8%) | 24/51 (47.1%) | 27/51 (52.9%) | 29/51 (56.9%) | **33/51 (64.7%)** |
-| Confirmed gaps | 1 (T-RTA) | 4 | 4 | 4 | **4** (T-RTA, T4-B4, T4-D4, T2-5b) |
-| Plus PARTIAL | — | — | 36/51 = 70.6% | 37/51 = 72.5% | **41/51 = 80.4%** |
+| Metric | Before push | iter 2 | iter 3 | iter 4 | iter 5 | **iter 6 (post-PR #517 merge)** |
+|---|---|---|---|---|---|---|
+| Verified state (PASS + gap) | 7/51 = 13.7% | 28/51 = 54.9% | 31/51 = 60.8% | 33/51 = 64.7% | 37/51 = 72.5% | **38/51 = 74.5%** |
+| Strict PASS only | 6 (11.8%) | 24 (47.1%) | 27 (52.9%) | 29 (56.9%) | 33 (64.7%) | **33 (64.7%)** |
+| Confirmed gaps | 1 (T-RTA) | 4 | 4 | 4 | 4 | **5** (T-RTA, T4-B4, T4-D4, T2-5b, **T4-D1**) |
+| Plus PARTIAL | — | — | 36/51 = 70.6% | 37/51 = 72.5% | 41/51 = 80.4% | **42/51 = 82.4%** |
+
+### Iter 6 (post-PR #517 merge) deliverables
+
+1. **T4-D1 confirmed gap via source grep** (new 5th gap). `sales/orders/list.vue:925-955` dialog 列结构 = 品名/规格/下单数量/单位/单价/箱数/税率/操作 — no 仓库 / batch source column. `utils/warehouse.ts:21-26` provides `warehouseDisplayLabel` (WH-LOG → 总仓, WH-WKS → 线边仓) but **NOT imported in sales/orders/list.vue**. Verdict logic updated to source-aware FAIL. → **GitHub issue #525** filed.
+
+2. **Test env probe** (3 deferred asks T4-B3/T4-D5/T3-14): web-admin-test at 139:8097 reachable, but per memory `reference_test_env_warehouse_account.md` F006 test seed accounts NOT present (only F001 seed). Defer permanently from F006 agent scope — needs cross-team test env seed work.
+
+3. **Visual QA tickets filed**:
+   - T3-6 采购订单字段挤压 → **issue #523**
+   - T3-13 成品详情规格列盖住 → **issue #524**
+   
+4. **9 truly unverified remaining** (down from 10):
+   - 3 RN scope (T1-4 小程序 / T4-B6 App / T1-5 报工)
+   - 3 test env defer (T4-B3 / T4-D5 / T3-14)
+   - 2 visual QA tickets filed (T3-6 #523 / T3-13 #524)
+   - 1 T3-2 conditional (feature in code, F006 prod no triggering data)
 
 ### Iter 5 (Vue-source-verified selectors) major gains
 
