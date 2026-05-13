@@ -21,6 +21,7 @@ import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.sales.OperationalQuoteRepository;
+import com.cretas.aims.security.PriceMaskResolver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -60,6 +61,10 @@ class ReferenceDataControllerTest {
     @Mock SalesOrderRepository salesOrderRepository;
     @Mock PurchaseOrderRepository purchaseOrderRepository;
     @Mock MaterialBatchRepository materialBatchRepository;
+    // findProducts now takes an Authorization header for price-masking. The
+    // controller field is @Autowired final, so @InjectMocks needs a mock here
+    // (returning false = no masking, matches default null-Authorization behavior).
+    @Mock PriceMaskResolver priceMaskResolver;
 
     @InjectMocks ReferenceDataController controller;
 
