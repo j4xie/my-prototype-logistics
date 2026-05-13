@@ -51,27 +51,7 @@ const factoryId = computed(() => authStore.factoryId);
 const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
-// PR #423/#443/#456/#457/#458 follow-up (P3, 2026-05-12):
-// Backend PriceFieldResponseAdvice + PriceSensitiveSerializerModifier strip
-// price fields to null for roles outside PermissionServiceImpl.PRICE_VIEW_ROLES.
-// E2E flagged that <span v-if="row.totalAmount != null"> still rendered the
-// column HEADERS 总金额 / 运费 / 折扣 for warehouse_manager (cells empty,
-// headers visible → misleading). Mirror the backend role whitelist here to
-// hide the columns entirely.
-// Whitelist source: backend/.../PermissionServiceImpl.java PRICE_VIEW_ROLES
-const PRICE_VIEW_ROLES = [
-  'factory_super_admin',
-  'platform_admin',
-  'procurement_manager',
-  'finance_manager',
-  'sales_manager',
-  'dispatcher',
-  'production_manager',
-  'restaurant_manager',
-  'permission_admin',
-  'department_admin',
-];
-const canViewPrice = computed(() => PRICE_VIEW_ROLES.includes(authStore.currentRole));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
