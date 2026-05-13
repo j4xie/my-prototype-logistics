@@ -171,9 +171,9 @@ const SCENARIOS = [
     tag: 'S-T-B2-batch-select',
     priority: 'P1',
     account: 'f006_admin',
-    description: 'T4-B2 调拨批次选择: 用正确路径 /inventory/transfer-orders (D1 cascade PR #355)',
+    description: 'T4-B2 调拨批次选择: actual route /transfer/list (router/index.ts:187, NOT /inventory/transfer-orders)',
     run: async (page, ctx) => {
-      await page.goto(`${TARGET}/inventory/transfer-orders`);
+      await page.goto(`${TARGET}/transfer/list`);
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
       const headers = await page.$$eval('.el-table th', (els) => els.map((el) => el.textContent?.trim() || ''));
       const hasCurrentStockCol = headers.some((h) => h.includes('现有库存'));  // T4-B4
@@ -346,9 +346,9 @@ const SCENARIOS = [
     tag: 'S-T-INV-collect',
     priority: 'P1',
     account: 'f006_admin',
-    description: 'T-INV 一键收款 + 财务审批闭环',
+    description: 'T-INV 一键收款 + 财务审批闭环 (actual route /finance/payments, router:434)',
     run: async (page, ctx) => {
-      await page.goto(`${TARGET}/finance/收款管理`).catch(() => page.goto(`${TARGET}/finance/collections`));
+      await page.goto(`${TARGET}/finance/payments`);
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
       const bodyText = await page.textContent('body');
       const hasOneClickConfirm = /一键确认|一键收款/.test(bodyText || '');
