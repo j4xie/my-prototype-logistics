@@ -192,3 +192,10 @@ meituan:
     member_id: ["会员卡号"]
     product: ["菜品名称", "菜品"]
     category: ["分类", "菜品类别"]
+    # QHJ 收入管理报表 spec §5.2 — 2026-05-13 added for revenue report feature
+    order_type: ["订单类型", "堂食/外卖"]
+    meal_period: ["班次", "市段", "午晚市"]
+    revenue_ratio: ["营业额占比", "营业额占比(%)"]
+    avg_order_spend: ["单均消费"]
+    avg_diner_spend: ["人均消费"]
+    store_name: ["门店名称", "店铺名称"]
