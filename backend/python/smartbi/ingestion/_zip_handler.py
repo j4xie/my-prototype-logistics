@@ -12,12 +12,12 @@ Plan: docs/superpowers/plans/2026-05-12-qhj-revenue-report.md Task B2
 """
 import io
 import zipfile
-from typing import Iterator
+from typing import Iterator, Tuple
 
 _DATA_SUFFIXES = {".csv", ".xlsx", ".xls"}
 
 
-def extract_inner_files(zip_bytes: bytes) -> Iterator[tuple[str, bytes]]:
+def extract_inner_files(zip_bytes: bytes) -> Iterator[Tuple[str, bytes]]:
     """Yield (filename, content) for every data file inside, recursing into nested zips.
 
     Skips:

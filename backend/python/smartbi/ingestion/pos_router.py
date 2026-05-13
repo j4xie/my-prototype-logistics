@@ -13,6 +13,8 @@ file as preview_headers so the API layer can surface them in 400 response.
 Spec: docs/qa-specs/2026-05-12-qhj-revenue-report-design.md §5.1
 Plan: docs/superpowers/plans/2026-05-12-qhj-revenue-report.md Task B5
 """
+from __future__ import annotations  # py38 compat: builtin generics list/tuple/dict
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, Optional
@@ -55,7 +57,8 @@ def _route_by_filename(filename: str) -> Optional[RouteDecision]:
     stripped = strip_pos_prefix(filename)
     for entry in _REGISTRY:
         if entry["keyword"] in stripped:
-            type_short = entry["writer"].removesuffix("_writer")
+            writer = entry["writer"]
+            type_short = writer[:-len("_writer")] if writer.endswith("_writer") else writer
             return RouteDecision(
                 report_type=type_short,
                 writer=entry["writer"],

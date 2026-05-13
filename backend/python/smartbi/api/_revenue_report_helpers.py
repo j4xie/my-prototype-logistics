@@ -208,7 +208,7 @@ async def _log_audit(
                         CASE WHEN $12 = 'no-data' THEN NULL
                              ELSE $12::timestamp END)
                 """,
-                params.factory_id, "qhj_revenue_v1", user_id,
+                params.factory_id, "qhj_revenue_v1", str(user_id),
                 json.dumps(params_snapshot), params_hash, cache_key,
                 summary.get("cache_hit", False),
                 summary.get("file_size_bytes"),

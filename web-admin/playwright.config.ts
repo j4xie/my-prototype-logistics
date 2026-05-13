@@ -109,5 +109,24 @@ export default defineConfig({
       workers: 1,
       use: { storageState: 'test-results/.auth/factory-admin.json' },
     },
+    // Step 15: QHJ revenue report (Phase I, 2026-05-13). Self-injects auth via
+    // e2e-auth-helper; doesn't depend on vue-auth (uses qhj_admin not factory_admin1).
+    // Run via:
+    //   E2E_BASE_URL=http://139.196.165.140:8097 \
+    //   E2E_API_BASE=http://139.196.165.140:8097/api/mobile \
+    //   E2E_USER=qhj_admin E2E_PASS=... E2E_FACTORY_ID=R_QINGHUAJIAO_REAL \
+    //   npx playwright test --project revenue-report
+    {
+      name: 'revenue-report',
+      testMatch: 'revenue-report.spec.ts',
+      fullyParallel: false,
+      workers: 1,
+    },
+    {
+      name: 'revenue-report-smoke',
+      testMatch: 'revenue-report-smoke.spec.ts',
+      fullyParallel: false,
+      workers: 1,
+    },
   ],
 });

@@ -77,6 +77,7 @@ from smartbi.api import (  # noqa: E402
 )
 from smartbi.api import restaurant_sections  # noqa: E402
 from smartbi.api import intent_analysis  # noqa: E402
+from smartbi.api import revenue_report  # noqa: E402  (Phase G2, PR #516 — was unwired)
 from smartbi.api.materialized_analytics import router as materialized_analytics_router  # noqa: E402
 from smartbi.capability.api import router as capability_router  # noqa: E402
 
@@ -981,6 +982,8 @@ app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Si
 app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
 app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["MaterializedAnalytics"])
+# QHJ revenue report (Phase G2 / PR #516) — router has full prefix baked in
+app.include_router(revenue_report.router, tags=["Revenue Report"])
 app.include_router(capability_router)
 app.include_router(ota_endpoints.router, prefix="/api/ota", tags=["OTA"])
 

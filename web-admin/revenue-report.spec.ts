@@ -23,17 +23,23 @@ const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
 const FACTORY_ID = process.env.E2E_FACTORY_ID || 'R_QINGHUAJIAO_REAL';
 const REVENUE_REPORT_PATH = '/smart-bi/revenue-report';
 const SD = 'test-results/screenshots/revenue-report';
+const API_BASE = process.env.E2E_API_BASE || `${BASE_URL}/api/mobile`;
 
 let authResult: LoginResult | null = null;
 
 test.beforeAll(async () => {
   // Login as a RESTAURANT-type user for the target factory.
-  // E2E_USER / E2E_PASS env vars supplied by test runner.
-  authResult = await fetchLoginToken({
-    username: process.env.E2E_USER || 'qhj_admin',
-    password: process.env.E2E_PASS || 'qhj_admin_password',
-    factoryId: FACTORY_ID,
-  }).catch(() => null);
+  // fetchLoginToken signature: (username, password, apiBase).
+  // E2E_USER / E2E_PASS / E2E_API_BASE env vars supplied by test runner.
+  authResult = await fetchLoginToken(
+    process.env.E2E_USER || 'qhj_admin',
+    process.env.E2E_PASS || 'QhjAdmin@2026',
+    API_BASE,
+  ).catch((e) => {
+    // eslint-disable-next-line no-console
+    console.error(`[revenue-report] login failed: ${e?.message || e}`);
+    return null;
+  });
 });
 
 async function gotoRevenueReport(page: Page) {
