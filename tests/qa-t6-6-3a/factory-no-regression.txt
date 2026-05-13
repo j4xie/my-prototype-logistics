@@ -1,0 +1,34 @@
+T6.6.3a Canary — Factory-tenant no-regression evidence
+======================================================
+
+Goal: confirm factory tenants (F006) still hit Java for the SAME two endpoints,
+i.e. T6.6.3a only opens R_ILTEATRO_REAL to Python.
+
+Strategy: curl F006 /analysis/production + /analysis/quality after apply.
+Expect: NO matching entry in python-prod.log post-curl (Java handled it).
+
+Apply timestamp: 20260514_023351 (UTC: 2026-05-13T18:33:51Z)
+Reload time:     2026-05-13T18:34:40Z
+
+--- F006 /analysis/production post-apply ---
+HTTP=401 size=188 ttfb=0.017893s
+body: {"success":false,"code":401,"message":"未授权，请先登录","severity":"error","actionHint":"会话已过期或未登录, 请重新登录","timestamp":"2026-05-14T02:35:11.657746715"}
+shape: Java envelope (compact, full envelope, 188 B)
+
+--- F006 /analysis/quality post-apply ---
+HTTP=401 size=188 ttfb=0.017534s
+body shape: same Java envelope as production
+
+--- Python log grep for F006 production/quality (last 60s window) ---
+$ ssh 47 'tail -200 /www/wwwroot/cretas/python-prod.log | grep -E "F006.*analysis/(production|quality)"'
+(empty — no matches)
+
+→ Conclusion: PASS. F006 (factory tenant) for these two endpoints remains on Java.
+   T6.6.3a regex `^/api/mobile/R_ILTEATRO_REAL/...` correctly matches the canary
+   tenant only; F006 falls through to the catch-all `/api/mobile/` → Java upstream.
+   No factory-tenant regression.
+
+Cross-check sanity:
+- R_ILTEATRO_REAL /analysis/production size = 96 B  (Python shape — proves cutover)
+- F006             /analysis/production size = 188 B (Java envelope — proves no regression)
+- Same endpoint, same nginx instance, different factory_id → different upstream selection ✓

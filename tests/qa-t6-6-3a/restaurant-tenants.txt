@@ -1,0 +1,33 @@
+T6.6.3a Canary — Restaurant tenants in scope (this PR)
+=======================================================
+
+Cutover scope: SINGLE tenant only (canary).
+
+Tenant: R_ILTEATRO_REAL
+DB row (from cretas_prod_db.factories):
+  id        = R_ILTEATRO_REAL
+  name      = IL TEATRO 西餐
+  is_active = t
+  type      = (not selected — schema doesn't have a 'type' column; tenant detection
+               is via the Python smartbi_compat.tenant module, not DB column)
+
+Active users for this factory:
+  $ psql -d cretas_prod_db -c "SELECT username FROM users WHERE factory_id='R_ILTEATRO_REAL' AND is_active=true LIMIT 5"
+  → 0 rows
+
+Implication for web-admin smoke (MO Step 5):
+  Cannot perform manual login smoke because no R_ILTEATRO_REAL user account exists.
+  Flagged to organizer for follow-up:
+    - Either provision an R_ILTEATRO_REAL test user (e.g. r_ilteatro_admin / 123456)
+      and rerun the smoke post-merge
+    - Or wait for IL TEATRO real-customer onboarding to land users
+
+Active-E2E (MO Step 4) is unaffected — performed via unauthenticated curl + Python
+access-log presence check (see r-ilteatro-evidence.md). All 5 probes PASS.
+
+Out of scope (3b / 3c / Phase 2D):
+  - R_QINGHUAJIAO_REAL (川菜 pilot) → T6.6.3b (separate PR / chat)
+  - All other restaurant tenants (R_GML_DEMO, R_XMX_*, R_YHDJ_DEMO, R_YJJ_DEMO, RES_*)
+    → T6.6.3c (separate PR / chat)
+  - F00x / FOOD_3101_* / MEAT_3101_* / etc. (factory tenants) → Phase 2D
+  - T6.6.4 X-SmartBI-Deprecated header on Java fallback → separate spec step
