@@ -87,6 +87,9 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
         order.setReturnDate(request.getReturnDate());
         order.setReason(request.getReason());
         order.setRemark(request.getRemark());
+        // T-RTA business logic (issue #571): default TRUE (实物退货, customer's primary case).
+        // Caller may explicitly set false for refund-only path.
+        order.setWithGoods(request.getWithGoods() != null ? request.getWithGoods() : Boolean.TRUE);
         order.setCreatedBy(userId);
 
         order = returnOrderRepository.save(order);
@@ -205,32 +208,47 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
         order.setApprovedBy(approverId);
         order.setApprovedAt(LocalDateTime.now());
 
-        // Record credit note in AR/AP
-        try {
-            if (order.getReturnType() == ReturnType.PURCHASE_RETURN) {
-                // Purchase return → reduce payable (AP_CREDIT_NOTE)
-                arApService.recordAdjustment(factoryId,
-                        com.cretas.aims.entity.enums.CounterpartyType.SUPPLIER,
-                        order.getCounterpartyId(),
-                        order.getTotalAmount().negate(),
-                        approverId,
-                        "采购退货冲减-" + order.getReturnNumber());
-                log.info("采购退货冲减应付: returnNumber={}, amount={}", order.getReturnNumber(), order.getTotalAmount());
-            } else if (order.getReturnType() == ReturnType.SALES_RETURN) {
-                // Sales return → reduce receivable (AR_CREDIT_NOTE)
-                arApService.recordAdjustment(factoryId,
-                        com.cretas.aims.entity.enums.CounterpartyType.CUSTOMER,
-                        order.getCounterpartyId(),
-                        order.getTotalAmount().negate(),
-                        approverId,
-                        "销售退货冲减-" + order.getReturnNumber());
-                log.info("销售退货冲减应收: returnNumber={}, amount={}", order.getReturnNumber(), order.getTotalAmount());
+        // T-RTA business logic (issue #571, audit BLOCKER B1): branch by withGoods.
+        //
+        // withGoods=true  (实物退货): defer AR/AP adjustment to completeReturnOrder. Warehouse
+        //                            keeper must physically receive goods first; financial
+        //                            credit happens when 不良品 inbound is confirmed.
+        // withGoods=false (退款 only): trigger AR/AP adjustment now (existing behavior). No
+        //                            inventory action needed since no physical goods involved.
+        //
+        // Customer transcript (第四次:956-1037): "有食物的话, 库存入库到总仓 ... 无食物的话就退款"
+        // — the order of operations matters because real-world workflow can't credit before
+        // verifying physical receipt (would create accounting/audit gap).
+        boolean withGoods = Boolean.TRUE.equals(order.getWithGoods());
+        if (!withGoods) {
+            // No-goods path: AR/AP adjustment immediately on approve (current behavior).
+            try {
+                if (order.getReturnType() == ReturnType.PURCHASE_RETURN) {
+                    arApService.recordAdjustment(factoryId,
+                            com.cretas.aims.entity.enums.CounterpartyType.SUPPLIER,
+                            order.getCounterpartyId(),
+                            order.getTotalAmount().negate(),
+                            approverId,
+                            "采购退货冲减(无货)-" + order.getReturnNumber());
+                    log.info("采购退货冲减应付(无货, 审批立即触发): returnNumber={}, amount={}", order.getReturnNumber(), order.getTotalAmount());
+                } else if (order.getReturnType() == ReturnType.SALES_RETURN) {
+                    arApService.recordAdjustment(factoryId,
+                            com.cretas.aims.entity.enums.CounterpartyType.CUSTOMER,
+                            order.getCounterpartyId(),
+                            order.getTotalAmount().negate(),
+                            approverId,
+                            "销售退货冲减(无货)-" + order.getReturnNumber());
+                    log.info("销售退货冲减应收(无货, 审批立即触发): returnNumber={}, amount={}", order.getReturnNumber(), order.getTotalAmount());
+                }
+            } catch (Exception e) {
+                log.error("退货AR/AP冲减失败 (无货path): returnOrderId={}", returnOrderId, e);
             }
-        } catch (Exception e) {
-            log.error("退货AR/AP冲减失败: returnOrderId={}", returnOrderId, e);
+        } else {
+            // With-goods path: AR/AP冲减 deferred until 仓库实物入库 in completeReturnOrder.
+            log.info("审批退货单(有货): returnOrderId={} — AR冲减 + 库存入库 deferred to completion", returnOrderId);
         }
 
-        log.info("审批退货单: returnOrderId={}, approvedBy={}", returnOrderId, approverId);
+        log.info("审批退货单: returnOrderId={}, approvedBy={}, withGoods={}", returnOrderId, approverId, withGoods);
         return returnOrderRepository.save(order);
     }
 
@@ -255,8 +273,47 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
             throw new BusinessException(409, "只有已审批状态的退货单可以完成")
                     .withHint("请刷新退货单列表查看最新状态");
         }
+
+        // T-RTA business logic (issue #571 Phase B): for withGoods=true, trigger
+        // deferred AR/AP冲减 now (after physical receipt confirmed). For withGoods=false,
+        // AR/AP冲减 already happened at approve time — just flip status.
+        boolean withGoods = Boolean.TRUE.equals(order.getWithGoods());
+        if (withGoods) {
+            // Deferred AR/AP冲减 from approve.
+            try {
+                if (order.getReturnType() == ReturnType.PURCHASE_RETURN) {
+                    arApService.recordAdjustment(factoryId,
+                            com.cretas.aims.entity.enums.CounterpartyType.SUPPLIER,
+                            order.getCounterpartyId(),
+                            order.getTotalAmount().negate(),
+                            order.getApprovedBy(),
+                            "采购退货冲减(实物已入库)-" + order.getReturnNumber());
+                    log.info("采购退货冲减应付(实物已入库, completion 触发): returnNumber={}, amount={}", order.getReturnNumber(), order.getTotalAmount());
+                } else if (order.getReturnType() == ReturnType.SALES_RETURN) {
+                    arApService.recordAdjustment(factoryId,
+                            com.cretas.aims.entity.enums.CounterpartyType.CUSTOMER,
+                            order.getCounterpartyId(),
+                            order.getTotalAmount().negate(),
+                            order.getApprovedBy(),
+                            "销售退货冲减(实物已入库)-" + order.getReturnNumber());
+                    log.info("销售退货冲减应收(实物已入库, completion 触发): returnNumber={}, amount={}", order.getReturnNumber(), order.getTotalAmount());
+                }
+            } catch (Exception e) {
+                log.error("退货AR/AP冲减失败 (有货 completion path): returnOrderId={}", returnOrderId, e);
+            }
+            // TODO Phase C (separate follow-up ticket): 库存入库 to WH-LOG with 不良品 status flag.
+            //   - Find/create MaterialBatch (PURCHASE_RETURN) or FinishedGoodsBatch (SALES_RETURN)
+            //     with status='DEFECTIVE' or similar new enum value
+            //   - Link batchId back to the ReturnOrderItem for traceability
+            //   - May need new column FinishedGoodsBatch.qualityStatus or similar
+            //   - Customer's "不良品" semantics: 调拨/销售/生产 should NOT pick these batches
+            //     unless explicit override (e.g. for 二次销售 or 处理).
+            //   See issue #571 PR body for design considerations.
+            log.warn("退货单完成(有货): inventory inbound to WH-LOG with 不良品 status NOT YET IMPLEMENTED (Phase C scope, issue #571). Status flipped to COMPLETED + AR冲减 done, but stock 仍未增加.");
+        }
+
         order.setStatus(ReturnOrderStatus.COMPLETED);
-        log.info("完成退货单: returnOrderId={}, returnNumber={}", returnOrderId, order.getReturnNumber());
+        log.info("完成退货单: returnOrderId={}, returnNumber={}, withGoods={}", returnOrderId, order.getReturnNumber(), withGoods);
         return returnOrderRepository.save(order);
     }
 

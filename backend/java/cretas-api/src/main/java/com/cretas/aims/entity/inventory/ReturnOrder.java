@@ -86,6 +86,24 @@ public class ReturnOrder extends BaseEntity {
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
+    /**
+     * 有食物 / 无食物 (T-RTA business logic, audit BLOCKER #571):
+     *   TRUE  = 有食物退货 (库存入库到总仓 + 不良品状态; AR 冲减在 completeReturnOrder 触发)
+     *   FALSE = 无食物退货 (直接退款; AR 冲减在 approveReturnOrder 立即触发, 无库存动作)
+     *
+     * <p>Customer (第四次:956-1037): "有食物的话, 库存入库到总仓 ... 无食物的话就退款, 财务审批".
+     * Default TRUE per customer's stated primary case (实物退货).
+     *
+     * <p>Phase B (this PR): approve flow branches by this field.
+     * Phase C (inventory inbound + 不良品 status flag): follow-up ticket — currently
+     * completeReturnOrder for withGoods=true does NOT yet create MaterialBatch inbound;
+     * only flips status + runs deferred AR 冲减.
+     *
+     * <p>Migration: V20260514_03__add_return_order_with_goods.sql
+     */
+    @Column(name = "with_goods", nullable = false)
+    private Boolean withGoods = Boolean.TRUE;
+
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 

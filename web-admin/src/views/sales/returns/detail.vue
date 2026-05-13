@@ -64,11 +64,20 @@ async function loadData() {
 }
 
 async function handleAction(action: 'submit' | 'approve' | 'reject' | 'complete') {
+  // T-RTA business logic (#571): messages reflect actual backend branching by withGoods.
+  // Old confirm message LIED ("approve triggers inbound") — fixed to match real flow.
+  const withGoods = order.value?.withGoods !== false; // null/undefined defaults to true (legacy + new primary)
+  const approveMsg = withGoods
+    ? '审批通过后, 退货单状态置为 已审批, 等待仓库实物入库. 完成时才触发 AR/AP 冲减. 确认审批?'
+    : '审批通过后, 立即触发 AR/AP 冲减 (无库存动作). 完成动作仅标记状态. 确认审批?';
+  const completeMsg = withGoods
+    ? '标记完成: 触发 AR/AP 冲减. 注意: 库存入库到总仓 + 不良品状态 暂未自动实现 (issue #571 Phase C), 需仓管员手动入库. 确认完成?'
+    : '标记完成: 仅状态置为已完成. AR/AP 冲减已在审批时完成. 确认?';
   const messages: Record<string, string> = {
     submit: '确认提交本退货单进入审批?',
-    approve: '审批通过后, 有食物的退货会等待入库, 无食物的退款将走财务流程. 确认审批?',
+    approve: approveMsg,
     reject: '驳回后退货单状态置为已驳回, 不再处理. 确认驳回?',
-    complete: '退货单已处理完成 (库存调整 / 财务退款已落实). 确认标记完成?',
+    complete: completeMsg,
   };
   try {
     await ElMessageBox.confirm(messages[action], '退货单操作', { type: 'warning' });
@@ -119,6 +128,12 @@ function goBack() { router.push('/sales/returns'); }
         <template #header><span class="section-title">基本信息</span></template>
         <el-descriptions :column="3" border>
           <el-descriptions-item label="退货类型">{{ order.returnType === 'SALES_RETURN' ? '销售退货' : '采购退货' }}</el-descriptions-item>
+          <!-- T-RTA business logic (#571): 有食物/无食物 drives 审批/完成 时机 + 库存动作. -->
+          <el-descriptions-item label="退货分支">
+            <el-tag :type="order.withGoods === false ? 'info' : 'warning'" size="small">
+              {{ order.withGoods === false ? '无食物 (直接退款)' : '有食物 (实物入库)' }}
+            </el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="客户/对方">{{ order.counterpartyName || order.counterpartyId || '-' }}</el-descriptions-item>
           <el-descriptions-item label="源订单号">{{ order.sourceOrderNumber || order.sourceOrderId || '-' }}</el-descriptions-item>
           <el-descriptions-item label="退货日期">{{ order.returnDate || '-' }}</el-descriptions-item>

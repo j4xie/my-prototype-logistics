@@ -52,10 +52,14 @@ type ReturnDialogItem = {
   quantity: number;
   reason: string;
 };
-const returnForm = ref<{ returnDate: string; reason: string; remark: string; items: ReturnDialogItem[] }>({
+// T-RTA business logic (issue #571): withGoods toggle drives backend branching.
+//   true  = 有食物退货 → 库存入库总仓 + 不良品 (Phase C TODO) → AR冲减 at completion
+//   false = 无食物退货 → 直接退款, 无库存动作 → AR冲减 immediate on approve
+const returnForm = ref<{ returnDate: string; reason: string; remark: string; withGoods: boolean; items: ReturnDialogItem[] }>({
   returnDate: new Date().toISOString().slice(0, 10),
   reason: '',
   remark: '',
+  withGoods: true, // default 实物退货 (customer's primary case per 第四次:956-1037)
   items: [],
 });
 
@@ -352,6 +356,7 @@ function openReturnDialog() {
     returnDate: new Date().toISOString().slice(0, 10),
     reason: '',
     remark: '',
+    withGoods: true, // default 实物退货
     items: (order.value.items as TableRow[]).map((it) => {
       const delivered = Number(it.deliveredQuantity) || 0;
       return {
@@ -394,6 +399,9 @@ async function handleCreateReturn() {
       returnDate: returnForm.value.returnDate,
       reason: returnForm.value.reason,
       remark: returnForm.value.remark,
+      // T-RTA business logic (#571): explicit branch — backend uses this to defer
+      // AR/AP冲减 to completion path for 有食物 (waits for physical receipt).
+      withGoods: returnForm.value.withGoods,
       items: selectedItems.map((it) => ({
         productTypeId: it.productTypeId,
         itemName: it.itemName,
@@ -1264,12 +1272,23 @@ async function handleCreatePayment() {
       </template>
     </el-dialog>
 
-    <!-- ─── T-RTA (issue #531): 申请退货 对话框 ─── -->
+    <!-- ─── T-RTA (issues #531 + #571 business logic): 申请退货 对话框 ─── -->
     <el-dialog v-model="returnDialogVisible" title="申请退货" width="780px" destroy-on-close>
       <el-alert type="info" show-icon :closable="false" style="margin-bottom: 12px"
                 title="退货流程说明"
-                description="提交后退货单为 DRAFT 草稿. 销售退货 → 销售退货 列表里点 提交审批, 财务/管理员审批通过后即可入库或退款. 退货数量不能超过已发货数量." />
+                description="提交后退货单为 DRAFT 草稿. 客户服务 → 销售退货 菜单里点 提交审批, 财务/管理员审批后才会触发库存或退款动作. 退货数量不能超过已发货数量." />
       <el-form label-width="100px">
+        <!-- T-RTA business logic (#571): 有食物 / 无食物 分支决定后端 AR冲减 + 库存 时机. -->
+        <el-form-item label="退货类型" required>
+          <el-radio-group v-model="returnForm.withGoods">
+            <el-radio :value="true">有食物退货 (库存入库总仓 → 完成时 AR 冲减)</el-radio>
+            <el-radio :value="false">无食物退款 (审批立即 AR 冲减, 无库存动作)</el-radio>
+          </el-radio-group>
+          <div style="color: #909399; font-size: 12px; margin-top: 4px;">
+            <span v-if="returnForm.withGoods">实物退货: 仓库收到货 → 总仓入库 (不良品状态) → 标记完成时触发 AR/AP 冲减.</span>
+            <span v-else>无实物: 审批通过即触发 AR/AP 冲减, 不产生库存动作.</span>
+          </div>
+        </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="退货日期" required>
