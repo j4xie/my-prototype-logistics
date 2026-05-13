@@ -65,11 +65,14 @@ class R6V3MaterialConsumptionRbacTest {
         List<Method> leakingMethods = List.of(
                 MaterialConsumptionController.class.getDeclaredMethod(
                         "getConsumptionStats", String.class, Long.class,
-                        java.time.LocalDate.class, java.time.LocalDate.class),
+                        java.time.LocalDate.class, java.time.LocalDate.class,
+                        String.class /* Authorization */),
                 MaterialConsumptionController.class.getDeclaredMethod(
-                        "getConsumptionById", String.class, Integer.class),
+                        "getConsumptionById", String.class, Integer.class,
+                        String.class /* Authorization */),
                 MaterialConsumptionController.class.getDeclaredMethod(
-                        "getBatchConsumptionCost", String.class, Long.class),
+                        "getBatchConsumptionCost", String.class, Long.class,
+                        String.class /* Authorization */),
                 MaterialConsumptionController.class.getDeclaredMethod(
                         "getBatchConsumptionSummary", String.class, Long.class)
         );
