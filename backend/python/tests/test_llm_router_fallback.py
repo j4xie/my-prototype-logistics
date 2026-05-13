@@ -281,6 +281,40 @@ def test_quota_exhausted_detection():
 
 
 # ────────────────────────────────────────────────────────────────────────
+# Test 8b: 402 'Insufficient Balance' counts as quota exhaustion (issue #581)
+# ────────────────────────────────────────────────────────────────────────
+def test_402_insufficient_balance_is_quota_exhausted():
+    """DeepSeek-official balance-0 returns 402 + body 'Insufficient Balance'.
+    Predicate must flag this as quota exhausted so the chain logs WARNING and
+    falls back cleanly instead of surfacing as generic ERROR."""
+    is_q = llm_router._is_quota_exhausted
+
+    # The exact DeepSeek shape: JSON body with the Insufficient Balance message.
+    assert is_q(402, '{"error":{"message":"Insufficient Balance","type":"insufficient_quota"}}')
+    # Body-only substring check is sufficient — match regardless of surrounding JSON.
+    assert is_q(402, "Insufficient Balance")
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Test 8c: 402 must NOT trigger fallback on unrelated bodies / wrong codes
+# ────────────────────────────────────────────────────────────────────────
+def test_402_other_cases_not_quota_exhausted():
+    """Regression guard: only 402 + 'Insufficient Balance' substring counts.
+    Other 402 bodies stay on the generic-error path, and the 'Insufficient
+    Balance' string on non-402 statuses must not accidentally trigger fallback."""
+    is_q = llm_router._is_quota_exhausted
+
+    # 402 + unrelated body → not quota (generic-error path, logged as ERROR).
+    assert not is_q(402, "Payment Required")
+    assert not is_q(402, "")
+    assert not is_q(402, '{"error":"some other 402 reason"}')
+    # The substring must not accidentally trigger on non-402 statuses.
+    assert not is_q(200, "Insufficient Balance")
+    assert not is_q(500, "Insufficient Balance")
+    assert not is_q(401, "Insufficient Balance")
+
+
+# ────────────────────────────────────────────────────────────────────────
 # Test 9: DeepSeek monthly USD cap removes it from chain when over budget
 # ────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio

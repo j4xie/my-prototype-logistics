@@ -187,6 +187,11 @@ class SLOT(str, Enum):
 # (per Steve audit: review slot is fine, don't churn).
 #
 # Triggered by prod incident "All providers exhausted for chat" 2026-05-13.
+#
+# Each provider's 403/429/402 triggers fallback per `_is_quota_exhausted`.
+# DeepSeek-official balance-0 returns 402 'Insufficient Balance' — issue #581
+# added that case so the chain logs WARNING quota-exhausted instead of generic
+# ERROR before exhausting cleanly.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     # CRITICAL: deepseek-v4 default `thinking.type=enabled` adds ~5s of
     # invisible reasoning before visible answer + truncates output. We force
@@ -311,6 +316,11 @@ def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
         return "FreeTierOnly" in body_text or "AllocationQuota" in body_text
     if status_code == 429:
         # ZhipuAI / DeepSeek may use 429 for quota/rate. Treat as fallback trigger.
+        return True
+    if status_code == 402 and "Insufficient Balance" in body_text:
+        # DeepSeek-official balance-0 returns 402 with body "Insufficient
+        # Balance". Structurally identical to other quota exhaustion — fall
+        # through with WARNING instead of generic ERROR (issue #581).
         return True
     return False
 
