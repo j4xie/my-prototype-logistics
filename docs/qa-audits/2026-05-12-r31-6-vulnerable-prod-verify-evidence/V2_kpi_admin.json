@@ -1,0 +1,1 @@
+{"code":200,"message":"操作成功","data":{"laborProductivity":88.0,"productionEfficiency":85.0,"costReduction":5.0,"equipmentOEE":75.0,"inventoryTurnover":4.5,"safetyIncidents":0,"deliveryOnTime":95.0,"maintenanceCompliance":90.0,"qualityRate":98.0},"timestamp":"2026-05-13T05:27:41.132150536","success":true,"actionHint":null,"severity":null,"hintTarget":null}
