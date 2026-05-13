@@ -29,6 +29,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 
+from smartbi_compat._rbac_role import require_analytics_read
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import _java_isoformat, wrap_response
@@ -525,7 +527,7 @@ async def get_incentive_plan(
     factory_id: str,
     target_type: str,
     target_id: str,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict[str, Any]:
     """Java-compatible alias: GET /smart-bi/incentive-plan/{targetType}/{targetId}.
 
@@ -552,4 +554,4 @@ async def get_incentive_plan(
             message=f"Unsupported target type: {target_type}",
             success=False,
         )
-    return wrap_response(plan, message="操作成功")
+    return wrap_response(strip_price_for_role(plan, auth.role), message="操作成功")

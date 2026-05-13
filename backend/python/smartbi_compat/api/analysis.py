@@ -42,6 +42,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
 from smartbi_compat._java_compat import _format_decimal_half_up
+from smartbi_compat._rbac_role import require_analytics_read
+from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.alert_thresholds import ALERT_SEVERITY, load_thresholds
 from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
@@ -127,7 +129,7 @@ def _query_templates(factory_id: str) -> List[dict]:
 @router.get("/api/mobile/{factory_id}/smart-bi/query-templates")
 async def list_query_templates(
     factory_id: str,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict[str, Any]:
     """Java-compatible alias: list saved query templates for a factory.
 
@@ -136,7 +138,7 @@ async def list_query_templates(
     path-equals-token-factoryId, so the two are equivalent in practice.
     """
     rows = _query_templates(auth.factory_id)
-    return wrap_response(rows)
+    return wrap_response(strip_price_for_role(rows, auth.role))
 
 
 def _datasource_row_to_dict(row: Any) -> dict:
@@ -931,7 +933,7 @@ def _generate_recommendations(factory_id: str, range_: DateRange, analysis_type:
 @router.get("/api/mobile/{factory_id}/smart-bi/datasource/list")
 async def list_datasources(
     factory_id: str,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict[str, Any]:
     """Java-compatible alias: list active datasources for a factory.
 
@@ -940,14 +942,14 @@ async def list_datasources(
     path-equals-token-factoryId, so the two are equivalent in practice.
     """
     rows = _query_datasources(auth.factory_id)
-    return wrap_response(rows)
+    return wrap_response(strip_price_for_role(rows, auth.role))
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/alerts")
 async def get_alerts(
     factory_id: str,
     category: Optional[str] = None,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict[str, Any]:
     """Java-compatible alias: GET /smart-bi/alerts[?category=sales|finance|department].
 
@@ -966,14 +968,14 @@ async def get_alerts(
         alerts = _generate_department_alerts(auth.factory_id, range_)
     else:
         alerts = _generate_all_alerts(auth.factory_id, range_)
-    return wrap_response(alerts)
+    return wrap_response(strip_price_for_role(alerts, auth.role))
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/recommendations")
 async def get_recommendations(
     factory_id: str,
     analysisType: Optional[str] = None,
-    auth: AuthContext = Depends(verify_jwt_and_factory),
+    auth: AuthContext = Depends(require_analytics_read),
 ) -> dict[str, Any]:
     """Java-compatible alias: GET /smart-bi/recommendations[?analysisType=sales|finance|customer|all].
 
@@ -988,4 +990,4 @@ async def get_recommendations(
     """
     range_ = DateRange.by_period("month")
     recs = _generate_recommendations(auth.factory_id, range_, analysisType)
-    return wrap_response(recs)
+    return wrap_response(strip_price_for_role(recs, auth.role))

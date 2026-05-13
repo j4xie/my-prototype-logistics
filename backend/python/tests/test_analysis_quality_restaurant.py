@@ -962,6 +962,10 @@ async def test_factory_msg_does_not_misroute_to_chat_b1(monkeypatch):
 
     class _AuthStub:
         factory_id = "F001"
+        # role added for R6 strip-wrap fix (PR following #483) — handler
+        # now calls strip_price_for_role(raw, auth.role). Using a
+        # PRICE_VIEW_ROLES member so the strip is a no-op for this test.
+        role = "factory_super_admin"
 
     result = await get_quality_analysis(
         factory_id="F001",
