@@ -68,7 +68,7 @@ esac
 GATEWAY="root@139.196.165.140"
 REMOTE_BACKUP_DIR="/www/wwwroot/web-admin-backups"
 LOCAL_BUILD_DIR="web-admin/dist"
-TMP_TAR="/tmp/web-admin-dist.tar.gz"
+TMP_TAR="/tmp/web-admin-dist.$$.tar.gz"
 BACKUP_KEEP=3
 
 # ==================== Git Sync Pre-check ====================
