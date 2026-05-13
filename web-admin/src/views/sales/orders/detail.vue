@@ -920,6 +920,43 @@ async function handleCreatePayment() {
   } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
+
+// T-INV (issue: F006 客户反馈 — "一键收款"): one-click full-amount payment record.
+// Customer's transcript wording was "一键收" — the 登记收款 dialog already auto-fills
+// remaining amount, so a true "一键" UX is dialog-less: confirm modal → POST.
+// Skips dialog form entirely; uses 默认 BANK_TRANSFER + today's date + no receipt.
+async function handleQuickPayFull() {
+  if (submitting.value) return;
+  const remaining = computedRemainingAmount();
+  if (remaining <= 0) {
+    return ElMessage.info('订单已全额收款, 无需再收');
+  }
+  try {
+    await ElMessageBox.confirm(
+      `应收余额 ¥${formatAmount(remaining)}, 收款方式默认 银行转账, 日期 ${new Date().toISOString().slice(0, 10)}. 一键登记?`,
+      '一键收款确认',
+      { type: 'warning' }
+    );
+  } catch { return; }
+  submitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/finance/payments/record`, {
+      salesOrderId: orderId.value,
+      amount: remaining,
+      paymentMethod: 'BANK_TRANSFER',
+      paymentDate: new Date().toISOString().slice(0, 10),
+      paymentReference: '',
+      remark: '一键收款 (全额, 默认方式)',
+      receiptUrl: null,
+    });
+    if (res.success) {
+      ElMessage.success('一键收款已登记');
+      loadPayments();
+      loadOrder();
+    } else { ElMessage.error(res.message || '创建失败'); }
+  } catch (e) { handleCatchError(e, '一键收款失败, 请检查网络'); }
+  finally { submitting.value = false; }
+}
 </script>
 
 <template>
@@ -1190,6 +1227,10 @@ async function handleCreatePayment() {
               <el-button v-if="canWrite" type="primary" @click="openPaymentDialog">
                 + 登记收款
               </el-button>
+              <!-- T-INV (F006 客户反馈): 一键收款 shortcut — only shown when remaining > 0.
+                   Auto-fills remaining amount + BANK_TRANSFER + today; bypasses dialog form. -->
+              <el-button v-if="canWrite && computedRemainingAmount() > 0" type="success"
+                         :loading="submitting" @click="handleQuickPayFull">一键收款 (全额)</el-button>
               <span v-if="canViewPrice" class="tab-hint">订单总额 {{ formatAmount(order.totalAmount) }} / 已收 {{ formatAmount(order.paidAmount || 0) }} / 待收 {{ formatAmount(computedRemainingAmount()) }}</span>
             </div>
 
