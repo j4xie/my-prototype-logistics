@@ -36,6 +36,13 @@ public class CreateReturnOrderRequest {
     @Size(max = 1000, message = "退货原因长度不能超过1000个字符")
     private String reason;
 
+    /**
+     * T-RTA business logic (issue #571): TRUE=有食物 (库存入库总仓 → AR 冲减), FALSE=无食物 (直接退款无库存动作).
+     * Nullable in DTO (default TRUE in service if absent) for backward-compat with legacy callers.
+     * Customer transcript (第四次:956-1037) explicitly distinguishes the two flows.
+     */
+    private Boolean withGoods;
+
     @Size(max = 5000, message = "备注长度不能超过5000个字符")
     private String remark;
 
