@@ -78,6 +78,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # QHJ revenue report (Phase G2) custom response headers must be exposed
+    # to the browser. Without this list, JS can read body but not headers.
+    expose_headers=[
+        "X-Cache-Hit",
+        "X-Gold-Materialized-At",
+        "X-Store-Count",
+        "X-Is-Stale",
+    ],
 )
 
 # Include API routers
@@ -117,6 +125,11 @@ app.include_router(client_requirement_router, prefix="/api/client-requirement", 
 app.include_router(client_requirement_router, prefix="/api/public/client-requirement", tags=["客户需求反馈(公开)"])
 app.include_router(completeness_router, prefix="/api/client-requirement", tags=["数据完整度"])
 app.include_router(completeness_router, prefix="/api/public/client-requirement", tags=["数据完整度(公开)"])
+
+# QHJ 收入管理报表 (Phase G — 青花椒 + R_*_REAL restaurant tenants)
+# Router self-mounts at /api/smartbi/{factory_id}/revenue-report/* per spec §8.
+from smartbi.api.revenue_report import router as revenue_report_router  # noqa: E402
+app.include_router(revenue_report_router, tags=["收入管理报表"])
 
 
 @app.get("/health")
