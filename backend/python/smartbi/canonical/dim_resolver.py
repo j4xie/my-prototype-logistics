@@ -144,6 +144,11 @@ class DimResolver:
         province: Optional[str] = None,
         region: Optional[str] = None,
     ) -> int:
+        # Whitespace normalization (Task B4): 二维火 POS CSV exports have
+        # trailing/leading whitespace on store names; without .strip() the
+        # dim_store unique constraint creates duplicates. Closed-store prefix
+        # (（闭店）) is BUSINESS data and is preserved — not noise.
+        name = (name or "").strip()
         if not name:
             raise ValueError("store name required")
         cached = self._store_cache.get(name)
