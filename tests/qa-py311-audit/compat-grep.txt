@@ -1,0 +1,127 @@
+# Python 3.8 → 3.11 compatibility grep evidence
+# Worktree: qa/py38-eol-audit-510 (Issue #510 prep)
+# Date: 2026-05-13
+# Scope: backend/python/ (all .py files)
+#
+# Methodology: grep against `git rev-parse origin/main`-fresh worktree.
+# Patterns are conservative — runtime-fatal forms only. Type-hint-only
+# usages already covered by `from __future__ import annotations` (573 files).
+
+================================================================
+1. `from __future__ import annotations` adoption
+================================================================
+files: 573
+coverage: very high — most modules already use lazy annotations,
+         meaning PEP 585 builtin generics and PEP 604 unions in
+         annotations are no risk on 3.8 today, and remain compatible
+         on 3.11.
+
+================================================================
+2. `match`/`case` (PEP 634, requires 3.10+)
+================================================================
+hits: 1
+- backend/python/scripts/b_spec/arbitrate.py:26  (CLI tool, not imported
+  by uvicorn `main:app`; runs as `python scripts/b_spec/arbitrate.py`
+  invocation only)
+
+Status on 3.8: file does NOT parse if imported. Currently not imported
+              by the service, so prod is unaffected.
+Status on 3.11: works as-is.
+
+================================================================
+3. Walrus operator `:=` (PEP 572, requires 3.8+ — already OK)
+================================================================
+hits: 0 (no usage)
+
+================================================================
+4. PEP 585 builtin generics (`list[X]`, `dict[X,Y]`, `tuple[X,Y]`) at
+   runtime, WITHOUT `from __future__ import annotations`
+================================================================
+hits: 6 files — all non-service paths.
+
+- backend/python/scripts/generate_synonyms.py:109
+    def generate_synonyms(... seeds: list[str], ...) -> list[str]
+- backend/python/smartbi/services/restaurant/tests/test_section_cross_chain_benchmark.py:9
+- backend/python/smartbi/tests/test_revenue_report_backfill_meal_period.py:78
+- backend/python/smartbi/tests/test_revenue_report_pos_router.py:18
+- backend/python/smartbi/tests/test_revenue_report_template_block_4.py:22
+- backend/python/smartbi/tests/test_revenue_report_zip_handler.py:12
+
+Notes:
+- PR #521 (`fix(phase-i): 8 active-E2E follow-ups`) already swept the
+  service-runtime occurrences (`Iterator[tuple[str, bytes]]` in
+  `_zip_handler.py`, `pos_router.py`) by adding `from __future__ import
+  annotations`. Remaining hits are tests + 1 admin script.
+- Tests do not load on prod. The 5 test files only execute under
+  pytest, which is invoked locally / in CI, not by uvicorn.
+- `scripts/generate_synonyms.py` is a one-shot admin tool. If currently
+  failing on 3.8 it's a latent bug; on 3.11 it works.
+
+Status: NOT a 3.11 migration blocker. Worth a one-line `__future__`
+        import sweep for hygiene, but does not block cutover.
+
+================================================================
+5. PEP 604 union syntax (`X | Y`) at runtime
+================================================================
+hits: 0 real (2 false positives in regex strings / docstrings).
+
+================================================================
+6. `str.removesuffix()` / `str.removeprefix()` (3.9+)
+================================================================
+hits: 0
+notes: PR #521 fixed the one historical occurrence in pos_router.py
+       (slice replacement). No remaining usage.
+
+================================================================
+7. Removed-in-3.10+ stdlib APIs
+================================================================
+- `asyncio.coroutine` decorator (removed 3.11): 0 hits
+- `collections.Mapping/Sequence/Set/Iterator/Callable` aliases
+  (removed 3.10):                                 0 hits
+- `imp` module (deprecated → removed 3.12):       0 hits
+  (grep flagged `importlib.util` — false positive)
+- `distutils` (removed 3.12):                      0 hits
+
+Status: no removed-API blockers for 3.11. (3.12 would need `imp`
+        sweep but we are not targeting 3.12 in this plan.)
+
+================================================================
+8. `asyncio.get_event_loop()` (deprecated 3.10+, behavior change 3.12)
+================================================================
+hits: 17 call sites, all INSIDE `async def` (running-loop context).
+
+Call sites:
+- ai/matcher/classifier.py:29        (run_in_executor wrapper)
+- efficiency_recognition/services/multi_stream_sampler.py:525
+- smartbi/api/chart.py:169
+- smartbi/ingestion/excel_adapter.py:97, 206
+- smartbi/services/analysis_cache.py:400, 450, 508
+- smartbi/services/parallel_processor.py:308, 490, 723
+- smartbi/services/precompute.py:61, 85
+- smartbi/services/restaurant/review_analyzer_llm.py:232
+- smartbi/services/upload_aggregate_cache.py:129, 286
+- smartbi_compat/api/analysis_sales.py:71  (explicit 3.7-3.9 fallback)
+- tests/test_concurrency.py:95, 97
+
+On 3.11 behavior:
+- Inside a running loop: returns the running loop, no warning.
+- Outside a running loop: emits DeprecationWarning (still functional).
+All 17 sites are inside async context — works without warnings on 3.11.
+
+Recommendation: post-cutover, sweep to `asyncio.get_running_loop()`
+                (preserves intent + silences future 3.12 strictness).
+                NOT a cutover blocker.
+
+================================================================
+9. Other PEP 612 / PEP 695 features
+================================================================
+- ParamSpec / TypeVarTuple usage: 0 hits (would require 3.10+/3.11+)
+- Generic class syntax `class Foo[T]:` (3.12+): 0 hits
+
+================================================================
+SUMMARY
+================================================================
+Service runtime code is **clean for Python 3.11**. No code change
+required before cutover. Optional hygiene sweeps (1 + 6 files for
+`__future__`, 17 sites for `get_running_loop`) can ship as a
+follow-up PR after the venv migration soaks.
