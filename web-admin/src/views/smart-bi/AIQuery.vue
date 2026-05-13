@@ -9,6 +9,7 @@ import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, nl2sql, logFeedback, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem, type NL2SQLResponse } from '@/api/smartbi';
+import { executeIntent, fetchCachedXlsx } from '@/api/smartbi/intent-chat';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ChatDotRound,
@@ -16,6 +17,7 @@ import {
   Promotion,
   Refresh,
   Delete,
+  Download,
   User,
   Cpu,
   TrendCharts,
@@ -95,6 +97,14 @@ interface ChatMessage {
   truncated?: boolean;
   // Original query for retry button to re-send.
   origQuery?: string;
+  // AI Chat Unification (2026-05-13): Tool produced a downloadable file.
+  // Bubble shows a prominent blue "下载 Excel" button — user must click.
+  downloadAttachment?: {
+    cacheKey: string;
+    filename: string;       // e.g. "收入管理报表_2025-03-01_2025-03-31.xlsx"
+    factoryId: string;
+    downloading?: boolean;  // local UI state during fetch
+  };
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -555,6 +565,195 @@ let activeStreamController: AbortController | null = null;
 let isComponentAlive = true;
 onBeforeUnmount(() => { isComponentAlive = false; });
 
+// ── AI Chat Unification (2026-05-13) ──────────────────────────────────
+// AIQuery.vue now primarily routes user queries to Java AIIntentService
+// (337 Tools + Skill orchestration). Python chatAnalysisStream falls
+// through only when Java can't help AND the user has uploaded data.
+const javaIntentSessionId = ref<string | undefined>(undefined);
+
+/** User clicks the blue "下载 Excel" button on a bot bubble. */
+async function handleAttachmentDownload(message: ChatMessage) {
+  const att = message.downloadAttachment;
+  if (!att || att.downloading) return;
+  att.downloading = true;
+  try {
+    const blob = await fetchCachedXlsx(att.factoryId, att.cacheKey);
+    const url = URL.createObjectURL(
+      new Blob([blob], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = att.filename;
+    document.body.appendChild(a);  // Chrome needs anchor in DOM for `download`
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    ElMessage.success('下载完成');
+  } catch (e) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const err = e as any;
+    ElMessage.error(`下载失败: ${err?.message || err}`);
+  } finally {
+    att.downloading = false;
+  }
+}
+
+/**
+ * Primary route: Java AIIntentService.
+ * Returns 'handled' when chat bubble is filled; 'fall-through' when caller
+ * should continue to Python chatAnalysisStream (only when user has upload).
+ */
+async function tryJavaIntentChat(
+  query: string,
+  assistantId: string,
+): Promise<'handled' | 'fall-through'> {
+  const idx = () => chatHistory.value.findIndex((m) => m.id === assistantId);
+  const factoryId = authStore.factoryId;
+  if (!factoryId) return 'fall-through';
+  try {
+    const res = await executeIntent(factoryId, query, {
+      sessionId: javaIntentSessionId.value,
+    });
+    javaIntentSessionId.value = res.sessionId ?? undefined;
+
+    const i = idx();
+    if (i === -1) return 'handled';
+    const msg = chatHistory.value[i];
+
+    if (res.status === 'SUCCESS') {
+      // Two response shapes:
+      //   FRESH (cache miss): res.message = clean text, res.resultData.data
+      //     = {download_url, summary, ...} ← Tool's structured result
+      //   CACHED:              res.message = "(缓存结果) " + JSON.stringify(...)
+      //     resultData is null on cache hit; parse JSON out of message.
+      let displayMessage = res.message || res.formattedText || '已为您处理。';
+      let downloadUrl: string | undefined;
+      let summary: Record<string, unknown> | undefined;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let preview: any = null;
+
+      const toolData = res.resultData?.data;
+      if (toolData?.download_url) {
+        downloadUrl = toolData.download_url;
+        summary = toolData.summary as Record<string, unknown> | undefined;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        preview = (toolData as any).preview;
+      }
+      if (!downloadUrl) {
+        const rawMsg = res.message || '';
+        const jsonStart = rawMsg.indexOf('{');
+        if (jsonStart !== -1 && rawMsg.trim().endsWith('}')) {
+          try {
+            const parsed = JSON.parse(rawMsg.substring(jsonStart));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const inner: any = parsed.data?.data ?? parsed.data ?? parsed;
+            if (typeof inner?.download_url === 'string') downloadUrl = inner.download_url;
+            if (inner?.summary && typeof inner.summary === 'object') summary = inner.summary;
+            if (inner?.preview && typeof inner.preview === 'object') preview = inner.preview;
+            const cleanMsg = parsed.data?.message ?? parsed.message;
+            if (typeof cleanMsg === 'string' && cleanMsg.trim()) displayMessage = cleanMsg;
+          } catch {
+            // Not JSON or malformed — keep raw message
+          }
+        }
+      }
+
+      // Build inline chart from preview data — stacked bar per store
+      // (堂食 + 外卖 = 汇总), shown directly in the chat bubble.
+      if (preview?.block1_yoy && Array.isArray(preview.block1_yoy)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows = preview.block1_yoy as Array<any>;
+        const storeNames = rows.map((r) => String(r.store_name || `store_${r.store_id}`));
+        const dineIn = rows.map((r) => Number(r.dine_in) || 0);
+        const takeout = rows.map((r) => Number(r.takeout) || 0);
+        msg.chartConfig = {
+          type: 'bar' as const,
+          title: `${summary?.date_range || ''} 收入分布`,
+          option: {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['堂食', '外卖'], top: 25 },
+            grid: { left: '3%', right: '4%', bottom: '8%', containLabel: true, top: 60 },
+            xAxis: {
+              type: 'category',
+              data: storeNames,
+              axisLabel: { rotate: 20, fontSize: 11, interval: 0 },
+            },
+            yAxis: {
+              type: 'value',
+              name: '元',
+              axisLabel: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter: (v: any) => (v >= 10000 ? (v / 10000).toFixed(1) + 'w' : String(v)),
+              },
+            },
+            series: [
+              {
+                name: '堂食',
+                type: 'bar',
+                stack: 'revenue',
+                data: dineIn,
+                itemStyle: { color: '#5470c6' },
+              },
+              {
+                name: '外卖',
+                type: 'bar',
+                stack: 'revenue',
+                data: takeout,
+                itemStyle: { color: '#91cc75' },
+              },
+            ],
+          } as Record<string, unknown>,
+        };
+      }
+
+      if (typeof downloadUrl === 'string' && downloadUrl.length > 0) {
+        const cacheKeyMatch = downloadUrl.match(/\/download\/(.+)$/);
+        if (cacheKeyMatch) {
+          const dateRange = String(summary?.date_range || 'report')
+            .replace(' - ', '_').replace(/\s+/g, '');
+          msg.downloadAttachment = {
+            cacheKey: cacheKeyMatch[1],
+            filename: `收入管理报表_${dateRange}.xlsx`,
+            factoryId,
+          };
+        }
+      }
+      msg.content = displayMessage;
+      msg.loading = false;
+      // After Vue renders the chart container (v-if message.chartConfig),
+      // mount the ECharts instance.
+      if (msg.chartConfig) {
+        const cfg = msg.chartConfig;
+        nextTick(() => renderChartFromConfig(assistantId, cfg));
+      }
+      return 'handled';
+    }
+
+    if (res.status === 'NEED_MORE_INFO' || res.status === 'CONVERSATION_CONTINUE') {
+      msg.content = res.message || res.formattedText || '请补充信息后继续。';
+      msg.loading = false;
+      return 'handled';
+    }
+
+    // Java didn't recognize intent — fall to Python if uploaded data present.
+    const hasDataSource =
+      currentData.value.length > 0 ||
+      Boolean(selectedUploadId.value);
+    if (!hasDataSource) {
+      msg.content = res.message || '抱歉，没听明白。试试："本月收入管理报表" / "哪家店亏损"';
+      msg.loading = false;
+      return 'handled';
+    }
+    return 'fall-through';
+  } catch (e) {
+    console.warn('[ai-chat] Java intent failed, fall through to Python:', e);
+    return 'fall-through';
+  }
+}
+
 // 发送消息
 async function handleSendMessage() {
   const query = inputQuery.value.trim();
@@ -598,6 +797,16 @@ async function handleSendMessage() {
   scrollToBottom(true);
 
   isTyping.value = true;
+
+  // ── AI Chat Unification primary route: try Java AIIntentService first.
+  // Falls through to Python chatAnalysisStream only when Java didn't help
+  // AND user has a data source loaded.
+  const intentResult = await tryJavaIntentChat(query, assistantId);
+  if (intentResult === 'handled') {
+    isTyping.value = false;
+    scrollToBottom();
+    return;
+  }
 
   // Fix 2 (Apr 23 2026): pass last 3 Q+A pairs as conversation history so
   // backend LLM can resolve pronominal/temporal references ("这个月"/"它"/
@@ -1337,6 +1546,16 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-if="message.role === 'assistant' && message.streaming" class="message-text streaming-text">{{ message.content }}</div>
                 <div v-else-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
                 <div v-else class="message-text">{{ message.content }}</div>
+
+                <!-- AI Chat Unification (2026-05-13): user-clicked xlsx download -->
+                <div v-if="message.role === 'assistant' && message.downloadAttachment" class="download-attachment-bar">
+                  <el-button
+                    type="primary"
+                    :icon="Download"
+                    :loading="message.downloadAttachment.downloading"
+                    @click="handleAttachmentDownload(message)"
+                  >下载 Excel</el-button>
+                </div>
 
                 <!-- D1 (Apr 26 2026): retry button when answer was truncated by 25s soft timeout -->
                 <div v-if="message.role === 'assistant' && !message.streaming && message.truncated" class="truncated-retry-bar">

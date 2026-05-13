@@ -128,5 +128,16 @@ export default defineConfig({
       fullyParallel: false,
       workers: 1,
     },
+    {
+      name: 'revenue-report-chat-demo',
+      testMatch: 'revenue-report-chat-demo.spec.ts',
+      fullyParallel: false,
+      workers: 1,
+      use: {
+        headless: false,
+        launchOptions: { slowMo: 400 },
+        video: 'on',
+      },
+    },
   ],
 });
