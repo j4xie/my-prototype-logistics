@@ -12,7 +12,7 @@
  *   - Custom response headers (X-Cache-Hit etc.) require CORS expose_headers
  *     in main.py (Phase G2)
  */
-import { request } from '@/api/request';
+import request from '@/api/request';
 import { getSmartBIBasePath } from './common';
 
 const BASE = () => `${getSmartBIBasePath()}/revenue-report`;
