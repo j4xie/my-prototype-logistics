@@ -1,0 +1,41 @@
+{
+  "admin": {
+    "page_count": 1,
+    "metadata": {
+      "format": "PDF 1.4",
+      "title": "",
+      "author": "",
+      "subject": "",
+      "keywords": "",
+      "creator": "",
+      "producer": "iText® 5.5.13.3 ©2000-2022 iText Group NV (AGPL-version)",
+      "creationDate": "D:20260513124848+08'00'",
+      "modDate": "D:20260513124848+08'00'",
+      "trapped": "",
+      "encryption": null
+    },
+    "xref_count": 12,
+    "is_encrypted": false,
+    "pdf_version": null,
+    "trailer": "<<\n  /Size 12\n  /Root 10 0 R\n  /Info 11 0 R\n  /ID [ <68A7CE4430C6C7E700FA648326F86702> <68A7CE4430C6C7E700FA648326F86702> ]\n>>"
+  },
+  "warehouse": {
+    "page_count": 1,
+    "metadata": {
+      "format": "PDF 1.4",
+      "title": "",
+      "author": "",
+      "subject": "",
+      "keywords": "",
+      "creator": "",
+      "producer": "iText® 5.5.13.3 ©2000-2022 iText Group NV (AGPL-version)",
+      "creationDate": "D:20260513124909+08'00'",
+      "modDate": "D:20260513124909+08'00'",
+      "trapped": "",
+      "encryption": null
+    },
+    "xref_count": 12,
+    "is_encrypted": false,
+    "trailer": "<<\n  /Size 12\n  /Root 10 0 R\n  /Info 11 0 R\n  /ID [ <B87383CE11D9484088470A37259FFF9A> <B87383CE11D9484088470A37259FFF9A> ]\n>>"
+  }
+}
