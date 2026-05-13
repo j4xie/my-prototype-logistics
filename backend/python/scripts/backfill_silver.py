@@ -314,6 +314,8 @@ def _build_canonical_row(
         table_no=(str(attrs["table_no"]) if attrs.get("table_no") else None),
         order_type=(str(attrs["order_type"]) if attrs.get("order_type") else None),
         channel_origin=(str(attrs["channel_origin"]) if attrs.get("channel_origin") else None),
+        # meal_period (Task C4) — .strip() per spec §5.5 writer-side normalization.
+        meal_period=(str(attrs["meal_period"]).strip() if attrs.get("meal_period") else None),
         customer_count=_parse_int(attrs.get("customer_count")),
         gross_amount=_parse_decimal(attrs.get("gross_amount")),
         discount_amount=_parse_decimal(attrs.get("discount_amount")),
