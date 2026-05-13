@@ -1,0 +1,8 @@
+# Prod JWT bearer tokens — must NOT be committed
+login_*.json
+wh_tok.txt
+# Raw response bodies redundant with REPORT.md evidence (contain F001 cost figures)
+f1_f001_*.json
+f1_admin.json
+f1_warehouse.json
+raw_responses.json

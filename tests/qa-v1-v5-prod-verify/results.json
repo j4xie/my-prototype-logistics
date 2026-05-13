@@ -1,0 +1,215 @@
+{
+  "test_run": "qa/v1-v5-prod-verify",
+  "executed_at": "2026-05-13",
+  "base_url": "http://139.196.165.140:8086",
+  "primary_factory": "F006 (六膳门食品科技, FACTORY type)",
+  "f001_supplement": "F001 used only for F1 strip verification (F006 has 0 plans)",
+  "users": {
+    "f006_admin": "factory_super_admin (perms *:*) — baseline",
+    "f006_warehouse_mgr": "warehouse_manager (warehouse:*+production:read+dashboard:read per matrix; lacks finance:read, procurement:price:view) — strip target",
+    "factory_admin1": "F001 factory_super_admin — F1 baseline w/ data",
+    "warehouse_mgr1": "F001 warehouse_manager — F1 strip target w/ data"
+  },
+  "endpoints_tested": 12,
+  "PASS": 11,
+  "PASS-GATE-ONLY": 1,
+  "FAIL": 0,
+  "P0_LEAK": 0,
+  "any_leak": false,
+  "results": [
+    {
+      "key": "F1_budget_vs_actual_F006",
+      "endpoint": "F1 ProductionAnalytics /budget-vs-actual (F006)",
+      "path": "/api/mobile/F006/production-analytics/budget-vs-actual",
+      "admin_status": 200,
+      "warehouse_status": 200,
+      "verdict": "PASS-GATE-ONLY",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200, 0 rows",
+        "warehouse_mgr: HTTP 200, 0 rows",
+        "DATA-LIMITED: 0 rows on this factory — cannot directly observe cost nulling"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":[],\"timestamp\":\"2026-05-13T11:55:56.100430694\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":[],\"timestamp\":\"2026-05-13T11:55:57.55209938\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    {
+      "key": "F1_budget_vs_actual_F001",
+      "endpoint": "F1 ProductionAnalytics /budget-vs-actual (F001)",
+      "path": "/api/mobile/F001/production-analytics/budget-vs-actual",
+      "admin_status": 200,
+      "warehouse_status": 200,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200, 51 rows",
+        "warehouse_mgr: HTTP 200, 51 rows",
+        "admin cost values present: 366/408 (89%)",
+        "warehouse_mgr cost keys present: 408/408 (stable contract), non-null values: 0",
+        "STRIP CONFIRMED: warehouse_mgr 8 keys present, all values=null; admin sees real costs"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":[{\"estimatedOtherCost\":null,\"estimatedMaterialCost\":1166.00,\"actualMaterialCost\":5347.00,\"actualEquipmentCost\":389.00,\"actualOtherCost\":null,\"estimatedLaborCost\":996.00,\"planId\":\"98a1dfc4-d1b7-4dc8-b4ca-117004457a11\",\"estimatedEquipmentCost\":617.00,\"productName\":\"带鱼段_updated\",\"actualLaborCost\":1764.00,\"planNumber\":\"PLAN-1768006626803-19161919\",\"status\":\"PENDING\"",
+      "_wh_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":[{\"estimatedOtherCost\":null,\"estimatedMaterialCost\":null,\"actualMaterialCost\":null,\"actualEquipmentCost\":null,\"actualOtherCost\":null,\"estimatedLaborCost\":null,\"planId\":\"98a1dfc4-d1b7-4dc8-b4ca-117004457a11\",\"estimatedEquipmentCost\":null,\"productName\":\"带鱼段_updated\",\"actualLaborCost\":null,\"planNumber\":\"PLAN-1768006626803-19161919\",\"status\":\"PENDING\"},{\"estimatedOt"
+    },
+    {
+      "key": "V1_summary",
+      "endpoint": "V1 RestaurantDashboard /summary (F006)",
+      "path": "/api/mobile/F006/restaurant-dashboard/summary",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"todayRequisitionCount\":0,\"pendingApprovalCount\":0,\"thisMonthWastageCost\":0,\"latestStocktakingDate\":null},\"timestamp\":\"2026-05-13T11:56:00.271454599\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 缺少 采购管理 或 财务管理 模块的 [price:view / 读取 / 读写] 权限 (需任一)\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 采购管理 或 财务管理 的 [price:view / 读取 / 读写] 权限 (任一即可), 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\""
+    },
+    {
+      "key": "V2_inventory",
+      "endpoint": "V2 Report /inventory (F006)",
+      "path": "/api/mobile/F006/reports/inventory",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"totalValue\":141926.5440,\"typeDistribution\":{\"RMT_1777441647274\":150.00,\"RMT_1777690110201\":2009.12},\"lowStockItems\":0,\"statusDistribution\":{\"AVAILABLE\":3,\"EXPIRED\":0,\"SCRAPPED\":0,\"DEPLETED\":0,\"INSPECTING\":0,\"RESERVED\":0,\"FROZEN\":0,\"IN_STOCK\":0,\"USED_UP\":0,\"FRESH\":0},\"totalBatches\":3,\"expiringBatches\":0,\"expiredBatches\":0},\"timestamp\":\"2026-05-13T11:56:01.16465",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 缺少 财务管理 或 采购管理 模块的 [读取 / 读写 / price:view] 权限 (需任一)\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 财务管理 或 采购管理 的 [读取 / 读写 / price:view] 权限 (任一即可), 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"finance\",\"action\":\"read\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"finance\",\"action\":\"read\"},{\"mod"
+    },
+    {
+      "key": "V2_finance",
+      "endpoint": "V2 Report /finance (F006)",
+      "path": "/api/mobile/F006/reports/finance",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"otherCost\":0,\"accountsReceivable\":0,\"totalProfit\":0,\"equipmentCost\":0,\"laborCost\":0,\"profitMargin\":0.0,\"materialCost\":0,\"totalRevenue\":0,\"accountsPayable\":28710.00,\"totalCost\":0,\"customerPrepayments\":2000.00},\"timestamp\":\"2026-05-13T11:56:02.030358682\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 缺少 财务管理 或 采购管理 模块的 [读取 / 读写 / price:view] 权限 (需任一)\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 财务管理 或 采购管理 的 [读取 / 读写 / price:view] 权限 (任一即可), 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"finance\",\"action\":\"read\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"finance\",\"action\":\"read\"},{\"mod"
+    },
+    {
+      "key": "V2_overview",
+      "endpoint": "V2 Report /dashboard/overview (F006)",
+      "path": "/api/mobile/F006/reports/dashboard/overview",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"summary\":{\"completedBatches\":0,\"onDutyWorkers\":16,\"totalBatches\":0,\"qualityInspections\":0,\"activeAlerts\":0,\"totalWorkers\":16,\"activeBatches\":0},\"alerts\":{\"active\":0,\"status\":\"normal\"},\"todayBatches\":0,\"period\":\"today\",\"kpi\":{\"productionEfficiency\":0,\"equipmentUtilization\":0,\"unitCost\":0,\"avgCycleHours\":0,\"qualityPassRate\":0},\"monthlyYieldRate\":0,\"yesterdayStat",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 缺少 财务管理 或 采购管理 模块的 [读取 / 读写 / price:view] 权限 (需任一)\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 财务管理 或 采购管理 的 [读取 / 读写 / price:view] 权限 (任一即可), 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"finance\",\"action\":\"read\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"finance\",\"action\":\"read\"},{\"mod"
+    },
+    {
+      "key": "V3_stats",
+      "endpoint": "V3 MaterialConsumption /stats (F006)",
+      "path": "/api/mobile/F006/processing/material-consumptions/stats",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"totalQuantity\":0,\"consumptionCount\":0,\"totalCost\":0,\"byMaterialType\":[]},\"timestamp\":\"2026-05-13T11:56:03.841696549\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [采购管理] 的 [price:view] 权限, 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\":\"price:view\"}]}}"
+    },
+    {
+      "key": "V3_list",
+      "endpoint": "V3 MaterialConsumption / (list) (F006)",
+      "path": "/api/mobile/F006/processing/material-consumptions",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"content\":[],\"page\":1,\"size\":20,\"totalElements\":0,\"totalPages\":0,\"first\":true,\"last\":true,\"currentPage\":1,\"empty\":true,\"number\":0},\"timestamp\":\"2026-05-13T11:56:05.978136682\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [采购管理] 的 [price:view] 权限, 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\":\"price:view\"}]}}"
+    },
+    {
+      "key": "V4_supplier_report",
+      "endpoint": "V4 SupplierAdmission /report/{id} (F006)",
+      "path": "/api/mobile/F006/supplier-admission/report/00000000-0000-0000-0000-000000000000",
+      "admin_status": 400,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 400",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"success\":false,\"message\":\"供应商不存在\"}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [采购管理] 的 [price:view] 权限, 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\":\"price:view\"}]}}"
+    },
+    {
+      "key": "V5_pricelist_list",
+      "endpoint": "V5 PriceList / (list) (F006)",
+      "path": "/api/mobile/F006/price-lists",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"查询成功\",\"data\":{\"content\":[],\"page\":1,\"size\":20,\"totalElements\":0,\"totalPages\":0,\"first\":true,\"last\":true,\"currentPage\":1,\"empty\":true,\"number\":0},\"timestamp\":\"2026-05-13T11:56:08.787729508\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [采购管理] 的 [price:view] 权限, 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\":\"price:view\"}]}}"
+    },
+    {
+      "key": "V5_pricelist_effective",
+      "endpoint": "V5 PriceList /effective (F006)",
+      "path": "/api/mobile/F006/price-lists/effective",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"查询成功\",\"data\":[],\"timestamp\":\"2026-05-13T11:56:10.638473889\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 [采购管理] 的 [price:view] 权限, 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\":\"price:view\"}]}}"
+    },
+    {
+      "key": "Sibling_wastage_stats",
+      "endpoint": "Sibling WastageRecord /statistics (F006)",
+      "path": "/api/mobile/F006/restaurant/wastage/statistics",
+      "admin_status": 200,
+      "warehouse_status": 403,
+      "verdict": "PASS",
+      "leak": false,
+      "notes": [
+        "admin: HTTP 200",
+        "warehouse_mgr: HTTP 403",
+        "warehouse_mgr 403 OK (gate blocks)"
+      ],
+      "_admin_body": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"startDate\":\"2026-05-01\",\"endDate\":\"2026-05-13\",\"totalEstimatedCost\":0,\"byType\":[],\"byMaterial\":[]},\"timestamp\":\"2026-05-13T11:56:11.540354129\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}",
+      "_wh_body": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [仓储主管] 缺少 采购管理 或 财务管理 模块的 [price:view / 读取 / 读写] 权限 (需任一)\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [仓储主管] 开通 采购管理 或 财务管理 的 [price:view / 读取 / 读写] 权限 (任一即可), 或切换到有权限的账号重试\",\"meta\":{\"role\":\"warehouse_manager\",\"module\":\"procurement\",\"action\":\"price:view\",\"requireAll\":false,\"requiredPermissions\":[{\"module\":\"procurement\",\"action\""
+    }
+  ]
+}
