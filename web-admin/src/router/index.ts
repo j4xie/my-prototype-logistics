@@ -298,6 +298,21 @@ const businessRoutes: RouteRecordRaw[] = [
             component: () => import('@/views/sales/quotes/list.vue'),
             meta: { requiresAuth: true, title: '运营报价', module: 'sales' }
           },
+          // T-RTA (issue #531): 退货流程 — F006 customer feedback 第四次会议 956-1037.
+          // Backend ReturnOrderController existed (covers both 采购退货 + 销售退货 since 2026-Q1)
+          // but no frontend view shipped. These 2 routes close the F006 gap for SALES_RETURN side.
+          {
+            path: 'returns',
+            name: 'SalesReturns',
+            component: () => import('@/views/sales/returns/list.vue'),
+            meta: { requiresAuth: true, title: '销售退货', module: 'sales' }
+          },
+          {
+            path: 'returns/:id',
+            name: 'SalesReturnDetail',
+            component: () => import('@/views/sales/returns/detail.vue'),
+            meta: { requiresAuth: true, title: '退货单详情', module: 'sales', hidden: true }
+          },
           {
             path: 'finished-goods',
             name: 'SalesFinishedGoods',

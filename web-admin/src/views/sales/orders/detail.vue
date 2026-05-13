@@ -38,6 +38,27 @@ const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; it
   deliveryAddress: '', logisticsCompany: '', items: [],
 });
 
+// T-RTA (issue #531): F006 客户反馈 第四次会议 956-1037 — 申请退货 dialog.
+// Builds CreateReturnOrderRequest with returnType=SALES_RETURN + counterpartyId=customerId
+// + sourceOrderId=orderId. Items default from order.items with checked=true, qty=delivered.
+const returnDialogVisible = ref(false);
+const returnSubmitting = ref(false);
+type ReturnDialogItem = {
+  productTypeId: string;
+  itemName: string;
+  unitPrice?: number;
+  maxQuantity: number; // delivered (cap for refund)
+  selected: boolean;
+  quantity: number;
+  reason: string;
+};
+const returnForm = ref<{ returnDate: string; reason: string; remark: string; items: ReturnDialogItem[] }>({
+  returnDate: new Date().toISOString().slice(0, 10),
+  reason: '',
+  remark: '',
+  items: [],
+});
+
 // 批次分配对话框 (P0-13 强制批次追溯 — R16 深度测试后补完)
 const batchAllocDialogVisible = ref(false);
 const batchAllocLoading = ref(false);
@@ -319,6 +340,74 @@ function openDeliveryDialog() {
     })),
   };
   deliveryDialogVisible.value = true;
+}
+
+// T-RTA (issue #531): F006 客户反馈 — open return-order dialog from sales order detail.
+function openReturnDialog() {
+  if (!order.value?.items?.length) {
+    ElMessage.warning('订单无明细, 无法发起退货');
+    return;
+  }
+  returnForm.value = {
+    returnDate: new Date().toISOString().slice(0, 10),
+    reason: '',
+    remark: '',
+    items: (order.value.items as TableRow[]).map((it) => {
+      const delivered = Number(it.deliveredQuantity) || 0;
+      return {
+        productTypeId: String(it.productTypeId || ''),
+        itemName: String(it.productName || it.productTypeName || '-'),
+        unitPrice: Number(it.unitPrice) || 0,
+        maxQuantity: delivered, // can't refund more than delivered
+        selected: delivered > 0,
+        quantity: delivered,
+        reason: '',
+      };
+    }),
+  };
+  returnDialogVisible.value = true;
+}
+
+async function handleCreateReturn() {
+  const selectedItems = returnForm.value.items.filter((i) => i.selected && i.quantity > 0);
+  if (selectedItems.length === 0) {
+    ElMessage.warning('请至少选择一行并填写退货数量');
+    return;
+  }
+  if (!returnForm.value.reason.trim()) {
+    ElMessage.warning('请填写退货原因');
+    return;
+  }
+  // Quantity caps: each row's quantity should not exceed maxQuantity (delivered).
+  for (const it of selectedItems) {
+    if (it.maxQuantity > 0 && it.quantity > it.maxQuantity) {
+      ElMessage.warning(`${it.itemName} 退货数量超过已发货数量 (${it.maxQuantity})`);
+      return;
+    }
+  }
+  returnSubmitting.value = true;
+  try {
+    const res = await post(`/${factoryId.value}/return-orders`, {
+      returnType: 'SALES_RETURN',
+      counterpartyId: order.value?.customerId || '',
+      sourceOrderId: orderId.value,
+      returnDate: returnForm.value.returnDate,
+      reason: returnForm.value.reason,
+      remark: returnForm.value.remark,
+      items: selectedItems.map((it) => ({
+        productTypeId: it.productTypeId,
+        itemName: it.itemName,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        reason: it.reason,
+      })),
+    });
+    if (res.success) {
+      ElMessage.success('退货单已创建 (DRAFT 草稿). 在销售退货页继续提交审批.');
+      returnDialogVisible.value = false;
+    }
+  } catch { /* interceptor */ }
+  finally { returnSubmitting.value = false; }
 }
 
 async function handleCreateDelivery() {
@@ -848,6 +937,10 @@ async function handleCreatePayment() {
             <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="openFinanceReview('reject')">审核驳回</el-button>
             <el-button v-if="order.status === 'FINANCE_APPROVED'" type="primary" :loading="submitting" @click="handleStartProduction">开始生产</el-button>
             <el-button v-if="['CONFIRMED','FINANCE_APPROVED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
+            <!-- T-RTA (issue #531): F006 客户反馈 第四次会议 956-1037 — 申请退货 入口.
+                 Opens dialog that builds CreateReturnOrderRequest with returnType=SALES_RETURN. -->
+            <el-button v-if="['PARTIAL_DELIVERED','DELIVERED','COMPLETED'].includes(order.status)"
+                       type="warning" :loading="submitting" @click="openReturnDialog">申请退货</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
@@ -1168,6 +1261,57 @@ async function handleCreatePayment() {
       <template #footer>
         <el-button @click="deliveryDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreateDelivery">创建发货单</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ─── T-RTA (issue #531): 申请退货 对话框 ─── -->
+    <el-dialog v-model="returnDialogVisible" title="申请退货" width="780px" destroy-on-close>
+      <el-alert type="info" show-icon :closable="false" style="margin-bottom: 12px"
+                title="退货流程说明"
+                description="提交后退货单为 DRAFT 草稿. 销售退货 → 销售退货 列表里点 提交审批, 财务/管理员审批通过后即可入库或退款. 退货数量不能超过已发货数量." />
+      <el-form label-width="100px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="退货日期" required>
+              <el-date-picker v-model="returnForm.returnDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="退货原因" required>
+              <el-input v-model="returnForm.reason" placeholder="如: 客户验收不合格 / 包装破损 / 滞销退仓" maxlength="500" show-word-limit />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="备注">
+          <el-input v-model="returnForm.remark" type="textarea" :rows="2" maxlength="1000" show-word-limit />
+        </el-form-item>
+        <el-divider content-position="left">退货明细</el-divider>
+        <el-table :data="returnForm.items" border size="small">
+          <el-table-column width="50" align="center">
+            <template #default="{ row }"><el-checkbox v-model="row.selected" /></template>
+          </el-table-column>
+          <el-table-column label="品名" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.itemName }}</template>
+          </el-table-column>
+          <el-table-column label="已发货" width="100" align="right">
+            <template #default="{ row }">{{ row.maxQuantity }}</template>
+          </el-table-column>
+          <el-table-column label="退货数量" width="140">
+            <template #default="{ row }">
+              <el-input-number v-model="row.quantity" :min="0" :max="row.maxQuantity || undefined" :precision="3"
+                               :controls="false" size="small" style="width: 100%" :disabled="!row.selected" />
+            </template>
+          </el-table-column>
+          <el-table-column label="行原因" min-width="180">
+            <template #default="{ row }">
+              <el-input v-model="row.reason" size="small" placeholder="(可选)" maxlength="500" :disabled="!row.selected" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-form>
+      <template #footer>
+        <el-button @click="returnDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="returnSubmitting" @click="handleCreateReturn">提交退货申请</el-button>
       </template>
     </el-dialog>
 
