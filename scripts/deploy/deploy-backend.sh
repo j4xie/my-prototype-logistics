@@ -1092,7 +1092,9 @@ deploy_jar() {
     if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
         if [ "$DEPLOY_MODE" = "bluegreen" ]; then
             echo "   [生产] 通过 nginx upstream 验证 (Blue-Green)..."
-            PROD_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
+            # `|| echo "000"` 防 set -e: ssh GATEWAY 失败 → 让 if-check 走异常分支, 不杀 deploy.
+            # (Sweep follow-up to #556 — same bug class as the 'exit 28 cosmetic' fix.)
+            PROD_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null || echo "000")
             if [ "$PROD_STATUS" = "200" ]; then
                 echo "   ✓ 生产服务正常 (HTTP 200 via nginx)"
             else
@@ -1133,7 +1135,9 @@ deploy_jar() {
         fi
     elif [[ "$DEPLOY_ENV" == "test" ]]; then
         # 通过 nginx upstream 检查 prod (兼容 Blue-Green 和 in-place)
-        OTHER_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
+        # `|| echo "000"` 防 set -e: ssh GATEWAY 失败 → 让 if-check 走异常分支, 不杀 deploy.
+        # (Sweep follow-up to #556 — same bug class as the 'exit 28 cosmetic' fix.)
+        OTHER_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null || echo "000")
         if [ "$OTHER_STATUS" != "200" ]; then
             echo ""
             echo "   ⚠️  [防御检查] prod 异常 (HTTP $OTHER_STATUS via nginx) — 生产可能宕机!"
