@@ -1,0 +1,107 @@
+{
+  "request": "/api/mobile/F001/smart-bi/analysis/department?startDate=2026-02-11&endDate=2026-05-12",
+  "status": 200,
+  "body": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "completionRates": [],
+      "efficiencyMatrix": {
+        "chartType": "SCATTER",
+        "title": "部门效率矩阵",
+        "seriesField": null,
+        "data": [],
+        "options": null,
+        "xaxisField": null,
+        "yaxisField": null
+      },
+      "dateRange": {
+        "startDate": "2026-02-11",
+        "endDate": "2026-05-12",
+        "granularity": "QUARTER",
+        "originalExpression": "2026-02-11 至 2026-05-12",
+        "relative": false,
+        "days": 91,
+        "valid": true
+      },
+      "generatedAt": "2026-05-12T21:32:17.292287",
+      "ranking": [],
+      "trendComparison": {
+        "chartType": "LINE",
+        "title": "部门销售趋势对比",
+        "seriesField": "department",
+        "data": [
+          {
+            "period": "2026-W07",
+            "未知部门": 1068791
+          },
+          {
+            "period": "2026-W08",
+            "未知部门": 372671.2
+          },
+          {
+            "period": "2026-W09",
+            "未知部门": 2003722.7
+          },
+          {
+            "period": "2026-W10",
+            "未知部门": 540750.1
+          },
+          {
+            "period": "2026-W11",
+            "未知部门": 1664700
+          },
+          {
+            "period": "2026-W12",
+            "未知部门": 2042746.3
+          },
+          {
+            "period": "2026-W13",
+            "未知部门": 1666975.9
+          },
+          {
+            "period": "2026-W14",
+            "未知部门": 114706.9
+          },
+          {
+            "period": "2026-W15",
+            "未知部门": 2222609.1
+          },
+          {
+            "period": "2026-W16",
+            "未知部门": 1470560.8
+          },
+          {
+            "period": "2026-W17",
+            "未知部门": 1926722.7
+          },
+          {
+            "period": "2026-W18",
+            "未知部门": 361116.5
+          },
+          {
+            "period": "2026-W19",
+            "未知部门": 3659021
+          },
+          {
+            "period": "2026-W20",
+            "未知部门": 83600
+          }
+        ],
+        "options": {
+          "series": [
+            "未知部门"
+          ],
+          "period": "WEEK"
+        },
+        "xaxisField": "period",
+        "yaxisField": "amount"
+      }
+    },
+    "timestamp": "2026-05-13T05:32:17.292302",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+  }
+}

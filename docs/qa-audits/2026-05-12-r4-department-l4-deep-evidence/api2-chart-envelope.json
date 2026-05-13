@@ -1,0 +1,65 @@
+{
+  "request": "(reuse from API-1 body.data.efficiencyMatrix)",
+  "data": {
+    "completionRates": [],
+    "efficiencyMatrix": {
+      "chartType": "SCATTER",
+      "title": "部门效率矩阵",
+      "seriesField": null,
+      "data": [],
+      "options": null,
+      "xaxisField": null,
+      "yaxisField": null
+    },
+    "dateRange": {
+      "startDate": "2026-04-12",
+      "endDate": "2026-05-12",
+      "granularity": "MONTH",
+      "originalExpression": "2026-04-12 至 2026-05-12",
+      "relative": false,
+      "days": 31,
+      "valid": true
+    },
+    "generatedAt": "2026-05-12T21:32:17.06489",
+    "ranking": [],
+    "trendComparison": {
+      "chartType": "LINE",
+      "title": "部门销售趋势对比",
+      "seriesField": "department",
+      "data": [
+        {
+          "period": "2026-W15",
+          "未知部门": 560511
+        },
+        {
+          "period": "2026-W16",
+          "未知部门": 1470560.8
+        },
+        {
+          "period": "2026-W17",
+          "未知部门": 1926722.7
+        },
+        {
+          "period": "2026-W18",
+          "未知部门": 361116.5
+        },
+        {
+          "period": "2026-W19",
+          "未知部门": 3659021
+        },
+        {
+          "period": "2026-W20",
+          "未知部门": 83600
+        }
+      ],
+      "options": {
+        "series": [
+          "未知部门"
+        ],
+        "period": "WEEK"
+      },
+      "xaxisField": "period",
+      "yaxisField": "amount"
+    }
+  }
+}

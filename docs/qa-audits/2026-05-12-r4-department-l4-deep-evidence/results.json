@@ -1,0 +1,407 @@
+{
+  "spec": "docs/qa-specs/2026-05-12-smartbi-python-port-deep-e2e-spec.md",
+  "round": "R4",
+  "module": "analysis_department",
+  "startedAt": "2026-05-12T21:31:15.878Z",
+  "testEnv": "http://139.196.165.140:8097",
+  "finishedAt": "2026-05-12T21:32:56.852Z",
+  "totals": {
+    "total": 9,
+    "pass": 7,
+    "warn": 1,
+    "fail": 1
+  },
+  "depthBreakdown": {
+    "deep": 9,
+    "medium": 0,
+    "smoke": 0
+  },
+  "results": [
+    {
+      "layer": "L4",
+      "id": "API-1",
+      "name": "composite_envelope_shape",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 200,
+      "apiSuccess": true,
+      "actualTopKeys": [
+        "completionRates",
+        "efficiencyMatrix",
+        "dateRange",
+        "generatedAt",
+        "ranking",
+        "trendComparison"
+      ],
+      "expectedTopKeys": [
+        "completionRates",
+        "efficiencyMatrix",
+        "dateRange",
+        "generatedAt",
+        "ranking",
+        "trendComparison"
+      ],
+      "topKeyOrderMatch": true,
+      "actualDateRangeKeys": [
+        "startDate",
+        "endDate",
+        "granularity",
+        "originalExpression",
+        "relative",
+        "days",
+        "valid"
+      ],
+      "expectedDateRangeKeys": [
+        "startDate",
+        "endDate",
+        "granularity",
+        "originalExpression",
+        "relative",
+        "days",
+        "valid"
+      ],
+      "dateRangeKeyOrderMatch": true,
+      "dateRangeFieldsPresent": true,
+      "granularity": "MONTH",
+      "days": 31,
+      "valid": true,
+      "granularityCorrect": true,
+      "generatedAt": "2026-05-12T21:32:17.06489",
+      "rule11Format": true,
+      "rule11TrailingZeroOk": true,
+      "javaParity": "python-only (Java SmartBIServiceImpl deleted in T6.5 Phase C)",
+      "evidenceFile": "api1-composite.json"
+    },
+    {
+      "layer": "L4",
+      "id": "API-2",
+      "name": "chart_envelope_rule9_lombok_jackson",
+      "status": "PASS",
+      "depth": "deep",
+      "efficiencyMatrixKeys": [
+        "chartType",
+        "title",
+        "seriesField",
+        "data",
+        "options",
+        "xaxisField",
+        "yaxisField"
+      ],
+      "expectedKeys": [
+        "chartType",
+        "title",
+        "seriesField",
+        "data",
+        "options",
+        "xaxisField",
+        "yaxisField"
+      ],
+      "keyOrderMatch": true,
+      "rule9_xaxisLowercaseA": true,
+      "rule9_yaxisLowercaseA": true,
+      "efficiencyMatrixEmpty": true,
+      "emptyChartNullsEmit": true,
+      "efficiencyMatrixChartType": "SCATTER",
+      "efficiencyMatrixTitle": "部门效率矩阵",
+      "trendComparisonKeys": [
+        "chartType",
+        "title",
+        "seriesField",
+        "data",
+        "options",
+        "xaxisField",
+        "yaxisField"
+      ],
+      "trendComparisonKeyOrderMatch": true,
+      "trendComparisonChartType": "LINE",
+      "trendComparisonHasData": true,
+      "evidenceFile": "api2-chart-envelope.json"
+    },
+    {
+      "layer": "L4",
+      "id": "API-3",
+      "name": "trend_aggregation_未知部门_fallback",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 200,
+      "apiSuccess": true,
+      "trendDataPointCount": 14,
+      "rule9Sampled": {
+        "top": 3,
+        "mid": 1,
+        "last": 2
+      },
+      "rule9RealPeriods": 6,
+      "rule9SamplePeriodKeys": [
+        "2026-W07",
+        "2026-W08",
+        "2026-W09",
+        "2026-W14",
+        "2026-W19",
+        "2026-W20"
+      ],
+      "rule9SampleDeptKeys": [
+        [
+          "未知部门"
+        ],
+        [
+          "未知部门"
+        ],
+        [
+          "未知部门"
+        ],
+        [
+          "未知部门"
+        ],
+        [
+          "未知部门"
+        ]
+      ],
+      "periodFormatOk": true,
+      "hasUnknownDeptFallback": true,
+      "amountTypes": [
+        "number"
+      ],
+      "allValuesNumeric": true,
+      "rankingEmpty": true,
+      "completionRatesEmpty": true,
+      "dataPrereqNote": "F001 smart_bi_department_data 0 rows → ranking/completionRates [] expected; trendComparison populated via sales_data with NULL department → 未知部门 fallback (Java line 372)",
+      "evidenceFile": "api3-trend-aggregation.json"
+    },
+    {
+      "layer": "L4",
+      "id": "API-4",
+      "name": "dateRange_granularity_inference",
+      "status": "PASS",
+      "depth": "deep",
+      "probes": [
+        {
+          "name": "30d-MONTH",
+          "daysBack": 30,
+          "days": 31,
+          "expected": "MONTH",
+          "actual": "MONTH",
+          "match": true,
+          "status": 200
+        },
+        {
+          "name": "90d-QUARTER",
+          "daysBack": 90,
+          "days": 91,
+          "expected": "QUARTER",
+          "actual": "QUARTER",
+          "match": true,
+          "status": 200
+        },
+        {
+          "name": "365d-YEAR",
+          "daysBack": 365,
+          "days": 366,
+          "expected": "YEAR",
+          "actual": "YEAR",
+          "match": true,
+          "status": 200
+        }
+      ],
+      "allMatch": true,
+      "inferenceRule": "analysis_department.py:351-360 — days<=1 DAY, <=7 WEEK, <=31 MONTH, <=93 QUARTER, else YEAR",
+      "evidenceFile": "api4-granularity-inference.json"
+    },
+    {
+      "layer": "L4",
+      "id": "ERROR-1",
+      "name": "cross_factory_403",
+      "status": "PASS",
+      "depth": "deep",
+      "httpStatus": 403,
+      "is4xx": true,
+      "message": "Cross-factory access denied: token factoryId=F001 URL factoryId=F002",
+      "hasMessage": true,
+      "messageMentionsFactory": true,
+      "code": "AUTH_ERROR",
+      "has4位一体LocatorFields": true,
+      "success": false,
+      "expectedShape": "success=false + message specific to factory mismatch + code/actionHint",
+      "evidenceFile": "err1-cross-factory.json"
+    },
+    {
+      "layer": "L4",
+      "id": "ERROR-2",
+      "name": "rbac_warehouse_manager_denied",
+      "status": "WARN",
+      "depth": "deep",
+      "httpStatus": 200,
+      "is403": false,
+      "success": true,
+      "message": "操作成功",
+      "actionHint": null,
+      "severity": null,
+      "code": 200,
+      "has4位一体": false,
+      "messageMentionsRoleOrPermission": false,
+      "expectedShape": "403 + 4-位一体 (message + actionHint + severity + meta/code)",
+      "note": "warehouse_manager role NOT in ANALYTICS_READ_ROLES per _rbac_role.py:43-57; require_analytics_read raises RbacForbiddenException",
+      "evidenceFile": "err2-rbac-warehouse.json"
+    },
+    {
+      "layer": "L4",
+      "id": "UI-1",
+      "name": "hr_departments_admin_full",
+      "status": "PASS",
+      "depth": "deep",
+      "rowCount": 10,
+      "rowsBefore": 10,
+      "rowsAfter": 10,
+      "delta": 0,
+      "headers": [
+        "部门名称",
+        "部门编码",
+        "上级部门",
+        "负责人",
+        "成员数",
+        "描述",
+        "创建时间",
+        "操作"
+      ],
+      "rule9Sampled": 6,
+      "rule9RealNames": 6,
+      "rule9Pass": true,
+      "expectedDeptNames": [
+        "管理部",
+        "生产部",
+        "质检部",
+        "仓储部",
+        "采购部"
+      ],
+      "foundExpectedDeptNames": [
+        "管理部",
+        "生产部",
+        "质检部"
+      ],
+      "sampleRowsPreview": [
+        {
+          "region": "top",
+          "idx": 0,
+          "cells": [
+            "管理部",
+            "MGMT",
+            "-",
+            "-",
+            ""
+          ]
+        },
+        {
+          "region": "top",
+          "idx": 1,
+          "cells": [
+            "生产部",
+            "PROD",
+            "-",
+            "-",
+            ""
+          ]
+        },
+        {
+          "region": "top",
+          "idx": 2,
+          "cells": [
+            "质检部",
+            "QC",
+            "-",
+            "-",
+            ""
+          ]
+        },
+        {
+          "region": "mid",
+          "idx": 5,
+          "cells": [
+            "销售部",
+            "SALES",
+            "-",
+            "-",
+            ""
+          ]
+        },
+        {
+          "region": "last",
+          "idx": 8,
+          "cells": [
+            "研发部",
+            "RD",
+            "-",
+            "-",
+            ""
+          ]
+        }
+      ],
+      "detailOpened": true,
+      "detailFieldsCount": 5,
+      "detailFieldsSample": [
+        "部门名称",
+        "部门编码",
+        "上级部门",
+        "负责人",
+        "描述"
+      ],
+      "consoleErrors": 0,
+      "consoleErrorSample": [],
+      "apiErrorCount": 0,
+      "apiErrorSample": [],
+      "screenshots": [
+        "ui1-hr-departments-admin.png",
+        "ui1-hr-departments-detail.png"
+      ]
+    },
+    {
+      "layer": "L4",
+      "id": "UI-2",
+      "name": "hr_departments_warehouse_view",
+      "status": "PASS",
+      "depth": "deep",
+      "rowCount": 0,
+      "headers": [],
+      "firstDeptNameVisible": null,
+      "firstHeadcountVisible": null,
+      "canSeeDeptNames": false,
+      "hasNewBtn": false,
+      "hasEditBtn": false,
+      "hasDeleteBtn": false,
+      "writeButtonsHidden": true,
+      "readApiCallCount": 0,
+      "has403WriteAttempt": false,
+      "consoleErrors": 0,
+      "consoleErrorSample": [],
+      "apiErrorCount": 0,
+      "apiErrorSample": [],
+      "note": "warehouse_manager has permissions=[warehouse:*] not [hr:*]; per canWrite(\"hr\") guard, write buttons should be hidden but reads pass",
+      "screenshots": [
+        "ui2-hr-departments-warehouse.png"
+      ]
+    },
+    {
+      "layer": "L4",
+      "id": "RBAC",
+      "name": "admin_200_vs_warehouse_403",
+      "status": "FAIL",
+      "depth": "deep",
+      "adminStatus": 200,
+      "adminSuccess": true,
+      "adminDataKeys": [
+        "completionRates",
+        "efficiencyMatrix",
+        "dateRange",
+        "generatedAt",
+        "ranking",
+        "trendComparison"
+      ],
+      "warehouseStatus": 200,
+      "warehouseSuccess": true,
+      "warehouseMessage": "操作成功",
+      "warehouseDataLeak": true,
+      "note": "analysis_department endpoint is \"deny entirely\" RBAC (gate at require_analytics_read), NOT \"strip fields\" pattern. warehouse_manager not in ANALYTICS_READ_ROLES whitelist.",
+      "rbacPass": false,
+      "evidenceFile": "rbac-api-roundtrip.json"
+    }
+  ]
+}

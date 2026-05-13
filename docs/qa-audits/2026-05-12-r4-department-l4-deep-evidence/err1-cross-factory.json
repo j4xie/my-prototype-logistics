@@ -1,0 +1,10 @@
+{
+  "request": "/api/mobile/F002/smart-bi/analysis/department?startDate=2026-04-12&endDate=2026-05-12",
+  "status": 403,
+  "body": {
+    "success": false,
+    "data": null,
+    "message": "Cross-factory access denied: token factoryId=F001 URL factoryId=F002",
+    "code": "AUTH_ERROR"
+  }
+}
