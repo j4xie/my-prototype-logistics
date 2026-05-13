@@ -12,6 +12,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -272,7 +273,7 @@ async function submitCreateForm() {
           <el-form-item label="单位" prop="unit">
             <el-input v-model="createForm.unit" placeholder="kg / 件 / 箱" style="width: 140px" />
           </el-form-item>
-          <el-form-item label="单价">
+          <el-form-item v-if="canViewPrice" label="单价">
             <el-input-number v-model="createForm.unitPrice" :min="0" :precision="2" :step="1" />
           </el-form-item>
           <el-form-item label="出货日期" prop="shipmentDate">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import echarts from '@/utils/echarts';
@@ -14,7 +15,9 @@ import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
 const { fetchCapability } = useCapability();
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 // Apr 24 2026 UX P1-11: restaurant tenants have no production/quality/cost
 // tracking — don't show the 3 zero-value charts for them. Gold POS trend
 // card above is the relevant content; legacy charts only matter for
@@ -470,7 +473,7 @@ onUnmounted(() => {
     </el-alert>
 
     <!-- v1.2 Week 9 Gold flip: POS revenue+orders trend for restaurant tenants -->
-    <CapabilityGate card-id="trends_monthly" :requires="['date', 'net_amount']">
+    <CapabilityGate v-if="canViewPrice" card-id="trends_monthly" :requires="['date', 'net_amount']">
     <el-card v-show="goldTrend" class="chart-card gold-trend-card" style="margin-bottom: 16px; border-top: 3px solid #67C23A;">
       <template #header>
         <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap;">
@@ -507,12 +510,12 @@ onUnmounted(() => {
       </el-row>
 
       <el-row :gutter="16">
-        <el-col :span="12">
+        <el-col :span="canViewPrice ? 12 : 24">
           <el-card class="chart-card">
             <div id="quality-chart" class="chart"></div>
           </el-card>
         </el-col>
-        <el-col :span="12">
+        <el-col v-if="canViewPrice" :span="12">
           <el-card class="chart-card">
             <div id="cost-chart" class="chart"></div>
           </el-card>

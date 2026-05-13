@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue';
@@ -11,8 +12,10 @@ import type { TableRow } from '@/types/api';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const batchId = computed(() => route.params.id as string);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const batch = ref<TableRow | null>(null);
@@ -189,7 +192,7 @@ function getTimelineIcon(type: string) {
           <div class="kpi-label">完成效率</div>
           <div class="kpi-value">{{ formatPercent(batch.efficiency) }}</div>
         </div>
-        <div class="kpi-card">
+        <div v-if="canViewPrice" class="kpi-card">
           <div class="kpi-label">单位成本</div>
           <div class="kpi-value">{{ formatCost(batch.unitCost) }}</div>
         </div>
@@ -256,7 +259,7 @@ function getTimelineIcon(type: string) {
         </el-card>
 
         <!-- Cost Breakdown -->
-        <el-card shadow="never" class="detail-card">
+        <el-card v-if="canViewPrice" shadow="never" class="detail-card">
           <template #header>
             <span class="section-title">成本明细</span>
           </template>

@@ -12,6 +12,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -105,60 +106,63 @@ function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
               @clear="handleSearchClear"
             />
             <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">新建价格表</el-button>
+            <el-button v-if="canWrite && canViewPrice" type="primary" :icon="Plus" @click="dialogVisible = true">新建价格表</el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border row-key="id" style="width: 100%">
-        <el-table-column type="expand">
-          <template #default="{ row }">
-            <div style="padding: 12px 48px">
-              <el-table :data="row.items || []" border size="small">
-                <el-table-column prop="itemName" label="项目名称" min-width="150" />
-                <el-table-column prop="unit" label="单位" width="80" align="center" />
-                <el-table-column prop="standardPrice" label="标准价" width="120" align="right">
-                  <template #default="{ row: item }">{{ formatAmount(item.standardPrice) }}</template>
-                </el-table-column>
-                <el-table-column prop="minPrice" label="最低价" width="120" align="right">
-                  <template #default="{ row: item }">{{ formatAmount(item.minPrice) }}</template>
-                </el-table-column>
-                <el-table-column prop="maxPrice" label="最高价" width="120" align="right">
-                  <template #default="{ row: item }">{{ formatAmount(item.maxPrice) }}</template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="name" label="价格表名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="priceType" label="类型" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag size="small">{{ priceTypeMap[row.priceType] || row.priceType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="effectiveFrom" label="生效日期" width="120" />
-        <el-table-column prop="effectiveTo" label="失效日期" width="120" />
-        <el-table-column prop="isActive" label="状态" width="90" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.isActive ? 'success' : 'info'" size="small">{{ row.isActive ? '生效中' : '未生效' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right" align="center">
-          <template #default="{ row }">
-            <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <template v-if="canViewPrice">
+        <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border row-key="id" style="width: 100%">
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div style="padding: 12px 48px">
+                <el-table :data="row.items || []" border size="small">
+                  <el-table-column prop="itemName" label="项目名称" min-width="150" />
+                  <el-table-column prop="unit" label="单位" width="80" align="center" />
+                  <el-table-column prop="standardPrice" label="标准价" width="120" align="right">
+                    <template #default="{ row: item }">{{ formatAmount(item.standardPrice) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="minPrice" label="最低价" width="120" align="right">
+                    <template #default="{ row: item }">{{ formatAmount(item.minPrice) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="maxPrice" label="最高价" width="120" align="right">
+                    <template #default="{ row: item }">{{ formatAmount(item.maxPrice) }}</template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="价格表名称" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="priceType" label="类型" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag size="small">{{ priceTypeMap[row.priceType] || row.priceType }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="effectiveFrom" label="生效日期" width="120" />
+          <el-table-column prop="effectiveTo" label="失效日期" width="120" />
+          <el-table-column prop="isActive" label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.isActive ? 'success' : 'info'" size="small">{{ row.isActive ? '生效中' : '未生效' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" fixed="right" align="center">
+            <template #default="{ row }">
+              <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row.id)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <div class="pagination-wrapper">
-        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.size"
-          :page-sizes="[10, 20, 50]" :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handlePageChange" @size-change="handleSizeChange" />
-      </div>
+        <div class="pagination-wrapper">
+          <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.size"
+            :page-sizes="[10, 20, 50]" :total="pagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @current-change="handlePageChange" @size-change="handleSizeChange" />
+        </div>
+      </template>
+      <el-empty v-else description="您没有查看价格数据的权限" />
     </el-card>
 
-    <el-dialog v-model="dialogVisible" title="新建价格表" width="720px" destroy-on-close>
+    <el-dialog v-if="canViewPrice" v-model="dialogVisible" title="新建价格表" width="720px" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item label="名称" required><el-input v-model="form.name" placeholder="例如:2025 Q2 采购标准价" /></el-form-item>
         <el-form-item label="类型" required>

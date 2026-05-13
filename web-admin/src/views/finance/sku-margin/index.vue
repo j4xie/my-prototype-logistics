@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
@@ -9,7 +10,9 @@ import type { ECharts } from 'echarts/core';
 
 // ---------- auth ----------
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // ---------- state ----------
 const loading = ref(false);
@@ -418,6 +421,7 @@ function handleRefresh() {
         </div>
       </template>
 
+      <template v-if="canViewPrice">
       <!-- R76: 提示成本/售价数据未接入 — 之前用 Math.random 编造, 已移除 -->
       <el-alert
         v-if="noCostDataNotice.show"
@@ -546,6 +550,8 @@ function handleRefresh() {
           @size-change="handleSizeChange"
         />
       </div>
+      </template>
+      <el-empty v-else description="您没有查看价格/财务数据的权限" />
     </el-card>
   </div>
 </template>

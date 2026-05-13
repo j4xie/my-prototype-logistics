@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue';
@@ -9,12 +10,9 @@ import type { ECharts } from 'echarts/core';
 
 // ---------- auth ----------
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
-// P1-NEW-3: 仓库角色隐藏价格字段 (客户需求 4907-4925s: 商业机密, 仓库看不到价格)
-const isWarehouseOnly = computed(() => {
-  const role = authStore.currentRole;
-  return role === 'warehouse_manager' || role === 'warehouse_worker';
-});
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // ---------- state ----------
 const loading = ref(false);
@@ -263,7 +261,7 @@ onBeforeUnmount(() => {
         row-key="id"
         @expand-change="handleExpandChange"
       >
-        <el-table-column type="expand">
+        <el-table-column v-if="canViewPrice" type="expand">
           <template #default="{ row }">
             <div class="expand-content" v-loading="expandLoading[row.id]">
               <div
@@ -291,14 +289,14 @@ onBeforeUnmount(() => {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column v-if="!isWarehouseOnly" label="当前均价" width="130" align="right">
+        <el-table-column v-if="canViewPrice" label="当前均价" width="130" align="right">
           <template #default="{ row }">
             <span class="price-value">
               {{ formatPrice(row.movingAvgPrice ?? row.unitPrice) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column v-if="!isWarehouseOnly" label="最近入库价" width="130" align="right">
+        <el-table-column v-if="canViewPrice" label="最近入库价" width="130" align="right">
           <template #default="{ row }">
             {{ formatPrice(row.unitPrice) }}
           </template>

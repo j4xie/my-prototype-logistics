@@ -10,6 +10,7 @@ import type { TableRow } from '@/types/api';
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const costData = ref<TableRow | null>(null);
@@ -80,47 +81,51 @@ const statCards = computed(() => [
       </el-form>
     </el-card>
 
-    <el-row :gutter="20" class="stat-cards">
-      <el-col v-for="card in statCards" :key="card.title" :xs="24" :sm="8">
-        <el-card class="stat-card" shadow="hover">
-          <div class="stat-content">
-            <div class="stat-info">
-              <span class="stat-title">{{ card.title }}</span>
-              <span class="stat-value" :style="{ color: card.color }">
-                {{ card.value.toLocaleString() }}
-                <small>{{ card.unit }}</small>
-              </span>
+    <template v-if="canViewPrice">
+      <el-row :gutter="20" class="stat-cards">
+        <el-col v-for="card in statCards" :key="card.title" :xs="24" :sm="8">
+          <el-card class="stat-card" shadow="hover">
+            <div class="stat-content">
+              <div class="stat-info">
+                <span class="stat-title">{{ card.title }}</span>
+                <span class="stat-value" :style="{ color: card.color }">
+                  {{ card.value.toLocaleString() }}
+                  <small>{{ card.unit }}</small>
+                </span>
+              </div>
+              <el-icon class="stat-icon" :style="{ backgroundColor: card.color + '20', color: card.color }">
+                <component :is="card.icon" />
+              </el-icon>
             </div>
-            <el-icon class="stat-icon" :style="{ backgroundColor: card.color + '20', color: card.color }">
-              <component :is="card.icon" />
-            </el-icon>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+          </el-card>
+        </el-col>
+      </el-row>
 
-    <el-row :gutter="20">
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <span>成本趋势分析</span>
-          </template>
-          <div class="chart-placeholder">
-            <el-empty description="图表加载中..." />
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <span>成本结构分析</span>
-          </template>
-          <div class="chart-placeholder">
-            <el-empty description="图表加载中..." />
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-card>
+            <template #header>
+              <span>成本趋势分析</span>
+            </template>
+            <div class="chart-placeholder">
+              <el-empty description="图表加载中..." />
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :span="12">
+          <el-card>
+            <template #header>
+              <span>成本结构分析</span>
+            </template>
+            <div class="chart-placeholder">
+              <el-empty description="图表加载中..." />
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </template>
+    <el-empty v-else description="您没有查看价格/成本数据的权限" />
+
   </div>
 </template>
 

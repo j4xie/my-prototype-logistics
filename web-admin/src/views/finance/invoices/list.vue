@@ -14,6 +14,7 @@ const permissionStore = usePermissionStore();
 const route = useRoute();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('finance'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -193,7 +194,7 @@ async function handleRequestSubmit() {
             </el-select>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
-            <el-button v-if="canWrite" type="primary" @click="requestDialogVisible = true">申请开票</el-button>
+            <el-button v-if="canWrite && canViewPrice" type="primary" @click="requestDialogVisible = true">申请开票</el-button>
           </div>
         </div>
       </template>
@@ -201,7 +202,7 @@ async function handleRequestSubmit() {
       <el-table :data="tableData" border stripe>
         <el-table-column prop="invoiceNumber" label="发票编号" width="180" />
         <el-table-column prop="customerName" label="客户" min-width="130" />
-        <el-table-column prop="totalAmount" label="价税合计" width="130" align="right">
+        <el-table-column v-if="canViewPrice" prop="totalAmount" label="价税合计" width="130" align="right">
           <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
         </el-table-column>
         <el-table-column prop="invoiceType" label="类型" width="90" align="center">
@@ -260,10 +261,10 @@ async function handleRequestSubmit() {
             </template>
           </el-select>
         </el-form-item>
-        <el-form-item label="不含税金额" required>
+        <el-form-item v-if="canViewPrice" label="不含税金额" required>
           <el-input-number v-model="requestForm.amount" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
-        <el-form-item label="税额">
+        <el-form-item v-if="canViewPrice" label="税额">
           <el-input-number v-model="requestForm.taxAmount" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
         <el-form-item label="发票类型">

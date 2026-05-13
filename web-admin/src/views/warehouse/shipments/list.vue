@@ -14,11 +14,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
-// P1-NEW-3: 仓库角色隐藏价格字段 (客户需求 4907-4925s: 商业机密, 仓库看不到价格)
-const isWarehouseOnly = computed(() => {
-  const role = authStore.currentRole;
-  return role === 'warehouse_manager' || role === 'warehouse_worker';
-});
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -346,7 +342,7 @@ function getStatusText(status: string) {
         <el-table-column label="物流/车牌" width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ row.logisticsCompany || row.vehicleNumber || row.trackingNumber || '-' }}</template>
         </el-table-column>
-        <el-table-column v-if="!isWarehouseOnly" label="单价/金额" width="120" align="right">
+        <el-table-column v-if="canViewPrice" label="单价/金额" width="120" align="right">
           <template #default="{ row }">{{ row.totalAmount ? `¥${row.totalAmount}` : row.unitPrice ? `¥${row.unitPrice}/${row.unit || ''}` : '-' }}</template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">

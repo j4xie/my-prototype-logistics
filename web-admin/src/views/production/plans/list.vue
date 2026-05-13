@@ -25,6 +25,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const actionLoading = ref(false);
@@ -786,7 +787,7 @@ function handleAiFill(params: TableRow) {
             <el-option
               v-for="so in selectableSalesOrders"
               :key="String(so.id)"
-              :label="`${so.orderNo} | ${so.customerName || ''} | ¥${so.totalAmount || 0} | ${so.statusLabel || ''}`"
+              :label="canViewPrice ? `${so.orderNo} | ${so.customerName || ''} | ¥${so.totalAmount || 0} | ${so.statusLabel || ''}` : `${so.orderNo} | ${so.customerName || ''} | ${so.statusLabel || ''}`"
               :value="String(so.id)"
             />
           </el-select>

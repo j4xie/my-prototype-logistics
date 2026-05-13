@@ -11,6 +11,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('rd'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const currentUser = computed(() => {
   const u = authStore.user;
   return (u as TableRow)?.fullName || (u as TableRow)?.username || '';
@@ -329,16 +330,16 @@ async function addTrackingRecord() {
       <!-- 报价任务列表 -->
       <el-table v-if="activeTab === 'quotations'" :data="tableData" border stripe>
         <el-table-column prop="taskNumber" label="任务编号" width="180" />
-        <el-table-column prop="totalCost" label="总成本" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="totalCost" label="总成本" width="120" align="right">
           <template #default="{ row }">{{ row.totalCost || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="suggestedPrice" label="建议售价" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="suggestedPrice" label="建议售价" width="120" align="right">
           <template #default="{ row }">{{ row.suggestedPrice || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="finalPrice" label="最终报价" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="finalPrice" label="最终报价" width="120" align="right">
           <template #default="{ row }">{{ row.finalPrice || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="profitMargin" label="毛利率" width="90" align="center">
+        <el-table-column v-if="canViewPrice" prop="profitMargin" label="毛利率" width="90" align="center">
           <template #default="{ row }">{{ row.profitMargin != null ? `${row.profitMargin}%` : '-' }}</template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">

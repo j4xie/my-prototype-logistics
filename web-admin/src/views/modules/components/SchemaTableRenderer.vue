@@ -6,6 +6,10 @@
 import { computed } from 'vue'
 import dayjs from 'dayjs'
 import type { EffectiveField, WorkflowTransition } from '@/types/config'
+import { usePermissionStore } from '@/store/modules/permission'
+
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 
 const props = defineProps<{
   fields: EffectiveField[]
@@ -23,9 +27,12 @@ const emit = defineEmits<{
 }>()
 
 // 列表可见字段，按 listOrder 排序
+// canViewPrice 防御层 (PR #442/#443 backend strip 的 UX 配套): priceSensitive 列在 viewer 端整列隐藏,
+// 比依赖 backend strip 渲染 "—" 占位更干净 (没有空列), 与 SchemaFormRenderer / static-Vue v-if 一致.
 const listFields = computed(() =>
   props.fields
     .filter((f) => f.extra?.listVisible)
+    .filter((f) => canViewPrice.value || f.extra?.priceSensitive !== true)
     .sort((a, b) => ((a.extra?.listOrder as number) ?? 99) - ((b.extra?.listOrder as number) ?? 99)),
 )
 

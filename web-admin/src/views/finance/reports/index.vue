@@ -10,6 +10,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canRead = computed(() => permissionStore.canRead('finance'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const dateRange = ref<[Date, Date]>([
@@ -291,13 +292,14 @@ function handleExport() {
               ]"
               @change="handleDateChange"
             />
-            <el-button type="primary" :icon="Download" @click="handleExport">
+            <el-button v-if="canViewPrice" type="primary" :icon="Download" @click="handleExport">
               导出报表
             </el-button>
           </div>
         </div>
       </template>
 
+      <template v-if="canViewPrice">
       <!-- 统计卡片 -->
       <div class="stat-cards">
         <el-card v-for="card in statCards" :key="card.title" class="stat-card" shadow="hover">
@@ -362,6 +364,8 @@ function handleExport() {
           </template>
         </el-alert>
       </div>
+      </template>
+      <el-empty v-else description="您没有查看价格/财务数据的权限" />
     </el-card>
   </div>
 </template>

@@ -10,8 +10,12 @@
  * 响应 data.taxBreakdown: [{taxRate, taxableAmount, taxAmount, lineCount}]
  */
 import { ref, computed, watch } from 'vue';
+import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
 import { ElMessage } from 'element-plus';
+
+const permissionStore = usePermissionStore();
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 interface TaxBreakdownEntry {
   taxRate: number | string;
@@ -154,7 +158,7 @@ watch(visible, (v) => {
         <span class="label">客户:</span>
         <span class="value">{{ customerName || '—' }}</span>
       </div>
-      <div>
+      <div v-if="canViewPrice">
         <span class="label">订单总额:</span>
         <span class="value amount">¥{{ fmt(orderTotalAmount) }}</span>
       </div>
@@ -222,7 +226,7 @@ watch(visible, (v) => {
               <span class="line-count">{{ g.lineCount }} 行明细</span>
             </div>
           </template>
-          <div class="group-body">
+          <div v-if="canViewPrice" class="group-body">
             <div class="field">
               <span class="k">不含税金额</span>
               <span class="v big">¥{{ fmt(g.taxableAmount) }}</span>
@@ -246,7 +250,7 @@ watch(visible, (v) => {
           <span class="label">申请单号:</span>
           <span class="value">{{ record.invoiceNumber || record.id || '—' }}</span>
         </div>
-        <div>
+        <div v-if="canViewPrice">
           <span class="label">合计:</span>
           <span class="value amount">¥{{ fmt(record.totalAmount) }}</span>
         </div>

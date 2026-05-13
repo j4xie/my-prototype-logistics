@@ -56,6 +56,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<ReceiveRow[]>([]);
@@ -401,7 +402,7 @@ onMounted(() => { loadData(); loadOptions(); });
               <el-input v-model="row.unit" size="small" />
             </template>
           </el-table-column>
-          <el-table-column label="单价" width="120">
+          <el-table-column v-if="canViewPrice" label="单价" width="120">
             <template #default="{ row }">
               <el-input-number v-model="row.unitPrice" :min="0" :precision="2" :controls="false" size="small" style="width:100%" />
             </template>
@@ -446,7 +447,7 @@ onMounted(() => { loadData(); loadOptions(); });
         <el-table-column prop="materialName" label="物料名称" min-width="160" />
         <el-table-column prop="receivedQuantity" label="到货数量" width="110" align="right" />
         <el-table-column prop="unit" label="单位" width="80" align="center" />
-        <el-table-column label="单价" width="100" align="right">
+        <el-table-column v-if="canViewPrice" label="单价" width="100" align="right">
           <!--
             RBAC defense-in-depth (PR #415 Option B 2026-05-12):
             backend PriceFieldResponseAdvice strips unitPrice → null for roles

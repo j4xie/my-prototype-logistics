@@ -1,7 +1,25 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { usePermissionStore } from '@/store/modules/permission'
 import { get } from '@/api/request'
 import { ElMessage } from 'element-plus'
+
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
+
+const PRICE_FIELDS = ['unitPrice', 'taxRate', 'priceUnit']
+function visibleEntries(obj: Record<string, unknown> | null): [string, unknown][] {
+  if (!obj) return []
+  const skipKeys = ['id', 'factoryId', 'bomId', 'createdAt', 'updatedAt', 'deletedAt']
+  return Object.entries(obj).filter(([k]) => {
+    if (skipKeys.includes(k)) return false
+    if (!canViewPrice.value && PRICE_FIELDS.includes(k)) return false
+    return true
+  })
+}
+function visibleDiffKeys(oldVal: Record<string, unknown> | null, newVal: Record<string, unknown> | null): string[] {
+  return diffKeys(oldVal, newVal).filter(k => canViewPrice.value || !PRICE_FIELDS.includes(k))
+}
 
 interface ChangeLogEntry {
   id: string
@@ -122,7 +140,7 @@ function fieldLabel(key: string): string {
             <div v-if="log.changeType === 'CREATE' && log.newValue" class="change-detail">
               <el-descriptions :column="2" size="small" border>
                 <el-descriptions-item
-                  v-for="[k, v] in Object.entries(log.newValue).filter(([k]) => !['id', 'factoryId', 'bomId', 'createdAt', 'updatedAt', 'deletedAt'].includes(k))"
+                  v-for="[k, v] in visibleEntries(log.newValue)"
                   :key="k"
                   :label="fieldLabel(k)"
                 >
@@ -135,7 +153,7 @@ function fieldLabel(key: string): string {
             <div v-if="log.changeType === 'DELETE' && log.oldValue" class="change-detail">
               <el-descriptions :column="2" size="small" border>
                 <el-descriptions-item
-                  v-for="[k, v] in Object.entries(log.oldValue).filter(([k]) => !['id', 'factoryId', 'bomId', 'createdAt', 'updatedAt', 'deletedAt'].includes(k))"
+                  v-for="[k, v] in visibleEntries(log.oldValue)"
                   :key="k"
                   :label="fieldLabel(k)"
                 >
@@ -146,7 +164,7 @@ function fieldLabel(key: string): string {
 
             <!-- UPDATE: show diff -->
             <div v-if="log.changeType === 'UPDATE' && log.oldValue && log.newValue" class="change-detail">
-              <el-table :data="diffKeys(log.oldValue, log.newValue).map(k => ({ field: k, old: log.oldValue![k], new: log.newValue![k] }))" size="small" border stripe>
+              <el-table :data="visibleDiffKeys(log.oldValue, log.newValue).map(k => ({ field: k, old: log.oldValue![k], new: log.newValue![k] }))" size="small" border stripe>
                 <el-table-column prop="field" label="字段" width="120">
                   <template #default="{ row }">{{ fieldLabel(row.field) }}</template>
                 </el-table-column>

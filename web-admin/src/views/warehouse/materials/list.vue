@@ -17,6 +17,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -374,7 +375,7 @@ async function handleFormSubmit() {
         <el-form-item label="总重量(kg)" prop="totalWeight">
           <el-input-number v-model="formData.totalWeight" :min="0" :precision="3" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="总价值(元)" prop="totalValue">
+        <el-form-item v-if="canViewPrice" label="总价值(元)" prop="totalValue">
           <el-input-number v-model="formData.totalValue" :min="0" :precision="2" style="width: 100%" />
         </el-form-item>
         <el-form-item label="过期日期">

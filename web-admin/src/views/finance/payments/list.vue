@@ -11,6 +11,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('finance'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -146,7 +147,7 @@ async function handleRecordSubmit() {
             </el-select>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
-            <el-button v-if="canWrite" type="primary" @click="recordDialogVisible = true">录入收款</el-button>
+            <el-button v-if="canWrite && canViewPrice" type="primary" @click="recordDialogVisible = true">录入收款</el-button>
           </div>
         </div>
       </template>
@@ -154,7 +155,7 @@ async function handleRecordSubmit() {
       <el-table :data="tableData" border stripe>
         <el-table-column prop="paymentNumber" label="收款编号" width="180" />
         <el-table-column prop="customerName" label="客户" min-width="130" />
-        <el-table-column prop="amount" label="收款金额" width="130" align="right">
+        <el-table-column v-if="canViewPrice" prop="amount" label="收款金额" width="130" align="right">
           <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
         </el-table-column>
         <el-table-column prop="paymentMethod" label="方式" width="100" align="center">
@@ -213,7 +214,7 @@ async function handleRecordSubmit() {
             </template>
           </el-select>
         </el-form-item>
-        <el-form-item label="收款金额" required>
+        <el-form-item v-if="canViewPrice" label="收款金额" required>
           <el-input-number v-model="recordForm.amount" :min="0" :precision="2" style="width:100%" />
         </el-form-item>
         <el-form-item label="支付方式">

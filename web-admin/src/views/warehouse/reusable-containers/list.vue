@@ -12,7 +12,7 @@
         <el-table-column prop="containerCode" label="编号" width="120" />
         <el-table-column prop="containerName" label="名称" min-width="160" />
         <el-table-column prop="specification" label="规格" min-width="180" />
-        <el-table-column v-if="!isWarehouseOnly" prop="unitPrice" label="单价/赔偿价" width="120" />
+        <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价/赔偿价" width="120" />
         <el-table-column prop="totalQuantity" label="总持有" width="100" />
         <el-table-column prop="inWarehouseQuantity" label="在库" width="100" />
         <el-table-column prop="inTransitQuantity" label="在客户处" width="110" />
@@ -42,7 +42,7 @@
         <el-form-item label="编号"><el-input v-model="createForm.containerCode" /></el-form-item>
         <el-form-item label="名称"><el-input v-model="createForm.containerName" /></el-form-item>
         <el-form-item label="规格"><el-input v-model="createForm.specification" placeholder="60*40*30 cm / 25kg" /></el-form-item>
-        <el-form-item label="单价/赔偿价"><el-input-number v-model="createForm.unitPrice" :min="0" :precision="2" /></el-form-item>
+        <el-form-item v-if="canViewPrice" label="单价/赔偿价"><el-input-number v-model="createForm.unitPrice" :min="0" :precision="2" /></el-form-item>
         <el-form-item label="初始数量"><el-input-number v-model="createForm.totalQuantity" :min="0" /></el-form-item>
         <el-form-item label="备注"><el-input v-model="createForm.remark" type="textarea" /></el-form-item>
       </el-form>
@@ -67,7 +67,7 @@
         <el-form-item v-if="actionType === 'shipOut'" label="发货单ID">
           <el-input v-model="actionForm.salesDeliveryId" />
         </el-form-item>
-        <el-form-item v-if="actionType === 'loss'" label="赔偿金额">
+        <el-form-item v-if="actionType === 'loss' && canViewPrice" label="赔偿金额">
           <el-input-number v-model="actionForm.compensationAmount" :min="0" :precision="2" />
         </el-form-item>
         <el-form-item label="备注">
@@ -87,7 +87,7 @@
         <el-table-column prop="transactionType" label="类型" width="100" />
         <el-table-column prop="quantity" label="数量" width="80" />
         <el-table-column prop="customerName" label="客户" min-width="140" />
-        <el-table-column prop="compensationAmount" label="赔偿金额" width="110" />
+        <el-table-column v-if="canViewPrice" prop="compensationAmount" label="赔偿金额" width="110" />
         <el-table-column prop="remark" label="备注" min-width="160" />
       </el-table>
     </el-dialog>
@@ -99,14 +99,12 @@ import { onMounted, ref, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { get, post } from '@/api/request';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
-// P1-NEW-3: 仓库角色隐藏价格字段 (客户需求 4907-4925s: 商业机密, 仓库看不到价格)
-const isWarehouseOnly = computed(() => {
-  const role = authStore.currentRole;
-  return role === 'warehouse_manager' || role === 'warehouse_worker';
-});
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const rows = ref<any[]>([]);
