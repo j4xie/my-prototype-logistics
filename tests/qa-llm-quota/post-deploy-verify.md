@@ -71,12 +71,59 @@ VL slot not directly probed; relying on Steve's screenshot for qwen3-vl-plus-202
 - glm-4.5-air on zhipu — 6.5M independent pool ✓ (50% cache hit indicates pool is healthy, not depleted)
 - deepseek-v4-pro via aliyun_a DashScope — 999K free ✓ (200 OK via new chain entry)
 
-### Prod deploy: PENDING (awaiting Steve GO)
+### Prod deploy: 2026-05-13 18:02 EDT
 
-After Steve GO:
+Deploy command:
 ```
-./scripts/deploy/deploy-smartbi-python.sh --env prod
-journalctl -u cretas-python -f | grep -E '\[llm_router\]'
+cd C:/Users/Steve/cretas-llm-switch && bash scripts/deploy/deploy-smartbi-python.sh --env prod
 ```
-Will append observed log lines below.
+
+Result:
+```
+Production Python restarted (systemd)
+健康检查 (SSH localhost): port=8083 (最多等待 30s)
+服务正常 (HTTP 200, 等待 2s)
+[生产] Python 服务 (8083) 部署成功
+部署完成! (环境: prod)
+```
+
+systemd `cretas-python` restart confirmed via:
+```
+May 14 06:02:47 iZuf6aillfem75trsuv1l1Z systemd[1]: Started Cretas Python AI Service (port 8083).
+```
+
+### Prod smoke (manual with systemd-loaded LLM_* env vars)
+
+```
+2026-05-14 06:03:32 [INFO] HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-05-14 06:03:32 [INFO] [cache] slot=chat via aliyun_b/qwen-max: prompt=11 cached=0 (0%) completion=1
+2026-05-14 06:03:32 [INFO] [llm_router] slot=chat OK via aliyun_b/qwen-max
+=== CHAT: OK === model=qwen-max content=OK
+
+2026-05-14 06:03:33 [INFO] [llm_router] slot=insights OK via aliyun_b/qwen3.6-35b-a3b
+=== INSIGHTS: OK === model=qwen3.6-35b-a3b content=OK
+```
+
+Prod chain confirmed live: `['aliyun_b', 'aliyun_a', 'zhipu', 'aliyun_a_deepseek', 'deepseek']`.
+
+### Prod 5-min organic watch (06:02:54 → 06:07:54)
+
+```
+ssh root@47.100.235.168 "journalctl -u cretas-python --since '6 min ago' --no-pager | grep -E '\\[llm_router\\]|exhausted|HTTP 4[0-9][0-9]|HTTP 5[0-9][0-9]'"
+```
+
+Result: **EMPTY** — no organic prod LLM traffic in the 5-min window (no client calls hit the chain in that 5-min span). Only the systemd Start line appears at 06:02:47.
+
+This is fine:
+- No errors / 4xx / 5xx → service is healthy
+- No `[llm_router] All providers exhausted` → original incident signature gone
+- No `[llm_router] OK via deepseek/...` → chain not falling through (would indicate fallback)
+
+Prod is genuinely idle in this window. Real organic traffic will exercise the chain naturally over the next hours; the smoke calls (CHAT + INSIGHTS) above already confirm new SKUs work on prod-key accounts.
+
+### Cleanup checklist after merge
+
+- [ ] Verify `[llm_router] All providers exhausted` doesn't reappear in prod log over next 24-48h
+- [ ] Re-audit SKU quota status before next mid-month milestone (2026-05-27 = +2 weeks)
+- [ ] Consider Issue #580 ops decision (3 options analyzed in `docs/qa-audits/2026-05-14-deepseek-decision-580.md`, PR #584)
 
