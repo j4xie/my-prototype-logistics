@@ -273,12 +273,13 @@ async function confirmReceive(receiveId: string) {
         </el-descriptions>
 
         <h3 style="margin: 20px 0 12px">{{ label('rawMaterial') }}明细</h3>
-        <el-table :data="order.items || []" border stripe>
-          <el-table-column prop="materialName" :label="label('rawMaterial')" min-width="150" />
-          <el-table-column prop="specification" label="规格" width="120" show-overflow-tooltip>
+        <!-- T3-6 fix (issue #523): widen 规格 + 原料名称 columns + scroll-x fallback to prevent 字段挤压 / tooltip overlay 盖住邻列. -->
+        <el-table :data="order.items || []" border stripe style="width: 100%" :scrollbar-always-on="true">
+          <el-table-column prop="materialName" :label="label('rawMaterial')" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="specification" label="规格" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">{{ row.specification || '-' }}</template>
           </el-table-column>
-          <el-table-column prop="quantity" label="采购数量" width="100" align="right" />
+          <el-table-column prop="quantity" label="采购数量" width="110" align="right" />
           <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
             <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
           </el-table-column>
