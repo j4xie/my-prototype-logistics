@@ -14,6 +14,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // State
 const loading = ref(false);
@@ -691,7 +692,7 @@ function refreshData() {
           <el-button :icon="Refresh" style="margin-left: 12px;" @click="refreshData">刷新</el-button>
           <el-button style="margin-left: 12px;" @click="changeLogVisible = true" :disabled="!selectedProductTypeId">变更记录</el-button>
         </div>
-        <div class="header-right">
+        <div v-if="canViewPrice" class="header-right">
           <el-card class="cost-summary-card" shadow="never">
             <div class="cost-summary">
               <div class="cost-item">
@@ -782,17 +783,17 @@ function refreshData() {
             </template>
           </el-table-column>
           <el-table-column prop="unit" label="单位" width="60" align="center" />
-          <el-table-column prop="unitPrice" label="单价(含税)" width="90" align="right">
+          <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价(含税)" width="90" align="right">
             <template #default="{ row }">
               {{ (row.unitPrice || 0).toFixed(2) }}
             </template>
           </el-table-column>
-          <el-table-column prop="taxRate" label="税率%" width="70" align="right">
+          <el-table-column v-if="canViewPrice" prop="taxRate" label="税率%" width="70" align="right">
             <template #default="{ row }">
               {{ (row.taxRate || 0).toFixed(0) }}%
             </template>
           </el-table-column>
-          <el-table-column label="小计" width="90" align="right">
+          <el-table-column v-if="canViewPrice" label="小计" width="90" align="right">
             <template #default="{ row }">
               {{ (((row.standardQuantity || 0) / ((row.yieldRate || 100) / 100)) * (row.unitPrice || 0)).toFixed(2) }}
             </template>
@@ -804,7 +805,7 @@ function refreshData() {
             </template>
           </el-table-column>
         </el-table>
-        <div class="table-footer">
+        <div v-if="canViewPrice" class="table-footer">
           <span class="total-label">原料成本合计:</span>
           <span class="total-value">{{ materialCostTotal.toFixed(2) }} 元</span>
         </div>
@@ -825,18 +826,18 @@ function refreshData() {
         </template>
         <el-table :data="laborCosts" stripe border size="small" style="width: 100%">
           <el-table-column prop="processName" label="工序名称" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="unitPrice" label="工序单价" width="90" align="right">
+          <el-table-column v-if="canViewPrice" prop="unitPrice" label="工序单价" width="90" align="right">
             <template #default="{ row }">
               {{ (row.unitPrice || 0).toFixed(4) }}
             </template>
           </el-table-column>
-          <el-table-column prop="priceUnit" label="工序单位" width="80" align="center" />
+          <el-table-column v-if="canViewPrice" prop="priceUnit" label="工序单位" width="80" align="center" />
           <el-table-column prop="standardQuantity" label="操作量" width="80" align="right">
             <template #default="{ row }">
               {{ (row.standardQuantity || 1).toFixed(2) }}
             </template>
           </el-table-column>
-          <el-table-column label="费用小计" width="100" align="right">
+          <el-table-column v-if="canViewPrice" label="费用小计" width="100" align="right">
             <template #default="{ row }">
               {{ ((row.unitPrice || 0) * (row.standardQuantity || 1)).toFixed(4) }}
             </template>
@@ -849,7 +850,7 @@ function refreshData() {
             </template>
           </el-table-column>
         </el-table>
-        <div class="table-footer">
+        <div v-if="canViewPrice" class="table-footer">
           <span class="total-label">人工费用合计:</span>
           <span class="total-value">{{ laborCostTotal.toFixed(4) }} 元</span>
         </div>
@@ -870,18 +871,18 @@ function refreshData() {
         </template>
         <el-table :data="overheadCosts" stripe border size="small" style="width: 100%">
           <el-table-column prop="name" label="名称" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="unitPrice" label="单价" width="90" align="right">
+          <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="90" align="right">
             <template #default="{ row }">
               {{ (row.unitPrice || 0).toFixed(4) }}
             </template>
           </el-table-column>
-          <el-table-column prop="priceUnit" label="分摊单位" width="80" align="center" />
+          <el-table-column v-if="canViewPrice" prop="priceUnit" label="分摊单位" width="80" align="center" />
           <el-table-column prop="allocationRate" label="分摊量" width="80" align="right">
             <template #default="{ row }">
               {{ (row.allocationRate || 1).toFixed(2) }}
             </template>
           </el-table-column>
-          <el-table-column label="费用小计" width="100" align="right">
+          <el-table-column v-if="canViewPrice" label="费用小计" width="100" align="right">
             <template #default="{ row }">
               {{ ((row.unitPrice || 0) * (row.allocationRate || 1)).toFixed(4) }}
             </template>
@@ -894,7 +895,7 @@ function refreshData() {
             </template>
           </el-table-column>
         </el-table>
-        <div class="table-footer">
+        <div v-if="canViewPrice" class="table-footer">
           <span class="total-label">均摊费用合计:</span>
           <span class="total-value">{{ overheadCostTotal.toFixed(4) }} 元</span>
         </div>
@@ -951,10 +952,10 @@ function refreshData() {
           </el-select>
           <div class="form-tip">D3: 建议选 g (克), 系统调拨时自动按 1:1000 换算为 kg (千克)</div>
         </el-form-item>
-        <el-form-item label="单价（含税）">
+        <el-form-item v-if="canViewPrice" label="单价（含税）">
           <el-input-number v-model="bomForm.unitPrice" :min="0" :precision="4" :step="0.1" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="税率%">
+        <el-form-item v-if="canViewPrice" label="税率%">
           <el-input-number v-model="bomForm.taxRate" :min="0" :max="100" :precision="0" :step="1" style="width: 100%" />
         </el-form-item>
         <el-form-item label="备注">
@@ -978,17 +979,17 @@ function refreshData() {
             <el-option v-for="cat in processCategories" :key="cat" :label="cat" :value="cat" />
           </el-select>
         </el-form-item>
-        <el-form-item label="工序单价" required>
+        <el-form-item v-if="canViewPrice" label="工序单价" required>
           <el-input-number v-model="laborForm.unitPrice" :min="0" :precision="4" :step="0.01" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="工序单位">
+        <el-form-item v-if="canViewPrice" label="工序单位">
           <el-input v-model="laborForm.priceUnit" placeholder="如: 元/kg" />
         </el-form-item>
         <el-form-item label="操作量">
           <el-input-number v-model="laborForm.standardQuantity" :min="0" :precision="2" :step="0.1" style="width: 100%" />
         </el-form-item>
         <!-- Issue 10: Real-time subtotal calculation -->
-        <el-form-item label="费用小计">
+        <el-form-item v-if="canViewPrice" label="费用小计">
           <div class="labor-subtotal">
             {{ ((laborForm.unitPrice || 0) * (laborForm.standardQuantity || 1)).toFixed(4) }} 元
           </div>
@@ -1015,10 +1016,10 @@ function refreshData() {
             <el-option v-for="cat in overheadCategories" :key="cat" :label="cat" :value="cat" />
           </el-select>
         </el-form-item>
-        <el-form-item label="单价" required>
+        <el-form-item v-if="canViewPrice" label="单价" required>
           <el-input-number v-model="overheadForm.unitPrice" :min="0" :precision="4" :step="0.01" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="分摊单位">
+        <el-form-item v-if="canViewPrice" label="分摊单位">
           <el-input v-model="overheadForm.priceUnit" placeholder="如: 元/kg" />
         </el-form-item>
         <el-form-item label="分摊量">

@@ -2,14 +2,17 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh, TrendCharts, Histogram, Timer, Check, KnifeFork, DataAnalysis } from '@element-plus/icons-vue';
 import { pythonFetch } from '@/api/smartbi/common';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const router = useRouter();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 // Apr 24 P1.6: restaurant tenants see ops-specific KPIs, not manufacturing ones
 const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT');
 
@@ -185,7 +188,7 @@ function formatPercent(value: number) {
             <span class="target">目标: &lt; 1%</span>
           </div>
         </div>
-        <div v-if="restaurantKpi.marginRevenue > 0" class="kpi-item">
+        <div v-if="canViewPrice && restaurantKpi.marginRevenue > 0" class="kpi-item">
           <div class="kpi-label">菜品毛利率 (POS 销售 × 配方成本)</div>
           <el-progress
             :percentage="Math.round(restaurantKpi.marginRate * 100)"
@@ -198,7 +201,7 @@ function formatPercent(value: number) {
         </div>
         <div class="kpi-stats">
           <div class="stat"><div class="stat-value">{{ restaurantKpi.activeDays }}</div><div class="stat-label">活动天数</div></div>
-          <div class="stat"><div class="stat-value">¥{{ Math.round(restaurantKpi.totalCost).toLocaleString() }}</div><div class="stat-label">领料总成本</div></div>
+          <div v-if="canViewPrice" class="stat"><div class="stat-value">¥{{ Math.round(restaurantKpi.totalCost).toLocaleString() }}</div><div class="stat-label">领料总成本</div></div>
         </div>
       </el-card>
 
@@ -355,7 +358,7 @@ function formatPercent(value: number) {
       </el-card>
 
       <!-- 成本KPI -->
-      <el-card class="kpi-card">
+      <el-card v-if="canViewPrice" class="kpi-card">
         <template #header>
           <div class="card-header">
             <el-icon><Histogram /></el-icon>

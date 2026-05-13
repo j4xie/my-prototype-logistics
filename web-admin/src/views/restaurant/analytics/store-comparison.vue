@@ -9,7 +9,7 @@
             <el-tag v-if="stores.length" size="small">{{ stores.length }} 家门店</el-tag>
           </div>
           <div class="header-right">
-            <el-button type="info" plain @click="$router.push('/restaurant/analytics/gross-margin')">📊 菜品毛利分析 →</el-button>
+            <el-button v-if="canViewPrice" type="info" plain @click="$router.push('/restaurant/analytics/gross-margin')">📊 菜品毛利分析 →</el-button>
             <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px; margin-left: 8px" @change="handleSelectUpload">
               <el-option v-for="u in uploads" :key="u.id" :label="`${u.fileName} (${u.rowCount}行)`" :value="u.id" />
             </el-select>
@@ -18,9 +18,10 @@
       </template>
 
       <div v-if="loading" v-loading="true" style="min-height: 400px" />
+      <el-empty v-else-if="!canViewPrice" description="您没有查看价格/财务数据的权限" />
       <el-empty v-else-if="stores.length === 0" description="请选择数据源" />
 
-      <template v-if="stores.length > 0 && !loading">
+      <template v-if="canViewPrice && stores.length > 0 && !loading">
         <!-- Bar chart -->
         <el-card shadow="hover">
           <template #header><div class="chart-title">门店营收排名</div></template>
@@ -97,10 +98,14 @@
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
+import { usePermissionStore } from '@/store/modules/permission'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
 import { formatAmount } from '@/utils/tableFormatters'
 import type { StoreComparisonData } from '@/types/restaurant-analytics'
+
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)

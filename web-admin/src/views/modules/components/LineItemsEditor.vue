@@ -12,6 +12,7 @@
 import { computed, watch } from 'vue'
 import ReferenceSelector from './ReferenceSelector.vue'
 import { evaluateSpelBoolean, evaluateSpelValue } from '@/utils/spelEvaluator'
+import { usePermissionStore } from '@/store/modules/permission'
 
 interface ItemField {
   code: string
@@ -34,6 +35,8 @@ interface ItemField {
   defaultValue?: unknown
   /** Round 4 Fix P2-23: per-row visibility expression (SpEL) evaluated against the row */
   visibleWhen?: string
+  /** Schema-driven price gating: hide column when canViewPrice=false. Mirrors SchemaTableRenderer / module_schemas seed. */
+  priceSensitive?: boolean
 }
 
 const props = defineProps<{
@@ -45,6 +48,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: Record<string, unknown>[]]
 }>()
+
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 
 const rows = computed({
   get: () => props.modelValue || [],
@@ -152,9 +158,18 @@ function isCellVisible(field: ItemField, row: Record<string, unknown>): boolean 
 
 /** Check if entire column should render (at least one row has it visible). */
 function isColumnVisible(field: ItemField): boolean {
+  if (field.priceSensitive && !canViewPrice.value) return false
   if (!field.visibleWhen) return true
   return rows.value.some(row => isCellVisible(field, row))
 }
+
+/** Hide the合计 line when canViewPrice=false (computed field is typically price-bearing). */
+const showTotalAmount = computed(() => {
+  const amountField = props.itemSchema.fields.find((f) => f.computed)
+  if (!amountField) return false
+  if (amountField.priceSensitive && !canViewPrice.value) return false
+  return Number(totalAmount.value) > 0
+})
 
 // C-6 unit-test surface (parallel to ReferenceSelector). Internals only used by tests.
 defineExpose({ recomputeRow, onReferenceProject, updateField })
@@ -229,7 +244,7 @@ defineExpose({ recomputeRow, onReferenceProject, updateField })
     </el-table>
     <div style="display: flex; justify-content: space-between; margin-top: 8px; align-items: center">
       <el-button v-if="!disabled" type="primary" link size="small" @click="addRow">+ 添加行</el-button>
-      <span v-if="totalAmount" style="font-weight: 600; color: #409eff">合计: ¥{{ totalAmount.toFixed(2) }}</span>
+      <span v-if="showTotalAmount" style="font-weight: 600; color: #409eff">合计: ¥{{ totalAmount.toFixed(2) }}</span>
     </div>
   </div>
 </template>

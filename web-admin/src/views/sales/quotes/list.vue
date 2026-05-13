@@ -23,6 +23,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -308,13 +309,13 @@ async function handleRevise(row: TableRow) {
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="单价" width="120" align="right">
+        <el-table-column v-if="canViewPrice" label="单价" width="120" align="right">
           <template #default="{ row }">
             <span v-if="row.unitPrice">{{ formatAmount(row.unitPrice) }}/{{ row.unit }}</span>
             <span v-else style="color:#909399">未报价</span>
           </template>
         </el-table-column>
-        <el-table-column label="毛利率" width="90" align="right">
+        <el-table-column v-if="canViewPrice" label="毛利率" width="90" align="right">
           <template #default="{ row }">
             <span v-if="row.marginRate" :style="{ color: Number(row.marginRate) >= 0.3 ? '#67c23a' : '#e6a23c' }">
               {{ (Number(row.marginRate) * 100).toFixed(1) }}%
@@ -402,14 +403,14 @@ async function handleRevise(row: TableRow) {
             <el-radio value="NEGOTIABLE">可议价</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="单价" required>
+        <el-form-item v-if="canViewPrice" label="单价" required>
           <el-input-number v-model="submitPriceForm.unitPrice" :min="0" :precision="2" style="width: 200px" />
           <el-input v-model="submitPriceForm.unit" style="width: 80px; margin-left: 8px" placeholder="单位" />
         </el-form-item>
         <el-form-item label="最小起订量">
           <el-input-number v-model="submitPriceForm.minOrderQty" :min="0" :precision="3" style="width: 200px" />
         </el-form-item>
-        <el-form-item label="成本单价">
+        <el-form-item v-if="canViewPrice" label="成本单价">
           <el-input-number v-model="submitPriceForm.costPrice" :min="0" :precision="2" style="width: 200px" />
           <span style="margin-left: 12px; color:#909399; font-size:12px">内部参考, 不展示给客户</span>
         </el-form-item>

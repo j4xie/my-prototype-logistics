@@ -17,7 +17,7 @@
 
       <!-- 统计卡片 -->
       <el-row :gutter="16" class="stat-row" v-if="statsLoaded">
-        <el-col :xs="12" :sm="6">
+        <el-col v-if="canViewPrice" :xs="12" :sm="6">
           <div class="stat-item">
             <span class="stat-label">损耗总额</span>
             <span class="stat-value danger">¥{{ (statsData.totalEstimatedCost ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
@@ -29,7 +29,7 @@
             <span class="stat-value">{{ statsData.totalCount ?? pagination.total }} 条</span>
           </div>
         </el-col>
-        <el-col :xs="12" :sm="6" v-if="statsData.byType?.length">
+        <el-col v-if="canViewPrice && statsData.byType?.length" :xs="12" :sm="6">
           <div class="stat-item">
             <span class="stat-label">最高损耗类型</span>
             <span class="stat-value warning">{{ wastageTypeText(topType.type) }} (¥{{ topType.totalCost?.toLocaleString() ?? 0 }})</span>
@@ -45,6 +45,7 @@
 
       <!-- Apr 24 P1 analytics strip: trend + ranking from current table rows -->
       <AnalyticsStrip
+        v-if="canViewPrice"
         :rows="tableData"
         date-field="wastageDate"
         value-field="estimatedCost"
@@ -96,7 +97,7 @@
         <el-table-column label="数量" width="110" align="right">
           <template #default="{ row }">{{ row.quantity }} {{ row.unit }}</template>
         </el-table-column>
-        <el-table-column label="估算损失" width="110" align="right">
+        <el-table-column v-if="canViewPrice" label="估算损失" width="110" align="right">
           <template #default="{ row }">
             {{ formatAmount(row.estimatedCost) }}
           </template>
@@ -148,7 +149,7 @@
         <el-form-item label="单位">
           <el-input v-model="dialogForm.unit" placeholder="kg / L" style="width: 120px" />
         </el-form-item>
-        <el-form-item label="估算损失">
+        <el-form-item v-if="canViewPrice" label="估算损失">
           <el-input-number v-model="dialogForm.estimatedCost" :precision="2" :step="10" :min="0" />
         </el-form-item>
         <el-form-item label="原因">
@@ -170,7 +171,7 @@
         <el-descriptions-item label="状态">{{ statusText(detailData.status) }}</el-descriptions-item>
         <el-descriptions-item label="食材">{{ materialNameMap[detailData.rawMaterialTypeId] || detailData.rawMaterialTypeId }}</el-descriptions-item>
         <el-descriptions-item label="数量">{{ detailData.quantity }} {{ detailData.unit }}</el-descriptions-item>
-        <el-descriptions-item label="估算损失">{{ formatAmount(detailData.estimatedCost) }}</el-descriptions-item>
+        <el-descriptions-item v-if="canViewPrice" label="估算损失">{{ formatAmount(detailData.estimatedCost) }}</el-descriptions-item>
         <el-descriptions-item label="原因">{{ detailData.reason || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注">{{ detailData.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -199,6 +200,7 @@ const wastageTypeMap: Record<string, string> = {
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
 const canWrite = computed(() => permissionStore.canWrite('restaurant'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const materialTypes = ref<{ id: string; name: string }[]>([]);
 const materialNameMap = computed(() => Object.fromEntries(materialTypes.value.map(m => [m.id, m.name])));

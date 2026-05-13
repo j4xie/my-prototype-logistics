@@ -11,6 +11,7 @@ import type { TableRow } from '@/types/api';
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const activeTab = ref('overview');
 const loading = ref(false);
@@ -114,7 +115,7 @@ function handleAgingTypeChange() { loadAging(); }
         </div>
       </template>
 
-      <el-tabs v-model="activeTab">
+      <el-tabs v-if="canViewPrice" v-model="activeTab">
         <!-- 概览 Tab -->
         <el-tab-pane label="财务概览" name="overview">
           <div class="stat-cards" v-if="overview">
@@ -235,8 +236,10 @@ function handleAgingTypeChange() { loadAging(); }
         </el-tab-pane>
       </el-tabs>
 
+      <el-empty v-else description="您没有查看价格/财务数据的权限" />
+
       <!-- 交易记录分页 -->
-      <div v-if="activeTab === 'receivable' || activeTab === 'payable'" class="pagination-wrapper">
+      <div v-if="canViewPrice && (activeTab === 'receivable' || activeTab === 'payable')" class="pagination-wrapper">
         <el-pagination v-model:current-page="txPagination.page" v-model:page-size="txPagination.size"
           :page-sizes="[10, 20, 50]" :total="txPagination.total"
           layout="total, sizes, prev, pager, next, jumper"

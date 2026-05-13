@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
@@ -9,8 +10,10 @@ import { formatAmount } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -98,7 +101,7 @@ function statusType(row: TableRow) {
           </template>
         </el-table-column>
         <el-table-column prop="unit" label="单位" width="70" align="center" />
-        <el-table-column prop="unitPrice" label="成本单价" width="110" align="right">
+        <el-table-column v-if="canViewPrice" prop="unitPrice" label="成本单价" width="110" align="right">
           <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
         </el-table-column>
         <el-table-column prop="productionDate" label="生产日期" width="120" />

@@ -19,6 +19,7 @@ const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const transferId = computed(() => route.params.id as string);
 
 const loading = ref(false);
@@ -223,7 +224,7 @@ function formatBatchLabel(b: BatchOption): string {
           <el-descriptions-item label="调拨类型">
             {{ transfer.transferType === 'HQ_TO_BRANCH' ? '总部→分部' : transfer.transferType === 'BRANCH_TO_BRANCH' ? '分部→分部' : '分部→总部' }}
           </el-descriptions-item>
-          <el-descriptions-item label="总金额">{{ formatAmount(transfer.totalAmount) }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="总金额">{{ formatAmount(transfer.totalAmount) }}</el-descriptions-item>
           <el-descriptions-item label="调出方">{{ transfer.sourceFactory?.name || transfer.sourceFactoryId }}</el-descriptions-item>
           <el-descriptions-item label="调入方">{{ transfer.targetFactory?.name || transfer.targetFactoryId }}</el-descriptions-item>
           <el-descriptions-item label="调拨日期">{{ transfer.transferDate }}</el-descriptions-item>
@@ -264,10 +265,10 @@ function formatBatchLabel(b: BatchOption): string {
             <template #default="{ row }">{{ row.receivedQuantity || 0 }}</template>
           </el-table-column>
           <el-table-column prop="unit" label="单位" width="80" align="center" />
-          <el-table-column prop="unitPrice" label="单价" width="120" align="right">
+          <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="120" align="right">
             <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
           </el-table-column>
-          <el-table-column label="小计" width="130" align="right">
+          <el-table-column v-if="canViewPrice" label="小计" width="130" align="right">
             <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
           </el-table-column>
           <!-- B1: SHIP 前批次选择 (status=APPROVED + 调出方视角) -->

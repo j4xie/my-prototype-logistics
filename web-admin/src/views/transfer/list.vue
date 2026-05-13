@@ -17,6 +17,7 @@ const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -270,7 +271,7 @@ function isOutbound(row: TableRow) { return row.sourceFactoryId === factoryId.va
           <template #default="{ row }">{{ row.targetFactory?.name || row.targetFactoryId }}</template>
         </el-table-column>
         <el-table-column prop="transferDate" label="调拨日期" width="120" />
-        <el-table-column prop="totalAmount" label="金额" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="totalAmount" label="金额" width="120" align="right">
           <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
@@ -427,7 +428,7 @@ function isOutbound(row: TableRow) { return row.sourceFactoryId === factoryId.va
               <el-input v-model="row.unit" size="small" maxlength="20" />
             </template>
           </el-table-column>
-          <el-table-column label="单价" width="120">
+          <el-table-column v-if="canViewPrice" label="单价" width="120">
             <template #default="{ row }">
               <el-input-number
                 v-model="row.unitPrice" :min="0" :precision="2"

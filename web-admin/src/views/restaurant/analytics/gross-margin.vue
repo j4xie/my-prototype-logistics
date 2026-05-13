@@ -9,6 +9,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { ElMessage } from 'element-plus';
 import { Refresh, Download, DataAnalysis, TrendCharts, Money } from '@element-plus/icons-vue';
 import { pythonFetch } from '@/api/smartbi/common';
@@ -16,7 +17,9 @@ import echarts from '@/utils/echarts';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const daysWindow = ref(30);
@@ -220,6 +223,7 @@ function marginRateTag(rate: number) {
         </div>
       </template>
 
+      <template v-if="canViewPrice">
       <!-- 加速 E: 估算/精确切换 toggle -->
       <div v-if="totals.dishCount > 0 && totals.withCost < totals.dishCount" class="estimate-toggle" style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: linear-gradient(135deg, #fff8e6, #ffeecc); border-radius: 6px; border: 1px solid #f0d8a0;">
         <span style="font-size: 13px; font-weight: 600">📊 显示模式:</span>
@@ -345,6 +349,8 @@ function marginRateTag(rate: number) {
           录入, ETL 下一轮 (每小时) 自动重算.
         </div>
       </el-alert>
+      </template>
+      <el-empty v-else description="您没有查看价格/财务数据的权限" />
     </el-card>
   </div>
 </template>

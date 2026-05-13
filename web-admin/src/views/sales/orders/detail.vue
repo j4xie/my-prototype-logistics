@@ -18,6 +18,7 @@ const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
@@ -866,10 +867,10 @@ async function handleCreatePayment() {
           <el-descriptions-item :label="label('customer')">{{ order.customerName || order.customer?.name || order.customerId }}</el-descriptions-item>
           <el-descriptions-item label="下单日期">{{ order.orderDate }}</el-descriptions-item>
           <el-descriptions-item label="业务员">{{ order.salesperson || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="订单总额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
-          <el-descriptions-item label="已发货金额">{{ order.actualShippedAmount ? formatAmount(order.actualShippedAmount) : '0.00' }}</el-descriptions-item>
-          <el-descriptions-item label="已开票">{{ order.invoicedAmount ? formatAmount(order.invoicedAmount) : '0.00' }}</el-descriptions-item>
-          <el-descriptions-item label="已收款">{{ order.paidAmount ? formatAmount(order.paidAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="订单总额">{{ formatAmount(order.totalAmount) }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="已发货金额">{{ order.actualShippedAmount ? formatAmount(order.actualShippedAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="已开票">{{ order.invoicedAmount ? formatAmount(order.invoicedAmount) : '0.00' }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="已收款">{{ order.paidAmount ? formatAmount(order.paidAmount) : '0.00' }}</el-descriptions-item>
         </el-descriptions>
 
         <!-- 4 tab 业务中心 (V3 P0-11 — 金矿截图 49m17s) -->
@@ -880,10 +881,10 @@ async function handleCreatePayment() {
             <el-descriptions :column="3" border style="margin-top: 8px">
               <el-descriptions-item label="交货日期">{{ order.requiredDeliveryDate || '-' }}</el-descriptions-item>
               <el-descriptions-item label="下单箱数">{{ order.boxQuantity || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="折扣">{{ order.discountAmount ? formatAmount(order.discountAmount) : '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="canViewPrice" label="折扣">{{ order.discountAmount ? formatAmount(order.discountAmount) : '-' }}</el-descriptions-item>
               <el-descriptions-item label="含运费">{{ order.shippingIncluded ? '是' : '否' }}</el-descriptions-item>
-              <el-descriptions-item label="运费">{{ order.shippingFee ? formatAmount(order.shippingFee) : '-' }}</el-descriptions-item>
-              <el-descriptions-item label="预估利润">{{ order.estimatedProfit ? formatAmount(order.estimatedProfit) : '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="canViewPrice" label="运费">{{ order.shippingFee ? formatAmount(order.shippingFee) : '-' }}</el-descriptions-item>
+              <el-descriptions-item v-if="canViewPrice" label="预估利润">{{ order.estimatedProfit ? formatAmount(order.estimatedProfit) : '-' }}</el-descriptions-item>
               <el-descriptions-item label="交货地址" :span="3">{{ order.deliveryAddress || '-' }}</el-descriptions-item>
               <el-descriptions-item label="备注" :span="3">{{ order.remark || '-' }}</el-descriptions-item>
             </el-descriptions>
@@ -899,7 +900,7 @@ async function handleCreatePayment() {
               <el-table-column prop="boxQuantity" label="箱数" width="80" align="right">
                 <template #default="{ row }">{{ row.boxQuantity || '-' }}</template>
               </el-table-column>
-              <el-table-column prop="unitPrice" label="销售单价" width="120" align="right">
+              <el-table-column v-if="canViewPrice" prop="unitPrice" label="销售单价" width="120" align="right">
                 <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
               </el-table-column>
               <el-table-column prop="taxRate" label="税率" width="80" align="center">
@@ -914,13 +915,13 @@ async function handleCreatePayment() {
               <el-table-column label="已发货" width="100" align="right">
                 <template #default="{ row }">{{ row.deliveredQuantity || 0 }}</template>
               </el-table-column>
-              <el-table-column label="销售小计" width="130" align="right">
+              <el-table-column v-if="canViewPrice" label="销售小计" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
               </el-table-column>
             </el-table>
 
             <!-- ─── R14: 税率分组汇总 (Canvas FormulaEngine 驱动) ─── -->
-            <div v-if="taxGroupData" class="tax-group-section">
+            <div v-if="canViewPrice && taxGroupData" class="tax-group-section">
               <h3 style="margin: 20px 0 12px">税率分组汇总</h3>
               <el-table :data="taxGroupData" border stripe size="small" style="max-width: 400px">
                 <el-table-column label="税率" width="120" align="center">
@@ -985,16 +986,16 @@ async function handleCreatePayment() {
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="amount" label="不含税" width="120" align="right">
+              <el-table-column v-if="canViewPrice" prop="amount" label="不含税" width="120" align="right">
                 <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
               </el-table-column>
-              <el-table-column prop="taxAmount" label="税额" width="120" align="right">
+              <el-table-column v-if="canViewPrice" prop="taxAmount" label="税额" width="120" align="right">
                 <template #default="{ row }">{{ formatAmount(row.taxAmount) }}</template>
               </el-table-column>
-              <el-table-column prop="totalAmount" label="价税合计" width="130" align="right">
+              <el-table-column v-if="canViewPrice" prop="totalAmount" label="价税合计" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
               </el-table-column>
-              <el-table-column label="税率分组" min-width="240">
+              <el-table-column v-if="canViewPrice" label="税率分组" min-width="240">
                 <template #default="{ row }">
                   <div v-if="row.taxBreakdown && row.taxBreakdown.length" class="tax-breakdown">
                     <el-tag
@@ -1050,7 +1051,7 @@ async function handleCreatePayment() {
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="totalAmount" label="金额" width="130" align="right">
+              <el-table-column v-if="canViewPrice" prop="totalAmount" label="金额" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
               </el-table-column>
               <el-table-column label="操作" width="230" align="center">
@@ -1074,13 +1075,13 @@ async function handleCreatePayment() {
               <el-button v-if="canWrite" type="primary" @click="openPaymentDialog">
                 + 登记收款
               </el-button>
-              <span class="tab-hint">订单总额 {{ formatAmount(order.totalAmount) }} / 已收 {{ formatAmount(order.paidAmount || 0) }} / 待收 {{ formatAmount(computedRemainingAmount()) }}</span>
+              <span v-if="canViewPrice" class="tab-hint">订单总额 {{ formatAmount(order.totalAmount) }} / 已收 {{ formatAmount(order.paidAmount || 0) }} / 待收 {{ formatAmount(computedRemainingAmount()) }}</span>
             </div>
 
             <el-table :data="payments" border stripe style="margin-top: 12px">
               <el-table-column prop="paymentNumber" label="收款单号" width="180" />
               <el-table-column prop="paymentDate" label="收款日期" width="120" />
-              <el-table-column prop="amount" label="收款金额" width="130" align="right">
+              <el-table-column v-if="canViewPrice" prop="amount" label="收款金额" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
               </el-table-column>
               <el-table-column prop="paymentMethod" label="收款方式" width="120" align="center">
@@ -1120,7 +1121,7 @@ async function handleCreatePayment() {
                   <el-tag size="small">{{ row.status }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="totalAmount" label="金额" width="130" align="right">
+              <el-table-column v-if="canViewPrice" prop="totalAmount" label="金额" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
               </el-table-column>
               <el-table-column label="操作" width="100" align="center">
@@ -1151,7 +1152,7 @@ async function handleCreatePayment() {
           </template>
         </el-table-column>
         <el-table-column prop="unit" label="单位" width="80" align="center" />
-        <el-table-column prop="unitPrice" label="单价" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="120" align="right">
           <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
         </el-table-column>
       </el-table>
@@ -1267,7 +1268,7 @@ async function handleCreatePayment() {
     <!-- ─── 登记收款对话框 ─── -->
     <el-dialog v-model="paymentDialogVisible" title="登记收款" width="520px" destroy-on-close>
       <el-form label-width="90px">
-        <el-form-item label="收款金额" required>
+        <el-form-item v-if="canViewPrice" label="收款金额" required>
           <el-input-number v-model="paymentForm.amount" :min="0" :precision="2" style="width: 200px" />
           <span style="margin-left: 12px; color: #909399">待收 {{ formatAmount(computedRemainingAmount()) }}</span>
         </el-form-item>
@@ -1326,7 +1327,7 @@ async function handleCreatePayment() {
         <el-form-item label="客户">
           <span>{{ order?.customerName || order?.customerId }}</span>
         </el-form-item>
-        <el-form-item label="订单总额">
+        <el-form-item v-if="canViewPrice" label="订单总额">
           <span style="font-weight:600;color:#67C23A">{{ formatAmount(Number(order?.totalAmount || 0)) }}</span>
         </el-form-item>
         <!--
@@ -1354,7 +1355,7 @@ async function handleCreatePayment() {
           </div>
         </el-form-item>
         <!-- 预估利润依赖 estimatedCost, estimatedCost 未填则 financeReviewProfit=null, 此 form-item 自动隐藏 (无需独立改动) -->
-        <el-form-item v-if="financeReviewForm.isApprove && financeReviewProfit !== null" label="预估利润">
+        <el-form-item v-if="canViewPrice && financeReviewForm.isApprove && financeReviewProfit !== null" label="预估利润">
           <span :style="{ fontWeight: 600, color: financeReviewProfit >= 0 ? '#67C23A' : '#F56C6C' }">
             {{ formatAmount(financeReviewProfit) }}
             <span v-if="Number(order?.totalAmount || 0) > 0" style="color:#909399;font-size:12px;margin-left:8px">

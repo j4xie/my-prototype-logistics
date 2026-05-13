@@ -55,6 +55,7 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const currentUserId = computed(() => authStore.user?.id);
 const canApprove = computed(() => permissionStore.canWrite('finance'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const tableData = ref<AdjustmentRow[]>([]);
@@ -340,14 +341,14 @@ onMounted(loadData);
         <el-table-column label="对手方" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.counterpartyName || row.counterpartyId }}</template>
         </el-table-column>
-        <el-table-column label="金额" width="140" align="right">
+        <el-table-column v-if="canViewPrice" label="金额" width="140" align="right">
           <template #default="{ row }">
             <span :style="{ color: row.amount > 0 ? '#67C23A' : '#F56C6C', fontWeight: 600 }">
               {{ formatAmount(row.amount, row.counterpartyType) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="balanceAfter" label="变动后余额" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="balanceAfter" label="变动后余额" width="120" align="right">
           <template #default="{ row }">{{ row.balanceAfter?.toFixed(2) || '-' }}</template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />

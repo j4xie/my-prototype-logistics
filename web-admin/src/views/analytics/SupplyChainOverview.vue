@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
@@ -11,7 +12,9 @@ import type { ECharts } from 'echarts/core';
 
 // ---------- auth ----------
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // ---------- state ----------
 const loading = ref(false);
@@ -329,7 +332,7 @@ function getStatusText(status: string): string {
 
       <!-- Summary Cards -->
       <el-row :gutter="16" class="summary-cards">
-        <el-col :xs="12" :sm="8" :md="4">
+        <el-col v-if="canViewPrice" :xs="12" :sm="8" :md="4">
           <el-card class="stat-card purchase" shadow="hover">
             <div class="stat-value">{{ formatNumber(summary.purchaseTotal) }}</div>
             <div class="stat-label">采购总额</div>
@@ -359,7 +362,7 @@ function getStatusText(status: string): string {
             <div class="stat-label">成品数量</div>
           </el-card>
         </el-col>
-        <el-col :xs="12" :sm="8" :md="4">
+        <el-col v-if="canViewPrice" :xs="12" :sm="8" :md="4">
           <el-card class="stat-card sales" shadow="hover">
             <div class="stat-value">{{ formatNumber(summary.salesTotal) }}</div>
             <div class="stat-label">出库/销售额</div>
@@ -382,7 +385,7 @@ function getStatusText(status: string): string {
             >
               <el-table-column prop="orderNumber" label="订单号" min-width="150" show-overflow-tooltip />
               <el-table-column prop="supplierName" label="供应商" min-width="150" show-overflow-tooltip />
-              <el-table-column prop="totalAmount" label="总金额" width="120" align="right">
+              <el-table-column v-if="canViewPrice" prop="totalAmount" label="总金额" width="120" align="right">
                 <template #default="{ row }">
                   {{ formatNumber(row.totalAmount) }}
                 </template>
@@ -469,7 +472,7 @@ function getStatusText(status: string): string {
             >
               <el-table-column prop="orderNumber" label="订单号" min-width="150" show-overflow-tooltip />
               <el-table-column prop="customerName" label="客户名称" min-width="150" show-overflow-tooltip />
-              <el-table-column prop="totalAmount" label="总金额" width="120" align="right">
+              <el-table-column v-if="canViewPrice" prop="totalAmount" label="总金额" width="120" align="right">
                 <template #default="{ row }">
                   {{ formatNumber(row.totalAmount) }}
                 </template>

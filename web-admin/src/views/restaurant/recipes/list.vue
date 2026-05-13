@@ -228,7 +228,7 @@
       <el-table v-if="unmatchedData" :data="unmatchedData.dishes" max-height="400" border @selection-change="onSelectionChange">
         <el-table-column type="selection" width="45" />
         <el-table-column prop="name" label="POS 菜名" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="revenue" label="营收" width="120" align="right">
+        <el-table-column v-if="canViewPrice" prop="revenue" label="营收" width="120" align="right">
           <template #default="{ row }">¥{{ row.revenue.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</template>
         </el-table-column>
         <el-table-column prop="qty" label="销量" width="90" align="right" />
@@ -323,7 +323,7 @@
                 <el-input v-model="ing.name" size="small" style="width: 110px" />
                 <el-input-number v-model="ing.qty" :precision="4" :step="0.01" :min="0" size="small" :controls="false" style="width: 80px" />
                 <el-input v-model="ing.unit" size="small" style="width: 50px" />
-                <el-input-number v-model="ing.suggested_unit_price" :precision="2" :step="1" :min="0" size="small" :controls="false" placeholder="单价" style="width: 80px" />
+                <el-input-number v-if="canViewPrice" v-model="ing.suggested_unit_price" :precision="2" :step="1" :min="0" size="small" :controls="false" placeholder="单价" style="width: 80px" />
                 <el-button type="danger" link size="small" @click="row.ingredients.splice(i, 1)">✖</el-button>
               </div>
             </template>
@@ -379,7 +379,7 @@
                 <el-switch v-model="row.is_main" size="small" />
               </template>
             </el-table-column>
-            <el-table-column label="单价(元/单位)" width="130">
+            <el-table-column v-if="canViewPrice" label="单价(元/单位)" width="130">
               <template #default="{ row }">
                 <el-input-number v-model="row.price" :precision="2" :step="1" :min="0" size="small" :controls="false" placeholder="采购价" style="width: 110px" />
               </template>
@@ -411,7 +411,7 @@
         <div id="price-history-chart" style="height: 260px; margin-bottom: 14px" v-if="priceHistoryData.history.length > 1"></div>
         <el-empty v-else description="暂无历史变更 (食材价格首次录入后才会 snapshot)" :image-size="80" />
         <el-table :data="priceHistoryData.history" size="small" border v-if="priceHistoryData.history.length">
-          <el-table-column label="单价(元)" prop="unitPrice" width="90" align="right" />
+          <el-table-column v-if="canViewPrice" label="单价(元)" prop="unitPrice" width="90" align="right" />
           <el-table-column label="生效起" width="160">
             <template #default="{ row }">{{ row.effectiveFrom ? new Date(row.effectiveFrom).toLocaleDateString('zh-CN') : '-' }}</template>
           </el-table-column>
@@ -440,6 +440,7 @@ import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
 const canWrite = computed(() => permissionStore.canWrite('restaurant'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const productTypes = ref<{ id: string; name: string }[]>([]);
 const materialTypes = ref<{ id: string; name: string }[]>([]);
