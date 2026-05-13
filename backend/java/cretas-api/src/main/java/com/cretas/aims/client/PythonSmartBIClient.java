@@ -2060,6 +2060,39 @@ public class PythonSmartBIClient {
         }
     }
 
+    /**
+     * 调用 QHJ 收入管理报表 Python 服务
+     *
+     * <p>Spec §8.4 / Task H2. Mirrors callFinancialDashboard but accepts the full
+     * path (callers build the factory-scoped URL since revenue-report endpoints
+     * are mounted at /api/smartbi/{factory_id}/revenue-report/*).
+     *
+     * @param fullEndpoint full path, e.g. "/api/smartbi/R_QINGHUAJIAO_REAL/revenue-report/prepare"
+     * @param request request body Map (will be serialized to JSON)
+     * @return response Map (parsed JSON), or null on service unavailable
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> callRevenueReport(String fullEndpoint, Map<String, Object> request) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过收入管理报表调用");
+            return null;
+        }
+
+        String url = config.getFullUrl(fullEndpoint);
+        log.info("调用收入管理报表: url={}, keys={}", url, request.keySet());
+
+        try {
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+            return executeWithRetry(httpRequest, Map.class);
+        } catch (IOException | PythonServiceUnavailableException e) {
+            log.error("收入管理报表调用失败: endpoint={}, error={}", fullEndpoint, e.getMessage());
+            return null;
+        }
+    }
+
     // ==================== 辅助转换方法 ====================
 
     /**
