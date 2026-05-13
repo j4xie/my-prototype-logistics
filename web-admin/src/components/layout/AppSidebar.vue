@@ -149,6 +149,11 @@ const menuConfig: MenuItem[] = [
       { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' },
       { path: '/sales/shipments', title: '出货记录', icon: '', module: 'sales',
         hideForFactoryTypes: ['RESTAURANT'] },
+      // T-RTA fix (audit B2 BLOCKER 2026-05-13): /sales/returns route was added by
+      // PR #549 but NEVER surfaced in sidebar — customer service / finance roles
+      // had no menu entry, only "申请退货" button on individual sales order detail.
+      // Now discoverable for 历史退货 review + status-tracking workflows.
+      { path: '/sales/returns', title: '销售退货', icon: '', module: 'sales' },
       { path: '/sales/vehicles', title: '车辆字典', icon: '', module: 'sales',
         hideForFactoryTypes: ['RESTAURANT'] }
     ]
