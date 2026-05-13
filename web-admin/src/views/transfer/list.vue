@@ -50,7 +50,10 @@ interface ManualTransferItem {
   unitPrice?: number;
   remark?: string;
 }
-interface MaterialTypeOption { id: string; name: string; code: string; unit: string }
+// T4-B4 (issue #532): backend ReferenceDataController.findMaterials now emits currentStock
+// (PR adds it via MaterialBatchRepository.sumQuantityByMaterialType bulk query — issue #540).
+// Treat as optional + accept string|number to tolerate BigDecimal-as-string JSON encoding.
+interface MaterialTypeOption { id: string; name: string; code: string; unit: string; currentStock?: number | string | null }
 interface FactoryNetworkEntry { factoryId: string; factoryName: string }
 
 const createVisible = ref(false);
@@ -164,7 +167,17 @@ function handleMaterialChange(idx: number, materialId: string) {
   if (m) {
     form.value.items[idx].itemName = m.name;
     if (m.unit) form.value.items[idx].unit = m.unit;
+    // T4-B4 (issue #532): project currentStock onto the row so dialog 现有库存 column renders.
+    // Underscore prefix marks frontend-only (not submitted to backend on create).
+    (form.value.items[idx] as any)._currentStock = m.currentStock ?? null;
   }
+}
+
+function formatStock(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '-';
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return n.toLocaleString('zh-CN', { maximumFractionDigits: 3 });
 }
 
 async function submitCreate() {
@@ -421,6 +434,18 @@ function isOutbound(row: TableRow) { return row.sourceFactoryId === factoryId.va
                 v-model="row.quantity" :min="0.001" :precision="3"
                 :controls="false" size="small" style="width:100%"
               />
+            </template>
+          </el-table-column>
+          <!-- T4-B4 (issue #532): F006 customer asked for 现有库存 inline next to 调拨数量 so user
+               knows the upper bound before submitting. Backend ReferenceDataController.findMaterials
+               populates currentStock (issue #540 fix). Red when 调拨数量 exceeds available; green otherwise. -->
+          <el-table-column label="现有库存" width="110" align="right">
+            <template #default="{ row }">
+              <span v-if="row._currentStock != null && row._currentStock !== ''"
+                    :style="{ color: Number(row._currentStock) < Number(row.quantity || 0) ? '#f56c6c' : '#67c23a' }">
+                {{ formatStock(row._currentStock) }}
+              </span>
+              <span v-else style="color: #c0c4cc">-</span>
             </template>
           </el-table-column>
           <el-table-column label="单位" width="90">
