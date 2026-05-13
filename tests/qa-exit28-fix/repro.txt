@@ -1,0 +1,71 @@
+QA reproduction — deploy-backend.sh "exit 28 cosmetic" bug
+=============================================================
+Date: 2026-05-13
+Branch: fix/deploy-backend-defensive-ping
+Reporter: organizer chat (Steve), referenced from memory
+  project_2026_05_12_phase_2b_close_and_customer_features_live.md
+
+Symptom
+-------
+Java prod deploys (PR #501, #529, #545, #547 on 2026-05-12/13) printed
+`Background command failed with exit code 28` at the end. Despite the exit
+code, Blue-Green cutover finished, /api/mobile/health returned 200, and
+all 5/5 deploy health probes passed. Operator was repeatedly confused —
+the exit code suggested failure but the deploy was actually fine.
+
+Reproduction (local operator machine)
+-------------------------------------
+$ ./scripts/deploy/deploy-backend.sh --env prod
+... [full deploy succeeds] ...
+🔍 [4/4] 验证部署...
+   [生产] 通过 nginx upstream 验证 (Blue-Green)...
+   ✓ 生产服务正常 (HTTP 200 via nginx)
+Background command failed with exit code 28
+$ echo $?
+28
+
+Distilled minimal repro
+-----------------------
+$ bash -c 'set -e; VAR=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 \
+    http://47.100.235.168:10011/api/mobile/health 2>/dev/null); \
+    echo "after assignment VAR=$VAR"' ; echo "exit=$?"
+exit=28
+(The "after assignment" echo never prints — `set -e` killed the shell at
+the assignment line.)
+
+Root cause
+----------
+File:  scripts/deploy/deploy-backend.sh
+Lines: 1119-1121 (pre-fix, the "防御性检查" block for DEPLOY_ENV=prod)
+
+Two preconditions, one trigger:
+
+  (1) `set -e` is set at line 18 of the script.
+  (2) Aliyun SG (sg-uf64n0hcl8w37d34zfmy) Phase 3 收紧 (2026-04-11) restricts
+      port 10011 to source `139.196.165.140/32` only. See
+      .claude/rules/aliyun-credentials.md and
+      .claude/rules/server-operations.md.
+
+Trigger: when the operator's local machine runs deploy --env prod, the
+script reaches the cross-env defensive ping:
+
+    OTHER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+        "http://${SERVER_IP}:10011/api/mobile/health" 2>/dev/null)
+
+The packet hits 47.100.235.168:10011 from the operator's public IP, SG drops
+it, curl waits the full 5s, and exits with CURLE_OPERATION_TIMEDOUT (28).
+
+With `set -e`, the command substitution's non-zero exit propagates through
+the assignment, and bash terminates the script — _after_ the deploy
+finished but _before_ the success banner prints. The script's tail output
+is suppressed and the exit code is 28.
+
+Why nobody noticed in test mode
+-------------------------------
+The mirror branch (DEPLOY_ENV=test, line 1133) does:
+
+    OTHER_STATUS=$(ssh -o ConnectTimeout=5 $GATEWAY "curl ... https://127.0.0.1/...")
+
+SSH to 139 GATEWAY succeeds and curl runs through nginx upstream from the
+whitelisted source. No timeout, no exit 28. The bug only fires on the
+prod branch's local-curl shortcut.
