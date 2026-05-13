@@ -1,0 +1,32 @@
+=== AFTER (in-scope, issue #530 fixed) — /smart-bi/analysis/production ===
+URL:       GET /api/mobile/F001/smart-bi/analysis/production?startDate=2026-01-01&endDate=2026-01-31
+Status:    401
+Bytes:     185
+Content-Type: application/json; charset=utf-8
+Raw body:  b'{"success":false,"code":401,"message":"\xe6\x9c\xaa\xe6\x8e\x88\xe6\x9d\x83\xef\xbc\x8c\xe8\xaf\xb7\xe5\x85\x88\xe7\x99\xbb\xe5\xbd\x95","severity":"error","actionHint":"\xe4\xbc\x9a\xe8\xaf\x9d\xe5\xb7\xb2\xe8\xbf\x87\xe6\x9c\x9f\xe6\x88\x96\xe6\x9c\xaa\xe7\x99\xbb\xe5\xbd\x95, \xe8\xaf\xb7\xe9\x87\x8d\xe6\x96\xb0\xe7\x99\xbb\xe5\xbd\x95","timestamp":"2026-05-13T16:28:57.912442"}'
+Decoded:   {"success":false,"code":401,"message":"未授权，请先登录","severity":"error","actionHint":"会话已过期或未登录, 请重新登录","timestamp":"2026-05-13T16:28:57.912442"}
+
+=== AFTER (in-scope, issue #530 fixed) — /smart-bi/analysis/quality ===
+URL:       GET /api/mobile/F001/smart-bi/analysis/quality?startDate=2026-01-01&endDate=2026-01-31
+Status:    401
+Bytes:     185
+Content-Type: application/json; charset=utf-8
+Raw body:  b'{"success":false,"code":401,"message":"\xe6\x9c\xaa\xe6\x8e\x88\xe6\x9d\x83\xef\xbc\x8c\xe8\xaf\xb7\xe5\x85\x88\xe7\x99\xbb\xe5\xbd\x95","severity":"error","actionHint":"\xe4\xbc\x9a\xe8\xaf\x9d\xe5\xb7\xb2\xe8\xbf\x87\xe6\x9c\x9f\xe6\x88\x96\xe6\x9c\xaa\xe7\x99\xbb\xe5\xbd\x95, \xe8\xaf\xb7\xe9\x87\x8d\xe6\x96\xb0\xe7\x99\xbb\xe5\xbd\x95","timestamp":"2026-05-13T16:28:57.916442"}'
+Decoded:   {"success":false,"code":401,"message":"未授权，请先登录","severity":"error","actionHint":"会话已过期或未登录, 请重新登录","timestamp":"2026-05-13T16:28:57.916442"}
+
+=== AFTER (in-scope, issue #530 fixed) — /smart-bi/analysis/finance ===
+URL:       GET /api/mobile/F001/smart-bi/analysis/finance?startDate=2026-01-01&endDate=2026-01-31
+Status:    401
+Bytes:     185
+Content-Type: application/json; charset=utf-8
+Raw body:  b'{"success":false,"code":401,"message":"\xe6\x9c\xaa\xe6\x8e\x88\xe6\x9d\x83\xef\xbc\x8c\xe8\xaf\xb7\xe5\x85\x88\xe7\x99\xbb\xe5\xbd\x95","severity":"error","actionHint":"\xe4\xbc\x9a\xe8\xaf\x9d\xe5\xb7\xb2\xe8\xbf\x87\xe6\x9c\x9f\xe6\x88\x96\xe6\x9c\xaa\xe7\x99\xbb\xe5\xbd\x95, \xe8\xaf\xb7\xe9\x87\x8d\xe6\x96\xb0\xe7\x99\xbb\xe5\xbd\x95","timestamp":"2026-05-13T16:28:57.919440"}'
+Decoded:   {"success":false,"code":401,"message":"未授权，请先登录","severity":"error","actionHint":"会话已过期或未登录, 请重新登录","timestamp":"2026-05-13T16:28:57.919440"}
+
+=== BEFORE shape (out-of-scope sister /analysis/region — unchanged on purpose) ===
+URL:       GET /api/mobile/F001/smart-bi/analysis/region?startDate=2026-01-01&endDate=2026-01-31
+Status:    401
+Bytes:     96
+Content-Type: application/json
+Raw body:  b'{"success": false, "message": "Missing or invalid Authorization header", "code": "UNAUTHORIZED"}'
+Decoded:   {"success": false, "message": "Missing or invalid Authorization header", "code": "UNAUTHORIZED"}
+
