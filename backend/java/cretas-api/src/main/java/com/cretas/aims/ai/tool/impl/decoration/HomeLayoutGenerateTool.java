@@ -2,16 +2,12 @@ package com.cretas.aims.ai.tool.impl.decoration;
 
 import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
-import com.cretas.aims.entity.FactorySettings;
-import com.cretas.aims.repository.FactorySettingsRepository;
 import com.cretas.aims.service.validator.LayoutValidator;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -30,7 +26,7 @@ import java.util.*;
 public class HomeLayoutGenerateTool extends AbstractBusinessTool {
 
     @Autowired
-    private FactorySettingsRepository factorySettingsRepository;
+    private FactoryHomeLayoutToolStore layoutStore;
 
     @Autowired
     private DashScopeClient dashScopeClient;
@@ -110,7 +106,7 @@ public class HomeLayoutGenerateTool extends AbstractBusinessTool {
         }
 
         // 4. 保存布局
-        saveLayout(factoryId, userId, generatedLayout);
+        saveLayout(factoryId, userId, generatedLayout, prompt);
 
         Map<String, Object> result = new HashMap<>();
         result.put("message", "已为您生成新的首页布局方案");
@@ -165,37 +161,11 @@ public class HomeLayoutGenerateTool extends AbstractBusinessTool {
         return parsed;
     }
 
-    private void saveLayout(String factoryId, Long userId, List<Map<String, Object>> layout) {
-        try {
-            Optional<FactorySettings> settingsOpt = factorySettingsRepository.findByFactoryId(factoryId);
-            FactorySettings settings;
-            Map<String, Object> aiSettings;
-
-            if (settingsOpt.isPresent()) {
-                settings = settingsOpt.get();
-                if (settings.getAiSettings() != null) {
-                    aiSettings = objectMapper.readValue(settings.getAiSettings(),
-                            new TypeReference<Map<String, Object>>() {});
-                } else {
-                    aiSettings = new HashMap<>();
-                }
-            } else {
-                settings = new FactorySettings();
-                settings.setFactoryId(factoryId);
-                aiSettings = new HashMap<>();
-            }
-
-            aiSettings.put("homeLayout", layout);
-            aiSettings.put("layoutUpdatedAt", LocalDateTime.now().toString());
-            aiSettings.put("layoutUpdatedBy", userId);
-            settings.setAiSettings(objectMapper.writeValueAsString(aiSettings));
-
-            factorySettingsRepository.save(settings);
-            log.info("布局已保存: factoryId={}, userId={}", factoryId, userId);
-        } catch (Exception e) {
-            log.error("保存布局失败: {}", e.getMessage(), e);
-            throw new RuntimeException("保存布局失败", e);
-        }
+    private void saveLayout(String factoryId, Long userId, List<Map<String, Object>> layout, String aiPrompt) {
+        // Track A Project 3: 写 factory_home_layout (经 layoutStore 转 nested 形态),
+        // 不再写 factory_settings.ai_settings.homeLayout — 让 Tool 输出能被
+        // DecorationServiceImpl.getHomeLayout 读到并送达 FAHomeScreen 渲染器。
+        layoutStore.saveFlatLayout(factoryId, userId, layout, aiPrompt);
     }
 
     @Override
