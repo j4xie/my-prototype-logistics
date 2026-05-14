@@ -1,6 +1,6 @@
 # Phase IIa Nginx Deploy Evidence — Runbook
 
-**Status**: 🟡 DRAFT (WIP) — config drafted, **NOT yet applied to server 139**
+**Status**: 🟢 Phase TEST APPLIED 2026-05-14T19:37:42Z — smoke green. Phase PROD pending PR-A prod deploy signal.
 **Branch**: `ops/phase-iia-nginx-restaurant-routing`
 **Spec**: `docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md` §6.1
 **MO**: `docs/superpowers/dispatch/2026-05-14-phase-iia-pr-c-nginx-marching-order.md`
@@ -156,17 +156,28 @@ curl -sS -X GET "http://139.196.165.140:8097/api/mobile/R_QINGHUAJIAO_REAL/smart
 # Expect: HTTP 200 + JSON with data.tenantType == "RESTAURANT"
 ```
 
-#### Evidence — Phase TEST
+#### Evidence — Phase TEST (APPLIED 2026-05-14)
 
 | Field | Value |
 |---|---|
-| Test reload timestamp | `<TBD>` |
-| Backup filename | `<TBD: web-admin-test.conf.bak.phase-iia.<TS>>` |
-| `nginx -t` result | `<TBD>` |
-| Smoke HTTP status | `<TBD>` |
-| Smoke `data.tenantType` | `<TBD: expect "RESTAURANT">` |
-| Smoke response excerpt (redacted) | `<TBD>` |
-| Issues encountered | `<TBD>` |
+| Test reload timestamp | **2026-05-14T19:37:42Z** (server local: May 15 03:37 UTC+8) |
+| Backup filename | `/www/server/panel/vhost/nginx/web-admin-test.conf.bak.phase-iia.20260514_153626` (9160 bytes) |
+| Edit method | Python script via SSH heredoc — inserted block before marker `# Phase 2A SmartBI list endpoints (PR #507 R1 fix):`. Idempotent (re-run guards against double-insert). |
+| Inserted lines | Line 133-150 (comment header + location block, see verification grep below) |
+| `nginx -t` result | **OK** — `syntax is ok / test is successful` (1 pre-existing `ssl_stapling` OCSP warn on `centerapi.cretaceousfuture.com.pem`, unrelated) |
+| Reload | `nginx -s reload` exit 0 |
+| Smoke `R_QINGHUAJIAO_REAL` /sales | **HTTP 200**, 640ms — `data.tenantType: "RESTAURANT"` ✓, `billCount: 134738`, `storeCount: 5`, `dataSource: "agg_daily"` |
+| Smoke `R_QINGHUAJIAO_REAL` /finance | **HTTP 200** — `data.tenantType: "RESTAURANT"` ✓, `analysisType: "overview"`, `kpi.billCount: 134738`, `kpi.storeCount: 5` |
+| ⚠️ Observation (PR-A backend concern, NOT nginx) | Both endpoints return `totalRevenue: 0` and `avgPerCapita: 0` despite `billCount: 134738`. Likely PR-A SUM aggregation bug or Decimal serialization issue. **Nginx routing verified correct — restaurant tenant reaches Python with RESTAURANT shape.** Flagged for PR-A review. |
+| RES_3101_009 smoke | Not run via `qhj_admin` (returns 403 — auth-scoped to QHJ only; need broader-admin login or test on prod with cross-tenant admin). Routing correctness covered by `R_QINGHUAJIAO_REAL` evidence. |
+| Issues encountered | None nginx-side. PR-A `totalRevenue: 0` flagged separately. |
+
+**Verification grep** (insertion line numbers, from server):
+
+```
+133:    # Phase IIa (2026-05-14): restaurant tenants → Python TEST 8084 for /analysis/(finance|sales).
+138:    location ~ ^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|sales)(/.*)?$ {
+```
 
 ### Phase PROD — after organizer signal "PR-A prod 8083 healthy (Blue-Green)"
 
