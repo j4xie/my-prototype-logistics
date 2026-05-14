@@ -2,6 +2,7 @@ package com.cretas.aims.service.attachment.impl;
 
 import com.aliyun.oss.HttpMethod;
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.model.ObjectMetadata;
 import com.cretas.aims.config.OssConfig;
 import com.cretas.aims.entity.Attachment;
 import com.cretas.aims.entity.Attachment.EntityType;
@@ -16,10 +17,20 @@ import com.cretas.aims.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -50,6 +61,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
     private static final int UPLOAD_URL_TTL_SECONDS = 300;     // 5 分钟
     private static final int DOWNLOAD_URL_TTL_SECONDS = 3600;  // 1 小时
+    private static final int THUMBNAIL_MAX_DIM = 200;          // 200x200 fit
 
     private final AttachmentRepository attachmentRepository;
     private final OssService ossService;
@@ -100,7 +112,93 @@ public class AttachmentServiceImpl implements AttachmentService {
         Attachment saved = attachmentRepository.save(a);
         log.info("Attachment 注册: factory={} entityType={} entityId={} id={} fileName={}",
                 factoryId, req.getEntityType(), req.getEntityId(), saved.getId(), req.getFileName());
+
+        // Async 异步生成图片缩略图 — 失败不阻塞 register
+        if (saved.getFileCategory() == FileCategory.PHOTO && saved.getThumbnailUrl() == null) {
+            try {
+                generateThumbnailAsync(saved.getId());
+            } catch (Exception e) {
+                log.warn("缩略图异步触发失败 (attachment 仍 register OK): {}", e.getMessage());
+            }
+        }
+
         return saved;
+    }
+
+    // ==================== 缩略图 (异步) ====================
+
+    /**
+     * 异步生成 200x200 缩略图 — 仅图片. 失败仅 log, 不影响 register.
+     *
+     * <p>Spring @Async 默认 SimpleAsyncTaskExecutor (新线程, 不池化). 量大时考虑
+     * 加专属线程池, 但 attachment 频率低 (<1QPS), 默认足够. 不在事务中执行.
+     */
+    @Async
+    public void generateThumbnailAsync(String attachmentId) {
+        if (ossClient == null) {
+            log.debug("OSS 未启用, 跳过缩略图: id={}", attachmentId);
+            return;
+        }
+        try {
+            Attachment a = attachmentRepository.findById(attachmentId).orElse(null);
+            if (a == null || a.getFileCategory() != FileCategory.PHOTO) return;
+            if (a.getThumbnailUrl() != null) return;  // 已有不重做
+
+            // 1. 下载原图 bytes
+            byte[] srcBytes;
+            try (InputStream in = new URL(a.getFileUrl()).openStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                in.transferTo(out);
+                srcBytes = out.toByteArray();
+            }
+
+            // 2. 用 BufferedImage resize
+            BufferedImage src = ImageIO.read(new ByteArrayInputStream(srcBytes));
+            if (src == null) {
+                log.warn("缩略图: ImageIO 无法解析 {} (可能格式不支持)", a.getFileUrl());
+                return;
+            }
+            int w = src.getWidth(), h = src.getHeight();
+            double scale = Math.min((double) THUMBNAIL_MAX_DIM / w, (double) THUMBNAIL_MAX_DIM / h);
+            if (scale >= 1.0) {
+                // 原图已小于 200x200, 直接 thumbnailUrl = fileUrl
+                a.setThumbnailUrl(a.getFileUrl());
+                attachmentRepository.save(a);
+                return;
+            }
+            int tw = (int) (w * scale), th = (int) (h * scale);
+            BufferedImage thumb = new BufferedImage(tw, th, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = thumb.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(src.getScaledInstance(tw, th, Image.SCALE_SMOOTH), 0, 0, null);
+            g.dispose();
+
+            ByteArrayOutputStream thumbOut = new ByteArrayOutputStream();
+            ImageIO.write(thumb, "jpg", thumbOut);
+            byte[] thumbBytes = thumbOut.toByteArray();
+
+            // 3. 上传到 OSS 单独 key
+            String thumbKey = buildThumbnailKey(a);
+            ObjectMetadata meta = new ObjectMetadata();
+            meta.setContentLength(thumbBytes.length);
+            meta.setContentType("image/jpeg");
+            ossClient.putObject(ossConfig.getMediaBucket(), thumbKey, new ByteArrayInputStream(thumbBytes), meta);
+
+            // 4. 写回 thumbnailUrl
+            String thumbUrl = ossConfig.getMediaUrlPrefix() + "/" + thumbKey;
+            a.setThumbnailUrl(thumbUrl);
+            attachmentRepository.save(a);
+            log.info("缩略图生成: id={} {}x{} -> {}", attachmentId, tw, th, thumbUrl);
+        } catch (Exception e) {
+            log.warn("缩略图生成失败 id={}: {}", attachmentId, e.getMessage());
+        }
+    }
+
+    private String buildThumbnailKey(Attachment a) {
+        // 同 factory 同日期目录, suffix _thumb.jpg
+        String dateDir = LocalDate.now().format(DATE_FORMAT);
+        String shortId = a.getId().replace("-", "").substring(0, 16);
+        return String.format("%s/attachments/%s/thumbs/%s_thumb.jpg", a.getFactoryId(), dateDir, shortId);
     }
 
     // ==================== query / count ====================
