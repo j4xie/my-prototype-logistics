@@ -215,4 +215,85 @@ class SalesOrderFulfillmentWarehouseTest {
         // Defensive: 若未来重命名 WH-LOG → 这个 test 立即 fail, 提醒 grep 所有 site
         assertEquals("WH-LOG", WarehouseCodes.WH_LOG);
     }
+
+    // ============================================================
+    // T4-D5 #572: per-row sourceWarehouseCode honored (PR #547/#564 chain)
+    // ============================================================
+
+    @Test
+    @DisplayName("T4-D5 #572: sourceWarehouseCode=WH-WKS → 查 WH-WKS 仓库批次, 不走 WH-LOG 默认")
+    void deduct_honorsSourceWarehouseCode_whWks() throws Exception {
+        final String WH_WKS_ID = "wh-wks-f001";
+        when(warehouseResolver.resolveId(FACTORY_A, WarehouseCodes.WH_WKS)).thenReturn(WH_WKS_ID);
+
+        FinishedGoodsBatch wksBatch = buildAvailableBatch("B-WKS-001", WH_WKS_ID, new BigDecimal("50"));
+        when(finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_WKS_ID))
+                .thenReturn(List.of(wksBatch));
+
+        SalesDeliveryItem item = buildDeliveryItem(new BigDecimal("30"));
+        item.setSourceWarehouseCode(WarehouseCodes.WH_WKS);
+        invokeDeduct(item);
+
+        // 解析走 resolveId(code), 不走 resolveLogisticsId 默认
+        verify(warehouseResolver, times(1)).resolveId(FACTORY_A, WarehouseCodes.WH_WKS);
+        verify(warehouseResolver, never()).resolveLogisticsId(anyString());
+        verify(finishedGoodsBatchRepository, times(1))
+                .findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_WKS_ID);
+
+        // 扣减 30 / 50
+        assertEquals(0, wksBatch.getShippedQuantity().compareTo(new BigDecimal("30")));
+    }
+
+    @Test
+    @DisplayName("T4-D5 #572: sourceWarehouseCode=null (legacy) → 回落 WH-LOG, 行为与 D5 一致")
+    void deduct_nullSourceWarehouseCode_fallsBackToWhLog() throws Exception {
+        FinishedGoodsBatch whLogBatch = buildAvailableBatch("B-LOG-001", WH_LOG_ID, new BigDecimal("50"));
+        when(finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_LOG_ID))
+                .thenReturn(List.of(whLogBatch));
+
+        SalesDeliveryItem item = buildDeliveryItem(new BigDecimal("30"));
+        // sourceWarehouseCode 留 null (legacy 行)
+        invokeDeduct(item);
+
+        // 回落到 resolveLogisticsId, 不调 resolveId(code)
+        verify(warehouseResolver, times(1)).resolveLogisticsId(FACTORY_A);
+        verify(warehouseResolver, never()).resolveId(anyString(), anyString());
+        verify(finishedGoodsBatchRepository, times(1))
+                .findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_LOG_ID);
+
+        assertEquals(0, whLogBatch.getShippedQuantity().compareTo(new BigDecimal("30")));
+    }
+
+    @Test
+    @DisplayName("T4-D5 #572: sourceWarehouseCode=空字符串 → 也走 fallback (blank-safe)")
+    void deduct_blankSourceWarehouseCode_fallsBackToWhLog() throws Exception {
+        FinishedGoodsBatch whLogBatch = buildAvailableBatch("B-LOG-001", WH_LOG_ID, new BigDecimal("50"));
+        when(finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_LOG_ID))
+                .thenReturn(List.of(whLogBatch));
+
+        SalesDeliveryItem item = buildDeliveryItem(new BigDecimal("30"));
+        item.setSourceWarehouseCode("   ");
+        invokeDeduct(item);
+
+        verify(warehouseResolver, times(1)).resolveLogisticsId(FACTORY_A);
+        verify(warehouseResolver, never()).resolveId(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("T4-D5 #572: 错误信息含选中仓库 code (UX — 用户看得到自己选哪个仓)")
+    void deduct_insufficientStock_errorMessageIncludesWarehouse() throws Exception {
+        final String WH_WKS_ID = "wh-wks-f001";
+        when(warehouseResolver.resolveId(FACTORY_A, WarehouseCodes.WH_WKS)).thenReturn(WH_WKS_ID);
+        when(finishedGoodsBatchRepository.findAvailableBatchesByWarehouse(FACTORY_A, PRODUCT_TYPE, WH_WKS_ID))
+                .thenReturn(Collections.emptyList());
+
+        SalesDeliveryItem item = buildDeliveryItem(new BigDecimal("10"));
+        item.setSourceWarehouseCode(WarehouseCodes.WH_WKS);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> invokeDeduct(item));
+        assertNotNull(ex.getMessage());
+        // 用户看到 message 里显式提到 WH-WKS — 知道是选错仓的问题, 不是没生产
+        assertEquals(true, ex.getMessage().contains("WH-WKS"));
+        assertEquals(true, ex.getMessage().contains("成品库存不足"));
+    }
 }

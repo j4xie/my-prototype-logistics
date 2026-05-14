@@ -989,8 +989,12 @@ public class SalesServiceImpl implements SalesService {
      * 按生产日期从早到晚，依次扣减可用库存
      */
     private void deductFinishedGoodsInventory(String factoryId, SalesDeliveryItem item) {
-        // D1: warehouse strategy per PR #310 §5 — sales 发货 WH-LOG fixed (D5 销售只从 WH-LOG 出).
-        String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+        // T4-D5 #572: honor per-row sourceWarehouseCode (PR #547/#564 data contract).
+        // Legacy rows (sourceWarehouseCode null) fall back to WH-LOG — preserves D5 default.
+        String sourceCode = item.getSourceWarehouseCode();
+        String warehouseId = (sourceCode != null && !sourceCode.isBlank())
+                ? warehouseResolver.resolveId(factoryId, sourceCode)
+                : warehouseResolver.resolveLogisticsId(factoryId);
         List<FinishedGoodsBatch> batches = finishedGoodsBatchRepository
                 .findAvailableBatchesByWarehouse(factoryId, item.getProductTypeId(), warehouseId);
 
@@ -1017,9 +1021,10 @@ public class SalesServiceImpl implements SalesService {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            throw new BusinessException(String.format("成品库存不足: 产品=%s, 缺少数量=%s",
-                item.getProductTypeId(), remaining.toPlainString()))
-                .withHint("请先下达生产计划(/production/plans)完成生产入库, 或减少本次发货数量")
+            String warehouseDisplay = (sourceCode != null && !sourceCode.isBlank()) ? sourceCode : "WH-LOG";
+            throw new BusinessException(String.format("成品库存不足: 产品=%s, 仓库=%s, 缺少数量=%s",
+                item.getProductTypeId(), warehouseDisplay, remaining.toPlainString()))
+                .withHint("请检查 " + warehouseDisplay + " 库存, 或调整销售订单的来源仓库后再发货")
                 .withHintTarget("生产计划");
         }
     }
