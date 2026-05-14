@@ -4,7 +4,7 @@ Spec: docs/qa-specs/2026-05-12-qhj-revenue-report-design.md §6.1-§6.2 + §11.2
 Plan: docs/superpowers/plans/2026-05-12-qhj-revenue-report.md Task E1
 """
 from datetime import date
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

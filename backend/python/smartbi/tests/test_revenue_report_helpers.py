@@ -3,8 +3,6 @@
 Spec: docs/qa-specs/2026-05-12-qhj-revenue-report-design.md §7.3, §10.7, §11.3
 Plan: docs/superpowers/plans/2026-05-12-qhj-revenue-report.md Task G1
 """
-import hashlib
-import json
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
