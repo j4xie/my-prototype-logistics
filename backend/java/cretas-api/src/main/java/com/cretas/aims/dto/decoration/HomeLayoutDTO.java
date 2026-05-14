@@ -68,33 +68,48 @@ public class HomeLayoutDTO {
 
     /**
      * 模块配置
+     *
+     * <p>字段集对齐前端 {@code HomeModule} (types/decoration.ts): 同时支持
+     * 新的 {@code gridPosition}/{@code gridSize}/{@code name} 形态 和 老的
+     * {@code order}/{@code colSpan}/{@code rowSpan}/{@code title} 形态。
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     @Schema(description = "模块配置")
     public static class ModuleConfig {
 
-        @Schema(description = "模块ID", example = "today_stats")
+        @Schema(description = "模块ID", example = "stats_grid")
         private String id;
 
-        @Schema(description = "模块类型", example = "stats")
+        @Schema(description = "模块类型", example = "stats_grid",
+                allowableValues = {"welcome", "ai_insight", "stats_grid", "quick_actions", "dev_tools"})
         private String type;
+
+        @Schema(description = "模块显示名称", example = "数据统计")
+        private String name;
 
         @Schema(description = "是否可见", example = "true")
         private Boolean visible;
 
-        @Schema(description = "排序序号", example = "1")
+        @Schema(description = "Bento 网格位置")
+        private GridPosition gridPosition;
+
+        @Schema(description = "Bento 网格尺寸")
+        private GridSize gridSize;
+
+        @Schema(description = "排序序号 (旧字段, 保留兼容)", example = "1")
         private Integer order;
 
-        @Schema(description = "列跨度", example = "2")
+        @Schema(description = "列跨度 (旧字段, 保留兼容)", example = "2")
         private Integer colSpan;
 
-        @Schema(description = "行跨度", example = "1")
+        @Schema(description = "行跨度 (旧字段, 保留兼容)", example = "1")
         private Integer rowSpan;
 
-        @Schema(description = "模块标题")
+        @Schema(description = "模块标题 (旧字段, 保留兼容)")
         private String title;
 
         @Schema(description = "模块图标")
@@ -105,31 +120,83 @@ public class HomeLayoutDTO {
     }
 
     /**
-     * 主题配置
+     * Bento 网格位置 (对齐前端 HomeModule.gridPosition)
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "Bento 网格位置")
+    public static class GridPosition {
+        @Schema(description = "X 坐标 (0-based)", example = "0")
+        private Integer x;
+
+        @Schema(description = "Y 坐标 (0-based)", example = "0")
+        private Integer y;
+    }
+
+    /**
+     * Bento 网格尺寸 (对齐前端 HomeModule.gridSize, w/h ∈ {1,2})
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "Bento 网格尺寸")
+    public static class GridSize {
+        @Schema(description = "宽度 (1 或 2)", example = "2")
+        private Integer w;
+
+        @Schema(description = "高度 (1 或 2)", example = "1")
+        private Integer h;
+    }
+
+    /**
+     * 主题配置
+     *
+     * <p>字段集对齐前端 {@code ThemeConfig} (types/decoration.ts:85-93)。
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     @Schema(description = "主题配置")
     public static class ThemeConfig {
 
-        @Schema(description = "主题色", example = "#1890ff")
+        @Schema(description = "主题色", example = "#2E7D32")
         private String primaryColor;
 
-        @Schema(description = "背景色", example = "#f5f5f5")
+        @Schema(description = "次要色 (前端字段)", example = "#4CAF50")
+        private String secondaryColor;
+
+        @Schema(description = "背景色", example = "#F5F5F5")
         private String backgroundColor;
 
-        @Schema(description = "卡片圆角", example = "8")
+        @Schema(description = "卡片圆角 (前端字段)", example = "12")
+        private Integer cardBorderRadius;
+
+        @Schema(description = "AI 卡片渐变色 (前端字段, 2 个 hex)")
+        private java.util.List<String> aiCardGradient;
+
+        @Schema(description = "文字色 (前端字段)", example = "#212121")
+        private String textColor;
+
+        @Schema(description = "卡片背景色 (前端字段)", example = "#FFFFFF")
+        private String cardBackgroundColor;
+
+        // ===== 旧字段保留兼容现有 caller =====
+
+        @Schema(description = "卡片圆角 (旧字段, 等价 cardBorderRadius)", example = "8")
         private Integer cardRadius;
 
-        @Schema(description = "卡片间距", example = "12")
+        @Schema(description = "卡片间距 (旧字段)", example = "12")
         private Integer cardGap;
 
-        @Schema(description = "字体大小比例", example = "1.0")
+        @Schema(description = "字体大小比例 (旧字段)", example = "1.0")
         private Double fontScale;
 
-        @Schema(description = "是否紧凑模式", example = "false")
+        @Schema(description = "是否紧凑模式 (旧字段)", example = "false")
         private Boolean compactMode;
     }
 
