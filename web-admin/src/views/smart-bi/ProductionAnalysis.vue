@@ -8,6 +8,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { get } from '@/api/request'
 import { useAuthStore } from '@/store/modules/auth'
+import { usePermissionStore } from '@/store/modules/permission'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { formatNumber } from '@/utils/format-number'
@@ -15,7 +16,9 @@ import { ElMessage } from 'element-plus'
 import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore()
+const permissionStore = usePermissionStore()
 const factoryId = computed(() => authStore.factoryId)
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 
 const rootRef = ref<HTMLDivElement>()
 const period = ref('month')
@@ -101,12 +104,17 @@ function processKPIs(dailySummary: TableRow[]) {
     'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
   ]
 
-  kpiData.value = [
+  // canViewPrice: 非 PRICE_VIEW_ROLES (e.g. viewer) 不显示 "总成本" KPI 卡
+  // Aligns with PR #520 UI defense + backend price-stripping policy.
+  const cards: Array<{ label: string; value: string; gradient: string }> = [
     { label: '总产量', value: formatNumber(totalOutput), gradient: gradients[0] },
     { label: '平均良率', value: avgYield.toFixed(1) + '%', gradient: gradients[1] },
-    { label: '总成本', value: '¥' + formatNumber(totalCost), gradient: gradients[2] },
-    { label: '总批次数', value: totalBatches.toString(), gradient: gradients[3] },
   ]
+  if (canViewPrice.value) {
+    cards.push({ label: '总成本', value: '¥' + formatNumber(totalCost), gradient: gradients[2] })
+  }
+  cards.push({ label: '总批次数', value: totalBatches.toString(), gradient: gradients[3] })
+  kpiData.value = cards
 }
 
 // formatNumber imported from @/utils/format-number

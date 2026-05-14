@@ -60,6 +60,9 @@ const route = useRoute();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+// canViewPrice: PR #520 pattern — entire view renders 利润/成本/应收/应付/预算 KPIs;
+// hide for non-PRICE_VIEW_ROLES (e.g. viewer) to avoid misleading empty UI.
+// Defense-in-depth: outer <template v-if> wrapper (this PR) + inner per-cell v-if (#598).
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 // Apr 24 2026 UX P0-1: restaurant tenants 没有 cost/profit 数据 (Silver 无),
 // 顶部 KPI 改显 Gold 营收/订单/客单价/门店. Manufacturing tenants 保持原样.
@@ -1903,6 +1906,7 @@ onUnmounted(() => {
       </template>
     </el-alert>
 
+    <template v-if="canViewPrice">
     <!-- 筛选栏 -->
     <el-card class="filter-card">
       <div class="filter-bar">
@@ -2437,6 +2441,8 @@ onUnmounted(() => {
 
     <!-- Day 9 数据织网 Sub-Project A: unlock more analyses CTA -->
     <UnlockMoreCTA />
+    </template>
+    <el-empty v-else description="您没有查看价格/财务数据的权限" />
   </div>
 </template>
 

@@ -33,8 +33,11 @@ import TrustIndicator from '@/components/TrustIndicator.vue';
 
 const auth = useAuthStore();
 const permissionStore = usePermissionStore();
-const canViewPrice = computed(() => permissionStore.canViewPrice);
 const router = useRouter();
+// canViewPrice: PR #520 pattern — entire page renders revenue/营收/客单价/etc;
+// hide for non-PRICE_VIEW_ROLES (e.g. viewer) to avoid misleading empty UI.
+// Defense-in-depth: outer <template v-if> wrapper (this PR) + inner per-cell v-if (#598).
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // 数据织网 Sub-Project C Day 24-25 POC: build cell-audit URL from a
 // product row. Returns undefined when entityId/fieldName missing so the
@@ -142,6 +145,7 @@ onMounted(() => {
       </el-form>
     </el-card>
 
+    <template v-if="canViewPrice">
     <el-row :gutter="16" class="kpi-row">
       <el-col v-if="canViewPrice" :span="6">
         <el-statistic title="总营收" :value="kpi?.revenue ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
@@ -286,6 +290,8 @@ onMounted(() => {
         </el-card>
       </el-col>
     </el-row>
+    </template>
+    <el-empty v-else description="您没有查看价格/营收数据的权限" />
   </div>
 </template>
 
