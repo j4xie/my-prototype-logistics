@@ -48,6 +48,7 @@ import { toApiDateString } from '@/utils/dateFormat';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import RestaurantPhaseIIPlaceholder from '@/components/smartbi/RestaurantPhaseIIPlaceholder.vue';
 import TemplateGrid from './components/TemplateGrid.vue';
 import type { ChartConfig } from '@/types/smartbi';
 // Day 9 数据织网 Sub-Project A: capability-driven card visibility
@@ -639,6 +640,13 @@ watch(dateRange, () => { if (isRestaurantTenant.value) loadGoldFinSummary(); });
 const { fetchCapability } = useCapability();
 
 onMounted(async () => {
+  // Restaurant tenants render <RestaurantPhaseIIPlaceholder> per template
+  // v-if. Skip all data fetching to avoid 404 spam against factory-only
+  // endpoints (/smart-bi/analysis/finance, /smartbi-api/capability/...).
+  if (isRestaurantTenant.value) {
+    return;
+  }
+
   // Day 9 数据织网 Sub-Project A: prime capability cache (fire-and-forget,
   // useCapability handles errors and is fail-open). Drives <CapabilityGate>
   // visibility for KPI cards below.
@@ -1045,6 +1053,8 @@ function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
 // Debounced to prevent double-fire when date picker emits start+end separately
 let financeWatchTimer: ReturnType<typeof setTimeout> | null = null;
 watch([analysisType, dateRange], () => {
+  // Restaurant tenants show placeholder — skip reactive reload.
+  if (isRestaurantTenant.value) return;
   if (selectedDataSource.value === 'system') {
     if (financeWatchTimer) clearTimeout(financeWatchTimer);
     financeWatchTimer = setTimeout(() => loadFinanceData(), 300);
@@ -1872,7 +1882,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="financePageRef" class="finance-analysis-page">
+  <!-- 餐饮租户尚未支持本页 (Phase II 建设中). 见 RestaurantPhaseIIPlaceholder. -->
+  <RestaurantPhaseIIPlaceholder v-if="isRestaurantTenant" pageName="财务数据分析" />
+  <div v-else ref="financePageRef" class="finance-analysis-page">
     <div class="page-header">
       <div class="header-left">
         <h1>财务分析</h1>

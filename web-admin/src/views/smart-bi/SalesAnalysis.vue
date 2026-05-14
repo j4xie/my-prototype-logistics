@@ -25,6 +25,7 @@ import echarts from '@/utils/echarts';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import RestaurantPhaseIIPlaceholder from '@/components/smartbi/RestaurantPhaseIIPlaceholder.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import type { ChartConfig as SmartBIChartConfig } from '@/types/smartbi';
 import {
@@ -46,6 +47,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 const rootRef = ref<HTMLDivElement>();
 const trendChartRef = ref<HTMLDivElement | null>(null);
 const pieChartRef = ref<HTMLDivElement | null>(null);
@@ -613,6 +615,13 @@ function closeDataPreview() {
 }
 
 onMounted(async () => {
+  // Restaurant tenants render <RestaurantPhaseIIPlaceholder> per template
+  // v-if. Skip all data fetching to avoid 404 spam against factory-only
+  // /smart-bi/analysis/sales endpoint.
+  if (isRestaurantTenant.value) {
+    return;
+  }
+
   // 默认选择最近30天
   const end = new Date();
   const start = new Date();
@@ -635,7 +644,10 @@ onMounted(async () => {
 });
 
 // 监听筛选条件变化 + 持久化
+// Restaurant tenants render placeholder (no filter UI) — skip watcher to
+// avoid 404 spam if hot-reload retains stale state.
 watch([dateRange, dimensionType, categoryFilter], () => {
+  if (isRestaurantTenant.value) return;
   saveFilters();
   loadSalesData();
 });
@@ -1418,7 +1430,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="rootRef" class="sales-analysis-page">
+  <!-- 餐饮租户尚未支持本页 (Phase II 建设中). 见 RestaurantPhaseIIPlaceholder. -->
+  <RestaurantPhaseIIPlaceholder v-if="isRestaurantTenant" pageName="销售数据分析" />
+  <div v-else ref="rootRef" class="sales-analysis-page">
     <div class="page-header">
       <div class="header-left">
         <h1>销售分析</h1>
