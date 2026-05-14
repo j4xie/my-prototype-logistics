@@ -1781,7 +1781,11 @@ async def _get_restaurant_overview(
     row = await conn.fetchrow(
         """
         SELECT
-            COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS total_revenue,
+            -- Defensive fallback to gross_amount when actual_receive NULL
+            -- (test smartbi_db ETL gap; prod data clean). Per task #90:
+            -- SUM(NULL) returns NULL → COALESCE chain gives gross_amount,
+            -- then 0, ensuring response shape stays valid.
+            COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS total_revenue,
             COALESCE(SUM(bill_count), 0)                    AS bill_count,
             COALESCE(SUM(customer_count), 0)                AS customer_count,
             COUNT(DISTINCT store_id)                        AS store_count
@@ -1830,7 +1834,8 @@ async def _get_restaurant_revenue_trend(
         """
         SELECT date,
                order_type,
-               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+               -- Task #90 defensive fallback to gross_amount
+               COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS amount
         FROM agg_daily_order_type_meal
         WHERE factory_id = $1
           AND date BETWEEN $2 AND $3
@@ -1889,7 +1894,8 @@ async def _get_restaurant_order_type_split(
     rows = await conn.fetch(
         """
         SELECT order_type,
-               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+               -- Task #90 defensive fallback to gross_amount
+               COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS amount
         FROM agg_daily_order_type_meal
         WHERE factory_id = $1
           AND date BETWEEN $2 AND $3
@@ -1942,7 +1948,8 @@ async def _get_restaurant_meal_period_breakdown(
     rows = await conn.fetch(
         """
         SELECT meal_period,
-               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+               -- Task #90 defensive fallback to gross_amount
+               COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS amount
         FROM agg_daily_order_type_meal
         WHERE factory_id = $1
           AND date BETWEEN $2 AND $3
@@ -2106,7 +2113,8 @@ async def _get_restaurant_avg_per_capita_trend(
     rows = await conn.fetch(
         """
         SELECT date,
-               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS revenue,
+               -- Task #90 defensive fallback to gross_amount
+               COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS revenue,
                COALESCE(SUM(customer_count), 0)                AS customer_count
         FROM agg_daily
         WHERE factory_id = $1

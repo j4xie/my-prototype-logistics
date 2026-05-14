@@ -696,12 +696,16 @@ Phase IIa Gold tables (`agg_daily`, `agg_product`, `agg_channel`, `agg_daily_ord
 
 Two patterns coexist in the codebase:
 
-1. **WHERE-clause pattern** — `analysis_production.py:190` uses `WHERE factory_id = $1` and relies on the connection-pool role having `BYPASSRLS`. This is the dispatch template Phase IIa mirrors.
-2. **GUC pattern** — `smartbi/agent/narrative_cache.py:86,130,163` and `smartbi/api/data_quality_queue_admin.py:14` explicitly call `SELECT set_config('app.factory_id', $1, true)` transaction-scoped.
+1. **WHERE-clause pattern** — `analysis_production.py:190` uses `WHERE factory_id = $1`. This is the dispatch template Phase IIa mirrors.
+2. **GUC pattern (explicit)** — `smartbi/agent/narrative_cache.py:86,130,163` and `smartbi/api/data_quality_queue_admin.py:14` explicitly call `SELECT set_config('app.factory_id', $1, true)` transaction-scoped. These code paths run **outside** the per-request auth middleware (background jobs, admin queues).
 
-**Phase IIa decision**: **Use the WHERE-clause pattern** mirroring `analysis_production.py:190`. The cretas async pool role is `cretas` (verify via `\du` in `smartbi_prod_db` before impl); per `analysis_production.py` working in prod today, this role either has BYPASSRLS or the `app.factory_id` GUC is set elsewhere upstream (FastAPI middleware?). Sister-chat impl must verify with `\du` and add a one-line comment in the new restaurant dispatcher: `# RLS: relies on connection pool role BYPASSRLS (analysis_production.py:190 pattern)`. If `\du` reveals the role does NOT have BYPASSRLS, fall back to the GUC pattern with one `set_config` call at the start of each request.
+**Phase IIa decision**: **Use the WHERE-clause pattern** mirroring `analysis_production.py:190`. WHERE-clause is sufficient because, although the `smartbi_user` pool role does **NOT** have `BYPASSRLS` (verified during Phase IIa impl via `\du smartbi_user` on `smartbi_prod_db` — PR-A chat finding 2026-05-14), the `auth_middleware.py:220` pool setup hook **automatically issues `SELECT set_config('app.factory_id', $1, true)` per acquired connection** from the JWT factoryId. RLS policies on `agg_daily` / `agg_product` / etc. auto-scope every query downstream — the WHERE-clause is belt-and-suspenders within the RLS-protected layer.
 
-**Why not the GUC pattern**: The dispatch template (`analysis_production.py`) is already in prod using WHERE-clause without issue — switching mid-implementation risks divergence and untested code paths. The cycle-2 finding is a documentation gap, not a code defect.
+**Therefore**: Sister-chat impl does NOT need to add explicit `set_config` calls in restaurant query helpers under `/api/mobile/...` endpoints. The WHERE-clause + middleware GUC combination works because every request enters via the auth middleware path. Code paths that bypass the middleware (background workers, scheduled cleaners) still need the explicit GUC pattern.
+
+**Why not pure GUC pattern in helpers**: Belt-and-suspenders is the existing prod pattern. Switching mid-implementation risks divergence and untested code paths.
+
+> **Cycle-5 amendment (post Phase IIa ship, 2026-05-14)**: The original cycle-2 spec language said "the cretas async pool role is `cretas` ... either has BYPASSRLS or the `app.factory_id` GUC is set elsewhere upstream". PR-A chat verified during impl: pool role is actually `smartbi_user` (not `cretas`), and it does **NOT** have BYPASSRLS. The "GUC set upstream" alternative is the actual mechanism — via `auth_middleware.py:220` pool-setup-callback reading the request JWT. This amendment corrects the BYPASSRLS hypothesis without changing the Phase IIa code (which works correctly).
 
 ### 6.4 Phase IIb Data Backfill
 
