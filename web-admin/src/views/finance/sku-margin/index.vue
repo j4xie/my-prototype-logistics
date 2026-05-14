@@ -175,6 +175,15 @@ async function loadData() {
   loading.value = true;
   noCostDataNotice.value = { show: false, batchProductCount: 0 };
   try {
+    // #592 Finding 1: AI intent path can't plumb date/customer filters.
+    // If user has any filter set, skip AI intent and go straight to fallback
+    // (which honors startDate/endDate). Prevents silently-ignored filters.
+    const hasFilters = !!(dateRange.value && dateRange.value[0]);
+    if (hasFilters) {
+      await loadFromBatches();
+      return;
+    }
+
     // Try the AI intent API for aggregated SKU margin data
     const intentRes = await post<{
       status?: string;
@@ -183,6 +192,15 @@ async function loadData() {
     }>(`/${factoryId.value}/ai-intents/execute`, {
       userInput: '查询SKU毛利率排名',
     });
+
+    // #592 Finding 3: surface NEED_CLARIFICATION instead of silently falling
+    // through to fallback. User sees an explicit hint so they know the AI
+    // intent path is uncertain; behavior still falls through to batches data.
+    if (intentRes.success && intentRes.data?.status === 'NEED_CLARIFICATION') {
+      ElMessage.info('AI 意图识别置信度偏低, 已切换到批次聚合视图');
+      await loadFromBatches();
+      return;
+    }
 
     if (intentRes.success && intentRes.data) {
       const payload = intentRes.data.data || intentRes.data.result || intentRes.data;
@@ -289,48 +307,6 @@ async function loadFromBatches() {
     tableData.value = [];
     pagination.value.total = 0;
   }
-}
-
-/**
- * Sample data for demonstration when no real API data is available.
- * TODO: Remove this once the SKU margin API endpoint is implemented.
- */
-function loadSampleData() {
-  const sampleProducts = [
-    { name: '红烧牛肉', materialCost: 12.5, laborCost: 3.2, sellingPrice: 28.0, qty: 850 },
-    { name: '糖醋排骨', materialCost: 14.0, laborCost: 3.5, sellingPrice: 32.0, qty: 620 },
-    { name: '麻辣鸡丁', materialCost: 8.5, laborCost: 2.8, sellingPrice: 22.0, qty: 1200 },
-    { name: '清蒸鲈鱼', materialCost: 18.0, laborCost: 4.0, sellingPrice: 38.0, qty: 320 },
-    { name: '宫保虾仁', materialCost: 16.5, laborCost: 3.8, sellingPrice: 35.0, qty: 450 },
-    { name: '番茄炒蛋', materialCost: 3.5, laborCost: 1.5, sellingPrice: 12.0, qty: 2100 },
-    { name: '酸菜鱼片', materialCost: 11.0, laborCost: 3.0, sellingPrice: 26.0, qty: 780 },
-    { name: '干锅花菜', materialCost: 4.0, laborCost: 2.0, sellingPrice: 15.0, qty: 1500 },
-    { name: '水煮肉片', materialCost: 10.5, laborCost: 3.2, sellingPrice: 25.0, qty: 900 },
-    { name: '蒜蓉西兰花', materialCost: 3.0, laborCost: 1.2, sellingPrice: 10.0, qty: 1800 },
-    { name: '剁椒鱼头', materialCost: 20.0, laborCost: 4.5, sellingPrice: 42.0, qty: 280 },
-    { name: '香辣蟹', materialCost: 25.0, laborCost: 5.0, sellingPrice: 48.0, qty: 200 },
-    { name: '回锅肉', materialCost: 9.0, laborCost: 2.5, sellingPrice: 20.0, qty: 1100 },
-    { name: '蛋炒饭', materialCost: 2.0, laborCost: 1.0, sellingPrice: 8.0, qty: 3000 },
-    { name: '麻婆豆腐', materialCost: 3.5, laborCost: 1.5, sellingPrice: 12.0, qty: 1600 },
-  ];
-
-  tableData.value = sampleProducts.map(p => {
-    const unitCost = Math.round((p.materialCost + p.laborCost) * 100) / 100;
-    const marginRate = p.sellingPrice > 0
-      ? Math.round(((p.sellingPrice - unitCost) / p.sellingPrice) * 1000) / 10
-      : 0;
-    return {
-      productName: p.name,
-      quantity: p.qty,
-      materialCost: Math.round(p.materialCost * p.qty * 100) / 100,
-      laborCost: Math.round(p.laborCost * p.qty * 100) / 100,
-      totalCost: Math.round(unitCost * p.qty * 100) / 100,
-      unitCost,
-      sellingPrice: p.sellingPrice,
-      marginRate,
-    };
-  });
-  pagination.value.total = tableData.value.length;
 }
 
 // ---------- helpers ----------
