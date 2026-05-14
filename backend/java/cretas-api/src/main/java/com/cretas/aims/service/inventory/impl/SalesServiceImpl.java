@@ -807,8 +807,18 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     public List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId) {
-        // D1: warehouse strategy per PR #310 §5 — sales 批次预占 WH-LOG fixed (D5 销售只从 WH-LOG 出).
-        String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+        // 老路径 — 维持 D5 WH-LOG 默认。委托给三参版本传 null sourceWarehouseCode 走 fallback.
+        return getAvailableBatches(factoryId, productTypeId, null);
+    }
+
+    @Override
+    public List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId,
+                                                        String sourceWarehouseCode) {
+        // T4-D5 #572 Phase B-1: honor caller-supplied sourceWarehouseCode (PR #547/#564 chain).
+        // null/blank → WH-LOG fallback (D5 默认行为, Phase A 一致).
+        String warehouseId = (sourceWarehouseCode != null && !sourceWarehouseCode.isBlank())
+                ? warehouseResolver.resolveId(factoryId, sourceWarehouseCode)
+                : warehouseResolver.resolveLogisticsId(factoryId);
         return finishedGoodsBatchRepository
                 .findAvailableBatchesByWarehouse(factoryId, productTypeId, warehouseId);
     }

@@ -271,12 +271,15 @@ public class SalesController {
     }
 
     @GetMapping("/finished-goods/available")
-    @Operation(summary = "查询可用成品批次（按产品）")
+    @Operation(summary = "查询可用成品批次（按产品 + 可选 sourceWarehouseCode）")
     @RequirePermission({"sales:read_write", "sales:read", "inventory:read"})
     public ApiResponse<List<FinishedGoodsBatch>> getAvailableBatches(
             @PathVariable @NotBlank String factoryId,
-            @RequestParam @NotBlank String productTypeId) {
-        List<FinishedGoodsBatch> batches = salesService.getAvailableBatches(factoryId, productTypeId);
+            @RequestParam @NotBlank String productTypeId,
+            @RequestParam(required = false) String sourceWarehouseCode) {
+        // T4-D5 #572 Phase B-1: sourceWarehouseCode 可选; null/空时回落 WH-LOG (D5 默认).
+        List<FinishedGoodsBatch> batches = salesService.getAvailableBatches(
+                factoryId, productTypeId, sourceWarehouseCode);
         return ApiResponse.success("查询成功", batches);
     }
 
