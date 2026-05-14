@@ -1,0 +1,46 @@
+{
+  "runAt": null,
+  "target": "http://139.196.165.140:8086",
+  "factory": "R_XMX_CHAIN",
+  "scriptVersion": "scaffold-2026-05-14",
+  "status": "PENDING_RUN",
+  "note": "Scaffold-only. Results to be populated by `cd scripts/customer-audit-e2e-2026-05-14-xmx && npm install && node run-coverage.mjs --all`. See coverage-summary.md §0 for scope rationale and §5 for run instructions.",
+  "preflightChecks": {
+    "auth_path_reachable": "PASS",
+    "auth_path_url": "http://139.196.165.140:8086/api/mobile/auth/unified-login",
+    "preflight_login_attempt": "PROBE_GOT_429_RATE_LIMITED",
+    "preflight_login_attempt_note": "Probe at 2026-05-14T11:24:41 returned HTTP 429 (per-username 60s rate-limit). Endpoint is reachable; auth credentials assumed but not verified end-to-end.",
+    "xmx_admin_password_assumed": "123456",
+    "xmx_admin_password_verified": false,
+    "user_count_in_factory": 1,
+    "user_roles_available": ["factory_super_admin"],
+    "rbac_test_feasibility": "blocked_by_single_user_constraint",
+    "playwright_installed_in_worktree": false,
+    "playwright_install_command": "cd scripts/customer-audit-e2e-2026-05-14-xmx && npm install"
+  },
+  "scenarios": [
+    { "tag": "S-XMX-T1-1-production-plan-page", "group": "SMOKE", "askRef": "T1-1", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T2-2-modules-nav", "group": "NAV", "askRef": "T2-2", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T2-4-rpf-chain-pages", "group": "NAV", "askRef": "T2-4", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T2-5-sales-order-list", "group": "DATA", "askRef": "T2-5", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T3-1-purchase-order-list", "group": "DATA", "askRef": "T3-1", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T3-5-approval-chain-page", "group": "NAV", "askRef": "T3-5", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T3-7-receive-qty-multi", "group": "DATA", "askRef": "T3-7", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T3-8-pdf-print-btn", "group": "SMOKE", "askRef": "T3-8", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T4-B1-production-process", "group": "DATA", "askRef": "T4-B1", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T4-B5-warehouse-inventory", "group": "DATA", "askRef": "T4-B5", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T4-B9-manual-transfer", "group": "NAV", "askRef": "T4-B9", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-T4-D1-warehouse-label", "group": "DATA", "askRef": "T4-D1", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-GOLD-dim-ingredient", "group": "GOLD", "askRef": "chat3 #539", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-GOLD-recipe-presence", "group": "GOLD", "askRef": "chat3 #539", "status": "PENDING_RUN" },
+    { "tag": "S-XMX-GOLD-wastage-presence", "group": "GOLD", "askRef": "chat3 #539", "status": "PENDING_RUN" }
+  ],
+  "tally": {
+    "PENDING_RUN": 15,
+    "PASS": 0,
+    "FAIL": 0,
+    "PARTIAL": 0,
+    "ERROR": 0,
+    "INFO": 0
+  }
+}
