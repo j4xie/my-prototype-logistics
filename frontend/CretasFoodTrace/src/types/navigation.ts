@@ -342,6 +342,11 @@ export type FAManagementStackParamList = {
   DisposalRecordManagement: undefined;
   // Schema 配置 (AI 创建字段)
   SchemaConfig: undefined;
+  // 低代码页面编辑器 (Track A C-CANVAS-PAGE)
+  PageEditor: {
+    pageId?: string;
+    pageType?: 'home' | 'dashboard' | 'list' | 'detail' | 'form';
+  } | undefined;
   // 规则配置 (Drools 规则 + 状态机)
   RuleConfiguration: undefined;
   // AI 智能初始化业务数据 (P1.5)

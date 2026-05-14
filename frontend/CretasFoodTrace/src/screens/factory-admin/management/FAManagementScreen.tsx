@@ -265,6 +265,13 @@ export function FAManagementScreen() {
               onPress={() => navigation.navigate('SchemaConfig')}
             />
             <GridItem
+              icon="view-grid-plus"
+              title={t('management.pageEditor', '页面编辑器')}
+              color="#5a4ad1"
+              testID="fa-page-editor-btn"
+              onPress={() => navigation.navigate('PageEditor', { pageType: 'home' })}
+            />
+            <GridItem
               icon="file-document-multiple-outline"
               title={t('formTemplate.title', '表单模版')}
               color="#722ed1"
