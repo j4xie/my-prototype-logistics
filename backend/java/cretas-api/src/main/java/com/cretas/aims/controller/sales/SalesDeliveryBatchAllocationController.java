@@ -52,12 +52,15 @@ public class SalesDeliveryBatchAllocationController {
     }
 
     @GetMapping("/recommend-fifo")
-    @Operation(summary = "FIFO 成品批次推荐（按生产日期升序）")
+    @Operation(summary = "FIFO 成品批次推荐（按生产日期升序）",
+            description = "T4-D5 (#572): sourceWarehouseCode 可选 — 指定则从对应仓库 FIFO 推荐, 缺省 = WH-LOG.")
     public ApiResponse<List<Map<String, Object>>> recommendFifo(
             @PathVariable String factoryId,
             @RequestParam String productTypeId,
-            @RequestParam BigDecimal requiredQty) {
-        return ApiResponse.success("FIFO 推荐 (按生产日期升序)", service.recommendFifo(factoryId, productTypeId, requiredQty));
+            @RequestParam BigDecimal requiredQty,
+            @RequestParam(required = false) String sourceWarehouseCode) {
+        return ApiResponse.success("FIFO 推荐 (按生产日期升序)",
+                service.recommendFifo(factoryId, productTypeId, requiredQty, sourceWarehouseCode));
     }
 
     @RequirePermission({"sales:read_write"})

@@ -63,7 +63,18 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
                     .withHint("请先在发货单中设置发货数量").withHintTarget("deliveredQuantity");
         }
 
-        // 2. 校验每一条 allocation：batch 存在、同工厂、有足够可用库存
+        // T4-D5 (#572): resolve the expected source warehouse for this delivery line.
+        // sourceWarehouseCode is per-row (PR #547/#564); null/blank → WH-LOG (legacy default).
+        String expectedWarehouseId;
+        String expectedWarehouseCode = item.getSourceWarehouseCode();
+        if (expectedWarehouseCode != null && !expectedWarehouseCode.isBlank()) {
+            expectedWarehouseId = warehouseResolver.resolveId(factoryId, expectedWarehouseCode);
+        } else {
+            expectedWarehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+            expectedWarehouseCode = "WH-LOG";
+        }
+
+        // 2. 校验每一条 allocation：batch 存在、同工厂、warehouse 匹配、有足够可用库存
         BigDecimal total = BigDecimal.ZERO;
         List<SalesDeliveryItemBatchAllocation> toPersist = new ArrayList<>();
         for (BatchAllocationDTO dto : allocations) {
@@ -81,6 +92,14 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
             if (!factoryId.equals(batch.getFactoryId())) {
                 throw new BusinessException(403, "成品批次不属于当前工厂: " + dto.getFinishedGoodsBatchId())
                         .withHint("跨工厂调用被拒绝, 请选择本工厂的成品批次").withHintTarget("finishedGoodsBatchId");
+            }
+            // T4-D5 (#572): batch.warehouseId must match line's declared sourceWarehouseCode.
+            // Blocks manual pickers from bypassing the line's intended warehouse.
+            if (!expectedWarehouseId.equals(batch.getWarehouseId())) {
+                throw new BusinessException(409, "成品批次 " + batch.getBatchNumber()
+                        + " 所在仓库与发货行声明的来源仓库 " + expectedWarehouseCode + " 不匹配")
+                        .withHint("请选择 " + expectedWarehouseCode + " 仓库内的成品批次, 或修改发货行的来源仓库")
+                        .withHintTarget("finishedGoodsBatchId");
             }
             BigDecimal available = batch.getProducedQuantity()
                     .subtract(batch.getShippedQuantity() == null ? BigDecimal.ZERO : batch.getShippedQuantity())
@@ -129,7 +148,7 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
     }
 
     @Override
-    public List<Map<String, Object>> recommendFifo(String factoryId, String productTypeId, BigDecimal requiredQty) {
+    public List<Map<String, Object>> recommendFifo(String factoryId, String productTypeId, BigDecimal requiredQty, String sourceWarehouseCode) {
         if (factoryId == null || factoryId.isBlank()) {
             throw new BusinessException(400, "factoryId 不能为空")
                     .withHint("请重新登录获取有效的工厂上下文").withHintTarget("factoryId");
@@ -143,8 +162,11 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
                     .withHint("请输入大于 0 的需求数量").withHintTarget("requiredQty");
         }
 
-        // D1: warehouse strategy per PR #310 §5 — sales FIFO 推荐 WH-LOG fixed (D5).
-        String warehouseId = warehouseResolver.resolveLogisticsId(factoryId);
+        // T4-D5 (#572): honor caller-supplied sourceWarehouseCode (PR #547/#564 data contract).
+        // Legacy callers passing null fall back to WH-LOG — preserves D5 default.
+        String warehouseId = (sourceWarehouseCode != null && !sourceWarehouseCode.isBlank())
+                ? warehouseResolver.resolveId(factoryId, sourceWarehouseCode)
+                : warehouseResolver.resolveLogisticsId(factoryId);
         var batches = finishedGoodsBatchRepository
                 .findAvailableBatchesFifoByWarehouse(factoryId, productTypeId, warehouseId);
 
