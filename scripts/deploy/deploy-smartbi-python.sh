@@ -255,6 +255,11 @@ restart_test_via_nohup() {
         FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
         INTERNAL_API_SECRET=cretas-internal-sec-87a9caca9f57b1f2 \
         LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
+        LLM_ALIYUN_A_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
+        LLM_ALIYUN_B_API_KEY=sk-3347ece751f2451086f130840ee83177 \
+        LLM_ALIYUN_C_API_KEY=sk-6be4d53e16434ccf891b555d0010a736 \
+        LLM_ZHIPU_API_KEY=20bd1a838cf143d6a63a14190f354969.aMb9Utno1zApuUgu \
+        LLM_DEEPSEEK_API_KEY=sk-008669a2c5e04d0f90e827fbdee03892 \
         LLM_MODEL=qwen3-max-2026-01-23 LLM_FAST_MODEL=qwen3.5-flash \
         LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3-vl-plus-2025-12-19 \
         JWT_SECRET=cretas-jwt-secret-key-2026-test \

@@ -1,7 +1,7 @@
 """Audit tests for free-quota fallback in common/llm_router.py.
 
 Goal: verify the SLOT_MODELS dict + DEFAULT_CHAIN
-([aliyun_b, aliyun_a, zhipu, aliyun_a_deepseek]) auto-detect model
+([aliyun_c, aliyun_b, aliyun_a, zhipu, aliyun_a_deepseek]) auto-detect model
 exhaustion and switch to the next provider as expected.
 
 These mock httpx so no real API calls happen — pure routing-logic verification.
@@ -16,8 +16,11 @@ Failure-trigger cases per `_is_quota_exhausted`:
 History:
 - Initial chain pre-#577: [aliyun_b, aliyun_a, zhipu, deepseek-official]
 - Post-#578: 5-provider with aliyun_a_deepseek inserted before deepseek-official
-- Post-#580 Option 2 (this file's current shape): 4-provider, deepseek-official
-  dropped since aliyun_a_deepseek covers DeepSeek-class quality on free tier.
+- Post-#580 Option 2: 4-provider, deepseek-official dropped since
+  aliyun_a_deepseek covers DeepSeek-class quality on free tier.
+- May 14 2026 (this file's current shape): added aliyun_c at chain HEAD —
+  3rd Aliyun bailian account with brand-new free quota. Chain is now
+  5-provider: [aliyun_c, aliyun_b, aliyun_a, zhipu, aliyun_a_deepseek].
 """
 from __future__ import annotations
 
@@ -57,7 +60,8 @@ class _ScriptedClient:
     Note: `aliyun_a` and `aliyun_a_deepseek` share the same DashScope endpoint
     AND the same API key. We differentiate by the `model` name in the request
     payload — DeepSeek-class models route to `aliyun_a_deepseek`, qwen-*
-    models route to `aliyun_a`.
+    models route to `aliyun_a`. `aliyun_c` also uses the DashScope endpoint
+    but has its own distinct API key (key_c).
     """
 
     def __init__(self, route_responses: Dict[str, MagicMock]):
@@ -69,10 +73,13 @@ class _ScriptedClient:
         # Find which account this URL+model belongs to
         account = None
         if "dashscope.aliyuncs.com" in url:
-            # Differentiate aliyun_a vs aliyun_b by api_key, then split
-            # aliyun_a vs aliyun_a_deepseek by model class.
+            # All three Aliyun accounts (c/b/a) hit the same DashScope endpoint;
+            # differentiate by api_key, then split aliyun_a vs aliyun_a_deepseek
+            # by model class.
             api_key = (headers or {}).get("Authorization", "")
-            if "key_b" in api_key:
+            if "key_c" in api_key:
+                account = "aliyun_c"
+            elif "key_b" in api_key:
                 account = "aliyun_b"
             elif "key_a" in api_key:
                 # Same endpoint+key serves both `aliyun_a` (qwen-*) and
@@ -92,10 +99,19 @@ class _ScriptedClient:
 
 
 def _patch_provider_keys(monkeypatch):
-    """Set fake API keys for all 4 providers so _provider_config returns them."""
+    """Set fake API keys for all 4 providers so _provider_config returns them.
+    (aliyun_a_deepseek reuses aliyun_a's key; no separate env var.)"""
+    monkeypatch.setenv("LLM_ALIYUN_C_API_KEY", "key_c_fake")
     monkeypatch.setenv("LLM_ALIYUN_A_API_KEY", "key_a_fake")
     monkeypatch.setenv("LLM_ALIYUN_B_API_KEY", "key_b_fake")
     monkeypatch.setenv("LLM_ZHIPU_API_KEY", "key_zhipu_fake")
+
+
+# Default "skip aliyun_c" canned response for tests that exercise the
+# downstream chain. aliyun_c sits at chain HEAD post-May-14; tests that
+# focus on b→a→zhipu→deepseek narratives prepend this so the chain head
+# fails as quota-exhausted and falls through to the original test scope.
+_C_QUOTA_OUT = _fake_response(403, body='AllocationQuota.FreeTierOnly')
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -107,6 +123,7 @@ async def test_b_quota_exhausted_falls_back_to_a(monkeypatch):
 
     success_payload = {"choices": [{"message": {"content": "ok from a"}}]}
     client = _ScriptedClient({
+        "aliyun_c": _C_QUOTA_OUT,  # chain HEAD — skip with quota-exhausted
         "aliyun_b": _fake_response(
             403,
             body='{"code":"AllocationQuota.FreeTierOnly","message":"quota out"}',
@@ -120,13 +137,14 @@ async def test_b_quota_exhausted_falls_back_to_a(monkeypatch):
 
     # Verify result came from aliyun_a, not aliyun_b
     assert result == success_payload
-    # Verify both providers were tried in correct order
+    # Verify chain head was probed first, then b → a
     accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a"]
-    # Verify the new model names were used (post-PR-#578 picks)
+    assert accounts_tried == ["aliyun_c", "aliyun_b", "aliyun_a"]
+    # Verify the new model names were used (post-PR-#578 + #aliyun_c picks)
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[0] == "qwen-max"             # aliyun_b CHAT
-    assert models_tried[1] == "qwen3.6-max-preview"  # aliyun_a CHAT
+    assert models_tried[0] == "qwen-flash"            # aliyun_c CHAT (benchmark winner 1.4s)
+    assert models_tried[1] == "qwen-max"              # aliyun_b CHAT
+    assert models_tried[2] == "qwen3.6-max-preview"   # aliyun_a CHAT
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -138,6 +156,7 @@ async def test_429_triggers_fallback(monkeypatch):
 
     success_payload = {"choices": [{"message": {"content": "ok"}}]}
     client = _ScriptedClient({
+        "aliyun_c": _C_QUOTA_OUT,
         "aliyun_b": _fake_response(429, body="rate limit hit"),
         "aliyun_a": _fake_response(200, json_payload=success_payload),
     })
@@ -147,10 +166,11 @@ async def test_429_triggers_fallback(monkeypatch):
 
     assert result == success_payload
     accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a"]
+    assert accounts_tried == ["aliyun_c", "aliyun_b", "aliyun_a"]
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[0] == "qwen3.5-122b-a10b"   # aliyun_b MAPPER (post-#578)
-    assert models_tried[1] == "qwen3.5-122b-a10b"   # aliyun_a MAPPER
+    assert models_tried[0] == "qwen-turbo"          # aliyun_c MAPPER (benchmark winner 1.2s)
+    assert models_tried[1] == "qwen3.5-122b-a10b"   # aliyun_b MAPPER (post-#578)
+    assert models_tried[2] == "qwen3.5-122b-a10b"   # aliyun_a MAPPER
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -162,6 +182,7 @@ async def test_full_cascade_to_zhipu(monkeypatch):
 
     success_payload = {"choices": [{"message": {"content": "ok zhipu"}}]}
     client = _ScriptedClient({
+        "aliyun_c": _C_QUOTA_OUT,
         "aliyun_b": _fake_response(403, body='AllocationQuota.FreeTierOnly'),
         "aliyun_a": _fake_response(429),
         "zhipu":    _fake_response(200, json_payload=success_payload),
@@ -172,11 +193,12 @@ async def test_full_cascade_to_zhipu(monkeypatch):
 
     assert result == success_payload
     accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu"]
+    assert accounts_tried == ["aliyun_c", "aliyun_b", "aliyun_a", "zhipu"]
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[0] == "qwen3.5-397b-a17b"   # aliyun_b REASONING (post-#578)
-    assert models_tried[1] == "qwen3.5-397b-a17b"   # aliyun_a REASONING
-    assert models_tried[2] == "glm-4.5-air"         # zhipu REASONING
+    assert models_tried[0] == "deepseek-v4-pro"     # aliyun_c REASONING (benchmark winner: best depth+structure)
+    assert models_tried[1] == "qwen3.5-397b-a17b"   # aliyun_b REASONING (post-#578)
+    assert models_tried[2] == "qwen3.5-397b-a17b"   # aliyun_a REASONING
+    assert models_tried[3] == "glm-4.5-air"         # zhipu REASONING
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -184,14 +206,15 @@ async def test_full_cascade_to_zhipu(monkeypatch):
 # ────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_cascade_to_aliyun_a_deepseek(monkeypatch):
-    """When aliyun_b/aliyun_a/zhipu all exhaust, chain reaches the 4th
-    provider — aliyun_a_deepseek — which routes deepseek-v4-pro via the
-    DashScope free pool.
+    """When aliyun_c/aliyun_b/aliyun_a/zhipu all exhaust, chain reaches the
+    5th (and final) provider — aliyun_a_deepseek — which routes
+    deepseek-v4-pro via the DashScope free pool.
     """
     _patch_provider_keys(monkeypatch)
 
     success_payload = {"choices": [{"message": {"content": "ok ds"}}]}
     client = _ScriptedClient({
+        "aliyun_c":          _C_QUOTA_OUT,
         "aliyun_b":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
         "aliyun_a":          _fake_response(429),
         "zhipu":             _fake_response(429),
@@ -203,9 +226,9 @@ async def test_cascade_to_aliyun_a_deepseek(monkeypatch):
 
     assert result == success_payload
     accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
+    assert accounts_tried == ["aliyun_c", "aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
     models_tried = [m for _, m in client.call_log]
-    assert models_tried[3] == "deepseek-v4-pro"
+    assert models_tried[4] == "deepseek-v4-pro"
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -216,6 +239,7 @@ async def test_all_exhausted_raises(monkeypatch):
     _patch_provider_keys(monkeypatch)
 
     client = _ScriptedClient({
+        "aliyun_c":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
         "aliyun_b":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
         "aliyun_a":          _fake_response(403, body='AllocationQuota.FreeTierOnly'),
         "zhipu":             _fake_response(429),
@@ -226,9 +250,9 @@ async def test_all_exhausted_raises(monkeypatch):
     with pytest.raises(RuntimeError, match="All providers exhausted"):
         await call_chain(SLOT.CHAT, {"messages": []})
 
-    # Verify all 4 providers in chain order were tried
+    # Verify all 5 providers in chain order were tried
     accounts_tried = [a for a, _ in client.call_log]
-    assert accounts_tried == ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
+    assert accounts_tried == ["aliyun_c", "aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -240,6 +264,7 @@ async def test_5xx_also_falls_through(monkeypatch):
 
     success_payload = {"choices": [{"message": {"content": "ok"}}]}
     client = _ScriptedClient({
+        "aliyun_c": _C_QUOTA_OUT,
         "aliyun_b": _fake_response(503, body="service unavailable"),
         "aliyun_a": _fake_response(200, json_payload=success_payload),
     })
@@ -248,14 +273,15 @@ async def test_5xx_also_falls_through(monkeypatch):
     result = await call_chain(SLOT.INSIGHTS, {"messages": []})
 
     assert result == success_payload
-    assert [a for a, _ in client.call_log] == ["aliyun_b", "aliyun_a"]
+    assert [a for a, _ in client.call_log] == ["aliyun_c", "aliyun_b", "aliyun_a"]
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 7: Verify chain order is the 4-provider all-free chain
+# Test 7: Verify chain order is the 5-provider all-free chain
 # ────────────────────────────────────────────────────────────────────────
-def test_default_chain_order_is_4_free_providers():
+def test_default_chain_order_is_5_free_providers():
     assert llm_router.DEFAULT_CHAIN == [
+        "aliyun_c",
         "aliyun_b",
         "aliyun_a",
         "zhipu",
@@ -264,14 +290,26 @@ def test_default_chain_order_is_4_free_providers():
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Test 8: Verify all SLOT_MODELS picks (current state per PR #578 + #580)
+# Test 8: Verify all SLOT_MODELS picks (current state per PR #578 + #580 + May 14 aliyun_c)
 # ────────────────────────────────────────────────────────────────────────
 def test_slot_models_match_current_audit():
     """Sanity check: each model in SLOT_MODELS matches the May 13 2026 audit
     (live-probe + Steve console-screenshot fused — see
-    tests/qa-llm-quota/audit-matrix.md).
+    tests/qa-llm-quota/audit-matrix.md) plus the May 14 aliyun_c additions
+    (Steve-provided allowlist of 7 SKUs, see llm_router.py docstring).
     """
     sm = llm_router.SLOT_MODELS
+
+    # aliyun_c (May 14 2026 additions — speed+quality benchmark winners per SLOT,
+    # see tests/qa-llm-quota/2026-05-14-aliyun-c-benchmark.md;
+    # NO other SKU may be used on this account)
+    assert sm[SLOT.CHAT]["aliyun_c"] == "qwen-flash"
+    assert sm[SLOT.INSIGHTS]["aliyun_c"] == "qwen-flash"
+    assert sm[SLOT.CHART]["aliyun_c"] == "qwen-turbo"
+    assert sm[SLOT.MAPPER]["aliyun_c"] == "qwen-turbo"
+    assert sm[SLOT.REASONING]["aliyun_c"] == "deepseek-v4-pro"
+    assert sm[SLOT.VL]["aliyun_c"] == "qwen3-vl-plus-2025-12-19"
+    assert sm[SLOT.REVIEW]["aliyun_c"] == "qwen3-max-2026-01-23"
 
     # aliyun_b
     assert sm[SLOT.CHAT]["aliyun_b"] == "qwen-max"
@@ -280,7 +318,7 @@ def test_slot_models_match_current_audit():
     assert sm[SLOT.MAPPER]["aliyun_b"] == "qwen3.5-122b-a10b"
     assert sm[SLOT.REASONING]["aliyun_b"] == "qwen3.5-397b-a17b"
     assert sm[SLOT.VL]["aliyun_b"] == "qwen3-vl-plus-2025-12-19"
-    assert sm[SLOT.REVIEW]["aliyun_b"] == "deepseek-r1-distill-qwen-32b"
+    assert sm[SLOT.REVIEW]["aliyun_b"] == "qwen-max"  # May 14 fix: was deepseek-r1-distill-qwen-32b (empty output bug)
 
     # aliyun_a
     assert sm[SLOT.CHAT]["aliyun_a"] == "qwen3.6-max-preview"
@@ -301,6 +339,45 @@ def test_slot_models_match_current_audit():
         assert sm[slot]["aliyun_a_deepseek"] == "deepseek-v4-pro", f"{slot.value}/aliyun_a_deepseek wrong"
     assert sm[SLOT.VL]["aliyun_a_deepseek"] is None
     assert sm[SLOT.REVIEW]["aliyun_a_deepseek"] is None
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Test 8b: aliyun_c allowlist guard — only 7 Steve-approved SKUs may be used
+# ────────────────────────────────────────────────────────────────────────
+def test_aliyun_c_uses_only_steve_allowlist():
+    """Steve provided an explicit list of free-quota SKUs available on the
+    new aliyun_c bailian account (May 14 2026 screenshot). The router must
+    use ONLY SKUs from that allowlist on this account — even if quota
+    exhausts, fall through to aliyun_b/a/zhipu per the chain rather than
+    silently swap in another aliyun_c SKU outside the list.
+
+    Source: conversation 2026-05-14 + llm_router.py docstring HARD CONSTRAINT.
+    """
+    STEVE_APPROVED_C_SKUS = {
+        # In use (May 14 2026 — benchmark winners, see
+        # tests/qa-llm-quota/2026-05-14-aliyun-c-benchmark.md):
+        "qwen-flash",
+        "qwen-turbo",
+        "deepseek-v4-pro",
+        "qwen3-vl-plus-2025-12-19",
+        "qwen3-max-2026-01-23",
+        # Bonus available SKUs on C (allowlist-OK, currently unused):
+        # qwen-max, qwen-plus, qwen3.6-flash, qwen3.6-max-preview,
+        # qwen3.6-35b-a3b, qwen3.5-flash, qwen3.5-flash-2026-02-23,
+        # qwen3.5-122b-a10b, qwen3.5-397b-a17b, glm-5, glm-4.5-air,
+        # deepseek-r1, deepseek-r1-distill-qwen-32b, deepseek-v3.2,
+        # deepseek-v3.2-exp, deepseek-v4-flash, etc.
+        # If adding any here, mirror in llm_router.py allowlist comment.
+    }
+    sm = llm_router.SLOT_MODELS
+    for slot, providers in sm.items():
+        c_sku = providers.get("aliyun_c")
+        if c_sku is None:
+            continue  # skipping a slot on C is fine
+        assert c_sku in STEVE_APPROVED_C_SKUS, (
+            f"aliyun_c SLOT.{slot.value} uses '{c_sku}' which is NOT on "
+            f"Steve's May-14 approved allowlist. Either remove or get new approval."
+        )
 
 
 # ────────────────────────────────────────────────────────────────────────

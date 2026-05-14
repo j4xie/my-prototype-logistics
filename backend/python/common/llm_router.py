@@ -145,16 +145,45 @@ class SLOT(str, Enum):
 
 
 # ─── Slot → per-provider model name ───
-# May 13 2026 mid-month re-audit + #580 Option 2 simplification.
+# May 14 2026 — added aliyun_c (3rd Aliyun bailian account, brand-new free
+# quota intact). May 13 2026 mid-month re-audit + #580 Option 2 simplification.
 #
 # Audit sources (per `tests/qa-llm-quota/audit-matrix.md`):
 #   1. Live SKU probe vs prod keys.
 #   2. Steve console-screenshot audit (Aliyun bailian + Zhipu open.bigmodel).
 #
 # Working free SKUs in use:
+#   aliyun_c: NEW account May 14 2026 — SKU choices driven by speed+quality
+#             benchmark (scripts/benchmark-llm-account.py, results in
+#             tests/qa-llm-quota/2026-05-14-aliyun-c-benchmark.md). For each
+#             SLOT, 4-6 allowlist-approved candidates were run 3× with a
+#             representative prompt; the winner per SLOT was chosen on
+#             combined latency + output quality:
+#               CHAT      : qwen-flash               (1.4s, clean concise, no hallucination)
+#               INSIGHTS  : qwen-flash               (1.2s, 1-sentence精炼洞察, 26 tokens)
+#               CHART     : qwen-turbo               (1.1s, valid compact JSON; glm-5 was 60s)
+#               MAPPER    : qwen-turbo               (1.2s, correct mapping direction)
+#               REASONING : deepseek-v4-pro          (22.7s, best depth+structure; acceptable
+#                                                    latency for non-interactive REASONING)
+#               VL        : qwen3-vl-plus-2025-12-19 (only allowlist VL option;
+#                                                    -2025-05-07 is 404 NOSKU on new accounts)
+#               REVIEW    : qwen3-max-2026-01-23     (9.3s, concise+complete;
+#                                                    deepseek-r1-distill-qwen-32b emitted EMPTY
+#                                                    output on benchmark — broken for REVIEW)
+#             aliyun_c sits at chain HEAD so its fresh quota consumes first
+#             before aliyun_b/a deplete.
+#
+#             ⛔ HARD CONSTRAINT (Steve May 14 2026): aliyun_c may use ONLY
+#             SKUs from Steve's allowlist screenshot. Any SKU outside that
+#             list must NOT be added on this account without re-confirmation,
+#             even if the API allows it. If quota on these 7 ever exhausts,
+#             fall through to aliyun_b/a per the chain — do not silently swap
+#             in another C-account SKU.
 #   aliyun_b: qwen-max (CHAT), qwen3.6-35b-a3b (INSIGHTS), glm-5 (CHART),
 #             qwen3.5-122b-a10b (MAPPER), qwen3.5-397b-a17b (REASONING),
-#             qwen3-vl-plus-2025-12-19 (VL), deepseek-r1-distill-qwen-32b (REVIEW)
+#             qwen3-vl-plus-2025-12-19 (VL), qwen-max (REVIEW — May 14 fix:
+#             was deepseek-r1-distill-qwen-32b which emits EMPTY output on
+#             REVIEW prompts, universal bug; see SLOT.REVIEW comment)
 #   aliyun_a: qwen3.6-max-preview (CHAT), qwen3.6-35b-a3b (INSIGHTS),
 #             glm-5 (CHART), qwen3.5-122b-a10b (MAPPER),
 #             qwen3.5-397b-a17b (REASONING + REVIEW),
@@ -167,8 +196,8 @@ class SLOT(str, Enum):
 #                      (~999K/month on Aliyun-A per Steve audit), independent
 #                      of the qwen-* pool that aliyun_a consumes.
 #
-# Chain — 4 providers, all free:
-#   aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
+# Chain — 5 providers, all free:
+#   aliyun_c → aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
 #
 # Why no DeepSeek-official tail any more (#580 Option 2): account balance 0
 # across all SKUs, 402 fell through "Other errors" path but never reached a
@@ -186,43 +215,50 @@ class SLOT(str, Enum):
 # ERROR before exhausting cleanly.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     SLOT.CHAT: {
+        "aliyun_c":          "qwen-flash",                # ✅ May 14 benchmark winner: 1.4s median, clean concise output, no hallucination (deepseek-v4-flash was 15s + hallucinated specifics)
         "aliyun_b":          "qwen-max",                  # Steve screenshot: B free 1M intact
         "aliyun_a":          "qwen3.6-max-preview",       # Steve screenshot: A free 999K intact
         "zhipu":             "glm-4.5-air",               # 6.5M independent pool (NOT in 通用池 which is 0)
         "aliyun_a_deepseek": "deepseek-v4-pro",           # DashScope-hosted, free 999K on aliyun_a key
     },
     SLOT.INSIGHTS: {
+        "aliyun_c":          "qwen-flash",                # ✅ May 14 benchmark winner: 1.2s median, 1-sentence精炼洞察(26 tokens). Cleanest of 5 candidates.
         "aliyun_b":          "qwen3.6-35b-a3b",           # Steve screenshot: 816K intact (live-probe also 200 OK)
         "aliyun_a":          "qwen3.6-35b-a3b",           # Steve screenshot: 998K intact
         "zhipu":             "glm-4.5-air",               # 6.5M independent pool
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.CHART: {
+        "aliyun_c":          "qwen-turbo",                # ✅ May 14 benchmark winner: 1.1s median, valid compact JSON. glm-5 was 60s, glm-4.5-air 400'd, deepseek-v4-flash mismatched xAxis/title.
         "aliyun_b":          "glm-5",                     # 875K intact B
         "aliyun_a":          "glm-5",                     # 886K intact A (expires 2026/05/17 — re-check before then)
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.MAPPER: {
+        "aliyun_c":          "qwen-turbo",                # ✅ May 14 benchmark winner: 1.2s median, correct mapping direction (original-col → standard-field). qwen-flash flipped direction; deepseek-v4-flash wrapped in ```json``` (needs extra parse).
         "aliyun_b":          "qwen3.5-122b-a10b",         # 998K intact
         "aliyun_a":          "qwen3.5-122b-a10b",         # 998K
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.REASONING: {
+        "aliyun_c":          "deepseek-v4-pro",           # ✅ May 14 benchmark winner: 22.7s but best depth+structure. Acceptable latency for REASONING (non-interactive). qwen3-max @16s was simpler; deepseek-r1 @43s too slow.
         "aliyun_b":          "qwen3.5-397b-a17b",         # 974K intact
         "aliyun_a":          "qwen3.5-397b-a17b",         # 998K
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.VL: {
+        "aliyun_c":          "qwen3-vl-plus-2025-12-19",  # ✅ Only allowlist-approved VL option on aliyun_c (2025-05-07 SKU is 404 NOSKU on new accounts — deprecated).
         "aliyun_b":          "qwen3-vl-plus-2025-12-19",  # 1M intact
         "aliyun_a":          "qwen3-vl-plus-2025-12-19",  # 1M intact on A
         "zhipu":             "glm-4.6v",                  # ⚠️ payload format incompatible with image_url (zhipu needs different shape); 6M independent pool exists but call site must adapt  # noqa: E501
         "aliyun_a_deepseek": None,                        # DashScope has no DeepSeek VL — skip cleanly
     },
     SLOT.REVIEW: {
-        "aliyun_b":          "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13
+        "aliyun_c":          "qwen3-max-2026-01-23",      # ✅ May 14 benchmark winner: 9.3s, concise + complete.
+        "aliyun_b":          "qwen-max",                      # ✅ May 14 aliyun_b probe (scripts/probe-review-sku.py): 6.4s, 267 tokens, real critique. REPLACES deepseek-r1-distill-qwen-32b which emits EMPTY output on REVIEW prompts (universal bug — confirmed on both aliyun_b AND aliyun_c, 24s wasted + 400 tokens billed with no content). Shares qwen-max free pool with aliyun_b CHAT (same SKU, same 1M/month bucket).
         "aliyun_a":          "qwen3.5-397b-a17b",             # ✅ A free OK May 13
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": None,                            # Skip new chain entry cleanly for REVIEW
@@ -233,6 +269,13 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
 def _provider_config(account: str) -> Tuple[str, str]:
     """Return (base_url, api_key) for a provider account."""
     mapping = {
+        # aliyun_c (May 14 2026): 3rd Aliyun bailian account — brand-new free
+        # quota intact (1M/SKU per Steve console screenshot). Sits at chain
+        # HEAD so its fresh quota consumes first, preserving aliyun_b/a balances.
+        "aliyun_c": (
+            os.getenv("LLM_ALIYUN_C_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            os.getenv("LLM_ALIYUN_C_API_KEY", ""),
+        ),
         "aliyun_a": (
             os.getenv("LLM_ALIYUN_A_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             os.getenv("LLM_ALIYUN_A_API_KEY") or os.getenv("LLM_API_KEY", ""),
@@ -259,8 +302,12 @@ def _provider_config(account: str) -> Tuple[str, str]:
     return mapping.get(account, ("", ""))
 
 
-# Chain order — all 4 providers on free tier:
-#   aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
+# Chain order — 5 providers, all free tier:
+#   aliyun_c → aliyun_b → aliyun_a → zhipu → aliyun_a_deepseek
+#
+# aliyun_c (May 14 2026): 3rd Aliyun bailian account, brand-new free quota.
+# Placed at HEAD so its fresh 1M/SKU pool consumes first before aliyun_b/a
+# deplete — preserves runway on the older accounts.
 #
 # Each provider's 403/AllocationQuota.FreeTierOnly + 429 triggers fallback
 # per `_is_quota_exhausted`. After a full cascade exhausts the chain raises
@@ -273,13 +320,17 @@ def _provider_config(account: str) -> Tuple[str, str]:
 #   - May 13 2026 (PR #577 + #578): mid-month SKU refresh after prod incident
 #     "All providers exhausted for chat". Added `aliyun_a_deepseek` 5th entry
 #     routing deepseek-v4-pro via DashScope free quota.
-#   - May 13 2026 (#580 Option 2, this commit): dropped deepseek-official
-#     5th slot since `aliyun_a_deepseek` already covers DeepSeek-class
-#     quality on free tier and deepseek-official balance is 0 anyway.
+#   - May 13 2026 (#580 Option 2): dropped deepseek-official 5th slot since
+#     `aliyun_a_deepseek` already covers DeepSeek-class quality on free tier
+#     and deepseek-official balance is 0 anyway.
+#   - May 14 2026 (this commit): added aliyun_c at chain HEAD — 3rd Aliyun
+#     bailian account, brand-new free quota. Probe 12/13 candidate SKUs 200
+#     OK (qwen3-vl-plus-2025-05-07 404 NOSKU on new accounts, deprecated;
+#     replaced with the 2025-12-19 SKU used by aliyun_a/b).
 #
 # Re-audit recommended ~every 2 weeks or whenever "All providers exhausted"
 # log line reappears (per `tests/qa-llm-quota/audit-matrix.md` cadence note).
-DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
+DEFAULT_CHAIN: List[str] = ["aliyun_c", "aliyun_b", "aliyun_a", "zhipu", "aliyun_a_deepseek"]
 
 
 def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
