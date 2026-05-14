@@ -1558,5 +1558,795 @@
       "message": "操作成功",
       "leaks": {}
     }
+  },
+  "qhj_warehouse_mgr": {
+    "_meta": {
+      "factoryId": "RES_3101_009",
+      "role": "warehouse_manager",
+      "tokenFactoryId": "RES_3101_009",
+      "tokenRole": "warehouse_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "qhj_finance_mgr": {
+    "_meta": {
+      "factoryId": "RES_3101_009",
+      "role": "finance_manager",
+      "tokenFactoryId": "RES_3101_009",
+      "tokenRole": "finance_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          146.86
+        ],
+        "KPI_money_card:客单价:value": [
+          "146.86"
+        ]
+      }
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          0
+        ],
+        "KPI_money_card:客单价:value": [
+          "0.00"
+        ]
+      }
+    }
+  },
+  "qhj_sales_mgr": {
+    "_meta": {
+      "factoryId": "RES_3101_009",
+      "role": "sales_manager",
+      "tokenFactoryId": "RES_3101_009",
+      "tokenRole": "sales_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          146.86
+        ],
+        "KPI_money_card:客单价:value": [
+          "146.86"
+        ]
+      }
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          0
+        ],
+        "KPI_money_card:客单价:value": [
+          "0.00"
+        ]
+      }
+    }
+  },
+  "qhj_operator": {
+    "_meta": {
+      "factoryId": "RES_3101_009",
+      "role": "operator",
+      "tokenFactoryId": "RES_3101_009",
+      "tokenRole": "operator",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [销售管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "gml_warehouse_mgr": {
+    "_meta": {
+      "factoryId": "R_GML_DEMO",
+      "role": "warehouse_manager",
+      "tokenFactoryId": "R_GML_DEMO",
+      "tokenRole": "warehouse_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "gml_finance_mgr": {
+    "_meta": {
+      "factoryId": "R_GML_DEMO",
+      "role": "finance_manager",
+      "tokenFactoryId": "R_GML_DEMO",
+      "tokenRole": "finance_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "gml_sales_mgr": {
+    "_meta": {
+      "factoryId": "R_GML_DEMO",
+      "role": "sales_manager",
+      "tokenFactoryId": "R_GML_DEMO",
+      "tokenRole": "sales_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "gml_operator": {
+    "_meta": {
+      "factoryId": "R_GML_DEMO",
+      "role": "operator",
+      "tokenFactoryId": "R_GML_DEMO",
+      "tokenRole": "operator",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [销售管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "xmx_warehouse_mgr": {
+    "_meta": {
+      "factoryId": "R_XMX_CHAIN",
+      "role": "warehouse_manager",
+      "tokenFactoryId": "R_XMX_CHAIN",
+      "tokenRole": "warehouse_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "xmx_finance_mgr": {
+    "_meta": {
+      "factoryId": "R_XMX_CHAIN",
+      "role": "finance_manager",
+      "tokenFactoryId": "R_XMX_CHAIN",
+      "tokenRole": "finance_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "xmx_sales_mgr": {
+    "_meta": {
+      "factoryId": "R_XMX_CHAIN",
+      "role": "sales_manager",
+      "tokenFactoryId": "R_XMX_CHAIN",
+      "tokenRole": "sales_manager",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "xmx_operator": {
+    "_meta": {
+      "factoryId": "R_XMX_CHAIN",
+      "role": "operator",
+      "tokenFactoryId": "R_XMX_CHAIN",
+      "tokenRole": "operator",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [销售管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
   }
 }

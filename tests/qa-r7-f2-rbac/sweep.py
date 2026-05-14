@@ -7,6 +7,10 @@ Scope adjustment (chat5 dispatch, Steve sign-off 2026-05-14):
   3 restaurant factories only have admin accounts → 12 of 25 cells N/A.
   13 cells are real (F001×5 + F006×5 + 3 restaurant admins).
 
+Post-seed update (issue #604, this chat 2026-05-14):
+  V20260514_04 seeded 12 restaurant-tenant role accounts. All 25 cells now real.
+  Added 12 cells (3 restaurants × {warehouse,finance,sales,operator} non-admin roles).
+
 Output:
   tokens.json     — captured JWTs per account
   cells.json      — per-cell response shape (HTTP, leak detection)
@@ -49,6 +53,19 @@ CELLS = [
     ("RES_3101_009", "factory_super_admin", "qhj_prod"),
     ("R_GML_DEMO",   "factory_super_admin", "gml_admin"),
     ("R_XMX_CHAIN",  "factory_super_admin", "xmx_admin"),
+    # Issue #604 V20260514_04 — 12 restaurant role accounts (added 2026-05-14).
+    ("RES_3101_009", "warehouse_manager", "qhj_warehouse_mgr"),
+    ("RES_3101_009", "finance_manager",   "qhj_finance_mgr"),
+    ("RES_3101_009", "sales_manager",     "qhj_sales_mgr"),
+    ("RES_3101_009", "operator",          "qhj_operator"),
+    ("R_GML_DEMO",   "warehouse_manager", "gml_warehouse_mgr"),
+    ("R_GML_DEMO",   "finance_manager",   "gml_finance_mgr"),
+    ("R_GML_DEMO",   "sales_manager",     "gml_sales_mgr"),
+    ("R_GML_DEMO",   "operator",          "gml_operator"),
+    ("R_XMX_CHAIN",  "warehouse_manager", "xmx_warehouse_mgr"),
+    ("R_XMX_CHAIN",  "finance_manager",   "xmx_finance_mgr"),
+    ("R_XMX_CHAIN",  "sales_manager",     "xmx_sales_mgr"),
+    ("R_XMX_CHAIN",  "operator",          "xmx_operator"),
 ]
 
 PASSWORD = "123456"  # documented in reference_f006_liutengmen_prod_accounts.md
