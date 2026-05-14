@@ -201,6 +201,28 @@ public class RawMaterialType extends BaseEntity {
     @Column(name = "moving_avg_price", precision = 12, scale = 4)
     private BigDecimal movingAvgPrice;
 
+    // ========== W-ABA-1 抄码品标记 (六扇门 F006 卤制品工厂刚需) ==========
+
+    /**
+     * 是否抄码品
+     * <p>抄码品 = 每箱重量不一的原料 (如牛肉/猪肉/鸭肉).
+     * true 时采购单创建隐藏箱数, 入库按实际称重逐箱录入.</p>
+     */
+    @Column(name = "is_abaca_packaging", nullable = false)
+    private Boolean isAbacaPackaging = false;
+
+    /**
+     * 抄码品箱重区间描述, UI 提示用 (示例: "约 10-15kg/箱").
+     */
+    @Column(name = "abaca_unit_per_box", length = 20)
+    private String abacaUnitPerBox;
+
+    /**
+     * 抄码品默认计量单位 (kg / g), 入库录称重默认带这个单位.
+     */
+    @Column(name = "abaca_default_unit", length = 20)
+    private String abacaDefaultUnit;
+
     // ========== 状态和备注 ==========
 
     /**
