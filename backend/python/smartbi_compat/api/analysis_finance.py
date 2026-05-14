@@ -39,6 +39,7 @@ from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.auth import AuthContext
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import _java_isoformat, wrap_error, wrap_response
+from smartbi_compat.tenant import TenantType, get_tenant_type
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -3277,6 +3278,206 @@ async def _get_budget_analysis(
 
 
 # ============================================================
+# Section 4b: Phase IIa Restaurant Branch (2026-05-14)
+# ============================================================
+#
+# Polymorphic tenant dispatch mirroring analysis_production.py:480-506 and
+# analysis_sales.py Section 4 (Phase IIa restaurant block). Triggered when
+# cretas_db.factories.type ∈ {RESTAURANT, BRANCH}.
+# Spec: docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md §4.3
+#
+# RLS: auth_middleware.py:220 set_factory_id() → smartbi pool setup hook
+# writes app.factory_id GUC; WHERE factory_id = $1 is belt-and-suspenders.
+
+
+async def _get_restaurant_finance_kpi(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.3 kpi block: 6 fields including coverageStart / coverageEnd.
+
+    The first 4 fields mirror analysis_sales restaurant overview. The
+    additional ``coverageStart`` / ``coverageEnd`` are the MIN / MAX of
+    ``agg_daily.date`` within the requested range (NOT the request bounds
+    themselves) — surfaces the actual data coverage to the UI KPI strip.
+    Both are None when the range has zero rows (Rule 1 honesty over zeros).
+
+    Edge case 2 (spec §4.5): bills > 0 but customers == 0 →
+    ``avgPerCapita: null``.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_finance_kpi: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    row = await conn.fetchrow(
+        """
+        SELECT
+            COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS total_revenue,
+            COALESCE(SUM(bill_count), 0)                    AS bill_count,
+            COALESCE(SUM(customer_count), 0)                AS customer_count,
+            COUNT(DISTINCT store_id)                        AS store_count,
+            MIN(date)                                       AS coverage_start,
+            MAX(date)                                       AS coverage_end
+        FROM agg_daily
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        """,
+        factory_id, start_date, end_date,
+    )
+    total_revenue = Decimal(row["total_revenue"])
+    bill_count = int(row["bill_count"])
+    customer_count = int(row["customer_count"])
+    if customer_count > 0:
+        avg = (total_revenue / Decimal(customer_count)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        avg_per_capita = _decimal_to_number(avg)
+    else:
+        avg_per_capita = None
+    coverage_start = (
+        row["coverage_start"].isoformat() if row["coverage_start"] is not None else None
+    )
+    coverage_end = (
+        row["coverage_end"].isoformat() if row["coverage_end"] is not None else None
+    )
+    return {
+        "totalRevenue": _decimal_to_number(
+            total_revenue.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        ),
+        "billCount": bill_count,
+        "avgPerCapita": avg_per_capita,
+        "storeCount": int(row["store_count"]),
+        "coverageStart": coverage_start,
+        "coverageEnd": coverage_end,
+    }
+
+
+async def _get_restaurant_finance_revenue_chart(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.3 revenueChart: BAR monthly revenue from ``agg_daily``.
+
+    xAxis labels are ``YYYY-MM`` strings, sorted ascending. Series has a
+    single ``总营收`` line. Empty rows → empty xAxis + empty series.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_finance_revenue_chart: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    rows = await conn.fetch(
+        """
+        SELECT
+            date_trunc('month', date)::date AS month,
+            COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+        FROM agg_daily
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        GROUP BY date_trunc('month', date)
+        ORDER BY date_trunc('month', date)
+        """,
+        factory_id, start_date, end_date,
+    )
+    x_axis = [f"{r['month'].year:04d}-{r['month'].month:02d}" for r in rows]
+    data = [
+        _decimal_to_number(
+            Decimal(r["amount"]).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        )
+        for r in rows
+    ]
+    return {
+        "chartType": "BAR",
+        "title": "月度营收",
+        "xAxis": x_axis,
+        "series": [{"name": "总营收", "data": data}],
+    }
+
+
+def _restaurant_finance_phase_iib_preview() -> dict:
+    """Spec §4.3 phaseIIbPreview placeholder. Static for Phase IIa.
+
+    Seeds the IIb wastage-rate KPI card position with a known marker so
+    the UI can render a friendly "Phase IIb 即将上线" empty state without a
+    second API call.
+    """
+    return {
+        "wastageRate": None,
+        "dataAvailability": "WASTAGE_NOT_TRACKED",
+    }
+
+
+async def _restaurant_finance_overview(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Phase IIa restaurant ``/analysis/finance`` overview dispatcher (spec §4.3).
+
+    Returns ``wrap_response``-wrapped envelope. All restaurant requests to
+    this endpoint route here regardless of ``analysisType`` for Phase IIa
+    (per spec §4.5.1: restaurants have overview-only in IIa; profit/cost/
+    receivable/payable/budget are factory-only). Future Phase IIb may add
+    a ``costops`` branch.
+
+    Edge cases handled:
+    * 1 (zero bills): kpi all 0 / null, revenueChart empty xAxis+data
+    * 2 (customer_count == 0 but bill_count > 0): kpi.avgPerCapita is None
+    * 4 (start > end): ``_validate_restaurant_date_range`` → HTTP 400
+    * 5 (single day): natural, revenueChart 1 element
+    * 6 (range > coverage): kpi.coverageStart / coverageEnd surface actual span
+    """
+    # Lazy import to avoid analysis_sales ↔ analysis_finance circular
+    # (analysis_sales already imports _decimal_to_number from this module).
+    from smartbi_compat.api.analysis_sales import _validate_restaurant_date_range
+    _validate_restaurant_date_range(start_date, end_date)
+
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[analysis_finance restaurant] smartbi pool acquisition failed factory=%s: %s",
+            factory_id, e,
+        )
+
+    if pool is None:
+        return wrap_response({
+            "tenantType": "RESTAURANT",
+            "analysisType": "overview",
+            "kpi": {
+                "totalRevenue": 0,
+                "billCount": 0,
+                "avgPerCapita": None,
+                "storeCount": 0,
+                "coverageStart": None,
+                "coverageEnd": None,
+            },
+            "revenueChart": {
+                "chartType": "BAR", "title": "月度营收",
+                "xAxis": [], "series": [{"name": "总营收", "data": []}],
+            },
+            "phaseIIbPreview": _restaurant_finance_phase_iib_preview(),
+            "generatedAt": _java_isoformat(datetime.now()),
+        })
+
+    async with pool.acquire() as conn:
+        kpi = await _get_restaurant_finance_kpi(
+            factory_id, start_date, end_date, conn
+        )
+        revenue_chart = await _get_restaurant_finance_revenue_chart(
+            factory_id, start_date, end_date, conn
+        )
+
+    return wrap_response({
+        "tenantType": "RESTAURANT",
+        "analysisType": "overview",
+        "kpi": kpi,
+        "revenueChart": revenue_chart,
+        "phaseIIbPreview": _restaurant_finance_phase_iib_preview(),
+        "generatedAt": _java_isoformat(datetime.now()),
+    })
+
+
+# ============================================================
 # Section 5: Route handler
 # ============================================================
 
@@ -3291,7 +3492,14 @@ async def get_finance_analysis(
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 222-274.
 
-    Branches:
+    Phase IIa (2026-05-14): polymorphic restaurant branch added (spec §4.3).
+    Restaurant tenants (cretas_db.factories.type ∈ {RESTAURANT, BRANCH}) ALL
+    requests route through ``_restaurant_finance_overview`` regardless of
+    ``analysisType`` — per spec §4.5.1 restaurants have overview-only in IIa
+    (profit/cost/receivable/payable/budget are factory semantics; Phase IIb
+    will add restaurant ``costops`` branch).
+
+    Factory branches (unchanged):
       analysisType empty       → composite (6-key Map via getComprehensiveAnalysis)
       analysisType=overview    → alias for empty/composite (F-1 follow-up,
                                  fixes UI dead-end where overview tab hit 501;
@@ -3303,6 +3511,33 @@ async def get_finance_analysis(
       analysisType=receivable  → receivable per-type (PR #42, 6-key shape)
       analysisType=other       → 501 envelope (un-ported, see spec §6 / §12)
     """
+    # Tenant detection — mirrors analysis_production.py:468-488 and
+    # analysis_sales.py get_sales_analysis (Phase IIa addition).
+    cretas_pool = None
+    try:
+        from smartbi.config import get_cretas_pool  # type: ignore
+        cretas_pool = await get_cretas_pool()
+    except Exception as e:
+        logger.warning(
+            "[analysis_finance] cretas_db pool acquisition failed factory=%s: %s",
+            auth.factory_id, e,
+        )
+
+    if cretas_pool is None:
+        tenant = TenantType.FACTORY
+    else:
+        async with cretas_pool.acquire() as conn:
+            tenant = await get_tenant_type(auth.factory_id, conn)
+
+    if tenant.is_restaurant_tenant:
+        envelope = await _restaurant_finance_overview(
+            auth.factory_id, startDate, endDate
+        )
+        if isinstance(envelope, dict):
+            strip_price_for_role(envelope.get("data"), auth.role)
+        return envelope
+
+    # Factory branch — unchanged Phase 2A behavior.
     range_ = DateRange.custom(startDate, endDate)
 
     if not analysisType or analysisType == "overview":
