@@ -13,6 +13,7 @@ import WHInboundDetailScreen from "../../screens/warehouse/inbound/WHInboundDeta
 import WHInboundCreateScreen from "../../screens/warehouse/inbound/WHInboundCreateScreen";
 import WHInspectScreen from "../../screens/warehouse/inbound/WHInspectScreen";
 import WHPutawayScreen from "../../screens/warehouse/inbound/WHPutawayScreen";
+import WHReceiptCreateScreen from "../../screens/warehouse/inbound/WHReceiptCreateScreen";
 import WHScanOperationScreen from "../../screens/warehouse/shared/WHScanOperationScreen";
 
 const Stack = createNativeStackNavigator<WHInboundStackParamList>();
@@ -60,6 +61,13 @@ export function WHInboundStackNavigator() {
         name="WHScanOperation"
         component={WHScanOperationScreen}
         options={{ title: "扫码作业" }}
+      />
+
+      {/* W-ABA-1 Day 5: PDF 扫码 → 2-字段收货页 */}
+      <Stack.Screen
+        name="WHReceiptCreate"
+        component={WHReceiptCreateScreen}
+        options={{ title: "扫码入库录入" }}
       />
     </Stack.Navigator>
   );

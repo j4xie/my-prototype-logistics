@@ -607,6 +607,8 @@ export type WHInboundStackParamList = {
   WHInspect: { batchId: string };
   WHPutaway: { batchId: string };
   WHScanOperation: { type: 'inbound' | 'outbound'; orderId?: string; mode?: string };
+  // W-ABA-1 Day 5: PDF 扫码 → 2-字段收货页 (扫 QR 跳本路由, purchaseOrderId 必传)
+  WHReceiptCreate: { purchaseOrderId: string; orderNumber?: string };
 };
 
 export type WHOutboundStackParamList = {
