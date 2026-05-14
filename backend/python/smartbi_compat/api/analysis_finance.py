@@ -3312,7 +3312,9 @@ async def _get_restaurant_finance_kpi(
     row = await conn.fetchrow(
         """
         SELECT
-            COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS total_revenue,
+            -- Task #90 defensive fallback to gross_amount when actual_receive
+            -- NULL (test smartbi_db ETL gap; prod data clean).
+            COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS total_revenue,
             COALESCE(SUM(bill_count), 0)                    AS bill_count,
             COALESCE(SUM(customer_count), 0)                AS customer_count,
             COUNT(DISTINCT store_id)                        AS store_count,
@@ -3369,7 +3371,8 @@ async def _get_restaurant_finance_revenue_chart(
         """
         SELECT
             date_trunc('month', date)::date AS month,
-            COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+            -- Task #90 defensive fallback to gross_amount
+            COALESCE(SUM(actual_receive), SUM(gross_amount), 0)::numeric(18,2) AS amount
         FROM agg_daily
         WHERE factory_id = $1
           AND date BETWEEN $2 AND $3
