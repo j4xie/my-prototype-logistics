@@ -149,6 +149,16 @@ class PurchaseApiClient {
     return apiClient.get(this.getPath(factoryId) + `/orders/${orderId}`);
   }
 
+  /**
+   * 按订单号查采购单详情 (PDF QR 扫码场景).
+   *
+   * 用法: 扫 PDF QR 拿到 orderNumber 字符串 (如 PO-20260514-001) → 调本接口
+   * 拿订单 + 关联明细 → 跳入库收货页. 后端 GET /orders/by-number/{orderNumber}.
+   */
+  async getOrderByNumber(orderNumber: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
+    return apiClient.get(this.getPath(factoryId) + `/orders/by-number/${encodeURIComponent(orderNumber)}`);
+  }
+
   /** 创建采购单 */
   async createOrder(data: CreatePurchaseOrderRequest, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
     return apiClient.post(this.getPath(factoryId) + '/orders', data);
