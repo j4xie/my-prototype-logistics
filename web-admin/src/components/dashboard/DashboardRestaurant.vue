@@ -65,7 +65,7 @@ const statCards = computed(() => [
 ]);
 
 // 快捷操作 — 餐饮常用入口 (按权限过滤)
-import { usePermissionStore } from '@/store/modules/permission';
+import { usePermissionStore, type ModuleName } from '@/store/modules/permission';
 const permissionStore = usePermissionStore();
 
 const allQuickActions = [
@@ -77,7 +77,7 @@ const allQuickActions = [
   { title: '财务报表', icon: Money, route: '/finance/reports', color: '#5ad8a6', module: 'finance' },
   { title: '智能BI', icon: TrendCharts, route: '/smart-bi/dashboard', color: '#5b8ff9', module: 'analytics' }
 ];
-const quickActions = computed(() => allQuickActions.filter(a => permissionStore.canAccess(a.module)));
+const quickActions = computed(() => allQuickActions.filter(a => permissionStore.canAccess(a.module as ModuleName)));
 
 onMounted(async () => {
   await loadDashboardData();

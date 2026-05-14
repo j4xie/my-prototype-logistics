@@ -69,7 +69,7 @@ const SAMPLE_RESPONSE = {
       cta: '上传含日期的报表解锁 5 张卡片',
     },
   ],
-  time_coverage: null,
+  time_coverage: null as null | { from: string; to: string },
 };
 
 // ── Tests ──────────────────────────────────────────────────────────────

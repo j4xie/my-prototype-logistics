@@ -42,7 +42,7 @@ const localValues = ref<TableRow>({})
 onMounted(async () => {
   if (!authStore.factoryId) return
   try {
-    const res = await getDynamicFields(authStore.factoryId, props.moduleCode)
+    const res = await getDynamicFields(authStore.factoryId, props.moduleCode) as unknown as { success: boolean; data: unknown }
     if (res.success && Array.isArray(res.data)) {
       fields.value = (res.data as DynField[])
         .filter(f => f.fieldType !== 'SUB_TABLE')

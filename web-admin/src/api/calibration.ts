@@ -237,7 +237,7 @@ export function exportCalibrationReport(params: {
 }) {
   return post<Blob>(`${API_PREFIX}/export`, params, {
     responseType: 'blob'
-  } as unknown);
+  });
 }
 
 // ==================== 校准会话管理 ====================
