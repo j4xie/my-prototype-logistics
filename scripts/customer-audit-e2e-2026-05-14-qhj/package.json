@@ -1,0 +1,13 @@
+{
+  "name": "customer-audit-e2e-2026-05-14-qhj",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "R7-E1: RES_3101_009 (QHJ chain) 51-ask coverage replay — mirrors F006 pattern; substituted from R_QINGHUAJIAO_REAL per Issue #538",
+  "scripts": {
+    "all": "node run-coverage.mjs --all"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0"
+  }
+}

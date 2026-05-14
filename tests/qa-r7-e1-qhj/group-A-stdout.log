@@ -1,0 +1,44 @@
+    → PARTIAL
+  [A] S-COV-T2-4-rpf-chain-list — T2-4 RPF 全链路: 研发样品/采购订单/入库/批次/生产计划 5 页面可达
+    → PARTIAL
+  [A] S-COV-T2-5-finance-link — T2-5 销售→应收→应付: finance/payments + invoices + 应付页面
+    → PASS
+  [A] S-COV-T2-6-llm-chat — T2-6 大模型理解: AI 对话浮窗/入口/输入框存在 (require interactive element, not just text)
+    → PASS
+  [A] S-COV-T2-7-skill-config — T2-7 AI 学习规则: Skill 配置入口 (system/ai-skills)
+    → PASS
+  [A] S-COV-T2-8-cross-module-ai — T2-8 AI 跨模块调度: SmartBI / AI Agent 数据分析页
+    → PASS
+  [A] S-COV-T2-9-bom-add-material — T2-9 BOM 多辅料 (一品 30+): BOM 关联多原料界面
+    → INFO — page rendered but BOM/配方 text not detected
+  [A] S-COV-T3-1-box-auto — T3-1 箱数自动算: 采购订单详情显示箱数字段
+    → INFO — no order to inspect
+  [A] S-COV-T3-2-abaca — T3-2 抄码品识别: /procurement/orders 列表含 抄码品 tag 或 规格=抄码 行 (PR #173 P1-3)
+    → INFO — F006 当前订单中无规格="抄码"的行 (功能实现 in code @ list.vue:131, 但 prod 数据未触发)
+  [A] S-COV-T3-3-three-price — T3-3 三价对比: 采购订单详情含三价对比模块
+    → INFO — no order
+  [A] S-COV-T3-4-expected-arrival — T3-4 预计到货时间 = 期望交货: 采购订单 dialog 或 detail 含"期望交货"字段
+    → INFO — 字段未在订单详情中找到
+  [A] S-COV-T3-5-approval-config — T3-5 审批链动态配置 UI 完整: /system/approval-chains
+    → ERROR
+  [A] S-COV-T3-10-sales-unit-price — T3-10 销售单价 BOM 默认+可改: 新建销售订单 dialog 单价 input 不 disabled
+    → ERROR
+  [A] S-COV-T3-12-material-supplier — T3-12 原料关联供应商: /procurement/suppliers 供应商管理页存在
+    → INFO — page rendered but no supplier text
+  [A] S-COV-T3-15-unit-conv — T3-15 一二级单位转换: F006 /production/conversions 含 conversionRate 字段
+    → INFO — page landed but no 转换率/conversion text detected
+  [A] S-COV-T4-B1-process-dropdown — T4-B1 生产计划工序下拉 (PR #293): "通用" 选项可见
+    → INFO
+  [A] S-COV-T4-B7-dialog-width — T4-B7 弹窗宽度: 新建销售订单 dialog width >= 800px
+    → PASS
+  [A] S-COV-T4-B8-bom-binding — T4-B8 BOM 关联原料联动: BOM 详情可见原料列表
+    → INFO
+  [A] S-COV-T4-D3-g-kg-conv — T4-D3 g↔kg 1:1000 换算: F006 工厂 BOM/转换率 含克/千克单位
+    → INFO — page rendered but no g/kg unit text
+
+Results written to C:\Users\Steve\cretas-r7-e1-qhj\scripts\customer-audit-e2e-2026-05-14-qhj\results-coverage.json
+Summary: PASS=6 FAIL=0 PARTIAL=2 INFO=14 SKIP_RBAC=0 ERROR=2
+
+real	11m21.161s
+user	0m0.561s
+sys	0m1.123s
