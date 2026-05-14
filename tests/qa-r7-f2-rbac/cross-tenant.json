@@ -1,0 +1,42 @@
+{
+  "F4_cross_tenant": {
+    "factory_admin1__F006__/material-batches?page=1&size=2": {
+      "http": 403,
+      "body_head": "{\"success\":false,\"code\":403,\"message\":\"无权访问该工厂数据\",\"severity\":\"error\",\"actionHint\":\"请检查是否访问了错误的工厂, 或切换到有权限的账号重试\",\"timestamp\":\"2026-05-14T11:37:14.801810307\"}"
+    },
+    "factory_admin1__F006__/sales/orders?page=1&size=2": {
+      "http": 403,
+      "body_head": "{\"success\":false,\"code\":403,\"message\":\"无权访问该工厂数据\",\"severity\":\"error\",\"actionHint\":\"请检查是否访问了错误的工厂, 或切换到有权限的账号重试\",\"timestamp\":\"2026-05-14T11:37:15.564623539\"}"
+    },
+    "f006_admin__F001__/material-batches?page=1&size=2": {
+      "http": 403,
+      "body_head": "{\"success\":false,\"code\":403,\"message\":\"无权访问该工厂数据\",\"severity\":\"error\",\"actionHint\":\"请检查是否访问了错误的工厂, 或切换到有权限的账号重试\",\"timestamp\":\"2026-05-14T11:37:16.301924098\"}"
+    },
+    "f006_admin__F001__/smart-bi/analysis/finance?periodType=MONTH&startDate=2025-01-01&endDate=2025-12-31": {
+      "http": 403,
+      "body_head": "{\"success\":false,\"data\":null,\"message\":\"Cross-factory access denied: token factoryId=F006 URL factoryId=F001\",\"code\":\"AUTH_ERROR\"}"
+    },
+    "qhj_prod__F001__/material-batches?page=1&size=2": {
+      "http": 403,
+      "body_head": "{\"success\":false,\"code\":403,\"message\":\"无权访问该工厂数据\",\"severity\":\"error\",\"actionHint\":\"请检查是否访问了错误的工厂, 或切换到有权限的账号重试\",\"timestamp\":\"2026-05-14T11:37:17.821094067\"}"
+    },
+    "gml_admin__RES_3101_009__/material-batches?page=1&size=2": {
+      "http": 403,
+      "body_head": "{\"success\":false,\"code\":403,\"message\":\"无权访问该工厂数据\",\"severity\":\"error\",\"actionHint\":\"请检查是否访问了错误的工厂, 或切换到有权限的账号重试\",\"timestamp\":\"2026-05-14T11:37:18.572239108\"}"
+    }
+  },
+  "H1_retries": {
+    "f001_sales_mgr__E5": {
+      "http": 200,
+      "body_head": "{\"code\":200,\"message\":\"操作成功\",\"data\":280160.9600,\"timestamp\":\"2026-05-14T11:37:19.33881773\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+    },
+    "f001_operator__E1": {
+      "http": 200,
+      "body_head": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"content\":[{\"id\":\"53943cea-0ce0-4f41-a3b8-41fa91850c8c\",\"factoryId\":\"F001\",\"batchNumber\":\"CRUD_MB_035188\",\"materialTypeId\":\"RMT_1774414299841\",\"materialName\":\"GPS牛"
+    },
+    "f006_finance_mgr__E8": {
+      "http": 200,
+      "body_head": "{\"code\":200,\"message\":\"查询成功\",\"data\":{\"content\":[{\"createdAt\":\"2026-05-07T11:13:54.505406\",\"updatedAt\":\"2026-05-07T11:22:47.649406\",\"deletedAt\":null,\"id\":\"4b8fe6ea-b13d-4647-b901-6f2ac67123e4\",\"factory"
+    }
+  }
+}

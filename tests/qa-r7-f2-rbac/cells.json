@@ -1,0 +1,1562 @@
+{
+  "factory_admin1": {
+    "_meta": {
+      "factoryId": "F001",
+      "role": "factory_super_admin",
+      "tokenFactoryId": "F001",
+      "tokenRole": "factory_super_admin",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "totalValue": [
+          25890.96,
+          105210.0,
+          1155.0,
+          1155.0,
+          1500.0
+        ],
+        "unitPrice": [
+          9.32,
+          15.0,
+          15.0,
+          15.0,
+          15.0
+        ],
+        "totalPrice": [
+          25890.96,
+          105210.0,
+          1155.0,
+          1155.0,
+          1500.0
+        ]
+      },
+      "rows": 5,
+      "total": 116
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          50.0,
+          300.0,
+          150.0,
+          150.0,
+          150.0
+        ],
+        "taxAmount": [
+          6.5,
+          39.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          5.0,
+          15.0,
+          15.0,
+          15.0,
+          15.0
+        ],
+        "taxRate": [
+          13.0,
+          13.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          50.0,
+          300.0,
+          150.0,
+          150.0,
+          150.0
+        ],
+        "lineAmountWithTax": [
+          56.5,
+          339.0,
+          150.0,
+          150.0,
+          150.0
+        ]
+      },
+      "rows": 5,
+      "total": 59
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rows": 5,
+      "total": 17
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "discountAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          25.5,
+          25.5,
+          300.0,
+          50.0,
+          50.0
+        ],
+        "discountRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "payableAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "taxRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rows": 5,
+      "total": 111
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          146.86
+        ],
+        "KPI_money_card:客单价:value": [
+          "146.86"
+        ]
+      }
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "f001_warehouse_mgr": {
+    "_meta": {
+      "factoryId": "F001",
+      "role": "warehouse_manager",
+      "tokenFactoryId": "F001",
+      "tokenRole": "warehouse_manager",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 116
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 59
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 17
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 111
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "f001_finance_mgr": {
+    "_meta": {
+      "factoryId": "F001",
+      "role": "finance_manager",
+      "tokenFactoryId": "F001",
+      "tokenRole": "finance_manager",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "totalValue": [
+          25890.96,
+          105210.0,
+          1155.0,
+          1155.0,
+          1500.0
+        ],
+        "unitPrice": [
+          9.32,
+          15.0,
+          15.0,
+          15.0,
+          15.0
+        ],
+        "totalPrice": [
+          25890.96,
+          105210.0,
+          1155.0,
+          1155.0,
+          1500.0
+        ]
+      },
+      "rows": 5,
+      "total": 116
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          50.0,
+          300.0,
+          150.0,
+          150.0,
+          150.0
+        ],
+        "taxAmount": [
+          6.5,
+          39.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          5.0,
+          15.0,
+          15.0,
+          15.0,
+          15.0
+        ],
+        "taxRate": [
+          13.0,
+          13.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          50.0,
+          300.0,
+          150.0,
+          150.0,
+          150.0
+        ],
+        "lineAmountWithTax": [
+          56.5,
+          339.0,
+          150.0,
+          150.0,
+          150.0
+        ]
+      },
+      "rows": 5,
+      "total": 59
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rows": 5,
+      "total": 17
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "discountAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          25.5,
+          25.5,
+          300.0,
+          50.0,
+          50.0
+        ],
+        "discountRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "payableAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "taxRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rows": 5,
+      "total": 111
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          146.86
+        ],
+        "KPI_money_card:客单价:value": [
+          "146.86"
+        ]
+      }
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "f001_sales_mgr": {
+    "_meta": {
+      "factoryId": "F001",
+      "role": "sales_manager",
+      "tokenFactoryId": "F001",
+      "tokenRole": "sales_manager",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "totalValue": [
+          25890.96,
+          105210.0,
+          1155.0,
+          1155.0,
+          1500.0
+        ],
+        "unitPrice": [
+          9.32,
+          15.0,
+          15.0,
+          15.0,
+          15.0
+        ],
+        "totalPrice": [
+          25890.96,
+          105210.0,
+          1155.0,
+          1155.0,
+          1500.0
+        ]
+      },
+      "rows": 5,
+      "total": 116
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "leaks": {
+        "_scalar": [
+          280160.96
+        ]
+      }
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "discountAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          25.5,
+          25.5,
+          300.0,
+          50.0,
+          50.0
+        ],
+        "discountRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "payableAmount": [
+          255.0,
+          255.0,
+          600.0,
+          50.0,
+          100.0
+        ],
+        "taxRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rows": 5,
+      "total": 111
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          146.86
+        ],
+        "KPI_money_card:客单价:value": [
+          "146.86"
+        ]
+      }
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "f001_operator": {
+    "_meta": {
+      "factoryId": "F001",
+      "role": "operator",
+      "tokenFactoryId": "F001",
+      "tokenRole": "operator",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "leaks": {},
+      "rows": 5,
+      "total": 116
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [销售管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "f006_admin": {
+    "_meta": {
+      "factoryId": "F006",
+      "role": "factory_super_admin",
+      "tokenFactoryId": "F006",
+      "tokenRole": "factory_super_admin",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "totalValue": [
+          1400.0,
+          2500.0,
+          138026.544
+        ],
+        "unitPrice": [
+          28.0,
+          25.0,
+          68.7
+        ],
+        "totalPrice": [
+          1400.0,
+          2500.0,
+          138026.544
+        ]
+      },
+      "rows": 3,
+      "total": 3
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          425.0,
+          5600.0,
+          2500.0,
+          2350.0,
+          20610.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          85.0,
+          28.0,
+          25.0,
+          23.5,
+          68.7
+        ],
+        "taxRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          425.0,
+          5600.0,
+          2500.0,
+          2350.0,
+          20610.0
+        ],
+        "lineAmountWithTax": [
+          425.0,
+          5600.0,
+          2500.0,
+          2350.0,
+          20610.0
+        ]
+      },
+      "rows": 5,
+      "total": 6
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          1400.0,
+          2500.0,
+          2500.0,
+          2500.0,
+          138026.54
+        ],
+        "unitPrice": [
+          28.0,
+          25.0,
+          25.0,
+          25.0,
+          68.7
+        ]
+      },
+      "rows": 5,
+      "total": 5
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ],
+        "discountAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "shippingFee": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          50.0,
+          100.0,
+          5600.0,
+          1850.0,
+          28.0
+        ],
+        "discountRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxRate": [
+          13.0,
+          13.0,
+          13.0,
+          13.0,
+          13.0
+        ],
+        "lineAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ],
+        "payableAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ]
+      },
+      "rows": 5,
+      "total": 5
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "f006_warehouse_mgr": {
+    "_meta": {
+      "factoryId": "F006",
+      "role": "warehouse_manager",
+      "tokenFactoryId": "F006",
+      "tokenRole": "warehouse_manager",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 3,
+      "total": 3
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 6
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 5
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 5,
+      "total": 5
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [仓储主管] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "f006_finance_mgr": {
+    "_meta": {
+      "factoryId": "F006",
+      "role": "finance_manager",
+      "tokenFactoryId": "F006",
+      "tokenRole": "finance_manager",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "totalValue": [
+          1400.0,
+          2500.0,
+          138026.544
+        ],
+        "unitPrice": [
+          28.0,
+          25.0,
+          68.7
+        ],
+        "totalPrice": [
+          1400.0,
+          2500.0,
+          138026.544
+        ]
+      },
+      "rows": 3,
+      "total": 3
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          425.0,
+          5600.0,
+          2500.0,
+          2350.0,
+          20610.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          85.0,
+          28.0,
+          25.0,
+          23.5,
+          68.7
+        ],
+        "taxRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lineAmount": [
+          425.0,
+          5600.0,
+          2500.0,
+          2350.0,
+          20610.0
+        ],
+        "lineAmountWithTax": [
+          425.0,
+          5600.0,
+          2500.0,
+          2350.0,
+          20610.0
+        ]
+      },
+      "rows": 5,
+      "total": 6
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "leaks": {
+        "totalAmount": [
+          1400.0,
+          2500.0,
+          2500.0,
+          2500.0,
+          138026.54
+        ],
+        "unitPrice": [
+          28.0,
+          25.0,
+          25.0,
+          25.0,
+          68.7
+        ]
+      },
+      "rows": 5,
+      "total": 5
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ],
+        "discountAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "shippingFee": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          50.0,
+          100.0,
+          5600.0,
+          1850.0,
+          28.0
+        ],
+        "discountRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxRate": [
+          13.0,
+          13.0,
+          13.0,
+          13.0,
+          13.0
+        ],
+        "lineAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ],
+        "payableAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ]
+      },
+      "rows": 5,
+      "total": 5
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "f006_sales_mgr": {
+    "_meta": {
+      "factoryId": "F006",
+      "role": "sales_manager",
+      "tokenFactoryId": "F006",
+      "tokenRole": "sales_manager",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "totalValue": [
+          1400.0,
+          2500.0,
+          138026.544
+        ],
+        "unitPrice": [
+          28.0,
+          25.0,
+          68.7
+        ],
+        "totalPrice": [
+          1400.0,
+          2500.0,
+          138026.544
+        ]
+      },
+      "rows": 3,
+      "total": 3
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [销售主管] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {
+        "totalAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ],
+        "discountAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxAmount": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "shippingFee": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "unitPrice": [
+          50.0,
+          100.0,
+          5600.0,
+          1850.0,
+          28.0
+        ],
+        "discountRate": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "taxRate": [
+          13.0,
+          13.0,
+          13.0,
+          13.0,
+          13.0
+        ],
+        "lineAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ],
+        "payableAmount": [
+          5000.0,
+          120000.0,
+          5605600.0,
+          382950.0,
+          14000.0
+        ]
+      },
+      "rows": 5,
+      "total": 5
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "f006_worker1": {
+    "_meta": {
+      "factoryId": "F006",
+      "role": "operator",
+      "tokenFactoryId": "F006",
+      "tokenRole": "operator",
+      "factoryType": "FACTORY"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 3,
+      "total": 3
+    },
+    "E5_inventory_valuation": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [price:view] 权限",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E8_purchase_receives_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [采购管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E9_sales_orders_list": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [销售管理] 模块无 [读写 / 读取] 权限",
+      "leaks": {}
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 403,
+      "success": false,
+      "code": "FORBIDDEN",
+      "message": "您的角色 [操作员] 在 [数据分析] 模块无 [读取] 权限",
+      "leaks": {}
+    }
+  },
+  "qhj_prod": {
+    "_meta": {
+      "factoryId": "RES_3101_009",
+      "role": "factory_super_admin",
+      "tokenFactoryId": "RES_3101_009",
+      "tokenRole": "factory_super_admin",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          146.86
+        ],
+        "KPI_money_card:客单价:value": [
+          "146.86"
+        ]
+      }
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {
+        "KPI_money_card:客单价:rawValue": [
+          0
+        ],
+        "KPI_money_card:客单价:value": [
+          "0.00"
+        ]
+      }
+    }
+  },
+  "gml_admin": {
+    "_meta": {
+      "factoryId": "R_GML_DEMO",
+      "role": "factory_super_admin",
+      "tokenFactoryId": "R_GML_DEMO",
+      "tokenRole": "factory_super_admin",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  },
+  "xmx_admin": {
+    "_meta": {
+      "factoryId": "R_XMX_CHAIN",
+      "role": "factory_super_admin",
+      "tokenFactoryId": "R_XMX_CHAIN",
+      "tokenRole": "factory_super_admin",
+      "factoryType": "RESTAURANT"
+    },
+    "E1_material_batches_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E5_inventory_valuation": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E6_purchase_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E8_purchase_receives_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E9_sales_orders_list": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "查询成功",
+      "leaks": {},
+      "rows": 0,
+      "total": 0
+    },
+    "E11_smartbi_analysis_finance": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    },
+    "E12_smartbi_dashboard_exec": {
+      "http": 200,
+      "success": true,
+      "code": 200,
+      "message": "操作成功",
+      "leaks": {}
+    }
+  }
+}

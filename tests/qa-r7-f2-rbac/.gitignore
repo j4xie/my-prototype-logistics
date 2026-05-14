@@ -1,0 +1,4 @@
+# Captured JWTs — never commit. Re-generate via sweep.py.
+tokens.json
+# Python cache
+__pycache__/
