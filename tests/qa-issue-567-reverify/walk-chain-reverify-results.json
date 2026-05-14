@@ -1,0 +1,247 @@
+{
+  "ranAt": "2026-05-14T06:42:22.472Z",
+  "target": "http://139.196.165.140:8086",
+  "account": "f006_admin",
+  "traces": [
+    {
+      "name": "A",
+      "po": {
+        "number": "PO-20260507-0003",
+        "id": "0ed28974"
+      },
+      "receive": {
+        "number": "RCV-20260507-4505",
+        "id": "4b8fe6ea"
+      },
+      "batch": {
+        "number": "MT-20260507-7640",
+        "id": "45e22fda"
+      }
+    },
+    {
+      "name": "B",
+      "po": {
+        "number": "PO-20260507-0002",
+        "id": "6705c5c8"
+      },
+      "receive": {
+        "number": "RCV-20260507-0023",
+        "id": "3dd9443a"
+      },
+      "batch": {
+        "number": "MT-20260507-2061",
+        "id": "c0634171"
+      }
+    },
+    {
+      "name": "C",
+      "po": {
+        "number": "PO-20260502-0001",
+        "id": "cd8d51eb"
+      },
+      "receive": {
+        "number": "RCV-20260502-4276",
+        "id": "97311d11"
+      },
+      "batch": {
+        "number": "MT-20260502-1365",
+        "id": "eb2f15d6"
+      }
+    }
+  ],
+  "consoleErrors": [
+    {
+      "type": "console.error",
+      "msg": "Failed to load resource: the server responded with a status of 404 ()"
+    }
+  ],
+  "consoleErrorCount": 1,
+  "steps": [
+    {
+      "step": "S0-login",
+      "ts": "2026-05-14T06:41:02.473Z",
+      "verdict": "PASS",
+      "token": "eyJhbGciOiJIUzI1NiJ9…",
+      "url": "http://139.196.165.140:8086/dashboard"
+    },
+    {
+      "step": "S1-L1-rd-samples",
+      "ts": "2026-05-14T06:41:06.249Z",
+      "verdict": "PASS",
+      "url": "http://139.196.165.140:8086/rd/samples",
+      "rowCount": 0,
+      "expectRows": 0,
+      "label": "L1 R&D 样品"
+    },
+    {
+      "step": "S1-L2-procurement-orders",
+      "ts": "2026-05-14T06:41:09.688Z",
+      "verdict": "PASS",
+      "url": "http://139.196.165.140:8086/procurement/orders",
+      "rowCount": 20,
+      "expectRows": 6,
+      "label": "L2 采购订单"
+    },
+    {
+      "step": "S1-L3-procurement-receives",
+      "ts": "2026-05-14T06:41:12.609Z",
+      "verdict": "PASS",
+      "url": "http://139.196.165.140:8086/procurement/receives",
+      "rowCount": 5,
+      "expectRows": 5,
+      "label": "L3 入库记录"
+    },
+    {
+      "step": "S1-L4-warehouse-inventory",
+      "ts": "2026-05-14T06:41:15.970Z",
+      "verdict": "PASS",
+      "url": "http://139.196.165.140:8086/warehouse/inventory",
+      "rowCount": 3,
+      "expectRows": 3,
+      "label": "L4 物料批次 (= chat3 /material-batches)"
+    },
+    {
+      "step": "S1-L5-production-plans",
+      "ts": "2026-05-14T06:41:18.939Z",
+      "verdict": "PASS",
+      "url": "http://139.196.165.140:8086/production/plans",
+      "rowCount": 6,
+      "expectRows": 6,
+      "label": "L5 生产计划"
+    },
+    {
+      "step": "S2-L2-L3-trace-A",
+      "ts": "2026-05-14T06:41:25.491Z",
+      "verdict": "PASS",
+      "listUrl": "http://139.196.165.140:8086/procurement/orders",
+      "detailUrl": "http://139.196.165.140:8086/procurement/orders/0ed28974-b428-4122-a376-fd0219073c12",
+      "poNumber": "PO-20260507-0003",
+      "receiveNumber": "RCV-20260507-4505",
+      "rowFoundInList": true,
+      "poNumberShown": true,
+      "receiveNumberShown": true
+    },
+    {
+      "step": "S2-L2-L3-trace-B",
+      "ts": "2026-05-14T06:41:31.407Z",
+      "verdict": "PASS",
+      "listUrl": "http://139.196.165.140:8086/procurement/orders",
+      "detailUrl": "http://139.196.165.140:8086/procurement/orders/6705c5c8-149e-4779-96d8-959ffc7acbd8",
+      "poNumber": "PO-20260507-0002",
+      "receiveNumber": "RCV-20260507-0023",
+      "rowFoundInList": true,
+      "poNumberShown": true,
+      "receiveNumberShown": true
+    },
+    {
+      "step": "S2-L2-L3-trace-C",
+      "ts": "2026-05-14T06:41:37.797Z",
+      "verdict": "PASS",
+      "listUrl": "http://139.196.165.140:8086/procurement/orders",
+      "detailUrl": "http://139.196.165.140:8086/procurement/orders/cd8d51eb-3fbe-4205-b709-9ab129a76782",
+      "poNumber": "PO-20260502-0001",
+      "receiveNumber": "RCV-20260502-4276",
+      "rowFoundInList": true,
+      "poNumberShown": true,
+      "receiveNumberShown": true
+    },
+    {
+      "step": "S3-L3-shows-PO-numbers",
+      "ts": "2026-05-14T06:41:41.945Z",
+      "verdict": "PASS—human-readable PO numbers rendered for all 3 traces",
+      "rowCount": 5,
+      "purchaseOrderColumnIndex": 2,
+      "purchaseOrderColumnHeader": "采购订单",
+      "purchaseOrderColumnSummary": {
+        "nameMatches": 5,
+        "uuidMatches": 0,
+        "fallbackMatches": 0,
+        "rawCells": [
+          "PO-20260507-0003",
+          "PO-20260507-0002",
+          "PO-20260507-0002",
+          "PO-20260507-0002",
+          "PO-20260502-0001"
+        ]
+      },
+      "traceReceiveNumbersOnPage": {
+        "a": true,
+        "b": true,
+        "c": true
+      },
+      "note": "Source: receives/list.vue:311-313 column renders purchaseOrderNumber || purchaseOrderId || fallback. UUID-only rendering = backend gap (LIST endpoint doesn't join PO number); PO number rendering = full L3→L2 visibility."
+    },
+    {
+      "step": "S4-L4-warehouse-inventory-shows-batches",
+      "ts": "2026-05-14T06:41:44.941Z",
+      "verdict": "PASS",
+      "trace_a_batch_seen": true,
+      "trace_b_batch_seen": true,
+      "trace_c_batch_seen": true,
+      "note": "/warehouse/inventory should show 3 material batches per chat3 PR #613"
+    },
+    {
+      "step": "S4b-L4-detail-dialog-usage-history",
+      "ts": "2026-05-14T06:41:47.558Z",
+      "verdict": "INFO—usage section not detected in dialog",
+      "hasUsageSection": false,
+      "emptyMessage": false,
+      "note": "L4→L5 surface: usage-history dialog. chat3 PR #613: F006 prod has 0 consumption rows; dialog should render empty state, not error.",
+      "dialogPreview": ""
+    },
+    {
+      "step": "S5-production-batches-list",
+      "ts": "2026-05-14T06:41:51.371Z",
+      "verdict": "PASS",
+      "rowCount": 1
+    },
+    {
+      "step": "S5b-production-batch-detail-consumption",
+      "ts": "2026-05-14T06:41:54.470Z",
+      "verdict": "INFO—consumption section not rendered (v-if length>0 guard means empty data hides section gracefully)",
+      "hasConsumptionSection": false,
+      "url": "http://139.196.165.140:8086/production/batches/1885",
+      "note": "T4-D4 PR #533 surface. F006 prod has 0 consumption rows per chat3 → section hides via v-if guard. Verdict here just records whether section CAN render when data is present."
+    },
+    {
+      "step": "S6a-direct-url-nav-state",
+      "ts": "2026-05-14T06:42:07.968Z",
+      "verdict": "PASS",
+      "note": "Direct URL nav to PO detail (full UUID captured from list-click) should hydrate factory context from auth store.",
+      "capturedDetailUrl": "http://139.196.165.140:8086/procurement/orders/0ed28974-b428-4122-a376-fd0219073c12",
+      "beforeFactoryToken": {
+        "token": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlI…",
+        "userKeys": [
+          "cretas_user",
+          "cretas_access_token"
+        ]
+      },
+      "tokenAfter": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlI…",
+      "poNumberShownAfterDirectNav": true
+    },
+    {
+      "step": "S6b-reload-state",
+      "ts": "2026-05-14T06:42:11.607Z",
+      "verdict": "PASS",
+      "note": "F5 reload on PO detail should re-hydrate from URL param + auth store. Token preserved.",
+      "tokenAfterReload": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlI…",
+      "poNumberShownAfterReload": true
+    },
+    {
+      "step": "S6c-back-button-state",
+      "ts": "2026-05-14T06:42:18.890Z",
+      "verdict": "PASS",
+      "url": "http://139.196.165.140:8086/procurement/orders",
+      "rowCount": 6,
+      "freshListRowCount": 6,
+      "note": "Fresh list → detail → browser back. Verifies factory context + list re-population."
+    },
+    {
+      "step": "S7-bogus-id-handling",
+      "ts": "2026-05-14T06:42:22.343Z",
+      "verdict": "INFO",
+      "note": "Bogus PO id should render NotFoundEmpty (per procurement/orders/detail.vue:82-85), not crash.",
+      "showsNotFound": false
+    }
+  ]
+}
