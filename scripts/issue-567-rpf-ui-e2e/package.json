@@ -1,0 +1,13 @@
+{
+  "name": "issue-567-rpf-ui-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Issue #567 T2-4 RPF chain UI cross-layer verification — chat3 ran API probe (#613); chat2 runs Playwright UI walk on prod 139:8086 as f006_admin",
+  "scripts": {
+    "run": "node walk-chain.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0"
+  }
+}
