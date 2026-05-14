@@ -38,7 +38,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
 from smartbi_compat.api.analysis import _query_sales_data, wrap_response
-from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import _java_isoformat

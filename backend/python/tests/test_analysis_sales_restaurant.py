@@ -17,20 +17,17 @@ data via ``_FakeConn`` monkeypatch (no live DB).
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 
 import pytest
 from fastapi import HTTPException
 
-from smartbi_compat.api import analysis_sales
 from smartbi_compat.api.analysis_sales import (
     _empty_restaurant_sales_envelope,
     _get_restaurant_avg_per_capita_trend,
     _get_restaurant_channel_breakdown,
     _get_restaurant_coverage_warning,
-    _get_restaurant_meal_period_breakdown,
-    _get_restaurant_order_type_split,
     _get_restaurant_overview,
     _get_restaurant_product_ranking,
     _get_restaurant_revenue_trend,
