@@ -207,17 +207,14 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
             "workerId", workerId != null ? workerId : 0L));
         log.info("Submitting normal report for task {} by worker {}", processTaskId, workerId);
 
-        // P1-3: 30秒时间窗口去重 — 防止弱网环境重复提交
+        // #566 T4-B6: SQL-side dedup (was in-memory filter on full task report list).
+        // F006 prod 单任务报工累计 ~6700 行 → 3-15s/submit; SQL + 索引 → <5ms.
         LocalDateTime dedup30s = LocalDateTime.now().minusSeconds(30);
-        List<ProductionReport> recentDuplicates = reportRepository
-                .findByProcessTaskIdAndDeletedAtIsNull(processTaskId).stream()
-                .filter(r -> r.getWorkerId() != null && r.getWorkerId().equals(workerId))
-                .filter(r -> r.getOutputQuantity() != null && r.getOutputQuantity().compareTo(outputQuantity) == 0)
-                .filter(r -> r.getCreatedAt() != null && r.getCreatedAt().isAfter(dedup30s))
-                .collect(Collectors.toList());
-        if (!recentDuplicates.isEmpty()) {
+        Optional<ProductionReport> duplicate = reportRepository.findRecentDuplicate(
+                processTaskId, workerId, outputQuantity, dedup30s);
+        if (duplicate.isPresent()) {
             log.warn("Duplicate report detected for task {} worker {} qty {} within 30s", processTaskId, workerId, outputQuantity);
-            ProductionReport existing = recentDuplicates.get(0);
+            ProductionReport existing = duplicate.get();
             return Map.of("reportId", existing.getId(), "taskStatus", "IN_PROGRESS",
                     "pendingQuantity", existing.getOutputQuantity(), "duplicate", true);
         }

@@ -615,6 +615,124 @@ class ProcessWorkReportingServiceImplTest {
         }
     }
 
+    // ==================== 正常报工 — SQL-side dedup (#566 T4-B6) ====================
+
+    @Nested
+    @DisplayName("正常报工 submitNormalReport — SQL-side dedup")
+    class SubmitNormalReportDedupTests {
+
+        @Test
+        @DisplayName("UT-PWR-22: 30s 内重复提交 — findRecentDuplicate 命中, 返回 duplicate=true, 不保存新报工")
+        void submitNormalReport_recentDuplicate_returnsExistingWithoutSaving() {
+            BigDecimal qty = new BigDecimal("50");
+            ProductionReport existing = pendingReport().outputQuantity(qty).build();
+
+            when(reportRepository.findRecentDuplicate(eq(TASK_ID), eq(WORKER_ID), eq(qty), any()))
+                    .thenReturn(Optional.of(existing));
+
+            Map<String, Object> result = service.submitNormalReport(
+                    FACTORY_ID, TASK_ID, WORKER_ID, "张三", qty, "测试备注");
+
+            assertEquals(Boolean.TRUE, result.get("duplicate"));
+            assertEquals(REPORT_ID, result.get("reportId"));
+            assertEquals(qty, result.get("pendingQuantity"));
+
+            // 关键: 命中后应 short-circuit, 既不查 task 也不保存任何东西
+            verify(taskRepository, never()).findByFactoryIdAndId(anyString(), anyString());
+            verify(reportRepository, never()).save(any(ProductionReport.class));
+            verify(taskRepository, never()).save(any(ProcessTask.class));
+
+            // 关键: 不再调用 in-memory 全表 stream 方法
+            verify(reportRepository, never())
+                    .findByProcessTaskIdAndDeletedAtIsNull(anyString());
+        }
+
+        @Test
+        @DisplayName("UT-PWR-23: 无重复 — findRecentDuplicate 返 empty, 正常创建报工")
+        void submitNormalReport_noDuplicate_createsReport() {
+            BigDecimal qty = new BigDecimal("75");
+            ProcessTask task = activeTask(ProcessTaskStatus.IN_PROGRESS)
+                    .pendingQuantity(new BigDecimal("100"))
+                    .build();
+            ProductionReport saved = pendingReport().id(500L).outputQuantity(qty).build();
+
+            when(reportRepository.findRecentDuplicate(eq(TASK_ID), eq(WORKER_ID), eq(qty), any()))
+                    .thenReturn(Optional.empty());
+            when(taskRepository.findByFactoryIdAndId(FACTORY_ID, TASK_ID))
+                    .thenReturn(Optional.of(task));
+            when(reportRepository.save(any(ProductionReport.class))).thenReturn(saved);
+            when(taskRepository.save(any(ProcessTask.class))).thenReturn(task);
+
+            Map<String, Object> result = service.submitNormalReport(
+                    FACTORY_ID, TASK_ID, WORKER_ID, "张三", qty, "正常报工");
+
+            assertNull(result.get("duplicate"), "无重复时不应有 duplicate 标志");
+            assertEquals(500L, result.get("reportId"));
+            assertEquals("IN_PROGRESS", result.get("taskStatus"));
+
+            // 报工应保存为 PENDING
+            verify(reportRepository).save(reportCaptor.capture());
+            ProductionReport createdReport = reportCaptor.getValue();
+            assertEquals("PENDING", createdReport.getApprovalStatus());
+            assertEquals(WORKER_ID, createdReport.getWorkerId());
+            assertEquals(qty, createdReport.getOutputQuantity());
+            assertFalse(createdReport.getIsSupplemental());
+
+            // task.pendingQuantity 应增加 75 → 175
+            verify(taskRepository).save(taskCaptor.capture());
+            assertEquals(new BigDecimal("175"), taskCaptor.getValue().getPendingQuantity());
+
+            // 关键: in-memory 全表方法不再被调用
+            verify(reportRepository, never())
+                    .findByProcessTaskIdAndDeletedAtIsNull(anyString());
+        }
+
+        @Test
+        @DisplayName("UT-PWR-24: PENDING task 首次报工 — auto-transition 到 IN_PROGRESS")
+        void submitNormalReport_pendingTask_autoTransitionsToInProgress() {
+            BigDecimal qty = new BigDecimal("40");
+            ProcessTask task = activeTask(ProcessTaskStatus.PENDING)
+                    .pendingQuantity(BigDecimal.ZERO)
+                    .build();
+            ProductionReport saved = pendingReport().id(501L).outputQuantity(qty).build();
+
+            when(reportRepository.findRecentDuplicate(eq(TASK_ID), eq(WORKER_ID), eq(qty), any()))
+                    .thenReturn(Optional.empty());
+            when(taskRepository.findByFactoryIdAndId(FACTORY_ID, TASK_ID))
+                    .thenReturn(Optional.of(task));
+            when(reportRepository.save(any(ProductionReport.class))).thenReturn(saved);
+            when(taskRepository.save(any(ProcessTask.class))).thenReturn(task);
+
+            Map<String, Object> result = service.submitNormalReport(
+                    FACTORY_ID, TASK_ID, WORKER_ID, "张三", qty, null);
+
+            assertEquals("IN_PROGRESS", result.get("taskStatus"));
+
+            verify(taskRepository).save(taskCaptor.capture());
+            assertEquals(ProcessTaskStatus.IN_PROGRESS, taskCaptor.getValue().getStatus());
+        }
+
+        @Test
+        @DisplayName("UT-PWR-25: COMPLETED task — 拒绝正常报工 (409)")
+        void submitNormalReport_completedTask_throws409() {
+            BigDecimal qty = new BigDecimal("10");
+            ProcessTask task = activeTask(ProcessTaskStatus.COMPLETED).build();
+
+            when(reportRepository.findRecentDuplicate(eq(TASK_ID), eq(WORKER_ID), eq(qty), any()))
+                    .thenReturn(Optional.empty());
+            when(taskRepository.findByFactoryIdAndId(FACTORY_ID, TASK_ID))
+                    .thenReturn(Optional.of(task));
+
+            BusinessException ex = assertThrows(BusinessException.class,
+                    () -> service.submitNormalReport(
+                            FACTORY_ID, TASK_ID, WORKER_ID, "张三", qty, null));
+
+            assertEquals(409, ex.getCode());
+            assertTrue(ex.getMessage().contains("正常报工仅限进行中或待开始的任务"));
+            verify(reportRepository, never()).save(any(ProductionReport.class));
+        }
+    }
+
     // ==================== 数量校准 ====================
 
     @Nested

@@ -8,9 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Repository
 public interface ProductionReportRepository extends JpaRepository<ProductionReport, Long> {
@@ -290,6 +293,27 @@ public interface ProductionReportRepository extends JpaRepository<ProductionRepo
         ORDER BY total_quantity DESC
         """, nativeQuery = true)
     List<Map<String, Object>> getWorkerSummaryByTaskId(@Param("taskId") String taskId);
+
+    // ==================== 报工防重 (30s 时间窗口) ====================
+
+    // #566 T4-B6: 替代 in-memory filter on findByProcessTaskIdAndDeletedAtIsNull —
+    // F006 prod 单任务可累计 ~6700 行,JVM 端 stream filter 单次 3-15s。
+    // 配套 partial index idx_pr_dedup (V20260514_01) → 索引扫描 <5ms。
+    @Query(value = """
+        SELECT * FROM production_reports
+        WHERE process_task_id = :taskId
+          AND worker_id = :workerId
+          AND output_quantity = :qty
+          AND created_at > :since
+          AND deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+        """, nativeQuery = true)
+    Optional<ProductionReport> findRecentDuplicate(
+            @Param("taskId") String taskId,
+            @Param("workerId") Long workerId,
+            @Param("qty") BigDecimal qty,
+            @Param("since") LocalDateTime since);
 
     // ==================== 冲销防重 ====================
 
