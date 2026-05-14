@@ -359,7 +359,7 @@ function fmtDuration(ms: number | null | undefined) {
   <div class="revenue-report-page">
     <h1 class="page-title">收入管理报表</h1>
     <p class="page-subtitle">
-      青花椒 / 餐饮真实门店 — 同比 / 环比 / 堂食外卖占比 / 客单人数分析
+      {{ authStore.factoryName || '餐饮门店' }} — 同比 / 环比 / 堂食外卖占比 / 客单人数分析
     </p>
 
     <!-- Stale-data warning banner (spec §11.4) -->
