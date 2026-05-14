@@ -6,6 +6,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { ElMessage } from 'element-plus';
 import { TrendCharts, DataAnalysis, Warning, InfoFilled } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
@@ -24,7 +25,9 @@ import {
 } from '@/api/smartbi/python-service';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // --- Container ref for chart resize ---
 const containerRef = ref<HTMLElement>();
@@ -486,7 +489,7 @@ onUnmounted(() => {
         </el-card>
 
         <!-- Cost structure card -->
-        <el-card v-if="costStructure" shadow="hover" style="margin-top: 16px;">
+        <el-card v-if="costStructure && canViewPrice" shadow="hover" style="margin-top: 16px;">
           <template #header>
             <span>成本结构 (自动检测)</span>
           </template>
@@ -524,7 +527,7 @@ onUnmounted(() => {
       <el-col :span="16">
         <!-- KPI impact cards -->
         <el-row :gutter="12" v-if="scenarioResult" class="kpi-row">
-          <el-col :span="6">
+          <el-col v-if="canViewPrice" :span="6">
             <el-card shadow="hover" class="kpi-card">
               <div class="kpi-title">预计收入</div>
               <div class="kpi-value">{{ fmtMoney(scenarioResult.projectedRevenue) }}</div>
@@ -534,7 +537,7 @@ onUnmounted(() => {
               </div>
             </el-card>
           </el-col>
-          <el-col :span="6">
+          <el-col v-if="canViewPrice" :span="6">
             <el-card shadow="hover" class="kpi-card">
               <div class="kpi-title">预计毛利</div>
               <div class="kpi-value">{{ fmtMoney(scenarioResult.projectedGrossProfit) }}</div>

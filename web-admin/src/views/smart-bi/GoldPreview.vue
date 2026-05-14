@@ -28,9 +28,12 @@ import {
   type TopProducts,
 } from '@/api/smartbi/gold';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import TrustIndicator from '@/components/TrustIndicator.vue';
 
 const auth = useAuthStore();
+const permissionStore = usePermissionStore();
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const router = useRouter();
 
 // 数据织网 Sub-Project C Day 24-25 POC: build cell-audit URL from a
@@ -140,16 +143,16 @@ onMounted(() => {
     </el-card>
 
     <el-row :gutter="16" class="kpi-row">
-      <el-col :span="6">
+      <el-col v-if="canViewPrice" :span="6">
         <el-statistic title="总营收" :value="kpi?.revenue ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
       </el-col>
       <el-col :span="6">
         <el-statistic title="账单数" :value="kpi?.billCount ?? 0" />
       </el-col>
-      <el-col :span="6">
+      <el-col v-if="canViewPrice" :span="6">
         <el-statistic title="客单价" :value="kpi?.avgBillValue ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
       </el-col>
-      <el-col :span="6">
+      <el-col v-if="canViewPrice" :span="6">
         <el-statistic title="人均消费" :value="kpi?.avgPerCapita ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
       </el-col>
     </el-row>
@@ -180,7 +183,7 @@ onMounted(() => {
           </template>
           <el-table :data="finance?.topStores ?? []" size="small" stripe>
             <el-table-column label="门店" prop="storeName" min-width="200" />
-            <el-table-column label="营收" align="right" width="140">
+            <el-table-column v-if="canViewPrice" label="营收" align="right" width="140">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
             <el-table-column label="账单" prop="billCount" align="right" width="90" />
@@ -198,7 +201,7 @@ onMounted(() => {
           <el-table :data="products?.topProducts ?? []" size="small" stripe max-height="320">
             <el-table-column label="商品" prop="productName" min-width="200" />
             <el-table-column label="销量" prop="qtySold" align="right" width="90" />
-            <el-table-column label="营收" align="right" width="120">
+            <el-table-column v-if="canViewPrice" label="营收" align="right" width="120">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
             <el-table-column label="数据置信度" width="240">
@@ -224,12 +227,12 @@ onMounted(() => {
           <template #header>
             <div class="panel-header">
               <span>支付渠道 (channel_breakdown)</span>
-              <span class="meta">{{ channels?.channels?.length ?? 0 }} rows · total {{ rmb(channels?.totalAmount ?? 0) }}</span>
+              <span class="meta">{{ channels?.channels?.length ?? 0 }} rows<span v-if="canViewPrice"> · total {{ rmb(channels?.totalAmount ?? 0) }}</span></span>
             </div>
           </template>
           <el-table :data="channels?.channels ?? []" size="small" stripe max-height="320">
             <el-table-column label="渠道" prop="channelName" min-width="150" />
-            <el-table-column label="金额" align="right" width="130">
+            <el-table-column v-if="canViewPrice" label="金额" align="right" width="130">
               <template #default="{ row }">{{ rmb(row.amount) }}</template>
             </el-table-column>
             <el-table-column label="占比" align="right" width="80">
@@ -244,12 +247,12 @@ onMounted(() => {
           <template #header>
             <div class="panel-header">
               <span>折扣/代金券 (discount_breakdown)</span>
-              <span class="meta">{{ discounts?.discounts?.length ?? 0 }} rows · total {{ rmb(discounts?.totalAmount ?? 0) }}</span>
+              <span class="meta">{{ discounts?.discounts?.length ?? 0 }} rows<span v-if="canViewPrice"> · total {{ rmb(discounts?.totalAmount ?? 0) }}</span></span>
             </div>
           </template>
           <el-table :data="discounts?.discounts ?? []" size="small" stripe max-height="320">
             <el-table-column label="折扣类型" prop="discountName" min-width="200" />
-            <el-table-column label="金额" align="right" width="130">
+            <el-table-column v-if="canViewPrice" label="金额" align="right" width="130">
               <template #default="{ row }">{{ rmb(row.amount) }}</template>
             </el-table-column>
             <el-table-column label="占比" align="right" width="80">

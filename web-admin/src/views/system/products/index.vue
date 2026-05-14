@@ -81,6 +81,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('system'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // 状态
 const loading = ref(false);
@@ -162,11 +163,12 @@ const formData = reactive<Partial<ProductType>>({
 });
 
 // P1-NEW-2: 产品大类=成品时隐藏"商务信息"组 (客户需求 1567-1572s: 成品不展示, 原辅料才展示)
-const visibleExtendedFields = computed<FieldConfig[]>(() =>
-  formData.productCategory === 'FINISHED_PRODUCT'
+const visibleExtendedFields = computed<FieldConfig[]>(() => {
+  const base = formData.productCategory === 'FINISHED_PRODUCT'
     ? productExtendedFields.filter(f => f.group !== '商务信息')
-    : productExtendedFields
-);
+    : productExtendedFields;
+  return canViewPrice.value ? base : base.filter(f => f.key !== 'taxIncludedUnitPrice');
+});
 
 // 客户下拉列表
 const customers = ref<{ id: string; name: string }[]>([]);

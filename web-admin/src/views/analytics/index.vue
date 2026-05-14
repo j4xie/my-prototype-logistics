@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { TrendCharts, DataAnalysis, Histogram, PieChart, Timer, Sunny, KnifeFork, Money, Goods, User, Box } from '@element-plus/icons-vue';
@@ -8,7 +9,9 @@ import { formatNumber } from '@/utils/format-number';
 import { pythonFetch } from '@/api/smartbi/common';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 // Apr 24 Plan C+: restaurant tenants get Gold ops dashboard instead of manufacturing cards
 const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT');
 
@@ -214,7 +217,7 @@ function formatPercent(num: number): string {
             <div class="stat-footer"><span>{{ formatNumber(restaurantOps.requisitionQty, 1) }} 单位</span></div>
           </el-card>
         </el-col>
-        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+        <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="8" :lg="4">
           <el-card class="stat-card quality" shadow="hover">
             <div class="card-header"><el-icon class="module-icon"><Sunny /></el-icon><span>损耗</span></div>
             <div class="stat-value">¥{{ formatNumber(restaurantOps.wastageCost, 0) }}</div>
@@ -230,7 +233,7 @@ function formatPercent(num: number): string {
             <div class="stat-footer"><span>{{ restaurantOps.stocktakingCount }} 次盘点</span></div>
           </el-card>
         </el-col>
-        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+        <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="8" :lg="4">
           <el-card class="stat-card sales" shadow="hover">
             <div class="card-header"><el-icon class="module-icon"><Money /></el-icon><span>食材成本</span></div>
             <div class="stat-value">¥{{ formatNumber(restaurantOps.requisitionCost, 0) }}</div>
@@ -258,7 +261,7 @@ function formatPercent(num: number): string {
 
       <!-- Gross margin row (Phase 7+: POS × food_cost) -->
       <el-row v-if="restaurantOps.marginRevenue > 0" :gutter="16" class="overview-cards" style="margin-top:12px">
-        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+        <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="8" :lg="4">
           <el-card class="stat-card sales" shadow="hover">
             <div class="card-header"><el-icon class="module-icon"><Money /></el-icon><span>POS 营收</span></div>
             <div class="stat-value">¥{{ formatNumber(restaurantOps.marginRevenue, 0) }}</div>
@@ -266,7 +269,7 @@ function formatPercent(num: number): string {
             <div class="stat-footer"><span>{{ restaurantOps.totalDishes }} 种菜品</span></div>
           </el-card>
         </el-col>
-        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+        <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="8" :lg="4">
           <el-card class="stat-card production" shadow="hover">
             <div class="card-header"><el-icon class="module-icon"><TrendCharts /></el-icon><span>毛利</span></div>
             <div class="stat-value success">¥{{ formatNumber(restaurantOps.marginProfit, 0) }}</div>
@@ -310,7 +313,7 @@ function formatPercent(num: number): string {
           <el-table-column type="index" width="60" label="排名" />
           <el-table-column prop="name" label="食材" />
           <el-table-column prop="category" label="类别" />
-          <el-table-column label="估算成本">
+          <el-table-column v-if="canViewPrice" label="估算成本">
             <template #default="{ row }">¥{{ formatNumber(row.cost, 2) }}</template>
           </el-table-column>
         </el-table>

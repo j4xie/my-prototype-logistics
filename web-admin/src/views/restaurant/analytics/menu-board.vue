@@ -76,11 +76,11 @@
                 <el-tag :type="tagType(row.quadrant)" size="small">{{ quadrantLabel(row.quadrant) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="revenue" label="营收(元)" width="120" align="right" sortable>
+            <el-table-column v-if="canViewPrice" prop="revenue" label="营收(元)" width="120" align="right" sortable>
               <template #default="{ row }">{{ row.revenue.toLocaleString() }}</template>
             </el-table-column>
             <el-table-column prop="quantity" label="销量" width="90" align="right" sortable />
-            <el-table-column prop="unitProfit" label="品均收入" width="110" align="right" sortable>
+            <el-table-column v-if="canViewPrice" prop="unitProfit" label="品均收入" width="110" align="right" sortable>
               <template #default="{ row }">¥{{ row.unitProfit.toFixed(1) }}</template>
             </el-table-column>
           </el-table>
@@ -106,9 +106,9 @@
           <el-descriptions-item label="象限">
             <el-tag :type="tagType(selectedItem.quadrant)">{{ quadrantLabel(selectedItem.quadrant) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="营收">¥{{ selectedItem.revenue.toLocaleString() }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="营收">¥{{ selectedItem.revenue.toLocaleString() }}</el-descriptions-item>
           <el-descriptions-item label="销量">{{ selectedItem.quantity }}</el-descriptions-item>
-          <el-descriptions-item label="品均收入">¥{{ selectedItem.unitProfit.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item v-if="canViewPrice" label="品均收入">¥{{ selectedItem.unitProfit.toFixed(2) }}</el-descriptions-item>
         </el-descriptions>
         <div class="suggestion-box" style="margin-top: 16px">
           <h4>运营建议</h4>
@@ -125,6 +125,7 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
+import { usePermissionStore } from '@/store/modules/permission'
 import type { MenuQuadrantData, MenuQuadrantItem } from '@/types/restaurant-analytics'
 import { pythonFetch } from '@/api/smartbi/common'
 // Day 9 数据织网 Sub-Project A: capability-driven card visibility
@@ -132,6 +133,8 @@ import { useCapability } from '@/composables/useCapability'
 import CapabilityGate from '@/components/CapabilityGate.vue'
 import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue'
 
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 const { fetchCapability } = useCapability()
 // Prime capability cache (fire-and-forget, useCapability handles errors fail-open).
 fetchCapability()

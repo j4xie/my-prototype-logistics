@@ -15,6 +15,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import echarts from '@/utils/echarts';
 import type { ECharts as EChartsInstance } from 'echarts/core';
@@ -58,7 +59,9 @@ import BomIngestDialog from './BomIngestDialog.vue';
 import TemplateGrid from './components/TemplateGrid.vue';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // ── State ──────────────────────────────────────────
 const uploads = ref<UploadHistoryItem[]>([]);
@@ -772,7 +775,7 @@ function formatCurrency(v?: number): string {
             >
               <el-icon><Refresh /></el-icon> 强制重算
             </el-button>
-            <el-button @click="showFinancialForm = !showFinancialForm">
+            <el-button v-if="canViewPrice" @click="showFinancialForm = !showFinancialForm">
               {{ showFinancialForm ? '收起财务' : '填财务数据' }}
             </el-button>
             <el-button type="success" :icon="Money" @click="openBomIngest">
@@ -786,7 +789,7 @@ function formatCurrency(v?: number): string {
 
         <!-- Financial data form (optional) -->
         <el-collapse-transition>
-          <div v-if="showFinancialForm" class="financial-form">
+          <div v-if="showFinancialForm && canViewPrice" class="financial-form">
             <el-alert type="info" :closable="false" style="margin-bottom: 12px">
               <template #default>
                 填财务数据后, 系统能跑成本弹性指数 + 对标预警 + 诊断. 不填则只做渠道毛利率 + 命名归一.

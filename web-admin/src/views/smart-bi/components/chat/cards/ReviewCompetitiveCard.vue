@@ -11,7 +11,7 @@
       </el-table-column>
       <el-table-column prop="rating" label="评分" align="right" width="70" />
       <el-table-column prop="review_count" label="评论数" align="right" width="80" />
-      <el-table-column prop="avg_spend" label="客单价" align="right" width="90">
+      <el-table-column v-if="canViewPrice" prop="avg_spend" label="客单价" align="right" width="90">
         <template #default="{ row }">
           {{ row.avg_spend != null ? '¥' + row.avg_spend : '-' }}
         </template>
@@ -33,7 +33,10 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
+import { usePermissionStore } from '@/store/modules/permission';
 const props = defineProps<{ data: Record<string, unknown> }>();
+const permissionStore = usePermissionStore();
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const ranking = computed(() => (props.data?.ranking as Array<Record<string, unknown>>) ?? []);
 const insights = computed(() => (props.data?.insights as string[]) ?? []);
 </script>

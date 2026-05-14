@@ -52,6 +52,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canUpload = computed(() => permissionStore.canWrite('analytics'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // ==================== 类型定义 ====================
 
@@ -1843,7 +1844,7 @@ onUnmounted(() => {
       </el-col>
     </el-row>
     <el-row v-else :gutter="16" class="kpi-section kpi-fade-in" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="6">
         <CapabilityGate card-id="dashboard_revenue_month" :requires="['date', 'net_amount']">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
@@ -1872,7 +1873,7 @@ onUnmounted(() => {
         </el-card>
         </CapabilityGate>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="6">
         <CapabilityGate card-id="dashboard_avg_bill" :requires="['source_bill_no', 'net_amount']">
         <el-card class="kpi-card profit">
           <div class="kpi-icon">
