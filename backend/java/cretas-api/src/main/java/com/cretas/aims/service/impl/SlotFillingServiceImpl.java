@@ -1,5 +1,6 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.config.IntentSlotConfiguration;
@@ -13,6 +14,7 @@ import com.cretas.aims.service.ParameterExtractionLearningService;
 import com.cretas.aims.service.SlotFillingService;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.config.TimeNormalizationRules;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,6 +57,16 @@ public class SlotFillingServiceImpl implements SlotFillingService {
     public void setProductTypeRepository(com.cretas.aims.repository.ProductTypeRepository productTypeRepository) {
         this.productTypeRepository = productTypeRepository;
     }
+
+    // LLM 客户端 (用于第 5 步: extract 缺失参数的兜底). Optional — 不可用时静默退化为 NEED_MORE_INFO。
+    private PythonLLMClient pythonLLMClient;
+
+    @Autowired(required = false)
+    public void setPythonLLMClient(PythonLLMClient pythonLLMClient) {
+        this.pythonLLMClient = pythonLLMClient;
+    }
+
+    private static final ObjectMapper SLOT_OBJECT_MAPPER = new ObjectMapper();
 
     @Override
     public IntentExecuteResponse checkAndStartSlotFilling(
@@ -203,7 +216,103 @@ public class SlotFillingServiceImpl implements SlotFillingService {
             extractWithLearnedRules(userInput, slots, extracted, matchResult, context);
         }
 
+        // 5. LLM 兜底抽参 — 让 LLM 处理 "今天/本月/上月/2025-03/上周" 等 NLP 短语，
+        //    填补前 4 步抽不到的 slot。不可用时静默退化为 NEED_MORE_INFO。
+        if (pythonLLMClient != null && userInput != null && !userInput.isEmpty()) {
+            List<RequiredSlot> stillMissing = slots.stream()
+                .filter(s -> !extracted.containsKey(s.getName()))
+                .collect(Collectors.toList());
+            if (!stillMissing.isEmpty()) {
+                Map<String, Object> llmExtracted = llmExtractMissingSlots(userInput, stillMissing);
+                for (Map.Entry<String, Object> e : llmExtracted.entrySet()) {
+                    if (!extracted.containsKey(e.getKey()) && e.getValue() != null) {
+                        extracted.put(e.getKey(), e.getValue());
+                        log.debug("LLM 抽参: {}={}", e.getKey(), e.getValue());
+                    }
+                }
+            }
+        }
+
         return extracted;
+    }
+
+    /**
+     * Step 5: LLM 兜底抽参。
+     *
+     * <p>把 user input + slot schema 喂给 LLM (低温度), 让它返回严格 JSON {name: value}。
+     * 主要解决 regex pattern 抓不到的相对时间短语 — "今天/本月/上月/上周/2025-03/3月"。
+     *
+     * <p>失败模式静默 (返空 map) → 上层逻辑走原 NEED_MORE_INFO path。
+     */
+    private Map<String, Object> llmExtractMissingSlots(String userInput, List<RequiredSlot> missing) {
+        try {
+            LocalDate today = LocalDate.now();
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate yesterday = today.minusDays(1);
+            LocalDate firstOfThisMonth = today.withDayOfMonth(1);
+            LocalDate lastOfThisMonth = today.withDayOfMonth(today.lengthOfMonth());
+            LocalDate firstOfLastMonth = firstOfThisMonth.minusMonths(1);
+            LocalDate lastOfLastMonth = firstOfThisMonth.minusDays(1);
+            LocalDate mondayOfThisWeek = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+            LocalDate sundayOfThisWeek = mondayOfThisWeek.plusDays(6);
+            LocalDate mondayOfLastWeek = mondayOfThisWeek.minusDays(7);
+            LocalDate sundayOfLastWeek = mondayOfThisWeek.minusDays(1);
+
+            StringBuilder slotList = new StringBuilder();
+            for (RequiredSlot s : missing) {
+                slotList.append("- ").append(s.getName())
+                    .append(" (").append(s.getType() == null ? "TEXT" : s.getType()).append(")");
+                if (s.getLabel() != null && !s.getLabel().isEmpty()) {
+                    slotList.append(": ").append(s.getLabel());
+                }
+                slotList.append("\n");
+            }
+
+            String systemPrompt = String.join("\n",
+                "你是参数提取助手。从用户输入提取以下参数, 输出**严格 JSON**。",
+                "",
+                "今天: " + today.format(df),
+                "昨天: " + yesterday.format(df),
+                "本月: " + firstOfThisMonth.format(df) + " ~ " + lastOfThisMonth.format(df),
+                "上月: " + firstOfLastMonth.format(df) + " ~ " + lastOfLastMonth.format(df),
+                "本周: " + mondayOfThisWeek.format(df) + " ~ " + sundayOfThisWeek.format(df),
+                "上周: " + mondayOfLastWeek.format(df) + " ~ " + sundayOfLastWeek.format(df),
+                "",
+                "需提取的参数:",
+                slotList.toString(),
+                "规则:",
+                "1. 提取不到的参数, JSON 值设 null",
+                "2. DATE 类型必须 YYYY-MM-DD 格式",
+                "3. 短月份格式 'YYYY-MM' 表示当月范围 (e.g. '2025-03' 配 date_from/date_to 类参数 → date_from=2025-03-01, date_to=2025-03-31)",
+                "4. 单一日期 'X月Y日' / 'YYYY-MM-DD' 配 date_from+date_to → 同日",
+                "5. 参数名形如 date_from/date_to/start_date/end_date 时智能配对",
+                "6. 输出**纯 JSON**, 无 markdown 代码块, 无解释文字",
+                "",
+                "输出格式: {\"param1\": \"value1\", \"param2\": \"value2\"}"
+            );
+
+            String response = pythonLLMClient.chatLowTemp(systemPrompt, userInput);
+            if (response == null || response.isEmpty()) return Collections.emptyMap();
+
+            // 去掉 markdown code fence (有些模型不听话)
+            String json = response.trim();
+            if (json.startsWith("```")) {
+                int firstNl = json.indexOf('\n');
+                if (firstNl > 0) json = json.substring(firstNl + 1);
+                int lastFence = json.lastIndexOf("```");
+                if (lastFence >= 0) json = json.substring(0, lastFence);
+                json = json.trim();
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parsed = SLOT_OBJECT_MAPPER.readValue(json, Map.class);
+            log.info("LLM 抽参成功: input='{}', extracted={}", userInput, parsed);
+            return parsed;
+        } catch (Exception e) {
+            log.warn("LLM 抽参失败 (退化为 NEED_MORE_INFO): input='{}', error={}",
+                userInput, e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 
     private void extractFromPreprocessedQuery(PreprocessedQuery pq, Map<String, Object> extracted) {
