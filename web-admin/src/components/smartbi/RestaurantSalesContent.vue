@@ -7,6 +7,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
+import axios from 'axios';
 import { get } from '@/api/request';
 import { toApiDateString } from '@/utils/dateFormat';
 import { ElMessage } from 'element-plus';
@@ -244,6 +245,11 @@ async function loadData() {
       : (response.data as SalesResponse);
     data.value = inner;
   } catch (error) {
+    // Suppress all forms of request cancellation (rapid navigation + abort):
+    //   - native fetch AbortError DOMException
+    //   - axios CanceledError (isCancel) — most common via interceptors
+    //   - any check on the abort controller signal
+    if (axios.isCancel(error)) return;
     if (error instanceof DOMException && error.name === 'AbortError') return;
     if (abortCtl?.signal.aborted) return;
     const msg = error instanceof Error ? error.message : '未知错误';
