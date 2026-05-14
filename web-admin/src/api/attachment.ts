@@ -1,0 +1,197 @@
+/**
+ * 附件 API — C-ATT-1.
+ *
+ * 对应后端 AttachmentController. 8 endpoint 完整封装.
+ * Base: /api/mobile/{factoryId}/attachments (request baseURL='/api/mobile')
+ */
+import request from './request';
+
+/** 关联实体类型 — 后端 Attachment.EntityType 枚举完整复刻 (18 值). */
+export type AttachmentEntityType =
+  | 'CUSTOMER'
+  | 'CUSTOMER_TRACKING'
+  | 'PURCHASE_ORDER'
+  | 'PURCHASE_RECEIPT'
+  | 'QUALITY_CHECK'
+  | 'PRODUCTION_BATCH'
+  | 'PAYMENT_VOUCHER'
+  | 'INVOICE'
+  | 'RD_SAMPLE'
+  | 'RECEIPT'
+  | 'RETURN_ORDER'
+  | 'SHIPMENT'
+  | 'WASTAGE_RECORD'
+  | 'GROUP_LEADER_REPORT'
+  | 'EXPENSE_REPORT'
+  | 'LEAVE_REQUEST'
+  | 'TIMECLOCK_PHOTO'
+  | 'GENERIC';
+
+export type AttachmentFileCategory =
+  | 'PHOTO'
+  | 'VIDEO'
+  | 'DOCUMENT'
+  | 'VOUCHER'
+  | 'SIGNATURE'
+  | 'OTHER';
+
+export interface Attachment {
+  id: string;
+  factoryId: string;
+  entityType: AttachmentEntityType;
+  entityId: string;
+  fileName: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  fileSize: number;
+  fileType: string;
+  fileCategory: AttachmentFileCategory;
+  fileStorage: string;
+  fileHash?: string;
+  businessTag?: string;
+  description?: string;
+  uploadedBy: number;
+  uploadedAt: string;
+  uploadSource: string;
+}
+
+export interface RegisterAttachmentRequest {
+  entityType: AttachmentEntityType;
+  entityId: string;
+  fileName: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  fileSize: number;
+  fileType: string;
+  fileCategory?: AttachmentFileCategory;
+  fileStorage?: string;
+  fileHash?: string;
+  businessTag?: string;
+  description?: string;
+  uploadSource?: string;
+}
+
+export interface UpdateAttachmentRequest {
+  description?: string;
+  businessTag?: string;
+  fileCategory?: AttachmentFileCategory;
+}
+
+export interface UploadUrlResponse {
+  uploadUrl: string;
+  fileUrl: string;
+}
+
+function getFactoryId(override?: string): string {
+  if (override) return override;
+  const raw = localStorage.getItem('cretas_user');
+  if (!raw) throw new Error('未登录 — 找不到 factoryId');
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed?.factoryId) throw new Error('用户对象无 factoryId 字段');
+    return parsed.factoryId as string;
+  } catch (e) {
+    throw new Error('用户数据无效');
+  }
+}
+
+function basePath(factoryId?: string): string {
+  return `/${getFactoryId(factoryId)}/attachments`;
+}
+
+/** 1. 列表 — 某实体的所有附件. */
+export function listAttachments(
+  entityType: AttachmentEntityType,
+  entityId: string,
+  factoryId?: string,
+): Promise<{ data: Attachment[]; success: boolean }> {
+  return request.get(`${basePath(factoryId)}?entityType=${entityType}&entityId=${encodeURIComponent(entityId)}`);
+}
+
+/** 2. 详情. */
+export function getAttachment(id: string, factoryId?: string): Promise<{ data: Attachment }> {
+  return request.get(`${basePath(factoryId)}/${id}`);
+}
+
+/** 3. 下载 — 后端 302 重定向. 直接打开 URL 即可. */
+export function downloadAttachmentUrl(id: string, factoryId?: string): string {
+  return `/api/mobile${basePath(factoryId)}/${id}/download`;
+}
+
+/** 4. 取 OSS pre-signed PUT URL — 5min. */
+export function getUploadUrl(
+  fileName: string,
+  fileType: string,
+  factoryId?: string,
+): Promise<{ data: UploadUrlResponse }> {
+  return request.post(`${basePath(factoryId)}/upload-url`, { fileName, fileType });
+}
+
+/** 5. 注册元数据 (OSS 直传完后). */
+export function registerAttachment(
+  req: RegisterAttachmentRequest,
+  factoryId?: string,
+): Promise<{ data: Attachment }> {
+  return request.post(basePath(factoryId), req);
+}
+
+/** 6. 更新 description/businessTag/fileCategory. */
+export function updateAttachment(
+  id: string,
+  req: UpdateAttachmentRequest,
+  factoryId?: string,
+): Promise<{ data: Attachment }> {
+  return request.put(`${basePath(factoryId)}/${id}`, req);
+}
+
+/** 7. 软删除. */
+export function deleteAttachment(id: string, factoryId?: string): Promise<unknown> {
+  return request.delete(`${basePath(factoryId)}/${id}`);
+}
+
+/** 8. 批量计数 — 列表页徽章. */
+export function batchCountAttachments(
+  entityType: AttachmentEntityType,
+  entityIds: string[],
+  factoryId?: string,
+): Promise<{ data: Record<string, number> }> {
+  return request.post(`${basePath(factoryId)}/batch-by-entity`, { entityType, entityIds });
+}
+
+/**
+ * 端到端上传辅助 — 浏览器 File → getUploadUrl → PUT to OSS → register.
+ */
+export async function uploadAndRegister(
+  file: File,
+  entityType: AttachmentEntityType,
+  entityId: string,
+  extras?: { businessTag?: string; description?: string; fileCategory?: AttachmentFileCategory },
+  factoryId?: string,
+): Promise<Attachment> {
+  const urlResp = await getUploadUrl(file.name, file.type, factoryId);
+  const { uploadUrl, fileUrl } = urlResp.data;
+
+  const putRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!putRes.ok) throw new Error(`OSS 上传失败 HTTP ${putRes.status}`);
+
+  const saved = await registerAttachment(
+    {
+      entityType,
+      entityId,
+      fileName: file.name,
+      fileUrl,
+      fileSize: file.size,
+      fileType: file.type,
+      fileCategory: extras?.fileCategory,
+      businessTag: extras?.businessTag,
+      description: extras?.description,
+      uploadSource: 'WEB',
+    },
+    factoryId,
+  );
+  return saved.data;
+}
