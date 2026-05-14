@@ -215,42 +215,42 @@ class SLOT(str, Enum):
 # ERROR before exhausting cleanly.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     SLOT.CHAT: {
-        "aliyun_c":          "qwen-flash",                # ✅ May 14 benchmark winner: 1.4s median, clean concise output, no hallucination (deepseek-v4-flash was 15s + hallucinated specifics)
+        "aliyun_c":          "qwen-flash",                # ✅ May 14 benchmark winner: 1.4s median, clean concise output, no hallucination (deepseek-v4-flash was 15s + hallucinated specifics)  # noqa: E501
         "aliyun_b":          "qwen-max",                  # Steve screenshot: B free 1M intact
         "aliyun_a":          "qwen3.6-max-preview",       # Steve screenshot: A free 999K intact
         "zhipu":             "glm-4.5-air",               # 6.5M independent pool (NOT in 通用池 which is 0)
         "aliyun_a_deepseek": "deepseek-v4-pro",           # DashScope-hosted, free 999K on aliyun_a key
     },
     SLOT.INSIGHTS: {
-        "aliyun_c":          "qwen-flash",                # ✅ May 14 benchmark winner: 1.2s median, 1-sentence精炼洞察(26 tokens). Cleanest of 5 candidates.
+        "aliyun_c":          "qwen-flash",                # ✅ May 14 benchmark winner: 1.2s median, 1-sentence精炼洞察(26 tokens). Cleanest of 5 candidates.  # noqa: E501
         "aliyun_b":          "qwen3.6-35b-a3b",           # Steve screenshot: 816K intact (live-probe also 200 OK)
         "aliyun_a":          "qwen3.6-35b-a3b",           # Steve screenshot: 998K intact
         "zhipu":             "glm-4.5-air",               # 6.5M independent pool
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.CHART: {
-        "aliyun_c":          "qwen-turbo",                # ✅ May 14 benchmark winner: 1.1s median, valid compact JSON. glm-5 was 60s, glm-4.5-air 400'd, deepseek-v4-flash mismatched xAxis/title.
+        "aliyun_c":          "qwen-turbo",                # ✅ May 14 benchmark winner: 1.1s median, valid compact JSON. glm-5 was 60s, glm-4.5-air 400'd, deepseek-v4-flash mismatched xAxis/title.  # noqa: E501
         "aliyun_b":          "glm-5",                     # 875K intact B
         "aliyun_a":          "glm-5",                     # 886K intact A (expires 2026/05/17 — re-check before then)
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.MAPPER: {
-        "aliyun_c":          "qwen-turbo",                # ✅ May 14 benchmark winner: 1.2s median, correct mapping direction (original-col → standard-field). qwen-flash flipped direction; deepseek-v4-flash wrapped in ```json``` (needs extra parse).
+        "aliyun_c":          "qwen-turbo",                # ✅ May 14 benchmark winner: 1.2s median, correct mapping direction (original-col → standard-field). qwen-flash flipped direction; deepseek-v4-flash wrapped in ```json``` (needs extra parse).  # noqa: E501
         "aliyun_b":          "qwen3.5-122b-a10b",         # 998K intact
         "aliyun_a":          "qwen3.5-122b-a10b",         # 998K
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.REASONING: {
-        "aliyun_c":          "deepseek-v4-pro",           # ✅ May 14 benchmark winner: 22.7s but best depth+structure. Acceptable latency for REASONING (non-interactive). qwen3-max @16s was simpler; deepseek-r1 @43s too slow.
+        "aliyun_c":          "deepseek-v4-pro",           # ✅ May 14 benchmark winner: 22.7s but best depth+structure. Acceptable latency for REASONING (non-interactive). qwen3-max @16s was simpler; deepseek-r1 @43s too slow.  # noqa: E501
         "aliyun_b":          "qwen3.5-397b-a17b",         # 974K intact
         "aliyun_a":          "qwen3.5-397b-a17b",         # 998K
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": "deepseek-v4-pro",
     },
     SLOT.VL: {
-        "aliyun_c":          "qwen3-vl-plus-2025-12-19",  # ✅ Only allowlist-approved VL option on aliyun_c (2025-05-07 SKU is 404 NOSKU on new accounts — deprecated).
+        "aliyun_c":          "qwen3-vl-plus-2025-12-19",  # ✅ Only allowlist-approved VL option on aliyun_c (2025-05-07 SKU is 404 NOSKU on new accounts — deprecated).  # noqa: E501
         "aliyun_b":          "qwen3-vl-plus-2025-12-19",  # 1M intact
         "aliyun_a":          "qwen3-vl-plus-2025-12-19",  # 1M intact on A
         "zhipu":             "glm-4.6v",                  # ⚠️ payload format incompatible with image_url (zhipu needs different shape); 6M independent pool exists but call site must adapt  # noqa: E501
@@ -258,7 +258,7 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
     },
     SLOT.REVIEW: {
         "aliyun_c":          "qwen3-max-2026-01-23",      # ✅ May 14 benchmark winner: 9.3s, concise + complete.
-        "aliyun_b":          "qwen-max",                      # ✅ May 14 aliyun_b probe (scripts/probe-review-sku.py): 6.4s, 267 tokens, real critique. REPLACES deepseek-r1-distill-qwen-32b which emits EMPTY output on REVIEW prompts (universal bug — confirmed on both aliyun_b AND aliyun_c, 24s wasted + 400 tokens billed with no content). Shares qwen-max free pool with aliyun_b CHAT (same SKU, same 1M/month bucket).
+        "aliyun_b":          "qwen-max",                      # ✅ May 14 aliyun_b probe (scripts/probe-review-sku.py): 6.4s, 267 tokens, real critique. REPLACES deepseek-r1-distill-qwen-32b which emits EMPTY output on REVIEW prompts (universal bug — confirmed on both aliyun_b AND aliyun_c, 24s wasted + 400 tokens billed with no content). Shares qwen-max free pool with aliyun_b CHAT (same SKU, same 1M/month bucket).  # noqa: E501
         "aliyun_a":          "qwen3.5-397b-a17b",             # ✅ A free OK May 13
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": None,                            # Skip new chain entry cleanly for REVIEW
