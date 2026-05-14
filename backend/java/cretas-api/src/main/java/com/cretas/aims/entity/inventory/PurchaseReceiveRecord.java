@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Where;
 
 /**
@@ -67,6 +68,17 @@ public class PurchaseReceiveRecord extends BaseEntity {
 
     @Column(name = "supplier_id", nullable = false, length = 191)
     private String supplierId;
+
+    // Issue #567: receives LIST response previously returned only the FK UUIDs;
+    // L3 入库记录 列表的 "采购订单" 和 "供应商" 列因此显示 raw UUID. Mirror the
+    // PurchaseOrder.supplierName pattern (PurchaseOrder.java:75-76) — Hibernate
+    // resolves these subqueries when the entity is loaded, so the list response
+    // now carries human-readable identifiers without service-layer hydration.
+    @Formula("(SELECT po.order_number FROM purchase_orders po WHERE po.id = purchase_order_id)")
+    private String purchaseOrderNumber;
+
+    @Formula("(SELECT s.name FROM suppliers s WHERE s.id = supplier_id)")
+    private String supplierName;
 
     @Column(name = "receive_date", nullable = false)
     private LocalDate receiveDate;
