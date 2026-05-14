@@ -194,8 +194,21 @@ export default function PurchaseOrderCreateScreen() {
     }
   };
 
+  // W-ABA-1 抄码品工具函数 — 查行对应的 MaterialType + 判断是否抄码品
+  const getSelectedMaterial = (item: DraftItem): MaterialType | undefined =>
+    materials.find((m) => m.id === item.materialTypeId);
+
+  const isAbacaItem = (item: DraftItem): boolean =>
+    !!getSelectedMaterial(item)?.isAbacaPackaging;
+
   // 单位选项: 该行原料的 1/2/3 级单位 + 该原料默认 unit (兜底)
+  // 抄码品锁定为 abacaDefaultUnit (默认 kg), 不允许选箱/盒等包装级单位
+  // — 因为入库以实际称重为准, 箱数无意义.
   const getUnitOptionsFor = (item: DraftItem): string[] => {
+    const m = getSelectedMaterial(item);
+    if (m?.isAbacaPackaging) {
+      return [m.abacaDefaultUnit || 'kg'];
+    }
     const set = new Set<string>();
     if (item.materialUnit) set.add(item.materialUnit);
     const pkg = packagingByMaterial[item.materialTypeId];
@@ -300,13 +313,17 @@ export default function PurchaseOrderCreateScreen() {
                     materials.map((m) => (
                       <Menu.Item
                         key={m.id}
-                        title={`${m.name} (${m.code})`}
+                        title={`${m.name} (${m.code})${m.isAbacaPackaging ? ' 🥩抄码' : ''}`}
                         onPress={() => {
+                          // 抄码品锁单位为 abacaDefaultUnit (默认 kg), 防止用户选成箱级
+                          const forcedUnit = m.isAbacaPackaging
+                            ? (m.abacaDefaultUnit || 'kg')
+                            : (item.unit || m.unit);
                           updateItem(item.key, {
                             materialTypeId: m.id,
                             materialName: m.name,
                             materialUnit: m.unit,
-                            unit: item.unit || m.unit, // 默认带入原料一级单位
+                            unit: forcedUnit,
                           });
                           setOpenMenuFor(null);
                           ensurePackagingLoaded(m.id);
@@ -316,18 +333,31 @@ export default function PurchaseOrderCreateScreen() {
                   )}
                 </Menu>
 
+                {/* W-ABA-1 抄码品 banner — 提示用户入库按实际称重, 箱数无意义 */}
+                {isAbacaItem(item) && (
+                  <View style={styles.abacaBanner}>
+                    <Text style={styles.abacaBannerText}>
+                      🥩 本品为抄码品 — 入库时按实际称重{' '}
+                      {getSelectedMaterial(item)?.abacaUnitPerBox
+                        ? `(${getSelectedMaterial(item)?.abacaUnitPerBox})`
+                        : '(每箱重量不一)'}
+                    </Text>
+                  </View>
+                )}
+
                 {/* 数量 + 单位 (宽行) */}
                 <View style={styles.row}>
                   <TextInput
-                    label="数量 *"
+                    label={isAbacaItem(item) ? '估算重量 *' : '数量 *'}
                     value={item.quantity}
                     onChangeText={(t) => updateItem(item.key, { quantity: t })}
                     mode="outlined"
                     keyboardType="numeric"
                     style={[styles.field, styles.flex2]}
+                    placeholder={isAbacaItem(item) ? '入库以实际称重为准' : undefined}
                   />
                   <Menu
-                    visible={openMenuFor?.kind === 'unit' && openMenuFor.key === item.key}
+                    visible={openMenuFor?.kind === 'unit' && openMenuFor.key === item.key && !isAbacaItem(item)}
                     onDismiss={() => setOpenMenuFor(null)}
                     anchor={
                       <TextInput
@@ -336,8 +366,14 @@ export default function PurchaseOrderCreateScreen() {
                         mode="outlined"
                         editable={false}
                         style={[styles.field, styles.flex1]}
-                        right={<TextInput.Icon icon="menu-down" onPress={() => setOpenMenuFor({ kind: 'unit', key: item.key })} />}
-                        onPressIn={() => setOpenMenuFor({ kind: 'unit', key: item.key })}
+                        right={
+                          isAbacaItem(item)
+                            ? <TextInput.Icon icon="lock" />
+                            : <TextInput.Icon icon="menu-down" onPress={() => setOpenMenuFor({ kind: 'unit', key: item.key })} />
+                        }
+                        onPressIn={isAbacaItem(item)
+                          ? undefined
+                          : () => setOpenMenuFor({ kind: 'unit', key: item.key })}
                       />
                     }
                   >
@@ -458,5 +494,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+  },
+
+  // W-ABA-1 抄码品提示条
+  abacaBanner: {
+    backgroundColor: '#fef3c7',  // 浅黄色背景, 区分常规
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+    borderRadius: 4,
+  },
+  abacaBannerText: {
+    fontSize: 12,
+    color: '#92400e',
+    lineHeight: 18,
   },
 });
