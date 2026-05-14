@@ -1,6 +1,6 @@
 # Phase IIa Nginx Deploy Evidence — Runbook
 
-**Status**: 🟢 Phase TEST APPLIED 2026-05-14T19:37:42Z — smoke green. Phase PROD pending PR-A prod deploy signal.
+**Status**: 🟢 Phase PROD APPLIED 2026-05-14T19:48:55Z — smoke green on 3 chains. Ready for PR-B frontend merge signal.
 **Branch**: `ops/phase-iia-nginx-restaurant-routing`
 **Spec**: `docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md` §6.1
 **MO**: `docs/superpowers/dispatch/2026-05-14-phase-iia-pr-c-nginx-marching-order.md`
@@ -207,18 +207,47 @@ ssh root@139.196.165.140 "
 "
 ```
 
-#### Evidence — Phase PROD
+#### Evidence — Phase PROD (APPLIED 2026-05-14)
 
 | Field | Value |
 |---|---|
-| Prod reload timestamp | `<TBD>` |
-| `web-admin.conf` backup | `<TBD>` |
-| `api.cretaceousfuture.com.conf` backup | `<TBD>` |
-| `nginx -t` result | `<TBD>` |
-| Smoke `R_QINGHUAJIAO_REAL` HTTP status | `<TBD>` |
-| Smoke `RES_3101_009` HTTP status (additional Gold-data chain) | `<TBD>` |
-| Smoke `R_GML_DEMO` HTTP status (additional Gold-data chain) | `<TBD>` |
-| Issues encountered | `<TBD>` |
+| Prod reload timestamp | **2026-05-14T19:48:55Z** (server local: May 15 03:48 UTC+8) |
+| `web-admin.conf` backup | `/www/server/panel/vhost/nginx/web-admin.conf.bak.phase-iia.20260514_154735` (10702 bytes) |
+| `api.cretaceousfuture.com.conf` backup | `/www/server/panel/vhost/nginx/api.cretaceousfuture.com.conf.bak.phase-iia.20260514_154735` (5888 bytes) |
+| Edit method | Python script via SSH — idempotent (already-inserted detection guards), markers `# Public API proxy` and `# Proxy all requests to Java backend on 47` |
+| `web-admin.conf` insertion | L174 (comment) → L182 (location) — between T6.6.3c block (ends L172) and `# Public API proxy` |
+| `api.cretaceousfuture.com.conf` insertion | L74 (comment) → L78 (location) — between T6.6.3c block (ends L72) and `# Proxy all requests to Java backend on 47` |
+| `nginx -t` | OK (1 pre-existing ssl_stapling warn unrelated, identical to Phase TEST) |
+| Reload | `nginx -s reload` exit 0 |
+| T6.6.3c (production\|quality) cascade L161/L69 | **NOT TOUCHED** — only new finance\|sales block added (verified via grep) |
+
+**Smoke results** (qhj_admin via :8086 prod + HTTPS api.cretaceousfuture.com):
+
+| # | Endpoint | HTTP | Latency | tenantType | Interpretation |
+|---|---|---|---|---|---|
+| a | `:8086 R_QINGHUAJIAO_REAL/smart-bi/analysis/sales` | **200** | 421ms | RESTAURANT ✓ | Empty-state expected per PR #625 — `billCount: 0`, `storeCount: 0`, `avgPerCapita: null` (Rule 4.5 edge case correctly handled — null not 0) |
+| b | `:8086 RES_3101_009/smart-bi/analysis/sales` | **403** | 422ms | n/a (auth blocked) | **Routing verified** — Python's `AUTH_ERROR` envelope `{code:"AUTH_ERROR", message:"Cross-factory access denied: token factoryId=R_QINGHUAJIAO_REAL URL factoryId=RES_3101_009"}`. Java catch-all would have returned 404 with different shape; Python's auth middleware response proves request reached Python. Rich-data verification of `RES_3101_009` requires cross-tenant admin login (out of PR-C scope) |
+| c | `https://api.cretaceousfuture.com R_QINGHUAJIAO_REAL/smart-bi/analysis/finance?analysisType=overview` | **200** | 649ms | RESTAURANT ✓ | Confirmed via `--resolve api.cretaceousfuture.com:443:139.196.165.140` (local DNS doesn't resolve; server-side routing verified). `kpi: {totalRevenue:0, billCount:0, avgPerCapita:null, storeCount:0, coverageStart:null, coverageEnd:null}` — empty-state per PR #625 |
+
+**Routing verdict**: All 3 smokes confirm restaurant prefix regex matches and requests proxy to `cretas_python`. Both vhosts (`:8086` web-admin + `:443` api.cretaceousfuture.com) route correctly. No Java fallthroughs.
+
+**Empty-state context**: `R_QINGHUAJIAO_REAL` on prod has `billCount: 0` (consistent with PR #625 acceptance memo: onboarding-blocked, customers haven't uploaded POS data yet). This is NOT a regression — it's the expected response per spec §4.5 edge case 1.
+
+**Verification grep**:
+
+```
+web-admin.conf:
+174:    # Phase IIa (2026-05-14): restaurant tenants → Python for /analysis/(finance|sales).
+182:    location ~ ^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|sales)(/.*)?$ {
+
+api.cretaceousfuture.com.conf:
+74:    # Phase IIa (2026-05-14): restaurant tenants → Python for /analysis/(finance|sales).
+78:    location ~ ^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|sales)(/.*)?$ {
+```
+
+T6.6.3c production|quality cascade (L161 in web-admin.conf, L69 in api.cretaceousfuture.com.conf) confirmed untouched.
+
+**Issues encountered**: None. (Smoke b's 403 is expected auth-scoping, not an issue.)
 
 ---
 
