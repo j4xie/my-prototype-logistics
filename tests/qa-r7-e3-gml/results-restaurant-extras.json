@@ -1,0 +1,174 @@
+{
+  "runAt": "2026-05-14T03:58:25.354Z",
+  "target": "http://139.196.165.140:8086",
+  "account": "gml_admin",
+  "factory": "R_GML_DEMO",
+  "scenariosTotal": 13,
+  "statusCounts": {
+    "PASS": 9,
+    "FAIL": 4
+  },
+  "results": [
+    {
+      "scenario": "S-COV-R-NAV",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "hasRestaurantMenu": true,
+        "verdict": "PASS",
+        "sidebarPreview": "白垩纪AI Agent首页销售管理销售订单客户管理销售退货系统管理用户管理角色管理操作日志系统设置AI意图配置Skill/Tool治理LLM 用量监控编码规则字典审批链配置AI 配额规则菜品信息管理工作流设计器功能模块配置Canvas 配置编辑器POS集成SmartBI配置数据质量队列经营报表分析概览趋势分析AI分析报告KPI看板异常预警进销存闭环总览餐饮运营运营分析运营总览菜品四象限门店对比经营与平台分析菜品毛利分析日常管理领料管理损耗管理配方管理盘点管理ETL 状态数据完整度智能分析分析入口经营驾驶舱财务 PBI 看板智能数据分析AI问答预定义报表销售数据分析财务数据分析收入管理报表数据管理Excel上传查询模板数据完整度质量管理知识库反馈AI 追问日志",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:38.274Z"
+    },
+    {
+      "scenario": "S-COV-R-1-requisitions",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/requisitions",
+        "hasListContainer": true,
+        "hasErrorContent": false,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:41.886Z"
+    },
+    {
+      "scenario": "S-COV-R-2-wastage",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/wastage",
+        "hasListContainer": true,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:45.757Z"
+    },
+    {
+      "scenario": "S-COV-R-3-recipes",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/recipes",
+        "hasListContainer": true,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:49.021Z"
+    },
+    {
+      "scenario": "S-COV-R-4-stocktaking",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/stocktaking",
+        "hasListContainer": true,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:51.989Z"
+    },
+    {
+      "scenario": "S-COV-R-5-analytics-overview",
+      "group": "R",
+      "status": "FAIL",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/404",
+        "hasMain": false,
+        "bodyTextPreview": "\n    404页面不存在抱歉，您访问的页面不存在或已被移除。返回上页返回首页\n    \n      白垩纪 AI Agent\n      \n      正在加载应用…\n    \n  \n\n",
+        "verdict": "FAIL",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:54.241Z"
+    },
+    {
+      "scenario": "S-COV-R-6-menu-board",
+      "group": "R",
+      "status": "FAIL",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/404",
+        "hasMain": false,
+        "verdict": "FAIL",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:56.276Z"
+    },
+    {
+      "scenario": "S-COV-R-7-store-comparison",
+      "group": "R",
+      "status": "FAIL",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/404",
+        "hasMain": false,
+        "verdict": "FAIL",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:57:58.328Z"
+    },
+    {
+      "scenario": "S-COV-R-8-dianping-gap",
+      "group": "R",
+      "status": "FAIL",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/404",
+        "hasMain": false,
+        "verdict": "FAIL",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:58:00.363Z"
+    },
+    {
+      "scenario": "S-COV-R-9-gross-margin",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/analytics/gross-margin",
+        "hasMain": true,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:58:16.948Z"
+    },
+    {
+      "scenario": "S-COV-R-10-etl-status",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/admin/etl-status",
+        "hasMain": true,
+        "verdict": "PASS",
+        "consoleErrors": [
+          "[gross-margin] load failed: TypeError: Failed to fetch\n    at v (http://139.196.165.140:8086/assets/common-QKxMW-wO.js:1:1589)\n    at R (http://139.196.165.140:8086/assets/gross-margin-CEcjU4Xt.js:1:2845)\n    at http://139.196.165.140:8086/assets/gross-margin-CEcjU4Xt.js:1:3628\n    at http://139.196.165.140:8086/assets/echarts-C3zi1NUf.js:4:7415\n    at du (http://139.196.165.140:8086/assets/echarts-C3zi1NUf.js:2:29688)\n    at Sn (http://139.196.165.140:8086/assets/echarts-C3zi1NUf.js:2:29759)\n    at t.__weh.t.__weh (http://139.196.165.140:8086/assets/echarts-C3zi1NUf.js:4:7295)\n    at Cp (http://139.196.165.140:8086/assets/echarts-C3zi1NUf.js:2:31269)\n    at AP (http://139.196.165.140:8086/assets/echarts-C3zi1NUf.js:2:31578)",
+          "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+        ]
+      },
+      "ts": "2026-05-14T03:58:19.796Z"
+    },
+    {
+      "scenario": "S-COV-R-11-data-completeness",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/restaurant/data-completeness",
+        "hasMain": true,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:58:22.636Z"
+    },
+    {
+      "scenario": "S-COV-R-12-pos-config",
+      "group": "R",
+      "status": "PASS",
+      "evidence": {
+        "loadedUrl": "http://139.196.165.140:8086/system/pos",
+        "hasMain": true,
+        "verdict": "PASS",
+        "consoleErrors": []
+      },
+      "ts": "2026-05-14T03:58:25.273Z"
+    }
+  ]
+}

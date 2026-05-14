@@ -1,0 +1,504 @@
+{
+  "runAt": "2026-05-14T03:56:58.804Z",
+  "target": "http://139.196.165.140:8086",
+  "scenariosTotal": 35,
+  "byGroup": {
+    "A": 24,
+    "B": 4,
+    "D": 4,
+    "E": 3
+  },
+  "statusCounts": {
+    "PASS": 9,
+    "FAIL": 4,
+    "PARTIAL": 3,
+    "INFO": 18,
+    "ERROR": 1
+  },
+  "results": [
+    {
+      "scenario": "S-COV-T4-D1-deeper",
+      "group": "E",
+      "priority": "P1-followup",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "hasWarehouseCol": true,
+        "hasZongCang": false,
+        "hasXianBianCang": false,
+        "dialogColumnsPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)来源仓库操作选择产品13% 加工选择删除+ 添加行取消创建",
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:41:08.479Z"
+    },
+    {
+      "scenario": "S-COV-T4-D4-rpf-manual",
+      "group": "E",
+      "priority": "P1-followup",
+      "account": "f006_admin",
+      "status": "INFO",
+      "evidence": {
+        "verdict": "INFO",
+        "reason": "no detail button on batches list"
+      },
+      "ts": "2026-05-14T03:41:42.228Z"
+    },
+    {
+      "scenario": "S-COV-T-INV-scope-clarify",
+      "group": "E",
+      "priority": "P1-followup",
+      "account": "f006_admin",
+      "status": "INFO",
+      "evidence": {
+        "verdict": "INFO",
+        "reason": "no order to test (table empty?)"
+      },
+      "ts": "2026-05-14T03:42:35.539Z"
+    },
+    {
+      "scenario": "S-COV-T1-1-plan-page",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — page renders but no data rows",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "rowCount": 0,
+        "verdict": "INFO — page renders but no data rows"
+      },
+      "ts": "2026-05-14T03:42:58.584Z"
+    },
+    {
+      "scenario": "S-COV-T1-2-ai-create-plan",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — AI 入口可能仅在 AI Agent 全局触发, 页面内未提供专门按钮",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "hasAiCreateBtn": false,
+        "hasContextualAi": false,
+        "verdict": "INFO — AI 入口可能仅在 AI Agent 全局触发, 页面内未提供专门按钮"
+      },
+      "ts": "2026-05-14T03:43:21.297Z"
+    },
+    {
+      "scenario": "S-COV-T1-3-by-process",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — 工序字段可能在详情或弹窗中",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "headers": [],
+        "hasProcessCol": false,
+        "verdict": "INFO — 工序字段可能在详情或弹窗中"
+      },
+      "ts": "2026-05-14T03:43:46.743Z"
+    },
+    {
+      "scenario": "S-COV-T1-5-shift-report",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — 未找到报工页面 (可能在 RN App / 小程序)",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/404",
+        "landed": null,
+        "hasReport": false,
+        "verdict": "INFO — 未找到报工页面 (可能在 RN App / 小程序)"
+      },
+      "ts": "2026-05-14T03:44:05.893Z"
+    },
+    {
+      "scenario": "S-COV-T2-1-ai-skill-registry",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/",
+        "hasAiAgent": true,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:44:32.674Z"
+    },
+    {
+      "scenario": "S-COV-T2-2-modules-nav",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PARTIAL",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/dashboard",
+        "modules": {
+          "进销存": true,
+          "财务": true,
+          "销售": true,
+          "采购": false,
+          "生产": false,
+          "研发": false
+        },
+        "matched": 3,
+        "verdict": "PARTIAL"
+      },
+      "ts": "2026-05-14T03:44:52.122Z"
+    },
+    {
+      "scenario": "S-COV-T2-4-rpf-chain-list",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PARTIAL",
+      "evidence": {
+        "results": {
+          "/rd/samples": true,
+          "/procurement/orders": true,
+          "/procurement/receives": true,
+          "/inventory/batches": false,
+          "/production/plans": true
+        },
+        "verdict": "PARTIAL"
+      },
+      "ts": "2026-05-14T03:45:25.352Z"
+    },
+    {
+      "scenario": "S-COV-T2-5-finance-link",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "results": {
+          "/finance/payments": true,
+          "/finance/invoices": true,
+          "/finance/adjustments": true
+        },
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:45:55.296Z"
+    },
+    {
+      "scenario": "S-COV-T2-6-llm-chat",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/dashboard",
+        "inputCount": 0,
+        "hasAiFloat": false,
+        "hasHeaderAi": true,
+        "hasAiBtn": false,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:46:19.073Z"
+    },
+    {
+      "scenario": "S-COV-T2-7-skill-config",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — Skill 配置可能不暴露给前端 (后端 DB 配置)",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/404",
+        "landed": null,
+        "verdict": "INFO — Skill 配置可能不暴露给前端 (后端 DB 配置)"
+      },
+      "ts": "2026-05-14T03:46:43.989Z"
+    },
+    {
+      "scenario": "S-COV-T2-8-cross-module-ai",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/smart-bi/dashboard",
+        "landed": "/smart-bi",
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:47:05.812Z"
+    },
+    {
+      "scenario": "S-COV-T2-9-bom-add-material",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "ERROR",
+      "evidence": {
+        "error": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://139.196.165.140:8086/production/bom\", waiting until \"load\"\u001b[22m\n"
+      },
+      "ts": "2026-05-14T03:47:35.933Z"
+    },
+    {
+      "scenario": "S-COV-T3-1-box-auto",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — no order to inspect",
+      "evidence": {
+        "verdict": "INFO — no order to inspect"
+      },
+      "ts": "2026-05-14T03:48:07.811Z"
+    },
+    {
+      "scenario": "S-COV-T3-2-abaca",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — F006 当前订单中无规格=\"抄码\"的行 (功能实现 in code @ list.vue:131, 但 prod 数据未触发)",
+      "evidence": {
+        "foundAbacaInDetail": false,
+        "foundAbacaInList": false,
+        "verdict": "INFO — F006 当前订单中无规格=\"抄码\"的行 (功能实现 in code @ list.vue:131, 但 prod 数据未触发)"
+      },
+      "ts": "2026-05-14T03:48:47.655Z"
+    },
+    {
+      "scenario": "S-COV-T3-3-three-price",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — no order",
+      "evidence": {
+        "verdict": "INFO — no order"
+      },
+      "ts": "2026-05-14T03:49:22.954Z"
+    },
+    {
+      "scenario": "S-COV-T3-4-expected-arrival",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — 字段未在订单详情中找到",
+      "evidence": {
+        "hasInDetail": false,
+        "verdict": "INFO — 字段未在订单详情中找到"
+      },
+      "ts": "2026-05-14T03:49:47.021Z"
+    },
+    {
+      "scenario": "S-COV-T3-5-approval-config",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — page landed but 审批链 text not detected",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/system/approval-chains",
+        "landed": "/system/approval-chains",
+        "hasApprovalConfig": false,
+        "verdict": "INFO — page landed but 审批链 text not detected"
+      },
+      "ts": "2026-05-14T03:50:09.842Z"
+    },
+    {
+      "scenario": "S-COV-T3-10-sales-unit-price",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "hasUnitPriceLabel": true,
+        "priceInputCount": 3,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:50:39.419Z"
+    },
+    {
+      "scenario": "S-COV-T3-12-material-supplier",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — page rendered but no supplier text",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/procurement/suppliers",
+        "landed": "/procurement/suppliers",
+        "hasSupplierMgmt": false,
+        "verdict": "INFO — page rendered but no supplier text"
+      },
+      "ts": "2026-05-14T03:50:58.977Z"
+    },
+    {
+      "scenario": "S-COV-T3-15-unit-conv",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — page landed but no 转换率/conversion text detected",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "landed": "/production/conversions",
+        "hasUnits": false,
+        "verdict": "INFO — page landed but no 转换率/conversion text detected"
+      },
+      "ts": "2026-05-14T03:51:15.822Z"
+    },
+    {
+      "scenario": "S-COV-T4-B1-process-dropdown",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO",
+      "evidence": {
+        "hasProcess": false,
+        "verdict": "INFO"
+      },
+      "ts": "2026-05-14T03:52:15.589Z"
+    },
+    {
+      "scenario": "S-COV-T4-B7-dialog-width",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "widthPx": 1024,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:52:38.614Z"
+    },
+    {
+      "scenario": "S-COV-T4-B8-bom-binding",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "hasMaterials": false,
+        "verdict": "INFO"
+      },
+      "ts": "2026-05-14T03:52:59.116Z"
+    },
+    {
+      "scenario": "S-COV-T4-D3-g-kg-conv",
+      "group": "A",
+      "priority": "P2",
+      "account": "f006_admin",
+      "status": "INFO — page rendered but no g/kg unit text",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "landed": "/production/conversions",
+        "hasUnits": false,
+        "verdict": "INFO — page rendered but no g/kg unit text"
+      },
+      "ts": "2026-05-14T03:53:19.016Z"
+    },
+    {
+      "scenario": "S-COV-T2-10-yield-rate",
+      "group": "B",
+      "priority": "P1-retest",
+      "account": "f006_admin",
+      "status": "FAIL — F006 BOM 未见 yield/出成率/净料率",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "hasYieldInList": false,
+        "hasYieldInDialog": false,
+        "dialogPreviewHead": "",
+        "verdict": "FAIL — F006 BOM 未见 yield/出成率/净料率"
+      },
+      "ts": "2026-05-14T03:53:41.017Z"
+    },
+    {
+      "scenario": "S-COV-T3-9-rbac-warehouse-mgr-list",
+      "group": "B",
+      "priority": "P1-retest",
+      "account": "f006_warehouse_mgr",
+      "status": "PASS",
+      "evidence": {
+        "results": {
+          "/procurement/orders": {
+            "headers": [],
+            "hasPrice": false
+          },
+          "/sales/orders": {
+            "headers": [],
+            "hasPrice": false
+          }
+        },
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:54:28.683Z"
+    },
+    {
+      "scenario": "S-COV-T4-B4-stock-col",
+      "group": "B",
+      "priority": "P1-retest",
+      "account": "f006_admin",
+      "status": "INFO — no 新建 button after 12s",
+      "evidence": {
+        "verdict": "INFO — no 新建 button after 12s"
+      },
+      "ts": "2026-05-14T03:55:10.782Z"
+    },
+    {
+      "scenario": "S-COV-T4-B9-manual-transfer",
+      "group": "B",
+      "priority": "P1-retest",
+      "account": "f006_admin",
+      "status": "FAIL",
+      "evidence": {
+        "hasManualBtn": false,
+        "hasManualText": false,
+        "verdict": "FAIL"
+      },
+      "ts": "2026-05-14T03:55:41.415Z"
+    },
+    {
+      "scenario": "S-COV-T2-5b-moving-avg-price",
+      "group": "D",
+      "priority": "P1-missed",
+      "account": "f006_admin",
+      "status": "PARTIAL",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "landed": "/warehouse/material-types",
+        "hasAvgPrice": false,
+        "verdict": "PARTIAL"
+      },
+      "ts": "2026-05-14T03:56:01.080Z"
+    },
+    {
+      "scenario": "S-COV-T2-11-yield-analysis",
+      "group": "D",
+      "priority": "P1-missed",
+      "account": "f006_admin",
+      "status": "FAIL",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/403",
+        "landed": "/production/process-io",
+        "hasYieldRpt": false,
+        "verdict": "FAIL"
+      },
+      "ts": "2026-05-14T03:56:14.611Z"
+    },
+    {
+      "scenario": "S-COV-T2-12-sku-margin",
+      "group": "D",
+      "priority": "P1-missed",
+      "account": "f006_admin",
+      "status": "FAIL",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/finance/sku-margin",
+        "landed": "/finance/sku-margin",
+        "hasMargin": false,
+        "verdict": "FAIL"
+      },
+      "ts": "2026-05-14T03:56:34.994Z"
+    },
+    {
+      "scenario": "S-COV-T3-8b-receive-no-price",
+      "group": "D",
+      "priority": "P1-missed",
+      "account": "f006_warehouse_mgr",
+      "status": "PASS",
+      "evidence": {
+        "headers": [],
+        "hasPrice": false,
+        "hasPhotoCol": false,
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:56:58.727Z"
+    }
+  ]
+}
