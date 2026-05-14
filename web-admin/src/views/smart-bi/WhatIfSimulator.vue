@@ -27,6 +27,9 @@ import {
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+// canViewPrice: PR #520 pattern — entire simulator renders revenue/cost/profit;
+// hide for non-PRICE_VIEW_ROLES (e.g. viewer) to avoid misleading empty UI.
+// Defense-in-depth: outer <template v-if> wrapper (this PR) + inner per-cell v-if (#598).
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // --- Container ref for chart resize ---
@@ -410,6 +413,7 @@ onUnmounted(() => {
       <p class="subtitle">调整价格、成本、客流参数，实时查看收入和利润影响</p>
     </div>
 
+    <template v-if="canViewPrice">
     <!-- Data source + controls row -->
     <el-row :gutter="16">
       <!-- Left: Controls -->
@@ -647,6 +651,8 @@ onUnmounted(() => {
         </el-table-column>
       </el-table>
     </el-card>
+    </template>
+    <el-empty v-else description="您没有查看价格/成本数据的权限" />
   </div>
 </template>
 
