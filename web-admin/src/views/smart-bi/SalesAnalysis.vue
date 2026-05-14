@@ -26,6 +26,7 @@ import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue'
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import RestaurantPhaseIIPlaceholder from '@/components/smartbi/RestaurantPhaseIIPlaceholder.vue';
+import RestaurantSalesContent from '@/components/smartbi/RestaurantSalesContent.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import type { ChartConfig as SmartBIChartConfig } from '@/types/smartbi';
 import {
@@ -48,6 +49,10 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
+// Phase IIa rollback flag (spec §5.7): default ON. Ops can flip
+// VITE_PHASE_IIA_ENABLED=false to fall back to RestaurantPhaseIIPlaceholder
+// without a code revert. The placeholder file stays in repo for this reason.
+const phaseIIaEnabled = computed(() => import.meta.env.VITE_PHASE_IIA_ENABLED !== 'false');
 const rootRef = ref<HTMLDivElement>();
 const trendChartRef = ref<HTMLDivElement | null>(null);
 const pieChartRef = ref<HTMLDivElement | null>(null);
@@ -1430,8 +1435,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 餐饮租户尚未支持本页 (Phase II 建设中). 见 RestaurantPhaseIIPlaceholder. -->
-  <RestaurantPhaseIIPlaceholder v-if="isRestaurantTenant" pageName="销售数据分析" />
+  <!-- Phase IIa (2026-05-14): real restaurant analytics replace the placeholder.
+       Rollback path (spec §5.7): VITE_PHASE_IIA_ENABLED=false falls back to the
+       placeholder without a code revert. RestaurantPhaseIIPlaceholder.vue stays
+       in repo so this flag flip works. -->
+  <RestaurantPhaseIIPlaceholder
+    v-if="isRestaurantTenant && !phaseIIaEnabled"
+    pageName="销售数据分析"
+  />
+  <RestaurantSalesContent v-else-if="isRestaurantTenant && phaseIIaEnabled" />
   <div v-else ref="rootRef" class="sales-analysis-page">
     <div class="page-header">
       <div class="header-left">
