@@ -49,6 +49,7 @@ import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue'
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import RestaurantPhaseIIPlaceholder from '@/components/smartbi/RestaurantPhaseIIPlaceholder.vue';
+import RestaurantFinanceContent from '@/components/smartbi/RestaurantFinanceContent.vue';
 import TemplateGrid from './components/TemplateGrid.vue';
 import type { ChartConfig } from '@/types/smartbi';
 // Day 9 数据织网 Sub-Project A: capability-driven card visibility
@@ -68,6 +69,10 @@ const canViewPrice = computed(() => permissionStore.canViewPrice);
 // Apr 24 2026 UX P0-1: restaurant tenants 没有 cost/profit 数据 (Silver 无),
 // 顶部 KPI 改显 Gold 营收/订单/客单价/门店. Manufacturing tenants 保持原样.
 const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
+// Phase IIa rollback flag (spec §5.7): default ON. Ops can flip
+// VITE_PHASE_IIA_ENABLED=false to fall back to RestaurantPhaseIIPlaceholder
+// without a code revert. The placeholder file stays in repo for this reason.
+const phaseIIaEnabled = computed(() => import.meta.env.VITE_PHASE_IIA_ENABLED !== 'false');
 
 // 分析类型
 type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
@@ -1882,8 +1887,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 餐饮租户尚未支持本页 (Phase II 建设中). 见 RestaurantPhaseIIPlaceholder. -->
-  <RestaurantPhaseIIPlaceholder v-if="isRestaurantTenant" pageName="财务数据分析" />
+  <!-- Phase IIa (2026-05-14): real restaurant analytics replace the placeholder.
+       Rollback path (spec §5.7): VITE_PHASE_IIA_ENABLED=false falls back to the
+       placeholder without a code revert. RestaurantPhaseIIPlaceholder.vue stays
+       in repo so this flag flip works. -->
+  <RestaurantPhaseIIPlaceholder
+    v-if="isRestaurantTenant && !phaseIIaEnabled"
+    pageName="财务数据分析"
+  />
+  <RestaurantFinanceContent v-else-if="isRestaurantTenant && phaseIIaEnabled" />
   <div v-else ref="financePageRef" class="finance-analysis-page">
     <div class="page-header">
       <div class="header-left">
