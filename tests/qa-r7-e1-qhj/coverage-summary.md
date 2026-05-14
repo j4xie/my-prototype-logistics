@@ -226,15 +226,12 @@ Cross-role RBAC verification on QHJ-chain tenants is **deferred until additional
 
 ## §7 Issues filed / recommended
 
-| Bucket | Issue | Title (proposed) | Severity |
+| Bucket | Issue | Title | Severity |
 |---|---|---|---|
-| Scope (R7-E1 process) | new | R7-Path-E should split E-manuf / E-restaurant matrices — F006 51-ask map is manufacturing-only | P2 |
-| Data hygiene | new | `R_QINGHUAJIAO_REAL` is a ghost tenant (1 user, 0 POS records) — consolidate with RES_3101_009 or seed data | P2 |
-| Account seeding | new | QHJ-chain factories lack warehouse_mgr/finance/operator role seeds — cross-role RBAC un-auditable | P2 |
-| Harness | inline-fix | `setDefaultNavigationTimeout(60000)` added post-Group-A to prevent pdf-lib race; ERROR scenarios should be re-run | P3 (patched) |
-| Restaurant coverage | new | Draft restaurant-specific 25-ask matrix (recipes/requisitions/wastage/stocktaking/POS analytics) for R7-E restaurant tenants | P1 |
-
-Issue numbers will be appended when filed.
+| Scope (R7-E1 process) + restaurant matrix | **#602** | qa(r7-e): split Path E into E-manuf / E-restaurant matrices — F006 51-ask map is manufacturing-only | P1/P2 |
+| Data hygiene | **#603** | data-hygiene: R_QINGHUAJIAO_REAL ghost tenant — 1 user, 0 POS records; consolidate with RES_3101_009 or seed data | P2 |
+| Account seeding | **#604** | rbac-audit-gap: QHJ-chain factories lack warehouse_mgr/finance/operator role seeds — cross-role RBAC un-auditable | P2 |
+| Harness | inline-fix in this PR | `setDefaultNavigationTimeout(60000)` added post-Group-A to prevent pdf-lib race; ERROR scenarios should be re-run | P3 (patched) |
 
 ---
 
