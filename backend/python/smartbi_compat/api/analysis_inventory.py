@@ -35,7 +35,7 @@ from smartbi_compat.api.analysis_finance import (
 from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import wrap_response
-from smartbi_compat.auth import verify_jwt_and_factory, AuthContext
+from smartbi_compat.auth import AuthContext
 # Java HashMap iter-order helper for value-tied entries on Collectors.groupingBy
 # outputs. See backend/python/smartbi_compat/_java_compat.py for full doc.
 from smartbi_compat._java_compat import (

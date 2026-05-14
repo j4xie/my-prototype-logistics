@@ -11,7 +11,8 @@ locks the fixes.
 | ``analysis_production`` | ``/analysis/production`` | gate + strip wrap missing |
 | ``analysis_quality`` | ``/analysis/quality`` | gate + strip wrap missing |
 | ``incentive_plan`` | ``/incentive-plan/{type}/{id}`` | gate + strip wrap missing |
-| ``analysis`` (4 legacy) | ``/query-templates``, ``/datasource/list``, ``/alerts``, ``/recommendations`` | gate + strip wrap missing |
+| ``analysis`` (4 legacy) | ``/query-templates``, ``/datasource/list``,
+  ``/alerts``, ``/recommendations`` | gate + strip wrap missing |
 
 Each test mocks the data-fetch seam so the gate / strip behavior can be
 isolated without hitting the database. Pattern mirrors
@@ -31,9 +32,7 @@ Skipped (deliberate, scheduled per Rule 8.4):
 from __future__ import annotations
 
 import os
-from datetime import date
-from decimal import Decimal
-from typing import Any, Optional
+from typing import Optional
 
 import jwt
 import pytest

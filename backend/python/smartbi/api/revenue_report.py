@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import re
 import uuid
 from datetime import date
@@ -25,7 +24,7 @@ from io import BytesIO
 from typing import List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -33,7 +32,6 @@ from smartbi.api._revenue_report_helpers import (
     REVENUE_REPORT_CACHE,
     _enforce_factory_match,
     _generate_with_cache,
-    compute_cache_key,
 )
 from smartbi.canonical.templates.qhj_revenue_report import RevenueReportParams
 

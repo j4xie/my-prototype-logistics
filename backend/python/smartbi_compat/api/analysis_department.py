@@ -26,7 +26,7 @@ from smartbi_compat.api.analysis_finance import (  # noqa: E402
 )
 from smartbi_compat._rbac_role import require_analytics_read  # noqa: E402
 from smartbi_compat._rbac_strip import strip_price_for_role  # noqa: E402
-from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
+from smartbi_compat.auth import AuthContext  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 
 # T1 lock — inline const, NOT alert_thresholds.py 80 (different concept for /alerts)

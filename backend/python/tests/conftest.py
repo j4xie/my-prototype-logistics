@@ -368,9 +368,11 @@ KNOWN_ENDPOINTS = frozenset({
     "query_templates_create",
     "query_templates_update",
     "query_templates_delete",
+    # cross-cutting sweep tests (not single endpoints)
+    "r6_rbac_strip_sister_sweep",
 })
-assert len(KNOWN_ENDPOINTS) == 34, (
-    f"KNOWN_ENDPOINTS size {len(KNOWN_ENDPOINTS)}, expected 34 — "
+assert len(KNOWN_ENDPOINTS) == 35, (
+    f"KNOWN_ENDPOINTS size {len(KNOWN_ENDPOINTS)}, expected 35 — "
     "update audit §1 + this set together"
 )
 

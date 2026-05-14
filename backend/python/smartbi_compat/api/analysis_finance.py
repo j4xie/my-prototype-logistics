@@ -36,7 +36,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
-from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
+from smartbi_compat.auth import AuthContext
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import _java_isoformat, wrap_error, wrap_response
 
