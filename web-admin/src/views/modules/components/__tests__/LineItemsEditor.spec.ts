@@ -7,9 +7,10 @@
  *  - R2 boolean catch-fallback skip (Number(true)=1 不污染数值字段)
  *  - null-guard 三元 returns null (not 0)
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 
 vi.mock('@/api/request', () => ({ default: { get: vi.fn() } }));
 vi.mock('@/store/modules/auth', () => ({
@@ -41,6 +42,8 @@ function makeWrapper(itemSchema: { fields: any[] }, modelValue: Record<string, u
 }
 
 describe('LineItemsEditor recomputeRow (Task 3)', () => {
+  beforeEach(() => { setActivePinia(createPinia()); });
+
   it('backward compat: quantity * unitPrice → lineAmount', () => {
     const w = makeWrapper({
       fields: [
@@ -108,6 +111,8 @@ describe('LineItemsEditor recomputeRow (Task 3)', () => {
 });
 
 describe('LineItemsEditor onReferenceProject (Task 2)', () => {
+  beforeEach(() => { setActivePinia(createPinia()); });
+
   it('spreads shadow fields into target row', () => {
     const initialRows = [{ quantity: 50 }, { quantity: 100 }];
     const w = makeWrapper({
