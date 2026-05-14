@@ -181,7 +181,9 @@ class SLOT(str, Enum):
 #             in another C-account SKU.
 #   aliyun_b: qwen-max (CHAT), qwen3.6-35b-a3b (INSIGHTS), glm-5 (CHART),
 #             qwen3.5-122b-a10b (MAPPER), qwen3.5-397b-a17b (REASONING),
-#             qwen3-vl-plus-2025-12-19 (VL), deepseek-r1-distill-qwen-32b (REVIEW)
+#             qwen3-vl-plus-2025-12-19 (VL), qwen-max (REVIEW — May 14 fix:
+#             was deepseek-r1-distill-qwen-32b which emits EMPTY output on
+#             REVIEW prompts, universal bug; see SLOT.REVIEW comment)
 #   aliyun_a: qwen3.6-max-preview (CHAT), qwen3.6-35b-a3b (INSIGHTS),
 #             glm-5 (CHART), qwen3.5-122b-a10b (MAPPER),
 #             qwen3.5-397b-a17b (REASONING + REVIEW),
@@ -255,8 +257,8 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
         "aliyun_a_deepseek": None,                        # DashScope has no DeepSeek VL — skip cleanly
     },
     SLOT.REVIEW: {
-        "aliyun_c":          "qwen3-max-2026-01-23",      # ✅ May 14 benchmark winner: 9.3s, concise + complete. deepseek-v4-pro @18.7s was deeper but slower; deepseek-r1-distill-qwen-32b returned EMPTY output (broken on REVIEW prompt).
-        "aliyun_b":          "deepseek-r1-distill-qwen-32b",  # ✅ B free OK May 13 (NB: May 14 benchmark on aliyun_c showed this SKU emitting empty output for REVIEW prompts — re-audit on aliyun_b before relying on it)
+        "aliyun_c":          "qwen3-max-2026-01-23",      # ✅ May 14 benchmark winner: 9.3s, concise + complete.
+        "aliyun_b":          "qwen-max",                      # ✅ May 14 aliyun_b probe (scripts/probe-review-sku.py): 6.4s, 267 tokens, real critique. REPLACES deepseek-r1-distill-qwen-32b which emits EMPTY output on REVIEW prompts (universal bug — confirmed on both aliyun_b AND aliyun_c, 24s wasted + 400 tokens billed with no content). Shares qwen-max free pool with aliyun_b CHAT (same SKU, same 1M/month bucket).
         "aliyun_a":          "qwen3.5-397b-a17b",             # ✅ A free OK May 13
         "zhipu":             "glm-4.5-air",
         "aliyun_a_deepseek": None,                            # Skip new chain entry cleanly for REVIEW

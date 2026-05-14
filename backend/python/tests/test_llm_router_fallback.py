@@ -318,7 +318,7 @@ def test_slot_models_match_current_audit():
     assert sm[SLOT.MAPPER]["aliyun_b"] == "qwen3.5-122b-a10b"
     assert sm[SLOT.REASONING]["aliyun_b"] == "qwen3.5-397b-a17b"
     assert sm[SLOT.VL]["aliyun_b"] == "qwen3-vl-plus-2025-12-19"
-    assert sm[SLOT.REVIEW]["aliyun_b"] == "deepseek-r1-distill-qwen-32b"
+    assert sm[SLOT.REVIEW]["aliyun_b"] == "qwen-max"  # May 14 fix: was deepseek-r1-distill-qwen-32b (empty output bug)
 
     # aliyun_a
     assert sm[SLOT.CHAT]["aliyun_a"] == "qwen3.6-max-preview"
