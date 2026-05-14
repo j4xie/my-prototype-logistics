@@ -104,7 +104,15 @@ export const CARD_MANIFEST: CardManifestEntry[] = [
     fallbackMode: 'placeholder',
     description: 'TemplateGrid-rendered (page-key=finance); B-stage adds SVC card canonical fields' },
 
-  // Total: 28 entries (was 30 pre-cleanup; removed restaurant_overview_avg + restaurant_overview_traffic)
+  // === Phase IIa Restaurant (2) — wrapped in RestaurantSalesContent.vue / RestaurantFinanceContent.vue ===
+  // Gate restaurant tenant 总营收 KPI cards behind canViewPrice + Gold field availability.
+  // Mirrors finance_revenue_mgmt requires shape (POS Gold-derived revenue).
+  { id: 'restaurant_sales_revenue', page: '/smart-bi/sales', title: '餐饮总营收 (销售页)',
+    requires: ['date', 'gross_amount'] },
+  { id: 'restaurant_finance_revenue', page: '/smart-bi/finance', title: '餐饮总营收 (财务页)',
+    requires: ['date', 'gross_amount'] },
+
+  // Total: 30 entries (28 pre-Phase-IIa + 2 restaurant cards added 2026-05-14)
 ];
 
 // Lint helper: check duplicate IDs at module load (cheap, runs once)
