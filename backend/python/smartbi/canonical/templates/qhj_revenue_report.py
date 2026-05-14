@@ -196,10 +196,10 @@ async def _period_compare(
         p = prev_map.get(r["store_id"])
         result.append({
             **dict(r),
-            "prev_total":   p["total"]   if p else None,
+            "prev_total": p["total"] if p else None,
             "prev_dine_in": p["dine_in"] if p else None,
             "prev_takeout": p["takeout"] if p else None,
-            "total_ratio":   _pct_ratio(r["total"],   p["total"])   if p else None,
+            "total_ratio": _pct_ratio(r["total"], p["total"]) if p else None,
             "dine_in_ratio": _pct_ratio(r["dine_in"], p["dine_in"]) if p else None,
             "takeout_ratio": _pct_ratio(r["takeout"], p["takeout"]) if p else None,
         })

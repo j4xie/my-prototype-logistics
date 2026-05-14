@@ -22,7 +22,6 @@ import json
 import logging
 import os
 import time
-from dataclasses import asdict
 from io import BytesIO
 from typing import Optional
 

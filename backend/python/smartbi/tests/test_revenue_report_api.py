@@ -8,7 +8,7 @@ internal-secret factory_id guard. Heavy mocking of the helper +
 asyncpg pool to avoid touching real DB.
 """
 import io
-from datetime import date, datetime
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -140,12 +140,12 @@ async def test_prepare_returns_download_url_and_summary(fake_pool):
     fake_resolve = AsyncMock(return_value=[1, 2])
 
     with patch("smartbi.api.revenue_report._get_pool", new=AsyncMock(return_value=pool)), \
-         patch(
-             "smartbi.api.revenue_report._enforce_factory_match",
-             return_value="R_QINGHUAJIAO_REAL",
-         ), \
-         patch("smartbi.api.revenue_report._resolve_store_ids", new=fake_resolve), \
-         patch("smartbi.api.revenue_report._generate_with_cache", new=fake_helper):
+            patch(
+                "smartbi.api.revenue_report._enforce_factory_match",
+                return_value="R_QINGHUAJIAO_REAL",
+            ), \
+            patch("smartbi.api.revenue_report._resolve_store_ids", new=fake_resolve), \
+            patch("smartbi.api.revenue_report._generate_with_cache", new=fake_helper):
         from httpx import ASGITransport, AsyncClient
         app = _mk_app_with_router()
         async with AsyncClient(
@@ -179,12 +179,12 @@ async def test_generate_streams_xlsx_with_response_headers(fake_pool):
     fake_resolve = AsyncMock(return_value=[1])
 
     with patch("smartbi.api.revenue_report._get_pool", new=AsyncMock(return_value=pool)), \
-         patch(
-             "smartbi.api.revenue_report._enforce_factory_match",
-             return_value="R_QINGHUAJIAO_REAL",
-         ), \
-         patch("smartbi.api.revenue_report._resolve_store_ids", new=fake_resolve), \
-         patch("smartbi.api.revenue_report._generate_with_cache", new=fake_helper):
+            patch(
+                "smartbi.api.revenue_report._enforce_factory_match",
+                return_value="R_QINGHUAJIAO_REAL",
+            ), \
+            patch("smartbi.api.revenue_report._resolve_store_ids", new=fake_resolve), \
+            patch("smartbi.api.revenue_report._generate_with_cache", new=fake_helper):
         from httpx import ASGITransport, AsyncClient
         app = _mk_app_with_router()
         async with AsyncClient(

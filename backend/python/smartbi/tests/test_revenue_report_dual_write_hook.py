@@ -59,7 +59,7 @@ async def test_dual_write_calls_aggregator_after_backfill():
         )
 
         from smartbi.gold.dual_write import run_silver_dual_write
-        result = await run_silver_dual_write(
+        await run_silver_dual_write(
             factory_id="R_QINGHUAJIAO_REAL", upload_id=99,
         )
 

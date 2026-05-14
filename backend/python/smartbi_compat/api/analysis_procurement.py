@@ -26,7 +26,7 @@ from smartbi_compat.api.analysis_finance import (  # noqa: E402
 )
 from smartbi_compat._rbac_role import require_analytics_read  # noqa: E402
 from smartbi_compat._rbac_strip import strip_price_for_role  # noqa: E402
-from smartbi_compat.auth import AuthContext, verify_jwt_and_factory  # noqa: E402
+from smartbi_compat.auth import AuthContext  # noqa: E402
 from smartbi_compat.schema_compat import wrap_response  # noqa: E402
 # Java HashMap iter-order helpers (extracted to shared module per task #22 —
 # previously defined inline here, now reusable across all smartbi_compat
