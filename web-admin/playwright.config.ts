@@ -145,5 +145,11 @@ export default defineConfig({
         video: 'on',
       },
     },
+    {
+      name: 'phase-iia-final-demo',
+      testMatch: 'phase-iia-final-demo.spec.ts',
+      fullyParallel: false,
+      workers: 1,
+    },
   ],
 });
