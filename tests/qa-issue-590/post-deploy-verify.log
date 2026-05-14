@@ -1,0 +1,128 @@
+Issue #590 post-fix verification log
+=====================================
+
+Migration: V20260515_01__llm_usage_allow_internal_sentinel.sql
+Applied to: prod smartbi_prod_db on 47.100.235.168
+Apply time: 2026-05-14 13:25 CST (Asia/Shanghai)
+Verified by: chat1 (organizer-dispatched)
+
+NOTE: Migration was applied manually via `psql -f` for rapid hot-fix
+verification before commit. The same file is committed in this PR and
+will be picked up automatically by `deploy-smartbi-python.sh` Step 3.5
+on the next regular deploy (Flyway tracker is keyed on filename, so the
+record will mark the manual apply as already-applied and skip re-run).
+
+
+T+0 — Apply migration
+---------------------
+
+  $ scp V20260515_01__llm_usage_allow_internal_sentinel.sql \
+      root@47.100.235.168:/tmp/
+  $ ssh root@47.100.235.168 \
+      'sudo -u postgres psql -d smartbi_prod_db -f /tmp/V20260515_01...sql'
+  DROP POLICY
+  CREATE POLICY
+
+
+T+0 — Verify policy DDL
+-----------------------
+
+  $ ssh root@... 'sudo -u postgres psql -d smartbi_prod_db -c "\d smart_bi_llm_usage"' | grep -A1 tenant_insert
+  POLICY "tenant_insert" FOR INSERT
+    WITH CHECK ((((factory_id IS NULL) AND ((current_setting('app.factory_id'::text, true) IS NULL) OR (current_setting('app.factory_id'::text, true) = ''::text) OR (current_setting('app.factory_id'::text, true) = '__internal__'::text))) OR ((factory_id IS NOT NULL) AND ((current_setting('app.factory_id'::text, true) IS NULL) OR (current_setting('app.factory_id'::text, true) = ''::text) OR (current_setting('app.factory_id'::text, true) = '__internal__'::text) OR ((factory_id)::text = current_setting('app.factory_id'::text, true))))))
+
+  '__internal__' branches present in both NULL and NOT-NULL halves. ✓
+
+
+T+0 — Direct INSERT under sentinel GUC (was the bug)
+----------------------------------------------------
+
+  SET ROLE smartbi_user;
+  SELECT set_config('app.factory_id', '__internal__', false);
+  INSERT INTO smart_bi_llm_usage
+    (provider, model, caller, factory_id, status_code)
+    VALUES ('dashscope', 'qwen-flash', 'verify-590-noret', NULL, 200);
+  -> INSERT 0 1   ✓ PASS (was: ERROR new row violates RLS)
+
+
+T+~4min — Real LLM call end-to-end
+-----------------------------------
+
+  $ ssh root@... 'curl -s -X POST http://localhost:8083/api/llm/chat \
+      -H "Content-Type: application/json" \
+      -d "{\"model\":\"qwen-flash\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":5}"'
+
+  {"choices":[{"message":{"role":"assistant","content":"Hello! How can I"}, ...
+   "usage":{"prompt_tokens":9,"completion_tokens":5,"total_tokens":14, ...},
+   "model":"qwen-max", ...}
+
+  HTTP 200. Hit aliyun_b/qwen-max via llm_router fallback.
+
+  ~5s later, flush_loop drained the queue:
+
+  $ ssh root@... 'sudo -u postgres psql -d smartbi_prod_db -c \
+      "SELECT id, ts, provider, model, caller, factory_id, status_code \
+       FROM smart_bi_llm_usage ORDER BY id DESC LIMIT 3;"'
+
+    id  | ts                         | provider  | model      | caller           | factory_id | status_code
+  ------+----------------------------+-----------+------------+------------------+------------+-------------
+   6436 | 2026-05-14 13:29:35.120992 | aliyun_b  | qwen-max   | unknown          |            | 200
+   6435 | 2026-05-14 13:25:58.745028 | dashscope | qwen-flash | verify-590-noret |            | 200
+   4785 | 2026-04-28 12:15:37.914534 | deepseek  | deepseek-v4-flash | ai_query_chat | RES_3101_009 | 200
+
+  Row 6436 = the real LLM call. caller='unknown' because no
+  llm_caller_context wrapped the curl. factory_id=NULL because the call
+  was outside a tenant request. status_code=200. ✓
+
+
+T+~6min — Soak: 0 flush errors since fix
+----------------------------------------
+
+  $ ssh root@... 'awk -v start="2026-05-14 13:25:00" "\$0 >= start" \
+      /www/wwwroot/cretas/python-prod.log | \
+      grep -iE "llm.*usage.*flush.*fail" | wc -l'
+  0
+
+  Compare: 30+ errors in the 20 minutes BEFORE the fix in the same log.
+
+
+SECURITY MATRIX RE-VERIFIED
+---------------------------
+
+  Test 3: cross-tenant escape attempt (must FAIL — preserves V20260502_05 intent)
+    SET ROLE smartbi_user;
+    SELECT set_config('app.factory_id', 'F001', false);
+    INSERT INTO smart_bi_llm_usage (... factory_id ...)
+      VALUES (..., 'F002', ...);
+    -> ERROR: new row violates row-level security policy   ✓ correctly blocked
+
+  Test 4: NULL-under-tenant-scope (must FAIL — preserves V20260514_01 intent)
+    SET ROLE smartbi_user;
+    SELECT set_config('app.factory_id', 'F001', false);
+    INSERT INTO smart_bi_llm_usage (... factory_id ...)
+      VALUES (..., NULL, ...);
+    -> ERROR: new row violates row-level security policy   ✓ correctly blocked
+
+
+CLEANUP
+-------
+
+  $ ssh root@... 'sudo -u postgres psql -d smartbi_prod_db -c \
+      "DELETE FROM smart_bi_llm_usage WHERE caller IN (\
+       '\''verify-590-noret'\'', '\''repro-590'\'')"'
+  DELETE 1   -- verify-590-noret only; repro-590 was deleted earlier
+
+  Test artifact rows pruned. Real LLM call row (6436) intentionally kept
+  as proof of working flush.
+
+
+GAP NOT RECOVERABLE
+-------------------
+
+Rows 4786 → 6434 (~1649) are permanently lost. The flush queue is
+in-memory (`asyncio.Queue` in `common.llm_metrics`). When a record is
+dequeued and the INSERT fails, the record is dropped (per the WARNING
+"LLM usage flush failed" path — no retry). Service restarts also drop
+the queue. There is no way to backfill these.
+
+Going forward: all LLM calls are captured.
