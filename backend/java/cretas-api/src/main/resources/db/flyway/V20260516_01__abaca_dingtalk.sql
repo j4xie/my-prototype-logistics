@@ -1,8 +1,11 @@
 -- ============================================================
--- V20260516_01 — Track B1 (DingTalk webhook logs) + Track B2 (abaca 抄码品)
+-- V20260516_01 — Track B1: DingTalk webhook logs (C-AI-1 PoC)
 --
--- Shared migration: Track B1 owns the dingtalk section below.
--- Track B2 will append the abaca section at the bottom of this file.
+-- Track B2 (abaca 抄码品) lands in a SEPARATE file V20260516_02__abaca.sql to
+-- avoid Flyway checksum-mismatch when both tracks deploy on different days.
+-- Original brief proposed shared file; reverted 2026-05-14 after checksum risk
+-- analysis (Flyway recomputes per-file at apply; appending after a deploy
+-- breaks subsequent deploys until `flyway repair`). Steve approved the split.
 -- ============================================================
 
 -- ============================================================
@@ -69,5 +72,5 @@ CREATE UNIQUE INDEX idx_users_dingtalk_user_id ON users (dingtalk_user_id) WHERE
 COMMENT ON COLUMN users.dingtalk_user_id IS 'DingTalk senderId for inbound user-resolution; nullable.';
 
 -- ============================================================
--- 下面由 Track B2 (Chat 6) 追加: abaca 字段 + abaca_quantity_log
+-- End of Track B1 section. Track B2 (abaca 抄码品) lives in V20260516_02__abaca.sql.
 -- ============================================================
