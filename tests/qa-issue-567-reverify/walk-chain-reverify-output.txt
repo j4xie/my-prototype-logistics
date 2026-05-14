@@ -1,0 +1,20 @@
+[S0-login] PASS 
+[S1-L1-rd-samples] PASS 
+[S1-L2-procurement-orders] PASS 
+[S1-L3-procurement-receives] PASS 
+[S1-L4-warehouse-inventory] PASS 
+[S1-L5-production-plans] PASS 
+[S2-L2-L3-trace-A] PASS 
+[S2-L2-L3-trace-B] PASS 
+[S2-L2-L3-trace-C] PASS 
+[S3-L3-shows-PO-numbers] PASS—human-readable PO numbers rendered for all 3 traces Source: receives/list.vue:311-313 column renders purchaseOrderNumber || purchaseOrderId || fallback. UUID-only rendering = backend gap (LIST endpoint doesn't join PO number); PO number rendering = full L3→L2 visibility.
+[S4-L4-warehouse-inventory-shows-batches] PASS /warehouse/inventory should show 3 material batches per chat3 PR #613
+[S4b-L4-detail-dialog-usage-history] INFO—usage section not detected in dialog L4→L5 surface: usage-history dialog. chat3 PR #613: F006 prod has 0 consumption rows; dialog should render empty state, not error.
+[S5-production-batches-list] PASS 
+[S5b-production-batch-detail-consumption] INFO—consumption section not rendered (v-if length>0 guard means empty data hides section gracefully) T4-D4 PR #533 surface. F006 prod has 0 consumption rows per chat3 → section hides via v-if guard. Verdict here just records whether section CAN render when data is present.
+[S6a-direct-url-nav-state] PASS Direct URL nav to PO detail (full UUID captured from list-click) should hydrate factory context from auth store.
+[S6b-reload-state] PASS F5 reload on PO detail should re-hydrate from URL param + auth store. Token preserved.
+[S6c-back-button-state] PASS Fresh list → detail → browser back. Verifies factory context + list re-population.
+[S7-bogus-id-handling] INFO Bogus PO id should render NotFoundEmpty (per procurement/orders/detail.vue:82-85), not crash.
+
+Done. 18 steps. Console errors: 1. Results → C:\Users\Steve\cretas-issue-567-reverify\scripts\issue-567-rpf-ui-e2e\results.json
