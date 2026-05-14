@@ -74,7 +74,7 @@ async function fetchData() {
     const res = await get<ProgressResp>(`/${factoryId.value}/dashboard/production-progress`, {
       params: { date: today.value }
     })
-    data.value = res
+    data.value = res.data ?? null
   } catch (e) {
     const msg = (e as Error)?.message || '加载失败'
     errorMsg.value = msg

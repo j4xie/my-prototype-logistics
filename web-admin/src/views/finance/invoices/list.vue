@@ -292,7 +292,7 @@ async function handleRequestSubmit() {
             :limit="1"
             accept="application/pdf,.pdf"
             :on-change="handlePdfChange"
-            :on-remove="() => (issuePdfFile = null)"
+            :on-remove="(): void => { issuePdfFile = null }"
           >
             <el-button type="primary">选择 PDF 文件</el-button>
             <template #tip>

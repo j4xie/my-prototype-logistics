@@ -20,7 +20,7 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
-const canApprove = computed(() => permissionStore.canApprove('sales'));
+const canApprove = computed(() => permissionStore.canWrite('sales'));
 
 const returnOrderId = computed(() => route.params.id as string);
 const loading = ref(false);
