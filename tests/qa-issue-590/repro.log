@@ -1,0 +1,138 @@
+Issue #590 reproduction log
+============================
+
+Branch: fix/issue-590-llm-usage-flush
+Date: 2026-05-14 13:20–13:31 CST (server time, Asia/Shanghai)
+Server: prod 47.100.235.168 (smartbi_prod_db)
+Operator: chat1 (organizer dispatched)
+
+PHASE 1 — confirm zero-state
+----------------------------
+
+Query:
+  ssh root@47.100.235.168 \
+    'sudo -u postgres psql -d smartbi_prod_db -c \
+     "SELECT COUNT(*), MAX(ts), MIN(ts) FROM smart_bi_llm_usage;"'
+
+Result (T-0 = 2026-05-14 13:20 CST):
+  total_rows | latest_ts                  | earliest_ts
+  -----------+----------------------------+----------------------------
+  4783       | 2026-04-28 12:15:37.914534 | 2026-04-16 15:02:03.50375
+
+Latest insert is from 2026-04-28 12:15 CST — 16 days ago. Confirms zero
+inserts since Apr 28 mid-day Shanghai time. (`ts` is `timestamp without
+time zone` with default `now()`; Cretas server timezone is Asia/Shanghai.)
+
+
+PHASE 2 — live flush errors
+---------------------------
+
+Query:
+  grep -iE 'llm.*usage|flush.*fail|smart_bi_llm' \
+    /www/wwwroot/cretas/python-prod.log | tail -30
+
+Sample (truncated; pattern fires every 20-30s):
+  2026-05-14 08:50:11,576 - common.llm_metrics - WARNING - [-] -
+    LLM usage flush failed: new row violates row-level security
+    policy for table "smart_bi_llm_usage"
+  2026-05-14 11:29:06,525 - common.llm_metrics - WARNING - [-] -
+    LLM usage flush failed: new row violates row-level security
+    policy for table "smart_bi_llm_usage"
+
+Pattern was firing continuously since V20260514_01 deploy (PR #576 May 13).
+
+
+PHASE 3 — direct reproduction with prod GUC pattern
+---------------------------------------------------
+
+Reproduction query (matches the asyncpg pool setup callback behaviour
+in smartbi.tenant_ctx.set_pg_connection_tenant):
+
+  SET ROLE smartbi_user;
+  SELECT set_config('app.factory_id', '__internal__', false);
+  INSERT INTO smart_bi_llm_usage
+    (provider, model, caller, input_tokens, output_tokens, total_tokens, factory_id)
+    VALUES ('test', 'test', 'repro-590', 0, 0, 0, NULL);
+
+Result:
+  SET
+   set_config
+  --------------
+   __internal__
+  (1 row)
+
+  ERROR: new row violates row-level security policy for table
+         "smart_bi_llm_usage"
+
+This is the exact failure path of common.llm_metrics._flush_loop.
+
+
+PHASE 4 — control: GUC unset (PR #576's tested path)
+----------------------------------------------------
+
+  SET ROLE smartbi_user;
+  -- no set_config — GUC defaults to NULL
+  INSERT INTO smart_bi_llm_usage (provider, model, caller, factory_id, ...)
+    VALUES (..., NULL) RETURNING id;
+
+Result:
+   id
+  ------
+   6430
+  (1 row)
+  INSERT 0 1
+
+So PR #576's policy correctly allows GUC-unset + NULL factory_id. But
+the prod flush loop never has GUC unset — the pool setup callback always
+writes the '__internal__' sentinel. That's the test gap PR #576 missed.
+
+
+PHASE 5 — apply fix (V20260515_01)
+----------------------------------
+
+Migration: DROP + CREATE tenant_insert policy, adding '__internal__'
+to both the NULL-factory_id and the tenant-factory_id branches.
+
+Result:
+  DROP POLICY
+  CREATE POLICY
+
+
+PHASE 6 — post-fix verification matrix
+--------------------------------------
+
+  # case: GUC='__internal__' + factory_id NULL  (bg flush system row)
+  SET ROLE smartbi_user;
+  SELECT set_config('app.factory_id', '__internal__', false);
+  INSERT INTO smart_bi_llm_usage (provider, model, caller, factory_id, status_code)
+    VALUES ('dashscope', 'qwen-flash', 'verify-590-noret', NULL, 200);
+  -> INSERT 0 1   ✓ PASS (was FAIL)
+
+  # case: real LLM call via /api/llm/chat
+  curl -X POST http://localhost:8083/api/llm/chat \
+    -d '{"model":"qwen-flash","messages":[{"role":"user","content":"hi"}],"max_tokens":5}'
+  -> 200 OK, response from aliyun_b/qwen-max
+
+  # wait 15s for flush_loop to drain queue, then check DB
+  SELECT id, ts, provider, model, caller, factory_id FROM smart_bi_llm_usage
+    ORDER BY id DESC LIMIT 2;
+   id  | ts                         | provider  | model    | caller  | factory_id
+  -----+----------------------------+-----------+----------+---------+-----------
+  6436 | 2026-05-14 13:29:35.120992 | aliyun_b  | qwen-max | unknown |
+  6435 | 2026-05-14 13:25:58.745028 | dashscope | qwen-flash | verify-590-noret |
+
+  Row 6436 = real LLM call captured by the flush loop. Confirms end-to-end
+  hook → queue → flush → DB INSERT works under the fixed policy.
+
+  # log sweep — count flush errors since fix
+  awk '$0 >= "2026-05-14 13:25:00"' /www/wwwroot/cretas/python-prod.log \
+    | grep -iE 'llm.*usage.*flush.*fail' | wc -l
+  -> 0
+
+
+GAP COUNT
+---------
+
+Lost rows during 16-day outage: id 4786 → 6434 (~1649 rows). These are
+unrecoverable telemetry — the flush queue is in-memory, drops on restart.
+Going forward, all inserts work.
