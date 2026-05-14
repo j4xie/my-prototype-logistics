@@ -15,6 +15,13 @@ import { pythonFetch } from '@/api/smartbi/common'
 
 const authStore = useAuthStore()
 const factoryId = computed(() => authStore.factoryId)
+// Restaurant tenant detection — mirrors backend ``is_restaurant_tenant``
+// helper. RESTAURANT + BRANCH route through restaurant analytical semantics;
+// FACTORY / HEADQUARTERS / CENTRAL_KITCHEN stay on manufacturing path.
+const isRestaurantTenant = computed(() => {
+  const t = authStore.factoryType
+  return t === 'RESTAURANT' || t === 'BRANCH'
+})
 const loading = ref(false)
 
 // Service availability state
@@ -25,11 +32,22 @@ interface FieldCompleteness {
   [field: string]: number
 }
 
+interface CompletenessMetadata {
+  minDate?: string | null
+  maxDate?: string | null
+  uniqueProducts?: number
+  [key: string]: unknown
+}
+
 interface CompletenessItem {
   entityType: string
   overallCompleteness: number
   totalRecords: number
   fieldCompleteness: FieldCompleteness
+  // POS entities (POS_TRANSACTION / POS_ITEM) include optional metadata
+  // such as date range and unique product counts. Manufacturing entities
+  // omit this field.
+  metadata?: CompletenessMetadata | null
 }
 
 // --- Feature 2B: Custom Validation Rules ---
@@ -52,6 +70,7 @@ const RULE_TYPE_OPTIONS = [
 ] as const
 
 // Field options per entity type — mirrors the Python backend ENTITY_FIELD_MAP
+// + POS_ENTITY_FIELD_MAP.
 const ENTITY_FIELD_OPTIONS: Record<string, string[]> = {
   PROCESSING_BATCH: [
     'batch_number', 'product_name', 'planned_quantity', 'actual_quantity',
@@ -75,7 +94,18 @@ const ENTITY_FIELD_OPTIONS: Record<string, string[]> = {
     'equipment_name', 'equipment_type', 'operating_hours',
     'last_maintenance_date', 'status'
   ],
+  // Restaurant POS entities (smartbi_db silver layer)
+  POS_TRANSACTION: [
+    'gross_amount', 'actual_receive', 'customer_count',
+    'order_type', 'meal_period', 'store_id', 'staff_id',
+  ],
+  POS_ITEM: [
+    'qty', 'unit_price', 'amount', 'return_qty',
+  ],
 }
+
+// POS entity types — opt-in for restaurant tenants only.
+const POS_ENTITY_TYPES = ['POS_TRANSACTION', 'POS_ITEM'] as const
 
 const completenessData = ref<CompletenessItem[]>([])
 const selectedModule = ref<CompletenessItem | null>(null)
@@ -129,7 +159,10 @@ function entityLabel(type: string): string {
     WORK_SESSION: '工时记录',
     MATERIAL_BATCH: '物料批次',
     QUALITY_INSPECTION: '质量检验',
-    EQUIPMENT: '设备管理'
+    EQUIPMENT: '设备管理',
+    // POS entities (餐饮)
+    POS_TRANSACTION: 'POS 订单',
+    POS_ITEM: 'POS 菜品明细',
   }
   return map[type] || type
 }
@@ -176,6 +209,17 @@ function fieldLabel(field: string): string {
     operating_hours: '运行时长',
     last_maintenance_date: '上次维护日期',
     status: '状态',
+    // POS entity fields
+    gross_amount: '总金额',
+    actual_receive: '实收金额',
+    customer_count: '人数',
+    order_type: '订单类型',
+    meal_period: '餐段',
+    store_id: '门店',
+    staff_id: '服务员',
+    qty: '数量',
+    amount: '金额',
+    return_qty: '退菜数量',
   }
   return map[field] || field.replace(/_/g, ' ')
 }
@@ -184,6 +228,26 @@ function getScoreClass(score: number): string {
   if (score >= 75) return 'score-good'
   if (score >= 50) return 'score-medium'
   return 'score-low'
+}
+
+/**
+ * Format a POS entity's metadata into a short subtitle line shown under the
+ * record count on each module card. Returns empty string for entities with
+ * no metadata so the template can v-if it cleanly.
+ */
+function formatModuleMetadata(item: CompletenessItem): string {
+  const md = item.metadata
+  if (!md) return ''
+  const parts: string[] = []
+  if (md.minDate && md.maxDate) {
+    // Both present — strip time component if it's a full ISO datetime.
+    const fmt = (d: string) => d.length >= 10 ? d.slice(0, 10) : d
+    parts.push(`${fmt(md.minDate)} ~ ${fmt(md.maxDate)}`)
+  }
+  if (typeof md.uniqueProducts === 'number' && md.uniqueProducts > 0) {
+    parts.push(`${md.uniqueProducts} 个菜品`)
+  }
+  return parts.join(' · ')
 }
 
 // Centralized score color mapping — used by progress bars, score text, and module card borders
@@ -211,10 +275,19 @@ async function loadData() {
   errorMessage.value = ''
   serviceAvailable.value = true
 
+  // Restaurant tenants: request only POS entity types (manufacturing tables
+  // are empty for restaurants — sending them would clutter the UI with 0-row
+  // cards). Factory tenants: omit entity_types so the backend computes the
+  // full manufacturing set by default.
+  const body: Record<string, unknown> = { factory_id: factoryId.value }
+  if (isRestaurantTenant.value) {
+    body.entity_types = [...POS_ENTITY_TYPES]
+  }
+
   try {
     const json = await pythonFetch('/api/client-requirement/completeness/compute', {
       method: 'POST',
-      body: JSON.stringify({ factory_id: factoryId.value }),
+      body: JSON.stringify(body),
       signal: abortController.signal
     }) as { success?: boolean; data?: CompletenessItem[] }
 
@@ -432,8 +505,32 @@ function fieldRuleLabels(fieldRaw: string): string[] {
 
 const enabledRuleCount = computed(() => validationRules.value.filter(r => r.enabled).length)
 
+/**
+ * Service-unavailable notice feature list — tenant-aware so restaurants see
+ * POS entities and factories see manufacturing modules. Mirrors the entity
+ * types that will be queried by loadData() for each tenant type.
+ */
+interface NoticeFeature { label: string; fieldCount: number }
+const noticeFeatures = computed<NoticeFeature[]>(() => {
+  const types = isRestaurantTenant.value
+    ? [...POS_ENTITY_TYPES]
+    : ['PROCESSING_BATCH', 'WORK_SESSION', 'MATERIAL_BATCH', 'QUALITY_INSPECTION', 'EQUIPMENT']
+  return types.map(t => ({
+    label: entityLabel(t),
+    fieldCount: ENTITY_FIELD_OPTIONS[t]?.length ?? 0,
+  }))
+})
+
 const ENTITY_TYPE_OPTIONS = computed(() => {
-  return Object.keys(ENTITY_FIELD_OPTIONS).map(key => ({
+  // Filter by tenant type — restaurants only see POS entities, factories
+  // only see manufacturing entities. Keeps the custom-validation-rule dialog
+  // free of options that won't match any data row.
+  const posSet = new Set<string>(POS_ENTITY_TYPES)
+  const allowed = Object.keys(ENTITY_FIELD_OPTIONS).filter(key => {
+    const isPos = posSet.has(key)
+    return isRestaurantTenant.value ? isPos : !isPos
+  })
+  return allowed.map(key => ({
     value: key,
     label: entityLabel(key),
   }))
@@ -472,25 +569,13 @@ onUnmounted(() => {
             此功能需要数据分析服务支持。当数据分析服务部署并连接数据库后，将自动计算各业务模块的数据填充率。
           </p>
           <div class="notice-features">
-            <div class="feature-item">
+            <div
+              v-for="feat in noticeFeatures"
+              :key="feat.label"
+              class="feature-item"
+            >
               <span class="feature-dot good"></span>
-              <span>生产批次 - 17个字段完整度检测</span>
-            </div>
-            <div class="feature-item">
-              <span class="feature-dot good"></span>
-              <span>工时记录 - 8个字段完整度检测</span>
-            </div>
-            <div class="feature-item">
-              <span class="feature-dot good"></span>
-              <span>物料批次 - 7个字段完整度检测</span>
-            </div>
-            <div class="feature-item">
-              <span class="feature-dot good"></span>
-              <span>质量检验 - 6个字段完整度检测</span>
-            </div>
-            <div class="feature-item">
-              <span class="feature-dot good"></span>
-              <span>设备管理 - 5个字段完整度检测</span>
+              <span>{{ feat.label }} - {{ feat.fieldCount }}个字段完整度检测</span>
             </div>
           </div>
           <el-button type="primary" plain @click="loadData" :loading="loading" style="margin-top: 16px">
@@ -664,6 +749,9 @@ onUnmounted(() => {
         </div>
         <div class="module-name">{{ entityLabel(item.entityType) }}</div>
         <div class="module-records">{{ item.totalRecords }} 条记录</div>
+        <div v-if="formatModuleMetadata(item)" class="module-metadata">
+          {{ formatModuleMetadata(item) }}
+        </div>
         <el-progress
           :percentage="item.overallCompleteness"
           :stroke-width="6"
@@ -986,7 +1074,17 @@ onUnmounted(() => {
 .module-records {
   font-size: 13px;
   color: var(--el-text-color-secondary, #909399);
+  margin-bottom: 4px;
+}
+
+.module-metadata {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder, #c0c4cc);
   margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail-section {
