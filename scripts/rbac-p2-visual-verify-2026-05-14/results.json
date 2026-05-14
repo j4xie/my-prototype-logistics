@@ -1,0 +1,262 @@
+[
+  {
+    "role": "f006_admin",
+    "route": "/finance/costs",
+    "id": "finance-costs",
+    "verdict": "PASS",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/finance/costs",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 846,
+      "markersFound": {
+        "应收总额": true,
+        "应付总额": true,
+        "金额": true
+      },
+      "visibleMarkerCount": 3
+    },
+    "screenshot": "shots\\f006_admin\\finance-costs.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/system/products",
+    "id": "system-products",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/system/products",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 984,
+      "markersFound": {
+        "含税单价": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\system-products.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/analytics/overview",
+    "id": "analytics",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/analytics/overview",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 823,
+      "markersFound": {
+        "损耗成本": false,
+        "申领成本": false,
+        "毛利收入": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\analytics.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/restaurant/stocktaking",
+    "id": "restaurant-stocktaking",
+    "verdict": "FAIL_403_FOR_ADMIN",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/403",
+      "redirected": true,
+      "redirectedTo": "/403",
+      "bodyLength": 90,
+      "markersFound": {
+        "差异金额": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\restaurant-stocktaking.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/restaurant/analytics",
+    "id": "restaurant-analytics",
+    "verdict": "FAIL_403_FOR_ADMIN",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/403",
+      "redirected": true,
+      "redirectedTo": "/403",
+      "bodyLength": 90,
+      "markersFound": {
+        "营收": false,
+        "客单价": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\restaurant-analytics.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/restaurant/analytics/menu",
+    "id": "restaurant-analytics-menu",
+    "verdict": "FAIL_403_FOR_ADMIN",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/403",
+      "redirected": true,
+      "redirectedTo": "/403",
+      "bodyLength": 90,
+      "markersFound": {
+        "营收": false,
+        "单品利润": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\restaurant-analytics-menu.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/restaurant/analytics/dianping",
+    "id": "restaurant-analytics-dianping",
+    "verdict": "FAIL_403_FOR_ADMIN",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/403",
+      "redirected": true,
+      "redirectedTo": "/403",
+      "bodyLength": 90,
+      "markersFound": {
+        "¥": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\restaurant-analytics-dianping.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/dashboard",
+    "id": "smartbi-dashboard",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/dashboard",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 1327,
+      "markersFound": {
+        "总营收": false,
+        "总利润": false,
+        "客单价": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-dashboard.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/finance",
+    "id": "smartbi-finance",
+    "verdict": "PASS",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/finance",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 1280,
+      "markersFound": {
+        "毛利": true,
+        "应收": true,
+        "应付": true,
+        "预算": true
+      },
+      "visibleMarkerCount": 4
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-finance.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/sales",
+    "id": "smartbi-sales",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/sales",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 1053,
+      "markersFound": {
+        "销售额": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-sales.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/upload",
+    "id": "smartbi-upload",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/upload",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 1057,
+      "markersFound": {
+        "¥": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-upload.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/whatif",
+    "id": "smartbi-whatif",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/whatif",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 813,
+      "markersFound": {
+        "预计收入": false,
+        "预计毛利": false,
+        "成本结构": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-whatif.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/restaurant-v2",
+    "id": "smartbi-restaurant-v2",
+    "verdict": "FAIL_ADMIN_MISSING_PRICE",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/restaurant-v2",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 1388,
+      "markersFound": {
+        "食材成本": false,
+        "人工成本": false,
+        "营收": false
+      },
+      "visibleMarkerCount": 0
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-restaurant-v2.png"
+  },
+  {
+    "role": "f006_admin",
+    "route": "/smart-bi/gold-preview",
+    "id": "smartbi-gold-preview",
+    "verdict": "PASS",
+    "probe": {
+      "finalUrl": "http://139.196.165.140:8097/smart-bi/gold-preview",
+      "redirected": false,
+      "redirectedTo": null,
+      "bodyLength": 1264,
+      "markersFound": {
+        "客单价": true,
+        "金额": true
+      },
+      "visibleMarkerCount": 2
+    },
+    "screenshot": "shots\\f006_admin\\smartbi-gold-preview.png"
+  },
+  {
+    "role": "f006_warehouse_mgr",
+    "route": null,
+    "status": "LOGIN_FAIL",
+    "error": "page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+  }
+]

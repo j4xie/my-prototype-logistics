@@ -1,0 +1,13 @@
+{
+  "name": "rbac-p2-visual-verify-2026-05-14",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "P2 visual verification of PR #598 canViewPrice sweep — 15 Vue views x 2 roles",
+  "scripts": {
+    "run": "node run-verify.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0"
+  }
+}
