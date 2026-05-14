@@ -145,7 +145,7 @@
               <!-- KPI 统计卡片 — extracted to analysis/KPIStripPanel.vue (Item 1 phase 3c) -->
               <KPIStripPanel
                 :enriching="enrichingSheets.has(sheet.sheetIndex)"
-                :kpis="sheet.flowResult?.kpiSummary ? getSheetKPIs(sheet) : []"
+                :kpis="sheet.flowResult?.kpiSummary ? filterMoneyKPIs(getSheetKPIs(sheet)) : []"
               />
 
               <!-- 图表展示（多图表仪表板） -->
@@ -284,7 +284,7 @@
               <!-- 高管摘要横幅 — extracted to analysis/ExecutiveSummaryBanner.vue (Item 1 phase 3e) -->
               <ExecutiveSummaryBanner
                 :summary="getExecutiveSummary(sheet)"
-                :kpis="getSheetKPIs(sheet)"
+                :kpis="filterMoneyKPIs(getSheetKPIs(sheet))"
                 :structured-insight="getStructuredInsight(sheet)"
                 :sensitivity-count="getSensitivityAnalysis(sheet)?.length || 0"
               />
@@ -466,6 +466,18 @@ const appStore = useAppStore();
 const echartsThemeName = computed(() => appStore.theme === 'dark' ? 'cretas-dark' : 'cretas');
 const permissionStore = usePermissionStore();
 const canUpload = computed(() => permissionStore.canWrite('analytics'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// Defense-in-depth: drop money-shape KPIs from list when role lacks canViewPrice.
+// Backend @PriceSensitive already strips values, but ghost cards (empty value
+// with "万元" unit) look broken. Detection mirrors TemplateCard.vue CURRENCY_KEY_RE
+// + checks unit text for currency markers.
+const MONEY_TITLE_RE = /(金额|单价|价格|总价|销售额|营业额|营收|收入|成本|消费|储值|实收|应收|应付|毛利|净利|利润|payable|receivable|revenue|amount|price|cost|profit|deposit)/i;
+const MONEY_UNIT_RE = /(元|¥|￥|万元|亿元|RMB|CNY)/;
+function filterMoneyKPIs(list: SmartKPI[]): SmartKPI[] {
+  if (canViewPrice.value) return list;
+  return list.filter(k => !MONEY_TITLE_RE.test(k.title) && !MONEY_UNIT_RE.test(k.unit || ''));
+}
 
 // 历史批次
 interface UploadBatch {
