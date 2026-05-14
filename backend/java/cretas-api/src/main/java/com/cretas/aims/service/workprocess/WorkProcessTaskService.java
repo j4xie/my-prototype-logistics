@@ -1,0 +1,84 @@
+package com.cretas.aims.service.workprocess;
+
+import com.cretas.aims.dto.WorkProcessTaskDTO;
+import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.entity.workprocess.WorkProcessTask.Status;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+
+/**
+ * 工序任务 Service (Track D2 — M-WP-1/2).
+ */
+public interface WorkProcessTaskService {
+
+    /**
+     * 从 product_work_processes 模板 spawn 工序任务实例.
+     *
+     * <p>每个 product_work_process 绑定生成 1 个 work_process_task (status=PENDING).
+     * 已 spawn 过的批次不会重复生成 (返回已有任务列表).
+     *
+     * <p>{@code productTypeId} 必填: 上层 (controller / Tool) 需先从 ProductionBatch 解析
+     * 产品类型再传入. 这样 Service 不依赖 ProductionBatch entity, 规避 brief §2.4 fork 风险。
+     *
+     * @return 生成的任务 DTO 列表
+     */
+    List<WorkProcessTaskDTO> spawnTasks(
+            String factoryId, Long productionBatchId, String productTypeId);
+
+    /**
+     * 列表 — 多过滤条件 + 分页.
+     */
+    PageResponse<WorkProcessTaskDTO> list(
+            String factoryId,
+            Status status,
+            Long productionBatchId,
+            Long assignedTo,
+            Pageable pageable);
+
+    /**
+     * 列出某批次的全部工序任务 (按 processOrder 升序, 不分页).
+     */
+    List<WorkProcessTaskDTO> listByBatch(String factoryId, Long productionBatchId);
+
+    /**
+     * 详情.
+     */
+    WorkProcessTaskDTO getById(String factoryId, Long id);
+
+    /**
+     * 开始工序: PENDING → IN_PROGRESS, 记录 actualStartAt.
+     */
+    WorkProcessTaskDTO start(String factoryId, Long id, Long operatorUserId);
+
+    /**
+     * 完成工序: IN_PROGRESS → COMPLETED, 必填 actualQuantity, 自动算 actualMinutes.
+     */
+    WorkProcessTaskDTO complete(
+            String factoryId,
+            Long id,
+            Long operatorUserId,
+            WorkProcessTaskDTO.CompleteRequest request);
+
+    /**
+     * 跳过工序: 任意非终态 → SKIPPED, 必填 notes, 限主管.
+     */
+    WorkProcessTaskDTO skip(
+            String factoryId,
+            Long id,
+            Long operatorUserId,
+            WorkProcessTaskDTO.SkipRequest request);
+
+    /**
+     * 分配责任人 / 调整计划 / 修改备注 (不改 status).
+     */
+    WorkProcessTaskDTO updatePlan(
+            String factoryId,
+            Long id,
+            WorkProcessTaskDTO.UpdatePlanRequest request);
+
+    /**
+     * 软删 (deleted_at = NOW).
+     */
+    void delete(String factoryId, Long id);
+}
