@@ -31,6 +31,11 @@ import FactorySettingsScreen from '../screens/management/FactorySettingsScreen';
 import BomConfigScreen from '../screens/factory/bom/BomConfigScreen';
 import BomEditorScreen from '../screens/factory/bom/BomEditorScreen';
 
+// Track D2 — 工序管理 (M-WP-1) + 产品工序配置 (M-WP-2)
+import WorkProcessListScreen from '../screens/factory/workprocess/WorkProcessListScreen';
+import WorkProcessCreateScreen from '../screens/factory/workprocess/WorkProcessCreateScreen';
+import ProductWorkProcessConfigScreen from '../screens/factory/workprocess/ProductWorkProcessConfigScreen';
+
 // Phase 4启用：规格配置管理
 // import MaterialSpecManagementScreen from '../screens/management/MaterialSpecManagementScreen';
 
@@ -176,6 +181,22 @@ export function ManagementStackNavigator() {
         name="BomConfigEdit"
         component={BomEditorScreen}
         options={{ title: 'BOM 配方编辑' }}
+      />
+      {/* Track D2 — 工序管理 + 产品工序配置 (六扇门第四次会议) */}
+      <Stack.Screen
+        name="WorkProcessList"
+        component={WorkProcessListScreen}
+        options={{ title: '工序管理' }}
+      />
+      <Stack.Screen
+        name="WorkProcessCreate"
+        component={WorkProcessCreateScreen}
+        options={{ title: '新增工序' }}
+      />
+      <Stack.Screen
+        name="ProductWorkProcessConfig"
+        component={ProductWorkProcessConfigScreen}
+        options={{ title: '产品工序配置' }}
       />
     </Stack.Navigator>
   );

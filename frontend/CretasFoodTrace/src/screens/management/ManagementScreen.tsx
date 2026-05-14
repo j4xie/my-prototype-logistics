@@ -32,6 +32,8 @@ export default function ManagementScreen() {
         { id: 'material-types', title: t('sections.productionConfig.materialTypes.title'), desc: t('sections.productionConfig.materialTypes.desc'), icon: 'food-drumstick', route: 'MaterialTypeManagement' },
         { id: 'conversion-rates', title: t('sections.productionConfig.conversionRates.title'), desc: t('sections.productionConfig.conversionRates.desc'), icon: 'swap-horizontal', route: 'ConversionRate' },
         { id: 'work-types', title: t('sections.productionConfig.workTypes.title'), desc: t('sections.productionConfig.workTypes.desc'), icon: 'account-hard-hat', route: 'WorkTypeManagement', adminOnly: true },
+        { id: 'work-processes', title: t('sections.productionConfig.workProcesses.title', { defaultValue: '工序管理' }), desc: t('sections.productionConfig.workProcesses.desc', { defaultValue: '定义生产工序步骤 (拆包/分割/卤制等)' }), icon: 'cog-transfer-outline', route: 'WorkProcessList' },
+        { id: 'product-work-processes', title: t('sections.productionConfig.productWorkProcesses.title', { defaultValue: '产品工序配置' }), desc: t('sections.productionConfig.productWorkProcesses.desc', { defaultValue: '给产品绑定工序流程, 生产计划自动带入' }), icon: 'format-list-numbered', route: 'ProductWorkProcessConfig' },
         { id: 'disposal-records', title: t('sections.productionConfig.disposalRecords.title'), desc: t('sections.productionConfig.disposalRecords.desc'), icon: 'delete-forever', route: 'DisposalRecordManagement', adminOnly: true },
       ],
     },
