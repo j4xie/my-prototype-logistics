@@ -74,6 +74,13 @@ public interface SalesService {
 
     List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId);
 
+    /**
+     * T4-D5 #572 Phase B-1: 按 sourceWarehouseCode 过滤的可用成品批次查询.
+     *
+     * <p>{@code sourceWarehouseCode} 为 null/空时回落到 WH-LOG (保持 D5 默认行为, 与 Phase A 一致).
+     */
+    List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId, String sourceWarehouseCode);
+
     FinishedGoodsBatch createFinishedGoodsBatch(String factoryId, FinishedGoodsBatch batch, Long userId);
 
     // ==================== 公式计算 ====================
