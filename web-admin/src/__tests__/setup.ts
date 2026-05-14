@@ -3,15 +3,13 @@
  *
  * Provides localStorage mock and cleans up between tests.
  *
- * NOTE: Pinia init was attempted in PR #635 but reverted — exposing the
- * setup gap surfaced 9+ pre-existing TS errors in vue-tsc build that
- * blocked clean CI. Re-enabling Pinia init must be paired with a TS
- * error cleanup PR (separate scope). Tracked as follow-up after #635.
+ * NOTE: Pinia init was attempted twice (PR #635 + PR #638) but reverted both
+ * times. Each attempt surfaces more pre-existing TS errors + vitest assertion
+ * failures (18+ TS, 5+ vitest tests through 3 CI rounds). Re-enabling Pinia
+ * requires a dedicated multi-PR rabbit-hole cleanup. Tracked in #636.
  */
 import { beforeEach, afterEach } from 'vitest';
 
-// jsdom provides localStorage by default, but we reset it between tests
-// to ensure test isolation.
 beforeEach(() => {
   localStorage.clear();
 });

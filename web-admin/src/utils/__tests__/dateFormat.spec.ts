@@ -40,9 +40,7 @@ describe('toApiDateString', () => {
   });
 
   it('returns empty string for non-Date / non-string inputs (does not throw)', () => {
-    // @ts-expect-error testing defensive path
     expect(toApiDateString({} as Date)).toBe('');
-    // @ts-expect-error testing defensive path
     expect(toApiDateString(123 as unknown as Date)).toBe('');
   });
 });

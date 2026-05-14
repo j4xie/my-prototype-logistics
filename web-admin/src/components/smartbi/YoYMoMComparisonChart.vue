@@ -369,7 +369,7 @@ const chartOptions = computed<EChartsOption>(() => {
       label: {
         show: true,
         position: 'top',
-        formatter: (params) => {
+        formatter: (params: { value: number | null | undefined }) => {
           const val = params.value as number;
           if (val === null || val === undefined) return '';
           const sign = val >= 0 ? '+' : '';

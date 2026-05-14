@@ -287,6 +287,8 @@ export interface ProductionStats {
   totalOutput: number;
   completedBatches: number;
   inProgressBatches: number;
+  /** Batches pending start (not yet in progress). Optional — may be absent from older API responses. */
+  pendingBatches?: number;
   avgEfficiency: number;
   trend: Array<{ date: string; output: number }>;
 }

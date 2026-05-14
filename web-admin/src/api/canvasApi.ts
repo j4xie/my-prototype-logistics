@@ -150,7 +150,7 @@ export const checkCompleteness = async (factoryId: string) => {
     const fallback: ApiResponse<CompletenessCheck> = {
       success: true,
       message: 'fallback (endpoint not implemented)',
-      data: { complete: true, missingModules: [], missingFields: [] } as CompletenessCheck,
+      data: { passed: true, checks: [] } as CompletenessCheck,
     }
     return fallback
   }

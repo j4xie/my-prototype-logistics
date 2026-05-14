@@ -14,7 +14,7 @@ export interface EffectiveModuleConfig {
   workflowTransitions: WorkflowTransition[]
   workflowOptions: Record<string, unknown>
   customLabels: Record<string, string>
-  renderingMode: 'LEGACY' | 'DYNAMIC' | 'DUAL'
+  renderingMode: 'LEGACY' | 'DYNAMIC' | 'DUAL' | 'CANVAS'
 }
 
 export interface EffectiveField {

@@ -9,7 +9,7 @@ import { Money, TrendCharts, Coin, Download } from '@element-plus/icons-vue';
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
-const canRead = computed(() => permissionStore.canRead('finance'));
+const canRead = computed(() => permissionStore.canAccess('finance'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);

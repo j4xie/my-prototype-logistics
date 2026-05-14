@@ -19,7 +19,7 @@
         <el-tab-pane label="属性" name="properties">
           <FieldPropertyDrawer
             v-if="selectedField"
-            :field="selectedField"
+            :field="(selectedField as unknown as EffectiveField)"
             @update="onFieldPropertyUpdate"
           />
           <el-empty v-else description="点击字段编辑属性" :image-size="60" />
@@ -47,6 +47,7 @@ import FieldPropertyDrawer from './components/FieldPropertyDrawer.vue'
 import { usePageEditor } from './composables/usePageEditor'
 import { getDynamicFields, createDynamicField, deleteDynamicField } from '@/api/canvasApi'
 import type { DynamicField } from '@/types/canvas'
+import type { EffectiveField } from '@/types/config'
 
 const props = defineProps<{
   moduleCode: string

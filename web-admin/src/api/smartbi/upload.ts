@@ -188,7 +188,6 @@ export async function uploadAndAnalyze(file: File, options?: {
       analysis: result.aiAnalysis ? {
         success: true,
         answer: result.aiAnalysis,
-        insights: [],
         charts: result.chartConfig ? [result.chartConfig] : []
       } : undefined,
       chartRecommendations: result.recommendedTemplates?.map((t: { chartType: string; templateCode: string; description: string }) => ({

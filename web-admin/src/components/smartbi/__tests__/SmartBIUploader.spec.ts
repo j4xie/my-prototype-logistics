@@ -132,7 +132,7 @@ describe('SmartBIUploader', () => {
     const events = wrapper.emitted();
     expect(events['filesChange']).toHaveLength(3);
     // Last emit carries all 3 files.
-    const lastEmit = events['filesChange']![2][0] as UploadFile[];
+    const lastEmit = (events['filesChange']![2] as unknown[])[0] as UploadFile[];
     expect(lastEmit).toHaveLength(3);
     expect(lastEmit.map((f) => f.uid)).toEqual([1, 2, 3]);
     // No single-file emit in multi mode.

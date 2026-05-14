@@ -334,7 +334,7 @@ export const usePermissionStore = defineStore('permission', () => {
     if (typeFilter) {
       for (const [mod, level] of Object.entries(typeFilter)) {
         if (level === '-') {
-          (rolePerms as Record<string, PermissionLevel>)[mod] = '-';
+          (rolePerms as unknown as Record<string, PermissionLevel>)[mod] = '-';
         }
       }
     }
