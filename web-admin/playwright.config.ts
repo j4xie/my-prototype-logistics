@@ -129,6 +129,12 @@ export default defineConfig({
       workers: 1,
     },
     {
+      name: 'smartbi-bug-repro',
+      testMatch: 'smartbi-bug-repro.spec.ts',
+      fullyParallel: false,
+      workers: 1,
+    },
+    {
       name: 'revenue-report-chat-demo',
       testMatch: 'revenue-report-chat-demo.spec.ts',
       fullyParallel: false,
