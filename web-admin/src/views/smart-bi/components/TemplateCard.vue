@@ -77,6 +77,7 @@ import { computed, onMounted, ref, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import type { ECharts } from 'echarts';
 import type { AnalysisResultItem } from '@/api/smartbi/analysisResults';
+import { usePermissionStore } from '@/store/modules/permission';
 import {
   getTemplateTitle,
   getRequiredFields,
@@ -94,6 +95,9 @@ const props = defineProps<{
 defineEmits<{
   (e: 'go-upload', code: string): void;
 }>();
+
+const permissionStore = usePermissionStore();
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const chartRef = ref<HTMLElement>();
 let chartInstance: ECharts | null = null;
@@ -269,7 +273,14 @@ function formatKpiValue(value: unknown, key?: string): { text: string; isLong: b
 const kpis = computed(() => {
   const kv = props.item?.kpiValues;
   if (!kv || typeof kv !== 'object') return [];
-  return Object.entries(kv)
+  let entries = Object.entries(kv);
+  // Defense-in-depth: drop currency-shape KPIs when role lacks canViewPrice.
+  // Backend @PriceSensitive already nulls the value, but rendering ¥ + empty
+  // (or — placeholder) wastes a slot. Filter so non-money KPIs fill the 4 slots.
+  if (!canViewPrice.value) {
+    entries = entries.filter(([key]) => !CURRENCY_KEY_RE.test(key));
+  }
+  return entries
     .slice(0, 4)
     .map(([key, value]) => {
       const formatted = formatKpiValue(value, key);
