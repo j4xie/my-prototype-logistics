@@ -1,0 +1,16 @@
+{
+  "name": "customer-audit-e2e-2026-05-13",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "六扇门 (F006) follow-up E2E scenarios from 2026-05-13 audit",
+  "scripts": {
+    "p0": "node run-e2e.mjs --p0",
+    "p1": "node run-e2e.mjs --p1",
+    "p2": "node run-e2e.mjs --p2",
+    "all": "node run-e2e.mjs --all"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0"
+  }
+}
