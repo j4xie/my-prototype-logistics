@@ -224,13 +224,13 @@ BEGIN
         bi.standard_quantity,
         COALESCE(bi.yield_rate, 100.00)                                AS yield_rate,
         CASE
-            WHEN bi.unit IS NULL OR bi.unit = ''                       THEN 'g'
-            WHEN LOWER(bi.unit) = 'kg' OR bi.unit = '公斤'              THEN 'kg'
-            WHEN LOWER(bi.unit) = 'g'  OR bi.unit = '克'                THEN 'g'
-            WHEN LOWER(bi.unit) = 'mg' OR bi.unit = '毫克'              THEN 'mg'
-            WHEN LOWER(bi.unit) = 'ml' OR bi.unit = '毫升'              THEN 'ml'
-            WHEN LOWER(bi.unit) = 'l'  OR bi.unit = '升'                THEN 'L'
-            WHEN bi.unit IN ('个','袋','箱','瓶','盒')                  THEN bi.unit
+            WHEN bi.unit IS NULL OR bi.unit = ''                                THEN 'g'
+            WHEN LOWER(bi.unit) = 'kg' OR bi.unit IN ('公斤','千克')             THEN 'kg'
+            WHEN LOWER(bi.unit) = 'g'  OR bi.unit = '克'                         THEN 'g'
+            WHEN LOWER(bi.unit) = 'mg' OR bi.unit = '毫克'                       THEN 'mg'
+            WHEN LOWER(bi.unit) = 'ml' OR bi.unit = '毫升'                       THEN 'ml'
+            WHEN LOWER(bi.unit) = 'l'  OR bi.unit IN ('升','公升')               THEN 'L'
+            WHEN bi.unit IN ('个','袋','箱','瓶','盒')                            THEN bi.unit
             ELSE 'g'  -- fallback (DRAFT 状态用户激活前会看到)
         END                                                            AS unit,
         bi.unit_price,
@@ -262,7 +262,7 @@ BEGIN
       AND bi.unit IS NOT NULL
       AND bi.unit <> ''
       AND LOWER(bi.unit) NOT IN ('g','kg','mg','ml','l')
-      AND bi.unit NOT IN ('公斤','克','毫克','毫升','升','个','袋','箱','瓶','盒');
+      AND bi.unit NOT IN ('公斤','千克','克','毫克','毫升','升','公升','个','袋','箱','瓶','盒');
     IF invalid_unit_count > 0 THEN
         RAISE WARNING 'M-BOM-1 migration: % bom_items rows had invalid unit (coerced to ''g'', 用户激活前可改)', invalid_unit_count;
     END IF;
