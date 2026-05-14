@@ -1,17 +1,18 @@
 /**
  * Vitest global test setup for web-admin.
  *
- * Provides localStorage mock, Pinia store init, and cleans up between tests.
+ * Provides localStorage mock and cleans up between tests.
+ *
+ * NOTE: Pinia init was attempted in PR #635 but reverted — exposing the
+ * setup gap surfaced 9+ pre-existing TS errors in vue-tsc build that
+ * blocked clean CI. Re-enabling Pinia init must be paired with a TS
+ * error cleanup PR (separate scope). Tracked as follow-up after #635.
  */
 import { beforeEach, afterEach } from 'vitest';
-import { createPinia, setActivePinia } from 'pinia';
 
-// Components using <script setup> with usePermissionStore / useAuthStore / etc.
-// call getActivePinia() at mount time. Without an active Pinia instance the
-// mount fails with "getActivePinia() was called but there was no active Pinia".
-// Register a fresh Pinia per test so state is isolated.
+// jsdom provides localStorage by default, but we reset it between tests
+// to ensure test isolation.
 beforeEach(() => {
-  setActivePinia(createPinia());
   localStorage.clear();
 });
 
