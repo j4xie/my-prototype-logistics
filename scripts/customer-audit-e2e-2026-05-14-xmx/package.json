@@ -1,0 +1,14 @@
+{
+  "name": "customer-audit-e2e-2026-05-14-xmx",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "R7-E2 R_XMX_CHAIN feature-regression smoke (F006 template adapted)",
+  "scripts": {
+    "all": "node run-coverage.mjs --all",
+    "smoke": "node run-coverage.mjs --group SMOKE"
+  },
+  "dependencies": {
+    "playwright": "^1.58.0"
+  }
+}
