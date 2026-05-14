@@ -10,6 +10,7 @@ import com.cretas.aims.repository.DingTalkUserBindingRepository;
 import com.cretas.aims.repository.DingTalkUserBindingRepository.DingTalkBoundUser;
 import com.cretas.aims.repository.DingTalkWebhookLogRepository;
 import com.cretas.aims.service.IntentExecutorService;
+import com.cretas.aims.service.dingtalk.DingTalkSendService.SendResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ class DingTalkInboundConsumerTest {
     @Mock private DingTalkWebhookLogRepository logRepository;
     @Mock private DingTalkUserBindingRepository userBindingRepository;
     @Mock private IntentExecutorService intentExecutorService;
+    @Mock private DingTalkSendService sendService;
 
     private DingTalkResponseFormatter responseFormatter;
 
@@ -80,6 +82,9 @@ class DingTalkInboundConsumerTest {
                     savedSnapshots.add(deepCopy(arg));
                     return arg;
                 });
+        // sendService.send is a no-op for inbound-consumer tests (it has its own
+        // dedicated test class); we only verify the dispatch HAPPENS.
+        lenient().when(sendService.send(any())).thenReturn(SendResult.sent());
     }
 
     private static DingTalkWebhookLog deepCopy(DingTalkWebhookLog src) {

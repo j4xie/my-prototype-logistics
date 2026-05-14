@@ -60,6 +60,7 @@ public class DingTalkInboundConsumer {
     private final DingTalkUserBindingRepository userBindingRepository;
     private final IntentExecutorService intentExecutorService;
     private final DingTalkResponseFormatter responseFormatter;
+    private final DingTalkSendService sendService;
 
     @Value("${dingtalk.default-factory-id:F006}")
     private String defaultFactoryId;
@@ -170,7 +171,9 @@ public class DingTalkInboundConsumer {
                 .sessionId(inbound.getDingtalkChatId())
                 .status(Status.PENDING)
                 .build();
-        logRepository.save(outbound);
+        outbound = logRepository.save(outbound);
+        // Dispatch inline (Day 4). Send-side status transitions written back inside send().
+        sendService.send(outbound);
     }
 
     private Map<String, Object> buildPayloadMap(DingTalkInboundPayload payload) {
