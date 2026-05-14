@@ -34,15 +34,17 @@ from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
 from smartbi_compat.api.analysis import _query_sales_data, wrap_response
+from smartbi_compat.api.analysis_finance import _decimal_to_number
 from smartbi_compat._rbac_role import require_analytics_read
 from smartbi_compat._rbac_strip import strip_price_for_role
 from smartbi_compat.schema_compat import _java_isoformat
 from smartbi_compat.auth import AuthContext
 from smartbi_compat.date_range import DateRange
+from smartbi_compat.tenant import TenantType, get_tenant_type
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1720,7 +1722,573 @@ async def _get_comprehensive_sales_analysis(
 
 
 # ============================================================
-# Section 4: Route handler (Task D.3)
+# Section 4: Phase IIa Restaurant Branch (2026-05-14)
+# ============================================================
+#
+# Polymorphic tenant dispatch mirroring analysis_production.py:480-506.
+# Triggered when cretas_db.factories.type ∈ {RESTAURANT, BRANCH}.
+# Spec: docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md §4.2
+#
+# RLS: relies on auth_middleware.py:220 set_factory_id() → pool setup hook
+# writes app.factory_id. WHERE factory_id = $1 is belt-and-suspenders.
+# smartbi_user role does NOT have BYPASSRLS (verified 2026-05-14 against
+# smartbi_prod_db). Without auth_middleware's tenant_ctx propagation queries
+# would return zero rows for restaurant factory_ids.
+
+INVALID_DATE_RANGE_MESSAGE = "开始日期不能晚于结束日期"
+
+
+def _validate_restaurant_date_range(start_date: date, end_date: date) -> None:
+    """Spec §4.5 edge case 4: start > end → HTTP 400 INVALID_DATE_RANGE.
+
+    Rule 6 precondition: refuse to query on missing/inverted dates rather than
+    swallow as zero-row response. asyncpg silently turns ``None → NULL`` and
+    ``BETWEEN NULL AND NULL`` returns 0 rows — callers would see "no data"
+    when the real bug is a null parameter.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_validate_restaurant_date_range: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    if start_date > end_date:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_DATE_RANGE",
+                "message": INVALID_DATE_RANGE_MESSAGE,
+            },
+        )
+
+
+async def _get_restaurant_overview(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.2 overview: totalRevenue, billCount, avgPerCapita, storeCount.
+
+    Source: ``agg_daily`` SUM(actual_receive / bill_count / customer_count)
+    plus DISTINCT store_id count.
+
+    Edge cases:
+    * 1 (zero bills): totalRevenue 0, billCount 0, storeCount 0 — natural
+    * 2 (bills > 0 but customers == 0): avgPerCapita is ``None`` (NOT 0.0)
+      per Rule 1 — null is honest about missing data, 0.0 reads as "free meal".
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_overview: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    row = await conn.fetchrow(
+        """
+        SELECT
+            COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS total_revenue,
+            COALESCE(SUM(bill_count), 0)                    AS bill_count,
+            COALESCE(SUM(customer_count), 0)                AS customer_count,
+            COUNT(DISTINCT store_id)                        AS store_count
+        FROM agg_daily
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        """,
+        factory_id, start_date, end_date,
+    )
+    total_revenue = Decimal(row["total_revenue"])
+    bill_count = int(row["bill_count"])
+    customer_count = int(row["customer_count"])
+    if customer_count > 0:
+        avg = (total_revenue / Decimal(customer_count)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        avg_per_capita = _decimal_to_number(avg)
+    else:
+        avg_per_capita = None
+    return {
+        "totalRevenue": _decimal_to_number(
+            total_revenue.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        ),
+        "billCount": bill_count,
+        "avgPerCapita": avg_per_capita,
+        "storeCount": int(row["store_count"]),
+        "dataSource": "agg_daily",
+    }
+
+
+async def _get_restaurant_revenue_trend(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.2 revenueTrend: BAR chart 堂食/外卖 stacked from ``agg_daily_order_type_meal``.
+
+    xAxis = sorted dates that appear in the range; dates with only one
+    order_type get 0.0 for the missing one (stacked-bar consumers expect
+    aligned arrays). Series prefer 堂食 → 外卖 order then alphabetical others.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_revenue_trend: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    rows = await conn.fetch(
+        """
+        SELECT date,
+               order_type,
+               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+        FROM agg_daily_order_type_meal
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        GROUP BY date, order_type
+        ORDER BY date
+        """,
+        factory_id, start_date, end_date,
+    )
+    by_date: dict = {}
+    order_types_seen: set = set()
+    for r in rows:
+        d = r["date"]
+        ot = r["order_type"] or "未分类"
+        by_date.setdefault(d, {})[ot] = Decimal(r["amount"])
+        order_types_seen.add(ot)
+    x_axis = sorted(by_date.keys())
+    order_type_order = []
+    if "堂食" in order_types_seen:
+        order_type_order.append("堂食")
+    if "外卖" in order_types_seen:
+        order_type_order.append("外卖")
+    for ot in sorted(order_types_seen):
+        if ot not in order_type_order:
+            order_type_order.append(ot)
+    series = []
+    for ot in order_type_order:
+        data = []
+        for d in x_axis:
+            v = by_date.get(d, {}).get(ot, Decimal("0"))
+            data.append(_decimal_to_number(
+                v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            ))
+        series.append({"name": ot, "data": data})
+    return {
+        "chartType": "BAR",
+        "title": "日营收趋势",
+        "xAxis": [d.isoformat() for d in x_axis],
+        "series": series,
+    }
+
+
+async def _get_restaurant_order_type_split(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.2 orderTypeSplit: PIE 堂食/外卖 percentage share.
+
+    Rule 10: divide(SCALE 4) → multiply(100) → final scale 2 — mirrors
+    Java ``BigDecimal.divide(divisor, 4, HALF_UP).multiply(100).setScale(2, HALF_UP)``.
+    Edge case 1: total amount 0 → empty series (frontend renders empty state).
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_order_type_split: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    rows = await conn.fetch(
+        """
+        SELECT order_type,
+               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+        FROM agg_daily_order_type_meal
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        GROUP BY order_type
+        """,
+        factory_id, start_date, end_date,
+    )
+    amounts = {
+        (r["order_type"] or "未分类"): Decimal(r["amount"]) for r in rows
+    }
+    total = sum(amounts.values(), Decimal("0"))
+    series = []
+    if total > 0:
+        ordered_keys = []
+        if "堂食" in amounts:
+            ordered_keys.append("堂食")
+        if "外卖" in amounts:
+            ordered_keys.append("外卖")
+        for k in sorted(amounts.keys()):
+            if k not in ordered_keys:
+                ordered_keys.append(k)
+        for k in ordered_keys:
+            share_q4 = (amounts[k] / total).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+            share_pct = (share_q4 * Decimal("100")).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            series.append({"name": k, "value": _decimal_to_number(share_pct)})
+    return {
+        "chartType": "PIE",
+        "title": "堂食/外卖占比",
+        "series": series,
+    }
+
+
+async def _get_restaurant_meal_period_breakdown(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.2 mealPeriodBreakdown: BAR 早/午/晚/夜市 absolute revenue.
+
+    Order: 早市 → 午市 → 晚市 → 夜市 then any other label alphabetically.
+    Edge case 1: empty rows → empty series.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_meal_period_breakdown: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    rows = await conn.fetch(
+        """
+        SELECT meal_period,
+               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS amount
+        FROM agg_daily_order_type_meal
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        GROUP BY meal_period
+        """,
+        factory_id, start_date, end_date,
+    )
+    period_amounts = {
+        (r["meal_period"] or "未分类"): Decimal(r["amount"]) for r in rows
+    }
+    preferred_order = ["早市", "午市", "晚市", "夜市"]
+    ordered_keys = [p for p in preferred_order if p in period_amounts]
+    for k in sorted(period_amounts.keys()):
+        if k not in ordered_keys:
+            ordered_keys.append(k)
+    series = [
+        {
+            "name": k,
+            "value": _decimal_to_number(
+                period_amounts[k].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            ),
+        }
+        for k in ordered_keys
+    ]
+    return {
+        "chartType": "BAR",
+        "title": "时段营收分布",
+        "series": series,
+    }
+
+
+async def _get_restaurant_product_ranking(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> list:
+    """Spec §4.2 productRanking: top 20 dishes by revenue from ``agg_product``.
+
+    ``agg_product.month`` is first-of-month; we bucket months whose first-of-
+    month falls in ``[start.replace(day=1), end.replace(day=1)]`` inclusive
+    (mirrors ``smartbi/gold/queries.py::top_products`` 2026-04 convention).
+
+    Edge case 3: deleted dish — LEFT JOIN ``dim_product`` and COALESCE name
+    to ``'(已下架菜品 #<id>)'`` so the row survives with revenue/qty intact.
+    Index: ``idx_agg_product_factory_month_revenue (factory_id, month, revenue DESC)``
+    backs the ``ORDER BY SUM(revenue) DESC LIMIT 20`` cheaply.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_product_ranking: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    start_m = start_date.replace(day=1)
+    end_m = end_date.replace(day=1)
+    rows = await conn.fetch(
+        """
+        SELECT
+            a.product_id,
+            COALESCE(p.name, '(已下架菜品 #' || a.product_id || ')') AS name,
+            SUM(a.revenue)::numeric(18,2)  AS revenue,
+            SUM(a.qty_sold)::numeric(18,3) AS qty_sold
+        FROM agg_product a
+        LEFT JOIN dim_product p
+               ON p.product_id = a.product_id
+              AND p.factory_id = a.factory_id
+        WHERE a.factory_id = $1
+          AND a.month BETWEEN $2 AND $3
+        GROUP BY a.product_id, p.name
+        ORDER BY SUM(a.revenue) DESC NULLS LAST
+        LIMIT 20
+        """,
+        factory_id, start_m, end_m,
+    )
+    result = []
+    for idx, r in enumerate(rows):
+        revenue = Decimal(r["revenue"] if r["revenue"] is not None else 0)
+        qty = Decimal(r["qty_sold"] if r["qty_sold"] is not None else 0)
+        result.append({
+            "rank": idx + 1,
+            "name": r["name"],
+            "revenue": _decimal_to_number(
+                revenue.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            ),
+            "qtySold": _decimal_to_number(
+                qty.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+            ),
+        })
+    return result
+
+
+async def _get_restaurant_channel_breakdown(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> list:
+    """Spec §4.2 channelBreakdown: payment channels from ``agg_channel`` joined
+    to ``dim_payment_channel.name``.
+
+    Edge case 1: zero rows → ``[]`` (NOT null; frontend v-for iterates).
+    Rule 10: share computed via divide(SCALE 4) → multiply(100) → scale 2.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_channel_breakdown: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    rows = await conn.fetch(
+        """
+        SELECT
+            COALESCE(c.name, '(未知渠道 #' || a.channel_id || ')') AS name,
+            SUM(a.amount)::numeric(18,2) AS amount,
+            SUM(a.bill_count)            AS bill_count
+        FROM agg_channel a
+        LEFT JOIN dim_payment_channel c
+               ON c.channel_id = a.channel_id
+              AND c.factory_id = a.factory_id
+        WHERE a.factory_id = $1
+          AND a.date BETWEEN $2 AND $3
+        GROUP BY a.channel_id, c.name
+        ORDER BY SUM(a.amount) DESC NULLS LAST
+        """,
+        factory_id, start_date, end_date,
+    )
+    total = sum(
+        (Decimal(r["amount"] if r["amount"] is not None else 0) for r in rows),
+        Decimal("0"),
+    )
+    result = []
+    for r in rows:
+        amount = Decimal(r["amount"] if r["amount"] is not None else 0)
+        if total > 0:
+            share_q4 = (amount / total).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+            share_pct = (share_q4 * Decimal("100")).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            share_val = _decimal_to_number(share_pct)
+        else:
+            share_val = _decimal_to_number(Decimal("0"))
+        result.append({
+            "channelName": r["name"],
+            "amount": _decimal_to_number(
+                amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            ),
+            "billCount": int(r["bill_count"]) if r["bill_count"] is not None else 0,
+            "share": share_val,
+        })
+    return result
+
+
+async def _get_restaurant_avg_per_capita_trend(
+    factory_id: str, start_date: date, end_date: date, conn
+) -> dict:
+    """Spec §4.2 avgPerCapitaTrend: LINE chart of daily 客单价.
+
+    Daily value = SUM(actual_receive) / SUM(customer_count) when customer_count > 0
+    else ``None`` (Rule 1 / spec §4.5 edge case 2 semantics applied per day).
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            "_get_restaurant_avg_per_capita_trend: start_date/end_date required "
+            f"(got start_date={start_date}, end_date={end_date})"
+        )
+    rows = await conn.fetch(
+        """
+        SELECT date,
+               COALESCE(SUM(actual_receive), 0)::numeric(18,2) AS revenue,
+               COALESCE(SUM(customer_count), 0)                AS customer_count
+        FROM agg_daily
+        WHERE factory_id = $1
+          AND date BETWEEN $2 AND $3
+        GROUP BY date
+        ORDER BY date
+        """,
+        factory_id, start_date, end_date,
+    )
+    x_axis = []
+    data = []
+    for r in rows:
+        x_axis.append(r["date"].isoformat())
+        cust = int(r["customer_count"])
+        if cust > 0:
+            avg = (Decimal(r["revenue"]) / Decimal(cust)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            data.append(_decimal_to_number(avg))
+        else:
+            data.append(None)
+    return {
+        "chartType": "LINE",
+        "title": "客单价趋势",
+        "xAxis": x_axis,
+        "series": [{"name": "客单价", "data": data}],
+    }
+
+
+async def _get_restaurant_coverage_warning(
+    factory_id: str, start_date: date, conn
+) -> Optional[str]:
+    """Spec §4.5 edge case 6: requested start_date before agg_daily coverage
+    start → emit ``"数据起始 YYYY-MM-DD"`` warning string.
+
+    Returns ``None`` when start_date is at-or-after tenant's earliest Gold row.
+    """
+    if start_date is None:
+        raise ValueError(
+            "_get_restaurant_coverage_warning: start_date required "
+            f"(got start_date={start_date})"
+        )
+    row = await conn.fetchrow(
+        "SELECT MIN(date) AS min_date FROM agg_daily WHERE factory_id = $1",
+        factory_id,
+    )
+    if row is None or row["min_date"] is None:
+        return None
+    min_date = row["min_date"]
+    if start_date < min_date:
+        return f"数据起始 {min_date.isoformat()}"
+    return None
+
+
+def _empty_restaurant_sales_envelope(start_date: date, end_date: date) -> dict:
+    """Defensive empty envelope returned when the SmartBI pool is unavailable.
+
+    All scalars 0, all collections empty — frontend renders the same empty
+    state as a real zero-bill response (spec §4.5 edge case 1). The wrap
+    happens at the caller (``_restaurant_sales_dispatch``).
+    """
+    return {
+        "tenantType": "RESTAURANT",
+        "dateRange": {
+            "startDate": start_date.isoformat(),
+            "endDate": end_date.isoformat(),
+            "days": (end_date - start_date).days + 1,
+        },
+        "overview": {
+            "totalRevenue": 0,
+            "billCount": 0,
+            "avgPerCapita": None,
+            "storeCount": 0,
+            "dataSource": "agg_daily",
+        },
+        "revenueTrend": {
+            "chartType": "BAR", "title": "日营收趋势",
+            "xAxis": [], "series": [],
+        },
+        "orderTypeSplit": {
+            "chartType": "PIE", "title": "堂食/外卖占比", "series": [],
+        },
+        "mealPeriodBreakdown": {
+            "chartType": "BAR", "title": "时段营收分布", "series": [],
+        },
+        "productRanking": [],
+        "channelBreakdown": [],
+        "avgPerCapitaTrend": {
+            "chartType": "LINE", "title": "客单价趋势",
+            "xAxis": [], "series": [{"name": "客单价", "data": []}],
+        },
+        "generatedAt": _java_isoformat(datetime.now()),
+    }
+
+
+async def _restaurant_sales_dispatch(
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+    analysis_type: Optional[str],
+) -> dict:
+    """Phase IIa restaurant ``/analysis/sales`` dispatcher (spec §4.2).
+
+    Returns ``wrap_response()``-wrapped envelope. ``analysis_type`` accepted
+    for signature symmetry with the factory branch but ignored — restaurants
+    have a single sales view (Phase IIb may add ``costops``).
+
+    Edge cases handled:
+    * 1 (zero bills): each helper returns empty arrays / 0 scalars
+    * 2 (customer_count == 0 but bill_count > 0): overview.avgPerCapita is None
+    * 3 (deleted dish): productRanking COALESCE fallback name
+    * 4 (start > end): ``_validate_restaurant_date_range`` → HTTP 400
+    * 5 (single day): natural, xAxis has 1 element
+    * 6 (range > coverage): ``dateRange.coverageWarning`` emitted
+    """
+    _validate_restaurant_date_range(start_date, end_date)
+    days = (end_date - start_date).days + 1
+
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[analysis_sales restaurant] smartbi pool acquisition failed factory=%s: %s",
+            factory_id, e,
+        )
+
+    if pool is None:
+        return wrap_response(_empty_restaurant_sales_envelope(start_date, end_date))
+
+    async with pool.acquire() as conn:
+        overview = await _get_restaurant_overview(
+            factory_id, start_date, end_date, conn
+        )
+        revenue_trend = await _get_restaurant_revenue_trend(
+            factory_id, start_date, end_date, conn
+        )
+        order_type_split = await _get_restaurant_order_type_split(
+            factory_id, start_date, end_date, conn
+        )
+        meal_period_breakdown = await _get_restaurant_meal_period_breakdown(
+            factory_id, start_date, end_date, conn
+        )
+        product_ranking = await _get_restaurant_product_ranking(
+            factory_id, start_date, end_date, conn
+        )
+        channel_breakdown = await _get_restaurant_channel_breakdown(
+            factory_id, start_date, end_date, conn
+        )
+        avg_trend = await _get_restaurant_avg_per_capita_trend(
+            factory_id, start_date, end_date, conn
+        )
+        coverage_warning = await _get_restaurant_coverage_warning(
+            factory_id, start_date, conn
+        )
+
+    date_range: dict = {
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "days": days,
+    }
+    if coverage_warning is not None:
+        date_range["coverageWarning"] = coverage_warning
+
+    return wrap_response({
+        "tenantType": "RESTAURANT",
+        "dateRange": date_range,
+        "overview": overview,
+        "revenueTrend": revenue_trend,
+        "orderTypeSplit": order_type_split,
+        "mealPeriodBreakdown": meal_period_breakdown,
+        "productRanking": product_ranking,
+        "channelBreakdown": channel_breakdown,
+        "avgPerCapitaTrend": avg_trend,
+        "generatedAt": _java_isoformat(datetime.now()),
+    })
+
+
+# ============================================================
+# Section 5: Route handler (Task D.3 + Phase IIa tenant dispatch)
 # ============================================================
 
 @router.get("/api/mobile/{factory_id}/smart-bi/analysis/sales")
@@ -1734,13 +2302,46 @@ async def get_sales_analysis(
 ) -> dict:
     """Java reference: SmartBIAnalysisController.getSalesAnalysis line 98-138.
 
-    department/dimension query params accepted but IGNORED — Java line 110
-    short-circuits to getComprehensiveAnalysis when smartBIService is non-null.
-    F999 goldens confirm: dimension=salesperson golden is byte-identical to
-    no-dimension golden except _meta.
+    Phase IIa (2026-05-14): polymorphic restaurant branch added (spec §4.2).
+    Restaurant tenants (cretas_db.factories.type ∈ {RESTAURANT, BRANCH}) get
+    a restaurant-shaped envelope via ``_restaurant_sales_dispatch``. Factory
+    tenants continue with the 7-key composite shape unchanged.
 
-    Returns 7-key composite Map wrapped in standard envelope.
+    department/dimension query params accepted but IGNORED for factory branch
+    — Java line 110 short-circuits to getComprehensiveAnalysis when
+    smartBIService is non-null. F999 goldens confirm: dimension=salesperson
+    golden is byte-identical to no-dimension golden except _meta. Restaurant
+    branch also ignores both params (single sales view, no factory-style
+    department/dimension filters).
     """
+    # Tenant detection — mirrors analysis_production.py:468-488.
+    cretas_pool = None
+    try:
+        from smartbi.config import get_cretas_pool  # type: ignore
+        cretas_pool = await get_cretas_pool()
+    except Exception as e:
+        logger.warning(
+            "[analysis_sales] cretas_db pool acquisition failed factory=%s: %s",
+            auth.factory_id, e,
+        )
+
+    if cretas_pool is None:
+        # Defensive — pool missing → factory branch (matches Java
+        # isRestaurantTenant returning false on repository failure).
+        tenant = TenantType.FACTORY
+    else:
+        async with cretas_pool.acquire() as conn:
+            tenant = await get_tenant_type(auth.factory_id, conn)
+
+    if tenant.is_restaurant_tenant:
+        envelope = await _restaurant_sales_dispatch(
+            auth.factory_id, startDate, endDate, dimension
+        )
+        if isinstance(envelope, dict):
+            strip_price_for_role(envelope.get("data"), auth.role)
+        return envelope
+
+    # Factory branch — unchanged Phase 2A behavior.
     range_ = DateRange.custom(startDate, endDate)
     result = await _get_comprehensive_sales_analysis(auth.factory_id, range_)
     return wrap_response(strip_price_for_role(result, auth.role))
