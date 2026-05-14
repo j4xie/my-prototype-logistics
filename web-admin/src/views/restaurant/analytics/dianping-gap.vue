@@ -43,7 +43,7 @@
               <div class="metric-hint">退货量/总订单 (建议 < 2%)</div>
             </div>
           </el-col>
-          <el-col :xs="12" :sm="6">
+          <el-col v-if="canViewPrice" :xs="12" :sm="6">
             <div class="metric-card">
               <div class="metric-label">品均收入</div>
               <div class="metric-value">¥{{ ops.priceVsBenchmark.actual.toFixed(0) }}</div>
@@ -259,10 +259,13 @@ import { ArrowLeft, CircleCheck, CircleClose, QuestionFilled } from '@element-pl
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
+import { usePermissionStore } from '@/store/modules/permission'
 import type { OperationsMetrics, PlatformReadiness, DianpingGapData, RestaurantAnalyticsResult } from '@/types/restaurant-analytics'
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 
 const {
   uploads, selectedUploadId, data: fullData, loading,
@@ -304,10 +307,10 @@ const opsSuggestions = computed(() => {
   if (g.consistencyScore < 60) {
     items.push({ priority: 'medium', text: '出品稳定性评分较低，建议标准化核心菜品制作流程，加强厨房品控巡检。' })
   }
-  if (g.priceVsBenchmark.actual > g.priceVsBenchmark.benchmarkMedian * 1.3) {
+  if (canViewPrice.value && g.priceVsBenchmark.actual > g.priceVsBenchmark.benchmarkMedian * 1.3) {
     items.push({ priority: 'medium', text: `品均收入 ¥${g.priceVsBenchmark.actual.toFixed(0)} 高于行业中位数30%+，需确保菜品品质匹配定价。` })
   }
-  if (g.priceVsBenchmark.actual > 0 && g.priceVsBenchmark.actual < g.priceVsBenchmark.benchmarkMedian * 0.7) {
+  if (canViewPrice.value && g.priceVsBenchmark.actual > 0 && g.priceVsBenchmark.actual < g.priceVsBenchmark.benchmarkMedian * 0.7) {
     items.push({ priority: 'low', text: `品均收入 ¥${g.priceVsBenchmark.actual.toFixed(0)} 低于行业中位数，有提价空间，可通过提升菜品呈现和套餐组合提升品均收入。` })
   }
   if (items.length === 0) {

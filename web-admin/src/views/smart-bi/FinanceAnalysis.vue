@@ -8,6 +8,7 @@ import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
 import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import {
   getUploadHistory,
@@ -57,7 +58,9 @@ import type { TableRow } from '@/types/api';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 // Apr 24 2026 UX P0-1: restaurant tenants 没有 cost/profit 数据 (Silver 无),
 // 顶部 KPI 改显 Gold 营收/订单/客单价/门店. Manufacturing tenants 保持原样.
 const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
@@ -2036,7 +2039,7 @@ onUnmounted(() => {
           餐饮门店 POS 汇总数据 (Silver 暂未覆盖 cost/profit 字段, 预计 v2 加入)
         </span>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="6">
         <CapabilityGate card-id="finance_revenue_mgmt" :requires="['date', 'gross_amount']">
         <el-card class="kpi-card kpi-accent-0">
           <div class="kpi-label">总营收</div>
@@ -2052,7 +2055,7 @@ onUnmounted(() => {
           <div class="kpi-sub">{{ goldFinSummary?.storeCount ?? 0 }} 家门店</div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col v-if="canViewPrice" :xs="24" :sm="12" :md="6">
         <el-card class="kpi-card kpi-accent-2">
           <div class="kpi-label">客单价</div>
           <div class="kpi-value">¥{{ goldFinSummary?.avgBillValue != null ? goldFinSummary.avgBillValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</div>
@@ -2069,7 +2072,7 @@ onUnmounted(() => {
     </el-row>
 
     <!-- 财务 KPI (manufacturing tenants 原路径) -->
-    <el-row v-else :gutter="16" class="kpi-section" v-loading="loading">
+    <el-row v-else-if="canViewPrice" :gutter="16" class="kpi-section" v-loading="loading">
       <!-- 利润分析 KPI -->
       <template v-if="analysisType === 'profit'">
         <el-col :xs="24" :sm="12" :md="6">

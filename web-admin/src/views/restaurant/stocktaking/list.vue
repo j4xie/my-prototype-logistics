@@ -180,7 +180,7 @@
         <el-descriptions-item label="实盘数量">{{ detailData.actualQuantity ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="差异">{{ detailData.differenceQuantity ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="差异类型">{{ diffText(detailData.differenceType) || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="差异金额">{{ detailData.differenceAmount != null ? `¥${detailData.differenceAmount}` : '-' }}</el-descriptions-item>
+        <el-descriptions-item v-if="canViewPrice" label="差异金额">{{ detailData.differenceAmount != null ? `¥${detailData.differenceAmount}` : '-' }}</el-descriptions-item>
         <el-descriptions-item label="差异原因">{{ detailData.adjustmentReason || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注">{{ detailData.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -204,6 +204,7 @@ import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
 const canWrite = computed(() => permissionStore.canWrite('restaurant'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const materialTypes = ref<{ id: string; name: string }[]>([]);
 const materialNameMap = computed(() => Object.fromEntries(materialTypes.value.map(m => [m.id, m.name])));

@@ -6,6 +6,7 @@
  */
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
+import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
 import { toApiDateString } from '@/utils/dateFormat';
@@ -42,7 +43,9 @@ import {
 import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 const rootRef = ref<HTMLDivElement>();
 const trendChartRef = ref<HTMLDivElement | null>(null);
 const pieChartRef = ref<HTMLDivElement | null>(null);
@@ -1602,7 +1605,7 @@ onUnmounted(() => {
                 </template>
               </el-table-column>
               <el-table-column label="销售员" prop="name" width="100" />
-              <el-table-column label="销售额" prop="sales" min-width="140">
+              <el-table-column v-if="canViewPrice" label="销售额" prop="sales" min-width="140">
                 <template #default="{ row }">
                   <div class="sales-bar-cell">
                     <div class="sales-bar-bg">

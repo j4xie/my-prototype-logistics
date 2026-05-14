@@ -40,13 +40,16 @@ import {
   Warning
 } from '@element-plus/icons-vue';
 import { KPICard, AIInsightPanel } from '@/components/smartbi';
+import { usePermissionStore } from '@/store/modules/permission';
 import echarts from '@/utils/echarts';
 
 const router = useRouter();
 const rootRef = ref<HTMLDivElement>();
 
 const authStore = useAuthStore();
+const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // 上传步骤
 const currentStep = ref(0);
@@ -983,6 +986,7 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
             >
               <el-table-column
                 v-for="header in parseResult.headers"
+                v-if="canViewPrice || getColumnTypeBadge(header).label !== '¥'"
                 :key="header"
                 :prop="header"
                 min-width="120"

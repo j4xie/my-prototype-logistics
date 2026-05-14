@@ -10,6 +10,7 @@ import type { TableRow } from '@/types/api';
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
+const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 const loading = ref(false);
 const overview = ref<TableRow | null>(null);
@@ -137,17 +138,17 @@ function getTransactionTypeTag(type: string) {
   <div class="page-wrapper" v-loading="loading" empty-text="暂无数据">
     <!-- 财务概览 KPI -->
     <div class="kpi-row" v-if="overview">
-      <div class="kpi-card receivable">
+      <div v-if="canViewPrice" class="kpi-card receivable">
         <div class="kpi-label">应收总额</div>
         <div class="kpi-value">{{ formatMoney(overview.totalReceivable) }}</div>
         <div class="kpi-sub">逾期: {{ formatMoney(overview.overdueReceivable) }}</div>
       </div>
-      <div class="kpi-card payable">
+      <div v-if="canViewPrice" class="kpi-card payable">
         <div class="kpi-label">应付总额</div>
         <div class="kpi-value">{{ formatMoney(overview.totalPayable) }}</div>
         <div class="kpi-sub">逾期: {{ formatMoney(overview.overduePayable) }}</div>
       </div>
-      <div class="kpi-card net">
+      <div v-if="canViewPrice" class="kpi-card net">
         <div class="kpi-label">净额 (应收-应付)</div>
         <div class="kpi-value" :class="{
           'positive': ((overview.totalReceivable || 0) - (overview.totalPayable || 0)) >= 0,
@@ -165,15 +166,15 @@ function getTransactionTypeTag(type: string) {
 
     <!-- 无数据时的概览占位 -->
     <div class="kpi-row" v-else-if="!loading">
-      <div class="kpi-card receivable">
+      <div v-if="canViewPrice" class="kpi-card receivable">
         <div class="kpi-label">应收总额</div>
         <div class="kpi-value">¥0.00</div>
       </div>
-      <div class="kpi-card payable">
+      <div v-if="canViewPrice" class="kpi-card payable">
         <div class="kpi-label">应付总额</div>
         <div class="kpi-value">¥0.00</div>
       </div>
-      <div class="kpi-card net">
+      <div v-if="canViewPrice" class="kpi-card net">
         <div class="kpi-label">净额</div>
         <div class="kpi-value">¥0.00</div>
       </div>
@@ -215,14 +216,14 @@ function getTransactionTypeTag(type: string) {
           </template>
         </el-table-column>
         <el-table-column prop="counterpartyName" label="客户/供应商" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="amount" label="金额" width="130" align="right">
+        <el-table-column v-if="canViewPrice" prop="amount" label="金额" width="130" align="right">
           <template #default="{ row }">
             <span :class="{ 'text-income': row.transactionType === 'AR_PAYMENT', 'text-expense': row.transactionType === 'PAYABLE' }">
               {{ formatMoney(row.amount) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="balanceAfter" label="余额" width="130" align="right">
+        <el-table-column v-if="canViewPrice" prop="balanceAfter" label="余额" width="130" align="right">
           <template #default="{ row }">
             {{ formatMoney(row.balanceAfter) }}
           </template>

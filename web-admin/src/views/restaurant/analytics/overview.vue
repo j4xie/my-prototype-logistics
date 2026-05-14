@@ -52,7 +52,7 @@
       <template v-if="data && !loading">
         <!-- KPI Cards -->
         <el-row :gutter="16" class="kpi-row">
-          <el-col :xs="12" :sm="8" :md="4">
+          <el-col v-if="canViewPrice" :xs="12" :sm="8" :md="4">
             <CapabilityGate card-id="restaurant_overview_revenue" :requires="['date', 'net_amount']">
             <div class="kpi-card">
               <div class="kpi-label">总营收</div>
@@ -164,7 +164,7 @@
                 </div>
               </template>
               <div id="chart-trend-line" style="height: 280px" />
-              <div class="chart-footer">
+              <div v-if="canViewPrice" class="chart-footer">
                 共 {{ data.trendAnalysis.totalDays }} 天
                 · 日均 ¥{{ formatMoney(data.trendAnalysis.avgDailyRevenue) }}
                 · 峰值 {{ data.trendAnalysis.peakDay.date }} (¥{{ formatMoney(data.trendAnalysis.peakDay.revenue) }})
@@ -201,7 +201,7 @@
                 </div>
               </template>
               <div id="chart-meal-pie" class="chart-pie-square chart-pie-small" />
-              <div class="chart-footer">
+              <div v-if="canViewPrice" class="chart-footer">
                 工作日均 ¥{{ formatMoney(data.timePeriodAnalysis.weekdayAvg) }}
                 · 周末均 ¥{{ formatMoney(data.timePeriodAnalysis.weekendAvg) }}
               </div>
@@ -238,7 +238,7 @@
                 </div>
               </template>
               <div id="chart-price-band" style="height: 240px" />
-              <div class="chart-footer">
+              <div v-if="canViewPrice" class="chart-footer">
                 主力价格带: <strong>{{ data.priceBandAnalysis.mainBand }}</strong>
                 · 品均价 ¥{{ data.priceBandAnalysis.avgUnitPrice.toFixed(0) }}
               </div>
@@ -342,12 +342,15 @@ import { Refresh } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
+import { usePermissionStore } from '@/store/modules/permission'
 import type { RestaurantAnalyticsResult } from '@/types/restaurant-analytics'
 // Day 9 数据织网 Sub-Project A: capability-driven card visibility
 import { useCapability } from '@/composables/useCapability'
 import CapabilityGate from '@/components/CapabilityGate.vue'
 import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue'
 
+const permissionStore = usePermissionStore()
+const canViewPrice = computed(() => permissionStore.canViewPrice)
 const { fetchCapability } = useCapability()
 // Prime capability cache (fire-and-forget, useCapability handles errors fail-open).
 fetchCapability()
