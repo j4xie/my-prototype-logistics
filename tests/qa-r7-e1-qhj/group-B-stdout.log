@@ -1,0 +1,12 @@
+Running 4 scenarios against http://139.196.165.140:8086
+  [B] S-COV-T2-10-yield-rate — T2-10 极低用量辅料 yield-rate: F006 工厂 BOM 含出成率/净料率 (PR #297)
+    → FAIL — F006 BOM 未见 yield/出成率/净料率
+  [B] S-COV-T3-9-rbac-warehouse-mgr-list — T3-9 RBAC 仓管列头隐藏 (PR #467 verify): /procurement/orders + /sales/orders 无价格列
+    → SKIP_RBAC
+  [B] S-COV-T4-B4-stock-col — T4-B4 调拨新建 form "现有库存" 列: 新建调拨单 dialog 含 现有库存
+    → INFO — no 新建 button after 12s
+  [B] S-COV-T4-B9-manual-transfer — T4-B9 手动调拨入口: 调拨列表 含"手动新建调拨单" 按钮
+    → FAIL
+
+Results written to C:\Users\Steve\cretas-r7-e1-qhj\scripts\customer-audit-e2e-2026-05-14-qhj\results-coverage.json
+Summary: PASS=0 FAIL=2 PARTIAL=0 INFO=1 SKIP_RBAC=1 ERROR=0

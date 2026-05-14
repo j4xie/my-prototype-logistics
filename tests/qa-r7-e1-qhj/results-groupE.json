@@ -1,0 +1,65 @@
+{
+  "runAt": "2026-05-14T03:58:09.582Z",
+  "target": "http://139.196.165.140:8086",
+  "scenariosTotal": 3,
+  "byGroup": {
+    "A": 0,
+    "B": 0,
+    "D": 0,
+    "E": 3
+  },
+  "statusCounts": {
+    "PASS": 1,
+    "FAIL": 0,
+    "PARTIAL": 0,
+    "INFO": 2,
+    "SKIP_RBAC": 0,
+    "ERROR": 0
+  },
+  "factory": "RES_3101_009",
+  "substitutionNote": "Originally spec'd R_QINGHUAJIAO_REAL had 0 POS records; substituted RES_3101_009 (same QHJ chain, 140K+ POS, qhj_prod admin user) per Steve sign-off 2026-05-14.",
+  "results": [
+    {
+      "scenario": "S-COV-T4-D1-deeper",
+      "group": "E",
+      "priority": "P1-followup",
+      "account": "qhj_prod",
+      "originalAccount": "f006_admin",
+      "status": "PASS",
+      "evidence": {
+        "hasWarehouseCol": true,
+        "hasZongCang": false,
+        "hasXianBianCang": false,
+        "dialogColumnsPreview": "新建销售订单客户请选择交货日期交货地址业务员请选择业务员含运费其他费用+ 添加费用项备注预订合同上传合同 (PDF/图片/Word, ≤20MB)成品明细品名规格下单数量单位单价箱数税率(%)来源仓库操作选择产品13% 加工选择删除+ 添加行取消创建",
+        "verdict": "PASS"
+      },
+      "ts": "2026-05-14T03:57:06.103Z"
+    },
+    {
+      "scenario": "S-COV-T4-D4-rpf-manual",
+      "group": "E",
+      "priority": "P1-followup",
+      "account": "qhj_prod",
+      "originalAccount": "f006_admin",
+      "status": "INFO",
+      "evidence": {
+        "verdict": "INFO",
+        "reason": "no detail button on batches list"
+      },
+      "ts": "2026-05-14T03:57:31.695Z"
+    },
+    {
+      "scenario": "S-COV-T-INV-scope-clarify",
+      "group": "E",
+      "priority": "P1-followup",
+      "account": "qhj_prod",
+      "originalAccount": "f006_admin",
+      "status": "INFO",
+      "evidence": {
+        "verdict": "INFO",
+        "reason": "no order to test (table empty?)"
+      },
+      "ts": "2026-05-14T03:58:09.507Z"
+    }
+  ]
+}

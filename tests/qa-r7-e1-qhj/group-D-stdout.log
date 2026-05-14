@@ -1,0 +1,12 @@
+Running 4 scenarios against http://139.196.165.140:8086
+  [D] S-COV-T2-5b-moving-avg-price — T2-5b 移动平均价/动态定价: 物料类型页含 movingAvgPrice 列 (PR #541) 或物料均价趋势页
+    → PARTIAL
+  [D] S-COV-T2-11-yield-analysis — T2-11 工序投入产出 + 出成率分析: 生产分析页
+    → FAIL
+  [D] S-COV-T2-12-sku-margin — T2-12 SKU 毛利率分析页: /finance/sku-margin-analysis
+    → FAIL
+  [D] S-COV-T3-8b-receive-no-price — T3-8b 仓管入库只录数量+日期+拍照: /procurement/receives 不显示价格 + 含拍照入口
+    → SKIP_RBAC
+
+Results written to C:\Users\Steve\cretas-r7-e1-qhj\scripts\customer-audit-e2e-2026-05-14-qhj\results-coverage.json
+Summary: PASS=0 FAIL=2 PARTIAL=1 INFO=0 SKIP_RBAC=1 ERROR=0
