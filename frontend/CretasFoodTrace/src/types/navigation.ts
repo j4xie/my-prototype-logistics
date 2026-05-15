@@ -194,6 +194,11 @@ export type ManagementStackParamList = {
   ShipmentManagement: undefined;  // 出货管理
   FactorySettings: undefined;
   MaterialSpecManagement: undefined; // Phase 4: 物料规格管理（已实现但暂未启用）
+
+  // M-BOM-1 (Track D1, 2026-05-14): BOM 配方主子表
+  BomConfigList: undefined;                       // BOM 配方列表
+  BomConfigEdit: { recipeId?: string };           // BOM 配方编辑 (无 id = 新建)
+
   DisposalRecordManagement: undefined; // 报废记录管理
   WorkSessionManagement: undefined; // 工作会话管理
 

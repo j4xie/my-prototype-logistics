@@ -1,0 +1,67 @@
+package com.cretas.aims.service.bom;
+
+import com.cretas.aims.dto.bom.CreateBomRecipeRequest;
+import com.cretas.aims.dto.bom.UpdateBomRecipeRequest;
+import com.cretas.aims.entity.bom.BomRecipe;
+import com.cretas.aims.entity.bom.BomRecipeItem;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * BomRecipeService (Track D1 / M-BOM-1).
+ *
+ * <p>Encapsulates BOM 配方主子表的业务操作: CRUD + 状态机 (DRAFT→ACTIVE→ARCHIVED)
+ * + 克隆 + 成本计算.
+ *
+ * @author Cretas Team / Track D1
+ * @since 2026-05-14
+ */
+public interface BomRecipeService {
+
+    /** 创建草稿 (status=DRAFT). 自动生成 recipeCode (BOM-YYYYMMDD-NNN). */
+    BomRecipe createRecipe(String factoryId, CreateBomRecipeRequest request);
+
+    /** 更新草稿. 仅 DRAFT 状态可改, 其他状态抛 IllegalStateException. */
+    BomRecipe updateRecipe(String factoryId, String recipeId, UpdateBomRecipeRequest request);
+
+    /** 激活草稿: DRAFT → ACTIVE, 同产品其他 is_current=TRUE 的版本设为 FALSE. */
+    BomRecipe activateRecipe(String factoryId, String recipeId, Long operatorId);
+
+    /** 克隆为新版本草稿: source ACTIVE/ARCHIVED → 新 DRAFT recipe, version+1. */
+    BomRecipe cloneRecipe(String factoryId, String recipeId);
+
+    /** 归档: DRAFT/ACTIVE → ARCHIVED, is_current=FALSE. */
+    BomRecipe archiveRecipe(String factoryId, String recipeId);
+
+    /** 软删除 (仅 DRAFT). 通过 BaseEntity.softDelete() 设置 deletedAt. */
+    void deleteRecipe(String factoryId, String recipeId);
+
+    /** 取详情 (含 items). */
+    BomRecipe getRecipe(String factoryId, String recipeId);
+
+    /** 取产品当前生效 BOM (status=ACTIVE + is_current=TRUE). */
+    Optional<BomRecipe> getCurrentRecipe(String factoryId, String productTypeId);
+
+    /** 取产品所有版本 (含历史). */
+    List<BomRecipe> getRecipeVersions(String factoryId, String productTypeId);
+
+    /** 分页查询 (可按 status 过滤). */
+    Page<BomRecipe> listRecipes(String factoryId, BomRecipe.Status status, Pageable pageable);
+
+    /** 重算成本 (运行时, 返回更新后的 recipe, 写回主表 total_*_cost 字段). */
+    BomRecipe calculateCost(String factoryId, String recipeId);
+
+    /** 添加配方项. */
+    BomRecipeItem addItem(String factoryId, String recipeId,
+                          CreateBomRecipeRequest.BomRecipeItemDTO dto);
+
+    /** 更新配方项. */
+    BomRecipeItem updateItem(String factoryId, Long itemId,
+                             CreateBomRecipeRequest.BomRecipeItemDTO dto);
+
+    /** 删除配方项 (软删). */
+    void deleteItem(String factoryId, Long itemId);
+}

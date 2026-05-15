@@ -27,6 +27,10 @@ import IntentConfigScreen from '../screens/management/IntentConfigScreen';
 // Phase 3 P2 - 工厂设置
 import FactorySettingsScreen from '../screens/management/FactorySettingsScreen';
 
+// M-BOM-1 (Track D1, 2026-05-14): BOM 配方主子表
+import BomConfigScreen from '../screens/factory/bom/BomConfigScreen';
+import BomEditorScreen from '../screens/factory/bom/BomEditorScreen';
+
 // Phase 4启用：规格配置管理
 // import MaterialSpecManagementScreen from '../screens/management/MaterialSpecManagementScreen';
 
@@ -161,6 +165,18 @@ export function ManagementStackNavigator() {
         options={{ title: '规格配置管理' }}
       />
       */}
+
+      {/* M-BOM-1 (Track D1, 2026-05-14): BOM 配方主子表 */}
+      <Stack.Screen
+        name="BomConfigList"
+        component={BomConfigScreen}
+        options={{ title: 'BOM 配方管理' }}
+      />
+      <Stack.Screen
+        name="BomConfigEdit"
+        component={BomEditorScreen}
+        options={{ title: 'BOM 配方编辑' }}
+      />
     </Stack.Navigator>
   );
 }
