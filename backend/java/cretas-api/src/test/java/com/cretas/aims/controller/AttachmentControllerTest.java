@@ -4,10 +4,12 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.Attachment;
 import com.cretas.aims.entity.Attachment.EntityType;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.security.AttachmentPermissionResolver;
 import com.cretas.aims.service.attachment.AttachmentService;
 import com.cretas.aims.service.attachment.dto.RegisterAttachmentRequest;
 import com.cretas.aims.service.attachment.dto.UpdateAttachmentRequest;
 import com.cretas.aims.service.attachment.dto.UploadUrlResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,9 @@ import static org.mockito.Mockito.*;
  * 覆盖 8 endpoint 的 controller 层契约: 路径绑定 / DTO 解析 / 响应包装 /
  * 302 redirect / stripQuery 在 fileUrl 派生.
  *
+ * <p>RBAC 行为在 {@link AttachmentControllerRBACTest} 单独覆盖, 这里 resolver
+ * 默认是 silent mock (调用不抛异常 = "管理员行为"), 让契约测试聚焦 controller 编排.
+ *
  * @author Cretas Team — Track C
  * @since 2026-05-15
  */
@@ -39,6 +44,8 @@ import static org.mockito.Mockito.*;
 class AttachmentControllerTest {
 
     @Mock AttachmentService attachmentService;
+    @Mock AttachmentPermissionResolver permissionResolver;
+    @Mock HttpServletRequest request;
     @InjectMocks AttachmentController controller;
 
     private static final String FACTORY_ID = "F006";
@@ -53,13 +60,14 @@ class AttachmentControllerTest {
                 .thenReturn(List.of(a));
 
         ResponseEntity<ApiResponse<List<Attachment>>> resp =
-                controller.listByEntity(FACTORY_ID, EntityType.PURCHASE_ORDER, "PO-001");
+                controller.listByEntity(FACTORY_ID, EntityType.PURCHASE_ORDER, "PO-001", request);
 
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertNotNull(resp.getBody());
         assertTrue(resp.getBody().getSuccess());
         assertEquals(1, resp.getBody().getData().size());
         assertEquals(ATT_ID, resp.getBody().getData().get(0).getId());
+        verify(permissionResolver).requireRead(any(), eq(EntityType.PURCHASE_ORDER));
     }
 
     @Test
@@ -67,24 +75,31 @@ class AttachmentControllerTest {
     void getById_returnsAttachment() {
         Attachment a = new Attachment();
         a.setId(ATT_ID);
+        a.setEntityType(EntityType.PURCHASE_ORDER);
         when(attachmentService.getById(FACTORY_ID, ATT_ID)).thenReturn(a);
 
-        ResponseEntity<ApiResponse<Attachment>> resp = controller.getById(FACTORY_ID, ATT_ID);
+        ResponseEntity<ApiResponse<Attachment>> resp = controller.getById(FACTORY_ID, ATT_ID, request);
 
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertEquals(ATT_ID, resp.getBody().getData().getId());
+        verify(permissionResolver).requireRead(any(), eq(EntityType.PURCHASE_ORDER));
     }
 
     @Test
     @DisplayName("✅ GET /attachments/{id}/download 返 302 + Location 签名 URL")
     void download_returns302WithSignedUrl() {
+        Attachment a = new Attachment();
+        a.setId(ATT_ID);
+        a.setEntityType(EntityType.PURCHASE_ORDER);
+        when(attachmentService.getById(FACTORY_ID, ATT_ID)).thenReturn(a);
         String signedUrl = "https://cretas-media.oss-cn-shanghai.aliyuncs.com/x?Signature=s&Expires=t";
         when(attachmentService.generateDownloadUrl(FACTORY_ID, ATT_ID)).thenReturn(signedUrl);
 
-        ResponseEntity<Void> resp = controller.download(FACTORY_ID, ATT_ID);
+        ResponseEntity<Void> resp = controller.download(FACTORY_ID, ATT_ID, request);
 
         assertEquals(HttpStatus.FOUND, resp.getStatusCode());
         assertEquals(signedUrl, resp.getHeaders().getLocation().toString());
+        verify(permissionResolver).requireRead(any(), eq(EntityType.PURCHASE_ORDER));
     }
 
     @Test
@@ -107,6 +122,7 @@ class AttachmentControllerTest {
         assertEquals("https://cretas-media.oss-cn-shanghai.aliyuncs.com/F006/attachments/2026/05/15/abc.jpg",
                 data.getFileUrl(),
                 "fileUrl = stripQuery (去除签名查询串)");
+        verify(permissionResolver).validateUploadRequest("image/jpeg", null);
     }
 
     @Test
@@ -125,7 +141,7 @@ class AttachmentControllerTest {
         when(attachmentService.register(eq(FACTORY_ID), any(RegisterAttachmentRequest.class), any()))
                 .thenReturn(saved);
 
-        ResponseEntity<ApiResponse<Attachment>> resp = controller.register(FACTORY_ID, req);
+        ResponseEntity<ApiResponse<Attachment>> resp = controller.register(FACTORY_ID, req, request);
 
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertEquals(ATT_ID, resp.getBody().getData().getId());
@@ -134,11 +150,17 @@ class AttachmentControllerTest {
         verify(attachmentService).register(eq(FACTORY_ID), cap.capture(), any());
         assertEquals(EntityType.PURCHASE_ORDER, cap.getValue().getEntityType());
         assertEquals("PO-001", cap.getValue().getEntityId());
+        verify(permissionResolver).requireWrite(any(), eq(EntityType.PURCHASE_ORDER));
     }
 
     @Test
     @DisplayName("✅ PUT /attachments/{id} 更新")
     void update_invokesService() {
+        Attachment existing = new Attachment();
+        existing.setId(ATT_ID);
+        existing.setEntityType(EntityType.PURCHASE_ORDER);
+        when(attachmentService.getById(FACTORY_ID, ATT_ID)).thenReturn(existing);
+
         UpdateAttachmentRequest req = new UpdateAttachmentRequest();
         req.setDescription("new desc");
         Attachment updated = new Attachment();
@@ -147,10 +169,11 @@ class AttachmentControllerTest {
         when(attachmentService.update(eq(FACTORY_ID), eq(ATT_ID), any(UpdateAttachmentRequest.class), any()))
                 .thenReturn(updated);
 
-        ResponseEntity<ApiResponse<Attachment>> resp = controller.update(FACTORY_ID, ATT_ID, req);
+        ResponseEntity<ApiResponse<Attachment>> resp = controller.update(FACTORY_ID, ATT_ID, req, request);
 
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertEquals("new desc", resp.getBody().getData().getDescription());
+        verify(permissionResolver).requireWrite(any(), eq(EntityType.PURCHASE_ORDER));
     }
 
     @Test
@@ -174,12 +197,13 @@ class AttachmentControllerTest {
         req.setEntityType(EntityType.PURCHASE_ORDER);
         req.setEntityIds(List.of("PO-001", "PO-002"));
 
-        ResponseEntity<ApiResponse<Map<String, Long>>> resp = controller.batchCount(FACTORY_ID, req);
+        ResponseEntity<ApiResponse<Map<String, Long>>> resp = controller.batchCount(FACTORY_ID, req, request);
 
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertEquals(2, resp.getBody().getData().size());
         assertEquals(3L, resp.getBody().getData().get("PO-001"));
         assertEquals(7L, resp.getBody().getData().get("PO-002"));
+        verify(permissionResolver).requireRead(any(), eq(EntityType.PURCHASE_ORDER));
     }
 
     @Test
@@ -189,7 +213,7 @@ class AttachmentControllerTest {
                 .thenThrow(new BusinessException(404, "附件不存在"));
 
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> controller.getById(FACTORY_ID, ATT_ID));
+                () -> controller.getById(FACTORY_ID, ATT_ID, request));
         assertEquals(404, ex.getCode());
     }
 }

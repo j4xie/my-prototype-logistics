@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.security.PriceMaskResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,22 +16,31 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * C-PRT-1 — 单据打印 PDF Java 入口.
  *
  * <p>5 单据 GET endpoint, 每个端点:
  * <ol>
- *   <li>校验访问权限 (跟随实体权限, factoryId 隔离)</li>
+ *   <li>校验访问权限 (跟随实体权限, factoryId 隔离, RBAC defense-in-depth)</li>
  *   <li>组装打印 payload (entity → flat dict)</li>
+ *   <li>RBAC: 无 {@code procurement:price:view} 权限的角色, 单价/小计/合计 等敏感字段
+ *       在 payload 阶段 strip 为 "—" (PR #423 PriceFieldResponseAdvice 只 walk JSON,
+ *       不 walk byte[] PDF — 必须在交给 Python 渲染之前 mask)</li>
  *   <li>POST 到 Python {@code /api/printing/{type}} 取 PDF bytes</li>
  *   <li>流回客户端 (Content-Disposition: attachment)</li>
  * </ol>
  *
- * <p><b>当前实现状态</b>: Day 6 MVP — 5 endpoint 全通, payload 组装为 stub
- * (返客户提供的 query string 即可生成 PDF, 适合 demo + 客户验收). 后续 PR
- * 把 stub 替换为 SalesOrderService / PurchaseOrderService 等真实 fetch.
+ * <p><b>Sprint1-Fix-K2 (2026-05-15)</b>: PR #659 merge 时 5 endpoint 0 @RequirePermission +
+ * 0 价格脱敏. 仓库管理员可以拉销售/采购订单 PDF 看到完整单价 — 绕开 PR #423 框架. 本 follow-up:
+ * <ul>
+ *   <li>每个 endpoint 加 module:read 网关 ({@code sales/procurement/production})</li>
+ *   <li>{@link PriceMaskResolver#shouldMaskPrice(String)} 决定是否脱敏 payload 的金额字段</li>
+ *   <li>{@code production-task} + {@code material-requisition} 不含金额, 仅做 RBAC 门禁</li>
+ * </ul>
  *
  * @author Cretas Team — Track C
  * @since 2026-05-15 (C-PRT-1)
@@ -40,62 +51,149 @@ import java.util.Map;
 @CrossOrigin(origins = {"https://www.cretaceousfuture.com", "http://139.196.165.140:8086", "http://localhost:5173"})
 public class PrintController {
 
+    /** Sentinel value used in printed PDFs for users without procurement:price:view permission. */
+    private static final String PRICE_MASK = "—";
+
+    /** Top-level payload keys whose value is a price/total — replace with {@link #PRICE_MASK} when masked. */
+    private static final Set<String> PRICE_TOPLEVEL_KEYS = Set.of(
+            "totalAmount",
+            "subtotal",
+            "taxAmount",
+            "discountAmount",
+            "payableAmount",
+            "paidAmount",
+            "balance"
+    );
+
+    /** Per-line-item keys inside {@code items[]} that are price-bearing. */
+    private static final Set<String> PRICE_ITEM_KEYS = Set.of(
+            "unitPrice",
+            "subtotal",
+            "totalAmount",
+            "amount",
+            "price",
+            "discount",
+            "discountAmount",
+            "tax",
+            "taxAmount"
+    );
+
     private final RestTemplate pythonRestTemplate;
     private final String pythonBaseUrl;
+    private final PriceMaskResolver priceMaskResolver;
 
     @Autowired
     public PrintController(
             @Qualifier("pythonAiRestTemplate") RestTemplate pythonRestTemplate,
-            @Qualifier("pythonAiBaseUrl") String pythonBaseUrl) {
+            @Qualifier("pythonAiBaseUrl") String pythonBaseUrl,
+            PriceMaskResolver priceMaskResolver) {
         this.pythonRestTemplate = pythonRestTemplate;
         this.pythonBaseUrl = pythonBaseUrl;
+        this.priceMaskResolver = priceMaskResolver;
     }
 
     // ==================== 5 单据 endpoint ====================
 
     @GetMapping("/sales-order/{id}")
+    @RequirePermission({"sales:read", "sales:read_write"})
     public ResponseEntity<byte[]> printSalesOrder(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @RequestParam(required = false) Map<String, String> overrides) {
+            @RequestParam(required = false) Map<String, String> overrides,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         Map<String, Object> payload = buildSalesOrderPayload(factoryId, id, overrides);
+        applyPriceMask(payload, authorization, "sales-order", true);
         return proxyToPython("sales-order", payload, "sales-order-" + id);
     }
 
     @GetMapping("/purchase-order/{id}")
+    @RequirePermission({"procurement:read", "procurement:read_write"})
     public ResponseEntity<byte[]> printPurchaseOrder(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @RequestParam(required = false) Map<String, String> overrides) {
+            @RequestParam(required = false) Map<String, String> overrides,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         Map<String, Object> payload = buildPurchaseOrderPayload(factoryId, id, overrides);
+        applyPriceMask(payload, authorization, "purchase-order", true);
         return proxyToPython("purchase-order", payload, "purchase-order-" + id);
     }
 
     @GetMapping("/quotation/{id}")
+    @RequirePermission({"sales:read", "sales:read_write"})
     public ResponseEntity<byte[]> printQuotation(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @RequestParam(required = false) Map<String, String> overrides) {
+            @RequestParam(required = false) Map<String, String> overrides,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         Map<String, Object> payload = buildQuotationPayload(factoryId, id, overrides);
+        applyPriceMask(payload, authorization, "quotation", true);
         return proxyToPython("quotation", payload, "quotation-" + id);
     }
 
     @GetMapping("/production-task/{id}")
+    @RequirePermission({"production:read", "production:read_write"})
     public ResponseEntity<byte[]> printProductionTask(
             @PathVariable String factoryId,
             @PathVariable String id,
             @RequestParam(required = false) Map<String, String> overrides) {
+        // 生产任务单不含金额字段, 仅 RBAC 门禁即可.
         Map<String, Object> payload = buildProductionTaskPayload(factoryId, id, overrides);
         return proxyToPython("production-task", payload, "production-task-" + id);
     }
 
     @GetMapping("/material-requisition/{id}")
+    @RequirePermission({"procurement:read", "procurement:read_write",
+            "warehouse:read", "warehouse:read_write"})
     public ResponseEntity<byte[]> printMaterialRequisition(
             @PathVariable String factoryId,
             @PathVariable String id,
             @RequestParam(required = false) Map<String, String> overrides) {
+        // 领料单不含金额字段, 仅 RBAC 门禁即可.
         Map<String, Object> payload = buildMaterialRequisitionPayload(factoryId, id, overrides);
         return proxyToPython("material-requisition", payload, "material-requisition-" + id);
+    }
+
+    // ==================== Price masking ====================
+
+    /**
+     * Replace price-bearing payload fields with {@link #PRICE_MASK} when the caller
+     * lacks {@code procurement:price:view}. Skipped entirely for doc types with no
+     * monetary fields (production-task, material-requisition).
+     *
+     * <p>RBAC defense-in-depth: {@link com.cretas.aims.security.PriceFieldResponseAdvice}
+     * (PR #423) only walks JSON response bodies — binary PDF byte[] returned by Python
+     * bypasses it, so we MUST strip on the input payload before proxying.
+     *
+     * @param hasMonetaryFields false for production-task / material-requisition
+     */
+    void applyPriceMask(Map<String, Object> payload, String authorization, String docType, boolean hasMonetaryFields) {
+        if (!hasMonetaryFields) {
+            return;
+        }
+        boolean mask = priceMaskResolver.shouldMaskPrice(authorization);
+        log.info("Print {} payload masking decision: docType={}, mask={}", docType, docType, mask);
+        if (!mask) {
+            return;
+        }
+        for (String key : PRICE_TOPLEVEL_KEYS) {
+            if (payload.containsKey(key)) {
+                payload.put(key, PRICE_MASK);
+            }
+        }
+        Object items = payload.get("items");
+        if (items instanceof List<?>) {
+            for (Object item : (List<?>) items) {
+                if (item instanceof Map<?, ?>) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> row = (Map<String, Object>) item;
+                    for (String key : PRICE_ITEM_KEYS) {
+                        if (row.containsKey(key)) {
+                            row.put(key, PRICE_MASK);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // ==================== Internal proxy ====================
