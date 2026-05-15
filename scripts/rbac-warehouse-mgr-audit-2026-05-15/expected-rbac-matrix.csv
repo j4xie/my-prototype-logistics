@@ -1,0 +1,26 @@
+role,view,endpoint,expected_status,expected_behavior
+warehouse_manager,采购订单详情,GET /purchase/orders/{id},200,mask price fields (unitPrice/totalAmount/payableAmount → null)
+warehouse_manager,销售订单详情,GET /sales/orders/{id},200,mask price fields (unitPrice/totalAmount → null)
+warehouse_manager,三价对比,GET /purchase/orders/{id}/price-comparison,403,deny entire endpoint (canViewPrice=false)
+warehouse_manager,BOM 详情,GET /bom/items?productTypeId=X,200,mask price fields (unitPrice/materialCost → null)
+warehouse_manager,财务凭证,GET /finance/payments/{id},403,deny entire endpoint (no finance:read permission)
+operator,采购订单详情,GET /purchase/orders/{id},200,mask price fields
+operator,销售订单详情,GET /sales/orders/{id},200,mask price fields
+operator,三价对比,GET /purchase/orders/{id}/price-comparison,403,deny
+operator,BOM 详情,GET /bom/items?productTypeId=X,200,mask price fields
+operator,财务凭证,GET /finance/payments/{id},403,deny
+quality_inspector,采购订单详情,GET /purchase/orders/{id},200,mask price fields
+quality_inspector,销售订单详情,GET /sales/orders/{id},200,mask price fields
+quality_inspector,三价对比,GET /purchase/orders/{id}/price-comparison,403,deny
+quality_inspector,BOM 详情,GET /bom/items?productTypeId=X,200,mask price fields
+quality_inspector,财务凭证,GET /finance/payments/{id},403,deny
+customer_service,采购订单详情,GET /purchase/orders/{id},200,mask price fields
+customer_service,销售订单详情,GET /sales/orders/{id},200,mask price fields
+customer_service,三价对比,GET /purchase/orders/{id}/price-comparison,403,deny
+customer_service,BOM 详情,GET /bom/items?productTypeId=X,200,mask price fields
+customer_service,财务凭证,GET /finance/payments/{id},403,deny
+viewer,采购订单详情,GET /purchase/orders/{id},200,mask price fields
+viewer,销售订单详情,GET /sales/orders/{id},200,mask price fields
+viewer,三价对比,GET /purchase/orders/{id}/price-comparison,403,deny
+viewer,BOM 详情,GET /bom/items?productTypeId=X,200,mask price fields
+viewer,财务凭证,GET /finance/payments/{id},403,deny
