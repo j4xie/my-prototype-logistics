@@ -9,8 +9,30 @@
 | File | Listen | Role | Upstream for /smart-bi/analysis/* |
 |---|---|---|---|
 | `web-admin.conf` | 8086 | Internal prod web-admin frontend (Vue dist at `/www/wwwroot/web-admin/`) | `cretas_python` (Python prod 8083) |
+| `admin.cretaceousfuture.com.conf` | 443 | **Real customer DNS** vhost (HTTPS) | `cretas_python` via shared include |
+| `api.cretaceousfuture.com.conf` | 443 | API consumer DNS vhost (HTTPS, currently DNS=NXDOMAIN) | `cretas_python` via shared include |
+| `smart-bi-routing.conf` | — | **Shared snippet** — included by all 3 vhosts above. Single source of truth for cutover paths. Server live path: `/www/server/nginx/conf/snippets/smart-bi-routing.conf`. |
 | `web-admin-test.conf` | 8097 | QA test env web-admin (Vue dist at `/www/wwwroot/web-admin-test/`) | `47.100.235.168:8084` (Python test 8084) |
 | `*.original` | — | Pre-patch snapshots scp'd from server 139 at 23:47 CST on 2026-05-12. Reference only — do not deploy. |
+
+## Shared-include architecture (2026-05-15)
+
+Each of the 3 prod vhosts (web-admin / admin / api) has exactly one line:
+
+```nginx
+include /www/server/nginx/conf/snippets/smart-bi-routing.conf;
+```
+
+That snippet contains the 5 Java→Python cutover location blocks (Phase 2A factory analysis + alerts + query-templates, T6.6.3c restaurant production/quality, Phase IIa restaurant finance/sales). Editing the snippet once propagates to all 3 vhosts — **drift impossible**.
+
+See `smart-bi-routing.conf` header for SCOPE rules (which paths belong here vs Java fall-through).
+
+Procedure for adding a new cutover block:
+1. Edit `ops/nginx-vhosts-139/smart-bi-routing.conf` in repo first
+2. `scp` to `/www/server/nginx/conf/snippets/smart-bi-routing.conf` on server 139
+3. `nginx -t && nginx -s reload`
+4. 2-curl smoke (IP + admin DNS)
+5. Commit + PR
 
 ## What changed (2026-05-12, BUG-R1B-01)
 
