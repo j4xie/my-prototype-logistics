@@ -61,6 +61,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '数据完整度', icon: 'Checked', module: 'analytics' },
       },
       {
+        path: 'upload-status',
+        name: 'SmartBIUploadStatus',
+        component: () => import('@/views/smart-bi/UploadStatusDashboard.vue'),
+        meta: { requiresAuth: true, title: '上传状态', icon: 'Document', module: 'analytics' },
+      },
+      {
         path: 'food-kb-feedback',
         name: 'SmartBIFoodKBFeedback',
         component: () => import('@/views/smart-bi/FoodKBFeedback.vue'),
