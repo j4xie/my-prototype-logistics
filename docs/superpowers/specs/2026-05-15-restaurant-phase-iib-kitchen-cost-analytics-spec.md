@@ -1,10 +1,10 @@
 # Restaurant Tenant Kitchen Cost & Ops Analytics — Phase IIb Implementation Spec
 
-**Status**: **DRAFT — Cycle-1 audit + Pre-IIb data audit complete (2026-05-15). OQ-2 signed off (Hybrid). Awaiting cycle-3 review + impl dispatch.**
+**Status**: **READY for impl dispatch — Cycle-1 through cycle-4 audits all complete (2026-05-15). OQ-2 + OQ-IIB-NEW signed off (Hybrid). Spec frozen for impl.**
 **Date**: 2026-05-15
 **Last audit**: cycle-1 spec review (subagent, 2026-05-15, 4 CRITICAL + 7 IMPORTANT + 5 MINOR all fixed in this cycle-2 amend) + Pre-IIb data audit (subagent, 2026-05-15, 8 schema drift fixed)
 **Author**: Architecture review (subagent draft for organizer review)
-**Audience**: Backend Python engineer (Sister-chat impl), frontend Vue engineer, product owner (Steve)
+**Audience**: Backend Python engineer (subagent impl), frontend Vue engineer, product owner (Steve)
 **Trigger**: Phase IIa shipped 2026-05-14 (PRs #633 backend / #634 frontend / #641 nginx / #644 close-out / #647 spec amendment + COALESCE follow-up). Restaurant tenants now see revenue-side analytics. Phase IIb fills the immediate next gap: *"我卖了多少钱看到了，但成本去哪了？"*
 
 ---
@@ -12,7 +12,7 @@
 ## STATUS (read first)
 
 - **Phase IIa**: ✅ **SHIPPED** 2026-05-14. RES_3101_009 verified ¥20.6M in prod end-to-end. 14 R_*_REAL chains remain onboarding-blocked (no Bronze POS data). This spec assumes Phase IIa as completed prerequisite.
-- **Phase IIb**: **DRAFT, cycle-2 amend complete** — OQ-2 + OQ-IIB-NEW signed off 2026-05-15 (Hybrid: ship empty-state-graceful + showcase R_XMX_CHAIN + RES_3101_009 wastage; 13 empty chains see SmartBIEmptyState; not gated on data). Pre-IIb data audit complete. Ready for cycle-3 review + impl dispatch.
+- **Phase IIb**: **DRAFT, cycle-1 through cycle-4 audits ALL complete** — OQ-2 + OQ-IIB-NEW signed off 2026-05-15 (Hybrid: ship empty-state-graceful + showcase R_XMX_CHAIN + RES_3101_009 wastage; 13 empty chains see SmartBIEmptyState; not gated on data). Cycle-4 verdict: **READY for impl dispatch** (0 CRITICAL, 2 IMPORTANT applied in this commit, 4 MINOR applied). Pre-IIb data audit complete.
 - **Phase IIc**: Untouched by this spec; full P&L remains the Phase IIc scope per IIa spec §3 (gated on OQ-3 cost-ingestion decision and `fact_cost_line` having data — note: `fact_cost_line` confirmed empty for ALL factories per Pre-IIb audit, not just restaurants).
 - **Next dispatch**: cycle-3 reviewer pass (mechanical re-audit, expected light), then subagent impl dispatch (backend / frontend / nginx PRs).
 - **Pending Steve decisions**: OQ-2 ✅ signed off Hybrid; OQ-IIB-NEW ✅ signed off (accept est_cost + caveat); OQ-1 ✅ N/A (no fact_cost_line anywhere).
@@ -124,7 +124,7 @@ SELECT factory_id, status, COUNT(*) FROM fact_restaurant_stocktaking GROUP BY fa
 
 ### Pre-IIb Data Audit Results (2026-05-15)
 
-Sister-chat ran the audit. Coverage matrix (rows in `fact_restaurant_*` per chain):
+Subagent ran the audit. Coverage matrix (rows in `fact_restaurant_*` per chain):
 
 | chain | wastage | requisition | stocktaking |
 |---|---|---|---|
@@ -514,14 +514,22 @@ Same as Phase IIa: `require_analytics_read` dependency. Restaurant analytics acc
 | Condition | Response | Why |
 |---|---|---|
 | Restaurant chain has no wastage rows in date range | `wastageAnalytics.totalWastageCost: 0.0`, `totalWastageEvents: 0`, empty arrays for `topWasteIngredients` / `wastageByType` / `trend`, `wastageRate: null` (denominator may exist but ratio meaningless). Frontend renders empty-state per §5.6. | Honest "no data" without breaking v-for |
-| Requisition data exists but POS revenue is 0 (closed period) | `foodCostRatio.totalRevenue: 0.0`, `ratio: null`, `ratioPercent: null`, `alertLevel: null`, `alertMessage: "暂无营收数据，无法计算占比"`. NOT zero. | Div-by-zero hazard; null is the honest signal (Rule 1) |
+| Requisition data exists but POS revenue is 0 (closed period) | `foodCostRatio.totalRequisitionCost: <sum est_cost>` (preserved, NOT zeroed), `totalRevenue: 0.0`, `ratio: null`, `ratioPercent: null`, `alertLevel: null`, `alertMessage: "暂无营收数据，无法计算占比"`. Frontend renders requisition cost number + ratio-area shows §5.6 empty-state-3 ("营收数据缺失"). | Div-by-zero hazard; null is honest signal (Rule 1). Requisition sum is still meaningful even without revenue denominator (drives §5.6 empty-state-3 partial render). |
+| POS revenue exists but no requisition rows | `foodCostRatio.totalRequisitionCost: 0.0`, `totalRevenue: <sum>`, `ratio: 0.0`, `ratioPercent: 0.0`, `alertLevel: "GREEN"`, `alertMessage: "暂无领料数据"`. NOT null (0% is meaningful "no waste"). | Ratio of 0 is the honest answer when no cost was incurred; differs from null which means "denominator missing". |
 | `startDate > endDate` (caller bug) | HTTP 400, `code: "INVALID_DATE_RANGE"`, message `"开始日期不能晚于结束日期"` | Mirror IIa edge-case §4.5 + Rule 6 |
 | Date range > 1 year | Allow, but warn `dateRange.warning: "日期范围超过 1 年，加载可能较慢"`. No hard cap. | Customer use case (annual review); cap would block legitimate analyses |
 | Deleted ingredient (ingredient_id not in `dim_ingredient`) | JOIN with `COALESCE(dim_ingredient.name, '(已删除食材 #' \|\| ingredient_id \|\| ')')`. Costs preserved. | Mirror IIa edge-case §4.5 for `dim_product` |
 | Stocktaking event with `difference_cost = NULL` (data quality issue) | Exclude from totals (treat as 0 contribution); include in `stocktakingCount` for audit transparency | NULL ≠ 0 (Rule 1) — but excluding from totals avoids polluting the variance number |
 | Same `factory_id` + `date` has both Silver rows AND Gold row (consistency check) | Prefer Gold (faster); WARN log if Silver SUM ≠ Gold value within ±1% tolerance | Detects materializer drift without breaking the response |
 
-Sister-chat impl must add unit tests covering each of these 7 conditions before merge.
+Subagent impl must add unit tests covering each of these 8 conditions before merge.
+
+**API contract numeric caps** (lock to avoid frontend silently slicing):
+- `wastageAnalytics.topWasteIngredients`: API returns up to **`topN: 10`** ingredients (configurable via query param `topN`, default 10, max 50). Frontend renders all returned rows.
+- `stocktakingVariance.byIngredient`: same `topN: 10` rule, sorted by `abs(diff_cost) DESC`.
+- `requisitionTrend.byCategory`: normalized to **5 buckets max + "其他"** per §2.1 CATEGORY_NORMALIZE dict (no `topN` slicing — bucketing already caps).
+
+**`wastageAnalytics.wastageRate` formula** (restated for impl clarity): `wastageRate = totalWastageCost / totalRequisitionCost`. Returns `null` if `totalRequisitionCost == 0`. Returns float in [0, 1] range (NOT percent — frontend multiplies by 100 for display). Mirror Rule 10 `divide.quantize().multiply` semantic if intermediate-step rounding needed.
 
 ### 4.6 Divergences from Factory Contract Justified
 
@@ -718,7 +726,7 @@ location ~ ^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|s
 **Post-edit verification**:
 - `nginx -t` (config syntax check)
 - `nginx -s reload` (apply)
-- 3 smoke curls — one per vhost — hitting `/api/mobile/RES_3101_009/smart-bi/analysis/kitchen-cost?startDate=2026-04-15&endDate=2026-05-15` and checking the response routes to Python (not the SPA fallback).
+- **2 smoke curls** (NOT 3 — `api.cretaceousfuture.com` DNS is NXDOMAIN, vhost dormant): one via IP `http://139.196.165.140:8086/...` (web-admin.conf) + one via DNS `https://admin.cretaceousfuture.com/...` (real customer path) hitting `/api/mobile/RES_3101_009/smart-bi/analysis/kitchen-cost?startDate=2026-04-15&endDate=2026-05-15` and checking the response routes to Python (not the SPA fallback). Both should return identical JSON.
 
 **Deploy order** (mirror IIa §6.1 pattern — avoid race where backend ready but frontend not):
 
@@ -747,7 +755,7 @@ Same decision as IIa §6.3.1: use the WHERE-clause + middleware-GUC belt-and-sus
 - Pool default: when ContextVar is unset (bg tasks / system flush paths), the setup-callback writes `INTERNAL_SENTINEL = '__internal__'`. RLS policies branching only on `IS NULL OR = ''` will silently never fire for those paths (see `reference_internal_sentinel_guc.md` — 16-day outage closed by V20260514_01/V20260515_01).
 - RLS policies on `fact_restaurant_wastage` / `fact_restaurant_requisition` / `fact_restaurant_stocktaking` / `agg_restaurant_daily_totals` / `agg_restaurant_daily_ops` / `dim_ingredient` all use `factory_id = current_setting('app.factory_id', true)`.
 
-Sister-chat impl does **NOT** need to add explicit `set_config` calls in restaurant kitchen-cost helpers. Any `/api/mobile/*` request enters via auth middleware → ContextVar set → pool setup-callback issues `set_config` → RLS auto-scopes. WHERE-clause is added for belt-and-suspenders consistency with IIa pattern (analysis_production.py:190).
+Subagent impl does **NOT** need to add explicit `set_config` calls in restaurant kitchen-cost helpers. Any `/api/mobile/*` request enters via auth middleware → ContextVar set → pool setup-callback issues `set_config` → RLS auto-scopes. WHERE-clause is added for belt-and-suspenders consistency with IIa pattern (analysis_production.py:190).
 
 **Testing RLS**: per HARD rule `feedback_test_rls_with_real_pool_not_psql_reset.md`, **do NOT** verify RLS policies via `psql RESET app.factory_id` — that doesn't exercise the pool setup-callback sentinel branch. Use the real asyncpg pool (or in psql, explicitly `SELECT set_config('app.factory_id', '__internal__', true)` before INSERT verification) to catch the sentinel branch.
 
@@ -776,7 +784,7 @@ Phase IIb risk is HIGH — same scenario as IIb-side of IIa spec §7.1. The Pre-
 - If unit prices drift between requisition and actual purchase, ratio is biased
 - If some ingredients don't have `unit_price` populated, their requisition cost is NULL → excluded from SUM (Rule 1) → biases down
 
-**Sister-chat impl must**:
+**Subagent impl must**:
 - Apply Rule 1: `WHERE est_cost IS NOT NULL` when summing requisitions
 - Surface this caveat in API response: add `foodCostRatio.dataCaveats: ["使用领料估算成本，非会计实际成本"]` (array, frontend renders as tooltip)
 - Discuss with Steve via OQ-IIB-NEW (§7.5) whether estimated cost is acceptable for Phase IIb
@@ -900,7 +908,7 @@ The following are explicitly excluded from Phase IIb:
 - [ ] Confirm `auth_middleware.py:220` ContextVar entrypoint + `smartbi/tenant_ctx.py` pool setup-callback active in prod (per `reference_smartbi_rls_via_auth_middleware_guc.md`)
 - [ ] Confirm hourly leader-only `_run_restaurant_ops_etl_forever()` (`main.py:464`, env `RESTAURANT_OPS_ETL_ENABLED`) is running → `agg_restaurant_daily_totals` + `agg_restaurant_daily_ops` populating; if not, Silver fallback path accepted per §2.3
 - [ ] EXPLAIN query plans on `RES_3101_009` for each of the 4 sub-queries; confirm indexed scans, no seq scans
-- [ ] **F002 dev smoke** (D8 finding): F002 manuf factory has the most complete IIb data shape in prod (13 wastage / 14 requisition / 9 stocktaking rows, range 02-11→05-07). Sister-chat may use F002 to dev-smoke all query paths (wastage / requisition / stocktaking / ratio). **Prod cutover does NOT include F002** — factory tenant branch will return `FACTORY_BRANCH_NOT_APPLICABLE` envelope per §4.3 (kitchen-cost is restaurant-only).
+- [ ] **F002 dev smoke** (D8 finding): F002 manuf factory has the most complete IIb data shape in prod (13 wastage / 14 requisition / 9 stocktaking rows, range 02-11→05-07). Subagent may use F002 to dev-smoke all query paths (wastage / requisition / stocktaking / ratio). **Prod cutover does NOT include F002** — factory tenant branch will return `FACTORY_BRANCH_NOT_APPLICABLE` envelope per §4.3 (kitchen-cost is restaurant-only).
 - [ ] Active E2E 15-30 min per stage (HARD rule `feedback_active_e2e_replaces_passive_soak.md`)
 
 **Post-deploy verification:**
@@ -985,8 +993,8 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 | Cycle | Date | Auditor | Findings | Disposition |
 |---|---|---|---|---|
 | Cycle-0 | 2026-05-15 | Architecture review (initial draft) | — | 840 lines initial draft |
-| Cycle-1 | 2026-05-15 | Sister-chat spec audit | 4 CRITICAL + 7 IMPORTANT + 5 MINOR | All fixed in cycle-2 amend |
-| Pre-IIb data audit | 2026-05-15 | Sister-chat prod SQL | 8 schema drift + Hybrid OQ-2 verdict | Schema fixes in cycle-2 amend; Steve signed off Hybrid 2026-05-15 |
+| Cycle-1 | 2026-05-15 | Subagent spec audit | 4 CRITICAL + 7 IMPORTANT + 5 MINOR | All fixed in cycle-2 amend |
+| Pre-IIb data audit | 2026-05-15 | Subagent prod SQL | 8 schema drift + Hybrid OQ-2 verdict | Schema fixes in cycle-2 amend; Steve signed off Hybrid 2026-05-15 |
 | Cycle-2 (this) | 2026-05-15 | Organizer + subagent amend | Cycle-1 + data-audit consolidated fix | This commit |
-| Cycle-3 | TBD | (independent reviewer) | (mechanical re-audit, expected light) | TBD |
-| Cycle-4 | TBD | (impl readiness review) | (last check before subagent impl) | TBD |
+| Cycle-3 | 2026-05-15 | Subagent re-audit | 0 CRITICAL + 2 IMPORTANT + 3 MINOR | All 5 fixed in cycle-3 fixup commit (`2c37f8f6e`) |
+| Cycle-4 | 2026-05-15 | Subagent impl-readiness | 0 CRITICAL + 2 IMPORTANT + 4 MINOR | All 6 fixed in cycle-4 fixup commit (this HEAD). **READY for impl dispatch.** |
