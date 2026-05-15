@@ -84,6 +84,34 @@ export function calculateActualQuantity(standardQuantity: number, yieldRate: num
   return standardQuantity / (yieldRate / 100);
 }
 
+/** 单位换算 — 镜像后端 UnitConversionService (Track D1 Bug-3).
+ *  仅 g↔kg + ml↔L (1:1000), 不支持的换算返 null. */
+export function convertUnit(value: number, from: string, to: string): number | null {
+  if (value == null || !from || !to) return null;
+  const f = from.trim().toLowerCase();
+  const t = to.trim().toLowerCase();
+  if (f === t) return value;
+  if (f === 'g' && t === 'kg') return value / 1000;
+  if (f === 'kg' && t === 'g') return value * 1000;
+  if (f === 'ml' && t === 'l') return value / 1000;
+  if (f === 'l' && t === 'ml') return value * 1000;
+  return null;
+}
+
+/** 客户原话: "我在这写的克, 那我做调包的时候会自动折换成公斤" (May10 line 263).
+ *  UI 预览用: g → 自动追加 (= X.X kg) 显示; kg → 追加 (= X g). */
+export function formatUnitDisplay(value: number, unit: string): string {
+  const altUnit = unit === 'g' ? 'kg' : unit === 'kg' ? 'g' : unit === 'ml' ? 'L' : unit === 'L' ? 'ml' : null;
+  if (!altUnit) return `${value} ${unit}`;
+  const alt = convertUnit(value, unit, altUnit);
+  if (alt == null) return `${value} ${unit}`;
+  // Smart precision: g→kg 显示 3 位小数, 其他保留有效位
+  const altStr = altUnit === 'kg' || altUnit === 'L'
+    ? alt.toFixed(3).replace(/\.?0+$/, '')
+    : alt.toString();
+  return `${value} ${unit} (= ${altStr} ${altUnit})`;
+}
+
 /** 创建 BOM 配方请求. */
 export interface CreateBomRecipeRequest {
   productTypeId: string;

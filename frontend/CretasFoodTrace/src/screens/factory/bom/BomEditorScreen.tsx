@@ -23,7 +23,11 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { bomApiClient } from '../../../services/api/bomApiClient';
-import { calculateActualQuantity } from '../../../types/bom';
+import {
+  calculateActualQuantity,
+  formatUnitDisplay,
+  convertUnit,
+} from '../../../types/bom';
 import type {
   BomRecipe, BomRecipeItemDTO, BomUnit, BomMaterialCategory,
 } from '../../../types/bom';
@@ -451,9 +455,17 @@ export function BomEditorScreen() {
                   />
                 </View>
                 {actualQty != null && (
-                  <Text style={styles.previewText}>
-                    实际用量 (含损耗): {actualQty.toFixed(2)} {row.unit}
-                  </Text>
+                  <>
+                    <Text style={styles.previewText}>
+                      实际用量 (含损耗): {formatUnitDisplay(parseFloat(actualQty.toFixed(4)), row.unit)}
+                    </Text>
+                    {/* Bug-3: g↔kg 自动换算 (客户 May10 line 263): 仓库 / 调拨单按 kg 显示 */}
+                    {(row.unit === 'g' || row.unit === 'kg') && (
+                      <Text style={styles.previewHint}>
+                        仓库出库会按 {row.unit === 'g' ? 'kg' : 'g'} 自动换算
+                      </Text>
+                    )}
+                  </>
                 )}
                 <Divider style={{ marginVertical: 8 }} />
               </View>
@@ -524,6 +536,7 @@ const styles = StyleSheet.create({
   itemIdx: { fontSize: 12, color: '#999', marginRight: 8, fontWeight: '600' },
   itemName: { fontSize: 14, fontWeight: '500', flex: 1, color: '#333' },
   previewText: { fontSize: 12, color: '#1976D2', marginTop: 4, paddingHorizontal: 4 },
+  previewHint: { fontSize: 11, color: '#999', marginTop: 2, paddingHorizontal: 4, fontStyle: 'italic' },
   totalText: { fontSize: 16, fontWeight: '600', color: '#FF6B35', textAlign: 'center' },
   emptyHint: { fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 16 },
   footer: { flexDirection: 'row', padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee' },
