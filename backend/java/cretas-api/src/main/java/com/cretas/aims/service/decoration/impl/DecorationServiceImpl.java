@@ -1,11 +1,14 @@
 package com.cretas.aims.service.decoration.impl;
 
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.dto.decoration.*;
 import com.cretas.aims.entity.decoration.FactoryHomeLayout;
 import com.cretas.aims.repository.FactoryHomeLayoutRepository;
 import com.cretas.aims.service.decoration.DecorationService;
+import com.cretas.aims.service.validator.LayoutValidator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 装饰服务实现
@@ -29,84 +33,59 @@ public class DecorationServiceImpl implements DecorationService {
 
     private final FactoryHomeLayoutRepository layoutRepository;
     private final ObjectMapper objectMapper;
+    private final PythonLLMClient pythonLLMClient;
+    private final LayoutValidator layoutValidator;
+
+    /** 5 种允许的模块 type — LayoutValidator.VALID_MODULE_IDS 镜像 (id == type 约定)。 */
+    private static final Set<String> ALLOWED_TYPES = Set.of(
+            "welcome", "ai_insight", "stats_grid", "quick_actions", "dev_tools");
 
     /**
-     * 默认模块配置
+     * 默认模块配置 — 对齐前端 HomeModule (5 种 type + gridPosition/gridSize/name)
      */
     private static final List<HomeLayoutDTO.ModuleConfig> DEFAULT_MODULES = Arrays.asList(
-            HomeLayoutDTO.ModuleConfig.builder()
-                    .id("today_stats")
-                    .type("stats")
-                    .title("今日统计")
-                    .icon("chart-bar")
-                    .visible(true)
-                    .order(1)
-                    .colSpan(2)
-                    .rowSpan(1)
-                    .build(),
-            HomeLayoutDTO.ModuleConfig.builder()
-                    .id("quick_actions")
-                    .type("actions")
-                    .title("快捷操作")
-                    .icon("lightning-bolt")
-                    .visible(true)
-                    .order(2)
-                    .colSpan(1)
-                    .rowSpan(1)
-                    .build(),
-            HomeLayoutDTO.ModuleConfig.builder()
-                    .id("recent_orders")
-                    .type("list")
-                    .title("最近订单")
-                    .icon("clipboard-list")
-                    .visible(true)
-                    .order(3)
-                    .colSpan(1)
-                    .rowSpan(1)
-                    .build(),
-            HomeLayoutDTO.ModuleConfig.builder()
-                    .id("production_progress")
-                    .type("progress")
-                    .title("生产进度")
-                    .icon("trending-up")
-                    .visible(true)
-                    .order(4)
-                    .colSpan(2)
-                    .rowSpan(1)
-                    .build(),
-            HomeLayoutDTO.ModuleConfig.builder()
-                    .id("inventory_alerts")
-                    .type("alerts")
-                    .title("库存预警")
-                    .icon("exclamation-circle")
-                    .visible(true)
-                    .order(5)
-                    .colSpan(1)
-                    .rowSpan(1)
-                    .build(),
-            HomeLayoutDTO.ModuleConfig.builder()
-                    .id("quality_overview")
-                    .type("stats")
-                    .title("质量概览")
-                    .icon("shield-check")
-                    .visible(true)
-                    .order(6)
-                    .colSpan(1)
-                    .rowSpan(1)
-                    .build()
+            buildModule("welcome", "welcome", "欢迎区", true, 0, 0, 0, 2, 1),
+            buildModule("ai_insight", "ai_insight", "AI洞察", true, 1, 0, 1, 2, 1),
+            buildModule("stats_grid", "stats_grid", "数据统计", true, 2, 0, 2, 2, 2),
+            buildModule("quick_actions", "quick_actions", "快捷操作", true, 3, 0, 4, 2, 1),
+            buildModule("dev_tools", "dev_tools", "开发工具", false, 4, 0, 5, 1, 1)
     );
 
     /**
-     * 默认主题配置
+     * 默认主题配置 — 同时填新字段 (cardBorderRadius/secondaryColor/...) 和旧字段
+     * (cardRadius/cardGap/...) 保证两侧消费者都能正常读取。
      */
     private static final HomeLayoutDTO.ThemeConfig DEFAULT_THEME = HomeLayoutDTO.ThemeConfig.builder()
-            .primaryColor("#1890ff")
-            .backgroundColor("#f5f5f5")
-            .cardRadius(8)
+            .primaryColor("#2E7D32")
+            .secondaryColor("#4CAF50")
+            .backgroundColor("#F5F5F5")
+            .cardBorderRadius(12)
+            .aiCardGradient(List.of("#1A237E", "#3949AB"))
+            .textColor("#212121")
+            .cardBackgroundColor("#FFFFFF")
+            .cardRadius(12)
             .cardGap(12)
             .fontScale(1.0)
             .compactMode(false)
             .build();
+
+    private static HomeLayoutDTO.ModuleConfig buildModule(
+            String id, String type, String name, boolean visible,
+            int order, int x, int y, int w, int h) {
+        return HomeLayoutDTO.ModuleConfig.builder()
+                .id(id)
+                .type(type)
+                .name(name)
+                .visible(visible)
+                .order(order)
+                .gridPosition(HomeLayoutDTO.GridPosition.builder().x(x).y(y).build())
+                .gridSize(HomeLayoutDTO.GridSize.builder().w(w).h(h).build())
+                // 旧字段也填，保持向后兼容
+                .title(name)
+                .colSpan(w)
+                .rowSpan(h)
+                .build();
+    }
 
     @Override
     public HomeLayoutDTO getHomeLayout(String factoryId) {
@@ -163,50 +142,291 @@ public class DecorationServiceImpl implements DecorationService {
         log.info("AI生成布局: factoryId={}, prompt={}", factoryId, request.getPrompt());
 
         long startTime = System.currentTimeMillis();
+        List<HomeLayoutDTO.ModuleConfig> modules;
+        HomeLayoutDTO.ThemeConfig theme;
+        String explanation;
+        List<String> suggestions;
+        String modelUsed;
 
-        // 基于用户输入生成布局配置
-        List<HomeLayoutDTO.ModuleConfig> generatedModules = generateModulesFromRequest(request);
-        HomeLayoutDTO.ThemeConfig generatedTheme = generateThemeFromRequest(request);
+        try {
+            String systemPrompt = buildLayoutGenerateSystemPrompt();
+            String userPrompt = buildLayoutGenerateUserPrompt(request);
+            log.debug("LLM systemPrompt 长度={}, userPrompt={}", systemPrompt.length(), userPrompt);
 
-        // 创建布局DTO
-        HomeLayoutDTO layout = HomeLayoutDTO.builder()
-                .factoryId(factoryId)
-                .modules(generatedModules)
-                .theme(generatedTheme)
-                .gridColumns(request.getGridColumns() != null ? request.getGridColumns() : 2)
-                .status(0)
-                .version(1)
-                .aiGenerated(1)
-                .aiPrompt(request.getPrompt())
-                .timeBasedEnabled(Boolean.TRUE.equals(request.getTimeBasedEnabled()) ? 1 : 0)
-                .build();
+            String llmResponse = pythonLLMClient.chatLowTemp(systemPrompt, userPrompt);
+            log.debug("LLM 响应: {}", llmResponse);
 
-        // 保存到数据库
-        FactoryHomeLayout entity = layoutRepository.findByFactoryId(factoryId)
-                .orElse(createNewLayout(factoryId));
+            ParsedLayout parsed = parseAndValidateLayout(llmResponse);
+            modules = parsed.modules;
+            theme = parsed.theme != null ? parsed.theme : DEFAULT_THEME;
+            explanation = parsed.explanation != null && !parsed.explanation.isBlank()
+                    ? parsed.explanation
+                    : "已根据您的描述生成新布局。";
+            suggestions = parsed.suggestions != null ? parsed.suggestions : List.of();
+            modelUsed = "qwen-flash";  // Python llm_router slot=chat 实际选 qwen-flash-aliyun-b
+        } catch (Exception e) {
+            log.warn("LLM 生成布局失败，降级到规则布局: {}", e.getMessage());
+            modules = generateModulesFromRequest(request);
+            theme = generateThemeFromRequest(request);
+            explanation = "AI 服务暂不可用，已用规则模板生成布局。";
+            suggestions = List.of("再说一次需求", "重置为默认布局", "试试简洁风格");
+            modelUsed = "rule-based-fallback";
+        }
 
-        entity.setModulesConfig(serializeModules(generatedModules));
-        entity.setThemeConfig(serializeTheme(generatedTheme));
-        entity.setGridColumns(layout.getGridColumns());
-        entity.setAiGenerated(1);
-        entity.setAiPrompt(request.getPrompt());
-        entity.setTimeBasedEnabled(layout.getTimeBasedEnabled());
-        entity.setStatus(0);
-
-        layoutRepository.save(entity);
-
-        long generationTime = System.currentTimeMillis() - startTime;
-
-        // 生成建议
-        List<AILayoutResponse.DesignSuggestion> suggestions = generateDesignSuggestions(request);
+        // 持久化到 FactoryHomeLayout (扁平 modules JSON，对齐前端 HomeModule 形态)
+        int gridColumns = request.getGridColumns() != null ? request.getGridColumns() : 2;
+        int timeBasedFlag = Boolean.TRUE.equals(request.getTimeBasedEnabled()) ? 1 : 0;
+        persistAIGeneratedLayout(factoryId, modules, theme, request.getPrompt(), gridColumns, timeBasedFlag);
 
         return AILayoutResponse.builder()
-                .layout(layout)
-                .explanation("根据您的描述，我们为您生成了一个优化的首页布局。")
-                .generationTimeMs(generationTime)
-                .modelUsed("rule-based")
+                .layout(modules)
+                .theme(theme)
+                .explanation(explanation)
+                .generationTimeMs(System.currentTimeMillis() - startTime)
+                .modelUsed(modelUsed)
                 .suggestions(suggestions)
+                .needsClarification(false)
+                .clarificationQuestions(List.of())
+                .gridColumns(gridColumns)
                 .build();
+    }
+
+    /** 持久化 AI 生成的布局到 factory_home_layout. */
+    private void persistAIGeneratedLayout(
+            String factoryId,
+            List<HomeLayoutDTO.ModuleConfig> modules,
+            HomeLayoutDTO.ThemeConfig theme,
+            String aiPrompt,
+            int gridColumns,
+            int timeBasedFlag) {
+        FactoryHomeLayout entity = layoutRepository.findByFactoryId(factoryId)
+                .orElse(createNewLayout(factoryId));
+        entity.setModulesConfig(serializeModules(modules));
+        entity.setThemeConfig(serializeTheme(theme));
+        entity.setGridColumns(gridColumns);
+        entity.setAiGenerated(1);
+        entity.setAiPrompt(aiPrompt);
+        entity.setTimeBasedEnabled(timeBasedFlag);
+        entity.setStatus(0);
+        layoutRepository.save(entity);
+    }
+
+    /**
+     * LLM system prompt — 5 模块 type 白名单 + 2 列 Bento Grid 约束 + 严格 JSON 输出。
+     */
+    String buildLayoutGenerateSystemPrompt() {
+        return """
+                你是 Cretas 食品溯源系统的首页布局设计师。根据用户描述生成首页模块布局 JSON。
+
+                【可用模块】(只能用以下 5 种 type，其他一律忽略)
+                - welcome     欢迎卡片  (maxW=2, maxH=1)
+                - ai_insight  AI 洞察   (maxW=2, maxH=2)
+                - stats_grid  数据统计  (maxW=2, maxH=2) ⚠️ 必须存在 visible=true
+                - quick_actions 快捷操作 (maxW=2, maxH=1)
+                - dev_tools   开发工具  (maxW=1, maxH=1, 通常 visible=false)
+
+                【布局约束】
+                - 网格 2 列，模块按 gridPosition.y 升序铺排，同行不允许重叠
+                - gridSize.w ∈ {1,2}, gridSize.h ∈ {1,2}
+                - gridPosition.x ∈ {0,1}, gridPosition.x + gridSize.w ≤ 2
+                - gridPosition.y ≥ 0
+                - 每种 type 至少出现一次时，id 直接复用 type；如有多个同类型，id 加数字后缀 (例 stats_grid_2)
+                - order 字段从 0 起递增，跟 modules 数组下标对齐
+
+                【主题颜色范围】
+                - primaryColor / secondaryColor：HEX 6 位
+                - cardBorderRadius ∈ [4,16]
+
+                【输出格式】严格 JSON 对象，不要 markdown 代码块，不要解释
+                {
+                  "modules": [
+                    {
+                      "id": "stats_grid",
+                      "type": "stats_grid",
+                      "name": "数据统计",
+                      "visible": true,
+                      "order": 0,
+                      "gridPosition": {"x": 0, "y": 0},
+                      "gridSize": {"w": 2, "h": 2}
+                    }
+                  ],
+                  "theme": {
+                    "primaryColor": "#2E7D32",
+                    "backgroundColor": "#F5F5F5",
+                    "cardBorderRadius": 12
+                  },
+                  "explanation": "一句话解释设计意图",
+                  "suggestions": ["后续可以尝试的指令A", "指令B"]
+                }
+                """;
+    }
+
+    String buildLayoutGenerateUserPrompt(AILayoutRequest request) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("用户需求: ").append(request.getPrompt() != null ? request.getPrompt() : "生成一个适合工厂管理的首页布局").append('\n');
+        if (request.getStylePreference() != null && !request.getStylePreference().isBlank()) {
+            sb.append("偏好风格: ").append(request.getStylePreference()).append('\n');
+        }
+        if (request.getPageType() != null && !request.getPageType().isBlank()) {
+            sb.append("页面类型: ").append(request.getPageType()).append('\n');
+        }
+        if (request.getOperationType() != null && !request.getOperationType().isBlank()) {
+            sb.append("操作类型: ").append(request.getOperationType()).append('\n');
+        }
+        if (request.getCurrentLayout() != null && !request.getCurrentLayout().isEmpty()) {
+            try {
+                sb.append("当前布局: ").append(objectMapper.writeValueAsString(request.getCurrentLayout())).append('\n');
+            } catch (JsonProcessingException ignore) {
+                // 序列化失败就不带上下文
+            }
+        }
+        if (request.getCurrentTheme() != null) {
+            try {
+                sb.append("当前主题: ").append(objectMapper.writeValueAsString(request.getCurrentTheme())).append('\n');
+            } catch (JsonProcessingException ignore) {
+                // 同上
+            }
+        }
+        return sb.toString();
+    }
+
+    /** LLM 输出解析结果。 */
+    private static class ParsedLayout {
+        List<HomeLayoutDTO.ModuleConfig> modules;
+        HomeLayoutDTO.ThemeConfig theme;
+        String explanation;
+        List<String> suggestions;
+    }
+
+    /**
+     * 解析 LLM JSON 输出并验证。
+     *
+     * @throws IllegalStateException LLM 输出无效 (上层 catch 后走 fallback)
+     */
+    ParsedLayout parseAndValidateLayout(String llmResponse) {
+        if (llmResponse == null || llmResponse.isBlank()) {
+            throw new IllegalStateException("LLM 返回空内容");
+        }
+        // 去掉可能存在的 markdown 围栏
+        String cleaned = llmResponse.replaceAll("(?s)```json\\s*", "")
+                                    .replaceAll("(?s)```\\s*", "")
+                                    .trim();
+
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(cleaned);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("LLM 输出不是合法 JSON: " + e.getMessage(), e);
+        }
+        if (!root.isObject() || !root.has("modules") || !root.get("modules").isArray()) {
+            throw new IllegalStateException("LLM 输出缺少 modules 数组");
+        }
+
+        List<HomeLayoutDTO.ModuleConfig> modules;
+        try {
+            modules = objectMapper.convertValue(
+                    root.get("modules"),
+                    new TypeReference<List<HomeLayoutDTO.ModuleConfig>>() {});
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("modules 反序列化失败: " + e.getMessage(), e);
+        }
+
+        // 过滤非法 type / 缺关键字段
+        modules = modules.stream()
+                .filter(m -> m != null && m.getType() != null && ALLOWED_TYPES.contains(m.getType()))
+                .filter(m -> m.getGridSize() != null && m.getGridPosition() != null)
+                .map(this::normalizeModule)
+                .collect(Collectors.toList());
+
+        if (modules.isEmpty()) {
+            throw new IllegalStateException("LLM 输出无任何有效模块");
+        }
+
+        // 走 LayoutValidator (它消费 Map 形态 with x/y/w/h flat keys)
+        List<Map<String, Object>> validatorInput = modules.stream()
+                .map(this::moduleToValidatorMap)
+                .collect(Collectors.toList());
+        LayoutValidator.ValidationResult v = layoutValidator.validate(validatorInput);
+        if (!v.isValid()) {
+            throw new IllegalStateException("布局验证失败: " + v.getErrorMessage());
+        }
+
+        ParsedLayout result = new ParsedLayout();
+        result.modules = modules;
+        result.theme = parseThemeFromNode(root.get("theme"));
+        result.explanation = root.has("explanation") ? root.get("explanation").asText() : null;
+        result.suggestions = parseSuggestions(root.get("suggestions"));
+        return result;
+    }
+
+    private HomeLayoutDTO.ModuleConfig normalizeModule(HomeLayoutDTO.ModuleConfig m) {
+        // id 缺省 = type
+        if (m.getId() == null || m.getId().isBlank()) {
+            m.setId(m.getType());
+        }
+        if (m.getName() == null || m.getName().isBlank()) {
+            m.setName(getModuleName(m.getType()));
+        }
+        if (m.getVisible() == null) {
+            m.setVisible(!"dev_tools".equals(m.getType()));
+        }
+        // 同步旧字段 (colSpan/rowSpan/title) 给老 caller 用
+        if (m.getColSpan() == null && m.getGridSize() != null) {
+            m.setColSpan(m.getGridSize().getW());
+        }
+        if (m.getRowSpan() == null && m.getGridSize() != null) {
+            m.setRowSpan(m.getGridSize().getH());
+        }
+        if (m.getTitle() == null) {
+            m.setTitle(m.getName());
+        }
+        return m;
+    }
+
+    private Map<String, Object> moduleToValidatorMap(HomeLayoutDTO.ModuleConfig m) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", m.getId());
+        map.put("type", m.getType());
+        map.put("visible", m.getVisible() != null ? m.getVisible() : true);
+        map.put("x", m.getGridPosition() != null && m.getGridPosition().getX() != null
+                ? m.getGridPosition().getX() : 0);
+        map.put("y", m.getGridPosition() != null && m.getGridPosition().getY() != null
+                ? m.getGridPosition().getY() : 0);
+        map.put("w", m.getGridSize() != null && m.getGridSize().getW() != null
+                ? m.getGridSize().getW() : 1);
+        map.put("h", m.getGridSize() != null && m.getGridSize().getH() != null
+                ? m.getGridSize().getH() : 1);
+        return map;
+    }
+
+    private HomeLayoutDTO.ThemeConfig parseThemeFromNode(JsonNode themeNode) {
+        if (themeNode == null || !themeNode.isObject()) {
+            return DEFAULT_THEME;
+        }
+        try {
+            HomeLayoutDTO.ThemeConfig t = objectMapper.treeToValue(themeNode, HomeLayoutDTO.ThemeConfig.class);
+            if (t.getPrimaryColor() == null) t.setPrimaryColor(DEFAULT_THEME.getPrimaryColor());
+            if (t.getBackgroundColor() == null) t.setBackgroundColor(DEFAULT_THEME.getBackgroundColor());
+            return t;
+        } catch (JsonProcessingException e) {
+            log.debug("theme 解析失败，用默认主题: {}", e.getMessage());
+            return DEFAULT_THEME;
+        }
+    }
+
+    private List<String> parseSuggestions(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        node.forEach(n -> {
+            if (n.isTextual()) {
+                out.add(n.asText());
+            } else if (n.isObject() && n.has("title")) {
+                out.add(n.get("title").asText());
+            }
+        });
+        return out;
     }
 
     @Override
@@ -510,25 +730,35 @@ public class DecorationServiceImpl implements DecorationService {
     }
 
     private String getModuleName(String moduleId) {
-        Map<String, String> moduleNames = Map.of(
-                "today_stats", "今日统计",
-                "quick_actions", "快捷操作",
-                "recent_orders", "最近订单",
-                "production_progress", "生产进度",
-                "inventory_alerts", "库存预警",
-                "quality_overview", "质量概览"
+        Map<String, String> moduleNames = Map.ofEntries(
+                Map.entry("welcome", "欢迎区"),
+                Map.entry("ai_insight", "AI洞察"),
+                Map.entry("stats_grid", "数据统计"),
+                Map.entry("quick_actions", "快捷操作"),
+                Map.entry("dev_tools", "开发工具"),
+                // 老 ID 兼容
+                Map.entry("today_stats", "今日统计"),
+                Map.entry("recent_orders", "最近订单"),
+                Map.entry("production_progress", "生产进度"),
+                Map.entry("inventory_alerts", "库存预警"),
+                Map.entry("quality_overview", "质量概览")
         );
         return moduleNames.getOrDefault(moduleId, moduleId);
     }
 
+    /**
+     * 规则降级路径：当 LLM 调用失败时用。复制 DEFAULT_MODULES, 根据 priorityModules /
+     * excludedModules / stylePreference 微调。
+     */
     private List<HomeLayoutDTO.ModuleConfig> generateModulesFromRequest(AILayoutRequest request) {
-        List<HomeLayoutDTO.ModuleConfig> modules = new ArrayList<>(DEFAULT_MODULES);
+        // 深拷贝 DEFAULT_MODULES (避免共享可变状态)
+        List<HomeLayoutDTO.ModuleConfig> modules = DEFAULT_MODULES.stream()
+                .map(this::cloneModule)
+                .collect(Collectors.toCollection(ArrayList::new));
 
-        // 根据用户偏好调整
+        // 根据用户偏好调整 (旧字段路径)
         if (request.getPreferences() != null) {
             AILayoutRequest.Preferences prefs = request.getPreferences();
-
-            // 优先级模块放在前面
             if (prefs.getPriorityModules() != null && !prefs.getPriorityModules().isEmpty()) {
                 modules.sort((a, b) -> {
                     int aIndex = prefs.getPriorityModules().indexOf(a.getId());
@@ -538,28 +768,71 @@ public class DecorationServiceImpl implements DecorationService {
                     return Integer.compare(aIndex, bIndex);
                 });
             }
-
-            // 更新排序
-            for (int i = 0; i < modules.size(); i++) {
-                modules.get(i).setOrder(i + 1);
-            }
         }
 
-        // 处理包含/排除的模块
-        if (request.getExcludedModules() != null) {
+        // 排除模块
+        if (request.getExcludedModules() != null && !request.getExcludedModules().isEmpty()) {
             modules.removeIf(m -> request.getExcludedModules().contains(m.getId()));
+        }
+
+        // 重新计算 order + gridPosition.y (确保不重叠)
+        int yCursor = 0;
+        for (int i = 0; i < modules.size(); i++) {
+            HomeLayoutDTO.ModuleConfig m = modules.get(i);
+            m.setOrder(i);
+            if (m.getGridPosition() == null) {
+                m.setGridPosition(HomeLayoutDTO.GridPosition.builder().x(0).y(yCursor).build());
+            } else {
+                m.getGridPosition().setY(yCursor);
+            }
+            int h = m.getGridSize() != null && m.getGridSize().getH() != null ? m.getGridSize().getH() : 1;
+            yCursor += h;
         }
 
         return modules;
     }
 
+    private HomeLayoutDTO.ModuleConfig cloneModule(HomeLayoutDTO.ModuleConfig src) {
+        HomeLayoutDTO.GridPosition pos = src.getGridPosition() != null
+                ? HomeLayoutDTO.GridPosition.builder()
+                    .x(src.getGridPosition().getX())
+                    .y(src.getGridPosition().getY())
+                    .build()
+                : null;
+        HomeLayoutDTO.GridSize size = src.getGridSize() != null
+                ? HomeLayoutDTO.GridSize.builder()
+                    .w(src.getGridSize().getW())
+                    .h(src.getGridSize().getH())
+                    .build()
+                : null;
+        return HomeLayoutDTO.ModuleConfig.builder()
+                .id(src.getId())
+                .type(src.getType())
+                .name(src.getName())
+                .visible(src.getVisible())
+                .order(src.getOrder())
+                .gridPosition(pos)
+                .gridSize(size)
+                .colSpan(src.getColSpan())
+                .rowSpan(src.getRowSpan())
+                .title(src.getTitle())
+                .icon(src.getIcon())
+                .config(src.getConfig() != null ? new HashMap<>(src.getConfig()) : null)
+                .build();
+    }
+
     private HomeLayoutDTO.ThemeConfig generateThemeFromRequest(AILayoutRequest request) {
         HomeLayoutDTO.ThemeConfig theme = HomeLayoutDTO.ThemeConfig.builder()
-                .primaryColor("#1890ff")
-                .backgroundColor("#f5f5f5")
-                .cardRadius(8)
-                .cardGap(12)
-                .fontScale(1.0)
+                .primaryColor(DEFAULT_THEME.getPrimaryColor())
+                .secondaryColor(DEFAULT_THEME.getSecondaryColor())
+                .backgroundColor(DEFAULT_THEME.getBackgroundColor())
+                .cardBorderRadius(DEFAULT_THEME.getCardBorderRadius())
+                .aiCardGradient(DEFAULT_THEME.getAiCardGradient())
+                .textColor(DEFAULT_THEME.getTextColor())
+                .cardBackgroundColor(DEFAULT_THEME.getCardBackgroundColor())
+                .cardRadius(DEFAULT_THEME.getCardRadius())
+                .cardGap(DEFAULT_THEME.getCardGap())
+                .fontScale(DEFAULT_THEME.getFontScale())
                 .compactMode(false)
                 .build();
 
@@ -570,41 +843,22 @@ public class DecorationServiceImpl implements DecorationService {
                 theme.setCardGap(8);
             }
             if ("dark".equals(prefs.getColorScheme())) {
-                theme.setBackgroundColor("#1a1a1a");
-                theme.setPrimaryColor("#177ddc");
+                theme.setBackgroundColor("#1A1A1A");
+                theme.setCardBackgroundColor("#2A2A2A");
+                theme.setPrimaryColor("#177DDC");
+                theme.setTextColor("#FFFFFF");
             }
         }
 
         if ("modern".equals(request.getStyle())) {
+            theme.setCardBorderRadius(12);
             theme.setCardRadius(12);
         } else if ("classic".equals(request.getStyle())) {
+            theme.setCardBorderRadius(4);
             theme.setCardRadius(4);
         }
 
         return theme;
     }
 
-    private List<AILayoutResponse.DesignSuggestion> generateDesignSuggestions(AILayoutRequest request) {
-        List<AILayoutResponse.DesignSuggestion> suggestions = new ArrayList<>();
-
-        suggestions.add(AILayoutResponse.DesignSuggestion.builder()
-                .type("layout_tip")
-                .title("布局建议")
-                .description("当前布局已根据您的偏好进行优化，您可以随时手动调整模块位置")
-                .confidence(0.9)
-                .action("none")
-                .build());
-
-        if (request.getTimeBasedEnabled() != null && request.getTimeBasedEnabled()) {
-            suggestions.add(AILayoutResponse.DesignSuggestion.builder()
-                    .type("time_based")
-                    .title("时段布局提示")
-                    .description("您已启用时段布局，系统将在不同时段自动切换显示内容")
-                    .confidence(0.95)
-                    .action("configure_time_layouts")
-                    .build());
-        }
-
-        return suggestions;
-    }
 }
