@@ -987,6 +987,11 @@ app.include_router(revenue_report.router, tags=["Revenue Report"])
 app.include_router(capability_router)
 app.include_router(ota_endpoints.router, prefix="/api/ota", tags=["OTA"])
 
+# C-PRT-1 (Track C, 2026-05-15): 单据打印 PDF 5 endpoint
+# Java PrintController 通过 RestTemplate 调本端点取 PDF bytes 流回客户端
+from printing.api import print as printing_api  # noqa: E402
+app.include_router(printing_api.router, prefix="/api/printing", tags=["Printing"])
+
 # Gold layer reads — v1 Phase B pilot (§5). Finance-summary from agg_daily.
 from smartbi.api import gold_reads  # noqa: E402
 app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"])

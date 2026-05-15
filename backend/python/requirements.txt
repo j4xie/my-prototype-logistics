@@ -64,6 +64,8 @@ python-pptx>=0.6.23
 
 # PDF generation
 reportlab>=4.0
+# C-PRT-1: 二维码 (采购单 PDF, 供仓管员扫码入库). 失败 graceful (无 QR 仍出 PDF).
+qrcode[pil]>=7.4
 
 # Pydantic settings (for environment variable loading)
 pydantic-settings>=2.0.0 ; python_version >= "3.9"
