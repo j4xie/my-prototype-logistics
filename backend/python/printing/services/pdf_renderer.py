@@ -134,7 +134,6 @@ def _render_items_table(items: list[dict], columns: list[tuple[str, str, str]], 
     columns: list of (header_label, key, align) e.g. [("产品", "name", "LEFT"), ("数量", "qty", "RIGHT")]
     """
     from reportlab.lib import colors
-    from reportlab.lib.units import cm
     from reportlab.platypus import Table, TableStyle
 
     headers = [c[0] for c in columns]
@@ -169,7 +168,8 @@ def _render_items_table(items: list[dict], columns: list[tuple[str, str, str]], 
 def render_sales_order(data: dict) -> bytes:
     """销售订单 PDF.
 
-    expected data: { orderNumber, orderDate, customerName, salesperson, totalAmount, remark, items: [{name, qty, unit, unitPrice, subtotal}], factory }
+    expected data: { orderNumber, orderDate, customerName, salesperson, totalAmount,
+    remark, items: [{name, qty, unit, unitPrice, subtotal}], factory }
     """
     from reportlab.lib.units import cm
     from reportlab.platypus import Paragraph, Spacer
@@ -302,7 +302,8 @@ def render_quotation(data: dict) -> bytes:
 def render_production_task(data: dict) -> bytes:
     """生产任务单 PDF.
 
-    expected data: { taskNumber, productName, plannedQuantity, unit, startDate, endDate, workshopName, supervisor, processes: [{seq, name, duration}] }
+    expected data: { taskNumber, productName, plannedQuantity, unit, startDate, endDate,
+    workshopName, supervisor, processes: [{seq, name, duration}] }
     """
     from reportlab.lib.units import cm
     from reportlab.platypus import Paragraph, Spacer
@@ -338,7 +339,8 @@ def render_production_task(data: dict) -> bytes:
 def render_material_requisition(data: dict) -> bytes:
     """领料单 PDF.
 
-    expected data: { requisitionNumber, productName, plannedQuantity, requestDate, workshop, requester, items: [{name, plannedQty, actualQty, unit, batch}] }
+    expected data: { requisitionNumber, productName, plannedQuantity, requestDate,
+    workshop, requester, items: [{name, plannedQty, actualQty, unit, batch}] }
     """
     from reportlab.lib.units import cm
     from reportlab.platypus import Paragraph, Spacer
