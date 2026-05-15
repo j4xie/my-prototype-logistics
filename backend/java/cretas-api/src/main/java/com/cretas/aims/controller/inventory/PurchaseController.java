@@ -329,7 +329,11 @@ public class PurchaseController {
 
     @GetMapping("/orders/{orderId}/price-comparison")
     @Operation(summary = "采购订单三价对比", description = "对比每个行项目的BOM标准单价、移动平均价、当前采购单价")
-    @RequirePermission({"procurement:read_write", "procurement:read"})
+    // Sprint1-Fix-K4 (2026-05-15): drop procurement:read — 5x5 RBAC regression
+    // showed warehouse_mgr/viewer (have procurement:read) leaked currentPrice=28.0.
+    // 客户 May7: "尽量少让仓管员参与价格" — 三价对比整段=价格数据,
+    // 仅 procurement:read_write (采购管理员/经理) + finance 可看。
+    @RequirePermission({"procurement:read_write", "finance:read_write", "finance:read"})
     public ApiResponse<List<MaterialPriceComparisonDTO>> getOrderPriceComparison(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId) {
@@ -339,7 +343,8 @@ public class PurchaseController {
 
     @GetMapping("/materials/{materialTypeId}/price-info")
     @Operation(summary = "原料三价查询", description = "查询单个原料的BOM标准单价、移动平均价，可选传入当前价计算偏差")
-    @RequirePermission({"procurement:read_write", "procurement:read"})
+    // Sprint1-Fix-K4 (2026-05-15): sister site of price-comparison, same lock.
+    @RequirePermission({"procurement:read_write", "finance:read_write", "finance:read"})
     public ApiResponse<MaterialPriceComparisonDTO> getMaterialPriceInfo(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String materialTypeId,
