@@ -21,6 +21,16 @@ public interface PurchaseService {
 
     PurchaseOrder getPurchaseOrderById(String factoryId, String orderId);
 
+    /**
+     * 按订单号 (orderNumber, 如 PO-20260514-001) 查采购单 — 工厂隔离.
+     *
+     * <p>主要用于 PDF QR 扫码场景: 仓管员扫 PDF 上的 QR 拿到 orderNumber, 直接
+     * 反查订单 + 关联明细, 进入入库收货页 (W-ABA-1 Day 3-6 PDF 扫码闭环).</p>
+     *
+     * @throws com.cretas.aims.exception.ResourceNotFoundException 找不到该订单号
+     */
+    PurchaseOrder getPurchaseOrderByNumber(String factoryId, String orderNumber);
+
     PageResponse<PurchaseOrder> getPurchaseOrders(String factoryId, int page, int size);
 
     PageResponse<PurchaseOrder> getPurchaseOrdersByStatus(String factoryId, PurchaseOrderStatus status, int page, int size);

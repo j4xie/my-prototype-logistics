@@ -102,6 +102,19 @@ public class PurchaseController {
         return ApiResponse.success("查询成功", order);
     }
 
+    @GetMapping("/orders/by-number/{orderNumber}")
+    @Operation(summary = "按订单号查采购单详情 (PDF QR 扫码场景)",
+            description = "PDF 二维码内容 = orderNumber (纯文本, 如 PO-20260514-001). " +
+                    "仓管员扫 QR → 调本接口拿订单 + 关联明细 → 跳入库收货页. " +
+                    "六扇门 May 7 transcript 客户原话: \"扫一下上面的拳运码... 开始入库\".")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
+    public ApiResponse<PurchaseOrder> getOrderByNumber(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderNumber) {
+        PurchaseOrder order = purchaseService.getPurchaseOrderByNumber(factoryId, orderNumber);
+        return ApiResponse.success("查询成功", order);
+    }
+
     /**
      * 采购订单 PDF (供货单) 下载.
      *

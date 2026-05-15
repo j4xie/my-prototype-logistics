@@ -33,6 +33,11 @@ export interface MaterialType {
   notes?: string;             // 备注（原 description）
   createdAt: string;
   updatedAt?: string;
+  // W-ABA-1 抄码品标记 (六扇门 F006 卤制品工厂刚需)
+  // true → 每箱重量不一, 采购不录箱数, 入库按实际称重
+  isAbacaPackaging?: boolean;
+  abacaUnitPerBox?: string;     // 箱重区间描述, UI 提示用 (如 "约 10-15kg/箱")
+  abacaDefaultUnit?: string;    // 入库默认计量单位 (kg / g)
   // 关联信息（后端字段）
   factoryName?: string;
   createdByName?: string;
