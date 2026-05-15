@@ -110,6 +110,11 @@ import StocktakingListScreen from "../../screens/restaurant/stocktaking/Stocktak
 import StocktakingExecuteScreen from "../../screens/restaurant/stocktaking/StocktakingExecuteScreen";
 import StocktakingSummaryScreen from "../../screens/restaurant/stocktaking/StocktakingSummaryScreen";
 
+// Track D2 — 工序管理 (M-WP-1) + 产品工序配置 (M-WP-2)
+import WorkProcessListScreen from "../../screens/factory/workprocess/WorkProcessListScreen";
+import WorkProcessCreateScreen from "../../screens/factory/workprocess/WorkProcessCreateScreen";
+import ProductWorkProcessConfigScreen from "../../screens/factory/workprocess/ProductWorkProcessConfigScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -337,6 +342,23 @@ export function FAManagementStackNavigator() {
         name="ProductTypeManagement"
         component={ProductTypeManagementScreen}
         options={{ title: "产品类型" }}
+      />
+
+      {/* Track D2 — 工序管理 + 产品工序配置 (六扇门第四次会议) */}
+      <Stack.Screen
+        name="WorkProcessList"
+        component={WorkProcessListScreen}
+        options={{ title: "工序管理" }}
+      />
+      <Stack.Screen
+        name="WorkProcessCreate"
+        component={WorkProcessCreateScreen}
+        options={{ title: "新增工序" }}
+      />
+      <Stack.Screen
+        name="ProductWorkProcessConfig"
+        component={ProductWorkProcessConfigScreen}
+        options={{ title: "产品工序配置" }}
       />
 
       {/* 原材料类型管理 (复用现有) */}

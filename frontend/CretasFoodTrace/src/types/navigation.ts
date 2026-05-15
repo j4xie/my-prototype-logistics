@@ -210,6 +210,11 @@ export type ManagementStackParamList = {
 
   // S4-2 SOP配置 (factory_super_admin/management角色)
   SopConfig: undefined;
+
+  // Track D2 — 工序管理 (M-WP-1) + 产品工序配置 (M-WP-2)
+  WorkProcessList: undefined;
+  WorkProcessCreate: { mode?: 'create' | 'edit'; id?: string } | undefined;
+  ProductWorkProcessConfig: { productTypeId?: string } | undefined;
 };
 
 // ==================== 个人中心模块导航参数 ====================
@@ -433,6 +438,11 @@ export type FAManagementStackParamList = {
   StocktakingList: undefined;
   StocktakingExecute: { recordId?: string } | undefined;
   StocktakingSummary: undefined;
+
+  // Track D2 — 工序管理 (M-WP-1) + 产品工序配置 (M-WP-2)
+  WorkProcessList: undefined;
+  WorkProcessCreate: { mode?: 'create' | 'edit'; id?: string } | undefined;
+  ProductWorkProcessConfig: { productTypeId?: string } | undefined;
 };
 
 export type FAProfileStackParamList = {

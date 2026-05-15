@@ -1,0 +1,61 @@
+package com.cretas.aims.repository.workprocess;
+
+import com.cretas.aims.entity.workprocess.WorkProcessTask;
+import com.cretas.aims.entity.workprocess.WorkProcessTask.Status;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 工序任务 Repository (Track D2 — M-WP-1/2).
+ */
+@Repository
+public interface WorkProcessTaskRepository extends JpaRepository<WorkProcessTask, Long> {
+
+    /**
+     * 列出某批次的全部工序任务 (按 processOrder 升序).
+     */
+    List<WorkProcessTask> findByFactoryIdAndProductionBatchIdOrderByProcessOrderAsc(
+            String factoryId, Long productionBatchId);
+
+    /**
+     * 列出某批次某状态的工序任务 (按 processOrder 升序).
+     */
+    List<WorkProcessTask> findByFactoryIdAndProductionBatchIdAndStatusOrderByProcessOrderAsc(
+            String factoryId, Long productionBatchId, Status status);
+
+    /**
+     * 单条 (factoryId + id) 多租户隔离查询.
+     */
+    Optional<WorkProcessTask> findByFactoryIdAndId(String factoryId, Long id);
+
+    /**
+     * 检查某批次是否已 spawn 过工序任务 (防重 spawn).
+     */
+    boolean existsByFactoryIdAndProductionBatchId(String factoryId, Long productionBatchId);
+
+    /**
+     * 分页列表 — 按 factoryId + status 过滤.
+     *
+     * 用 CAST(:status AS string) 应对 PostgreSQL 严格类型推断
+     * (.claude/rules/database-entity-sync.md: parameter-side IS NULL 必须显式 CAST).
+     */
+    @Query("SELECT t FROM WorkProcessTask t WHERE t.factoryId = :factoryId "
+            + "AND (CAST(:status AS string) IS NULL OR t.status = :status) "
+            + "AND (CAST(:productionBatchId AS long) IS NULL OR t.productionBatchId = :productionBatchId) "
+            + "AND (CAST(:assignedTo AS long) IS NULL OR t.assignedTo = :assignedTo) "
+            + "ORDER BY t.createdAt DESC")
+    Page<WorkProcessTask> findByFilters(
+            @Param("factoryId") String factoryId,
+            @Param("status") Status status,
+            @Param("productionBatchId") Long productionBatchId,
+            @Param("assignedTo") Long assignedTo,
+            Pageable pageable);
+
+}

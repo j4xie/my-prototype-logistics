@@ -165,6 +165,18 @@ export function FAManagementScreen() {
               onPress={() => navigation.navigate('ConversionRate')}
             />
             )}
+            <GridItem
+              icon="cog-transfer-outline"
+              title={t('management.workProcesses', '工序管理')}
+              color="#5b8def"
+              onPress={() => navigation.navigate('WorkProcessList')}
+            />
+            <GridItem
+              icon="format-list-numbered"
+              title={t('management.productWorkProcesses', '产品工序配置')}
+              color="#36cfc9"
+              onPress={() => navigation.navigate('ProductWorkProcessConfig')}
+            />
           </View>
         </View>
 
