@@ -9,7 +9,9 @@
  *   - 保存 → POST /bom/recipes (status=DRAFT)
  *   - 激活 → POST /bom/recipes/{id}/activate
  *
- * 物料选择 (Day 6): 添加原料按钮目前用 prompt 占位, Day 6 集成 MaterialSelectModal 弹窗.
+ * 物料选择 (Day 6 Bug-2 Fix): 集成 MaterialSelectModal 弹窗 (取代旧 Alert.prompt 占位).
+ *   - "添加原料" / "更换原料" 按钮 → 打开 modal → 选择后回填 materialTypeId/Name/defaultUnit
+ *   - excludeIds: 排除当前 BOM 已用过的原料 (避免重复)
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
@@ -27,6 +29,10 @@ import type {
 } from '../../../types/bom';
 import type { ManagementStackParamList } from '../../../types/navigation';
 import { handleError } from '../../../utils/errorHandler';
+import {
+  MaterialSelectModal,
+  MaterialSelectResult,
+} from '../../../components/MaterialSelectModal';
 
 type Nav = NativeStackNavigationProp<ManagementStackParamList, 'BomConfigEdit'>;
 type R = RouteProp<ManagementStackParamList, 'BomConfigEdit'>;
@@ -74,6 +80,9 @@ export function BomEditorScreen() {
   const [saving, setSaving] = useState(false);
   const [unitMenuFor, setUnitMenuFor] = useState<string | null>(null);
   const [outputUnitMenuOpen, setOutputUnitMenuOpen] = useState(false);
+
+  // Day 6 Bug-2: 物料字典选择器状态
+  const [materialModalForUiId, setMaterialModalForUiId] = useState<string | null>(null);
 
   const isEdit = !!recipeId;
   const isDraft = !recipe || recipe.status === 'DRAFT';
@@ -149,21 +158,31 @@ export function BomEditorScreen() {
     setItems(prev => prev.map(r => r.uiId === uiId ? { ...r, [field]: value } : r));
   };
 
-  // Day 6 swaps this with MaterialSelectModal弹窗
-  const promptMaterialSelect = (uiId: string) => {
-    Alert.prompt(
-      '选择原料 (Day 6 → MaterialSelectModal)',
-      '临时占位: 输入 materialTypeId|materialName (Day 6 替换为字典选择器)',
-      (text) => {
-        if (!text) return;
-        const [id, name] = text.split('|').map(s => s.trim());
-        if (id) {
-          updateItem(uiId, 'materialTypeId', id);
-          updateItem(uiId, 'materialName', name ?? id);
-        }
-      },
-    );
+  // Day 6 Bug-2: 弹出 MaterialSelectModal 让用户从 raw_material_types 字典选择.
+  const openMaterialSelect = (uiId: string) => {
+    setMaterialModalForUiId(uiId);
   };
+
+  const handleMaterialSelected = (result: MaterialSelectResult) => {
+    const uiId = materialModalForUiId;
+    if (!uiId) return;
+    setItems(prev => prev.map(r => r.uiId === uiId ? {
+      ...r,
+      materialTypeId: result.materialTypeId,
+      materialName: result.materialName,
+      // 默认单位从字典带出 (BOM 端 g 偏好, 但保留 raw_material_types.unit 作为初始值)
+      unit: (r.unit && r.unit !== 'g') ? r.unit : (result.defaultUnit as BomUnit) || 'g',
+    } : r));
+    setMaterialModalForUiId(null);
+  };
+
+  /** Excluded IDs for modal (avoid double-add of same material). */
+  const excludedMaterialIds = useMemo(
+    () => items
+      .filter(r => r.materialTypeId && r.uiId !== materialModalForUiId)
+      .map(r => r.materialTypeId),
+    [items, materialModalForUiId],
+  );
 
   const buildPayloadItems = (): BomRecipeItemDTO[] => {
     return items.map(r => ({
@@ -371,7 +390,7 @@ export function BomEditorScreen() {
                 {isDraft && (
                   <Button
                     mode="outlined"
-                    onPress={() => promptMaterialSelect(row.uiId)}
+                    onPress={() => openMaterialSelect(row.uiId)}
                     style={{ marginBottom: 8 }}
                     icon="magnify"
                   >
@@ -477,6 +496,15 @@ export function BomEditorScreen() {
           </Button>
         )}
       </View>
+
+      {/* Day 6 Bug-2: 物料字典选择器 (取代 Alert.prompt 占位) */}
+      <MaterialSelectModal
+        visible={materialModalForUiId !== null}
+        onDismiss={() => setMaterialModalForUiId(null)}
+        onSelect={handleMaterialSelected}
+        excludeIds={excludedMaterialIds}
+        title="选择原料 (从字典)"
+      />
     </SafeAreaView>
   );
 }
