@@ -55,6 +55,16 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
+// Phase IIb (2026-05-15): cross-link to 成本运营 tab. Parent FinanceAnalysis.vue
+// listens and flips analysisType. Backward-compat: emit may be unhandled
+// (parent without IIb tab support); v-if in template gates the button.
+const emit = defineEmits<{
+  'goto-kitchen-cost': [];
+}>();
+// Mirror parent's phaseIIbEnabled flag so the cross-link button only shows
+// when IIb is operationally enabled. Default ON.
+const phaseIIbEnabled = computed(() => import.meta.env.VITE_PHASE_IIB_ENABLED !== 'false');
+
 // Default last 365 days (mirrors parent FinanceAnalysis.vue default).
 const dateRange = ref<[string, string] | null>(null);
 const shortcuts = [
@@ -344,6 +354,16 @@ onUnmounted(() => {
           <p class="iib-footnote">
             完整成本/采购/损耗看板（Phase IIb）依赖 accounting_import 与 fact_restaurant_wastage 上线，预计 v2 加入。
           </p>
+          <!-- Phase IIb (2026-05-15): cross-link to the 成本运营 tab when IIb enabled. -->
+          <el-button
+            v-if="phaseIIbEnabled"
+            type="primary"
+            link
+            class="iib-cta"
+            @click="emit('goto-kitchen-cost')"
+          >
+            查看 成本运营详情 →
+          </el-button>
         </div>
       </el-card>
 
@@ -470,6 +490,9 @@ onUnmounted(() => {
   color: #909399;
   margin: 8px 0 0;
   font-style: italic;
+}
+.iib-cta {
+  margin-top: 8px;
 }
 .footer-meta {
   margin-top: 16px;
