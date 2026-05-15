@@ -696,7 +696,13 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     /**
-     * 构建单个原料的三价对比数据
+     * 构建单个原料的三价对比数据.
+     *
+     * <p>2026-05-15 (Day 8-9): 新增 {@code dataSourceHint} 字段, 解释为何某价 null.
+     * 客户原话 (六扇门第三次 May7): "三家对比没有 — 可能是一些数据的 bug". 实际是
+     * 移动均价基于入库 (raw_material_types.moving_avg_price 来自历次入库累积),
+     * BOM 标准价基于 BOM 配置 — 新原料 / 未入库 / 未配 BOM 时这两个字段必然 null.
+     * 此前 UI 显示"-", 客户误以为是 bug. 现在 dataSourceHint 明确告诉用户原因.
      */
     private MaterialPriceComparisonDTO buildPriceComparison(String factoryId, String materialTypeId,
                                                              String materialName, BigDecimal currentPrice) {
@@ -749,6 +755,9 @@ public class PurchaseServiceImpl implements PurchaseService {
             alert = true;
         }
 
+        // 5. 数据源诊断 — 帮 F006 仓管区分 "数据 bug" 和 "业务正常空态"
+        String dataSourceHint = PurchaseServiceImpl.buildPriceDataSourceHint(bomStandardPrice, movingAvgPrice);
+
         return MaterialPriceComparisonDTO.builder()
                 .materialTypeId(materialTypeId)
                 .materialName(name)
@@ -761,7 +770,36 @@ public class PurchaseServiceImpl implements PurchaseService {
                 .varianceFromAvg(varianceFromAvg)
                 .priceAlert(alert)
                 .bomProductNames(bomProductNames)
+                .dataSourceHint(dataSourceHint)
                 .build();
+    }
+
+    /**
+     * 构造数据源缺失提示 — Day 8-9 三价对比 bug 修复.
+     *
+     * <p>客户场景区分:
+     * <ul>
+     *   <li>BOM null + 移动均价 null → "新原料首次采购" (业务正常)</li>
+     *   <li>BOM null + 移动均价 OK → "未配 BOM, 仅可对比历史均价"</li>
+     *   <li>BOM OK + 移动均价 null → "尚无入库, 仅可对比 BOM 标准价"</li>
+     *   <li>双有 → null (正常对比, 无需 hint)</li>
+     * </ul>
+     */
+    // package-private static for test (PurchaseServicePriceHintTest) — pure function, 无依赖
+    static String buildPriceDataSourceHint(BigDecimal bomStandardPrice, BigDecimal movingAvgPrice) {
+        boolean missingBom = (bomStandardPrice == null);
+        boolean missingAvg = (movingAvgPrice == null);
+        if (!missingBom && !missingAvg) {
+            return null;
+        }
+        if (missingBom && missingAvg) {
+            return "新原料首次采购 — 三价对比基于 BOM 标准价 + 历次入库均价, 当前两项均无数据, 入库后自动累积 (这是预期状态, 不是 bug)";
+        }
+        if (missingBom) {
+            return "该原料未配置 BOM 标准价 — 仅可对比历史入库均价. 在 BOM 模块为相关产品添加该原料以启用 BOM 对比";
+        }
+        // missingAvg only
+        return "尚无该原料的入库记录 — 仅可对比 BOM 标准价. 入库一次后即累积移动均价";
     }
 
     /**

@@ -79,4 +79,20 @@ public class MaterialPriceComparisonDTO {
 
     /** BOM关联的产品名称（如果有多个产品，用逗号分隔） */
     private String bomProductNames;
+
+    /**
+     * 数据源诊断提示 — 解释为何某价 null (Day 8-9 三价对比 bug 修复).
+     *
+     * <p>客户场景: 新建采购单立刻看三价对比, "三家对比没有". 实际原因: 移动均价
+     * 来自历次入库 (`raw_material_types.moving_avg_price`), 新原料 / 从未入库的
+     * 原料 → null. BOM 标准价同理 — 该原料未配 BOM 则 null.
+     *
+     * <p>填值时机: 三价对比 endpoint 调用 buildPriceComparison 时根据缺失情况组装.
+     * 例: "尚无入库记录, 移动均价待累积" / "该原料未配置 BOM, 标准价缺失" /
+     *      "BOM + 入库均缺失 — 这是新原料首次采购的预期状态".
+     *
+     * <p>前端: 用 el-tooltip 挂在表头或 popover 出现 hint, 帮助 F006 仓管员
+     * 区分"数据 bug"和"业务正常空态".
+     */
+    private String dataSourceHint;
 }
