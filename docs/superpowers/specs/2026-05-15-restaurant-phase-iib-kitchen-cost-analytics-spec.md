@@ -2,8 +2,8 @@
 
 **Status**: **DRAFT — Cycle-1 audit + Pre-IIb data audit complete (2026-05-15). OQ-2 signed off (Hybrid). Awaiting cycle-3 review + impl dispatch.**
 **Date**: 2026-05-15
-**Last audit**: cycle-1 spec review (sister, 2026-05-15, 4 CRITICAL + 7 IMPORTANT + 5 MINOR all fixed in this cycle-2 amend) + Pre-IIb data audit (sister, 2026-05-15, 8 schema drift fixed)
-**Author**: Architecture review (sister-chat draft for organizer review)
+**Last audit**: cycle-1 spec review (subagent, 2026-05-15, 4 CRITICAL + 7 IMPORTANT + 5 MINOR all fixed in this cycle-2 amend) + Pre-IIb data audit (subagent, 2026-05-15, 8 schema drift fixed)
+**Author**: Architecture review (subagent draft for organizer review)
 **Audience**: Backend Python engineer (Sister-chat impl), frontend Vue engineer, product owner (Steve)
 **Trigger**: Phase IIa shipped 2026-05-14 (PRs #633 backend / #634 frontend / #641 nginx / #644 close-out / #647 spec amendment + COALESCE follow-up). Restaurant tenants now see revenue-side analytics. Phase IIb fills the immediate next gap: *"我卖了多少钱看到了，但成本去哪了？"*
 
@@ -14,7 +14,7 @@
 - **Phase IIa**: ✅ **SHIPPED** 2026-05-14. RES_3101_009 verified ¥20.6M in prod end-to-end. 14 R_*_REAL chains remain onboarding-blocked (no Bronze POS data). This spec assumes Phase IIa as completed prerequisite.
 - **Phase IIb**: **DRAFT, cycle-2 amend complete** — OQ-2 + OQ-IIB-NEW signed off 2026-05-15 (Hybrid: ship empty-state-graceful + showcase R_XMX_CHAIN + RES_3101_009 wastage; 13 empty chains see SmartBIEmptyState; not gated on data). Pre-IIb data audit complete. Ready for cycle-3 review + impl dispatch.
 - **Phase IIc**: Untouched by this spec; full P&L remains the Phase IIc scope per IIa spec §3 (gated on OQ-3 cost-ingestion decision and `fact_cost_line` having data — note: `fact_cost_line` confirmed empty for ALL factories per Pre-IIb audit, not just restaurants).
-- **Next dispatch**: cycle-3 reviewer pass (mechanical re-audit, expected light), then sister-chat impl dispatch (backend / frontend / nginx PRs).
+- **Next dispatch**: cycle-3 reviewer pass (mechanical re-audit, expected light), then subagent impl dispatch (backend / frontend / nginx PRs).
 - **Pending Steve decisions**: OQ-2 ✅ signed off Hybrid; OQ-IIB-NEW ✅ signed off (accept est_cost + caveat); OQ-1 ✅ N/A (no fact_cost_line anywhere).
 
 ## Table of Contents
@@ -155,13 +155,19 @@ Sister-chat ran the audit. Coverage matrix (rows in `fact_restaurant_*` per chai
 
 ### Acceptance criteria (gate Phase IIb dispatch)
 
-The audit output feeds the **OQ-2 decision**:
+The audit output fed the **OQ-2 decision** (resolved 2026-05-15 — see Hybrid block above). Below is the original branch enumeration kept for historical context; the actual outcome was effectively **Branch A** (`R_XMX_CHAIN` has all 3 fact-table types) + **Branch B1** for the 14 dark chains.
+
+<details><summary>Original branch enumeration (decision input — now resolved)</summary>
 
 - **Branch A (any chain has real data)**: If ≥1 chain has non-zero rows in both `fact_restaurant_wastage` AND `fact_restaurant_requisition` (with overlapping date range so wastage rate can compute), Phase IIb dispatchable as full-feature. That chain becomes the Phase IIb verification target.
 - **Branch B (only QHJ seed has data)**: If only `RES_3101_009` (seeded by `backend/python/smartbi/database/migrations/2026_04_25_qhj_demo_seed.sql` and its v2-v5 follow-ups) has wastage rows but no R_*_REAL chain does, Steve decides:
   - **B1**: ship empty-state-graceful (UI renders empty CTA for 14 onboarding-blocked chains, real charts for QHJ demo) — recommended, low-risk
   - **B2**: defer Phase IIb until ≥1 R_*_REAL chain has real ops data (gates on customer adoption, not engineering work)
 - **Branch C (no chain has any ops data at all, including QHJ)**: Defer Phase IIb entirely. Phase IIb spec stays valid as design artifact; no dispatch.
+
+**Resolution**: prod has `R_XMX_CHAIN` (all 3 fact types) → Branch A path active for that chain. `RES_3101_009` (wastage-only) → partial-data path. 13 R_*_REAL chains → B1 empty-state-graceful path. No Branch C trigger.
+
+</details>
 
 ### What this audit answers for OQ-2
 
@@ -353,7 +359,7 @@ Per IIa spec §0.5 finding: `GoldMaterializer` (gated by `SMARTBI_ENABLE_SILVER_
 
 **Data sources**: existing Silver + Gold restaurant ops tables (no migrations). Joins `dim_ingredient` for names/categories. Reads **`agg_daily`** (not `fact_pos_transaction`) for the ratio denominator — mirrors IIa shipped pattern (`analysis_finance.py:3312-3328`).
 
-**Effort**: 5-8 days = 1 backend Python PR (3 days) + 1 frontend Vue PR (2 days) + 1 nginx ops PR (0.5 day) + Pre-IIb data audit (0.5 day) + active E2E + cycle-1/cycle-2 audit buffers (1-2 days).
+**Effort**: 6-9 days = 1 backend Python PR (3 days) + 1 frontend Vue PR (2-3 days incl. **+1 day for §5.2 tab restructure** since IIa hides tab switcher + force-redirects restaurant tenants to 'profit') + 1 nginx ops PR (0.5 day, single shared-snippet edit) + Pre-IIb data audit ✅ done (0.5 day) + active E2E + cycle-1/cycle-2/cycle-3 audit buffers (1-2 days).
 
 **Gating to start Phase IIc**: IIb deployed + Steve OQ-3 sign-off on cost-data ingestion strategy + `fact_cost_line` has rows for ≥1 chain.
 
@@ -722,7 +728,7 @@ location ~ ^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|s
 3. Update nginx test config for kitchen-cost (or test by directly hitting Python 8084).
 4. Smoke test against `RES_3101_009` (test env Gold data should exist).
 5. Python deploy to prod (8083, Blue-Green).
-6. Update nginx prod config (3 vhosts) for kitchen-cost.
+6. Update nginx prod config — edit single shared snippet `ops/nginx-vhosts-139/smart-bi-routing.conf` block 5 to add `kitchen-cost` to allowlist; `scp` to server `/www/server/nginx/conf/snippets/smart-bi-routing.conf`; `nginx -t && nginx -s reload`. All 3 vhosts pick up via `include` automatically (per `feedback_nginx_3_vhost_sync.md` shared-include refactor 2026-05-15).
 7. Verify prod backend healthy: curl direct from server bypassing browser.
 8. **Final**: merge frontend PR + deploy web-admin. Tab appears for all restaurant tenants simultaneously.
 
@@ -843,12 +849,12 @@ The following are explicitly excluded from Phase IIb:
 ### Phase IIb Build Checklist
 
 **Pre-dispatch (organizer):**
-- [x] **Pre-IIb data audit** (§0.5 Track P) — completed 2026-05-15 (sister chat). Results in §0.5 "Pre-IIb Data Audit Results" sub-section. Coverage matrix: R_XMX_CHAIN has 3-table data; RES_3101_009 has wastage-only; 13 empty chains.
+- [x] **Pre-IIb data audit** (§0.5 Track P) — completed 2026-05-15 (subagent). Results in §0.5 "Pre-IIb Data Audit Results" sub-section. Coverage matrix: R_XMX_CHAIN has 3-table data; RES_3101_009 has wastage-only; 13 empty chains.
 - [x] Steve sign-off on OQ-2 — ✅ Hybrid (signed 2026-05-15): ship empty-state-graceful + showcase R_XMX_CHAIN + RES_3101_009.
 - [x] Steve sign-off on OQ-IIB-NEW — ✅ accept `est_cost` + caveat (signed 2026-05-15).
-- [x] **Cycle-1 audit on this spec** — completed 2026-05-15 (sister chat). 4 CRITICAL + 7 IMPORTANT + 5 MINOR findings consolidated into this cycle-2 amend.
+- [x] **Cycle-1 audit on this spec** — completed 2026-05-15 (subagent). 4 CRITICAL + 7 IMPORTANT + 5 MINOR findings consolidated into this cycle-2 amend.
 - [ ] **Cycle-3 reviewer pass** (independent mechanical re-audit, expected light)
-- [ ] **Cycle-4 impl-readiness review** (last check before sister-chat impl dispatch)
+- [ ] **Cycle-4 impl-readiness review** (last check before subagent impl dispatch)
 
 **Backend (1 PR):**
 - [ ] Create `backend/python/smartbi_compat/api/analysis_restaurant_ops.py`
@@ -865,15 +871,23 @@ The following are explicitly excluded from Phase IIb:
 - [ ] Edge case tests for each row in §4.5 (7 conditions)
 
 **Nginx (1 ops PR):**
-- [ ] Extend regex in all 3 vhosts: `web-admin.conf`, `api.cretaceousfuture.com.conf`, `admin.cretaceousfuture.com.conf` (per `feedback_nginx_3_vhost_sync.md`)
-- [ ] Add `kitchen-cost` to the existing `(finance|sales)` group → `(finance|sales|kitchen-cost)`
-- [ ] Backup before edit (timestamped .bak)
+- [ ] Edit ONE file: `ops/nginx-vhosts-139/smart-bi-routing.conf` block 5 — change regex `(finance|sales)` → `(finance|sales|kitchen-cost)`. Shared snippet is `include`d by all 3 vhosts (per `feedback_nginx_3_vhost_sync.md` HARD rule + 2026-05-15 shared-include refactor); single edit propagates to all 3 vhosts on `nginx -s reload`.
+- [ ] `scp` updated snippet to server: `/www/server/nginx/conf/snippets/smart-bi-routing.conf`
+- [ ] Backup before edit (timestamped `.bak` on server)
 - [ ] `nginx -t` + `nginx -s reload`
-- [ ] Smoke 3 curls (one per vhost) post-reload
+- [ ] Smoke 2 curls (web-admin.conf IP + admin.cretaceousfuture.com DNS) post-reload — `api.cretaceousfuture.com` DNS is NXDOMAIN, vhost dormant
+- [ ] Commit snippet file change in repo (`ops/nginx-vhosts-139/smart-bi-routing.conf`) for drift policy compliance
 
 **Frontend (1 PR):**
 - [ ] Create `web-admin/src/components/smartbi/RestaurantKitchenCostContent.vue` (~600-800 LOC)
-- [ ] Add 成本运营 tab to `FinanceAnalysis.vue` restaurant view (under existing `v-if="isRestaurantTenant"` block)
+- [ ] **§5.2 7-step structural change** to `FinanceAnalysis.vue` (NOT a drop-in tab add — IIa hides tab switcher + force-redirects restaurant tenants to 'profit'):
+  1. Extend `AnalysisType` enum to include `'kitchen-cost'`
+  2. Update / remove the 3 force-redirect-to-'profit' guards (lines 85-99 area) to whitelist `'kitchen-cost'`
+  3. Add `allAnalysisTypes` entry for kitchen-cost with `restaurantOnly: true` flag
+  4. Restore tab switcher visibility for restaurant tenants (currently hidden via v-if guard)
+  5. Re-gate the existing `<RestaurantFinanceContent v-else-if="isRestaurantTenant && phaseIIaEnabled" />` render path to switch on `analysisType.value`
+  6. Add component import + render block `<RestaurantKitchenCostContent v-else-if="isRestaurantTenant && phaseIIbEnabled && analysisType === 'kitchen-cost'" />`
+  7. Cross-link from 营收概览 `phaseIIbPreview` block → 成本运营 tab (router.push or analysisType switch)
 - [ ] Add cross-link from 营收概览 `phaseIIbPreview` block → 成本运营 tab
 - [ ] Wire `RestaurantKitchenCostContent` props to the parent `factoryId` + `dateRange`
 - [ ] Implement empty-state hierarchy per §5.6 (whole tab / single section / ratio-only-missing)
@@ -950,21 +964,21 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 - [x] **Steve OQ-2**: ✅ **Hybrid** (signed off 2026-05-15) — ship empty-state-graceful + showcase R_XMX_CHAIN (3-table real data) + RES_3101_009 (wastage real, others empty-state per-section). 13 empty chains see whole-tab `SmartBIEmptyState`. NOT gated on ETL populating events.
 - [x] **Steve OQ-IIB-NEW**: ✅ **Accept est_cost + caveat** (signed off 2026-05-15) — `fact_restaurant_requisition.est_cost` acceptable for IIb food cost ratio. Caveat surfaced in `foodCostRatio.dataCaveats: ["使用领料估算成本（est_cost），非会计实际成本"]`.
 - [x] **Steve OQ-1**: ✅ **N/A** (signed off 2026-05-15) — Pre-IIb audit confirmed `fact_cost_line` empty for ALL factories (not restaurant-specific). No fallback path for any tenant. Phase IIc remains gated on cost ingestion implementation, independent of IIb.
-- [x] **Engineering — Pre-IIb Data Audit**: ✅ completed 2026-05-15 (sister chat). Results in §0.5.
-- [x] **Engineering — cycle-1 audit**: ✅ completed 2026-05-15 (sister chat). 4 CRITICAL + 7 IMPORTANT + 5 MINOR findings consolidated into this cycle-2 amend.
+- [x] **Engineering — Pre-IIb Data Audit**: ✅ completed 2026-05-15 (subagent). Results in §0.5.
+- [x] **Engineering — cycle-1 audit**: ✅ completed 2026-05-15 (subagent). 4 CRITICAL + 7 IMPORTANT + 5 MINOR findings consolidated into this cycle-2 amend.
 - [ ] **Engineering — cycle-3 reviewer pass**: independent mechanical re-audit (expected light, 1-2 hours).
-- [ ] **Engineering — cycle-4 impl-readiness**: final check before sister-chat impl dispatch.
-- [ ] **Engineering — impl dispatch**: after cycle-3 + cycle-4, Phase IIb ready for sister-chat impl dispatch (backend PR / frontend PR / nginx PR).
+- [ ] **Engineering — cycle-4 impl-readiness**: final check before subagent impl dispatch.
+- [ ] **Engineering — impl dispatch**: after cycle-3 + cycle-4, Phase IIb ready for subagent impl dispatch (backend PR / frontend PR / nginx PR).
 
 ### 11.3 Flagged for cycle-3 / future tracking
 
 - **Migration vs materializer drift** (§2.2 `agg_restaurant_daily_ops`): `kpi_kind` codes declared in migration comment (`wastage_cost`, `stocktaking_diff_qty`, `stocktaking_diff_cost`) do not match prod-emitted codes (`wastage_cost_by_type`, `stocktaking_shortage_qty`). **Organizer recommended to file follow-up tracking issue** to either (a) update migration comment to match materializer, or (b) update materializer to match declared schema. Phase IIb spec locks on prod actual; tracking issue is non-blocking.
 - **`dim_ingredient.category` data hygiene**: prod has 20 free-text values + 31 NULL rows. Phase IIb works around with Python-side normalization (§2.1), but a longer-term cleanup migration (free-text → enum or controlled vocab) is product-side work, not engineering.
-- **`fact_restaurant_wastage.store_id` absence**: §8 OOS claim verified by sister (D6). Per-store breakdown deferred to a future spec when/if `store_id` is added.
+- **`fact_restaurant_wastage.store_id` absence**: §8 OOS claim verified by subagent (D6). Per-store breakdown deferred to a future spec when/if `store_id` is added.
 
 ---
 
-*Spec authored 2026-05-15 as cycle-0 draft by sister-chat sister at organizer request. Based on survey of `backend/python/smartbi/database/migrations/2026_04_24_silver_restaurant_ops.sql` + `2026_04_24_gold_restaurant_ops.sql`, `backend/python/smartbi_compat/api/analysis_production.py` (polymorphic dispatch pattern), `docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md` (parent design), `docs/qa-audits/2026-05-11-restaurant-data-readiness-audit.md` (data coverage baseline), `.claude/rules/python-java-port.md` Rules 1-12.*
+*Spec authored 2026-05-15 as cycle-0 draft by subagent at organizer request. Based on survey of `backend/python/smartbi/database/migrations/2026_04_24_silver_restaurant_ops.sql` + `2026_04_24_gold_restaurant_ops.sql`, `backend/python/smartbi_compat/api/analysis_production.py` (polymorphic dispatch pattern), `docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md` (parent design), `docs/qa-audits/2026-05-11-restaurant-data-readiness-audit.md` (data coverage baseline), `.claude/rules/python-java-port.md` Rules 1-12.*
 
 ### Audit history
 
@@ -973,6 +987,6 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 | Cycle-0 | 2026-05-15 | Architecture review (initial draft) | — | 840 lines initial draft |
 | Cycle-1 | 2026-05-15 | Sister-chat spec audit | 4 CRITICAL + 7 IMPORTANT + 5 MINOR | All fixed in cycle-2 amend |
 | Pre-IIb data audit | 2026-05-15 | Sister-chat prod SQL | 8 schema drift + Hybrid OQ-2 verdict | Schema fixes in cycle-2 amend; Steve signed off Hybrid 2026-05-15 |
-| Cycle-2 (this) | 2026-05-15 | Organizer + sister amend | Cycle-1 + data-audit consolidated fix | This commit |
+| Cycle-2 (this) | 2026-05-15 | Organizer + subagent amend | Cycle-1 + data-audit consolidated fix | This commit |
 | Cycle-3 | TBD | (independent reviewer) | (mechanical re-audit, expected light) | TBD |
-| Cycle-4 | TBD | (impl readiness review) | (last check before sister-chat impl) | TBD |
+| Cycle-4 | TBD | (impl readiness review) | (last check before subagent impl) | TBD |
