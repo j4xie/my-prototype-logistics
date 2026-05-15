@@ -1,8 +1,8 @@
 # Restaurant Tenant Kitchen Cost & Ops Analytics — Phase IIb Implementation Spec
 
-**Status**: **DRAFT — Cycle-0 (initial draft, awaiting cycle-1 audit)**
+**Status**: **DRAFT — Cycle-1 audit + Pre-IIb data audit complete (2026-05-15). OQ-2 signed off (Hybrid). Awaiting cycle-3 review + impl dispatch.**
 **Date**: 2026-05-15
-**Last audit**: none yet (cycle-0 fresh draft, organizer to dispatch cycle-1 audit before sister-chat impl)
+**Last audit**: cycle-1 spec review (sister, 2026-05-15, 4 CRITICAL + 7 IMPORTANT + 5 MINOR all fixed in this cycle-2 amend) + Pre-IIb data audit (sister, 2026-05-15, 8 schema drift fixed)
 **Author**: Architecture review (sister-chat draft for organizer review)
 **Audience**: Backend Python engineer (Sister-chat impl), frontend Vue engineer, product owner (Steve)
 **Trigger**: Phase IIa shipped 2026-05-14 (PRs #633 backend / #634 frontend / #641 nginx / #644 close-out / #647 spec amendment + COALESCE follow-up). Restaurant tenants now see revenue-side analytics. Phase IIb fills the immediate next gap: *"我卖了多少钱看到了，但成本去哪了？"*
@@ -12,10 +12,10 @@
 ## STATUS (read first)
 
 - **Phase IIa**: ✅ **SHIPPED** 2026-05-14. RES_3101_009 verified ¥20.6M in prod end-to-end. 14 R_*_REAL chains remain onboarding-blocked (no Bronze POS data). This spec assumes Phase IIa as completed prerequisite.
-- **Phase IIb**: **DRAFT** — designs proposed below; **gated on Steve sign-off for OQ-2 + OQ-IIB-NEW + Pre-IIb data audit** (§11.2).
-- **Phase IIc**: Untouched by this spec; full P&L remains the Phase IIc scope per IIa spec §3 (gated on OQ-3 cost-ingestion decision and `fact_cost_line` having data).
-- **Next dispatch**: Pre-IIb Data Audit (one-shot SQL query on `smartbi_prod_db` to inventory `fact_restaurant_wastage` + `fact_restaurant_requisition` + `fact_restaurant_stocktaking` row counts per chain). Best case 0.5 day. Outcome feeds the OQ-2 decision (gate on real data vs ship empty-state-graceful).
-- **Pending Steve decisions**: see §11.2 for 3 open OQs.
+- **Phase IIb**: **DRAFT, cycle-2 amend complete** — OQ-2 + OQ-IIB-NEW signed off 2026-05-15 (Hybrid: ship empty-state-graceful + showcase R_XMX_CHAIN + RES_3101_009 wastage; 13 empty chains see SmartBIEmptyState; not gated on data). Pre-IIb data audit complete. Ready for cycle-3 review + impl dispatch.
+- **Phase IIc**: Untouched by this spec; full P&L remains the Phase IIc scope per IIa spec §3 (gated on OQ-3 cost-ingestion decision and `fact_cost_line` having data — note: `fact_cost_line` confirmed empty for ALL factories per Pre-IIb audit, not just restaurants).
+- **Next dispatch**: cycle-3 reviewer pass (mechanical re-audit, expected light), then sister-chat impl dispatch (backend / frontend / nginx PRs).
+- **Pending Steve decisions**: OQ-2 ✅ signed off Hybrid; OQ-IIB-NEW ✅ signed off (accept est_cost + caveat); OQ-1 ✅ N/A (no fact_cost_line anywhere).
 
 ## Table of Contents
 
@@ -48,7 +48,7 @@ The data Cretas already collects via the materials/kitchen management module:
 - **Wastage records** (`fact_restaurant_wastage`) — spoilage, expiry, damage events with `estimated_cost`
 - **Requisition records** (`fact_restaurant_requisition`) — kitchen ingredient pulls with `est_cost`
 - **Stocktaking records** (`fact_restaurant_stocktaking`) — inventory variance with `difference_cost`
-- **POS revenue** (`fact_pos_transaction.actual_receive`) — Phase IIa denominator for ratio calculations
+- **POS revenue** (`agg_daily.actual_receive` with `gross_amount` COALESCE fallback per IIa shipped pattern) — Phase IIa denominator for ratio calculations
 
 Phase IIb delivers **4 reports** in a single composite `/analysis/kitchen-cost` endpoint:
 1. **食材损耗分析** — wastage trend, top-waste ingredients, wastage rate (loss / requisition cost)
@@ -58,9 +58,9 @@ Phase IIb delivers **4 reports** in a single composite `/analysis/kitchen-cost` 
 
 This is intentionally *not* a full P&L (that needs accounting data we don't have for restaurants — Phase IIc territory). Phase IIb is the cheapest, fastest "cost story" we can ship using only existing data. **The biggest risk is data availability**: prior audits (`docs/qa-audits/2026-05-11-restaurant-data-readiness-audit.md §1.4`) suggest most chains do not actively log wastage/requisition events through Cretas. The spec accepts this and mandates a fully graceful empty-state UX (§5.6).
 
-**Effort**: 5-8 days total — 1 backend Python PR (new `analysis_restaurant_ops.py` module) + 1 frontend Vue PR (new `RestaurantKitchenCostContent.vue` sub-component + new tab in `FinanceAnalysis.vue`) + 1 nginx ops PR (extend allowlist to `/smart-bi/analysis/kitchen-cost`).
+**Effort**: 6-9 days total — 1 backend Python PR (new `analysis_restaurant_ops.py` module, 3 days) + 1 frontend Vue PR (new `RestaurantKitchenCostContent.vue` sub-component + AnalysisType enum extension + 3 force-redirect-to-profit guards removed in `FinanceAnalysis.vue`, 2-3 days incl. **+1 day for tab restructure** since IIa hides tab switcher for restaurant tenants and force-redirects to `'profit'`) + 1 nginx ops PR (extend single shared snippet `smart-bi-routing.conf`, 0.5 day).
 
-**Gating**: Phase IIa ship ✅ + Steve sign-off on OQ-2 (gate on real data or ship empty-state) + OQ-IIB-NEW (estimated-cost denominator acceptable for food cost ratio?) + Pre-IIb data audit (§0.5).
+**Gating**: Phase IIa ship ✅ + Steve OQ-2 ✅ (Hybrid signed off 2026-05-15) + Steve OQ-IIB-NEW ✅ (est_cost + caveat accepted 2026-05-15) + Pre-IIb data audit ✅ (§0.5).
 
 ---
 
@@ -114,14 +114,51 @@ SELECT factory_id,
 FROM agg_restaurant_daily_totals
 GROUP BY factory_id
 ORDER BY factory_id;
+
+-- Track P5: status enum distribution (drives WHERE-clause filter spec)
+-- Run with GROUP BY status to verify spec'd filters land actual data
+SELECT factory_id, status, COUNT(*) FROM fact_restaurant_wastage GROUP BY factory_id, status ORDER BY factory_id, status;
+SELECT factory_id, status, COUNT(*) FROM fact_restaurant_requisition GROUP BY factory_id, status ORDER BY factory_id, status;
+SELECT factory_id, status, COUNT(*) FROM fact_restaurant_stocktaking GROUP BY factory_id, status ORDER BY factory_id, status;
 ```
+
+### Pre-IIb Data Audit Results (2026-05-15)
+
+Sister-chat ran the audit. Coverage matrix (rows in `fact_restaurant_*` per chain):
+
+| chain | wastage | requisition | stocktaking |
+|---|---|---|---|
+| RES_3101_009 (QHJ) | 6 (03-31→04-23) | 0 | 0 |
+| R_XMX_CHAIN | 4 (04-15→04-23) | 8 (04-15→04-24) | 1 (04-24) |
+| R_GML_DEMO | 0 | 0 | 0 |
+| 13 其他 R_*_REAL | 0 | 0 | 0 |
+
+**Track P3 / fact_cost_line**: empty for ALL factories (not just restaurants — OQ-1 / OQ-3 closure: no alternate path).
+
+**Track P5 status enum actual values** (prod, all factories combined):
+- `fact_restaurant_wastage.status`: `APPROVED`, `DRAFT`, `REJECTED`, `SUBMITTED` (spec'd in §2.1 was wrong — only 3 enum values assumed; actual = 4)
+- `fact_restaurant_requisition.status`: `APPROVED`, `REJECTED` (no `PENDING`, no `SUBMITTED`, no `DRAFT`)
+- `fact_restaurant_stocktaking.status`: `APPROVED`, `CANCELLED`, `COMPLETED`, `IN_PROGRESS`
+
+**`wastage_type` actual enum** (prod): `DAMAGED`, `EXPIRED`, `OTHER`, `PROCESSING`, `SPOILED` (5 values; spec'd in old §2.1/§4.2/§5 as `SPOILAGE/EXPIRY/DAMAGE/OTHER` — wrong, now corrected throughout).
+
+**`dim_ingredient.category` reality**: 20 messy free-text values + 31 NULL rows. Top categories: 肉类(12), 蔬菜(10), 水产(9), 调味料(8). Synonym pollution: 蔬菜/蔬菜类, 调味料/调料, 主食/主粮类. NOT the "5 clean categories" originally spec'd. Implementation must normalize via Python-side dict mapping + NULL → "其他" (see §2.1 normalization rules + §1.4 caveat).
+
+**Steve OQ-2 verdict (signed off 2026-05-15)**: **Hybrid path**:
+- Showcase chains: R_XMX_CHAIN renders 3-table real data; RES_3101_009 renders wastage real data + ratio/requisition/stocktaking empty-state per-section
+- 13 empty chains (R_GML_DEMO + 12 others): render whole-tab `SmartBIEmptyState` (mirrors 14 R_*_REAL onboarding-blocked pattern from IIa)
+- **NOT gate on ETL populating data** — ETL doesn't push events; we wait indefinitely if we gate. Ship empty-state-graceful + showcase the chains that DO have data.
+
+**Steve OQ-IIB-NEW verdict (signed off 2026-05-15)**: accept `est_cost` as denominator + ratio numerator, surface caveat in `foodCostRatio.dataCaveats` (§7.2).
+
+**Steve OQ-1 verdict (signed off 2026-05-15)**: N/A — `fact_cost_line` confirmed empty for ALL factories (not restaurant-specific); no fallback path exists for any tenant. Phase IIc remains gated until cost ingestion implemented.
 
 ### Acceptance criteria (gate Phase IIb dispatch)
 
 The audit output feeds the **OQ-2 decision**:
 
 - **Branch A (any chain has real data)**: If ≥1 chain has non-zero rows in both `fact_restaurant_wastage` AND `fact_restaurant_requisition` (with overlapping date range so wastage rate can compute), Phase IIb dispatchable as full-feature. That chain becomes the Phase IIb verification target.
-- **Branch B (only QHJ seed has data)**: If only `RES_3101_009` (seeded by `V20260513_03__qhj_kitchen_ops_seed.sql` or similar) has wastage rows but no R_*_REAL chain does, Steve decides:
+- **Branch B (only QHJ seed has data)**: If only `RES_3101_009` (seeded by `backend/python/smartbi/database/migrations/2026_04_25_qhj_demo_seed.sql` and its v2-v5 follow-ups) has wastage rows but no R_*_REAL chain does, Steve decides:
   - **B1**: ship empty-state-graceful (UI renders empty CTA for 14 onboarding-blocked chains, real charts for QHJ demo) — recommended, low-risk
   - **B2**: defer Phase IIb until ≥1 R_*_REAL chain has real ops data (gates on customer adoption, not engineering work)
 - **Branch C (no chain has any ops data at all, including QHJ)**: Defer Phase IIb entirely. Phase IIb spec stays valid as design artifact; no dispatch.
@@ -151,7 +188,7 @@ Per `docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md §3
 - Backend: `_restaurant_sales_dispatch()` + `_restaurant_finance_overview()` in `analysis_sales.py` / `analysis_finance.py`
 - Frontend: restaurant blocks in `SalesAnalysis.vue` + `FinanceAnalysis.vue` (under `v-if="isRestaurantTenant"`)
 - Nginx: `(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|sales)` allowlist
-- RLS pattern: WHERE-clause + `auth_middleware.py:220` GUC pool-setup-callback (per `reference_smartbi_rls_via_auth_middleware_guc.md`)
+- RLS pattern: WHERE-clause + `auth_middleware.py:220 (set_factory_id ContextVar)` + `smartbi/tenant_ctx.py` pool-setup-callback that issues `set_config('app.factory_id', ...)` per connection (per `reference_smartbi_rls_via_auth_middleware_guc.md` + HARD rule `feedback_test_rls_with_real_pool_not_psql_reset.md` — psql RESET tests do NOT exercise pool sentinel branch)
 
 Customer verified: `RES_3101_009` QHJ chain shows ¥20.6M revenue end-to-end in prod after PR #647 COALESCE follow-up.
 
@@ -192,10 +229,10 @@ Phase IIb deliberately stays in the **operational cost** lane — the costs the 
 | 食材损耗趋势 (daily/weekly) | `fact_restaurant_wastage` + `agg_restaurant_daily_totals.wastage_cost_total` | IIb | Gracefully empty for chains not logging |
 | Top-waste 食材 (ingredient ranking) | `fact_restaurant_wastage` JOIN `dim_ingredient` | IIb | Limit top 10 |
 | 损耗率 (% of requisition cost) | `wastage_cost / requisition_cost` per period | IIb | Estimated denominator (see OQ-IIB-NEW) |
-| 领料成本趋势 by category | `fact_restaurant_requisition.est_cost` GROUP BY `dim_ingredient.category` | IIb | Category = 肉类/蔬菜/主食/汤料/调料 |
+| 领料成本趋势 by category | `fact_restaurant_requisition.est_cost` GROUP BY `dim_ingredient.category` | IIb | Category is free-text in prod (20 distinct values + 31 NULL rows); Python-side normalization required: synonym merge (蔬菜+蔬菜类→蔬菜, 调味料+调料→调味料, 主食+主粮类→主食), NULL→"其他", Top-5 + "其他" bucket. UI tooltip: "类别基于食材主数据，部分门店未分类项归入 '其他'." |
 | 盘点差异报告 | `fact_restaurant_stocktaking.difference_qty/cost` | IIb | Pos = surplus, Neg = shortage |
 | 食材成本占比 (food cost ratio) | `requisition.est_cost / pos.actual_receive` | IIb | Benchmark alert GREEN/YELLOW/RED |
-| 毛利率 (P&L gross margin) | **Data gap**: needs `fact_cost_line` | IIc | OQ-3 unresolved |
+| 毛利率 (P&L gross margin) | **Data gap**: `fact_cost_line` confirmed empty for ALL factories (not just restaurants) per 2026-05-15 Pre-IIb audit. No replacement source. | IIc | OQ-3 still unresolved; OQ-1 closed N/A. Phase IIb uses `est_cost` + caveat instead. |
 | 人工/租金/水电 cost breakdown | **Data gap**: same | IIc | OQ-3 unresolved |
 
 ---
@@ -207,33 +244,47 @@ Phase IIb deliberately stays in the **operational cost** lane — the costs the 
 All tables already exist; no schema migrations required for Phase IIb. Source: `backend/python/smartbi/database/migrations/2026_04_24_silver_restaurant_ops.sql`.
 
 **`fact_restaurant_wastage`** — kitchen spoilage/damage events
-- Columns used: `factory_id`, `date`, `ingredient_id`, `wastage_type` (EXPIRED/DAMAGED/SPOILED/PROCESSING/OTHER), `quantity`, `estimated_cost`, `reason`
+- Columns used: `factory_id`, `date`, `ingredient_id`, `wastage_type` (actual prod enum 2026-05-15: `DAMAGED`, `EXPIRED`, `OTHER`, `PROCESSING`, `SPOILED` — 5 values; old spec wrote `SPOILAGE/EXPIRY/DAMAGE/OTHER`, was wrong), `quantity`, `estimated_cost`, `reason`, `status` (actual prod enum: `APPROVED`, `DRAFT`, `REJECTED`, `SUBMITTED`)
 - Index: `idx_fact_wastage_factory_date`, `idx_fact_wastage_factory_type`, `idx_fact_wastage_factory_ingredient`
 - RLS: `tenant_isolation` policy USING `factory_id = current_setting('app.factory_id', true)`
 - Grain: 1 row per wastage event (typically 0-50 events/day per chain)
+- **Status filter**: `status IN ('APPROVED', 'SUBMITTED')` — include approved + submitted-not-yet-rejected events. Exclude `DRAFT` (incomplete) and `REJECTED`.
 
 **`fact_restaurant_requisition`** — kitchen ingredient pull orders
-- Columns used: `factory_id`, `date`, `ingredient_id`, `type` (PRODUCTION/MANUAL), `status` (DRAFT/SUBMITTED/APPROVED/REJECTED), `requested_qty`, `actual_qty`, `est_cost`
+- Columns used: `factory_id`, `date`, `ingredient_id`, `type` (PRODUCTION/MANUAL), `status` (actual prod enum 2026-05-15: `APPROVED`, `REJECTED` — only 2 values; no `PENDING`/`SUBMITTED`/`DRAFT`), `requested_qty`, `actual_qty`, `est_cost`
 - Index: `idx_fact_req_factory_date`, `idx_fact_req_factory_ingredient`, `idx_fact_req_factory_status`
 - RLS: same `tenant_isolation` pattern
 - Grain: 1 row per requisition line item
-- **Status filter**: only `APPROVED` requisitions contribute to cost trend (`DRAFT`/`SUBMITTED`/`REJECTED` excluded). Spec'd here to avoid Sister-chat re-deciding ad-hoc.
+- **Status filter**: `status = 'APPROVED'` — only approved requisitions contribute to cost trend (`REJECTED` excluded).
 
 **`fact_restaurant_stocktaking`** — inventory variance
-- Columns used: `factory_id`, `date`, `ingredient_id`, `status` (IN_PROGRESS/COMPLETED/CANCELLED), `system_qty`, `actual_qty`, `difference_qty`, `difference_cost`
+- Columns used: `factory_id`, `date`, `ingredient_id`, `status` (actual prod enum 2026-05-15: `APPROVED`, `CANCELLED`, `COMPLETED`, `IN_PROGRESS`), `system_qty`, `actual_qty`, `difference_qty`, `difference_cost`
 - Index: `idx_fact_stock_factory_date`, `idx_fact_stock_factory_ingredient`
-- **Status filter**: only `COMPLETED` stocktakings contribute (per business logic — in-progress counts aren't final)
+- **Status filter**: `status IN ('COMPLETED', 'APPROVED')` — both are real completion signals (`COMPLETED` = stocktaking finished; `APPROVED` = reviewed/locked). Exclude `IN_PROGRESS` (counts not final) and `CANCELLED`.
 - `difference_qty < 0` means shortage (missing inventory); `difference_qty > 0` means surplus
 - `difference_cost` is always positive: `ABS(difference_qty) × unit_price` per Silver schema comment
 
 **`dim_ingredient`** — ingredient metadata for joins
 - Columns used: `ingredient_id` (PK), `factory_id`, `name`, `category`, `unit_price`, `shelf_life_days`
-- Categories observed in seed data: `肉类` (meat), `蔬菜` (vegetable), `主食` (staple), `汤料` (soup base), `调料` (seasoning)
+- **Category reality (prod 2026-05-15)**: 20 distinct free-text values + 31 NULL rows. Top values: `肉类`(12), `蔬菜`(10), `水产`(9), `调味料`(8). Synonym pollution: `蔬菜` vs `蔬菜类`, `调味料` vs `调料`, `主食` vs `主粮类`. The "5 clean categories" originally spec'd does NOT match prod.
+- **Category normalization in Python (REQUIRED for `byCategory` aggregation)**:
+  ```python
+  CATEGORY_NORMALIZE = {
+      "蔬菜类": "蔬菜",
+      "调料": "调味料",
+      "主粮类": "主食",
+      # ...extend as new synonyms surface
+  }
+  def _normalize_category(raw: Optional[str]) -> str:
+      if raw is None or raw.strip() == "":
+          return "其他"
+      raw = raw.strip()
+      return CATEGORY_NORMALIZE.get(raw, raw)
+  ```
+- After normalization: Top-5 categories + `"其他"` bucket. UI tooltip: "类别基于食材主数据，部分门店未分类项归入 '其他'."
 - RLS: same `tenant_isolation`
 
-**`fact_pos_transaction`** (Phase IIa already reads this) — denominator for food cost ratio
-- Column used: `actual_receive` (net of refunds; mirror IIa convention)
-- Phase IIb queries SUM(actual_receive) per period for the ratio calculation
+**`fact_pos_transaction`** (Phase IIa already reads this) — NOT read directly by Phase IIb; see §2.2 `agg_daily` for revenue source.
 
 ### 2.2 Gold Layer (read from when available)
 
@@ -248,7 +299,15 @@ Source: `backend/python/smartbi/database/migrations/2026_04_24_gold_restaurant_o
 - Columns: `factory_id`, `date`, `kpi_kind`, `dim_value_id` (BIGINT, ingredient_id or 0), `dim_value_str` (VARCHAR, category or ''), `value_num`
 - PK: `(factory_id, date, kpi_kind, dim_value_id, dim_value_str)`
 - Used for Top-N rankings and category breakdowns where pre-aggregated
-- **Sister-chat note**: query the EAV `kpi_kind` codes by inspecting populated rows for `RES_3101_009`; spec does not enumerate them because they evolve per materializer version
+- **`kpi_kind` codes — migration declared vs prod actual (DRIFT)**:
+  - Migration `2026_04_24_gold_restaurant_ops.sql:9-16` declares 7 codes: `requisition_qty`, `requisition_cost`, `wastage_qty`, `wastage_cost`, `stocktaking_diff_qty`, `stocktaking_diff_cost`, `recipe_line_count`
+  - Pre-IIb prod audit (2026-05-15) shows materializer actually emits **5 codes**: `requisition_cost`, `requisition_qty`, `stocktaking_shortage_qty`, `wastage_cost_by_type`, `wastage_qty`
+  - **Migration comment ↔ materializer emit are out of sync** (`wastage_cost` vs `wastage_cost_by_type`; `stocktaking_diff_qty` vs `stocktaking_shortage_qty`). Follow-up tracking issue recommended (organizer to file).
+  - **Spec locks IIb on prod actual 5 codes** (data is the truth, not the comment). IIb consumes 4 of them: `requisition_cost` (Section C category trend), `wastage_cost_by_type` (Section B byType pie), `wastage_qty` (Section B top-waste qty), `stocktaking_shortage_qty` (Section D variance summary).
+
+**`agg_daily`** (Phase IIa Gold revenue rollup) — **PRIMARY revenue source for `foodCostRatio` denominator**
+- Columns used: `factory_id`, `date`, `actual_receive`, `gross_amount` (fallback)
+- **Phase IIb queries `agg_daily` not `fact_pos_transaction` directly** — mirrors IIa shipped pattern (`_get_restaurant_finance_kpi` in `analysis_finance.py:3312-3328` uses `COALESCE(SUM(actual_receive), SUM(gross_amount), 0)`). Mixing Silver POS + Gold ops breaks parity and breaks IIa's COALESCE fallback discipline.
 
 **`agg_restaurant_product_cost`** — food cost per dish (snapshot)
 - Columns: `factory_id`, `product_id`, `food_cost`, `has_price_data`
@@ -256,10 +315,18 @@ Source: `backend/python/smartbi/database/migrations/2026_04_24_gold_restaurant_o
 
 ### 2.3 Materializer State (read-write boundary clarification)
 
-Per IIa spec §0.5 finding: `GoldMaterializer` (gated by `SMARTBI_ENABLE_SILVER_DUAL_WRITE=1` env flag) writes Gold tables incrementally on each Bronze upload. Restaurant ops Silver tables (`fact_restaurant_wastage` etc.) are written **directly by the ERP UI** when kitchen staff log events — not through Bronze upload. Therefore:
-- `agg_restaurant_daily_totals` and `agg_restaurant_daily_ops` are materialized via a different code path: `RestaurantOpsMaterializer` (verify by grep — Sister-chat task). If that materializer is not running in prod, Phase IIb must fall back to Silver scans for trend charts.
-- **Sister-chat impl must verify** (during cycle-1 audit): does the restaurant ops materializer run on each Silver write, or batch-nightly, or never? If never, Phase IIb queries Silver directly (acceptable for now — at 0-50 events/day, scans are fast).
-- **Fallback policy**: query Gold first; if `agg_restaurant_daily_totals` returns 0 rows for the date range but `fact_restaurant_wastage` has rows, fall back to Silver scan. Log a WARN so we know to fix the materializer.
+Per IIa spec §0.5 finding: `GoldMaterializer` (gated by `SMARTBI_ENABLE_SILVER_DUAL_WRITE=1` env flag) writes Gold tables incrementally on each Bronze upload. Restaurant ops Silver tables (`fact_restaurant_wastage` etc.) are written **directly by the ERP UI** when kitchen staff log events — not through Bronze upload.
+
+**Restaurant ops Gold ETL — actual prod impl (verified 2026-05-15)**:
+- Code path: **module function** `run_full_etl(...)` in `backend/python/smartbi/gold/restaurant_ops_etl.py:746` (NOT a class — the cycle-0 draft incorrectly named it `RestaurantOpsMaterializer`).
+- Orchestration: hourly leader-only task `_run_restaurant_ops_etl_forever()` in `backend/python/main.py:464`, spawned via `asyncio.create_task(...)` at line 567.
+- Env flag: `RESTAURANT_OPS_ETL_ENABLED` (default `"true"` per `main.py:456`). Disabled = no Gold materialization; Phase IIb falls to Silver.
+- Retry wrapper: `run_full_etl_with_retry` at line 817 — 3 retries + failure persistence to `restaurant_etl_failures` table.
+
+**Phase IIb read strategy**:
+- **Main path**: Gold-first query (`agg_restaurant_daily_totals` for daily totals trend; `agg_restaurant_daily_ops` for EAV breakdowns by category / wastage_type / shortage).
+- **Silver fallback**: **only** when the hourly leader task has crashed mid-cycle or is disabled (non-routine condition). At 0-50 events/day per chain, indexed scans on Silver are <100ms — acceptable temporary fallback.
+- **Fallback trigger**: if `agg_restaurant_daily_totals` returns 0 rows for the date range AND `fact_restaurant_wastage` has rows in that range, log WARN `restaurant_ops_etl_drift_detected` and fall through to Silver scan.
 
 ### 2.4 What Is Missing for Each Sub-Report
 
@@ -268,7 +335,7 @@ Per IIa spec §0.5 finding: `GoldMaterializer` (gated by `SMARTBI_ENABLE_SILVER_
 | 食材损耗分析 | `fact_restaurant_wastage` rows + `agg_restaurant_daily_totals.wastage_cost_total` | Most chains zero rows; empty-state UX critical |
 | 领料成本趋势 | `fact_restaurant_requisition` rows | Same risk as wastage |
 | 盘点差异报告 | `fact_restaurant_stocktaking` rows | Same risk; stocktakings are episodic (monthly?), not daily |
-| 食材成本占比 | needs BOTH `fact_restaurant_requisition.est_cost` AND `fact_pos_transaction.actual_receive` | If requisition data missing, denominator broken |
+| 食材成本占比 | needs BOTH `fact_restaurant_requisition.est_cost` AND `agg_daily.actual_receive` (Gold with `gross_amount` COALESCE fallback per IIa) | If requisition data missing, denominator broken |
 
 ---
 
@@ -284,7 +351,7 @@ Per IIa spec §0.5 finding: `GoldMaterializer` (gated by `SMARTBI_ENABLE_SILVER_
 3. **盘点差异报告** (`stocktakingVariance`)
 4. **食材成本占比** (`foodCostRatio`) with benchmark alert level
 
-**Data sources**: existing Silver + Gold restaurant ops tables (no migrations). Joins `dim_ingredient` for names/categories. Reads `fact_pos_transaction` for the ratio denominator.
+**Data sources**: existing Silver + Gold restaurant ops tables (no migrations). Joins `dim_ingredient` for names/categories. Reads **`agg_daily`** (not `fact_pos_transaction`) for the ratio denominator — mirrors IIa shipped pattern (`analysis_finance.py:3312-3328`).
 
 **Effort**: 5-8 days = 1 backend Python PR (3 days) + 1 frontend Vue PR (2 days) + 1 nginx ops PR (0.5 day) + Pre-IIb data audit (0.5 day) + active E2E + cycle-1/cycle-2 audit buffers (1-2 days).
 
@@ -342,6 +409,7 @@ Mirrors Phase IIa polymorphic dispatch pattern from `backend/python/smartbi_comp
         {"type": "PROCESSING", "totalCost": 580.00, "eventCount": 10},
         {"type": "OTHER", "totalCost": 200.00, "eventCount": 4}
       ],
+      "_note": "wastage_type enum (verified prod 2026-05-15): DAMAGED / EXPIRED / OTHER / PROCESSING / SPOILED — 5 values. Old draft listed SPOILAGE/EXPIRY/DAMAGE/OTHER which was wrong.",
       "trend": [
         {"period": "2026-04-15", "totalCost": 280.00, "eventCount": 5}
       ],
@@ -388,7 +456,8 @@ Mirrors Phase IIa polymorphic dispatch pattern from `backend/python/smartbi_comp
       },
       "alertLevel": "YELLOW",
       "alertMessage": "食材成本占比偏高（34.4%），建议优化领料计划",
-      "dataSource": "fact_restaurant_requisition+fact_pos_transaction"
+      "dataCaveats": ["使用领料估算成本（est_cost），非会计实际成本"],
+      "dataSource": "agg_daily+fact_restaurant_requisition"
     },
     "generatedAt": "2026-05-15T10:30:00"
   },
@@ -402,8 +471,9 @@ Mirrors Phase IIa polymorphic dispatch pattern from `backend/python/smartbi_comp
 - All monetary values are plain numbers via `_decimal_to_number()` (Rule 4)
 - All percentages provided in BOTH ratio form (0-1 decimal) AND percent form (0-100) — frontend chooses
 - `generatedAt` uses `_java_isoformat()` (Rule 11)
-- `dataSource` field per sub-section transparently shows which table powered the numbers (helps debugging + customer trust)
+- `dataSource` field per sub-section transparently shows which table powered the numbers (helps debugging + customer trust). **`foodCostRatio.dataSource` MUST be `"agg_daily+fact_restaurant_requisition"`** — mirror IIa shipped pattern (`analysis_finance.py:3312-3328`) which uses `agg_daily` (Gold) with `COALESCE(SUM(actual_receive), SUM(gross_amount), 0)` fallback. **Do NOT mix `fact_pos_transaction` (Silver) with Gold ops tables** — that breaks parity with IIa and breaks the COALESCE fallback discipline confirmed in PR #647.
 - `groupBy` parameter shapes the `trend.period` granularity: `day` → `YYYY-MM-DD`, `week` → `YYYY-Www` (Rule 2 calendar-year + ISO-week), `month` → `YYYY-MM`
+- **Key order policy**: Response envelope is built from a Python literal dict in `_restaurant_kitchen_cost_dispatch()`. Python dict insertion order = JSON serialization order. **Frontend MUST NOT depend on key order** — `RestaurantKitchenCostContent.vue` should only read named fields. No Java Map.of analog (Phase IIb is Python-native; Rule 8 N/A).
 - **Alert level computation** (mirror Rule 7 for non-integer thresholds — use Decimal comparison, NOT `float()`):
   - `ratio < 0.30` → `GREEN`
   - `0.30 ≤ ratio < 0.35` → `GREEN` with neutral message
@@ -460,18 +530,43 @@ Sister-chat impl must add unit tests covering each of these 7 conditions before 
 
 ### 5.1 Strategy: New Sub-Component, New Tab
 
-Phase IIa added restaurant blocks inline to `FinanceAnalysis.vue` + `SalesAnalysis.vue`. Per IIa §5.8 LOC concern, both files are now over 3000 LOC. **Phase IIb extracts a sub-component** rather than further bloating the parent file:
+Phase IIa added restaurant blocks inline to `FinanceAnalysis.vue` + `SalesAnalysis.vue`. Per IIa §5.8 LOC concern, both files are now approaching 3000 LOC (2984 lines). **Phase IIb extracts a sub-component** rather than further bloating the parent file:
 
 **Decision**: Create new `web-admin/src/components/smartbi/RestaurantKitchenCostContent.vue`. Add a new "成本运营" tab to `FinanceAnalysis.vue` (restaurant view only) that mounts this sub-component when active. Keeps `FinanceAnalysis.vue` parent small — only an `<el-tab-pane>` import addition + the existing `v-if="isRestaurantTenant"` block adjustment.
 
 ### 5.2 FinanceAnalysis.vue Changes
 
-1. Within the existing `v-if="isRestaurantTenant"` restaurant view block, the tab layout becomes:
-   - Tab: **营收概览** (existing, from Phase IIa) — renders `RestaurantFinanceContent.vue` or inline as today
-   - Tab: **成本运营** (NEW for Phase IIb) — renders `<RestaurantKitchenCostContent :factoryId="factoryId" :dateRange="dateRange" />`
-2. Add import: `import RestaurantKitchenCostContent from '@/components/smartbi/RestaurantKitchenCostContent.vue'`
-3. No template changes outside the tab strip — sub-component handles all internal layout
-4. The Phase IIa `phaseIIbPreview` block in the finance overview tab (which currently shows `WASTAGE_NOT_TRACKED` placeholder per IIa §4.3) gets a "查看 成本运营详情 →" cross-link button that switches to the 成本运营 tab
+⚠️ **Structural UX change required**. Phase IIa intentionally **hides the tab switcher for restaurant tenants** and force-redirects `analysisType` to `'profit'` in 3 places. Phase IIb must reverse this for restaurant tenants:
+
+**Required edits to `web-admin/src/views/smart-bi/FinanceAnalysis.vue`**:
+
+1. **Extend `AnalysisType` enum** (line 78-79): add `'kitchen-cost'`:
+   ```ts
+   type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget' | 'kitchen-cost';
+   const validTabs: AnalysisType[] = ['profit', 'cost', 'receivable', 'payable', 'budget', 'kitchen-cost'];
+   ```
+
+2. **Remove / whitelist the 3 force-redirect-to-profit guards** (current lines 85-87, 88-92, 95-99):
+   - Line 85-87 (initial mount): change to allow `'profit'` OR `'kitchen-cost'` for restaurant tenants
+   - Lines 88-92 (`watch route.query.tab`): same whitelist
+   - Lines 95-99 (`watch analysisType`): same whitelist
+   - Pattern: replace `if (isRestaurantTenant.value && analysisType.value !== 'profit')` with `if (isRestaurantTenant.value && !['profit', 'kitchen-cost'].includes(analysisType.value))`
+
+3. **Restore tab switcher visibility for restaurant tenants** (verify ~line 581 `allAnalysisTypes` + the v-if guarding tab switcher template). Restaurant tenants must see **TWO** tab choices: 营收概览 (profit) + 成本运营 (kitchen-cost). They must NOT see cost/receivable/payable/budget.
+
+4. **Add `'kitchen-cost'` entry to `allAnalysisTypes`** (~line 581):
+   ```ts
+   { type: 'kitchen-cost' as AnalysisType, label: '成本运营', icon: <suitable icon>, restaurantOnly: true },
+   ```
+   Then filter to only show `restaurantOnly` tabs for restaurant tenants and `!restaurantOnly` tabs for factory tenants.
+
+5. **Mount `RestaurantKitchenCostContent` under `v-else-if="isRestaurantTenant && phaseIIbEnabled && analysisType === 'kitchen-cost'"`** — sibling to the existing `<RestaurantFinanceContent v-else-if="isRestaurantTenant && phaseIIaEnabled" />` block. Phase IIa block becomes effectively gated by `analysisType === 'profit'` (the 营收概览 tab).
+
+6. **Add import**: `import RestaurantKitchenCostContent from '@/components/smartbi/RestaurantKitchenCostContent.vue'`
+
+7. **Cross-link** from the Phase IIa `phaseIIbPreview` block (in 营收概览 tab) → switch `analysisType.value = 'kitchen-cost'` button "查看 成本运营详情 →"
+
+**Effort impact**: +1 day frontend (tab restructure + 3 guard rewrites + Phase IIa block re-gating). Reflected in §0 TL;DR effort 6-9 days.
 
 ### 5.3 New Component: RestaurantKitchenCostContent.vue
 
@@ -496,11 +591,11 @@ Phase IIa added restaurant blocks inline to `FinanceAnalysis.vue` + `SalesAnalys
 3. **Section B: 食材损耗分析**:
    - Trend chart (`DynamicChartRenderer` line/bar): daily/weekly/monthly wastage cost
    - Top 10 ingredients table (`el-table`): ingredient × cost × qty × event count
-   - Pie chart: wastage by type (EXPIRED/DAMAGED/SPOILED/PROCESSING/OTHER)
+   - Pie chart: wastage by type (DAMAGED / EXPIRED / OTHER / PROCESSING / SPOILED — verified prod 2026-05-15)
 
 4. **Section C: 领料成本趋势**:
    - Trend chart: daily/weekly/monthly requisition cost
-   - Stacked bar or pie: by category (肉类/蔬菜/主食/汤料/调料)
+   - Stacked bar or pie: by normalized category (synonyms merged via Python-side `CATEGORY_NORMALIZE` per §2.1; Top-5 + "其他" bucket; NULL rows folded into "其他")
 
 5. **Section D: 盘点差异报告**:
    - Summary KPIs: 总短缺金额 / 总盈余金额 / 净差异
@@ -517,9 +612,10 @@ Phase IIa added restaurant blocks inline to `FinanceAnalysis.vue` + `SalesAnalys
 ### 5.4 Tab Structure (final)
 
 **FinanceAnalysis.vue** restaurant view (post Phase IIb):
-- Tab: 营收概览 (Phase IIa, existing)
-- Tab: **成本运营** (Phase IIb, NEW — mounts `RestaurantKitchenCostContent.vue`)
-- ~~利润/成本/应收/应付/预算~~ — hidden for restaurant tenants (unchanged from IIa)
+- Restaurant tenants now see a tab switcher with **TWO** options (reversing the IIa "hide tab switcher + force profit" pattern):
+  - Tab: **营收概览** (`analysisType === 'profit'`, Phase IIa) — renders `RestaurantFinanceContent.vue` block via `v-else-if="isRestaurantTenant && phaseIIaEnabled && analysisType === 'profit'"`
+  - Tab: **成本运营** (`analysisType === 'kitchen-cost'`, Phase IIb, NEW) — mounts `RestaurantKitchenCostContent.vue` via `v-else-if="isRestaurantTenant && phaseIIbEnabled && analysisType === 'kitchen-cost'"`
+- ~~利润/成本/应收/应付/预算~~ — still hidden for restaurant tenants (factory-only). Tab switcher entries filtered via `restaurantOnly` flag per §5.2.
 
 **SalesAnalysis.vue** restaurant view: unchanged from IIa (no Phase IIb additions to sales surface).
 
@@ -538,15 +634,18 @@ Phase IIa added restaurant blocks inline to `FinanceAnalysis.vue` + `SalesAnalys
 
 **Empty-state hierarchy** (most specific → most generic):
 
-1. **Whole tab empty** (all 4 reports have zero rows): Render `SmartBIEmptyState` covering the entire tab with primary CTA:
+1. **Whole tab empty** (all 4 reports have zero rows): Render `SmartBIEmptyState` covering the entire tab with **single** primary CTA:
    ```
    暂无厨房运营数据
 
    在领料管理 / 损耗记录 / 盘点管理模块录入业务数据后，此处将自动分析。
 
-   [前往领料管理]  [前往损耗记录]
+   [前往运营管理]
    ```
-   Buttons deeplink to the relevant Cretas ERP screens (router.push). Don't use external links.
+   - **Single CTA only**. The shared `SmartBIEmptyState` component (`web-admin/src/components/smartbi/SmartBIEmptyState.vue:163-178`) Props expose `actionText?: string` (singular) and emit `action: []` (singular). It does NOT support dual buttons. Saves ~30 LOC vs. inventing dual-button variant.
+   - Button click → `router.push('/restaurant/requisitions')` (the 领料管理 list view, verified path in `web-admin/src/router/index.ts:828`). This is the most likely first action a restaurant operator will take.
+   - Companion module routes for in-text deeplinks (used in Section-level empty states if needed): `/restaurant/wastage` (损耗管理, router line 834), `/restaurant/stocktaking` (盘点管理, router line 846).
+   - Don't use external links.
 
 2. **Single section empty** (e.g. wastage has data but stocktaking doesn't): Section renders its title + a small inline empty state:
    ```
@@ -571,7 +670,7 @@ If Phase IIb ships and customers report wrong numbers / broken UX:
 
 ### 5.8 File LOC impact
 
-- `FinanceAnalysis.vue`: +30 LOC (tab pane + import). Stays under 3500 LOC ceiling.
+- `FinanceAnalysis.vue`: currently approaching 3000 LOC (2984 lines). +60-80 LOC (tab pane + import + AnalysisType enum + 3 guard rewrites + Phase IIa block re-gating per §5.2). Stays under 3500 LOC ceiling.
 - `RestaurantKitchenCostContent.vue` (new file): estimated 600-800 LOC.
 
 No risk to compile/HMR thresholds.
@@ -582,23 +681,38 @@ No risk to compile/HMR thresholds.
 
 ### 6.1 Nginx Routing Required for Phase IIb
 
-Phase IIa added `(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|sales)(/.*)?` to web-admin.conf + api.cretaceousfuture.com.conf + admin.cretaceousfuture.com.conf (per `feedback_nginx_3_vhost_sync.md` HARD rule — three vhosts must sync). Phase IIb extends this to cover the new path.
+Phase IIa added the `(finance|sales)` allowlist to a **shared snippet** that all 3 vhosts include. Phase IIb edits **ONE file** and all 3 vhosts pick up the change automatically.
 
-**Phase IIb nginx change**: Update the location regex to include `kitchen-cost`:
+**Phase IIb nginx change** — edit **one** file:
+
+- Repo path: `ops/nginx-vhosts-139/smart-bi-routing.conf`
+- Server path: `/www/server/nginx/conf/snippets/smart-bi-routing.conf`
+- Block 5 (line ~89-101): current regex is `(finance|sales)`; change to `(finance|sales|kitchen-cost)`.
 
 ```nginx
+# 5. Phase IIa restaurant finance/sales (2026-05-14) → IIb adds kitchen-cost (2026-05-15+)
 location ~ ^/api/mobile/(R_[^/]+|RES_[^/]+|R[0-9]+)/smart-bi/analysis/(finance|sales|kitchen-cost)(/.*)?$ {
     proxy_pass http://cretas_python;
-    ...
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Authorization $http_authorization;
+    proxy_connect_timeout 300s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 900s;
+    client_max_body_size 500m;
 }
 ```
 
-**Must update all 3 vhosts**:
-- `/www/server/panel/vhost/nginx/web-admin.conf`
-- `/www/server/panel/vhost/nginx/api.cretaceousfuture.com.conf`
-- `/www/server/panel/vhost/nginx/admin.cretaceousfuture.com.conf`
+**Why only one edit** (vs. IIa's 3-vhost separate edits): the 2026-05-15 May 15 nginx incident fix (`feedback_nginx_3_vhost_sync.md` HARD rule) refactored to a shared snippet included from all 3 vhosts (`web-admin.conf` + `api.cretaceousfuture.com.conf` + `admin.cretaceousfuture.com.conf`). Edit the snippet once → all 3 vhosts pick up the change on `nginx -s reload`.
 
-Per the May 15 incident (memory entry "Nginx 3-vhost sync rule HARD"), missing the third vhost causes real customers via DNS to 404 while IP-direct works. Use `scripts/nginx/sync-3-vhosts.py` from the Phase IIa nginx PR or `docs/superpowers/runbooks/nginx-vhost-sync-checklist.md`.
+**Backward compatibility note**: The HARD rule `feedback_nginx_3_vhost_sync.md` is still in force for anyone who bypasses the snippet and inlines location blocks directly into vhost files. If a vhost has its own inline `/smart-bi/analysis/` block (audit: `grep -rn 'smart-bi/analysis' /www/server/panel/vhost/nginx/ /www/server/nginx/conf/`), that inline block must also be synced. Phase IIb impl should grep first to confirm no inline drift before relying solely on the snippet edit.
+
+**Post-edit verification**:
+- `nginx -t` (config syntax check)
+- `nginx -s reload` (apply)
+- 3 smoke curls — one per vhost — hitting `/api/mobile/RES_3101_009/smart-bi/analysis/kitchen-cost?startDate=2026-04-15&endDate=2026-05-15` and checking the response routes to Python (not the SPA fallback).
 
 **Deploy order** (mirror IIa §6.1 pattern — avoid race where backend ready but frontend not):
 
@@ -620,13 +734,16 @@ All Silver + Gold restaurant ops tables already exist. No `V2026xxxx` migrations
 
 ### 6.3 RLS Pattern Decision
 
-Same decision as IIa §6.3.1: use the WHERE-clause + middleware-GUC belt-and-suspenders pattern. Per `reference_smartbi_rls_via_auth_middleware_guc.md`:
+Same decision as IIa §6.3.1: use the WHERE-clause + middleware-GUC belt-and-suspenders pattern. Per `reference_smartbi_rls_via_auth_middleware_guc.md` + HARD rule `feedback_test_rls_with_real_pool_not_psql_reset.md`:
 
 - `smartbi_user` pool role does NOT have `BYPASSRLS`
-- `auth_middleware.py:220` pool-setup-callback auto-issues `SELECT set_config('app.factory_id', $1, true)` per connection from JWT
-- RLS policies on `fact_restaurant_wastage` / `fact_restaurant_requisition` / `fact_restaurant_stocktaking` / `agg_restaurant_daily_totals` / `agg_restaurant_daily_ops` / `dim_ingredient` all use `factory_id = current_setting('app.factory_id', true)`
+- `auth_middleware.py:220 (set_factory_id ContextVar)` is the entrypoint. The actual SQL `set_config('app.factory_id', $1, true)` is issued by the asyncpg pool setup-callback in `backend/python/smartbi/tenant_ctx.py` (per connection from JWT).
+- Pool default: when ContextVar is unset (bg tasks / system flush paths), the setup-callback writes `INTERNAL_SENTINEL = '__internal__'`. RLS policies branching only on `IS NULL OR = ''` will silently never fire for those paths (see `reference_internal_sentinel_guc.md` — 16-day outage closed by V20260514_01/V20260515_01).
+- RLS policies on `fact_restaurant_wastage` / `fact_restaurant_requisition` / `fact_restaurant_stocktaking` / `agg_restaurant_daily_totals` / `agg_restaurant_daily_ops` / `dim_ingredient` all use `factory_id = current_setting('app.factory_id', true)`.
 
-Sister-chat impl does **NOT** need to add explicit `set_config` calls in restaurant kitchen-cost helpers. Any `/api/mobile/*` request enters via auth middleware → GUC set → RLS auto-scopes. WHERE-clause is added for belt-and-suspenders consistency with IIa pattern (analysis_production.py:190).
+Sister-chat impl does **NOT** need to add explicit `set_config` calls in restaurant kitchen-cost helpers. Any `/api/mobile/*` request enters via auth middleware → ContextVar set → pool setup-callback issues `set_config` → RLS auto-scopes. WHERE-clause is added for belt-and-suspenders consistency with IIa pattern (analysis_production.py:190).
+
+**Testing RLS**: per HARD rule `feedback_test_rls_with_real_pool_not_psql_reset.md`, **do NOT** verify RLS policies via `psql RESET app.factory_id` — that doesn't exercise the pool setup-callback sentinel branch. Use the real asyncpg pool (or in psql, explicitly `SELECT set_config('app.factory_id', '__internal__', true)` before INSERT verification) to catch the sentinel branch.
 
 ### 6.4 Phase IIb Data Backfill
 
@@ -710,7 +827,7 @@ The following are explicitly excluded from Phase IIb:
 - **Supplier-side AP aging for ingredients** — restaurants don't use Cretas AR/AP modules
 - **Cross-tenant comparison** ("集团视角") — same OOS as IIa spec §8
 - **Mobile RN SmartBI views** — SmartBI is web-admin only
-- **Multi-language i18n** — project has no `vue-i18n`
+- **Multi-language i18n** — project has no `vue-i18n` (verified 2026-05-15: `grep -E '"vue-i18n"' web-admin/package.json` returns 0 hits)
 - **业务日 vs 自然日 reconciliation for ops events** — wastage/requisition events use `date` field at 00:00 boundary (civil day). Most kitchens log events during business hours, so boundary impact is minimal. Same OOS as IIa
 - **预测 / forecast on wastage trend** — Phase IIb shows historical; ARIMA/seasonal forecast deferred
 - **告警 / alert push notifications** — Phase IIb computes `alertLevel` GREEN/YELLOW/RED inline; no separate alert subsystem
@@ -726,19 +843,21 @@ The following are explicitly excluded from Phase IIb:
 ### Phase IIb Build Checklist
 
 **Pre-dispatch (organizer):**
-- [ ] **Pre-IIb data audit** (§0.5 Track P) — run SQL on `smartbi_prod_db`, write acceptance memo
-- [ ] Steve sign-off on OQ-2 (gate on real data vs ship empty-state-graceful) based on audit
-- [ ] Steve sign-off on OQ-IIB-NEW (estimated cost denominator acceptable?)
-- [ ] **Cycle-1 audit on this spec** (organizer dispatches sister chat) — verify EAV `kpi_kind` codes exist in `agg_restaurant_daily_ops`; verify `RestaurantOpsMaterializer` runs in prod; verify `fact_restaurant_wastage.store_id` absent (or correct §8 if present)
+- [x] **Pre-IIb data audit** (§0.5 Track P) — completed 2026-05-15 (sister chat). Results in §0.5 "Pre-IIb Data Audit Results" sub-section. Coverage matrix: R_XMX_CHAIN has 3-table data; RES_3101_009 has wastage-only; 13 empty chains.
+- [x] Steve sign-off on OQ-2 — ✅ Hybrid (signed 2026-05-15): ship empty-state-graceful + showcase R_XMX_CHAIN + RES_3101_009.
+- [x] Steve sign-off on OQ-IIB-NEW — ✅ accept `est_cost` + caveat (signed 2026-05-15).
+- [x] **Cycle-1 audit on this spec** — completed 2026-05-15 (sister chat). 4 CRITICAL + 7 IMPORTANT + 5 MINOR findings consolidated into this cycle-2 amend.
+- [ ] **Cycle-3 reviewer pass** (independent mechanical re-audit, expected light)
+- [ ] **Cycle-4 impl-readiness review** (last check before sister-chat impl dispatch)
 
 **Backend (1 PR):**
 - [ ] Create `backend/python/smartbi_compat/api/analysis_restaurant_ops.py`
-- [ ] Implement `get_kitchen_cost_analysis()` router with polymorphic dispatch (mirror `analysis_production.py:446-506`)
-- [ ] Implement `_restaurant_kitchen_cost_dispatch()` orchestrator
+- [ ] Implement `get_kitchen_cost_analysis()` router with polymorphic dispatch (mirror **router pattern** `analysis_production.py:446-506`)
+- [ ] Implement `_restaurant_kitchen_cost_dispatch()` orchestrator (mirror **IIa restaurant dispatcher impl** `analysis_finance.py:3412-3500 (_restaurant_finance_overview)` — including `agg_daily` COALESCE pattern for revenue denominator)
 - [ ] Implement `_get_wastage_analytics()` — query Gold `agg_restaurant_daily_totals` first, fall back to Silver `fact_restaurant_wastage` scan if Gold sparse
 - [ ] Implement `_get_requisition_trend()` — Gold + Silver fallback, GROUP BY `dim_ingredient.category`
 - [ ] Implement `_get_stocktaking_variance()` — Silver scan (no Gold pre-aggregation needed for episodic data)
-- [ ] Implement `_get_food_cost_ratio()` — JOIN `fact_restaurant_requisition` + `fact_pos_transaction` per period; apply Rule 10 intermediate quantize
+- [ ] Implement `_get_food_cost_ratio()` — sum `fact_restaurant_requisition.est_cost` + sum `agg_daily.actual_receive` (with `COALESCE(SUM(actual_receive), SUM(gross_amount), 0)` per IIa shipped `_get_restaurant_finance_kpi` `analysis_finance.py:3312-3328`); apply Rule 10 intermediate quantize at scale 4 before final scale 2
 - [ ] Implement `_compute_alert_level()` helper — Decimal comparison (Rule 7) for 0.30/0.35/0.40 thresholds
 - [ ] Apply Rule 1/4/6/10/11/12 audit checklist per `.claude/rules/python-java-port.md`
 - [ ] Register router in `main.py` (mirror existing analysis modules)
@@ -764,9 +883,10 @@ The following are explicitly excluded from Phase IIb:
 - [ ] `npx vitest run` must pass (per HARD rule `feedback_vitest_invariant_tests_not_run_by_vite_build.md` — invariant tests aren't run by vite build)
 
 **Pre-deploy checklist:**
-- [ ] Confirm `auth_middleware.py:220` GUC pool callback active in prod (per `reference_smartbi_rls_via_auth_middleware_guc.md`)
-- [ ] Confirm `RestaurantOpsMaterializer` running (or Silver fallback policy accepted)
+- [ ] Confirm `auth_middleware.py:220` ContextVar entrypoint + `smartbi/tenant_ctx.py` pool setup-callback active in prod (per `reference_smartbi_rls_via_auth_middleware_guc.md`)
+- [ ] Confirm hourly leader-only `_run_restaurant_ops_etl_forever()` (`main.py:464`, env `RESTAURANT_OPS_ETL_ENABLED`) is running → `agg_restaurant_daily_totals` + `agg_restaurant_daily_ops` populating; if not, Silver fallback path accepted per §2.3
 - [ ] EXPLAIN query plans on `RES_3101_009` for each of the 4 sub-queries; confirm indexed scans, no seq scans
+- [ ] **F002 dev smoke** (D8 finding): F002 manuf factory has the most complete IIb data shape in prod (13 wastage / 14 requisition / 9 stocktaking rows, range 02-11→05-07). Sister-chat may use F002 to dev-smoke all query paths (wastage / requisition / stocktaking / ratio). **Prod cutover does NOT include F002** — factory tenant branch will return `FACTORY_BRANCH_NOT_APPLICABLE` envelope per §4.3 (kitchen-cost is restaurant-only).
 - [ ] Active E2E 15-30 min per stage (HARD rule `feedback_active_e2e_replaces_passive_soak.md`)
 
 **Post-deploy verification:**
@@ -787,7 +907,7 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 | Document | Path | Relationship |
 |---|---|---|
 | Phase IIa spec | `docs/superpowers/specs/2026-05-14-restaurant-phase-ii-analytics-spec.md` | Parent design — this Phase IIb spec extends it |
-| Phase IIa close-out memo | `docs/qa-audits/2026-05-14-phase-iia-shipped-acceptance-memo.md` | Confirms IIa shipped baseline |
+| Phase IIa close-out memo | `docs/superpowers/dispatch/2026-05-14-phase-iia-shipped-acceptance-memo.md` | Confirms IIa shipped baseline |
 | Phase IIa backend ship PR | (PR #633) | Establishes restaurant branch pattern |
 | Phase IIa frontend ship PR | (PR #634) | Establishes `isRestaurantTenant` Vue branching |
 | Phase IIa nginx PR | (PR #641) | 3-vhost allowlist pattern |
@@ -799,12 +919,17 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 | Silver restaurant ops migration | `backend/python/smartbi/database/migrations/2026_04_24_silver_restaurant_ops.sql` | fact_restaurant_wastage/requisition/recipe/stocktaking + dim_ingredient schema |
 | Gold restaurant ops migration | `backend/python/smartbi/database/migrations/2026_04_24_gold_restaurant_ops.sql` | agg_restaurant_daily_totals / agg_restaurant_daily_ops / agg_restaurant_product_cost schema |
 | Silver cost migration | `backend/python/smartbi/database/migrations/2026_05_20_silver_cost.sql` | fact_cost_line schema (Phase IIc prerequisite, not used by IIb) |
-| Polymorphic dispatch pattern | `backend/python/smartbi_compat/api/analysis_production.py:440-506` | The exact pattern this spec extends |
+| Polymorphic dispatch pattern (router) | `backend/python/smartbi_compat/api/analysis_production.py:446-506` | Router pattern this spec mirrors |
+| Restaurant dispatcher impl (IIa) | `backend/python/smartbi_compat/api/analysis_finance.py:3412-3500 (_restaurant_finance_overview)` | IIb dispatcher (`_restaurant_kitchen_cost_dispatch`) mirrors this — incl. `agg_daily` COALESCE pattern at lines 3312-3328 |
+| Restaurant ops ETL (Gold materializer) | `backend/python/smartbi/gold/restaurant_ops_etl.py:746 (run_full_etl)` + `backend/python/main.py:464 (_run_restaurant_ops_etl_forever)` | Hourly leader-only module function (NOT a class). `RESTAURANT_OPS_ETL_ENABLED` env default true |
 | Tenant detection module | `backend/python/smartbi_compat/tenant.py` | `get_tenant_type()` + `TenantType.is_restaurant_tenant` |
 | Python port rules | `.claude/rules/python-java-port.md` | Rules 1-12 compliance requirements (esp. 1/4/6/10/11/12 for IIb) |
-| Nginx 3-vhost sync rule | `~/.claude/projects/.../memory/feedback_nginx_3_vhost_sync.md` | HARD rule — 3 vhosts must sync |
+| Nginx shared snippet | `ops/nginx-vhosts-139/smart-bi-routing.conf` (server: `/www/server/nginx/conf/snippets/smart-bi-routing.conf`) | Single edit → 3 vhosts pick up via include |
+| Nginx 3-vhost sync rule | `~/.claude/projects/.../memory/feedback_nginx_3_vhost_sync.md` | HARD rule — applies to anyone bypassing the snippet (inline location blocks in vhost files) |
 | Nginx vhost sync checklist | `docs/superpowers/runbooks/nginx-vhost-sync-checklist.md` | Operational runbook |
 | RLS via auth_middleware GUC | `~/.claude/projects/.../memory/reference_smartbi_rls_via_auth_middleware_guc.md` | RLS pattern reference |
+| RLS test with real pool | `~/.claude/projects/.../memory/feedback_test_rls_with_real_pool_not_psql_reset.md` | HARD rule — psql RESET tests miss sentinel branch |
+| INTERNAL_SENTINEL GUC | `~/.claude/projects/.../memory/reference_internal_sentinel_guc.md` | `'__internal__'` pool default; RLS policies branching only on NULL/'' miss bg-task path |
 | Vite build CI rule | `~/.claude/projects/.../memory/feedback_vite_build_only_catches_vue_ts_import_paths.md` | HARD rule |
 | Vitest CI rule | `~/.claude/projects/.../memory/feedback_vitest_invariant_tests_not_run_by_vite_build.md` | HARD rule |
 | Active E2E rule | `~/.claude/projects/.../memory/feedback_active_e2e_replaces_passive_soak.md` | HARD rule — 15-30 min per stage |
@@ -822,12 +947,20 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 
 ### 11.2 Open questions / pending dispatch
 
-- [ ] **Steve OQ-2** (carry from IIa spec §3): Gate Phase IIb on at least one chain having real ops data, or ship empty-state-graceful? **Engineering recommendation**: ship empty-state-graceful (Branch B1 in §0.5). Awaits Steve confirm.
-- [ ] **Steve OQ-IIB-NEW**: Is `fact_restaurant_requisition.est_cost` (estimated cost from `requested_qty × ingredient.unit_price`) acceptable as the food cost ratio numerator, or must Phase IIb wait for true accounting cost (Phase IIc)? **Engineering recommendation**: accept estimated cost for IIb, surface caveat in `foodCostRatio.dataCaveats` per §7.2.
-- [ ] **Steve OQ-1** (carry from IIa spec §3): Any restaurant chain has accounting cost data available today? (Informs Phase IIc sequencing; does not block IIb if OQ-IIB-NEW is yes-to-estimated.)
-- [ ] **Engineering — IMMEDIATE**: Dispatch Pre-IIb Data Audit (§0.5 Track P). Phase IIb impl waits on audit results + OQ-2/OQ-IIB-NEW sign-offs.
-- [ ] **Engineering — cycle-1 audit**: Organizer dispatches sister chat to audit this spec. Specifically verify: (a) `RestaurantOpsMaterializer` exists and runs in prod (§2.3); (b) `agg_restaurant_daily_ops` `kpi_kind` codes are observable in `RES_3101_009` Gold rows; (c) `fact_restaurant_wastage.store_id` truly absent (§8 OOS claim); (d) `dim_ingredient.category` categories observed in prod match the 5 listed in §2.1.
-- [ ] **Engineering — after audit + sign-offs**: Phase IIb ready for sister-chat impl dispatch (backend PR / frontend PR / nginx PR).
+- [x] **Steve OQ-2**: ✅ **Hybrid** (signed off 2026-05-15) — ship empty-state-graceful + showcase R_XMX_CHAIN (3-table real data) + RES_3101_009 (wastage real, others empty-state per-section). 13 empty chains see whole-tab `SmartBIEmptyState`. NOT gated on ETL populating events.
+- [x] **Steve OQ-IIB-NEW**: ✅ **Accept est_cost + caveat** (signed off 2026-05-15) — `fact_restaurant_requisition.est_cost` acceptable for IIb food cost ratio. Caveat surfaced in `foodCostRatio.dataCaveats: ["使用领料估算成本（est_cost），非会计实际成本"]`.
+- [x] **Steve OQ-1**: ✅ **N/A** (signed off 2026-05-15) — Pre-IIb audit confirmed `fact_cost_line` empty for ALL factories (not restaurant-specific). No fallback path for any tenant. Phase IIc remains gated on cost ingestion implementation, independent of IIb.
+- [x] **Engineering — Pre-IIb Data Audit**: ✅ completed 2026-05-15 (sister chat). Results in §0.5.
+- [x] **Engineering — cycle-1 audit**: ✅ completed 2026-05-15 (sister chat). 4 CRITICAL + 7 IMPORTANT + 5 MINOR findings consolidated into this cycle-2 amend.
+- [ ] **Engineering — cycle-3 reviewer pass**: independent mechanical re-audit (expected light, 1-2 hours).
+- [ ] **Engineering — cycle-4 impl-readiness**: final check before sister-chat impl dispatch.
+- [ ] **Engineering — impl dispatch**: after cycle-3 + cycle-4, Phase IIb ready for sister-chat impl dispatch (backend PR / frontend PR / nginx PR).
+
+### 11.3 Flagged for cycle-3 / future tracking
+
+- **Migration vs materializer drift** (§2.2 `agg_restaurant_daily_ops`): `kpi_kind` codes declared in migration comment (`wastage_cost`, `stocktaking_diff_qty`, `stocktaking_diff_cost`) do not match prod-emitted codes (`wastage_cost_by_type`, `stocktaking_shortage_qty`). **Organizer recommended to file follow-up tracking issue** to either (a) update migration comment to match materializer, or (b) update materializer to match declared schema. Phase IIb spec locks on prod actual; tracking issue is non-blocking.
+- **`dim_ingredient.category` data hygiene**: prod has 20 free-text values + 31 NULL rows. Phase IIb works around with Python-side normalization (§2.1), but a longer-term cleanup migration (free-text → enum or controlled vocab) is product-side work, not engineering.
+- **`fact_restaurant_wastage.store_id` absence**: §8 OOS claim verified by sister (D6). Per-store breakdown deferred to a future spec when/if `store_id` is added.
 
 ---
 
@@ -835,6 +968,11 @@ Unchanged from IIa spec §9. Phase IIc requires OQ-3 decision + cost ingestion p
 
 ### Audit history
 
-| Cycle | Date | Findings | Key changes applied |
-|---|---|---|---|
-| 0 | 2026-05-15 | (initial draft) | First emission. Awaiting cycle-1 audit. |
+| Cycle | Date | Auditor | Findings | Disposition |
+|---|---|---|---|---|
+| Cycle-0 | 2026-05-15 | Architecture review (initial draft) | — | 840 lines initial draft |
+| Cycle-1 | 2026-05-15 | Sister-chat spec audit | 4 CRITICAL + 7 IMPORTANT + 5 MINOR | All fixed in cycle-2 amend |
+| Pre-IIb data audit | 2026-05-15 | Sister-chat prod SQL | 8 schema drift + Hybrid OQ-2 verdict | Schema fixes in cycle-2 amend; Steve signed off Hybrid 2026-05-15 |
+| Cycle-2 (this) | 2026-05-15 | Organizer + sister amend | Cycle-1 + data-audit consolidated fix | This commit |
+| Cycle-3 | TBD | (independent reviewer) | (mechanical re-audit, expected light) | TBD |
+| Cycle-4 | TBD | (impl readiness review) | (last check before sister-chat impl) | TBD |
