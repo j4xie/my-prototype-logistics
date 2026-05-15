@@ -1214,6 +1214,7 @@ try:
     from smartbi_compat.api import analysis_drilldown
     from smartbi_compat.api import analysis_production
     from smartbi_compat.api import analysis_quality
+    from smartbi_compat.api import analysis_restaurant_ops
     from smartbi_compat.api import dashboard_composite
     app.include_router(smartbi_compat_analysis.router, tags=["SmartBI Compat: Analysis"])
     app.include_router(smartbi_compat_upload.router, tags=["SmartBI Compat: Upload"])
@@ -1227,6 +1228,7 @@ try:
     app.include_router(analysis_drilldown.router, tags=["SmartBI Compat: Analysis Drill-Down"])
     app.include_router(analysis_production.router, tags=["SmartBI Compat: Analysis Production"])
     app.include_router(analysis_quality.router, tags=["SmartBI Compat: Analysis Quality"])
+    app.include_router(analysis_restaurant_ops.router, tags=["SmartBI Compat: Analysis Restaurant Ops (Phase IIb)"])
     app.include_router(dashboard_composite.router, tags=["SmartBI Compat: Dashboard Composite (Tier 2 Pilot)"])
     from smartbi_compat.api import datasource as smartbi_compat_datasource
     app.include_router(smartbi_compat_datasource.router, tags=["SmartBI Compat: Datasource"])
