@@ -47,7 +47,7 @@ SELECT
     jsonb_build_object(
         'modules',
         COALESCE(fs.ai_settings::jsonb -> 'homeLayout', '[]'::jsonb)
-    )::text,
+    ),
     '{}',
     0,                                    -- status: 0 = 草稿 (operator promotes via UI)
     1,                                    -- version
