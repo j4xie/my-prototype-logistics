@@ -27,6 +27,7 @@ import EquipmentDetailScreen from "../../screens/processing/EquipmentDetailScree
 import SchemaConfigScreen from "../../screens/factory-admin/config/SchemaConfigScreen";
 import { FormTemplateListScreen } from "../../screens/factory-admin/config/FormTemplateListScreen";
 import { FormTemplateDetailScreen } from "../../screens/factory-admin/config/FormTemplateDetailScreen";
+import { PageEditorScreen } from "../../screens/factory-admin/pageeditor/PageEditorScreen";
 import RuleConfigurationScreen from "../../screens/management/RuleConfigurationScreen";
 import AIBusinessInitScreen from "../../screens/factory-admin/config/AIBusinessInitScreen";
 import EncodingRuleConfigScreen from "../../screens/factory-admin/config/EncodingRuleConfigScreen";
@@ -385,6 +386,13 @@ export function FAManagementStackNavigator() {
         name="SchemaConfig"
         component={SchemaConfigScreen}
         options={{ title: "表单配置" }}
+      />
+
+      {/* 低代码页面编辑器 (Track A C-CANVAS-PAGE) */}
+      <Stack.Screen
+        name="PageEditor"
+        component={PageEditorScreen}
+        options={{ title: "页面编辑器", headerShown: true }}
       />
 
       {/* 表单模版管理 */}
