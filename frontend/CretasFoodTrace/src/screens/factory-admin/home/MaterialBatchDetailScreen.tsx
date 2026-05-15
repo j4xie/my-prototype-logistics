@@ -19,6 +19,7 @@ import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { materialBatchApiClient, MaterialBatch } from '../../../services/api/materialBatchApiClient';
+import { AttachmentList, AttachmentUploadButton } from '../../../components/attachment';
 
 type NavigationProp = NativeStackNavigationProp<FAHomeStackParamList, 'MaterialBatchDetail'>;
 type RoutePropType = RouteProp<FAHomeStackParamList, 'MaterialBatchDetail'>;
@@ -33,6 +34,7 @@ export function MaterialBatchDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [batch, setBatch] = useState<MaterialBatch | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
 
   const loadData = useCallback(async () => {
     try {
@@ -285,6 +287,22 @@ export function MaterialBatchDetailScreen() {
               <Text style={styles.notesText}>{batch.notes}</Text>
             </View>
           )}
+        </View>
+
+        {/* 附件 (C-ATT-1) — 现场照片 / 单据扫描 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>附件</Text>
+          <AttachmentList
+            entityType="PRODUCTION_BATCH"
+            entityId={String(batchId)}
+            refreshKey={attachmentRefreshKey}
+          />
+          <AttachmentUploadButton
+            entityType="PRODUCTION_BATCH"
+            entityId={String(batchId)}
+            businessTag="BATCH_EVIDENCE"
+            onUploaded={() => setAttachmentRefreshKey(k => k + 1)}
+          />
         </View>
 
         <View style={{ height: 32 }} />

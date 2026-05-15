@@ -7,6 +7,8 @@ import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue';
 import { formatDateTime } from '@/utils/dateFormat';
+import AttachmentList from '@/components/attachment/AttachmentList.vue';
+import AttachmentUploadButton from '@/components/attachment/AttachmentUploadButton.vue';
 import type { TableRow } from '@/types/api';
 
 const route = useRoute();
@@ -20,6 +22,7 @@ const canViewPrice = computed(() => permissionStore.canViewPrice);
 const loading = ref(false);
 const batch = ref<TableRow | null>(null);
 const timeline = ref<TableRow[]>([]);
+const attachmentRefreshKey = ref(0);
 // T4-D4 (issue #533): F006 customer wants 原料消耗记录 visible on batch detail.
 // Backend endpoint /processing/material-consumptions/batch/{productionBatchId} (MaterialConsumptionController:151)
 // returns the consumption rows for this batch's production plan.
@@ -348,6 +351,26 @@ function getTimelineIcon(type: string) {
               </div>
             </el-timeline-item>
           </el-timeline>
+        </el-card>
+
+        <!-- 附件 (C-ATT-1) — 现场照片 / 出料单据 / 质检报告 -->
+        <el-card class="section-card" shadow="never" style="margin-top: 16px">
+          <template #header>
+            <span>附件</span>
+          </template>
+          <AttachmentList
+            entity-type="PRODUCTION_BATCH"
+            :entity-id="String(batchId)"
+            :refresh-key="attachmentRefreshKey"
+          />
+          <div style="margin-top: 12px">
+            <AttachmentUploadButton
+              entity-type="PRODUCTION_BATCH"
+              :entity-id="String(batchId)"
+              business-tag="BATCH_EVIDENCE"
+              @uploaded="attachmentRefreshKey++"
+            />
+          </div>
         </el-card>
       </div>
     </template>

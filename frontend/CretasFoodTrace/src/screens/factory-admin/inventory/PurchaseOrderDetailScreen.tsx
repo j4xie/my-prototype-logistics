@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { purchaseApiClient, PurchaseOrder } from '../../../services/api/purchaseApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
+import { AttachmentList, AttachmentUploadButton } from '../../../components/attachment';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -26,6 +27,7 @@ export default function PurchaseOrderDetailScreen() {
 
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
 
   useEffect(() => { loadOrder(); }, [orderId]);
 
@@ -174,6 +176,24 @@ export default function PurchaseOrderDetailScreen() {
             </Card.Content>
           </Card>
         )}
+
+        {/* 附件 (C-ATT-1) */}
+        <Card style={styles.card}>
+          <Card.Title title="附件" titleVariant="titleSmall" />
+          <Card.Content>
+            <AttachmentList
+              entityType="PURCHASE_ORDER"
+              entityId={String(orderId)}
+              refreshKey={attachmentRefreshKey}
+            />
+            <AttachmentUploadButton
+              entityType="PURCHASE_ORDER"
+              entityId={String(orderId)}
+              businessTag="PURCHASE_DOC"
+              onUploaded={() => setAttachmentRefreshKey(k => k + 1)}
+            />
+          </Card.Content>
+        </Card>
 
         {/* 操作按钮 */}
         <View style={styles.actionBar}>

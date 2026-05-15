@@ -10,6 +10,8 @@ import { ArrowLeft, Download } from '@element-plus/icons-vue';
 import { handleCatchError } from '@/utils/errorToast';
 import { formatAmount } from '@/utils/tableFormatters';
 import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
+import AttachmentList from '@/components/attachment/AttachmentList.vue';
+import AttachmentUploadButton from '@/components/attachment/AttachmentUploadButton.vue';
 import type { TableRow } from '@/types/api';
 
 const route = useRoute();
@@ -30,6 +32,7 @@ const notFoundMessage = ref('');
 const receives = ref<TableRow[]>([]);
 const receiveDialogVisible = ref(false);
 const receiveForm = ref<{ supplierId: string; receiveDate: string; items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ supplierId: '', receiveDate: '', items: [] });
+const attachmentRefreshKey = ref(0);
 
 // 三价对比
 interface PriceComparison {
@@ -355,6 +358,22 @@ async function confirmReceive(receiveId: string) {
             </template>
           </el-table-column>
         </el-table>
+
+        <!-- 附件 (C-ATT-1) — 收货单 / 合同 / 现场照片 -->
+        <h3 style="margin: 20px 0 12px">附件</h3>
+        <AttachmentList
+          entity-type="PURCHASE_ORDER"
+          :entity-id="String(orderId)"
+          :refresh-key="attachmentRefreshKey"
+        />
+        <div style="margin-top: 12px">
+          <AttachmentUploadButton
+            entity-type="PURCHASE_ORDER"
+            :entity-id="String(orderId)"
+            business-tag="PURCHASE_DOC"
+            @uploaded="attachmentRefreshKey++"
+          />
+        </div>
       </template>
     </el-card>
 

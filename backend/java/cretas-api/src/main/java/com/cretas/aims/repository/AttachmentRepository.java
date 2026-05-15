@@ -1,0 +1,61 @@
+package com.cretas.aims.repository;
+
+import com.cretas.aims.entity.Attachment;
+import com.cretas.aims.entity.Attachment.EntityType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Attachment JPA Repository — C-ATT-1.
+ *
+ * <p>所有查询自动应用 {@code @Where(deleted_at IS NULL)} (软删除过滤, 见 Attachment).
+ *
+ * <p>spec: SCHEMA_DESIGN §2.3
+ *
+ * @author Cretas Team — Track C
+ * @since 2026-05-15 (C-ATT-1)
+ */
+@Repository
+public interface AttachmentRepository extends JpaRepository<Attachment, String> {
+
+    /**
+     * 某实体的所有附件, 按 uploadedAt 倒序 — 详情页主查询.
+     */
+    List<Attachment> findByFactoryIdAndEntityTypeAndEntityIdOrderByUploadedAtDesc(
+            String factoryId, EntityType entityType, String entityId);
+
+    /**
+     * 批量计数 — 列表页徽章场景. 一次查 N 个 entity 的附件数, 避免 N+1.
+     *
+     * <p>返回 {@code [entityId, count]} 二维数组; 调用方收成 Map.
+     */
+    @Query("""
+            SELECT a.entityId AS entityId, COUNT(a) AS cnt
+            FROM Attachment a
+            WHERE a.factoryId = :factoryId
+              AND a.entityType = :entityType
+              AND a.entityId IN :ids
+            GROUP BY a.entityId
+            """)
+    List<Object[]> countByEntities(
+            @Param("factoryId") String factoryId,
+            @Param("entityType") EntityType entityType,
+            @Param("ids") List<String> ids);
+
+    /**
+     * 单条详情 — 强制 factoryId 多租户隔离.
+     */
+    Optional<Attachment> findByFactoryIdAndId(String factoryId, String id);
+
+    /**
+     * 去重查询 — register 时, 同 factory 同 hash 返回已有 Attachment.
+     *
+     * <p>注: file_hash 可能为 null (老数据 / 客户端未算), 此时不去重.
+     */
+    Optional<Attachment> findByFactoryIdAndFileHash(String factoryId, String fileHash);
+}
