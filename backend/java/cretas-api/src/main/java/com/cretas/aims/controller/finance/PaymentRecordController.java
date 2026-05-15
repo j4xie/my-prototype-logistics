@@ -88,10 +88,9 @@ public class PaymentRecordController {
     }
 
     @GetMapping
-    // Sprint1-Fix-K4 (2026-05-15): drop sales:read — 5x5 RBAC regression showed
-    // warehouse_mgr/viewer (have sales:read) leaked customerName + salesOrderId.
-    // 财务付款 detail 仅 finance 角色 + sales_manager (write) 可见; sales viewer 不行。
-    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write"})
+    // Sprint1-Fix-K5 (2026-05-15): drop finance:read too — viewer 有 finance:read
+    // 仍泄 customerName/salesOrderId. 财务付款仅 finance/sales 管理员 (write 权限) 可看。
+    @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> list(
             @PathVariable String factoryId,
             @RequestParam(required = false) String status,
@@ -104,20 +103,18 @@ public class PaymentRecordController {
     }
 
     @GetMapping("/{paymentId}")
-    // Sprint1-Fix-K4 (2026-05-15): drop sales:read — 5x5 RBAC regression showed
-    // warehouse_mgr/viewer (have sales:read) leaked customerName + salesOrderId.
-    // 财务付款 detail 仅 finance 角色 + sales_manager (write) 可见; sales viewer 不行。
-    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write"})
+    // Sprint1-Fix-K5 (2026-05-15): drop finance:read too — viewer 有 finance:read
+    // 仍泄 customerName/salesOrderId. 财务付款仅 finance/sales 管理员 (write 权限) 可看。
+    @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> detail(@PathVariable String paymentId) {
         return ResponseEntity.ok(Map.of("success", true, "data", paymentRecordService.getPayment(paymentId)));
     }
 
     /** List all payment records for a sales order — used by sales order detail page tab. */
     @GetMapping("/by-sales-order/{salesOrderId}")
-    // Sprint1-Fix-K4 (2026-05-15): drop sales:read — 5x5 RBAC regression showed
-    // warehouse_mgr/viewer (have sales:read) leaked customerName + salesOrderId.
-    // 财务付款 detail 仅 finance 角色 + sales_manager (write) 可见; sales viewer 不行。
-    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write"})
+    // Sprint1-Fix-K5 (2026-05-15): drop finance:read too — viewer 有 finance:read
+    // 仍泄 customerName/salesOrderId. 财务付款仅 finance/sales 管理员 (write 权限) 可看。
+    @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> listBySalesOrder(@PathVariable String factoryId, @PathVariable String salesOrderId) {
         return ResponseEntity.ok(Map.of("success", true,
                 "data", paymentRecordService.listPaymentsBySalesOrder(factoryId, salesOrderId)));
