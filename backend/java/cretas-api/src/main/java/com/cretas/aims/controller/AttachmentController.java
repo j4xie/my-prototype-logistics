@@ -1,15 +1,20 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.Attachment;
 import com.cretas.aims.entity.Attachment.EntityType;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.security.AttachmentPermissionResolver;
 import com.cretas.aims.service.attachment.AttachmentService;
 import com.cretas.aims.service.attachment.dto.RegisterAttachmentRequest;
 import com.cretas.aims.service.attachment.dto.UpdateAttachmentRequest;
 import com.cretas.aims.service.attachment.dto.UploadUrlResponse;
 import com.cretas.aims.service.attachment.impl.AttachmentServiceImpl;
 import com.cretas.aims.utils.SecurityUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -39,6 +44,12 @@ import java.util.Map;
  *   <li>POST /attachments/batch-by-entity — 批量计数 (列表页徽章)</li>
  * </ol>
  *
+ * <p><b>RBAC (Sprint1-Fix-K2, 2026-05-15)</b>: 每个 endpoint 标 {@code @RequirePermission} 作
+ * coarse 网关 (无 token / 无任何业务模块权限的请求被 {@link com.cretas.aims.config.PermissionInterceptor}
+ * 直接 403). Fine-grained 检查由 {@link AttachmentPermissionResolver} 根据 {@link EntityType}
+ * 派生模块 (e.g. {@code PAYMENT_VOUCHER → finance:read}, {@code QUALITY_CHECK → quality:read}).
+ * 仓库管理员不再能下载任意工厂的财务 / 质检附件 — 详情见 PR #658 follow-up.
+ *
  * @author Cretas Team — Track C
  * @since 2026-05-15 (C-ATT-1 Day 3)
  */
@@ -50,14 +61,30 @@ import java.util.Map;
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
+    private final AttachmentPermissionResolver permissionResolver;
 
     // ==================== 1. List by entity ====================
 
     @GetMapping
+    @RequirePermission(value = {
+            "procurement:read", "procurement:read_write",
+            "sales:read", "sales:read_write",
+            "finance:read", "finance:read_write",
+            "quality:read", "quality:read_write",
+            "production:read", "production:read_write",
+            "warehouse:read", "warehouse:read_write",
+            "hr:read", "hr:read_write",
+            "work_report:read", "work_report:read_write",
+            "restaurant:read", "restaurant:read_write",
+            "rd:read", "rd:read_write",
+            "system:read", "system:read_write"
+    })
     public ResponseEntity<ApiResponse<List<Attachment>>> listByEntity(
             @PathVariable String factoryId,
             @RequestParam EntityType entityType,
-            @RequestParam String entityId) {
+            @RequestParam String entityId,
+            HttpServletRequest request) {
+        permissionResolver.requireRead(permissionResolver.resolveCurrentUser(request), entityType);
         List<Attachment> list = attachmentService.queryByEntity(factoryId, entityType, entityId);
         return ResponseEntity.ok(ApiResponse.success(list));
     }
@@ -65,18 +92,50 @@ public class AttachmentController {
     // ==================== 2. Get by id ====================
 
     @GetMapping("/{id}")
+    @RequirePermission(value = {
+            "procurement:read", "procurement:read_write",
+            "sales:read", "sales:read_write",
+            "finance:read", "finance:read_write",
+            "quality:read", "quality:read_write",
+            "production:read", "production:read_write",
+            "warehouse:read", "warehouse:read_write",
+            "hr:read", "hr:read_write",
+            "work_report:read", "work_report:read_write",
+            "restaurant:read", "restaurant:read_write",
+            "rd:read", "rd:read_write",
+            "system:read", "system:read_write"
+    })
     public ResponseEntity<ApiResponse<Attachment>> getById(
             @PathVariable String factoryId,
-            @PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(attachmentService.getById(factoryId, id)));
+            @PathVariable String id,
+            HttpServletRequest request) {
+        Attachment attachment = attachmentService.getById(factoryId, id);
+        permissionResolver.requireRead(permissionResolver.resolveCurrentUser(request), attachment.getEntityType());
+        return ResponseEntity.ok(ApiResponse.success(attachment));
     }
 
     // ==================== 3. Download (302 redirect to signed URL) ====================
 
     @GetMapping("/{id}/download")
+    @RequirePermission(value = {
+            "procurement:read", "procurement:read_write",
+            "sales:read", "sales:read_write",
+            "finance:read", "finance:read_write",
+            "quality:read", "quality:read_write",
+            "production:read", "production:read_write",
+            "warehouse:read", "warehouse:read_write",
+            "hr:read", "hr:read_write",
+            "work_report:read", "work_report:read_write",
+            "restaurant:read", "restaurant:read_write",
+            "rd:read", "rd:read_write",
+            "system:read", "system:read_write"
+    })
     public ResponseEntity<Void> download(
             @PathVariable String factoryId,
-            @PathVariable String id) {
+            @PathVariable String id,
+            HttpServletRequest request) {
+        Attachment attachment = attachmentService.getById(factoryId, id);
+        permissionResolver.requireRead(permissionResolver.resolveCurrentUser(request), attachment.getEntityType());
         String signedUrl = attachmentService.generateDownloadUrl(factoryId, id);
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(URI.create(signedUrl));
@@ -86,9 +145,25 @@ public class AttachmentController {
     // ==================== 4. Upload URL (pre-signed PUT) ====================
 
     @PostMapping("/upload-url")
+    @RequirePermission(value = {
+            "procurement:read_write",
+            "sales:read_write",
+            "finance:read_write",
+            "quality:read_write",
+            "production:read_write",
+            "warehouse:read_write",
+            "hr:read_write",
+            "work_report:read_write",
+            "restaurant:read_write",
+            "rd:read_write",
+            "system:read_write"
+    })
     public ResponseEntity<ApiResponse<UploadUrlResponse>> generateUploadUrl(
             @PathVariable String factoryId,
             @Valid @RequestBody UploadUrlRequest req) {
+        // Content-type whitelist + size hint check (BEFORE signed URL issue —
+        // refuses oversize / executable uploads at the OSS boundary).
+        permissionResolver.validateUploadRequest(req.getFileType(), req.getFileSize());
         String putUrl = attachmentService.generateUploadUrl(factoryId, req.getFileName(), req.getFileType());
         String fileUrl = AttachmentServiceImpl.stripQuery(putUrl);
         return ResponseEntity.ok(ApiResponse.success(new UploadUrlResponse(putUrl, fileUrl)));
@@ -97,9 +172,32 @@ public class AttachmentController {
     // ==================== 5. Register metadata (post-upload) ====================
 
     @PostMapping
+    @RequirePermission(value = {
+            "procurement:read_write",
+            "sales:read_write",
+            "finance:read_write",
+            "quality:read_write",
+            "production:read_write",
+            "warehouse:read_write",
+            "hr:read_write",
+            "work_report:read_write",
+            "restaurant:read_write",
+            "rd:read_write",
+            "system:read_write"
+    })
     public ResponseEntity<ApiResponse<Attachment>> register(
             @PathVariable String factoryId,
-            @Valid @RequestBody RegisterAttachmentRequest req) {
+            @Valid @RequestBody RegisterAttachmentRequest req,
+            HttpServletRequest request) {
+        permissionResolver.requireWrite(permissionResolver.resolveCurrentUser(request), req.getEntityType());
+        if (req.getFileSize() != null && req.getFileSize() > AttachmentPermissionResolver.MAX_UPLOAD_SIZE_BYTES) {
+            throw new BusinessException(400, "文件超出 10MB 上限");
+        }
+        if (req.getFileType() != null
+                && !AttachmentPermissionResolver.ALLOWED_CONTENT_TYPES.contains(req.getFileType().toLowerCase())) {
+            throw new BusinessException(400,
+                    "不支持的文件类型: " + req.getFileType() + " — 仅允许 pdf / image / xlsx / docx / mp4");
+        }
         Long userId = SecurityUtils.getCurrentUserId();
         Attachment saved = attachmentService.register(factoryId, req, userId);
         return ResponseEntity.ok(ApiResponse.success("上传成功", saved));
@@ -108,17 +206,51 @@ public class AttachmentController {
     // ==================== 6. Update (description/businessTag/fileCategory) ====================
 
     @PutMapping("/{id}")
+    @RequirePermission(value = {
+            "procurement:read_write",
+            "sales:read_write",
+            "finance:read_write",
+            "quality:read_write",
+            "production:read_write",
+            "warehouse:read_write",
+            "hr:read_write",
+            "work_report:read_write",
+            "restaurant:read_write",
+            "rd:read_write",
+            "system:read_write"
+    })
     public ResponseEntity<ApiResponse<Attachment>> update(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @Valid @RequestBody UpdateAttachmentRequest req) {
+            @Valid @RequestBody UpdateAttachmentRequest req,
+            HttpServletRequest request) {
+        Attachment existing = attachmentService.getById(factoryId, id);
+        permissionResolver.requireWrite(permissionResolver.resolveCurrentUser(request), existing.getEntityType());
         Long userId = SecurityUtils.getCurrentUserId();
         return ResponseEntity.ok(ApiResponse.success(attachmentService.update(factoryId, id, req, userId)));
     }
 
     // ==================== 7. Soft delete ====================
+    //
+    // RBAC: 服务层已 enforce owner-or-admin (AttachmentServiceImpl.softDelete). 此处只加
+    // coarse @RequirePermission 网关 (拒绝 anonymous / 完全无权限的请求) — 不调
+    // resolver.requireWrite, 因为非 owner 的 module-write 用户(如同部门同事)不应能删除
+    // 别人传的附件; "owner-or-admin" 才是正确语义.
 
     @DeleteMapping("/{id}")
+    @RequirePermission(value = {
+            "procurement:read_write",
+            "sales:read_write",
+            "finance:read_write",
+            "quality:read_write",
+            "production:read_write",
+            "warehouse:read_write",
+            "hr:read_write",
+            "work_report:read_write",
+            "restaurant:read_write",
+            "rd:read_write",
+            "system:read_write"
+    })
     public ResponseEntity<ApiResponse<Void>> softDelete(
             @PathVariable String factoryId,
             @PathVariable String id) {
@@ -130,9 +262,24 @@ public class AttachmentController {
     // ==================== 8. Batch count by entity ====================
 
     @PostMapping("/batch-by-entity")
+    @RequirePermission(value = {
+            "procurement:read", "procurement:read_write",
+            "sales:read", "sales:read_write",
+            "finance:read", "finance:read_write",
+            "quality:read", "quality:read_write",
+            "production:read", "production:read_write",
+            "warehouse:read", "warehouse:read_write",
+            "hr:read", "hr:read_write",
+            "work_report:read", "work_report:read_write",
+            "restaurant:read", "restaurant:read_write",
+            "rd:read", "rd:read_write",
+            "system:read", "system:read_write"
+    })
     public ResponseEntity<ApiResponse<Map<String, Long>>> batchCount(
             @PathVariable String factoryId,
-            @Valid @RequestBody BatchCountRequest req) {
+            @Valid @RequestBody BatchCountRequest req,
+            HttpServletRequest request) {
+        permissionResolver.requireRead(permissionResolver.resolveCurrentUser(request), req.getEntityType());
         Map<String, Long> counts = attachmentService.countByEntities(factoryId, req.getEntityType(), req.getEntityIds());
         return ResponseEntity.ok(ApiResponse.success(counts));
     }
@@ -145,6 +292,9 @@ public class AttachmentController {
         private String fileName;
         @NotBlank
         private String fileType;
+        /** Optional declared size hint — when provided, must be ≤ 10 MB. */
+        @Min(1)
+        private Long fileSize;
     }
 
     @Data
