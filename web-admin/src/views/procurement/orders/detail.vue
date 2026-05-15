@@ -6,7 +6,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import request, { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { ArrowLeft, Download } from '@element-plus/icons-vue';
+import { ArrowLeft, Download, InfoFilled } from '@element-plus/icons-vue';
 import { handleCatchError } from '@/utils/errorToast';
 import { formatAmount } from '@/utils/tableFormatters';
 import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
@@ -44,10 +44,17 @@ interface PriceComparison {
   varianceFromAvg: number | null;
   priceAlert: boolean;
   bomProductNames: string;
+  // Day 8-9 (三价对比 bug): 数据源缺失诊断 — 解释为何某价 null,
+  // 帮 F006 仓管区分"数据 bug"和"业务正常空态"
+  dataSourceHint: string | null;
 }
 const priceComparisons = ref<PriceComparison[]>([]);
 const priceLoading = ref(false);
-const priceLoaded = ref(false);
+// Day 8-9 三价对比 bug 修复: 移除 priceLoaded 短路.
+// 旧逻辑: 一次加载后 priceLoaded=true, 用户再展开 collapse 不重拉, 导致新建采购单
+// → 入库 → 回此页, 用户看到旧三价对比 (空 / stale). 新逻辑: 每次展开都重拉,
+// 保证用户看到的就是当前后端真实状态. 无明显性能影响 (查询走 BOM + raw_material
+// 两表, 已有索引).
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -155,17 +162,28 @@ async function handleCreateReceive() {
 }
 
 async function loadPriceComparison() {
-  if (priceLoaded.value || priceLoading.value || !factoryId.value || !orderId.value) return;
+  // Day 8-9 三价对比 bug fix: 不再用 priceLoaded 短路, 每次展开都重拉.
+  // 防御 priceLoading reentrancy 即可.
+  if (priceLoading.value || !factoryId.value || !orderId.value) return;
   priceLoading.value = true;
   try {
     const res = await get(`/${factoryId.value}/purchase/orders/${orderId.value}/price-comparison`);
     if (res.success) {
       priceComparisons.value = Array.isArray(res.data) ? res.data : [];
-      priceLoaded.value = true;
     }
   } catch { /* axios interceptor already displayed error toast */ }
   finally { priceLoading.value = false; }
 }
+
+// Day 8-9 三价对比 bug fix: 计算"是否多数行缺失数据源" — 用于显示 banner 解释,
+// 区分"业务正常 (新原料/未入库)"和"系统 bug".
+const priceDataSourceHintBanner = computed(() => {
+  if (priceComparisons.value.length === 0) return null;
+  const missing = priceComparisons.value.filter(p => p.dataSourceHint != null).length;
+  if (missing === 0) return null;
+  // 至少 1 行有 hint → 显示通用解释 banner
+  return `三价对比基于"BOM 标准价 + 历次入库的移动均价". 新原料 / 尚未入库 / 未配 BOM 时部分对比项为空 — 这是业务正常状态, 不是数据 bug. ${missing}/${priceComparisons.value.length} 行有诊断信息, 鼠标悬停查看.`;
+});
 
 function formatVariance(val: number | null): string {
   if (val == null) return '-';
@@ -298,6 +316,15 @@ async function confirmReceive(receiveId: string) {
         <el-collapse v-if="canViewPrice" style="margin: 20px 0 12px" @change="(val: string[]) => { if (val.includes('price')) loadPriceComparison(); }">
           <el-collapse-item title="三价对比分析" name="price">
             <div v-loading="priceLoading">
+              <!-- Day 8-9 三价对比 bug fix: 数据源缺失时显示 banner 解释, 区分业务空态 vs bug -->
+              <el-alert
+                v-if="priceDataSourceHintBanner"
+                type="info"
+                :closable="false"
+                show-icon
+                style="margin-bottom: 12px"
+                :title="priceDataSourceHintBanner"
+              />
               <el-alert v-if="priceComparisons.some(p => p.priceAlert)" type="warning" :closable="false" show-icon style="margin-bottom: 12px">
                 存在价格偏差超过10%的原料，请关注标红行
               </el-alert>
@@ -329,6 +356,15 @@ async function confirmReceive(receiveId: string) {
                   </template>
                 </el-table-column>
                 <el-table-column prop="bomProductNames" label="关联产品" min-width="120" show-overflow-tooltip />
+                <!-- Day 8-9 三价对比 bug fix: 数据源诊断列 (仅有 hint 行显示 ⓘ icon + tooltip) -->
+                <el-table-column label="说明" width="60" align="center">
+                  <template #default="{ row }">
+                    <el-tooltip v-if="row.dataSourceHint" :content="row.dataSourceHint" placement="left">
+                      <el-icon style="color: #409eff; cursor: help"><InfoFilled /></el-icon>
+                    </el-tooltip>
+                    <span v-else>-</span>
+                  </template>
+                </el-table-column>
               </el-table>
               <el-empty v-else-if="priceLoaded" description="暂无三价对比数据" :image-size="60" />
             </div>
