@@ -2,17 +2,16 @@ package com.cretas.aims.ai.tool.impl.decoration;
 
 import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
-import com.cretas.aims.entity.FactorySettings;
-import com.cretas.aims.repository.FactorySettingsRepository;
 import com.cretas.aims.service.validator.LayoutValidator;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 首页布局更新工具
@@ -30,7 +29,7 @@ import java.util.*;
 public class HomeLayoutUpdateTool extends AbstractBusinessTool {
 
     @Autowired
-    private FactorySettingsRepository factorySettingsRepository;
+    private FactoryHomeLayoutToolStore layoutStore;
 
     @Autowired
     private DashScopeClient dashScopeClient;
@@ -112,7 +111,7 @@ public class HomeLayoutUpdateTool extends AbstractBusinessTool {
         }
 
         // 5. 保存布局
-        saveLayout(factoryId, userId, updatedLayout);
+        saveLayout(factoryId, userId, updatedLayout, userInput);
 
         Map<String, Object> result = new HashMap<>();
         result.put("message", operationSummary);
@@ -125,54 +124,13 @@ public class HomeLayoutUpdateTool extends AbstractBusinessTool {
     }
 
     private List<Map<String, Object>> getCurrentLayout(String factoryId) {
-        try {
-            Optional<FactorySettings> settingsOpt = factorySettingsRepository.findByFactoryId(factoryId);
-            if (settingsOpt.isPresent() && settingsOpt.get().getAiSettings() != null) {
-                JsonNode aiSettings = objectMapper.readTree(settingsOpt.get().getAiSettings());
-                if (aiSettings.has("homeLayout")) {
-                    return objectMapper.convertValue(
-                            aiSettings.get("homeLayout"),
-                            new TypeReference<List<Map<String, Object>>>() {}
-                    );
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前布局失败，使用默认布局: {}", e.getMessage());
-        }
-        return new ArrayList<>(DEFAULT_MODULES);
+        // Track A Project 3: 从 factory_home_layout 读 (layoutStore 转 flat 形态)
+        return layoutStore.loadFlatLayout(factoryId, DEFAULT_MODULES);
     }
 
-    private void saveLayout(String factoryId, Long userId, List<Map<String, Object>> layout) {
-        try {
-            Optional<FactorySettings> settingsOpt = factorySettingsRepository.findByFactoryId(factoryId);
-            FactorySettings settings;
-            Map<String, Object> aiSettings;
-
-            if (settingsOpt.isPresent()) {
-                settings = settingsOpt.get();
-                if (settings.getAiSettings() != null) {
-                    aiSettings = objectMapper.readValue(settings.getAiSettings(),
-                            new TypeReference<Map<String, Object>>() {});
-                } else {
-                    aiSettings = new HashMap<>();
-                }
-            } else {
-                settings = new FactorySettings();
-                settings.setFactoryId(factoryId);
-                aiSettings = new HashMap<>();
-            }
-
-            aiSettings.put("homeLayout", layout);
-            aiSettings.put("layoutUpdatedAt", LocalDateTime.now().toString());
-            aiSettings.put("layoutUpdatedBy", userId);
-            settings.setAiSettings(objectMapper.writeValueAsString(aiSettings));
-
-            factorySettingsRepository.save(settings);
-            log.info("布局已保存: factoryId={}, userId={}", factoryId, userId);
-        } catch (Exception e) {
-            log.error("保存布局失败: {}", e.getMessage(), e);
-            throw new RuntimeException("保存布局失败", e);
-        }
+    private void saveLayout(String factoryId, Long userId, List<Map<String, Object>> layout, String userInput) {
+        // Track A Project 3: 写 factory_home_layout
+        layoutStore.saveFlatLayout(factoryId, userId, layout, userInput);
     }
 
     private String buildLayoutUpdatePrompt(List<Map<String, Object>> currentLayout) {

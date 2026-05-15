@@ -1,10 +1,6 @@
 package com.cretas.aims.ai.tool.impl.decoration;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
-import com.cretas.aims.entity.FactorySettings;
-import com.cretas.aims.repository.FactorySettingsRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,7 +23,7 @@ import java.util.*;
 public class HomeLayoutSuggestTool extends AbstractBusinessTool {
 
     @Autowired
-    private FactorySettingsRepository factorySettingsRepository;
+    private FactoryHomeLayoutToolStore layoutStore;
 
     private static final List<Map<String, Object>> DEFAULT_MODULES = List.of(
             Map.of("id", "welcome", "name", "欢迎卡片", "type", "welcome", "x", 0, "y", 0, "w", 2, "h", 1, "visible", true),
@@ -85,21 +81,8 @@ public class HomeLayoutSuggestTool extends AbstractBusinessTool {
     }
 
     private List<Map<String, Object>> getCurrentLayout(String factoryId) {
-        try {
-            Optional<FactorySettings> settingsOpt = factorySettingsRepository.findByFactoryId(factoryId);
-            if (settingsOpt.isPresent() && settingsOpt.get().getAiSettings() != null) {
-                JsonNode aiSettings = objectMapper.readTree(settingsOpt.get().getAiSettings());
-                if (aiSettings.has("homeLayout")) {
-                    return objectMapper.convertValue(
-                            aiSettings.get("homeLayout"),
-                            new TypeReference<List<Map<String, Object>>>() {}
-                    );
-                }
-            }
-        } catch (Exception e) {
-            log.warn("获取当前布局失败，使用默认布局: {}", e.getMessage());
-        }
-        return new ArrayList<>(DEFAULT_MODULES);
+        // Track A Project 3: 从 factory_home_layout 读 (layoutStore 转 flat 形态)
+        return layoutStore.loadFlatLayout(factoryId, DEFAULT_MODULES);
     }
 
     private List<String> generateLayoutSuggestions(List<Map<String, Object>> currentLayout) {
