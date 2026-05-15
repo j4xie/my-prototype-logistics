@@ -112,7 +112,20 @@ export const CARD_MANIFEST: CardManifestEntry[] = [
   { id: 'restaurant_finance_revenue', page: '/smart-bi/finance', title: '餐饮总营收 (财务页)',
     requires: ['date', 'gross_amount'] },
 
-  // Total: 30 entries (28 pre-Phase-IIa + 2 restaurant cards added 2026-05-14)
+  // === Phase IIb Restaurant Kitchen Cost (4) — wrapped in RestaurantKitchenCostContent.vue ===
+  // Gate restaurant kitchen-cost KPI cards behind canViewPrice + Gold field availability.
+  // Cards: 食材成本占比 / 总损耗成本 / 总领料成本 / 净盘点差异
+  // Requires gross_amount (POS denominator for ratio) + date (range filter); aligns with IIa pattern.
+  { id: 'restaurant_kitchen_cost_ratio', page: '/smart-bi/finance', title: '食材成本占比 (厨房成本)',
+    requires: ['date', 'gross_amount'] },
+  { id: 'restaurant_kitchen_cost_wastage', page: '/smart-bi/finance', title: '总损耗成本 (厨房成本)',
+    requires: ['date', 'gross_amount'] },
+  { id: 'restaurant_kitchen_cost_requisition', page: '/smart-bi/finance', title: '总领料成本 (厨房成本)',
+    requires: ['date', 'gross_amount'] },
+  { id: 'restaurant_kitchen_cost_variance', page: '/smart-bi/finance', title: '净盘点差异 (厨房成本)',
+    requires: ['date', 'gross_amount'] },
+
+  // Total: 34 entries (28 pre-Phase-IIa + 2 restaurant cards 2026-05-14 + 4 Phase IIb kitchen-cost 2026-05-15)
 ];
 
 // Lint helper: check duplicate IDs at module load (cheap, runs once)

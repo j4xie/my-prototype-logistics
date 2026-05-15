@@ -50,6 +50,7 @@ import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import RestaurantPhaseIIPlaceholder from '@/components/smartbi/RestaurantPhaseIIPlaceholder.vue';
 import RestaurantFinanceContent from '@/components/smartbi/RestaurantFinanceContent.vue';
+import RestaurantKitchenCostContent from '@/components/smartbi/RestaurantKitchenCostContent.vue';
 import TemplateGrid from './components/TemplateGrid.vue';
 import type { ChartConfig } from '@/types/smartbi';
 // Day 9 数据织网 Sub-Project A: capability-driven card visibility
@@ -73,33 +74,51 @@ const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT'
 // VITE_PHASE_IIA_ENABLED=false to fall back to RestaurantPhaseIIPlaceholder
 // without a code revert. The placeholder file stays in repo for this reason.
 const phaseIIaEnabled = computed(() => import.meta.env.VITE_PHASE_IIA_ENABLED !== 'false');
+// Phase IIb rollback flag (spec §5.7): default ON. Ops can flip
+// VITE_PHASE_IIB_ENABLED=false to hide the 成本运营 tab without a code revert.
+const phaseIIbEnabled = computed(() => import.meta.env.VITE_PHASE_IIB_ENABLED !== 'false');
 
 // 分析类型
-type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
-const validTabs: AnalysisType[] = ['profit', 'cost', 'receivable', 'payable', 'budget'];
+// Phase IIb (2026-05-15): restaurants now see TWO tabs — 营收概览 (profit, Phase IIa)
+// and 成本运营 (kitchen-cost, NEW). Factory tenants see all 5 legacy tabs (profit/cost/...).
+type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget' | 'kitchen-cost';
+const validTabs: AnalysisType[] = ['profit', 'cost', 'receivable', 'payable', 'budget', 'kitchen-cost'];
 const initTab = validTabs.includes(route.query.tab as AnalysisType) ? (route.query.tab as AnalysisType) : 'profit';
 const analysisType = ref<AnalysisType>(initTab);
-// Apr 24 UX: restaurants only see 利润分析 tab (see analysisTypes computed below).
-// If URL had ?tab=cost/receivable/payable/budget, force back to profit.
-// Also guard against post-mount navigation (browser back/forward, history.push).
-if (isRestaurantTenant.value && analysisType.value !== 'profit') {
+// Phase IIb (2026-05-15): restaurants see {profit, kitchen-cost} only.
+// Whitelist replaces the IIa "force to profit" pattern. cost/receivable/payable/budget
+// remain hidden for restaurant tenants (factory-only data).
+const RESTAURANT_ALLOWED_TABS: AnalysisType[] = ['profit', 'kitchen-cost'];
+if (isRestaurantTenant.value && !RESTAURANT_ALLOWED_TABS.includes(analysisType.value)) {
   analysisType.value = 'profit';
 }
 watch(() => route.query.tab, (newTab) => {
-  if (isRestaurantTenant.value && newTab && newTab !== 'profit') {
+  if (isRestaurantTenant.value && newTab && !RESTAURANT_ALLOWED_TABS.includes(newTab as AnalysisType)) {
     analysisType.value = 'profit';
   }
 });
-// Also guard programmatic type switches (should never happen via UI since
-// switcher is hidden for restaurants, but defensive against any future code path)
+// Also guard programmatic type switches.
 watch(analysisType, (newType) => {
-  if (isRestaurantTenant.value && newType !== 'profit') {
+  if (isRestaurantTenant.value && !RESTAURANT_ALLOWED_TABS.includes(newType)) {
     analysisType.value = 'profit';
   }
 });
 
 // 日期范围
 const dateRange = ref<[Date, Date] | null>(null);
+
+// Phase IIb (2026-05-15): default 365-day range for the restaurant kitchen-cost
+// sub-component (mirrors RestaurantFinanceContent.vue default). Computed off
+// `new Date()` once — accept staleness during the user's session.
+const restaurantDefaultDateRange = computed(() => {
+  const end = new Date();
+  const start = new Date();
+  start.setTime(start.getTime() - 3600 * 1000 * 24 * 365);
+  return {
+    startDate: toApiDateString(start),
+    endDate: toApiDateString(end),
+  };
+});
 
 // 日期快捷选项
 const shortcuts = [
@@ -573,22 +592,38 @@ const financePageRef = ref<HTMLElement>();
 let mainChart: echarts.ECharts | null = null;
 
 // 分析类型配置
-// Apr 24 UX: for restaurant tenants, only 利润分析 is shown (Gold-backed POS).
-// 成本/应收/应付/预算 tabs all render 0 across the board because Silver has no
-// fact_cost_line (blocked on v2 accounting_import) and restaurants don't have
-// A/R, A/P, or annual budget data sources. Hide instead of showing misleading
-// zeros. Manufacturing tenants continue to see all 5 tabs.
-const allAnalysisTypes = [
-  { type: 'profit' as AnalysisType, label: '利润分析', icon: TrendCharts },
-  { type: 'cost' as AnalysisType, label: '成本分析', icon: Wallet },
-  { type: 'receivable' as AnalysisType, label: '应收分析', icon: Money },
-  { type: 'payable' as AnalysisType, label: '应付分析', icon: CreditCard },
-  { type: 'budget' as AnalysisType, label: '预算分析', icon: Document }
+// Apr 24 UX: 成本/应收/应付/预算 tabs render 0 for restaurants (no fact_cost_line +
+// no A/R, A/P, budget data sources for restaurants). Hidden instead of showing
+// misleading zeros.
+// Phase IIb (2026-05-15): restaurants see {profit, kitchen-cost} — overview + ops.
+// Factory tenants see the 5 legacy tabs (profit/cost/receivable/payable/budget).
+// `restaurantOnly: true` flag = visible only to restaurant tenants.
+interface AnalysisTypeEntry {
+  type: AnalysisType;
+  label: string;
+  icon: typeof TrendCharts;
+  /** When true: only restaurant tenants see this tab. When false/undefined: factory tenants see it. */
+  restaurantOnly?: boolean;
+}
+const allAnalysisTypes: AnalysisTypeEntry[] = [
+  { type: 'profit', label: '利润分析', icon: TrendCharts },
+  { type: 'cost', label: '成本分析', icon: Wallet },
+  { type: 'receivable', label: '应收分析', icon: Money },
+  { type: 'payable', label: '应付分析', icon: CreditCard },
+  { type: 'budget', label: '预算分析', icon: Document },
+  // Phase IIb: 餐饮专属。Label 跟 RestaurantFinanceContent header 标签呼应：
+  // profit → 营收概览，kitchen-cost → 成本运营。
+  { type: 'kitchen-cost', label: '成本运营', icon: Wallet, restaurantOnly: true },
 ];
 const analysisTypes = computed(() => {
-  return isRestaurantTenant.value
-    ? allAnalysisTypes.filter(t => t.type === 'profit')
-    : allAnalysisTypes;
+  if (isRestaurantTenant.value) {
+    // Restaurant: show 'profit' (营收概览, IIa) + 'kitchen-cost' (成本运营, IIb if enabled)
+    return allAnalysisTypes.filter(t =>
+      t.type === 'profit' || (t.type === 'kitchen-cost' && phaseIIbEnabled.value),
+    );
+  }
+  // Factory tenants: filter out restaurant-only tabs
+  return allAnalysisTypes.filter(t => !t.restaurantOnly);
 });
 
 // Gold-backed 营收/订单/客单价/门店 KPIs for restaurant tenants.
@@ -1895,7 +1930,38 @@ onUnmounted(() => {
     v-if="isRestaurantTenant && !phaseIIaEnabled"
     pageName="财务数据分析"
   />
-  <RestaurantFinanceContent v-else-if="isRestaurantTenant && phaseIIaEnabled" />
+  <!-- Phase IIb (2026-05-15): restaurant wrapper hosts BOTH 营收概览 (IIa)
+       and 成本运营 (IIb) under a shared tab switcher (when phaseIIbEnabled).
+       Pre-IIb: only 营收概览 mounted directly. Spec §5.2 7-step restructure. -->
+  <div v-else-if="isRestaurantTenant && phaseIIaEnabled" class="restaurant-finance-wrapper">
+    <!-- Tab switcher (only show when more than one tab — IIb-disabled fallback hides it) -->
+    <el-card v-if="analysisTypes.length > 1" class="type-switch-card">
+      <div class="type-switch">
+        <div
+          v-for="item in analysisTypes"
+          :key="item.type"
+          class="type-item"
+          :class="{ active: analysisType === item.type }"
+          @click="analysisType = item.type"
+        >
+          <el-icon><component :is="item.icon" /></el-icon>
+          <span>{{ item.label }}</span>
+        </div>
+      </div>
+    </el-card>
+    <!-- 营收概览 (Phase IIa) — listens for 'goto-kitchen-cost' cross-link emit -->
+    <RestaurantFinanceContent
+      v-if="analysisType === 'profit'"
+      @goto-kitchen-cost="analysisType = 'kitchen-cost'"
+    />
+    <!-- 成本运营 (Phase IIb) — listens for 'goto-overview' to return to 营收概览 -->
+    <RestaurantKitchenCostContent
+      v-else-if="phaseIIbEnabled && analysisType === 'kitchen-cost'"
+      :factory-id="factoryId || ''"
+      :date-range="restaurantDefaultDateRange"
+      @goto-overview="analysisType = 'profit'"
+    />
+  </div>
   <div v-else ref="financePageRef" class="finance-analysis-page">
     <div class="page-header">
       <div class="header-left">
