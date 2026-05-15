@@ -1,0 +1,504 @@
+/**
+ * W-ABA-1 Day 5 — PDF 扫码后收货录入页 (2 字段闭环).
+ *
+ * 场景: 仓管员扫 PDF 二维码 → WHScanOperation 拿到 orderNumber → 调 by-number
+ * 接口 → 跳本页 (purchaseOrderId / orderNumber). 本页 prefill 全部信息, 仓管员只
+ * 录"收货数量 + 商品日期"两个字段, 抄码品行的数量改成实际称重.
+ *
+ * 客户原话 (六扇门 May 7 part 2):
+ * - "做仓管的他年纪都比较大文化素质很低的"
+ * - "对于那个仓管员来说他的任务很简单就是我核对数量核对那个商品的日期这两个"
+ * - "其他的话就尽量少让那个仓管员去参与什么什么价格类的"
+ *
+ * 提交流程:
+ *   1. POST /purchase/receives  (创建草稿入库单, 含全部 items)
+ *   2. POST /purchase/receives/{id}/confirm  (确认 → 触发 material_batches 创建)
+ *   3. 对每个抄码品行: POST /material/abaca-log (用 batchNumber 自动解析 batchId)
+ *
+ * 拍照附件: Phase 2 (等 Track C Attachment API ready).
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import {
+  ActivityIndicator,
+  Appbar,
+  Button,
+  Card,
+  Chip,
+  Text,
+  TextInput,
+} from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { WHInboundStackParamList } from '../../../types/navigation';
+import {
+  purchaseApiClient,
+  PurchaseOrder,
+  PurchaseOrderItem,
+  PurchaseReceiveRecord,
+  PurchaseReceiveItem,
+  CreateReceiveRecordRequest,
+} from '../../../services/api/purchaseApiClient';
+import {
+  materialTypeApiClient,
+  MaterialType,
+} from '../../../services/api/materialTypeApiClient';
+import { abacaApiClient } from '../../../services/api/abacaApiClient';
+import { handleError } from '../../../utils/errorHandler';
+import { useAuthStore } from '../../../store/authStore';
+
+type Nav = NativeStackNavigationProp<WHInboundStackParamList, 'WHReceiptCreate'>;
+type RouteProps = RouteProp<WHInboundStackParamList, 'WHReceiptCreate'>;
+
+interface RowDraft {
+  receivedQuantity: string;
+  productionDate: string;       // YYYY-MM-DD
+}
+
+const todayStr = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+export default function WHReceiptCreateScreen() {
+  const navigation = useNavigation<Nav>();
+  const route = useRoute<RouteProps>();
+  const { purchaseOrderId, orderNumber } = route.params;
+  const { user } = useAuthStore();
+  const factoryId = user?.factoryId;
+
+  const [order, setOrder] = useState<PurchaseOrder | null>(null);
+  const [materialsById, setMaterialsById] = useState<Record<string, MaterialType>>({});
+  const [rows, setRows] = useState<Record<string, RowDraft>>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // ============================================================
+  // 加载 PO + 关联 MaterialType (含 abaca flag)
+  // ============================================================
+  useEffect(() => {
+    (async () => {
+      try {
+        const orderRes = await purchaseApiClient.getOrder(purchaseOrderId, factoryId);
+        const o = orderRes?.data;
+        if (!o || !o.items || o.items.length === 0) {
+          Alert.alert('订单异常', '此采购单无明细, 无法收货', [
+            { text: '返回', onPress: () => navigation.goBack() },
+          ]);
+          return;
+        }
+        setOrder(o);
+
+        // prefill 每行: 收货数量默认 = 订单数量 - 已收数量, 商品日期默认今天
+        const initRows: Record<string, RowDraft> = {};
+        for (const it of o.items) {
+          const remaining = Math.max(0, (it.quantity || 0) - (it.receivedQuantity || 0));
+          initRows[it.id] = {
+            receivedQuantity: remaining > 0 ? String(remaining) : '',
+            productionDate: todayStr(),
+          };
+        }
+        setRows(initRows);
+
+        // 并行拉每个原料的 MaterialType (拿 abaca 标记)
+        const uniqueTypeIds = Array.from(new Set(o.items.map((i) => i.materialTypeId)));
+        const typesArr = await Promise.all(
+          uniqueTypeIds.map((id) =>
+            materialTypeApiClient
+              .getMaterialTypeById(id, factoryId)
+              .catch(() => null),
+          ),
+        );
+        const map: Record<string, MaterialType> = {};
+        typesArr.forEach((t, idx) => {
+          if (t) map[uniqueTypeIds[idx]] = t;
+        });
+        setMaterialsById(map);
+      } catch (err) {
+        handleError(err, { title: '加载采购订单失败' });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [purchaseOrderId, factoryId, navigation]);
+
+  // ============================================================
+  // 工具
+  // ============================================================
+  const isAbacaItem = useCallback(
+    (item: PurchaseOrderItem): boolean =>
+      !!materialsById[item.materialTypeId]?.isAbacaPackaging,
+    [materialsById],
+  );
+
+  const unitFor = useCallback(
+    (item: PurchaseOrderItem): string => {
+      const m = materialsById[item.materialTypeId];
+      if (m?.isAbacaPackaging) return m.abacaDefaultUnit || 'kg';
+      return item.unit || m?.unit || '';
+    },
+    [materialsById],
+  );
+
+  const updateRow = (itemId: string, patch: Partial<RowDraft>) => {
+    setRows((prev) => ({
+      ...prev,
+      [itemId]: { ...(prev[itemId] || { receivedQuantity: '', productionDate: todayStr() }), ...patch },
+    }));
+  };
+
+  // ============================================================
+  // 提交
+  // ============================================================
+  const handleSubmit = useCallback(async () => {
+    if (!order || !order.items) return;
+
+    // 校验: 至少 1 行有 quantity > 0
+    const validItems = order.items.filter((it) => {
+      const q = Number(rows[it.id]?.receivedQuantity);
+      return Number.isFinite(q) && q > 0;
+    });
+    if (validItems.length === 0) {
+      Alert.alert('提示', '请至少填写一行收货数量');
+      return;
+    }
+
+    // 校验: 所有有数量的行必须有商品日期
+    for (const it of validItems) {
+      const d = rows[it.id]?.productionDate;
+      if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        Alert.alert('提示', `行 "${it.materialTypeName || it.materialTypeId}" 商品日期格式不对, 应为 YYYY-MM-DD`);
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    try {
+      // 1. createReceive (草稿)
+      const receivePayload: CreateReceiveRecordRequest = {
+        purchaseOrderId: order.id,
+        supplierId: order.supplierId,
+        receiveDate: todayStr(),
+        remark: orderNumber ? `扫码入库: ${orderNumber}` : '扫码入库',
+        items: validItems.map((it) => ({
+          materialTypeId: it.materialTypeId,
+          materialName: it.materialTypeName,
+          receivedQuantity: Number(rows[it.id].receivedQuantity),
+          unit: unitFor(it),
+          unitPrice: it.unitPrice,
+        })),
+      };
+      const createRes = await purchaseApiClient.createReceive(receivePayload, factoryId);
+      const receive: PurchaseReceiveRecord = createRes.data;
+      if (!receive?.id) throw new Error('createReceive 返回缺 id');
+
+      // 2. confirmReceive (触发 material_batches 创建)
+      const confirmRes = await purchaseApiClient.confirmReceive(receive.id, factoryId);
+      const confirmed: PurchaseReceiveRecord = confirmRes.data;
+
+      // 3. 对每个抄码品行 → POST /material/abaca-log (用 batchNumber 自动 lookup batchId)
+      const abacaItems = validItems.filter((it) => isAbacaItem(it));
+      const confirmedItemsByMaterial = new Map<string, PurchaseReceiveItem>();
+      (confirmed.items || []).forEach((ri) => confirmedItemsByMaterial.set(ri.materialTypeId, ri));
+
+      let abacaLogged = 0;
+      const abacaErrors: string[] = [];
+      for (const it of abacaItems) {
+        const confirmedItem = confirmedItemsByMaterial.get(it.materialTypeId);
+        if (!confirmedItem?.batchNumber) {
+          abacaErrors.push(`${it.materialTypeName || it.materialTypeId}: 确认后未拿到 batchNumber`);
+          continue;
+        }
+        try {
+          await abacaApiClient.create(
+            {
+              batchNumber: confirmedItem.batchNumber,
+              rawMaterialTypeId: it.materialTypeId,
+              actualWeight: Number(rows[it.id].receivedQuantity),
+              unit: unitFor(it),
+              weighingMethod: 'MANUAL',
+              purchaseOrderItemId: it.id,
+              notes: `扫码入库自动落账; 商品日期 ${rows[it.id].productionDate}`,
+            },
+            factoryId,
+          );
+          abacaLogged += 1;
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : '抄码日志失败';
+          abacaErrors.push(`${it.materialTypeName || it.materialTypeId}: ${msg}`);
+        }
+      }
+
+      const summary = [
+        `入库单 ${confirmed.receiveNumber || receive.id} 创建并确认成功`,
+        `共 ${validItems.length} 行`,
+        abacaItems.length > 0
+          ? `抄码品自动落称重日志: ${abacaLogged}/${abacaItems.length}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
+      const finalMsg = abacaErrors.length > 0
+        ? `${summary}\n\n抄码日志失败 (可手工补录):\n- ${abacaErrors.join('\n- ')}`
+        : summary;
+
+      Alert.alert('入库成功', finalMsg, [
+        { text: '确定', onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      handleError(err, { title: '入库提交失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [order, rows, orderNumber, factoryId, navigation, unitFor, isAbacaItem]);
+
+  // ============================================================
+  // Render
+  // ============================================================
+  const totalReceivedRows = useMemo(
+    () =>
+      Object.values(rows).filter((r) => {
+        const q = Number(r.receivedQuantity);
+        return Number.isFinite(q) && q > 0;
+      }).length,
+    [rows],
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="扫码入库录入" />
+        </Appbar.Header>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>加载采购单中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!order) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="扫码入库录入" />
+        </Appbar.Header>
+        <View style={styles.center}>
+          <Text>采购单加载失败</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content
+            title="扫码入库录入"
+            subtitle={order.orderNumber ? `订单 ${order.orderNumber}` : ''}
+          />
+        </Appbar.Header>
+
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+          {/* 订单信息卡片 (全部只读, prefill) */}
+          <Card style={styles.card}>
+            <Card.Content>
+              <Text style={styles.sectionTitle}>订单信息 (已 prefill)</Text>
+              <View style={styles.kv}>
+                <Text style={styles.kvLabel}>订单号</Text>
+                <Text style={styles.kvValue}>{order.orderNumber}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.kvLabel}>供应商</Text>
+                <Text style={styles.kvValue}>{order.supplierName || order.supplierId}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.kvLabel}>下单日期</Text>
+                <Text style={styles.kvValue}>{order.orderDate}</Text>
+              </View>
+              {order.expectedDeliveryDate && (
+                <View style={styles.kv}>
+                  <Text style={styles.kvLabel}>期望交货</Text>
+                  <Text style={styles.kvValue}>{order.expectedDeliveryDate}</Text>
+                </View>
+              )}
+              <View style={styles.kv}>
+                <Text style={styles.kvLabel}>明细行数</Text>
+                <Text style={styles.kvValue}>{order.items?.length || 0} 行</Text>
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* 收货明细 — 只要 2 字段必填 */}
+          <Text style={styles.outerHeader}>收货明细 (仅录数量 + 日期)</Text>
+          {(order.items || []).map((it, idx) => {
+            const abaca = isAbacaItem(it);
+            const m = materialsById[it.materialTypeId];
+            const row = rows[it.id] || { receivedQuantity: '', productionDate: todayStr() };
+            return (
+              <Card key={it.id} style={styles.itemCard}>
+                <Card.Content>
+                  <View style={styles.itemHeaderRow}>
+                    <Text style={styles.itemIndex}>第 {idx + 1} 行</Text>
+                    {abaca && (
+                      <Chip
+                        compact
+                        style={styles.abacaChip}
+                        textStyle={styles.abacaChipText}
+                      >
+                        🥩 抄码品
+                      </Chip>
+                    )}
+                  </View>
+
+                  <View style={styles.kv}>
+                    <Text style={styles.kvLabel}>原料</Text>
+                    <Text style={styles.kvValue}>
+                      {it.materialTypeName || m?.name || it.materialTypeId}
+                    </Text>
+                  </View>
+                  <View style={styles.kv}>
+                    <Text style={styles.kvLabel}>订单数量</Text>
+                    <Text style={styles.kvValue}>
+                      {it.quantity} {it.unit}
+                      {it.receivedQuantity > 0 ? `  (已收 ${it.receivedQuantity})` : ''}
+                    </Text>
+                  </View>
+
+                  {abaca && (
+                    <View style={styles.abacaBanner}>
+                      <Text style={styles.abacaBannerText}>
+                        本品按实际称重 {m?.abacaUnitPerBox ? `(${m.abacaUnitPerBox})` : ''} —
+                        提交后自动写入称重日志 (boxIndex 自动分配, 可在抄码品详情页继续 append)
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.fieldsRow}>
+                    <TextInput
+                      label={abaca ? `估算重量 (${unitFor(it)}) *` : `数量 (${unitFor(it)}) *`}
+                      value={row.receivedQuantity}
+                      onChangeText={(t) =>
+                        updateRow(it.id, { receivedQuantity: t.replace(/[^0-9.]/g, '') })
+                      }
+                      mode="outlined"
+                      keyboardType="numeric"
+                      style={[styles.field, styles.flex1]}
+                      placeholder={abaca ? '入库以实际称重为准' : ''}
+                    />
+                    <TextInput
+                      label="商品日期 *"
+                      value={row.productionDate}
+                      onChangeText={(t) => updateRow(it.id, { productionDate: t })}
+                      mode="outlined"
+                      placeholder="YYYY-MM-DD"
+                      style={[styles.field, styles.flex1]}
+                    />
+                  </View>
+                </Card.Content>
+              </Card>
+            );
+          })}
+
+          {/* 拍照附件 — Phase 2 (Track C Attachment API ready 后) */}
+          <Card style={styles.card}>
+            <Card.Content>
+              <Text style={styles.sectionTitle}>拍照附件</Text>
+              <Text style={styles.todoText}>
+                📷 收货拍照功能 Phase 2 接入 (依赖 Track C 通用 Attachment 系统).
+                {'\n'}当前提交不含照片. 仓管员可手工拍照存档.
+              </Text>
+            </Card.Content>
+          </Card>
+
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Button
+            mode="contained"
+            onPress={handleSubmit}
+            loading={submitting}
+            disabled={submitting || totalReceivedRows === 0}
+            icon="check"
+          >
+            提交入库 ({totalReceivedRows} 行)
+          </Button>
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#f5f7fa' },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 12 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loadingText: { fontSize: 14, color: '#666' },
+
+  card: { marginBottom: 12, borderRadius: 8 },
+  sectionTitle: { fontSize: 15, fontWeight: '600', marginBottom: 8, color: '#2d3748' },
+  outerHeader: { fontSize: 15, fontWeight: '600', marginBottom: 8, marginTop: 4, color: '#2d3748' },
+
+  itemCard: { marginBottom: 12, borderRadius: 8 },
+  itemHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  itemIndex: { fontSize: 13, color: '#666', fontWeight: '500' },
+  abacaChip: { backgroundColor: '#fef3c7' },
+  abacaChipText: { color: '#92400e', fontSize: 12 },
+
+  kv: { flexDirection: 'row', paddingVertical: 4 },
+  kvLabel: { width: 80, fontSize: 13, color: '#718096' },
+  kvValue: { flex: 1, fontSize: 13, color: '#2d3748' },
+
+  abacaBanner: {
+    backgroundColor: '#fef3c7',
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 4,
+  },
+  abacaBannerText: { fontSize: 12, color: '#92400e', lineHeight: 18 },
+
+  fieldsRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  field: { backgroundColor: 'transparent' },
+  flex1: { flex: 1 },
+
+  todoText: { fontSize: 12, color: '#888', lineHeight: 18 },
+
+  bottomSpacer: { height: 24 },
+
+  footer: {
+    padding: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+});

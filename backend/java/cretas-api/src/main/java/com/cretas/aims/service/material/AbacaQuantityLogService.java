@@ -1,9 +1,11 @@
 package com.cretas.aims.service.material;
 
 import com.cretas.aims.dto.material.CreateAbacaQuantityLogRequest;
+import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.warehouse.AbacaQuantityLog;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.AbacaQuantityLogRepository;
+import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class AbacaQuantityLogService {
 
     private final AbacaQuantityLogRepository abacaRepo;
     private final RawMaterialTypeRepository rawMaterialTypeRepo;
+    private final MaterialBatchRepository materialBatchRepo;
 
     // ==================== 读取 ====================
 
@@ -65,9 +68,8 @@ public class AbacaQuantityLogService {
     /** 单箱称重写入 + 返回新建记录 + 该批次累计汇总. */
     @Transactional
     public Map<String, Object> create(String factoryId, Long weighedBy, CreateAbacaQuantityLogRequest req) {
-        validateMaterialTypeIsAbaca(factoryId, req.getRawMaterialTypeId());
-
         AbacaQuantityLog entity = toEntity(factoryId, weighedBy, req);
+        validateMaterialTypeIsAbaca(factoryId, entity.getRawMaterialTypeId());
         AbacaQuantityLog saved = abacaRepo.save(entity);
         log.info("抄码称重写入 factory={} batch={} box={} weight={} {}",
                 factoryId, saved.getMaterialBatchId(), saved.getBoxIndex(),
@@ -87,22 +89,22 @@ public class AbacaQuantityLogService {
         if (requests == null || requests.isEmpty()) {
             throw new BusinessException("批量称重请求不能为空");
         }
-        String batchId = requests.get(0).getMaterialBatchId();
-        if (batchId == null || batchId.isBlank()) {
-            throw new BusinessException("批次 ID 不能为空");
-        }
 
         List<AbacaQuantityLog> saved = new ArrayList<>(requests.size());
+        String firstBatchId = null;
         for (CreateAbacaQuantityLogRequest req : requests) {
-            if (!batchId.equals(req.getMaterialBatchId())) {
-                throw new BusinessException("批量请求必须属于同一个 materialBatchId");
+            AbacaQuantityLog entity = toEntity(factoryId, weighedBy, req);
+            if (firstBatchId == null) {
+                firstBatchId = entity.getMaterialBatchId();
+            } else if (!firstBatchId.equals(entity.getMaterialBatchId())) {
+                throw new BusinessException("批量请求必须属于同一个批次 (materialBatchId 或 batchNumber 等价)");
             }
-            validateMaterialTypeIsAbaca(factoryId, req.getRawMaterialTypeId());
-            saved.add(abacaRepo.save(toEntity(factoryId, weighedBy, req)));
+            validateMaterialTypeIsAbaca(factoryId, entity.getRawMaterialTypeId());
+            saved.add(abacaRepo.save(entity));
         }
 
-        log.info("抄码批量称重 factory={} batch={} 共 {} 箱", factoryId, batchId, saved.size());
-        return withSummary(factoryId, batchId, saved);
+        log.info("抄码批量称重 factory={} batch={} 共 {} 箱", factoryId, firstBatchId, saved.size());
+        return withSummary(factoryId, firstBatchId, saved);
     }
 
     /** 复核 (双签). */
@@ -137,15 +139,25 @@ public class AbacaQuantityLogService {
 
     private AbacaQuantityLog toEntity(String factoryId, Long weighedBy,
                                      CreateAbacaQuantityLogRequest req) {
+        // 解析 batchId — 支持 materialBatchId 或 batchNumber 二选一 (PDF 扫码场景 RN 端常拿 batchNumber)
+        String batchId = resolveBatchId(factoryId, req);
+        String materialTypeId = req.getRawMaterialTypeId();
+        if (materialTypeId == null || materialTypeId.isBlank()) {
+            // 自动从 batch 取 (避免 caller 重复传)
+            MaterialBatch batch = materialBatchRepo.findById(batchId)
+                    .orElseThrow(() -> new BusinessException("批次不存在: " + batchId));
+            materialTypeId = batch.getMaterialTypeId();
+        }
+
         Integer boxIdx = req.getBoxIndex();
         if (boxIdx == null) {
-            Integer maxIdx = abacaRepo.maxBoxIndexByBatch(factoryId, req.getMaterialBatchId());
+            Integer maxIdx = abacaRepo.maxBoxIndexByBatch(factoryId, batchId);
             boxIdx = (maxIdx == null ? 0 : maxIdx) + 1;
         }
         AbacaQuantityLog entity = new AbacaQuantityLog();
         entity.setFactoryId(factoryId);
-        entity.setMaterialBatchId(req.getMaterialBatchId());
-        entity.setRawMaterialTypeId(req.getRawMaterialTypeId());
+        entity.setMaterialBatchId(batchId);
+        entity.setRawMaterialTypeId(materialTypeId);
         entity.setPurchaseOrderItemId(req.getPurchaseOrderItemId());
         entity.setBoxIndex(boxIdx);
         entity.setActualWeight(req.getActualWeight());
@@ -155,6 +167,20 @@ public class AbacaQuantityLogService {
         entity.setWeighedBy(weighedBy);
         entity.setNotes(req.getNotes());
         return entity;
+    }
+
+    /** materialBatchId 优先; 否则按 batchNumber + factoryId lookup; 二者皆空抛 400. */
+    private String resolveBatchId(String factoryId, CreateAbacaQuantityLogRequest req) {
+        if (req.getMaterialBatchId() != null && !req.getMaterialBatchId().isBlank()) {
+            return req.getMaterialBatchId();
+        }
+        if (req.getBatchNumber() != null && !req.getBatchNumber().isBlank()) {
+            return materialBatchRepo.findByFactoryIdAndBatchNumber(factoryId, req.getBatchNumber())
+                    .orElseThrow(() -> new BusinessException(
+                            "批次号不存在 (工厂 " + factoryId + "): " + req.getBatchNumber()))
+                    .getId();
+        }
+        throw new BusinessException("必须提供 materialBatchId 或 batchNumber 之一");
     }
 
     private void validateMaterialTypeIsAbaca(String factoryId, String rawMaterialTypeId) {

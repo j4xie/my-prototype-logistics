@@ -32,12 +32,18 @@ import java.math.BigDecimal;
 @Schema(description = "抄码品单箱称重请求")
 public class CreateAbacaQuantityLogRequest {
 
-    @NotBlank(message = "批次 ID 不能为空")
-    @Schema(description = "原料批次 ID", required = true)
+    /**
+     * 原料批次 ID — 跟 batchNumber 二选一. 优先 ID; 若空则后端按 batchNumber 在 factoryId
+     * 范围内 lookup. RN 端 PDF 扫码场景常拿到 batchNumber 而非 ID, 故允许后端解析.
+     */
+    @Schema(description = "原料批次 ID (与 batchNumber 二选一; 二者皆空 → 400)")
     private String materialBatchId;
 
-    @NotBlank(message = "原料类型 ID 不能为空")
-    @Schema(description = "原料类型 ID (raw_material_types.id)", required = true)
+    @Schema(description = "原料批次号 (与 materialBatchId 二选一; 后端用 factoryId+batchNumber lookup)")
+    private String batchNumber;
+
+    /** 原料类型 ID — 可选; 若空, 后端从 materialBatch.materialTypeId 自动填充. */
+    @Schema(description = "原料类型 ID (raw_material_types.id); 可空, 默认从 batch 取")
     private String rawMaterialTypeId;
 
     /** 可空 — 后端自动分配 (现有最大 boxIndex + 1). */

@@ -214,6 +214,14 @@ public class PurchaseServiceImpl implements PurchaseService {
         return order;
     }
 
+    @Override
+    public PurchaseOrder getPurchaseOrderByNumber(String factoryId, String orderNumber) {
+        PurchaseOrder order = purchaseOrderRepository.findByFactoryIdAndOrderNumber(factoryId, orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("采购订单不存在: " + orderNumber));
+        hydrateSalesOrderNumber(order);
+        return order;
+    }
+
     /**
      * Rule 2 hydration: 给 PO 填 salesOrderNumber (@Transient). 前端"关联销售订单"
      * 展示直接用, 免去 1+N 查询 SO. Null-safe — 无 salesOrderId 时不查.
