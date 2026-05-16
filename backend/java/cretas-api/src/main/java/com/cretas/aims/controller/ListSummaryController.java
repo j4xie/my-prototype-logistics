@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
  *   - returnOrder       — 退货单 (return_orders)
  *   - internalTransfer  — 内部调拨 (internal_transfers; source 或 target = factoryId)
  *   - qualityInspection — 质检 (quality_inspections; result PASS/FAIL/PENDING)
+ *   - productionPlan    — 生产计划 (production_plans; 计划/完成数量 + 完成率)
+ *   - shipment          — 发货 (sales_delivery_records; 待发货/已完成 split)
  *
  * Frontend: RN StickyFooterSummary + Vue TableFooter.
  */

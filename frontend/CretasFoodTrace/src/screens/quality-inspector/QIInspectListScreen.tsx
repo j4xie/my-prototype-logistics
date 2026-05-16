@@ -3,7 +3,7 @@
  * Quality Inspector - Pending Batches List Screen
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,8 @@ import { useTranslation } from 'react-i18next';
 import { QI_COLORS, QualityInspectorStackParamList, QIBatch, BATCH_STATUS_LABELS, BATCH_STATUS_COLORS } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
 import { useAuthStore } from '../../store/authStore';
+import { StickyFooterSummary } from '../../components/list';
+import { useListSummary } from '../../hooks/useListSummary';
 
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
@@ -89,6 +91,11 @@ export default function QIInspectListScreen() {
       loadBatches(page + 1, false);
     }
   };
+
+  // U-FOOTER-1
+  const summaryRequest = useMemo(() => ({ filterConditions: {} }), []);
+  const { summary, refresh: refreshSummary } = useListSummary('qualityInspection', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing]);
 
   const handleScanPress = () => {
     navigation.navigate('QIScan');
@@ -194,34 +201,50 @@ export default function QIInspectListScreen() {
       </View>
 
       {/* 批次列表 */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={QI_COLORS.primary} />
-          <Text style={styles.loadingText}>加载中...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={batches}
-          keyExtractor={(item) => item.id}
-          renderItem={renderBatchItem}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: insets.bottom + 20 },
-          ]}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[QI_COLORS.primary]}
-            />
-          }
-          onEndReached={onEndReached}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmpty}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={QI_COLORS.primary} />
+            <Text style={styles.loadingText}>加载中...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={batches}
+            keyExtractor={(item) => item.id}
+            renderItem={renderBatchItem}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: insets.bottom + 20 },
+            ]}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[QI_COLORS.primary]}
+              />
+            }
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={renderFooter}
+            ListEmptyComponent={renderEmpty}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'QUALITY_CHECK',
+              initialMessage: '分析当前质检列表 (合格率 / 不合格趋势)',
+            },
+          }))
+        }
+      />
     </View>
   );
 }

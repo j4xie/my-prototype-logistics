@@ -59,4 +59,6 @@ export type SupportedSummaryEntityType =
   | 'attendance'
   | 'returnOrder'
   | 'internalTransfer'
-  | 'qualityInspection';
+  | 'qualityInspection'
+  | 'productionPlan'
+  | 'shipment';

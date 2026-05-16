@@ -47,3 +47,5 @@ export type SupportedSummaryEntityType =
   | 'returnOrder'
   | 'internalTransfer'
   | 'qualityInspection'
+  | 'productionPlan'
+  | 'shipment'

@@ -12,7 +12,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -28,6 +28,8 @@ import { useTranslation } from 'react-i18next';
 
 import { timeclockApiClient } from '../../../services/api/timeclockApiClient';
 import { HR_THEME } from '../../../types/hrNavigation';
+import { StickyFooterSummary } from '../../../components/list';
+import { useListSummary } from '../../../hooks/useListSummary';
 
 type ViewMode = 'today' | 'history';
 
@@ -117,6 +119,11 @@ export default function AttendanceManageScreen() {
     setRefreshing(true);
     loadData();
   }, [loadData]);
+
+  // U-FOOTER-1
+  const summaryRequest = useMemo(() => ({ filterConditions: {} }), []);
+  const { summary, refresh: refreshSummary } = useListSummary('attendance', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing, viewMode]);
 
   const filteredData = records.filter(
     (item) =>
@@ -218,23 +225,39 @@ export default function AttendanceManageScreen() {
         />
       </View>
 
-      <FlatList
-        data={filteredData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons
-              name="calendar-check-outline"
-              size={64}
-              color={HR_THEME.textMuted}
-            />
-            <Text style={styles.emptyText}>{t('attendance.department.noRecords')}</Text>
-          </View>
+      <View style={{ flex: 1 }}>
+        <FlatList
+          data={filteredData}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name="calendar-check-outline"
+                size={64}
+                color={HR_THEME.textMuted}
+              />
+              <Text style={styles.emptyText}>{t('attendance.department.noRecords')}</Text>
+            </View>
+          }
+        />
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'ATTENDANCE',
+              initialMessage: `分析考勤列表 (视图: ${viewMode === 'today' ? '今日' : '历史'})`,
+            },
+          }))
         }
       />
     </SafeAreaView>

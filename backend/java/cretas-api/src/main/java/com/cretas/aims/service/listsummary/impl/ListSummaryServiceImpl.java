@@ -38,7 +38,8 @@ public class ListSummaryServiceImpl implements ListSummaryService {
 
     private static final Set<String> SUPPORTED = Set.of(
             "salesOrder", "purchaseOrder", "inventory", "wastage", "attendance",
-            "returnOrder", "internalTransfer", "qualityInspection");
+            "returnOrder", "internalTransfer", "qualityInspection",
+            "productionPlan", "shipment");
 
     @Override
     @Transactional(readOnly = true)
@@ -60,6 +61,8 @@ public class ListSummaryServiceImpl implements ListSummaryService {
             case "returnOrder"       -> computeReturnOrderSummary(factoryId, filter, dateFrom, dateTo);
             case "internalTransfer"  -> computeInternalTransferSummary(factoryId, filter, dateFrom, dateTo);
             case "qualityInspection" -> computeQualityInspectionSummary(factoryId, filter, dateFrom, dateTo);
+            case "productionPlan"    -> computeProductionPlanSummary(factoryId, filter, dateFrom, dateTo);
+            case "shipment"          -> computeShipmentSummary(factoryId, filter, dateFrom, dateTo);
             default -> throw new IllegalStateException("unreachable");
         };
     }
@@ -258,6 +261,58 @@ public class ListSummaryServiceImpl implements ListSummaryService {
         stats.add(stat("合格率", BigDecimal.valueOf(passRate).setScale(1, RoundingMode.HALF_UP),
                 "percent", "%", false));
         return ListSummaryResponse.builder().entityType("qualityInspection").stats(stats).build();
+    }
+
+    // ==================== 生产计划 ====================
+
+    private ListSummaryResponse computeProductionPlanSummary(String factoryId, Map<String, Object> filter,
+                                                              LocalDate from, LocalDate to) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*), COALESCE(SUM(planned_quantity), 0), COALESCE(SUM(actual_quantity), 0) " +
+                "FROM production_plans WHERE factory_id = :fid AND deleted_at IS NULL");
+        appendStatusFilter(sql, filter);
+        appendDateRange(sql, "planned_date", from, to);
+        Query q = em.createNativeQuery(sql.toString());
+        bindParams(q, factoryId, filter, from, to);
+        Object[] row = (Object[]) q.getSingleResult();
+        long count = ((Number) row[0]).longValue();
+        BigDecimal planned = (BigDecimal) row[1];
+        BigDecimal actual = (BigDecimal) row[2];
+        BigDecimal completionRate = planned.signum() > 0
+                ? actual.multiply(BigDecimal.valueOf(100)).divide(planned, 1, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        List<SummaryStat> stats = new ArrayList<>();
+        stats.add(stat("共", count, "number", "条", false));
+        stats.add(stat("计划数量", planned, "number", "", false));
+        stats.add(stat("完成数量", actual, "number", "", false));
+        stats.add(stat("完成率", completionRate, "percent", "%", false));
+        return ListSummaryResponse.builder().entityType("productionPlan").stats(stats).build();
+    }
+
+    // ==================== 发货 ====================
+
+    private ListSummaryResponse computeShipmentSummary(String factoryId, Map<String, Object> filter,
+                                                        LocalDate from, LocalDate to) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*), COALESCE(SUM(total_amount), 0), " +
+                "       COUNT(*) FILTER (WHERE status IN ('PENDING','SUBMITTED')) AS pending_cnt, " +
+                "       COUNT(*) FILTER (WHERE status = 'COMPLETED') AS completed_cnt " +
+                "FROM sales_delivery_records WHERE factory_id = :fid AND deleted_at IS NULL");
+        appendStatusFilter(sql, filter);
+        appendDateRange(sql, "delivery_date", from, to);
+        Query q = em.createNativeQuery(sql.toString());
+        bindParams(q, factoryId, filter, from, to);
+        Object[] row = (Object[]) q.getSingleResult();
+        long count = ((Number) row[0]).longValue();
+        BigDecimal total = (BigDecimal) row[1];
+        long pending = ((Number) row[2]).longValue();
+        long completed = ((Number) row[3]).longValue();
+        List<SummaryStat> stats = new ArrayList<>();
+        stats.add(stat("共", count, "number", "条", false));
+        stats.add(stat("待发货", pending, "number", "条", false));
+        stats.add(stat("已完成", completed, "number", "条", false));
+        stats.add(stat("总金额", total, "currency", "¥", true));
+        return ListSummaryResponse.builder().entityType("shipment").stats(stats).build();
     }
 
     // ==================== Helpers ====================
