@@ -76,7 +76,9 @@ const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
   // Bug #40: finance_manager 需审核开票申请, 加 ERP 财务操作入口
   { path: '/finance/invoices?status=REQUESTED', title: '开票审核', icon: 'Tickets', module: 'finance' },
-  { path: '/finance/payments', title: '收款管理', icon: 'Money', module: 'finance' }
+  { path: '/finance/payments', title: '收款管理', icon: 'Money', module: 'finance' },
+  // Smoke v2 Bug #2: 财务审核采购单 — finance_manager 是该列表的主审核人
+  { path: '/procurement/finance-review', title: '财务待审采购单', icon: 'ShoppingCart', module: 'finance' }
 ];
 
 const menuConfig: MenuItem[] = [
@@ -132,6 +134,7 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/procurement/orders', title: '采购订单', icon: '', module: 'procurement' },
       { path: '/procurement/receives', title: '采购入库', icon: '', module: 'procurement' },
+      { path: '/procurement/finance-review', title: '财务待审采购单', icon: '', module: 'finance' },
       { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' },
       { path: '/procurement/price-lists', title: '价格表管理', icon: '', module: 'procurement' }
     ]

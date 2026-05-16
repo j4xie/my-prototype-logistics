@@ -22,6 +22,7 @@ const ROLE_PATH_WHITELIST: Record<string, string[]> = {
   finance_manager: [
     '/dashboard',
     '/finance',
+    '/procurement/finance-review',
     '/smart-bi/dashboard',
     '/smart-bi/finance',
     '/smart-bi/financial-dashboard',
