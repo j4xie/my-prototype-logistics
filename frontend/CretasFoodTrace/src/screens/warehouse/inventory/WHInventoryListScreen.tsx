@@ -6,7 +6,7 @@
  * - materialBatchApiClient - 获取库存统计和批次列表
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -34,6 +34,10 @@ import { materialBatchApiClient, MaterialBatch } from "../../../services/api/mat
 import { handleError } from "../../../utils/errorHandler";
 import { logger } from "../../../utils/logger";
 import { formatNumberWithCommas, formatDate } from "../../../utils/formatters";
+import { CommonActions } from "@react-navigation/native";
+import { Alert } from "react-native";
+import { RowActionBottomSheet } from "../../../components/list";
+import { useRowActions, type RowContext } from "../../../hooks/useRowActions";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -130,6 +134,28 @@ export function WHInventoryListScreen() {
     expiringBatchesCount: number;
     inventoryByType?: Record<string, number>;
   } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
+
+  /** Map warningType ('normal'/'low'/'expire') to STATUS_ACTIONS_MAP key. */
+  const deriveInventoryStatus = (item: InventoryItem): string => {
+    if (item.warningType === 'expire') return 'EXPIRE';
+    if (item.warningType === 'low') return 'LOW';
+    return 'NORMAL';
+  };
+
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => navigation.navigate('WHInventoryDetail', { inventoryId: e.id }),
+    transfer: () => Alert.alert('调拨', '跳转 WHInventoryTransfer (待接)'),
+    'view-price-history': (e: RowContext) => Alert.alert('价格历史', `物料 ${e.id}`),
+  }), [navigation]);
+
+  const sheetCtx: RowContext = selectedItem
+    ? { status: deriveInventoryStatus(selectedItem), id: selectedItem.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('inventory', sheetCtx, { handlers });
+
+  const openSheet = (item: InventoryItem) => { setSelectedItem(item); setActionSheetVisible(true); };
 
   // Define type config and quick actions inside component to access t()
   const typeConfig: Record<MaterialType, { label: string; color: string; bgColor: string }> = {
@@ -369,6 +395,7 @@ export function WHInventoryListScreen() {
               <TouchableOpacity
                 key={item.id}
                 onPress={() => handleItemPress(item)}
+                onLongPress={() => openSheet(item)}
                 activeOpacity={0.7}
               >
                 <Surface style={styles.inventoryCard} elevation={1}>
@@ -469,6 +496,21 @@ export function WHInventoryListScreen() {
         <View style={{ height: 20 }} />
       </ScrollView>
       )}
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedItem ? `${selectedItem.name}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedItem) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'INVENTORY', initialMessage: `${selectedItem.name}: ` },
+          }));
+        }}
+      />
     </SafeAreaView>
   );
 }

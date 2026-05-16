@@ -10,6 +10,8 @@ import { Plus, Refresh, Search, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
@@ -52,6 +54,34 @@ const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT'
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+/** UX-A2: secondary-action dropdown ("操作 ▾") shown last in row toolbar. */
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'salesOrder',
+    { status: String(row.status || ''), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': goDetail(String(row.id)); break;
+    case 'edit': handleEdit(row); break;
+    case 'submit': case 'approve': handleAction(String(row.id), 'confirm'); break;
+    case 'cancel': handleAction(String(row.id), 'cancel'); break;
+    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    case 'copy': ElMessage.info(`复制单据 ${row.orderNumber} (待接 API)`); break;
+    case 'convert-to-production': ElMessage.info('转生产任务 (待 Track E N31 集成)'); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  // Day 9: open existing AiEntryDrawer with row context. Drawer's seed-message
+  // hook is owned by useAiChat — we surface the row id via console for now;
+  // full availableActions surfacing waits on Track A AIChat schema.
+  console.info('[RowAction AI]', { entityType: 'salesOrder', entityId: row.id, orderNumber: row.orderNumber });
+  aiEntryVisible.value = true;
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -805,6 +835,12 @@ async function submitQuickPayment() {
               size="small"
               @click="handleQuickPayment(row)"
             >收款</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

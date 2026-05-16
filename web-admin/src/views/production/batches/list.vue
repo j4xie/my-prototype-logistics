@@ -9,6 +9,8 @@ import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 const router = useRouter();
 
@@ -16,6 +18,26 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
+const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'processTask',
+    { status: String(row.status || 'IN_PROGRESS'), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': router.push(`/production/batches/${row.id}`); break;
+    case 'edit': router.push(`/production/batches/${row.id}`); break;
+    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  ElMessage.info(`AIChat: processTask/${row.batchNumber || row.id} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -240,10 +262,16 @@ function getStatusText(status: string) {
         </el-table-column>
         <el-table-column prop="supervisorName" label="负责人" width="100" />
         <el-table-column prop="createdAt" label="创建时间" width="180" :formatter="formatDateTimeCell" />
-        <el-table-column label="操作" width="150" fixed="right" align="center">
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="router.push(`/production/batches/${row.id}`)">查看</el-button>
             <el-button v-if="canWrite" type="primary" link size="small" @click="router.push(`/production/batches/${row.id}`)">编辑</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

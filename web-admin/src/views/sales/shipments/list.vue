@@ -7,12 +7,33 @@ import { ElMessage, type FormInstance } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'whOutbound',
+    { status: String(row.status || 'SHIPPED'), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': handleView(row); break;
+    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    case 'return': ElMessage.info(`发起退货 (待接 returnOrder API): ${row.id}`); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  ElMessage.info(`AIChat: shipment/${row.id} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -249,9 +270,15 @@ async function submitCreateForm() {
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="出货时间" width="180" :formatter="formatDateTimeCell" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleView(row)">查看</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

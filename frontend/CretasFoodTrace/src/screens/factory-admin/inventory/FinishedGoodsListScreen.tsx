@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Chip, ActivityIndicator, ProgressBar } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { salesApiClient, FinishedGoodsBatch } from '../../../services/api/salesApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
+import { RowActionBottomSheet } from '../../../components/list';
+import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 
 export default function FinishedGoodsListScreen() {
   const navigation = useNavigation();
@@ -12,6 +14,29 @@ export default function FinishedGoodsListScreen() {
   const [batches, setBatches] = useState<FinishedGoodsBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<FinishedGoodsBatch | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
+
+  /** Derive a STATUS_ACTIONS_MAP key from quantity ratio. */
+  const deriveStockStatus = (b: FinishedGoodsBatch): string => {
+    if (b.availableQuantity <= 0) return 'OUT_OF_STOCK';
+    const ratio = b.totalQuantity > 0 ? b.availableQuantity / b.totalQuantity : 0;
+    if (ratio < 0.2) return 'LOW_STOCK';
+    return 'IN_STOCK';
+  };
+
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => Alert.alert('查看详情', `批次 ${e.id}`),
+    transfer: (e: RowContext) => Alert.alert('调拨', `调拨批次 ${e.id} (待接调拨流程)`),
+    'view-price-history': (e: RowContext) => Alert.alert('价格历史', `批次 ${e.id}`),
+  }), []);
+
+  const sheetCtx: RowContext = selectedBatch
+    ? { status: deriveStockStatus(selectedBatch), id: selectedBatch.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('inventory', sheetCtx, { handlers });
+
+  const openSheet = (batch: FinishedGoodsBatch) => { setSelectedBatch(batch); setActionSheetVisible(true); };
 
   const loadData = async () => {
     try {
@@ -38,7 +63,7 @@ export default function FinishedGoodsListScreen() {
     const ratio = item.totalQuantity > 0 ? item.availableQuantity / item.totalQuantity : 0;
 
     return (
-      <Card style={styles.card}>
+      <Card style={styles.card} onLongPress={() => openSheet(item)}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <View style={{ flex: 1 }}>
@@ -100,6 +125,21 @@ export default function FinishedGoodsListScreen() {
           ListEmptyComponent={<Text style={styles.empty}>{t('finishedGoods.empty')}</Text>}
         />
       )}
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedBatch ? `成品 ${selectedBatch.batchNumber}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedBatch) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'INVENTORY', initialMessage: `${selectedBatch.batchNumber}: ` },
+          }));
+        }}
+      />
     </View>
   );
 }

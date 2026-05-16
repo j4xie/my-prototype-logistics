@@ -8,17 +8,19 @@
  * - 新建计划入口
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Searchbar } from 'react-native-paper';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { DISPATCHER_THEME } from '../../../types/dispatcher';
 import { productionPlanApiClient } from '../../../services/api/productionPlanApiClient';
+import { RowActionBottomSheet } from '../../../components/list';
+import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 
 interface PlanItem {
   id: string;
@@ -65,6 +67,25 @@ export default function PlanListScreen() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState<PlanItem | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
+
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => {
+      const plan = plans.find(p => p.id === e.id);
+      if (plan) navigation.navigate('PlanDetail', { planId: e.id, planData: plan });
+    },
+    cancel: (e: RowContext) => Alert.alert('取消', `取消计划 ${e.id} (待接 cancel API)`),
+    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    copy: (e: RowContext) => Alert.alert('复制', `复制计划 ${e.id} (待接 API)`),
+  }), [navigation, plans]);
+
+  const sheetCtx: RowContext = selectedPlan
+    ? { status: (selectedPlan.status || '').toUpperCase(), id: selectedPlan.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('productionPlan', sheetCtx, { handlers });
+
+  const openSheet = (plan: PlanItem) => { setSelectedPlan(plan); setActionSheetVisible(true); };
 
   const loadPlans = useCallback(async (p = 1, isRefresh = false) => {
     try {
@@ -146,6 +167,7 @@ export default function PlanListScreen() {
         style={styles.card}
         activeOpacity={0.7}
         onPress={() => navigation.navigate('PlanDetail', { planId: item.id, planData: item })}
+        onLongPress={() => openSheet(item)}
       >
         {/* Top row: plan name + status */}
         <View style={styles.cardTop}>
@@ -281,6 +303,21 @@ export default function PlanListScreen() {
           }
         />
       )}
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedPlan ? `生产计划 ${selectedPlan.planNumber || selectedPlan.id}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedPlan) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'PRODUCTION_PLAN', initialMessage: `${selectedPlan.planNumber || selectedPlan.id}: ` },
+          }));
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -25,12 +25,32 @@ import { Refresh, Search, View } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { formatDateTime } from '@/utils/dateFormat';
 import type { TableRow } from '@/types/api';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'returnOrder',
+    { status: String(row.status || ''), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': router.push(`/sales/returns/${row.id}`); break;
+    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  ElMessage.info(`AIChat: returnOrder/${row.returnNumber || row.id} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -139,9 +159,15 @@ function viewDetail(row: TableRow) { router.push(`/sales/returns/${row.id}`); }
         <el-table-column label="创建时间" width="160">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="100" align="center" fixed="right">
+        <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
             <el-button :icon="View" link type="primary" @click="viewDetail(row)">查看</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

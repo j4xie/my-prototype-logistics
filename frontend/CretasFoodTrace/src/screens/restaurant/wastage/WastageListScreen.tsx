@@ -1,12 +1,12 @@
 /**
  * 损耗列表 — 查看所有损耗记录
  */
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { Text, Surface, Chip, Searchbar, FAB } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { RWastageStackParamList } from '../../../types/navigation';
@@ -14,6 +14,8 @@ import { restaurantApiClient } from '../../../services/api/restaurantApiClient';
 import { WastageRecord, WastageStatus } from '../../../types/restaurant';
 import { handleError } from '../../../utils/errorHandler';
 import { formatShortDateTime } from '../../../utils/formatters';
+import { RowActionBottomSheet } from '../../../components/list';
+import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 
 type Nav = NativeStackNavigationProp<RWastageStackParamList>;
 
@@ -41,6 +43,20 @@ export function WastageListScreen() {
   const [statusFilter, setStatusFilter] = useState<'all' | WastageStatus>('all');
   const [records, setRecords] = useState<WastageRecord[]>([]);
   const [loadError, setLoadError] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<WastageRecord | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
+
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => Alert.alert('查看详情', `损耗 ${e.id}`),
+    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+  }), []);
+
+  const sheetCtx: RowContext = selectedRecord
+    ? { status: selectedRecord.status, id: selectedRecord.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('wastage', sheetCtx, { handlers });
+
+  const openSheet = (record: WastageRecord) => { setSelectedRecord(record); setActionSheetVisible(true); };
 
   const loadData = useCallback(async () => {
     try {
@@ -106,7 +122,8 @@ export function WastageListScreen() {
             {filtered.map(r => {
               const sc = STATUS_COLORS[r.status] || STATUS_COLORS.DRAFT;
               return (
-                <Surface key={r.id} style={styles.card} elevation={1}>
+                <TouchableOpacity key={r.id} activeOpacity={0.85} onLongPress={() => openSheet(r)}>
+                <Surface style={styles.card} elevation={1}>
                   <View style={styles.cardHeader}>
                     <MaterialCommunityIcons name={(TYPE_ICONS[r.type] || 'help-circle-outline') as any} size={20} color="#FF5630" />
                     <Text style={styles.wastageNumber}>{r.wastageNumber}</Text>
@@ -136,6 +153,7 @@ export function WastageListScreen() {
                   </View>
                   <Text style={styles.dateText}>{r.wastageDate ? formatShortDateTime(r.wastageDate) : ''}</Text>
                 </Surface>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -143,6 +161,21 @@ export function WastageListScreen() {
       </ScrollView>
 
       <FAB icon="plus" style={styles.fab} onPress={() => navigation.navigate('WastageCreate')} />
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedRecord ? `损耗 ${selectedRecord.wastageNumber}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedRecord) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'WASTAGE', initialMessage: `${selectedRecord.wastageNumber}: ` },
+          }));
+        }}
+      />
     </SafeAreaView>
   );
 }
