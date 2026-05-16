@@ -960,6 +960,21 @@ const businessRoutes: RouteRecordRaw[] = [
           roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
         },
       },
+      // Sprint 3 Track-J C-PRT-EDITOR-1 — print template visual designer.
+      // Schema-driven PDF print, FormTemplate entity reused with PRINT_* prefix.
+      // RBAC gates editor by role; backend FormTemplateController PUT requires system:read_write.
+      {
+        path: 'print-template-editor',
+        name: 'PrintTemplateEditor',
+        component: () => import('@/views/platform/print-template-editor/index.vue'),
+        meta: {
+          title: '打印模板设计器',
+          icon: 'Printer',
+          requiresAuth: true,
+          showInMenu: true,
+          roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+        },
+      },
       // 动态模块页 (Canvas配置系统)
       {
         path: 'modules/:moduleCode',
