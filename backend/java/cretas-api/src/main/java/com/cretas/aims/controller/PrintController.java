@@ -103,7 +103,7 @@ public class PrintController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         Map<String, Object> payload = buildSalesOrderPayload(factoryId, id, overrides);
         applyPriceMask(payload, authorization, "sales-order", true);
-        return proxyToPython("sales-order", payload, "sales-order-" + id);
+        return proxyToPython("sales-order", payload, "sales-order-" + id, authorization);
     }
 
     @GetMapping("/purchase-order/{id}")
@@ -115,7 +115,7 @@ public class PrintController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         Map<String, Object> payload = buildPurchaseOrderPayload(factoryId, id, overrides);
         applyPriceMask(payload, authorization, "purchase-order", true);
-        return proxyToPython("purchase-order", payload, "purchase-order-" + id);
+        return proxyToPython("purchase-order", payload, "purchase-order-" + id, authorization);
     }
 
     @GetMapping("/quotation/{id}")
@@ -127,7 +127,7 @@ public class PrintController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         Map<String, Object> payload = buildQuotationPayload(factoryId, id, overrides);
         applyPriceMask(payload, authorization, "quotation", true);
-        return proxyToPython("quotation", payload, "quotation-" + id);
+        return proxyToPython("quotation", payload, "quotation-" + id, authorization);
     }
 
     @GetMapping("/production-task/{id}")
@@ -135,10 +135,11 @@ public class PrintController {
     public ResponseEntity<byte[]> printProductionTask(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @RequestParam(required = false) Map<String, String> overrides) {
+            @RequestParam(required = false) Map<String, String> overrides,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         // 生产任务单不含金额字段, 仅 RBAC 门禁即可.
         Map<String, Object> payload = buildProductionTaskPayload(factoryId, id, overrides);
-        return proxyToPython("production-task", payload, "production-task-" + id);
+        return proxyToPython("production-task", payload, "production-task-" + id, authorization);
     }
 
     @GetMapping("/material-requisition/{id}")
@@ -147,10 +148,11 @@ public class PrintController {
     public ResponseEntity<byte[]> printMaterialRequisition(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @RequestParam(required = false) Map<String, String> overrides) {
+            @RequestParam(required = false) Map<String, String> overrides,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         // 领料单不含金额字段, 仅 RBAC 门禁即可.
         Map<String, Object> payload = buildMaterialRequisitionPayload(factoryId, id, overrides);
-        return proxyToPython("material-requisition", payload, "material-requisition-" + id);
+        return proxyToPython("material-requisition", payload, "material-requisition-" + id, authorization);
     }
 
     // ==================== Price masking ====================
@@ -198,10 +200,15 @@ public class PrintController {
 
     // ==================== Internal proxy ====================
 
-    private ResponseEntity<byte[]> proxyToPython(String docType, Map<String, Object> payload, String filename) {
+    private ResponseEntity<byte[]> proxyToPython(String docType, Map<String, Object> payload, String filename, String authorization) {
         String url = pythonBaseUrl + "/api/printing/" + docType;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // Smoke v2 P0 fix (2026-05-16): Python /api/printing/* requires auth.
+        // Forward inbound Authorization so Python middleware accepts.
+        if (authorization != null && !authorization.isEmpty()) {
+            headers.set("Authorization", authorization);
+        }
         HttpEntity<Map<String, Object>> req = new HttpEntity<>(payload, headers);
 
         try {
