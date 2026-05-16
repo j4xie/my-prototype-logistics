@@ -47,6 +47,9 @@ import { UrgentInsertStatsScreen } from '../screens/dispatcher/stats';
 // SmartBI 模块
 import SmartBIStackNavigator from './SmartBIStackNavigator';
 
+// AI 对话 (U-NAV-1 跨角色复用 FA 端 AIChatScreen, Sprint 2 Track G Day 9)
+import AIChatScreen from '../screens/factory-admin/ai-analysis/AIChatScreen';
+
 // 工序任务 (从计划详情跳入)
 import ProcessRunOverviewScreen from '../screens/processing/ProcessRunOverviewScreen';
 
@@ -81,6 +84,16 @@ export type DispatcherStackParamList = {
   SmartBI: undefined;
   // 工序任务总览
   ProcessRunOverview: { productionRunId: string };
+  // AI 对话 (U-NAV-1 跨角色复用)
+  AIChat: {
+    entityType?: string;
+    initialMessage?: string;
+    entryContext?: {
+      module: 'sales' | 'purchase' | 'production' | 'finance' | 'inventory' | string;
+      node?: string;
+      factoryId?: string;
+    };
+  } | undefined;
 };
 
 const Stack = createStackNavigator<DispatcherStackParamList>();
@@ -129,6 +142,9 @@ export function DispatcherNavigator() {
 
       {/* 工序任务总览 */}
       <Stack.Screen name="ProcessRunOverview" component={ProcessRunOverviewScreen} />
+
+      {/* AI 对话 (U-NAV-1 Sprint 2 Track G Day 9) */}
+      <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: 'AI 对话' }} />
     </Stack.Navigator>
   );
 }

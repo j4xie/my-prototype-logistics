@@ -9,6 +9,8 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Search, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
+import { WorkflowBar } from '@/components/workflow';
+import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { formatAmount } from '@/utils/tableFormatters';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
@@ -84,6 +86,14 @@ function openAiForRow(row: TableRow) {
   // full availableActions surfacing waits on Track A AIChat schema.
   console.info('[RowAction AI]', { entityType: 'salesOrder', entityId: row.id, orderNumber: row.orderNumber });
   aiEntryVisible.value = true;
+}
+
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'sales');
+function handleWorkflowNodeClick(_nodeId: string) {
+  // Day 5: 节点 id (pending/in_progress/done) 是 bucket 不是单 enum,
+  // 现有 statusFilter 单值映射不上 — Day 9 polish 加多状态 filter 或 viewTab 映射.
+  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
 }
 
 const loading = ref(false);
@@ -714,6 +724,15 @@ async function submitQuickPayment() {
 
   <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
+    <!-- U-NAV-1 业务流程图导航 (Sprint 2 Track G) -->
+    <WorkflowBar
+      :nodes="workflowStats?.nodes ?? []"
+      :loading="workflowLoading"
+      title="销售工作流"
+      :ai-trigger-enabled="true"
+      @node-click="handleWorkflowNodeClick"
+      @ai-trigger="aiEntryVisible = true"
+    />
     <ConceptDisambiguationAlert
       here-name="销售订单"
       here="客户向我们下的订单（出货方向、应收账款）"

@@ -7,6 +7,8 @@ import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
+import { WorkflowBar } from '@/components/workflow';
+import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
@@ -15,6 +17,15 @@ const route = useRoute();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('finance'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'finance');
+function handleWorkflowNodeClick(_nodeId: string) {
+  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
+}
+function handleWorkflowAITrigger() {
+  ElMessage.info('AI 入口待 Day 7 接入');
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -182,6 +193,15 @@ async function handleRequestSubmit() {
 
 <template>
   <div class="page-wrapper" v-loading="loading">
+    <!-- U-NAV-1 业务流程图导航 (Sprint 2 Track G) -->
+    <WorkflowBar
+      :nodes="workflowStats?.nodes ?? []"
+      :loading="workflowLoading"
+      title="财务工作流"
+      :ai-trigger-enabled="true"
+      @node-click="handleWorkflowNodeClick"
+      @ai-trigger="handleWorkflowAITrigger"
+    />
     <el-card shadow="never">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">

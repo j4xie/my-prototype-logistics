@@ -322,6 +322,12 @@ export type FAAIStackParamList = {
   AIChat: {
     entityType?: string;
     initialMessage?: string;
+    /** U-NAV-1 (Sprint 2 Track G): workflow node 长按 / AI 入口触发携带 */
+    entryContext?: {
+      module: 'sales' | 'purchase' | 'production' | 'finance' | 'inventory' | string;
+      node?: string;
+      factoryId?: string;
+    };
   } | undefined;  // 支持从其他页面传入上下文
   QualityAnalysis: undefined;
   CreatePlan: undefined;

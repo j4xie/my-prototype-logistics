@@ -18,6 +18,8 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
+import { WorkflowBar } from '@/components/workflow';
+import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
@@ -50,6 +52,12 @@ function handleRowActionClick(actionId: string, row: TableRow) {
 function openAiForRow(row: TableRow) {
   console.info('[RowAction AI]', { entityType: 'productionPlan', entityId: row.id, planNumber: row.planNumber });
   aiEntryVisible.value = true;
+}
+
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'production');
+function handleWorkflowNodeClick(_nodeId: string) {
+  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
 }
 
 const loading = ref(false);
@@ -619,6 +627,15 @@ function handleAiFill(params: TableRow) {
 <template>
   <CanvasAwareWrapper module-code="production_plan">
   <div class="page-wrapper">
+    <!-- U-NAV-1 业务流程图导航 (Sprint 2 Track G) -->
+    <WorkflowBar
+      :nodes="workflowStats?.nodes ?? []"
+      :loading="workflowLoading"
+      title="生产工作流"
+      :ai-trigger-enabled="true"
+      @node-click="handleWorkflowNodeClick"
+      @ai-trigger="aiEntryVisible = true"
+    />
     <ConceptDisambiguationAlert
       here-name="生产计划"
       here="未来要做什么的「计划」（PENDING / 待开工状态，可调整数量、日期）"

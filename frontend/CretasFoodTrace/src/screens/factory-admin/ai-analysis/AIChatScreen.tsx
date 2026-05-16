@@ -81,6 +81,32 @@ interface Message {
 
 type AIChatRouteProp = RouteProp<FAAIStackParamList, 'AIChat'>;
 
+// U-NAV-1 (Sprint 2 Track G): 工作流节点进入 AIChat 的 contextual greeting 构造.
+// entryContext 由 WorkflowVisualizer 节点长按 / AI 入口按钮传入.
+const WORKFLOW_MODULE_LABEL: Record<string, string> = {
+  sales: '销售订单',
+  purchase: '采购订单',
+  production: '生产计划',
+  finance: '财务',
+  inventory: '库存',
+};
+const WORKFLOW_NODE_LABEL: Record<string, string> = {
+  pending: '待处理',
+  in_progress: '进行中',
+  done: '已完成',
+};
+function buildWorkflowGreeting(ctx: {
+  module: string;
+  node?: string;
+}): string {
+  const moduleLabel = WORKFLOW_MODULE_LABEL[ctx.module] ?? ctx.module;
+  if (ctx.node) {
+    const nodeLabel = WORKFLOW_NODE_LABEL[ctx.node] ?? ctx.node;
+    return `帮我查看${moduleLabel}中"${nodeLabel}"状态的项目`;
+  }
+  return `给我${moduleLabel}的工作流概览`;
+}
+
 // 场景专属快捷问题和允许的操作 actionCode
 const SCENE_CONFIG: Record<string, {
   quickQuestions: string[];
@@ -282,7 +308,11 @@ export default function AIChatScreen() {
   const initialMessageSentRef = useRef(false);
   useEffect(() => {
     const params = route.params as Record<string, any> | undefined;
-    const initialMsg = params?.initialMessage || params?.initialQuery;
+    // 显式 initialMessage / initialQuery 优先, 否则从 workflow entryContext 自动构造 (U-NAV-1)
+    const explicitMsg = params?.initialMessage || params?.initialQuery;
+    const entryContext = params?.entryContext;
+    const initialMsg = explicitMsg
+      || (entryContext?.module ? buildWorkflowGreeting(entryContext) : undefined);
     if (initialMsg && !initialMessageSentRef.current) {
       initialMessageSentRef.current = true;
       // 延迟发送，等待组件完全挂载
