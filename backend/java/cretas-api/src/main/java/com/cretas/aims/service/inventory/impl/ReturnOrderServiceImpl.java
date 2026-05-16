@@ -12,6 +12,7 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderItemRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderRepository;
+import com.cretas.aims.service.LinkArrayService;
 import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.finance.ArApService;
 import com.cretas.aims.service.inventory.ReturnOrderService;
@@ -59,6 +60,10 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
+    /** Sprint 3 Track-F: unified cross-business link service (double-write w/ sourceOrderId). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private LinkArrayService linkArrayService;
 
     public ReturnOrderServiceImpl(ReturnOrderRepository returnOrderRepository,
                                    ReturnOrderItemRepository returnOrderItemRepository,
@@ -133,6 +138,23 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
         returnOrderItemRepository.saveAll(items);
         order.setTotalAmount(totalAmount);
         order = returnOrderRepository.save(order);
+
+        // Sprint 3 Track-F (C-LINKARRAY-1): unified BusinessLink double-write.
+        // ReturnOrder.sourceOrderId stays for backward compat; new code reads via
+        // LinkArrayService.getOutboundLinks(RETURN_ORDER, id).
+        if (linkArrayService != null && order.getSourceOrderId() != null && !order.getSourceOrderId().isBlank()) {
+            String targetType = returnType == ReturnType.SALES_RETURN ? "SALES_ORDER" : "PURCHASE_ORDER";
+            String linkType = returnType == ReturnType.SALES_RETURN ? "sale" : "free";
+            try {
+                linkArrayService.link(factoryId,
+                        "RETURN_ORDER", order.getId(),
+                        linkType,
+                        targetType, order.getSourceOrderId(),
+                        "退货源单", userId != null ? userId.toString() : null);
+            } catch (Exception e) {
+                log.warn("BusinessLink double-write failed for return order {}: {}", order.getId(), e.getMessage());
+            }
+        }
 
         // Round 11 T2: Canvas Integration Template hook 2 — persist dynamic fields.
         // Customer-configured fields (退货照片, 客诉单号, 退货责任方) land in cf_*
