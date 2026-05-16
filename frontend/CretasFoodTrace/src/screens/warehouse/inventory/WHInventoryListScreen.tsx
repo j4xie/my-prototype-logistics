@@ -6,7 +6,7 @@
  * - materialBatchApiClient - 获取库存统计和批次列表
  */
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -24,7 +24,9 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, CommonActions } from "@react-navigation/native";
+import { StickyFooterSummary } from "../../../components/list";
+import { useListSummary } from "../../../hooks/useListSummary";
 
 type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -247,6 +249,11 @@ export function WHInventoryListScreen() {
     setRefreshing(true);
     loadData();
   }, [loadData]);
+
+  // U-FOOTER-1
+  const summaryRequest = useMemo(() => ({ filterConditions: {} }), []);
+  const { summary, refresh: refreshSummary } = useListSummary('inventory', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing]);
 
   // 筛选数据
   const filteredList = inventoryList.filter((item) => {
@@ -496,6 +503,17 @@ export function WHInventoryListScreen() {
         <View style={{ height: 20 }} />
       </ScrollView>
       )}
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab' as never, {
+            screen: 'AIChat',
+            params: { entityType: 'MATERIAL', initialMessage: '分析当前库存 (低库存预警 / 总价值 / 周转率)' },
+          } as never))
+        }
+      />
 
       <RowActionBottomSheet
         visible={actionSheetVisible}

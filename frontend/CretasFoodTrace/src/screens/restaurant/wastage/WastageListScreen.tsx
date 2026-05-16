@@ -14,8 +14,9 @@ import { restaurantApiClient } from '../../../services/api/restaurantApiClient';
 import { WastageRecord, WastageStatus } from '../../../types/restaurant';
 import { handleError } from '../../../utils/errorHandler';
 import { formatShortDateTime } from '../../../utils/formatters';
-import { RowActionBottomSheet } from '../../../components/list';
+import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
+import { useListSummary } from '../../../hooks/useListSummary';
 
 type Nav = NativeStackNavigationProp<RWastageStackParamList>;
 
@@ -74,6 +75,11 @@ export function WastageListScreen() {
   }, [statusFilter, t]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // U-FOOTER-1
+  const summaryRequest = useMemo(() => ({ filterConditions: {} }), []);
+  const { summary, refresh: refreshSummary } = useListSummary('wastage', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing, statusFilter]);
 
   const filtered = records.filter(r => {
     if (!searchQuery) return true;
@@ -159,6 +165,20 @@ export function WastageListScreen() {
           </View>
         )}
       </ScrollView>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab' as never, {
+            screen: 'AIChat',
+            params: {
+              entityType: 'WASTAGE',
+              initialMessage: `分析当前损耗记录 (筛选: ${statusFilter === 'all' ? '全部' : statusFilter})`,
+            },
+          } as never))
+        }
+      />
 
       <FAB icon="plus" style={styles.fab} onPress={() => navigation.navigate('WastageCreate')} />
 
