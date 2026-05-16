@@ -52,6 +52,11 @@ import org.hibernate.annotations.Where;
 @AllArgsConstructor
 @Where(clause = "deleted_at IS NULL")
 public class PayrollRecord extends BaseEntity {
+
+    /** Sprint3-E F-VFLAG-1: 凭证生成状态. UNCREATED → PENDING → CREATED / FAILED. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vflag", nullable = false, length = 20)
+    private com.cretas.aims.entity.enums.VoucherFlag vflag = com.cretas.aims.entity.enums.VoucherFlag.UNCREATED;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
