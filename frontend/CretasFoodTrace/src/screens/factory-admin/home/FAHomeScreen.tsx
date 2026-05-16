@@ -44,8 +44,50 @@ import {
   EditToolbar,
   AddItemSheet,
 } from './components';
+import { WorkflowVisualizer } from '../../../components/workflow';
+import type { WorkflowModule, WorkflowAIEntryContext } from '../../../types/workflow';
 
 type NavigationProp = NativeStackNavigationProp<FAHomeStackParamList, 'FAHome'>;
+
+const FA_WORKFLOW_MODULES: WorkflowModule[] = [
+  'sales',
+  'purchase',
+  'production',
+  'inventory',
+  'finance',
+];
+
+function navigateToModuleList(
+  navigation: NavigationProp,
+  module: WorkflowModule,
+  statusFilter: string,
+) {
+  const params = { statusFilter };
+  switch (module) {
+    case 'sales':
+      navigation.navigate('SalesOrderList' as never, params as never);
+      return;
+    case 'purchase':
+      navigation.navigate('PurchaseOrderList' as never, params as never);
+      return;
+    case 'production':
+      navigation.navigate('ProductionPlanManagement' as never, params as never);
+      return;
+    case 'inventory':
+      navigation.navigate('MaterialBatch' as never, params as never);
+      return;
+    case 'finance':
+      navigation.navigate('FinanceAnalysis' as never, params as never);
+      return;
+  }
+}
+
+function navigateToAIChat(
+  navigation: NavigationProp,
+  entryContext: WorkflowAIEntryContext,
+) {
+  navigation.navigate('AIChat' as never, { entryContext } as never);
+}
 
 export function FAHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -289,6 +331,20 @@ export function FAHomeScreen() {
           onEditLayout={() => navigation.navigate('HomeLayoutEditor')}
         />
 
+        {/* U-NAV-1 业务流程图导航 — Sprint 2 Track G */}
+        <View style={styles.workflowSection}>
+          <WorkflowVisualizer
+            modules={FA_WORKFLOW_MODULES}
+            factoryId={user?.factoryId}
+            aiTriggerEnabled
+            onNodePress={(module, nodeId) =>
+              navigateToModuleList(navigation, module, nodeId)
+            }
+            onNodeLongPress={(module, ctx) => navigateToAIChat(navigation, ctx)}
+            onAITrigger={(_module, ctx) => navigateToAIChat(navigation, ctx)}
+          />
+        </View>
+
         {/* Error banner */}
         {error && (
           <View style={styles.errorBanner}>
@@ -396,6 +452,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  workflowSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
   },
   errorBanner: {
     flexDirection: 'row',

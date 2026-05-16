@@ -33,6 +33,10 @@ import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { productionPlanApiClient } from '../../../services/api/productionPlanApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
+import { WorkflowVisualizer } from '../../../components/workflow';
+import type { WorkflowModule } from '../../../types/workflow';
+
+const DS_WORKFLOW_MODULES: WorkflowModule[] = ['production', 'sales'];
 
 export default function DSHomeScreen() {
   const navigation = useNavigation<any>();
@@ -195,6 +199,28 @@ export default function DSHomeScreen() {
             </View>
           </View>
         </LinearGradient>
+
+        {/* U-NAV-1 业务流程图导航 — Sprint 2 Track G (DS: production + sales) */}
+        <View style={{ marginHorizontal: 16, marginTop: 12 }}>
+          <WorkflowVisualizer
+            modules={DS_WORKFLOW_MODULES}
+            factoryId={user?.factoryId}
+            aiTriggerEnabled
+            onNodePress={(module, nodeId) => {
+              if (module === 'production') {
+                navigation.navigate('ProductionPlanManagement' as never, { statusFilter: nodeId } as never);
+              } else if (module === 'sales') {
+                navigation.navigate('SalesOrderList' as never, { statusFilter: nodeId } as never);
+              }
+            }}
+            onNodeLongPress={(module, ctx) =>
+              navigation.navigate('AIChat' as never, { entryContext: ctx } as never)
+            }
+            onAITrigger={(_module, ctx) =>
+              navigation.navigate('AIChat' as never, { entryContext: ctx } as never)
+            }
+          />
+        </View>
 
         {/* AI智能调度中心入口 */}
         {/* AI调度卡片: 暂时隐藏，scheduling API 未完成 */}
