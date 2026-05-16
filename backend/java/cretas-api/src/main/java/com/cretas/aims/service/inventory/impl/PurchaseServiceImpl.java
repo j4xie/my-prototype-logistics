@@ -19,10 +19,12 @@ import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.repository.bom.BomItemRepository;
+import com.cretas.aims.repository.inventory.PurchaseOrderApprovalRuleRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
+import com.cretas.aims.entity.inventory.PurchaseOrderApprovalRule;
 import com.cretas.aims.event.MaterialReceivedEvent;
 import com.cretas.aims.service.MaterialBatchService;
 import com.cretas.aims.service.inventory.PurchaseService;
@@ -100,8 +102,18 @@ public class PurchaseServiceImpl implements PurchaseService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.cretas.aims.service.factory.WarehouseResolver warehouseResolver;
 
-    /** 三价对比偏差预警阈值（10%） */
+    /**
+     * 三价对比偏差预警阈值兜底值 (10%).
+     *
+     * <p>Sprint2-J 之后: 优先从 {@link PurchaseOrderApprovalRule#getPriceVarianceThreshold}
+     * 取 per-factory 阈值. 仅当 factory 无 enabled rule 时回落到这个兜底.
+     * Flyway V20260517_01 为每家 factory 播种了默认 10% / 10万元 规则.
+     */
     private static final BigDecimal PRICE_ALERT_THRESHOLD = new BigDecimal("10");
+
+    /** Sprint2-J P-FIN-1: per-factory 可配置审核规则. required=false 兼容老 ApplicationContext (启动顺序). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private PurchaseOrderApprovalRuleRepository approvalRuleRepository;
 
     public PurchaseServiceImpl(PurchaseOrderRepository purchaseOrderRepository,
                                PurchaseOrderItemRepository purchaseOrderItemRepository,
@@ -307,12 +319,94 @@ public class PurchaseServiceImpl implements PurchaseService {
             throw new BusinessException(409, "只有已提交状态的订单可以审批")
                     .withHint("请刷新订单列表查看最新状态");
         }
-        order.setStatus(PurchaseOrderStatus.APPROVED);
+
+        // Sprint2-J P-FIN-1: 评估审核规则 → 是否需要财务复核
+        // 触发条件 (任一): (a) 任一行三价 priceAlert=true (偏差 > 阈值)
+        //                  (b) 订单 totalAmount > rule.amountThreshold
+        ApprovalTriggerEvaluation eval = evaluateApprovalTrigger(factoryId, order);
+
         order.setApprovedBy(approvedBy);
         order.setApprovedAt(LocalDateTime.now());
-        log.info("审批采购订单: orderId={}, approvedBy={}", orderId, approvedBy);
+
+        if (eval.requiresFinanceReview()) {
+            // 自动跳过 APPROVED, 直接进 PENDING_FINANCE_REVIEW —
+            // 业务语义: 运营审批已 implicit 通过 (approvedBy/At 已记录),
+            // 但财务复核未通过前不允许 receive/PO 履行 → 状态机锁定.
+            order.setStatus(PurchaseOrderStatus.PENDING_FINANCE_REVIEW);
+            log.info("审批采购订单 → 触发财务复核: orderId={}, approvedBy={}, 原因={}",
+                    orderId, approvedBy, eval.reason());
+        } else {
+            order.setStatus(PurchaseOrderStatus.APPROVED);
+            log.info("审批采购订单: orderId={}, approvedBy={}", orderId, approvedBy);
+        }
+
         return purchaseOrderRepository.save(order);
     }
+
+    /**
+     * Sprint2-J P-FIN-1: 评估订单是否需要财务复核.
+     *
+     * <p>顺序: (1) 取 factory 启用规则 — 无规则 fallback 兜底值 10% / null 金额阈值
+     * (2) 算三价 priceComparisons (复用 buildPriceComparison) — 任一行 priceAlert=true → 触发
+     * (3) 比较 totalAmount vs amountThreshold — 超过 → 触发
+     *
+     * <p>不抛异常 — 评估失败 (e.g. 三价数据缺失) 时 fail-open 走 APPROVED 路径,
+     * 由 ops 在 ApprovalRule 数据修复后重试 submit. 这符合 CLAUDE.md "禁止降级处理"
+     * 的反面: 这里不是把错误显示成正常, 而是评估本身不强制 fail-closed (财务复核
+     * 是 nice-to-have 拦截, 非业务正确性必要条件).
+     */
+    private ApprovalTriggerEvaluation evaluateApprovalTrigger(String factoryId, PurchaseOrder order) {
+        PurchaseOrderApprovalRule rule = resolveActiveRule(factoryId);
+        BigDecimal priceThreshold = rule != null && rule.getPriceVarianceThreshold() != null
+                ? rule.getPriceVarianceThreshold()
+                : PRICE_ALERT_THRESHOLD;
+        BigDecimal amountThreshold = rule != null ? rule.getAmountThreshold() : null;
+
+        // 总金额触发 (先判, 不需要查每行三价)
+        if (amountThreshold != null && order.getTotalAmount() != null
+                && order.getTotalAmount().compareTo(amountThreshold) > 0) {
+            return new ApprovalTriggerEvaluation(true,
+                    String.format("总金额 ¥%s > 阈值 ¥%s", order.getTotalAmount(), amountThreshold));
+        }
+
+        // 三价标红触发 (逐行查 BOM + 移动均, 复用 buildPriceComparison)
+        try {
+            List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+            int alertCount = 0;
+            for (PurchaseOrderItem item : items) {
+                if (item.getMaterialTypeId() == null || item.getUnitPrice() == null) continue;
+                MaterialPriceComparisonDTO dto = buildPriceComparison(factoryId,
+                        item.getMaterialTypeId(), item.getMaterialName(), item.getUnitPrice(), priceThreshold);
+                if (Boolean.TRUE.equals(dto.getPriceAlert())) {
+                    alertCount++;
+                }
+            }
+            if (alertCount > 0) {
+                return new ApprovalTriggerEvaluation(true,
+                        String.format("三价标红 %d 项 (偏差 > %s%%)", alertCount, priceThreshold));
+            }
+        } catch (Exception e) {
+            log.warn("三价评估失败 (fail-open → APPROVED): orderId={}, error={}", order.getId(), e.getMessage());
+        }
+
+        return new ApprovalTriggerEvaluation(false, "未触发 (价格 + 金额均在阈值内)");
+    }
+
+    /**
+     * 取 factory 当前启用的审核规则. 多条 enabled=true 时按 createdAt desc 取首条
+     * (ops 灰度新规则: 引入新规则后旧的应该 disabled).
+     *
+     * @return null 表示无启用规则 — caller 应 fallback 到代码兜底值
+     */
+    private PurchaseOrderApprovalRule resolveActiveRule(String factoryId) {
+        if (approvalRuleRepository == null) return null;
+        List<PurchaseOrderApprovalRule> rules =
+                approvalRuleRepository.findByFactoryIdAndEnabledTrueOrderByCreatedAtDesc(factoryId);
+        return rules.isEmpty() ? null : rules.get(0);
+    }
+
+    /** Approval trigger 评估结果 — internal record. */
+    private record ApprovalTriggerEvaluation(boolean requiresFinanceReview, String reason) {}
 
     @Override
     @Transactional
@@ -686,9 +780,14 @@ public class PurchaseServiceImpl implements PurchaseService {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
 
+        // Sprint2-J: 取 factory 当前规则一次, 转给每行 — 避免行级 N+1 规则查询
+        PurchaseOrderApprovalRule rule = resolveActiveRule(factoryId);
+        BigDecimal threshold = rule != null && rule.getPriceVarianceThreshold() != null
+                ? rule.getPriceVarianceThreshold() : PRICE_ALERT_THRESHOLD;
+
         return items.stream()
                 .map(item -> buildPriceComparison(factoryId, item.getMaterialTypeId(),
-                        item.getMaterialName(), item.getUnitPrice()))
+                        item.getMaterialName(), item.getUnitPrice(), threshold))
                 .collect(Collectors.toList());
     }
 
@@ -700,7 +799,10 @@ public class PurchaseServiceImpl implements PurchaseService {
             throw new BusinessException(403, "无权访问该原料类型")
                     .withHint("当前原料类型不属于该工厂, 无法访问");
         }
-        return buildPriceComparison(factoryId, materialTypeId, materialType.getName(), currentPrice);
+        PurchaseOrderApprovalRule rule = resolveActiveRule(factoryId);
+        BigDecimal threshold = rule != null && rule.getPriceVarianceThreshold() != null
+                ? rule.getPriceVarianceThreshold() : PRICE_ALERT_THRESHOLD;
+        return buildPriceComparison(factoryId, materialTypeId, materialType.getName(), currentPrice, threshold);
     }
 
     /**
@@ -713,7 +815,9 @@ public class PurchaseServiceImpl implements PurchaseService {
      * 此前 UI 显示"-", 客户误以为是 bug. 现在 dataSourceHint 明确告诉用户原因.
      */
     private MaterialPriceComparisonDTO buildPriceComparison(String factoryId, String materialTypeId,
-                                                             String materialName, BigDecimal currentPrice) {
+                                                             String materialName, BigDecimal currentPrice,
+                                                             BigDecimal alertThreshold) {
+        BigDecimal effectiveThreshold = alertThreshold != null ? alertThreshold : PRICE_ALERT_THRESHOLD;
         // 1. 查询原料类型获取移动平均价和基础信息
         RawMaterialType materialType = materialTypeRepository.findById(materialTypeId).orElse(null);
         BigDecimal movingAvgPrice = materialType != null ? materialType.getMovingAvgPrice() : null;
@@ -754,12 +858,12 @@ public class PurchaseServiceImpl implements PurchaseService {
         BigDecimal varianceFromBom = calculateVariance(currentPrice, bomStandardPrice);
         BigDecimal varianceFromAvg = calculateVariance(currentPrice, movingAvgPrice);
 
-        // 4. 判断是否价格异常
+        // 4. 判断是否价格异常 (Sprint2-J: 用 caller 传入的 per-factory 阈值, 兜底 10%)
         boolean alert = false;
-        if (varianceFromBom != null && varianceFromBom.abs().compareTo(PRICE_ALERT_THRESHOLD) > 0) {
+        if (varianceFromBom != null && varianceFromBom.abs().compareTo(effectiveThreshold) > 0) {
             alert = true;
         }
-        if (varianceFromAvg != null && varianceFromAvg.abs().compareTo(PRICE_ALERT_THRESHOLD) > 0) {
+        if (varianceFromAvg != null && varianceFromAvg.abs().compareTo(effectiveThreshold) > 0) {
             alert = true;
         }
 

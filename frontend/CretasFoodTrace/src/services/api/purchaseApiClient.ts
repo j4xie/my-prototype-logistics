@@ -14,7 +14,21 @@ export interface PurchaseOrder {
   orderNumber: string;
   supplierId: string;
   supplierName?: string;
-  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PARTIAL_RECEIVED' | 'COMPLETED' | 'CANCELLED';
+  status:
+    | 'DRAFT'
+    | 'SUBMITTED'
+    | 'APPROVED'
+    | 'REJECTED'
+    | 'PENDING_FINANCE_REVIEW'
+    | 'FINANCE_APPROVED'
+    | 'FINANCE_REJECTED'
+    | 'PARTIAL_RECEIVED'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'CLOSED';
+  financeReviewedBy?: number;
+  financeReviewedAt?: string;
+  financeReviewNotes?: string;
   totalAmount: number;
   orderDate: string;
   expectedDeliveryDate?: string;
@@ -86,6 +100,23 @@ export interface CreateReceiveRecordRequest {
     qcResult?: string;
     remark?: string;
   }[];
+}
+
+// ========== Sprint2-J P-FIN-1: 三价对比 + 财务审核 ==========
+
+export interface MaterialPriceComparison {
+  materialTypeId: string;
+  materialName: string | null;
+  materialCode: string | null;
+  unit: string | null;
+  bomStandardPrice: number | null;
+  movingAvgPrice: number | null;
+  currentPrice: number | null;
+  varianceFromBom: number | null;
+  varianceFromAvg: number | null;
+  priceAlert: boolean;
+  bomProductNames: string | null;
+  dataSourceHint: string | null;
 }
 
 export interface PageResponse<T> {
@@ -192,6 +223,28 @@ class PurchaseApiClient {
   /** 按状态查询采购单列表 */
   async getOrdersByStatus(status: PurchaseOrder['status'], params?: { page?: number; size?: number }, factoryId?: string): Promise<{ success: boolean; data: PageResponse<PurchaseOrder> }> {
     return apiClient.get(this.getPath(factoryId) + '/orders/by-status', { params: { status, ...params } });
+  }
+
+  // ========== Sprint2-J P-FIN-1: 财务审核 ==========
+
+  /** 提交财务审核 (从 APPROVED → PENDING_FINANCE_REVIEW; approveOrder 自动触发条件满足时也会直达此状态) */
+  async submitForFinanceReview(orderId: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
+    return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/submit-for-finance-review`);
+  }
+
+  /** 财务审核通过 (PENDING_FINANCE_REVIEW → FINANCE_APPROVED) */
+  async financeApprove(orderId: string, notes?: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
+    return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/finance-approve`, { notes });
+  }
+
+  /** 财务驳回 (PENDING_FINANCE_REVIEW → FINANCE_REJECTED). notes 必填. */
+  async financeReject(orderId: string, notes: string, factoryId?: string): Promise<{ success: boolean; data: PurchaseOrder }> {
+    return apiClient.post(this.getPath(factoryId) + `/orders/${orderId}/finance-reject`, { notes });
+  }
+
+  /** 采购单三价对比 (priceAlert=true → 红行) */
+  async getOrderPriceComparison(orderId: string, factoryId?: string): Promise<{ success: boolean; data: MaterialPriceComparison[] }> {
+    return apiClient.get(this.getPath(factoryId) + `/orders/${orderId}/price-comparison`);
   }
 
   // ========== 入库单 (receives) ==========
