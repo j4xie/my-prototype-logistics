@@ -945,6 +945,21 @@ const businessRoutes: RouteRecordRaw[] = [
           roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
         },
       },
+      // Sprint 3 Track-I (C-APPROVAL-EDITOR-1) — graph-native 审批工作流编辑器.
+      // Backend: ApprovalWorkflowController + ApprovalWorkflowExecutor (4 modes).
+      // Day 5 scaffold (skeleton); Day 6-9 fills nodes / property panel / simulator.
+      {
+        path: 'approval-workflow-editor',
+        name: 'ApprovalWorkflowEditor',
+        component: () => import('@/views/platform/approval-workflow-editor/index.vue'),
+        meta: {
+          title: '审批工作流编辑器',
+          icon: 'Connection',
+          requiresAuth: true,
+          showInMenu: true,
+          roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+        },
+      },
       // 动态模块页 (Canvas配置系统)
       {
         path: 'modules/:moduleCode',
