@@ -9,6 +9,7 @@ import { formatNumberWithCommas } from '../../../utils/formatters';
 import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -156,7 +157,7 @@ export default function SalesOrderListScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'SALES_ORDER',
-              initialMessage: `分析当前销售单列表 (筛选: ${statusFilter === 'all' ? '全部' : statusFilter})`,
+              initialMessage: `分析当前销售单列表${formatSummaryForAI(summary, { filter: { status: statusFilter } })}`,
             },
           }))
         }
