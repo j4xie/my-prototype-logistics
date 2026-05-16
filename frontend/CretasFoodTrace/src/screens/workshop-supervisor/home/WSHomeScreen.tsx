@@ -29,6 +29,7 @@ import { WORKSHOP_SUP_ACTIONS } from '../../../store/quickActionsStore';
 import { useTutorialStore, TUTORIAL_HOME, TUTORIAL_ENABLED, useTutorialTarget, registerTutorialTarget } from '../../../store/tutorialStore';
 import { useDraftReportStore } from '../../../store/draftReportStore';
 import { WorkflowVisualizer } from '../../../components/workflow';
+import { getBucketPrimaryStatus } from '../../../types/workflow';
 import type { WorkflowModule } from '../../../types/workflow';
 
 const WS_WORKFLOW_MODULES: WorkflowModule[] = ['production'];
@@ -439,8 +440,8 @@ export function WSHomeScreen() {
             modules={WS_WORKFLOW_MODULES}
             factoryId={user?.factoryId}
             aiTriggerEnabled
-            onNodePress={(_module, nodeId) =>
-              navigation.navigate('ProductionPlanManagement' as never, { statusFilter: nodeId } as never)
+            onNodePress={(module, nodeId) =>
+              navigation.navigate('ProductionPlanManagement' as never, { statusFilter: getBucketPrimaryStatus(module, nodeId) } as never)
             }
             onNodeLongPress={(_module, ctx) =>
               navigation.navigate('AIChat' as never, { entryContext: ctx } as never)

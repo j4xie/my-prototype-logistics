@@ -9,6 +9,7 @@ import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
 import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
+import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import type { TableRow } from '@/types/api';
 
 const authStore = useAuthStore();
@@ -18,10 +19,15 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('finance'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
-// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G + FU Chat 3 bucket-filter)
 const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'finance');
-function handleWorkflowNodeClick(_nodeId: string) {
-  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
+function handleWorkflowNodeClick(nodeId: string) {
+  const primary = getBucketPrimaryStatus('finance', nodeId);
+  if (!primary) return;
+  statusFilter.value = primary;
+  pagination.value.page = 1;
+  loadData();
+  ElMessage.success(`已切到 "${getBucketLabel('finance', nodeId)}" (显示状态: ${primary}). finance 是 Invoice+Payment 复合, done 节点实为 payment.VERIFIED 但本表仅 invoice — 详情请去收款管理.`);
 }
 function handleWorkflowAITrigger() {
   ElMessage.info('AI 入口待 Day 7 接入');
