@@ -84,6 +84,8 @@ import ProcessTaskApprovalScreen from "../../screens/processing/ProcessTaskAppro
 import PurchaseOrderListScreen from "../../screens/factory-admin/inventory/PurchaseOrderListScreen";
 import PurchaseOrderCreateScreen from "../../screens/factory-admin/inventory/PurchaseOrderCreateScreen";
 import PurchaseOrderDetailScreen from "../../screens/factory-admin/inventory/PurchaseOrderDetailScreen";
+import PurchaseOrderFinanceReviewListScreen from "../../screens/factory-admin/inventory/PurchaseOrderFinanceReviewListScreen";
+import PurchaseOrderFinanceReviewScreen from "../../screens/factory-admin/inventory/PurchaseOrderFinanceReviewScreen";
 import SalesOrderListScreen from "../../screens/factory-admin/inventory/SalesOrderListScreen";
 import SalesOrderDetailScreen from "../../screens/factory-admin/inventory/SalesOrderDetailScreen";
 import FinishedGoodsListScreen from "../../screens/factory-admin/inventory/FinishedGoodsListScreen";
@@ -486,6 +488,17 @@ export function FAManagementStackNavigator() {
         name="PurchaseOrderDetail"
         component={PurchaseOrderDetailScreen}
         options={{ title: "采购单详情" }}
+      />
+      {/* Sprint2-J P-FIN-1: 财务审核 (PENDING_FINANCE_REVIEW) */}
+      <Stack.Screen
+        name="PurchaseOrderFinanceReviewList"
+        component={PurchaseOrderFinanceReviewListScreen}
+        options={{ title: "财务待审" }}
+      />
+      <Stack.Screen
+        name="PurchaseOrderFinanceReview"
+        component={PurchaseOrderFinanceReviewScreen}
+        options={{ title: "财务审核" }}
       />
       <Stack.Screen
         name="SalesOrderList"
