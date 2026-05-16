@@ -56,6 +56,8 @@ temp*
 !backend/python/smartbi/services/template_rag.py
 !backend/python/smartbi/services/template_embedding_index.py
 !backend/python/printing/services/template_renderer.py
+!web-admin/src/views/platform/print-template-editor/utils/templateRenderer.ts
+!web-admin/src/views/platform/print-template-editor/__tests__/templateRenderer.spec.ts
 !web-admin/src/views/smart-bi/components/Template*.vue
 !backend/python/smartbi/capability/template_status.py
 !backend/python/tests/test_template_status.py
