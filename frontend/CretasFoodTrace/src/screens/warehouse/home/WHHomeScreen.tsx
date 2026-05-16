@@ -43,6 +43,10 @@ import { materialBatchApiClient, MaterialBatch } from '../../../services/api/mat
 import { handleError, getErrorMsg } from '../../../utils/errorHandler';
 import { logger } from '../../../utils/logger';
 import { formatDate, formatNumberWithCommas } from '../../../utils/formatters';
+import { WorkflowVisualizer } from '../../../components/workflow';
+import type { WorkflowModule } from '../../../types/workflow';
+
+const WH_WORKFLOW_MODULES: WorkflowModule[] = ['inventory'];
 
 // 主题色
 const THEME_COLOR = '#4CAF50';
@@ -502,6 +506,24 @@ export default function WHHomeScreen() {
           />
         }
       >
+        {/* U-NAV-1 业务流程图导航 — Sprint 2 Track G (WH: inventory) */}
+        <View style={{ marginHorizontal: 16, marginTop: 12 }}>
+          <WorkflowVisualizer
+            modules={WH_WORKFLOW_MODULES}
+            factoryId={user?.factoryId}
+            aiTriggerEnabled
+            onNodePress={(_module, nodeId) =>
+              navigation.navigate('WHInventoryList' as never, { statusFilter: nodeId } as never)
+            }
+            onNodeLongPress={(_module, ctx) =>
+              navigation.navigate('AIChat' as never, { entryContext: ctx } as never)
+            }
+            onAITrigger={(_module, ctx) =>
+              navigation.navigate('AIChat' as never, { entryContext: ctx } as never)
+            }
+          />
+        </View>
+
         {/* 领料调拨入口 */}
         <TouchableOpacity
           style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: '#fff', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', elevation: 2 }}

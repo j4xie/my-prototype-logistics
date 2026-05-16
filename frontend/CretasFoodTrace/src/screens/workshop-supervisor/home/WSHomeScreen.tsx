@@ -28,6 +28,10 @@ import { TutorialOverlay } from '../../../components/common/TutorialOverlay';
 import { WORKSHOP_SUP_ACTIONS } from '../../../store/quickActionsStore';
 import { useTutorialStore, TUTORIAL_HOME, TUTORIAL_ENABLED, useTutorialTarget, registerTutorialTarget } from '../../../store/tutorialStore';
 import { useDraftReportStore } from '../../../store/draftReportStore';
+import { WorkflowVisualizer } from '../../../components/workflow';
+import type { WorkflowModule } from '../../../types/workflow';
+
+const WS_WORKFLOW_MODULES: WorkflowModule[] = ['production'];
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { processingApiClient } from '../../../services/api/processingApiClient';
 import { schedulingApiClient, SupervisorTaskDTO } from '../../../services/api/schedulingApiClient';
@@ -427,6 +431,24 @@ export function WSHomeScreen() {
             </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* U-NAV-1 业务流程图导航 — Sprint 2 Track G (WS: production) */}
+        <View style={{ marginHorizontal: 16, marginTop: 12 }}>
+          <WorkflowVisualizer
+            modules={WS_WORKFLOW_MODULES}
+            factoryId={user?.factoryId}
+            aiTriggerEnabled
+            onNodePress={(_module, nodeId) =>
+              navigation.navigate('ProductionPlanManagement' as never, { statusFilter: nodeId } as never)
+            }
+            onNodeLongPress={(_module, ctx) =>
+              navigation.navigate('AIChat' as never, { entryContext: ctx } as never)
+            }
+            onAITrigger={(_module, ctx) =>
+              navigation.navigate('AIChat' as never, { entryContext: ctx } as never)
+            }
+          />
         </View>
 
         {/* 快捷操作 */}

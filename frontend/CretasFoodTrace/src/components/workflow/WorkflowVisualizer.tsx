@@ -1,190 +1,115 @@
-import React, { Fragment } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  PressableStateCallbackType,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useTheme } from 'react-native-paper';
-import type { AppTheme } from '../../theme';
-import type { WorkflowNode as WorkflowNodeData } from '../../types/workflow';
-import { WorkflowNode } from './WorkflowNode';
-import { WorkflowConnector } from './WorkflowConnector';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useWorkflowStats } from '../../hooks/useWorkflowStats';
+import type {
+  WorkflowAIEntryContext,
+  WorkflowModule,
+} from '../../types/workflow';
+import { WorkflowCard } from './WorkflowCard';
+
+const MODULE_TITLES: Record<WorkflowModule, string> = {
+  sales: '今日销售工作流',
+  purchase: '今日采购工作流',
+  production: '今日生产工作流',
+  finance: '今日财务工作流',
+  inventory: '库存状态',
+};
 
 export interface WorkflowVisualizerProps {
-  nodes: WorkflowNodeData[];
-  title?: string;
-  orientation?: 'horizontal' | 'vertical';
-  loading?: boolean;
-  emptyHint?: string;
+  /** 要显示的 module 列表; 顺序即渲染顺序 (按角色定制子集) */
+  modules: WorkflowModule[];
+  /** 工厂 ID; 留空时 API client 从登录 user 拿 */
+  factoryId?: string;
+  /** AI 入口按钮是否显示 (各 card 都显示, 由调用方决定 module 关联) */
   aiTriggerEnabled?: boolean;
-  aiTriggerLabel?: string;
-  onNodePress?: (nodeId: string) => void;
-  onNodeLongPress?: (nodeId: string) => void;
-  onAITrigger?: () => void;
+  /** 自定义 title 覆盖默认映射 (key 必须是 modules 里的值) */
+  titles?: Partial<Record<WorkflowModule, string>>;
+  /** 节点点击; 调用方拿到 (module, nodeId) 后自己 navigate + filter */
+  onNodePress?: (module: WorkflowModule, nodeId: string) => void;
+  /** 节点长按; entryContext 推荐传给 AIChat 路由 */
+  onNodeLongPress?: (module: WorkflowModule, ctx: WorkflowAIEntryContext) => void;
+  /** AI 按钮点击; entryContext 推荐传给 AIChat 路由 */
+  onAITrigger?: (module: WorkflowModule, ctx: WorkflowAIEntryContext) => void;
 }
 
-const DEFAULT_EMPTY_HINT = '暂无工作流数据';
-const DEFAULT_AI_LABEL = '💬 跟 AI 说';
-
+/**
+ * 多模块工作流可视化 — 顶层 wrapper. 每个 module 渲染一张 {@link WorkflowCard}.
+ *
+ * 角色驱动: 调用方按角色传不同 modules 子集
+ * (FA=全 5, DS=[production,sales], WS=[production], WH=[inventory]).
+ *
+ * 数据由内部 {@link useWorkflowStats} hook 自动取, 调用方不需自己 fetch.
+ */
 export function WorkflowVisualizer({
-  nodes,
-  title,
-  orientation = 'horizontal',
-  loading,
-  emptyHint = DEFAULT_EMPTY_HINT,
+  modules,
+  factoryId,
   aiTriggerEnabled,
-  aiTriggerLabel = DEFAULT_AI_LABEL,
+  titles,
   onNodePress,
   onNodeLongPress,
   onAITrigger,
 }: WorkflowVisualizerProps) {
-  const theme = useTheme<AppTheme>();
-  const isVertical = orientation === 'vertical';
-
-  const renderHeader = () => {
-    if (!title && !aiTriggerEnabled) return null;
-    return (
-      <View style={styles.header}>
-        {title ? (
-          <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
-            {title}
-          </Text>
-        ) : (
-          <View />
-        )}
-        {aiTriggerEnabled && onAITrigger ? (
-          <Pressable
-            onPress={onAITrigger}
-            style={({ pressed }: PressableStateCallbackType) => [
-              styles.aiButton,
-              {
-                backgroundColor: theme.colors.primaryContainer,
-                borderColor: theme.colors.primary,
-              },
-              pressed && styles.aiButtonPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="向 AI 助手发起会话"
-          >
-            <Text style={[styles.aiButtonLabel, { color: theme.colors.onPrimaryContainer }]}>
-              {aiTriggerLabel}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-    );
-  };
-
-  const renderBody = () => {
-    if (loading) {
-      return (
-        <View style={styles.stateRow}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={[styles.stateText, { color: theme.colors.textSecondary }]}>加载中…</Text>
-        </View>
-      );
-    }
-    if (!nodes.length) {
-      return (
-        <View style={styles.stateRow}>
-          <Text style={[styles.stateText, { color: theme.colors.textSecondary }]}>{emptyHint}</Text>
-        </View>
-      );
-    }
-    return (
-      <View
-        style={[
-          styles.nodesContainer,
-          isVertical ? styles.nodesVertical : styles.nodesHorizontal,
-        ]}
-      >
-        {nodes.map((node, i) => (
-          <Fragment key={node.id}>
-            <WorkflowNode
-              node={node}
-              onPress={onNodePress}
-              onLongPress={onNodeLongPress}
-            />
-            {i < nodes.length - 1 ? (
-              <WorkflowConnector orientation={orientation} />
-            ) : null}
-          </Fragment>
-        ))}
-      </View>
-    );
-  };
-
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
-          ...theme.custom.shadows.small,
-        },
-      ]}
-      accessibilityLabel={title ? `${title} 工作流卡片` : '工作流卡片'}
-    >
-      {renderHeader()}
-      {renderBody()}
+    <View style={styles.stack}>
+      {modules.map((module) => (
+        <ModuleCard
+          key={module}
+          module={module}
+          factoryId={factoryId}
+          title={titles?.[module] ?? MODULE_TITLES[module]}
+          aiTriggerEnabled={aiTriggerEnabled}
+          onNodePress={onNodePress}
+          onNodeLongPress={onNodeLongPress}
+          onAITrigger={onAITrigger}
+        />
+      ))}
     </View>
   );
 }
 
+interface ModuleCardProps {
+  module: WorkflowModule;
+  factoryId?: string;
+  title: string;
+  aiTriggerEnabled?: boolean;
+  onNodePress?: (module: WorkflowModule, nodeId: string) => void;
+  onNodeLongPress?: (module: WorkflowModule, ctx: WorkflowAIEntryContext) => void;
+  onAITrigger?: (module: WorkflowModule, ctx: WorkflowAIEntryContext) => void;
+}
+
+function ModuleCard({
+  module,
+  factoryId,
+  title,
+  aiTriggerEnabled,
+  onNodePress,
+  onNodeLongPress,
+  onAITrigger,
+}: ModuleCardProps) {
+  const { stats, loading } = useWorkflowStats(module, factoryId);
+  const nodes = stats?.nodes ?? [];
+
+  return (
+    <WorkflowCard
+      title={title}
+      nodes={nodes}
+      loading={loading}
+      aiTriggerEnabled={aiTriggerEnabled}
+      onNodePress={onNodePress ? (nodeId) => onNodePress(module, nodeId) : undefined}
+      onNodeLongPress={
+        onNodeLongPress
+          ? (nodeId) => onNodeLongPress(module, { module, node: nodeId, factoryId })
+          : undefined
+      }
+      onAITrigger={
+        onAITrigger ? () => onAITrigger(module, { module, factoryId }) : undefined
+      }
+    />
+  );
+}
+
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: '600',
-    flex: 1,
-    paddingRight: 8,
-  },
-  aiButton: {
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  aiButtonPressed: {
-    opacity: 0.75,
-  },
-  aiButtonLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  nodesContainer: {
-    alignItems: 'center',
-  },
-  nodesHorizontal: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    rowGap: 12,
-  },
-  nodesVertical: {
-    flexDirection: 'column',
-  },
-  stateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 24,
-    gap: 8,
-  },
-  stateText: {
-    fontSize: 13,
+  stack: {
+    gap: 12,
   },
 });
