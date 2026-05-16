@@ -7,8 +7,9 @@ import { FAManagementStackParamList } from '../../../types/navigation';
 import { purchaseApiClient, PurchaseOrder } from '../../../services/api/purchaseApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { formatNumberWithCommas } from '../../../utils/formatters';
-import { RowActionBottomSheet } from '../../../components/list';
+import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
+import { useListSummary } from '../../../hooks/useListSummary';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -58,6 +59,14 @@ export default function PurchaseOrderListScreen() {
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const onRefresh = () => { setRefreshing(true); loadOrders(); };
+
+  // U-FOOTER-1: sticky footer summary, filter mirrors list filter
+  const summaryRequest = useMemo(
+    () => ({ filterConditions: statusFilter !== 'all' ? { status: statusFilter } : {} }),
+    [statusFilter],
+  );
+  const { summary, refresh: refreshSummary } = useListSummary('purchaseOrder', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing]);
 
   const handleAction = async (orderId: string, action: string) => {
     try {
@@ -155,18 +164,34 @@ export default function PurchaseOrderListScreen() {
         />
       </View>
 
-      {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" />
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={item => item.id}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>暂无采购单</Text>}
-        />
-      )}
+      <View style={styles.listWrap}>
+        {loading ? (
+          <ActivityIndicator style={styles.loader} size="large" />
+        ) : (
+          <FlatList
+            data={orders}
+            keyExtractor={item => item.id}
+            renderItem={renderOrder}
+            contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            ListEmptyComponent={<Text style={styles.empty}>暂无采购单</Text>}
+          />
+        )}
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'PURCHASE',
+              initialMessage: `分析当前采购单列表 (筛选: ${statusFilter === 'all' ? '全部' : statusFilter})`,
+            },
+          }))
+        }
+      />
 
       <FAB
         icon="plus"
@@ -197,6 +222,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   filterRow: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#fff' },
   segmented: { },
+  listWrap: { flex: 1 },
   loader: { flex: 1, justifyContent: 'center' },
   list: { padding: 12, paddingBottom: 80 },
   card: { marginBottom: 10, borderRadius: 10 },
