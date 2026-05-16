@@ -22,18 +22,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRoute, type RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { sampleApiClient, type ProductSample } from '../../services/api/sampleApiClient';
 import { AttachmentList } from '../../components/attachment/AttachmentList';
+import { AttachmentUploadButton } from '../../components/attachment/AttachmentUploadButton';
 
 type RDStackParamList = {
   SampleRequestDetail: { sampleId: string };
+  SamplePhotoGallery: { sampleId: string; sampleCode?: string; sampleName?: string };
 };
 
 type Route = RouteProp<RDStackParamList, 'SampleRequestDetail'>;
+type Nav = NativeStackNavigationProp<RDStackParamList, 'SampleRequestDetail'>;
 
 export const SampleRequestDetailScreen: React.FC = () => {
   const route = useRoute<Route>();
+  const navigation = useNavigation<Nav>();
   const { sampleId } = route.params;
 
   const [sample, setSample] = useState<ProductSample | null>(null);
@@ -41,6 +46,7 @@ export const SampleRequestDetailScreen: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [reviewNotes, setReviewNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -185,8 +191,33 @@ export const SampleRequestDetailScreen: React.FC = () => {
         </Section>
       ) : null}
 
-      <Section title="附件 (Sprint 1 Track C)">
-        <AttachmentList entityType="RD_SAMPLE" entityId={sample.id} />
+      <Section title="附件 / 样品照片">
+        <View style={styles.attachmentHeaderRow}>
+          <AttachmentUploadButton
+            entityType="RD_SAMPLE"
+            entityId={sample.id}
+            fileCategory="PHOTO"
+            buttonLabel="📷 上传照片"
+            onUploaded={() => setAttachmentRefreshKey(k => k + 1)}
+          />
+          <TouchableOpacity
+            style={styles.galleryLink}
+            onPress={() =>
+              navigation.navigate('SamplePhotoGallery', {
+                sampleId: sample.id,
+                sampleCode: sample.sampleCode,
+                sampleName: sample.name,
+              })
+            }
+          >
+            <Text style={styles.galleryLinkText}>🖼 网格视图 →</Text>
+          </TouchableOpacity>
+        </View>
+        <AttachmentList
+          entityType="RD_SAMPLE"
+          entityId={sample.id}
+          refreshKey={attachmentRefreshKey}
+        />
       </Section>
 
       {(showSubmitButton || showReviewButtons) ? (
@@ -320,6 +351,14 @@ const styles = StyleSheet.create({
   buttonSuccess: { backgroundColor: '#10B981' },
   buttonDanger: { backgroundColor: '#EF4444' },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  attachmentHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  galleryLink: { paddingHorizontal: 12, paddingVertical: 6 },
+  galleryLinkText: { color: '#2563EB', fontSize: 14, fontWeight: '600' },
 });
 
 export default SampleRequestDetailScreen;
