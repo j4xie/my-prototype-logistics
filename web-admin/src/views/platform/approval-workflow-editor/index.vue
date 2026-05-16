@@ -1,0 +1,709 @@
+<template>
+  <div class="approval-workflow-editor">
+    <!-- Header -->
+    <el-card shadow="never" class="header-card">
+      <div class="header-row">
+        <div class="header-left">
+          <h2>审批工作流编辑器</h2>
+          <el-tag v-if="currentWorkflow" :type="publishStatusType" size="small">
+            {{ publishStatusLabel }} v{{ currentWorkflow.version }}
+          </el-tag>
+        </div>
+        <div class="header-actions">
+          <el-select
+            v-model="selectedDecisionType"
+            placeholder="选择决策类型"
+            style="width: 200px"
+            @change="onDecisionTypeChange"
+          >
+            <el-option
+              v-for="dt in decisionTypeOptions"
+              :key="dt.value"
+              :label="dt.label"
+              :value="dt.value"
+            />
+          </el-select>
+          <el-select
+            v-model="selectedWorkflowId"
+            placeholder="选择工作流"
+            clearable
+            :disabled="workflowList.length === 0"
+            style="width: 220px"
+            @change="onWorkflowSelectionChange"
+          >
+            <el-option
+              v-for="w in workflowList"
+              :key="w.id"
+              :label="`${w.name} (v${w.version} · ${w.publishStatus})`"
+              :value="w.id"
+            />
+          </el-select>
+          <el-input
+            v-model="workflowName"
+            placeholder="工作流名称"
+            style="width: 200px"
+          />
+          <el-button :icon="Plus" @click="resetEditor">新建</el-button>
+          <el-button :icon="View" @click="handleValidate" :disabled="nodes.length === 0">校验</el-button>
+          <el-button :icon="VideoPlay" :disabled="nodes.length === 0" @click="openSimulator">模拟</el-button>
+          <el-button
+            type="primary"
+            :icon="Download"
+            :disabled="!canSave"
+            :loading="saving"
+            @click="handleSave"
+          >
+            {{ currentWorkflow ? '保存' : '保存草稿' }}
+          </el-button>
+          <el-button
+            type="success"
+            :icon="Upload"
+            :disabled="!canPublish"
+            @click="handlePublish"
+          >
+            发布
+          </el-button>
+          <el-button
+            v-if="currentWorkflow && currentWorkflow.publishStatus === 'published'"
+            type="warning"
+            @click="handleArchive"
+          >
+            归档
+          </el-button>
+          <el-button
+            v-if="currentWorkflow"
+            type="danger"
+            @click="handleDelete"
+          >
+            删除
+          </el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 3-pane body: palette | canvas | properties -->
+    <div class="editor-body">
+      <!-- Left: Node palette (Day 6 fills in real nodes) -->
+      <div class="palette">
+        <h4>节点类型</h4>
+        <div
+          v-for="schema in nodeSchemas"
+          :key="schema.type"
+          class="palette-node"
+          draggable="true"
+          @dragstart="onPaletteDragStart($event, schema)"
+        >
+          <span class="palette-icon" :style="{ backgroundColor: schema.color }">
+            {{ schema.icon }}
+          </span>
+          <div class="palette-info">
+            <span class="palette-name">{{ schema.displayName }}</span>
+            <span class="palette-desc">{{ schema.description }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: VueFlow canvas -->
+      <div class="canvas-container" @drop="onCanvasDrop" @dragover.prevent>
+        <VueFlow
+          v-model:nodes="nodes"
+          v-model:edges="edges"
+          :node-types="nodeTypes"
+          :default-viewport="{ zoom: 0.9, x: 50, y: 50 }"
+          fit-view-on-init
+          @node-click="onNodeClick"
+          @edge-click="onEdgeClick"
+          @connect="onConnect"
+        >
+          <Background />
+          <Controls />
+        </VueFlow>
+      </div>
+
+      <!-- Right: Property panel -->
+      <div class="properties-panel">
+        <PropertyPanel
+          v-if="selectedElement"
+          :key="selectedElement.id"
+          :element="selectedElement"
+          @update="onPropertyUpdate"
+          @delete="onDeleteSelected"
+        />
+        <el-empty v-else description="点击节点或边查看属性" :image-size="80" />
+      </div>
+    </div>
+
+    <!-- Simulator modal -->
+    <WorkflowSimulator
+      v-if="simulatorOpen && simulatorInput"
+      v-model="simulatorOpen"
+      :nodes="simulatorInput.nodes"
+      :edges="simulatorInput.edges"
+      :start-node-id="simulatorInput.startNodeId"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { markRaw, ref, computed, onMounted } from 'vue'
+import { VueFlow, type Connection, type Node, type Edge } from '@vue-flow/core'
+import { Background } from '@vue-flow/background'
+import { Controls } from '@vue-flow/controls'
+import { Download, Plus, Upload, View, VideoPlay } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/store/modules/auth'
+import StartNode from './components/nodes/StartNode.vue'
+import ApprovalNode from './components/nodes/ApprovalNode.vue'
+import ConditionNode from './components/nodes/ConditionNode.vue'
+import ParallelNode from './components/nodes/ParallelNode.vue'
+import JoinNode from './components/nodes/JoinNode.vue'
+import NotifyNode from './components/nodes/NotifyNode.vue'
+import EndNode from './components/nodes/EndNode.vue'
+import PropertyPanel from './components/PropertyPanel.vue'
+import WorkflowSimulator from './components/WorkflowSimulator.vue'
+import type { SimulatorInput } from './composables/useSimulator'
+import {
+  getDecisionTypes,
+  getWorkflowsByDecisionType,
+  getWorkflowById,
+  createWorkflow,
+  updateWorkflow,
+  deleteWorkflow,
+  publishWorkflow,
+  archiveWorkflow,
+  validateWorkflow,
+  type ApprovalWorkflowDTO,
+  type ApprovalWorkflowNode,
+  type ApprovalWorkflowEdge as ApiEdge,
+  type CreateWorkflowRequest,
+  type DecisionType,
+  type NodeType,
+} from '@/api/approvalWorkflow'
+
+import '@vue-flow/core/dist/style.css'
+import '@vue-flow/core/dist/theme-default.css'
+import '@vue-flow/controls/dist/style.css'
+
+// ==================== State ====================
+
+const authStore = useAuthStore()
+const factoryId = computed(() => authStore.factoryId)
+
+const selectedDecisionType = ref<DecisionType>('QUALITY_RELEASE')
+const workflowName = ref('')
+const saving = ref(false)
+
+const nodes = ref<Node[]>([])
+const edges = ref<Edge[]>([])
+const currentWorkflow = ref<ApprovalWorkflowDTO | null>(null)
+const workflowList = ref<ApprovalWorkflowDTO[]>([])
+const selectedWorkflowId = ref<string | undefined>(undefined)
+
+// Simulator modal state
+const simulatorOpen = ref(false)
+const simulatorInput = ref<SimulatorInput | null>(null)
+
+interface SelectedElement {
+  kind: 'node' | 'edge'
+  id: string
+  type?: NodeType
+  data: Record<string, unknown>
+}
+const selectedElement = ref<SelectedElement | null>(null)
+
+// Custom node type registry — markRaw avoids Vue making components reactive.
+const nodeTypes = {
+  start: markRaw(StartNode),
+  approval: markRaw(ApprovalNode),
+  condition: markRaw(ConditionNode),
+  parallel: markRaw(ParallelNode),
+  join: markRaw(JoinNode),
+  notify: markRaw(NotifyNode),
+  end: markRaw(EndNode),
+}
+
+/** Default config per node type — used when dragging from palette. */
+function defaultConfigFor(type: NodeType): Record<string, unknown> {
+  switch (type) {
+    case 'approval':
+      return { approverRoles: [], requiredApprovers: 1, timeoutMinutes: 0 }
+    case 'condition':
+      return { description: '' }
+    case 'parallel':
+      return {}
+    case 'join':
+      return { mode: 'ALL' }
+    case 'notify':
+      return { notifyRoles: [] }
+    case 'end':
+      return { outcome: 'APPROVED' }
+    default:
+      return {}
+  }
+}
+
+// Static node palette schemas (Day 6 will refine each)
+interface PaletteSchema {
+  type: NodeType
+  displayName: string
+  description: string
+  icon: string
+  color: string
+}
+
+const nodeSchemas: PaletteSchema[] = [
+  { type: 'start',     displayName: '开始',   description: '工作流入口',            icon: '▶', color: '#67C23A' },
+  { type: 'approval',  displayName: '审批',   description: '单签 / 会签节点',       icon: '✓', color: '#409EFF' },
+  { type: 'condition', displayName: '条件',   description: 'SpEL 分支判断',          icon: '?', color: '#E6A23C' },
+  { type: 'parallel',  displayName: '并行',   description: '同时启动多分支',         icon: '⇉', color: '#909399' },
+  { type: 'join',      displayName: '汇聚',   description: 'ALL / N_OF_M / ANY',     icon: '⇇', color: '#909399' },
+  { type: 'notify',    displayName: '通知',   description: '推 InAppNotification',   icon: '✉', color: '#909399' },
+  { type: 'end',       displayName: '结束',   description: 'APPROVED / REJECTED',    icon: '■', color: '#F56C6C' },
+]
+
+const decisionTypeOptions: Array<{ value: DecisionType; label: string }> = [
+  { value: 'QUALITY_RELEASE',         label: 'QUALITY_RELEASE 质检放行' },
+  { value: 'FORCE_INSERT',            label: 'FORCE_INSERT 强制插单' },
+  { value: 'QUALITY_EXCEPTION',       label: 'QUALITY_EXCEPTION 质检特批' },
+  { value: 'BATCH_STATUS_CHANGE',     label: 'BATCH_STATUS_CHANGE 批次状态变更' },
+  { value: 'SUPPLIER_APPROVAL',       label: 'SUPPLIER_APPROVAL 供应商准入' },
+  { value: 'SUPPLIER_STATUS_CHANGE',  label: 'SUPPLIER_STATUS_CHANGE 供应商状态' },
+  { value: 'MATERIAL_DISPOSAL',       label: 'MATERIAL_DISPOSAL 物料处置' },
+  { value: 'PRODUCTION_PLAN_CHANGE',  label: 'PRODUCTION_PLAN_CHANGE 生产计划变更' },
+  { value: 'EQUIPMENT_STATUS_CHANGE', label: 'EQUIPMENT_STATUS_CHANGE 设备状态' },
+  { value: 'CUSTOM',                  label: 'CUSTOM 自定义' },
+]
+
+// ==================== Computed ====================
+
+const canSave = computed(() => Boolean(workflowName.value && selectedDecisionType.value && nodes.value.length > 0))
+const canPublish = computed(() => currentWorkflow.value?.publishStatus === 'draft')
+
+const publishStatusType = computed<'success' | 'warning' | 'info'>(() => {
+  if (!currentWorkflow.value) return 'info'
+  const map: Record<string, 'success' | 'warning' | 'info'> = {
+    published: 'success',
+    draft: 'warning',
+    archived: 'info',
+  }
+  return map[currentWorkflow.value.publishStatus] ?? 'info'
+})
+
+const publishStatusLabel = computed(() => {
+  if (!currentWorkflow.value) return ''
+  const map: Record<string, string> = { published: '已发布', draft: '草稿', archived: '已归档' }
+  return map[currentWorkflow.value.publishStatus] ?? currentWorkflow.value.publishStatus
+})
+
+// ==================== Handlers ====================
+
+async function onDecisionTypeChange() {
+  resetEditor()
+  await refreshWorkflowList()
+}
+
+function onPaletteDragStart(event: DragEvent, schema: PaletteSchema) {
+  if (event.dataTransfer) {
+    event.dataTransfer.setData('application/vueflow', JSON.stringify(schema))
+    event.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+function onCanvasDrop(event: DragEvent) {
+  const raw = event.dataTransfer?.getData('application/vueflow')
+  if (!raw) return
+  const schema: PaletteSchema = JSON.parse(raw)
+  const canvasRect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const position = {
+    x: event.clientX - canvasRect.left,
+    y: event.clientY - canvasRect.top,
+  }
+  // Enforce singleton for start (only one entry node allowed).
+  if (schema.type === 'start' && nodes.value.some(n => n.type === 'start')) {
+    ElMessage.warning('工作流只能有一个 start 节点')
+    return
+  }
+  const id = `${schema.type}_${Date.now()}`
+  nodes.value.push({
+    id,
+    type: schema.type,
+    position,
+    data: {
+      label: schema.displayName,
+      nodeType: schema.type,
+      config: defaultConfigFor(schema.type),
+    },
+  })
+}
+
+function onConnect(connection: Connection) {
+  const id = `e_${Date.now()}`
+  edges.value.push({
+    id,
+    source: connection.source,
+    target: connection.target,
+    sourceHandle: connection.sourceHandle ?? undefined,
+    targetHandle: connection.targetHandle ?? undefined,
+    label: '',
+    data: { condition: '', priority: 0 },
+  })
+}
+
+function onNodeClick({ node }: { node: Node }) {
+  selectedElement.value = {
+    kind: 'node',
+    id: node.id,
+    type: node.type as NodeType,
+    data: { label: String(node.data?.label ?? ''), config: { ...(node.data?.config as Record<string, unknown> ?? {}) } },
+  }
+}
+
+function onEdgeClick({ edge }: { edge: Edge }) {
+  selectedElement.value = {
+    kind: 'edge',
+    id: edge.id,
+    data: {
+      label: edge.label ? String(edge.label) : '',
+      condition: (edge.data?.condition as string) ?? '',
+      priority: Number(edge.data?.priority ?? 0),
+    },
+  }
+}
+
+/** Property panel emits new data — apply to nodes/edges array. */
+function onPropertyUpdate(newData: Record<string, unknown>) {
+  if (!selectedElement.value) return
+  const sel = selectedElement.value
+  if (sel.kind === 'node') {
+    const idx = nodes.value.findIndex(n => n.id === sel.id)
+    if (idx !== -1) {
+      const node = nodes.value[idx]
+      nodes.value[idx] = {
+        ...node,
+        data: {
+          ...node.data,
+          label: newData.label,
+          config: { ...(newData.config as Record<string, unknown>) },
+        },
+      }
+    }
+  } else {
+    const idx = edges.value.findIndex(e => e.id === sel.id)
+    if (idx !== -1) {
+      const edge = edges.value[idx]
+      edges.value[idx] = {
+        ...edge,
+        label: String(newData.label ?? ''),
+        data: { condition: newData.condition, priority: newData.priority },
+      }
+    }
+  }
+  sel.data = { ...newData }
+}
+
+function onDeleteSelected() {
+  if (!selectedElement.value) return
+  const sel = selectedElement.value
+  if (sel.kind === 'node') {
+    if (sel.type === 'start') {
+      ElMessage.warning('start 节点不可删除 (工作流入口)')
+      return
+    }
+    nodes.value = nodes.value.filter(n => n.id !== sel.id)
+    // 删除所有以此 node 为端点的边
+    edges.value = edges.value.filter(e => e.source !== sel.id && e.target !== sel.id)
+  } else {
+    edges.value = edges.value.filter(e => e.id !== sel.id)
+  }
+  selectedElement.value = null
+}
+
+/** Serialize current VueFlow graph state → CreateWorkflowRequest wire shape. */
+function serializeGraph(): CreateWorkflowRequest | null {
+  const startNode = nodes.value.find(n => n.type === 'start')
+  if (!startNode) {
+    ElMessage.warning('工作流必须包含一个 start 节点')
+    return null
+  }
+  const wireNodes: ApprovalWorkflowNode[] = nodes.value.map(n => ({
+    id: n.id,
+    type: (n.type as NodeType) ?? 'approval',
+    label: String(n.data?.label ?? n.id),
+    position: { x: n.position.x, y: n.position.y },
+    config: (n.data?.config as Record<string, unknown>) ?? {},
+  }))
+  const wireEdges: ApiEdge[] = edges.value.map(e => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    condition: (e.data?.condition as string) || undefined,
+    label: e.label ? String(e.label) : undefined,
+    priority: Number(e.data?.priority ?? 0),
+  }))
+  return {
+    decisionType: selectedDecisionType.value,
+    name: workflowName.value,
+    nodes: wireNodes,
+    edges: wireEdges,
+    startNodeId: startNode.id,
+  }
+}
+
+/** Deserialize a backend ApprovalWorkflowDTO → VueFlow nodes/edges arrays. */
+function deserializeGraph(dto: ApprovalWorkflowDTO) {
+  const parsedNodes: ApprovalWorkflowNode[] = JSON.parse(dto.nodesJson || '[]')
+  const parsedEdges: ApiEdge[] = JSON.parse(dto.edgesJson || '[]')
+  nodes.value = parsedNodes.map(n => ({
+    id: n.id,
+    type: n.type,
+    position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
+    data: { label: n.label ?? n.id, config: n.config ?? {} },
+  }))
+  edges.value = parsedEdges.map(e => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    label: e.label ?? '',
+    data: { condition: e.condition ?? '', priority: e.priority ?? 0 },
+  }))
+}
+
+async function handleSave() {
+  if (!factoryId.value || !canSave.value) return
+  saving.value = true
+  try {
+    const payload = serializeGraph()
+    if (!payload) return
+
+    if (currentWorkflow.value?.id) {
+      // Update existing
+      const res = await updateWorkflow(factoryId.value, currentWorkflow.value.id, payload)
+      if (res.success && res.data) {
+        currentWorkflow.value = res.data
+        ElMessage.success('已保存 (草稿)')
+        await refreshWorkflowList()
+      } else {
+        ElMessage.error(res.message ?? '保存失败')
+      }
+    } else {
+      // Create new
+      const res = await createWorkflow(factoryId.value, payload)
+      if (res.success && res.data) {
+        currentWorkflow.value = res.data
+        selectedWorkflowId.value = res.data.id
+        ElMessage.success('草稿已创建')
+        await refreshWorkflowList()
+      } else {
+        ElMessage.error(res.message ?? '保存失败')
+      }
+    }
+  } catch (e) {
+    console.error('[save failed]', e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function handlePublish() {
+  if (!factoryId.value || !currentWorkflow.value?.id) return
+  try {
+    await ElMessageBox.confirm(
+      '发布后, 同 decisionType 的新审批实例将走这个 graph workflow. 确认?',
+      '发布工作流',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    const res = await publishWorkflow(factoryId.value, currentWorkflow.value.id)
+    if (res.success && res.data) {
+      currentWorkflow.value = res.data
+      ElMessage.success('工作流已发布')
+      await refreshWorkflowList()
+    } else {
+      ElMessage.error(res.message ?? '发布失败')
+    }
+  } catch (e) {
+    console.error('[publish failed]', e)
+  }
+}
+
+async function handleArchive() {
+  if (!factoryId.value || !currentWorkflow.value?.id) return
+  try {
+    await ElMessageBox.confirm(
+      '归档后, 该工作流不再被 executor 选中. 已运行实例不受影响. 确认?',
+      '归档工作流',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  const res = await archiveWorkflow(factoryId.value, currentWorkflow.value.id)
+  if (res.success && res.data) {
+    currentWorkflow.value = res.data
+    ElMessage.success('已归档')
+    await refreshWorkflowList()
+  } else {
+    ElMessage.error(res.message ?? '归档失败')
+  }
+}
+
+async function handleDelete() {
+  if (!factoryId.value || !currentWorkflow.value?.id) return
+  try {
+    await ElMessageBox.confirm(
+      `确定删除工作流 "${currentWorkflow.value.name}" ? (软删除可恢复, 但 UI 上不再显示)`,
+      '删除工作流',
+      { type: 'error' },
+    )
+  } catch {
+    return
+  }
+  const res = await deleteWorkflow(factoryId.value, currentWorkflow.value.id)
+  if (res.success) {
+    ElMessage.success('已删除')
+    resetEditor()
+    await refreshWorkflowList()
+  } else {
+    ElMessage.error(res.message ?? '删除失败')
+  }
+}
+
+function openSimulator() {
+  const payload = serializeGraph()
+  if (!payload) return
+  simulatorInput.value = {
+    startNodeId: payload.startNodeId,
+    nodes: payload.nodes,
+    edges: payload.edges,
+  }
+  simulatorOpen.value = true
+}
+
+async function handleValidate() {
+  if (!factoryId.value) return
+  const payload = serializeGraph()
+  if (!payload) return
+  const res = await validateWorkflow(factoryId.value, payload)
+  if (res.success && res.data) {
+    const result = res.data
+    if (result.valid) {
+      ElMessage.success(`校验通过 ${result.warnings.length ? `(${result.warnings.length} 警告)` : ''}`)
+      if (result.warnings.length) {
+        ElMessageBox.alert(result.warnings.join('\n'), '校验警告', { type: 'warning' })
+      }
+    } else {
+      ElMessageBox.alert(result.errors.join('\n'), '校验失败', { type: 'error' })
+    }
+  } else {
+    ElMessage.error(res.message ?? '校验请求失败')
+  }
+}
+
+function resetEditor() {
+  nodes.value = []
+  edges.value = []
+  currentWorkflow.value = null
+  selectedWorkflowId.value = undefined
+  workflowName.value = ''
+  selectedElement.value = null
+}
+
+/** Load list of workflows for the currently selected decisionType. */
+async function refreshWorkflowList() {
+  if (!factoryId.value) return
+  try {
+    const res = await getWorkflowsByDecisionType(factoryId.value, selectedDecisionType.value)
+    if (res.success && res.data) {
+      workflowList.value = res.data
+    }
+  } catch (e) {
+    console.warn('[refreshWorkflowList failed]', e)
+  }
+}
+
+async function onWorkflowSelectionChange(id: string | undefined) {
+  if (!factoryId.value || !id) {
+    resetEditor()
+    return
+  }
+  try {
+    const res = await getWorkflowById(factoryId.value, id)
+    if (res.success && res.data) {
+      currentWorkflow.value = res.data
+      workflowName.value = res.data.name
+      selectedDecisionType.value = res.data.decisionType
+      deserializeGraph(res.data)
+      selectedElement.value = null
+      ElMessage.success(`已加载: ${res.data.name} v${res.data.version}`)
+    }
+  } catch (e) {
+    console.error('[load workflow failed]', e)
+    ElMessage.error('加载工作流失败')
+  }
+}
+
+// ==================== Lifecycle ====================
+
+onMounted(async () => {
+  if (!factoryId.value) return
+  try {
+    await getDecisionTypes(factoryId.value)
+    await refreshWorkflowList()
+  } catch (e) {
+    console.warn('[approval-workflow-editor] 后端未就绪或网络异常', e)
+  }
+})
+</script>
+
+<style scoped>
+.approval-workflow-editor {
+  height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+}
+.header-card { margin-bottom: 8px; flex-shrink: 0; }
+.header-row { display: flex; justify-content: space-between; align-items: center; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left h2 { margin: 0; font-size: 18px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.editor-body { flex: 1; display: flex; gap: 8px; min-height: 0; }
+
+.palette {
+  width: 220px; flex-shrink: 0; background: #fff;
+  border: 1px solid #e4e7ed; border-radius: 4px; padding: 12px; overflow-y: auto;
+}
+.palette h4 { margin: 0 0 12px; font-size: 14px; color: #303133; }
+
+.palette-node {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px; margin-bottom: 4px;
+  border: 1px solid #e4e7ed; border-radius: 6px;
+  cursor: grab; transition: all 0.2s;
+}
+.palette-node:hover { border-color: #409EFF; background: #f0f7ff; }
+.palette-icon {
+  width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: white; font-weight: bold;
+}
+.palette-info { display: flex; flex-direction: column; min-width: 0; }
+.palette-name { font-size: 13px; font-weight: 500; }
+.palette-desc { font-size: 11px; color: #909399; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.canvas-container {
+  flex: 1; background: #fafafa;
+  border: 1px solid #e4e7ed; border-radius: 4px; min-height: 400px;
+}
+
+.properties-panel {
+  width: 320px; flex-shrink: 0; background: #fff;
+  border: 1px solid #e4e7ed; border-radius: 4px; padding: 12px; overflow-y: auto;
+}
+.properties-panel h4 { margin: 0 0 8px; font-size: 14px; color: #303133; }
+.placeholder p { margin: 4px 0; font-size: 13px; }
+.placeholder .hint { color: #909399; font-family: monospace; font-size: 11px; }
+</style>

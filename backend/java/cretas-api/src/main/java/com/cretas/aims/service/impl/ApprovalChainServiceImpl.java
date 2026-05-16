@@ -6,8 +6,10 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.config.ApprovalChainConfigRepository;
 import com.cretas.aims.service.ApprovalChainService;
+import com.cretas.aims.service.ApprovalWorkflowService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.context.annotation.Lazy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,15 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
 
     private final ApprovalChainConfigRepository approvalChainConfigRepository;
     private final ObjectMapper objectMapper;
+
+    /**
+     * Sprint 3 Track-I (C-APPROVAL-EDITOR-1) dual-source read:
+     * {@link #requiresApproval(String, DecisionType, Map)} 优先查 graph
+     * workflow, 不存在则 fallback 到 flat-list ApprovalChainConfig.
+     *
+     * <p>{@code @Lazy} 防御未来潜在循环依赖 (当前无, Day 4 verified).
+     */
+    private final @Lazy ApprovalWorkflowService approvalWorkflowService;
 
     // ==================== 配置管理 ====================
 
@@ -327,6 +338,22 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
 
     @Override
     public boolean requiresApproval(String factoryId, DecisionType decisionType, Map<String, Object> context) {
+        // ① Sprint 3 Track-I dual-source: 优先查 ApprovalWorkflow (graph)
+        // ApprovalWorkflowService.getActiveByDecisionType() 已 filter published+enabled.
+        // graph 存在即认定需要审批 (graph 自身管 auto-approve 逻辑).
+        boolean hasGraphWorkflow = approvalWorkflowService
+                .getActiveByDecisionType(factoryId, decisionType)
+                .isPresent();
+        if (hasGraphWorkflow) {
+            log.debug("使用 graph workflow (Sprint 3 Track-I) - factoryId={}, decisionType={}",
+                    factoryId, decisionType);
+            return true;
+        }
+
+        // ② Fallback to legacy flat-list ApprovalChainConfig
+        log.debug("Fallback to legacy ApprovalChainConfig - factoryId={}, decisionType={}",
+                factoryId, decisionType);
+
         // 查找匹配的配置
         Optional<ApprovalChainConfig> configOpt = findMatchingConfig(factoryId, decisionType, context);
 
