@@ -45,7 +45,19 @@ public class FormTemplateServiceImpl implements FormTemplateService {
             "EQUIPMENT",            // 设备表单
             "DISPOSAL_RECORD",      // 报废处理表单
             "RAW_MATERIAL_TYPE",    // 原料类型表单 (新建/编辑) — 2026-05-07 加, Canvas 可改
-            "PURCHASE_ORDER"        // 采购订单表单 — 2026-05-07 加, Canvas 可改
+            "PURCHASE_ORDER",       // 采购订单表单 — 2026-05-07 加, Canvas 可改
+            // ─── Sprint 3 Track-J C-PRT-EDITOR-1 (2026-05-16) — print template visual designer
+            //     Note: PRINT_PURCHASE_ORDER is intentionally distinct from the PURCHASE_ORDER
+            //     entry above. The latter is a Formily form schema for editing a PO; the former
+            //     is a print-layout schema for rendering a PO PDF. They share NO storage row.
+            //     Storage shape: {type:"object",properties:{_printSchema:PrintTemplateSchema}}
+            //     which satisfies validateSchemaJson() unchanged. See design doc 2026-05-16-c-prt-editor-design.md §3.1.
+            "PRINT_SALES_ORDER",          // 销售单打印模板
+            "PRINT_PURCHASE_ORDER",       // 采购单打印模板
+            "PRINT_QUOTATION",            // 报价单打印模板
+            "PRINT_PRODUCTION_TASK",      // 生产任务单打印模板
+            "PRINT_MATERIAL_REQUISITION", // 领料单打印模板
+            "PRINT_WEIGHING_SLIP"         // 称重单打印模板 (F006 食品行业刚需)
     );
 
     private final FormTemplateRepository formTemplateRepository;

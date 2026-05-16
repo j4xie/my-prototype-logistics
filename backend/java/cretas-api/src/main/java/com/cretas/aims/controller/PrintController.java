@@ -155,6 +155,118 @@ public class PrintController {
         return proxyToPython("material-requisition", payload, "material-requisition-" + id, authorization);
     }
 
+    // ==================== C-PRT-EDITOR-1 (Sprint 3 Track-J) ====================
+
+    /**
+     * Schema-driven PDF preview.
+     *
+     * <p>Co-exists with the 5 hardcoded endpoints above (which keep serving
+     * the legacy fixed-layout PDFs); this endpoint renders whatever schema
+     * the print template designer has saved (or an inline schema for live
+     * editor preview without persistence).
+     *
+     * <p>Day 4 MVP scope:
+     * <ul>
+     *   <li>Body shape: {@code {templateId?, inlineSchemaJson?, entityType, entityId?, mockData?}}</li>
+     *   <li>One of {@code templateId} or {@code inlineSchemaJson} required.</li>
+     *   <li>{@code mockData} (sample entity payload from editor) is used as
+     *       {@code entityData} when {@code entityId} is absent. Day 5+ will
+     *       fetch real entity rows when {@code entityId} is supplied.</li>
+     *   <li>Java masks price fields in the data dict via {@link PriceMaskResolver}
+     *       BEFORE proxying to Python — Python does not know about RBAC.</li>
+     * </ul>
+     *
+     * <p>RBAC: {@code system:read} is enough — any authenticated user can
+     * preview templates for their own factory. The mutation endpoint that
+     * saves templates (FormTemplateController) keeps its existing
+     * {@code system:read_write} gate.
+     *
+     * @since 2026-05-16 (Sprint 3 Track-J Day 4)
+     */
+    @PostMapping("/preview-template")
+    @RequirePermission({"system:read", "system:read_write"})
+    public ResponseEntity<byte[]> printPreviewTemplate(
+            @PathVariable String factoryId,
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+
+        // ── validate body ─────────────────────────────────────────────────
+        Object templateIdObj = body.get("templateId");
+        Object inlineSchemaJsonObj = body.get("inlineSchemaJson");
+        Object entityTypeObj = body.get("entityType");
+
+        String templateId = (templateIdObj instanceof String s) ? s : null;
+        String inlineSchemaJson = (inlineSchemaJsonObj instanceof String s) ? s : null;
+        String entityType = (entityTypeObj instanceof String s) ? s : null;
+
+        if ((templateId == null || templateId.isBlank())
+                && (inlineSchemaJson == null || inlineSchemaJson.isBlank())) {
+            throw new BusinessException(400, "templateId 或 inlineSchemaJson 至少一项");
+        }
+        if (entityType == null || entityType.isBlank()) {
+            throw new BusinessException(400, "entityType 必填");
+        }
+        if (!entityType.startsWith("PRINT_")) {
+            throw new BusinessException(400, "entityType 必须以 PRINT_ 前缀 (e.g. PRINT_SALES_ORDER)");
+        }
+
+        // ── resolve entity data (mockData for editor / TODO: real entity for entityId) ─
+        Object mockDataObj = body.get("mockData");
+        Map<String, Object> entityData;
+        if (mockDataObj instanceof Map<?, ?> m) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> typed = (Map<String, Object>) m;
+            entityData = new HashMap<>(typed);
+        } else {
+            entityData = new HashMap<>();
+        }
+        // Day 5+: when entityId present, fetch real entity via the corresponding
+        // service (SalesOrderService.getById etc.) and overwrite entityData.
+
+        // ── price masking — same pattern as the 5 hardcoded endpoints ────
+        boolean hasMonetary = !entityType.equals("PRINT_PRODUCTION_TASK")
+                && !entityType.equals("PRINT_MATERIAL_REQUISITION");
+        applyPriceMask(entityData, authorization, entityType, hasMonetary);
+
+        // ── proxy to Python /api/printing/preview-template ───────────────
+        Map<String, Object> pythonBody = new HashMap<>();
+        pythonBody.put("factoryId", factoryId);
+        pythonBody.put("templateId", templateId);
+        pythonBody.put("inlineSchemaJson", inlineSchemaJson);
+        pythonBody.put("entityType", entityType);
+        pythonBody.put("entityData", entityData);
+
+        String url = pythonBaseUrl + "/api/printing/preview-template";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        // Forward inbound Authorization so Python auth_middleware accepts
+        // the request (mirrors PR #692 fix to proxyToPython, 2026-05-16).
+        if (authorization != null && !authorization.isEmpty()) {
+            headers.set("Authorization", authorization);
+        }
+        HttpEntity<Map<String, Object>> req = new HttpEntity<>(pythonBody, headers);
+
+        try {
+            ResponseEntity<byte[]> resp = pythonRestTemplate.exchange(
+                    url, HttpMethod.POST, req, byte[].class);
+            byte[] pdf = resp.getBody();
+            if (pdf == null || pdf.length == 0) {
+                throw new BusinessException(502, "Python 打印服务返空 PDF");
+            }
+            HttpHeaders out = new HttpHeaders();
+            out.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "preview-" + entityType + "-" + (templateId != null ? templateId : "inline");
+            out.setContentDisposition(org.springframework.http.ContentDisposition
+                    .attachment().filename(filename + ".pdf").build());
+            out.setContentLength(pdf.length);
+            return new ResponseEntity<>(pdf, out, org.springframework.http.HttpStatus.OK);
+        } catch (RestClientException e) {
+            log.error("preview-template 代理失败 factory={} template={} url={}: {}",
+                    factoryId, templateId, url, e.getMessage());
+            throw new BusinessException(502, "打印服务暂不可用 — 请稍后重试");
+        }
+    }
+
     // ==================== Price masking ====================
 
     /**
