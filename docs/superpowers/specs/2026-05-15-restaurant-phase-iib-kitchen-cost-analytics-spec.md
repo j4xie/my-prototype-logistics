@@ -451,17 +451,17 @@ Mirrors Phase IIa polymorphic dispatch pattern from `backend/python/smartbi_comp
       "dataSource": "fact_restaurant_stocktaking"
     },
     "foodCostRatio": {
-      "totalRequisitionCost": 247500.00,
+      "totalRequisitionCost": 272160.00,
       "totalRevenue": 720000.00,
-      "ratio": 0.344,
-      "ratioPercent": 34.4,
+      "ratio": 0.378,
+      "ratioPercent": 37.8,
       "benchmark": {
         "healthy": 0.30,
         "warning": 0.35,
         "critical": 0.40
       },
       "alertLevel": "YELLOW",
-      "alertMessage": "食材成本占比偏高（34.4%），建议优化领料计划",
+      "alertMessage": "食材成本占比偏高（37.8%），建议优化领料计划",
       "dataCaveats": ["使用领料估算成本（est_cost），非会计实际成本"],
       "dataSource": "agg_daily+fact_restaurant_requisition"
     },
