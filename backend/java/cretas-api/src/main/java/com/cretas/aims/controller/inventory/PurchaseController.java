@@ -249,8 +249,13 @@ public class PurchaseController {
             @PathVariable @NotBlank String orderId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody java.util.Map<String, String> body) {
+        // Smoke v3 P2 fix (2026-05-17): 驳回必须给原因, 空 notes 拒绝
+        String notes = body.get("notes");
+        if (notes == null || notes.trim().isEmpty()) {
+            throw new BusinessException(400, "驳回必须填写原因 (notes 不能为空)");
+        }
         Long userId = extractUserId(authorization);
-        PurchaseOrder order = purchaseService.financeRejectOrder(factoryId, orderId, userId, body.get("notes"));
+        PurchaseOrder order = purchaseService.financeRejectOrder(factoryId, orderId, userId, notes);
         return ApiResponse.success("财务审核已驳回", order);
     }
 
