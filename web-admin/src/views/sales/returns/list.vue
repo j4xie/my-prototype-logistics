@@ -27,6 +27,7 @@ import { formatDateTime } from '@/utils/dateFormat';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { safePrint } from '@/api/printApi';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
@@ -47,7 +48,8 @@ function rowActionsFor(row: TableRow) {
 function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': router.push(`/sales/returns/${row.id}`); break;
-    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    // Sales return 复用 sales-order 模板 (后端 RBAC 仍校验 sales:read)
+    case 'print-pdf': void safePrint('sales-order', factoryId.value, String(row.id), { fileName: `销售退货单_${row.returnNumber || row.id}` }); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }

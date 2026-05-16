@@ -9,6 +9,7 @@ import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { safePrint } from '@/api/printApi';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
@@ -29,7 +30,8 @@ function rowActionsFor(row: TableRow) {
 function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': handleView(row); break;
-    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    // Shipments 复用 sales-order 模板 — 出货关联的销售单 PDF 是客户期望
+    case 'print-pdf': void safePrint('sales-order', factoryId.value, String(row.salesOrderId || row.id), { fileName: `出货单_${row.id}` }); break;
     case 'return': ElMessage.info(`发起退货 (待接 returnOrder API): ${row.id}`); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }

@@ -11,6 +11,7 @@ import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/l
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
 import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
+import { safePrint } from '../../../services/api/printApiClient';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -60,7 +61,8 @@ export default function TransferListScreen() {
   // UX-A2 (Track H): row-action bottom sheet
   const handlers = useMemo(() => ({
     'view-detail': (e: RowContext) => navigation.navigate('TransferDetail', { transferId: e.id }),
-    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    // 调拨单暂复用 material-requisition 模板 (warehouse:read 也准入)；后续可扩 transfer 专属模板
+    'print-pdf': (e: RowContext) => { void safePrint('material-requisition', e.id); },
   }), [navigation]);
 
   const sheetCtx: RowContext = selectedTransfer

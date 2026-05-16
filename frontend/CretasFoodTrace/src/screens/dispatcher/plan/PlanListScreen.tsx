@@ -23,6 +23,7 @@ import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/l
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
 import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
+import { safePrint } from '../../../services/api/printApiClient';
 
 interface PlanItem {
   id: string;
@@ -78,7 +79,7 @@ export default function PlanListScreen() {
       if (plan) navigation.navigate('PlanDetail', { planId: e.id, planData: plan });
     },
     cancel: (e: RowContext) => Alert.alert('取消', `取消计划 ${e.id} (待接 cancel API)`),
-    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    'print-pdf': (e: RowContext) => { void safePrint('production-task', e.id); },
     copy: (e: RowContext) => Alert.alert('复制', `复制计划 ${e.id} (待接 API)`),
   }), [navigation, plans]);
 

@@ -11,6 +11,7 @@ import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/l
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
 import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
+import { safePrint } from '../../../services/api/printApiClient';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -91,7 +92,7 @@ export default function PurchaseOrderListScreen() {
     approve: (e: RowContext) => handleAction(e.id, 'approve'),
     reject: (e: RowContext) => handleAction(e.id, 'reject'),
     cancel: (e: RowContext) => handleAction(e.id, 'cancel'),
-    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    'print-pdf': (e: RowContext) => { void safePrint('purchase-order', e.id); },
     copy: (e: RowContext) => Alert.alert('复制', `复制单据 ${e.id} (待接 API)`),
   }), [navigation]);
 
