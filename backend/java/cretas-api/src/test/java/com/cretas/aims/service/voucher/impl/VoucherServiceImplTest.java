@@ -12,6 +12,7 @@ import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.restaurant.WastageRecordRepository;
+import com.cretas.aims.service.LinkArrayService;
 import com.cretas.aims.service.voucher.VoucherGeneratorRegistry;
 import com.cretas.aims.service.voucher.impl.SalesReceiptVoucherGenerator;
 import jakarta.persistence.EntityNotFoundException;
@@ -44,6 +45,7 @@ class VoucherServiceImplTest {
     @Mock private WastageRecordRepository wastageRecordRepo;
     @Mock private PayrollRecordRepository payrollRecordRepo;
     @Mock private ProductionPlanRepository productionPlanRepo;
+    @Mock private LinkArrayService linkArrayService;
 
     @InjectMocks
     private VoucherServiceImpl service;
@@ -89,6 +91,63 @@ class VoucherServiceImplTest {
         assertEquals(VoucherStatus.DRAFT, v.getStatus());
         assertEquals(new BigDecimal("500.00"), v.getTotalDebit());
         assertEquals(new BigDecimal("500.00"), v.getTotalCredit());
+        verify(voucherRepo).save(any(Voucher.class));
+    }
+
+    @Test
+    void createFromBusinessCallsLinkArrayServiceAfterSave() {
+        SalesOrder order = new SalesOrder();
+        order.setId("so-1");
+        order.setOrderNumber("SO-2026-0001");
+        order.setOrderDate(LocalDate.of(2026, 5, 16));
+        order.setTotalAmount(new BigDecimal("500.00"));
+
+        when(voucherRepo.findBySourceBusinessTypeAndSourceBusinessIdAndDeletedAtIsNull("SALES_ORDER", "so-1"))
+                .thenReturn(Optional.empty());
+        when(salesOrderRepo.findById("so-1")).thenReturn(Optional.of(order));
+        when(registry.findByBusinessType("SALES_ORDER")).thenReturn(Optional.of(realGenerator));
+        when(voucherRepo.countByFactoryIdAndYear(eq("F001"), eq("2026"))).thenReturn(0L);
+        when(voucherRepo.save(any(Voucher.class))).thenAnswer(inv -> {
+            Voucher v = inv.getArgument(0);
+            v.setId("v-new-1");
+            return v;
+        });
+
+        service.createFromBusiness("F001", "SALES_ORDER", "so-1");
+
+        verify(linkArrayService).link(
+                eq("F001"),
+                eq("VOUCHER"), eq("v-new-1"),
+                eq("sale"),
+                eq("SALES_ORDER"), eq("so-1"),
+                any(), eq(null));
+    }
+
+    @Test
+    void createFromBusinessSwallowsLinkArrayServiceException() {
+        SalesOrder order = new SalesOrder();
+        order.setId("so-2");
+        order.setOrderNumber("SO-2026-0002");
+        order.setOrderDate(LocalDate.of(2026, 5, 16));
+        order.setTotalAmount(new BigDecimal("300.00"));
+
+        when(voucherRepo.findBySourceBusinessTypeAndSourceBusinessIdAndDeletedAtIsNull("SALES_ORDER", "so-2"))
+                .thenReturn(Optional.empty());
+        when(salesOrderRepo.findById("so-2")).thenReturn(Optional.of(order));
+        when(registry.findByBusinessType("SALES_ORDER")).thenReturn(Optional.of(realGenerator));
+        when(voucherRepo.countByFactoryIdAndYear(eq("F001"), eq("2026"))).thenReturn(0L);
+        when(voucherRepo.save(any(Voucher.class))).thenAnswer(inv -> {
+            Voucher v = inv.getArgument(0);
+            v.setId("v-new-2");
+            return v;
+        });
+        when(linkArrayService.link(any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("link table locked"));
+
+        Voucher v = assertDoesNotThrow(
+                () -> service.createFromBusiness("F001", "SALES_ORDER", "so-2"));
+
+        assertEquals("V-2026-0001", v.getVoucherNumber());
         verify(voucherRepo).save(any(Voucher.class));
     }
 
