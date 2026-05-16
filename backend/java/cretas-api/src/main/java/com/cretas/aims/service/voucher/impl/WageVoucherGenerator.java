@@ -1,0 +1,66 @@
+package com.cretas.aims.service.voucher.impl;
+
+import com.cretas.aims.entity.PayrollRecord;
+import com.cretas.aims.entity.enums.VoucherType;
+import com.cretas.aims.entity.finance.VoucherEntry;
+import com.cretas.aims.service.voucher.AbstractVoucherGenerator;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * 工资发放凭证 generator.
+ *
+ * 借: 2211 应付职工薪酬 (冲减负债)
+ * 贷: 1002 银行存款 (现金流出)
+ *
+ * 业务: PayrollRecord status=PAID → 财务记 "应付薪酬已支付".
+ *
+ * Note: PayrollRecord.id 是 Long, 转 String 存 source_business_id.
+ */
+@Component
+public class WageVoucherGenerator extends AbstractVoucherGenerator<PayrollRecord> {
+
+    public static final String BUSINESS_TYPE = "PAYROLL_RECORD";
+
+    @Override
+    public VoucherType getType() {
+        return VoucherType.WAGE;
+    }
+
+    @Override
+    public boolean supports(String businessType) {
+        return BUSINESS_TYPE.equals(businessType);
+    }
+
+    @Override
+    protected String extractSourceBusinessType() {
+        return BUSINESS_TYPE;
+    }
+
+    @Override
+    protected String extractSourceBusinessId(PayrollRecord r) {
+        return r.getId() != null ? r.getId().toString() : null;
+    }
+
+    @Override
+    protected LocalDate extractVoucherDate(PayrollRecord r) {
+        return r.getPeriodStart();
+    }
+
+    @Override
+    protected String extractDescription(PayrollRecord r) {
+        return "工资发放 — " + r.getWorkerName() + " (" + r.getPeriodStart() + ")";
+    }
+
+    @Override
+    public List<VoucherEntry> buildEntries(PayrollRecord r) {
+        BigDecimal amount = nullToZero(r.getTotalWage());
+        return List.of(
+                debitEntry(1, "2211", "应付职工薪酬", amount, "支付 " + r.getWorkerName()),
+                creditEntry(2, "1002", "银行存款", amount, "工资银行划款")
+        );
+    }
+}
