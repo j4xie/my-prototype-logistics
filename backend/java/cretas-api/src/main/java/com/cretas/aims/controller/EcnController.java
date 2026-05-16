@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.bom.EcnCreateRequest;
 import com.cretas.aims.dto.bom.EcnImpactReport;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -23,6 +24,14 @@ import java.util.Map;
  * <p>5 reason 类: CUSTOMER_REQUEST / MATERIAL_DISCONTINUED / COST_OPTIMIZATION /
  * QUALITY_DEFECT / PROCESS_IMPROVEMENT.
  *
+ * <p>RBAC: Write 方法 (POST) 沿用 {@link BomController} / {@link BomRecipeController} 模式 —
+ * {@code @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})}.
+ * SCHEMA spec 提议的 {@code bom:write} 新权限码暂未引入 role binding, 故复用 production:* 系列.
+ * Read 方法 (GET) 不加 @RequirePermission, 由 @RequireModule("bom") 控制模块启用即可.
+ *
+ * <p>Issue #710 fix (2026-05-16): 补全 7 个 write endpoint 缺失的 RBAC, 防止低权限 F006 用户
+ * (viewer/operator/quality_insp/...) 直接调 approve/reject 绕过审批 (P0 RBAC bypass).
+ *
  * @author Cretas Team / Sprint 3 Track-H
  * @since 2026-05-16
  */
@@ -37,6 +46,7 @@ public class EcnController {
 
     private final ECNService ecnService;
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "创建 ECN DRAFT (auto generateEcnNumber ECN-YYYY-NNNN)")
     public ApiResponse<EngineeringChangeNotice> create(
@@ -55,6 +65,7 @@ public class EcnController {
         return ApiResponse.success(ecnService.getById(factoryId, ecnId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{ecnId}/submit")
     @Operation(summary = "提交审批 (DRAFT → SUBMITTED) — 触发 notifyImpactedRoles")
     public ApiResponse<EngineeringChangeNotice> submitForApproval(
@@ -63,6 +74,7 @@ public class EcnController {
         return ApiResponse.success(ecnService.submitForApproval(factoryId, ecnId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{ecnId}/approve")
     @Operation(summary = "审批通过 (SUBMITTED → APPROVED) — cascade approve BomVersion DRAFT")
     public ApiResponse<EngineeringChangeNotice> approve(
@@ -74,6 +86,7 @@ public class EcnController {
         return ApiResponse.success(ecnService.approve(factoryId, ecnId, approverId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{ecnId}/reject")
     @Operation(summary = "拒绝 (SUBMITTED → REJECTED, terminal) — cascade reject BomVersion DRAFT")
     public ApiResponse<EngineeringChangeNotice> reject(
@@ -86,6 +99,7 @@ public class EcnController {
         return ApiResponse.success(ecnService.reject(factoryId, ecnId, approverId, reason));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{ecnId}/notify")
     @Operation(summary = "重发通知给 notify_roles (幂等)")
     public ApiResponse<Void> notifyImpactedRoles(
@@ -95,6 +109,7 @@ public class EcnController {
         return ApiResponse.success(null);
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/calculate-impact")
     @Operation(summary = "计算 ECN 影响范围 (read-only, 不创建 ECN)")
     public ApiResponse<EcnImpactReport> calculateImpact(
@@ -106,6 +121,7 @@ public class EcnController {
         return ApiResponse.success(ecnService.calculateImpact(factoryId, bomRecipeId, changeContext));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/activate-due")
     @Operation(summary = "Housekeeping: APPROVED + effective_date ≤ today → EFFECTIVE")
     public ApiResponse<Integer> activateDueApprovedEcns(
