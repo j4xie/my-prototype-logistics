@@ -30,6 +30,7 @@ import { timeclockApiClient } from '../../../services/api/timeclockApiClient';
 import { HR_THEME } from '../../../types/hrNavigation';
 import { StickyFooterSummary } from '../../../components/list';
 import { useListSummary } from '../../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
 
 type ViewMode = 'today' | 'history';
 
@@ -255,7 +256,7 @@ export default function AttendanceManageScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'ATTENDANCE',
-              initialMessage: `分析考勤列表 (视图: ${viewMode === 'today' ? '今日' : '历史'})`,
+              initialMessage: `分析考勤列表 (视图: ${viewMode === 'today' ? '今日' : '历史'})${formatSummaryForAI(summary)}`,
             },
           }))
         }

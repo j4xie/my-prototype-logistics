@@ -10,6 +10,7 @@ import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
 import { useListSummary } from '@/composables/useListSummary';
+import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
 
 const authStore = useAuthStore();
@@ -348,7 +349,7 @@ async function submitCreateForm() {
         :stats="footerSummary?.stats ?? []"
         :loading="footerLoading"
         :show-export="false"
-        @ai-analyze="() => { /* TODO Day 7 */ }"
+        @ai-analyze="() => ElMessage.info({ message: `AI 分析 (待接 SmartBI): 分析当前出货${formatSummaryForAI(footerSummary, { filter: { status: statusFilter } })}`, duration: 8000, showClose: true })"
       />
 
       <el-pagination

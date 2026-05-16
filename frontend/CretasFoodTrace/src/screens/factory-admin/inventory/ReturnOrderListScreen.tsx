@@ -9,6 +9,7 @@ import { formatNumberWithCommas } from '../../../utils/formatters';
 import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -183,7 +184,7 @@ export default function ReturnOrderListScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'RETURN_ORDER',
-              initialMessage: `分析当前退货单列表 (类型: ${returnType === 'PURCHASE_RETURN' ? '采购退货' : '销售退货'})`,
+              initialMessage: `分析当前退货单列表 (类型: ${returnType === 'PURCHASE_RETURN' ? '采购退货' : '销售退货'})${formatSummaryForAI(summary)}`,
             },
           }))
         }

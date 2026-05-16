@@ -23,6 +23,7 @@ import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 import type { TableRow } from '@/types/api';
 import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
+import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
@@ -882,7 +883,7 @@ async function submitQuickPayment() {
         :stats="footerSummary?.stats ?? []"
         :loading="footerLoading"
         :show-export="false"
-        @ai-analyze="() => { /* TODO Day 7: SmartBI deep link */ }"
+        @ai-analyze="() => ElMessage.info({ message: `AI 分析 (待接 SmartBI): 分析当前销售订单${formatSummaryForAI(footerSummary, { filter: { status: statusFilter } })}`, duration: 8000, showClose: true })"
       />
 
       <div class="pagination-wrapper">

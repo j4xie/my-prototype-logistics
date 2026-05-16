@@ -22,6 +22,7 @@ import { productionPlanApiClient } from '../../../services/api/productionPlanApi
 import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
 
 interface PlanItem {
   id: string;
@@ -323,7 +324,7 @@ export default function PlanListScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'PRODUCTION_PLAN',
-              initialMessage: `分析当前生产计划列表 (筛选: ${activeTab === 'all' ? '全部' : activeTab})`,
+              initialMessage: `分析当前生产计划列表${formatSummaryForAI(summary, { filter: { status: activeTab } })}`,
             },
           }))
         }

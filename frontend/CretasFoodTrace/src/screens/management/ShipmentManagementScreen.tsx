@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { StickyFooterSummary } from '../../components/list';
 import { useListSummary } from '../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../utils/aiSummaryContext';
 import {
   Text,
   Appbar,
@@ -623,7 +624,7 @@ export default function ShipmentManagementScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'SHIPMENT',
-              initialMessage: `分析当前出货 (筛选: ${filterStatus === 'all' ? '全部' : filterStatus})`,
+              initialMessage: `分析当前出货${formatSummaryForAI(summary, { filter: { status: filterStatus } })}`,
             },
           } as never))
         }

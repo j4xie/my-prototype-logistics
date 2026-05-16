@@ -27,6 +27,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect, CommonActions } from "@react-navigation/native";
 import { StickyFooterSummary } from "../../../components/list";
 import { useListSummary } from "../../../hooks/useListSummary";
+import { formatSummaryForAI } from "../../../utils/aiSummaryContext";
 
 type MCIconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -510,7 +511,7 @@ export function WHInventoryListScreen() {
         onAIAnalyze={() =>
           navigation.dispatch(CommonActions.navigate('FAAITab' as never, {
             screen: 'AIChat',
-            params: { entityType: 'MATERIAL', initialMessage: '分析当前库存 (低库存预警 / 总价值 / 周转率)' },
+            params: { entityType: 'MATERIAL', initialMessage: `分析当前库存 (低库存预警 / 总价值 / 周转率)${formatSummaryForAI(summary)}` },
           } as never))
         }
       />
