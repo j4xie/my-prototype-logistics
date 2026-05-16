@@ -142,6 +142,10 @@ public class CacheConfig {
         cacheConfigurations.put("inventoryReport", defaultConfig.entryTtl(Duration.ofMinutes(30)));
         cacheConfigurations.put("financeReport", defaultConfig.entryTtl(Duration.ofHours(1)));
 
+        // ========== 业务流程图导航 (U-NAV-1, Sprint 2 Track G) ==========
+        // 首页/列表页节点 count, 5 分钟可接受 staleness, 无需即时 evict
+        cacheConfigurations.put("workflowStats", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 .withInitialCacheConfigurations(cacheConfigurations)
@@ -161,7 +165,8 @@ public class CacheConfig {
                 "dailySummary", "weeklySummary", "aiToolResult",
                 "realtimeReport", "oeeReport", "kpiMetrics", "costVarianceReport",
                 "capacityUtilization", "onTimeDelivery", "productionByProduct",
-                "monthlyReport", "yearlyReport", "inventoryReport", "financeReport"
+                "monthlyReport", "yearlyReport", "inventoryReport", "financeReport",
+                "workflowStats"
         };
 
         java.util.List<org.springframework.cache.Cache> caches = new java.util.ArrayList<>();
