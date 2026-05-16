@@ -110,6 +110,27 @@ public class BomVersionServiceImpl implements BomVersionService {
         }
 
         LocalDate today = LocalDate.now();
+
+        // Issue #724 fix: explicitly OBSOLETE any prior APPROVED+effective version BEFORE
+        // promoting this row to APPROVED. The partial unique index
+        // {@code uq_bv_one_current_per_recipe} is enforced at row-write time; the AFTER
+        // trigger {@code trg_bom_version_supersede} fires too late to prevent the conflict.
+        // Service layer must perform the supersede itself, then flush, then write the new
+        // APPROVED row. Trigger remains as defense-in-depth for direct SQL / batch paths.
+        versionRepo.findCurrentInStatus(factoryId, version.getBomRecipeId(), VersionStatus.APPROVED)
+                .filter(prior -> !prior.getId().equals(version.getId()))
+                .ifPresent(prior -> {
+                    LocalDate priorEffectiveTo = today.minusDays(1);
+                    prior.setStatus(VersionStatus.OBSOLETE);
+                    prior.setEffectiveTo(priorEffectiveTo);
+                    versionRepo.save(prior);
+                    versionRepo.flush();
+                    log.info("BomVersion superseded prior APPROVED: priorId={}, priorVersion={}, "
+                                    + "newId={}, newVersion={}, effectiveTo={}",
+                            prior.getId(), prior.getVersionNumber(),
+                            version.getId(), version.getVersionNumber(), priorEffectiveTo);
+                });
+
         version.setStatus(VersionStatus.APPROVED);
         version.setEffectiveFrom(today);
         version.setEffectiveTo(null);
@@ -117,7 +138,6 @@ public class BomVersionServiceImpl implements BomVersionService {
         version.setApprovedAt(Instant.now());
 
         BomVersion saved = versionRepo.save(version);
-        // DB trigger trg_bom_version_supersede handles OBSOLETE of prior approved row.
         // Service layer also keeps BomRecipe.isCurrent in sync for parity with 6-month
         // transitional dual-track.
         syncBomRecipeIsCurrent(saved);
@@ -237,8 +257,9 @@ public class BomVersionServiceImpl implements BomVersionService {
      */
     private void syncBomRecipeIsCurrent(BomVersion approvedVersion) {
         recipeRepo.findById(approvedVersion.getBomRecipeId()).ifPresent(recipe -> {
-            // Trigger has already supersded any prior APPROVED bomVersion. The new approved
-            // version IS the current. Mark BomRecipe.isCurrent=true and version=approvedVersion.versionNumber.
+            // approve() has already superseded any prior APPROVED bomVersion (via explicit
+            // OBSOLETE write). The new approved version IS the current. Mark
+            // BomRecipe.isCurrent=true and version=approvedVersion.versionNumber.
             recipe.setIsCurrent(true);
             recipe.setVersion(approvedVersion.getVersionNumber());
             recipeRepo.save(recipe);
