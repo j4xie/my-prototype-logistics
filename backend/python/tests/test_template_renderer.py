@@ -34,6 +34,7 @@ from printing.services.template_renderer import (  # noqa: E402
 #  Binding resolver
 # ============================================================
 
+
 class TestBindingResolver:
     def test_plain_dotted_access(self):
         data = {"order": {"orderNumber": "SO-001"}}
@@ -98,6 +99,7 @@ class TestBindingResolver:
 #  Schema renderer — 7 element types
 # ============================================================
 
+
 def _wrap_schema(elements: list[dict]) -> dict:
     """Build a minimal schema with the given elements at A4 portrait."""
     return {
@@ -109,84 +111,162 @@ def _wrap_schema(elements: list[dict]) -> dict:
 
 class TestRenderer:
     def test_minimal_schema_renders(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "t1", "type": "text", "x": 50, "y": 50, "text": "Hello", "fontSize": 12},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "t1", "type": "text", "x": 50, "y": 50, "text": "Hello", "fontSize": 12},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
         assert len(pdf) > 1000
 
     def test_field_with_binding(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "f1", "type": "field", "x": 50, "y": 50, "binding": "{{name}}", "fontSize": 12},
-        ]), {"name": "示例"})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "f1", "type": "field", "x": 50, "y": 50, "binding": "{{name}}", "fontSize": 12},
+                ]
+            ),
+            {"name": "示例"},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_table_with_empty_rows_renders_placeholder(self):
         # The renderer must not crash on empty rows; it draws a placeholder line.
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "tbl", "type": "table", "x": 50, "y": 100, "width": 495, "rowHeight": 24,
-             "binding": "{{items}}",
-             "columns": [{"header": "Name", "binding": "{{item.name}}", "width": 200, "align": "left"}]},
-        ]), {"items": []})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {
+                        "id": "tbl",
+                        "type": "table",
+                        "x": 50,
+                        "y": 100,
+                        "width": 495,
+                        "rowHeight": 24,
+                        "binding": "{{items}}",
+                        "columns": [{"header": "Name", "binding": "{{item.name}}", "width": 200, "align": "left"}],
+                    },
+                ]
+            ),
+            {"items": []},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_table_with_rows_and_column_format(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "tbl", "type": "table", "x": 50, "y": 100, "width": 200, "rowHeight": 24,
-             "binding": "{{items}}",
-             "columns": [
-                 {"header": "Name", "binding": "{{item.name}}", "width": 100, "align": "left"},
-                 {"header": "Price", "binding": "{{item.price}}", "width": 100, "align": "right", "format": "currency"},
-             ]},
-        ]), {"items": [{"name": "A", "price": 88}]})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {
+                        "id": "tbl",
+                        "type": "table",
+                        "x": 50,
+                        "y": 100,
+                        "width": 200,
+                        "rowHeight": 24,
+                        "binding": "{{items}}",
+                        "columns": [
+                            {"header": "Name", "binding": "{{item.name}}", "width": 100, "align": "left"},
+                            {
+                                "header": "Price",
+                                "binding": "{{item.price}}",
+                                "width": 100,
+                                "align": "right",
+                                "format": "currency",
+                            },
+                        ],
+                    },
+                ]
+            ),
+            {"items": [{"name": "A", "price": 88}]},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_qr_static_content(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "q", "type": "qr", "x": 50, "y": 50, "size": 80, "content": "static"},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "q", "type": "qr", "x": 50, "y": 50, "size": 80, "content": "static"},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_qr_unresolved_binding_skipped(self):
         # If content remains unresolved (still has {{}}), QR is silently skipped
         # rather than rendering a bogus code.
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "q", "type": "qr", "x": 50, "y": 50, "size": 80, "content": "{{missing}}"},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "q", "type": "qr", "x": 50, "y": 50, "size": 80, "content": "{{missing}}"},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_barcode_renders(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "b", "type": "barcode", "x": 50, "y": 50, "width": 160, "height": 40, "content": "ABC123"},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "b", "type": "barcode", "x": 50, "y": 50, "width": 160, "height": 40, "content": "ABC123"},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_image_data_uri(self):
         # 1x1 transparent PNG data URI
-        png_uri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "img", "type": "image", "x": 50, "y": 50, "width": 100, "height": 50, "src": png_uri},
-        ]), {})
+        png_uri = (
+            "data:image/png;base64,"
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        )
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "img", "type": "image", "x": 50, "y": 50, "width": 100, "height": 50, "src": png_uri},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_image_missing_src_falls_back_to_placeholder(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "img", "type": "image", "x": 50, "y": 50, "width": 100, "height": 50, "src": ""},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "img", "type": "image", "x": 50, "y": 50, "width": 100, "height": 50, "src": ""},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_stamp_renders(self):
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "s", "type": "stamp", "x": 400, "y": 700, "size": 100, "stampId": "default", "opacity": 0.7},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "s", "type": "stamp", "x": 400, "y": 700, "size": 100, "stampId": "default", "opacity": 0.7},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
     def test_unknown_element_type_logged_and_skipped(self):
         # Defensive: a schema with an unknown element type should still render the rest.
-        pdf = render_schema_to_pdf(_wrap_schema([
-            {"id": "bad", "type": "future_widget", "x": 50, "y": 50},
-            {"id": "good", "type": "text", "x": 50, "y": 100, "text": "ok", "fontSize": 12},
-        ]), {})
+        pdf = render_schema_to_pdf(
+            _wrap_schema(
+                [
+                    {"id": "bad", "type": "future_widget", "x": 50, "y": 50},
+                    {"id": "good", "type": "text", "x": 50, "y": 100, "text": "ok", "fontSize": 12},
+                ]
+            ),
+            {},
+        )
         assert pdf.startswith(b"%PDF-")
 
 
@@ -194,17 +274,21 @@ class TestRenderer:
 #  unwrap_schema
 # ============================================================
 
+
 class TestUnwrap:
     def test_unwrap_valid(self):
-        wrapped = json.dumps({
-            "type": "object",
-            "properties": {"_printSchema": {"version": 1, "canvas": {}, "elements": []}},
-        })
+        wrapped = json.dumps(
+            {
+                "type": "object",
+                "properties": {"_printSchema": {"version": 1, "canvas": {}, "elements": []}},
+            }
+        )
         out = unwrap_schema(wrapped)
         assert out["version"] == 1
 
     def test_unwrap_missing_printschema_400(self):
         from fastapi import HTTPException
+
         wrapped = json.dumps({"type": "object", "properties": {"name": {}}})
         with pytest.raises(HTTPException) as exc:
             unwrap_schema(wrapped)
@@ -212,12 +296,14 @@ class TestUnwrap:
 
     def test_unwrap_invalid_json_400(self):
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             unwrap_schema("{not-json")
         assert exc.value.status_code == 400
 
     def test_unwrap_empty_400(self):
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc:
             unwrap_schema("")
         assert exc.value.status_code == 400
@@ -227,72 +313,91 @@ class TestUnwrap:
 #  Endpoint — POST /api/printing/preview-template
 # ============================================================
 
+
 @pytest.fixture
 def client():
     app = FastAPI()
     from printing.api import print as printing_api
+
     app.include_router(printing_api.router, prefix="/api/printing")
     return TestClient(app)
 
 
-_VALID_SCHEMA_JSON = json.dumps({
-    "type": "object",
-    "properties": {
-        "_printSchema": {
-            "version": 1,
-            "canvas": {"width": 595, "height": 842, "orientation": "portrait"},
-            "elements": [
-                {"id": "t", "type": "text", "x": 50, "y": 50, "text": "Hello", "fontSize": 12},
-                {"id": "f", "type": "field", "x": 50, "y": 80, "binding": "{{name}}", "fontSize": 12},
-            ],
+_VALID_SCHEMA_JSON = json.dumps(
+    {
+        "type": "object",
+        "properties": {
+            "_printSchema": {
+                "version": 1,
+                "canvas": {"width": 595, "height": 842, "orientation": "portrait"},
+                "elements": [
+                    {"id": "t", "type": "text", "x": 50, "y": 50, "text": "Hello", "fontSize": 12},
+                    {"id": "f", "type": "field", "x": 50, "y": 80, "binding": "{{name}}", "fontSize": 12},
+                ],
+            },
         },
-    },
-})
+    }
+)
 
 
 class TestEndpoint:
     def test_inline_schema_happy_path(self, client):
-        resp = client.post("/api/printing/preview-template", json={
-            "factoryId": "F001",
-            "inlineSchemaJson": _VALID_SCHEMA_JSON,
-            "entityType": "PRINT_SALES_ORDER",
-            "entityData": {"name": "示例"},
-        })
+        resp = client.post(
+            "/api/printing/preview-template",
+            json={
+                "factoryId": "F001",
+                "inlineSchemaJson": _VALID_SCHEMA_JSON,
+                "entityType": "PRINT_SALES_ORDER",
+                "entityData": {"name": "示例"},
+            },
+        )
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("application/pdf")
         assert resp.content.startswith(b"%PDF-")
         assert len(resp.content) > 1000
 
     def test_missing_schema_returns_400(self, client):
-        resp = client.post("/api/printing/preview-template", json={
-            "factoryId": "F001",
-            "entityType": "PRINT_SALES_ORDER",
-        })
+        resp = client.post(
+            "/api/printing/preview-template",
+            json={
+                "factoryId": "F001",
+                "entityType": "PRINT_SALES_ORDER",
+            },
+        )
         assert resp.status_code == 400
 
     def test_missing_factory_id_returns_400(self, client):
-        resp = client.post("/api/printing/preview-template", json={
-            "inlineSchemaJson": _VALID_SCHEMA_JSON,
-            "entityType": "PRINT_SALES_ORDER",
-        })
+        resp = client.post(
+            "/api/printing/preview-template",
+            json={
+                "inlineSchemaJson": _VALID_SCHEMA_JSON,
+                "entityType": "PRINT_SALES_ORDER",
+            },
+        )
         assert resp.status_code == 400
 
     def test_malformed_schema_returns_400(self, client):
-        resp = client.post("/api/printing/preview-template", json={
-            "factoryId": "F001",
-            "inlineSchemaJson": json.dumps({"foo": "bar"}),  # no _printSchema
-            "entityType": "PRINT_SALES_ORDER",
-        })
+        resp = client.post(
+            "/api/printing/preview-template",
+            json={
+                "factoryId": "F001",
+                "inlineSchemaJson": json.dumps({"foo": "bar"}),  # no _printSchema
+                "entityType": "PRINT_SALES_ORDER",
+            },
+        )
         assert resp.status_code == 400
 
     def test_empty_entity_data_still_renders(self, client):
         # When the editor preview runs before any field binding, the PDF
         # should still render with all '-' placeholders rather than 500.
-        resp = client.post("/api/printing/preview-template", json={
-            "factoryId": "F001",
-            "inlineSchemaJson": _VALID_SCHEMA_JSON,
-            "entityType": "PRINT_SALES_ORDER",
-            # no entityData key
-        })
+        resp = client.post(
+            "/api/printing/preview-template",
+            json={
+                "factoryId": "F001",
+                "inlineSchemaJson": _VALID_SCHEMA_JSON,
+                "entityType": "PRINT_SALES_ORDER",
+                # no entityData key
+            },
+        )
         assert resp.status_code == 200
         assert resp.content.startswith(b"%PDF-")

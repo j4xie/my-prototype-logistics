@@ -427,8 +427,6 @@ def _draw_stamp_element(c, el: dict, font: str, canvas_h: float, _data: dict) ->
     Day 4 MVP: schematic only. Day 5+ can load actual factory stamps from
     FactorySetting.stampUrl when the stampId resolution is wired.
     """
-    from reportlab.lib import colors
-
     x = float(el.get("x", 0))
     y = float(el.get("y", 0))
     size = float(el.get("size", 100))
