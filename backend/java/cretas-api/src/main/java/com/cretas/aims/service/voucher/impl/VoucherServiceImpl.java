@@ -4,6 +4,7 @@ import com.cretas.aims.entity.PayrollRecord;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.VoucherFlag;
 import com.cretas.aims.entity.enums.VoucherStatus;
+import com.cretas.aims.entity.enums.VoucherType;
 import com.cretas.aims.entity.finance.Voucher;
 import com.cretas.aims.entity.inventory.InternalTransfer;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
@@ -18,6 +19,7 @@ import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.restaurant.WastageRecordRepository;
+import com.cretas.aims.service.LinkArrayService;
 import com.cretas.aims.service.voucher.VoucherGenerator;
 import com.cretas.aims.service.voucher.VoucherGeneratorRegistry;
 import com.cretas.aims.service.voucher.VoucherService;
@@ -44,6 +46,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     private final VoucherRepository voucherRepo;
     private final VoucherGeneratorRegistry registry;
+    private final LinkArrayService linkArrayService;
 
     // 6 业务单 repo (ProductionPlan 暂不 hook generator, repo 留 batch-补单 用)
     private final SalesOrderRepository salesOrderRepo;
@@ -89,7 +92,37 @@ public class VoucherServiceImpl implements VoucherService {
         log.info("✅ Voucher 生成: {} (type={}, source={}/{}, total={})",
                 saved.getVoucherNumber(), saved.getVoucherType(),
                 businessType, businessId, saved.getTotalDebit());
+
+        // 6. Sprint 3 #720: link Voucher → source business entity via LinkArrayService
+        // Swallow exceptions — link failure must not roll back voucher persistence.
+        try {
+            String linkType = mapLinkType(saved.getVoucherType());
+            linkArrayService.link(
+                    factoryId,
+                    "VOUCHER", saved.getId(),
+                    linkType,
+                    businessType, businessId,
+                    "凭证自动生成 by " + saved.getVoucherNumber(),
+                    null);
+        } catch (Exception e) {
+            log.warn("LinkArray hook failed for voucher={} business={}/{}: {}",
+                    saved.getId(), businessType, businessId, e.getMessage());
+        }
+
         return saved;
+    }
+
+    /**
+     * Map VoucherType → LinkArrayService 8-class linkType taxonomy
+     * (sale / sample / request / produce / outsource / stock / project / free).
+     */
+    private String mapLinkType(VoucherType type) {
+        if (type == null) return "free";
+        return switch (type) {
+            case SALES_RECEIPT, RETURN -> "sale";
+            case PURCHASE_PAYMENT, INVENTORY_TRANSFER -> "stock";
+            case WAGE, EXPENSE, DEPRECATION -> "free";
+        };
     }
 
     @Override
