@@ -63,6 +63,30 @@ public class BomVersionServiceImpl implements BomVersionService {
 
     @Override
     @Transactional
+    public BomVersion createDraftWithSnapshot(String factoryId, String bomRecipeId,
+                                               Map<String, Object> snapshot, Long createdBy) {
+        // Validate parent recipe exists for the given factory (catches stale FK at write time).
+        recipeRepo.findById(bomRecipeId)
+                .filter(r -> factoryId.equals(r.getFactoryId()))
+                .orElseThrow(() -> new EntityNotFoundException("BomRecipe", bomRecipeId));
+
+        int nextVersion = versionRepo.findMaxVersionNumber(factoryId, bomRecipeId) + 1;
+        BomVersion version = BomVersion.builder()
+                .factoryId(factoryId)
+                .bomRecipeId(bomRecipeId)
+                .versionNumber(nextVersion)
+                .snapshotJson(snapshot)
+                .status(VersionStatus.DRAFT)
+                .createdBy(createdBy)
+                .build();
+        BomVersion saved = versionRepo.save(version);
+        log.info("BomVersion DRAFT created with explicit snapshot: factoryId={}, recipeId={}, version={}, id={}",
+                factoryId, bomRecipeId, nextVersion, saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
     public BomVersion submitForApproval(String factoryId, String versionId, String ecnId) {
         BomVersion version = getById(factoryId, versionId);
         requireStatus(version, VersionStatus.DRAFT, "submitForApproval");

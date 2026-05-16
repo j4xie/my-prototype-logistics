@@ -30,6 +30,14 @@ public interface BomVersionService {
      */
     BomVersion createDraft(String factoryId, String bomRecipeId, Long createdBy);
 
+    /**
+     * Create a DRAFT BomVersion with a caller-supplied snapshot (typically the result of an
+     * in-memory transformation by {@code BomBatchOperationService}). versionNumber assigned
+     * automatically (max+1).
+     */
+    BomVersion createDraftWithSnapshot(String factoryId, String bomRecipeId,
+                                        java.util.Map<String, Object> snapshot, Long createdBy);
+
     /** DRAFT → PENDING_APPROVAL. Sets ecnId link (nullable: manual versions skip ECN). */
     BomVersion submitForApproval(String factoryId, String versionId, String ecnId);
 
