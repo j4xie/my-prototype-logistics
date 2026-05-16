@@ -22,6 +22,11 @@ export interface SalesOrder {
   createdBy?: string;
   items?: SalesOrderItem[];
   deliveryRecords?: SalesDeliveryRecord[];
+  // Sprint3-G S-LOCK-1: 后端 SalesOrder @Transient @JsonProperty 派生 (聚合 items[]).
+  // chip 显示 锁/备/缺. NOT @PriceSensitive — inventory 数据非价格.
+  lockedQty?: number;
+  reservedQty?: number;
+  shortageQty?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -35,6 +40,11 @@ export interface SalesOrderItem {
   unitPrice: number;
   unit: string;
   totalPrice: number;
+  // Sprint3-G S-LOCK-1: 行级 lockedQty / reservedQty 来自 sales_order_items 列;
+  // shortageQty 后端 @Transient getter (quantity - reservedQty, clamp ≥0).
+  lockedQty?: number;
+  reservedQty?: number;
+  shortageQty?: number;
 }
 
 export interface SalesDeliveryRecord {

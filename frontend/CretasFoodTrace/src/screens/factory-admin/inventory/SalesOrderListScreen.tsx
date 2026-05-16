@@ -82,6 +82,11 @@ export default function SalesOrderListScreen() {
 
   const renderOrder = ({ item }: { item: SalesOrder }) => {
     const status = STATUS_MAP[item.status] || { label: item.status, color: '#909399' };
+    // Sprint3-G S-LOCK-1: 行内 锁/备/缺. 缺 > 0 红, 销售员一眼判断催生产 / 紧急采购.
+    const lockedQty = Number(item.lockedQty || 0);
+    const reservedQty = Number(item.reservedQty || 0);
+    const shortageQty = Number(item.shortageQty || 0);
+    const hasShortage = shortageQty > 0;
     return (
       <Card style={styles.card}
         onPress={() => navigation.navigate('SalesOrderDetail', { orderId: item.id })}
@@ -102,6 +107,17 @@ export default function SalesOrderListScreen() {
           <View style={styles.cardRow}>
             <Text style={styles.label}>下单日期</Text>
             <Text style={styles.value}>{item.orderDate}</Text>
+          </View>
+          <View style={styles.lockReserveShortageRow}>
+            <View style={[styles.lrsChip, styles.lrsLock]}>
+              <Text style={styles.lrsText}>锁:{lockedQty}</Text>
+            </View>
+            <View style={[styles.lrsChip, styles.lrsReserve]}>
+              <Text style={styles.lrsText}>备:{reservedQty}</Text>
+            </View>
+            <View style={[styles.lrsChip, hasShortage ? styles.lrsShortage : styles.lrsZero]}>
+              <Text style={[styles.lrsText, hasShortage && styles.lrsTextShortage]}>缺:{shortageQty}</Text>
+            </View>
           </View>
           {item.status === 'DRAFT' && (
             <View style={styles.actions}>
@@ -199,4 +215,13 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
   actionBtn: { flex: 1 },
   empty: { textAlign: 'center', marginTop: 60, color: '#999' },
+  // Sprint3-G S-LOCK-1: 锁/备/缺 chip — 行内显示, 缺 > 0 红色高亮
+  lockReserveShortageRow: { flexDirection: 'row', gap: 6, marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
+  lrsChip: { flex: 1, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 4, borderWidth: 1, alignItems: 'center' },
+  lrsLock: { backgroundColor: '#f0f4ff', borderColor: '#cfd8e8' },
+  lrsReserve: { backgroundColor: '#f0f9eb', borderColor: '#c2e7b0' },
+  lrsZero: { backgroundColor: '#f4f4f5', borderColor: '#e9e9eb' },
+  lrsShortage: { backgroundColor: '#fef0f0', borderColor: '#fbc4c4' },
+  lrsText: { fontSize: 12, color: '#606266' },
+  lrsTextShortage: { color: '#f56c6c', fontWeight: '600' },
 });

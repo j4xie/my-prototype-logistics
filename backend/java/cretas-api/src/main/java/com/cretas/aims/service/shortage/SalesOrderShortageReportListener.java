@@ -1,7 +1,10 @@
 package com.cretas.aims.service.shortage;
 
+import com.cretas.aims.dto.orchestration.LineItemMatch;
+import com.cretas.aims.entity.inventory.SalesOrderItem;
 import com.cretas.aims.entity.inventory.SalesOrderShortageReport;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
+import com.cretas.aims.repository.inventory.SalesOrderItemRepository;
 import com.cretas.aims.repository.inventory.SalesOrderShortageReportRepository;
 import com.cretas.aims.service.notification.NotificationService;
 import com.cretas.aims.service.shortage.dto.ProcurementSuggestion;
@@ -16,8 +19,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 监听销售订单财务审核通过事件, 异步生成 + 持久化缺料报告快照, 推工厂管理员通知。
@@ -46,6 +52,7 @@ public class SalesOrderShortageReportListener {
 
     private final ShortageAnalysisService shortageAnalysisService;
     private final SalesOrderShortageReportRepository reportRepository;
+    private final SalesOrderItemRepository salesOrderItemRepository;
     private final NotificationService notificationService;
 
     @Async
@@ -64,6 +71,10 @@ public class SalesOrderShortageReportListener {
             List<ProductionPlanSuggestion> production = shortageAnalysisService.suggestProduction(factoryId, report);
 
             persistReport(report, procurement, production, "COMPLETED");
+            // Sprint3-G S-LOCK-1 — 写回 SalesOrderItem 行内 reservedQty / lockedQty,
+            // 让销售单列表行内 chip 一眼可见. ShortageAnalysisService 仍 readOnly,
+            // 写副作用只在本 listener (已 REQUIRES_NEW + 已为 ShortageReport 写库).
+            writebackItemInventoryStatus(salesOrderId, report);
             notifyIfShortage(factoryId, salesOrderId, report, procurement, production);
 
             log.info("[ShortageReport] persisted COMPLETED snapshot: SO={}, fgShort={}, matShort={}",
@@ -97,6 +108,47 @@ public class SalesOrderShortageReportListener {
         entity.setProductionSuggestions(production);
         entity.setAnalysisSummary(report.getSummary());
         reportRepository.save(entity);
+    }
+
+    /**
+     * Sprint3-G S-LOCK-1 — 把 ShortageReport 派生的 reservedQty 写回 SalesOrderItem.
+     *
+     * <p>映射逻辑: ShortageReport.finishedGoodsLineItems 每条 {@link LineItemMatch} 含
+     * productTypeId + requiredQuantity + shortfallQuantity. reservedQty 推算为
+     * <code>requiredQuantity - max(0, shortfallQuantity)</code> — 即"已可用部分"。
+     *
+     * <p>lockedQty 暂置 0 — production_plan reservation 数据源接入留 Sprint3-G follow-up
+     * (brief §risks point 1: lockedQty 由生产/调拨锁定, 当前模型无直接源).
+     *
+     * <p>跨多个 SalesOrderItem 共享同 productTypeId 的情况罕见 (UI 校验同订单不能重复
+     * SKU, 见 list.vue:421); 若发生, 第一条命中即覆盖, 其余项保持初值 0.
+     */
+    private void writebackItemInventoryStatus(String salesOrderId, ShortageReport report) {
+        if (report == null || report.getFinishedGoodsLineItems() == null
+                || report.getFinishedGoodsLineItems().isEmpty()) {
+            return;
+        }
+        Map<String, BigDecimal> reservedByProductType = new HashMap<>();
+        for (LineItemMatch lim : report.getFinishedGoodsLineItems()) {
+            if (lim.getProductTypeId() == null) continue;
+            BigDecimal required = lim.getRequiredQuantity() != null ? lim.getRequiredQuantity() : BigDecimal.ZERO;
+            BigDecimal shortfall = lim.getShortfallQuantity() != null ? lim.getShortfallQuantity() : BigDecimal.ZERO;
+            BigDecimal shortPositive = shortfall.signum() < 0 ? BigDecimal.ZERO : shortfall;
+            BigDecimal reserved = required.subtract(shortPositive);
+            if (reserved.signum() < 0) reserved = BigDecimal.ZERO;
+            reservedByProductType.put(lim.getProductTypeId(), reserved);
+        }
+        if (reservedByProductType.isEmpty()) return;
+
+        List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(salesOrderId);
+        for (SalesOrderItem item : items) {
+            BigDecimal reserved = reservedByProductType.get(item.getProductTypeId());
+            if (reserved != null) {
+                item.setReservedQty(reserved);
+            }
+            // lockedQty MVP=0 — keep existing value (default 0 from Flyway).
+        }
+        salesOrderItemRepository.saveAll(items);
     }
 
     private void persistFailedPlaceholder(String factoryId, String salesOrderId, String reason) {

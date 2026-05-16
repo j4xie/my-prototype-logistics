@@ -68,6 +68,18 @@ public class SalesOrderItem extends BaseEntity {
     @Column(name = "delivered_quantity", nullable = false, precision = 15, scale = 4)
     private BigDecimal deliveredQuantity = BigDecimal.ZERO;
 
+    /** 已被生产计划/调拨锁住的数量. Sprint3-G S-LOCK-1.
+     *  写回路径: SalesOrderShortageReportListener.onSalesOrderFinanceApproved (lockedQty MVP=0,
+     *  production_plan reservation 接入留 Sprint3-G follow-up). */
+    @Column(name = "locked_qty", nullable = false, precision = 15, scale = 4)
+    private BigDecimal lockedQty = BigDecimal.ZERO;
+
+    /** 已 BOM 展开 + 备货 (reserve 给生产) 的数量. Sprint3-G S-LOCK-1.
+     *  写回路径: SalesOrderShortageReportListener 从 ShortageReport 派生
+     *  reservedQty = quantity - shortfallQuantity (LineItemMatch 已可用部分). */
+    @Column(name = "reserved_qty", nullable = false, precision = 15, scale = 4)
+    private BigDecimal reservedQty = BigDecimal.ZERO;
+
     @Column(name = "remark", length = 500)
     private String remark;
 
@@ -152,5 +164,19 @@ public class SalesOrderItem extends BaseEntity {
         if (quantity == null) return BigDecimal.ZERO;
         BigDecimal delivered = deliveredQuantity != null ? deliveredQuantity : BigDecimal.ZERO;
         return quantity.subtract(delivered);
+    }
+
+    /**
+     * 缺料数量 = quantity - reservedQty (clamp ≥0). Sprint3-G S-LOCK-1.
+     *
+     * <p>非 @Column — Jackson 序列化走 getter, 客户端拿 shortageQty 直接显示红色 chip.
+     * 不加 @JsonIgnore (Jackson 默认序列化 @Transient 公有 getter).
+     */
+    @Transient
+    public BigDecimal getShortageQty() {
+        BigDecimal demand = this.quantity != null ? this.quantity : BigDecimal.ZERO;
+        BigDecimal reserved = this.reservedQty != null ? this.reservedQty : BigDecimal.ZERO;
+        BigDecimal shortage = demand.subtract(reserved);
+        return shortage.signum() < 0 ? BigDecimal.ZERO : shortage;
     }
 }
