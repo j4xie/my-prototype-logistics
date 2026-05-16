@@ -9,6 +9,40 @@
 - ✅ Day 1 commit: ShortageAnalysisService 接口 + 3 DTO (ShortageReport / ProcurementSuggestion / ProductionPlanSuggestion)
 - 明日计划 (Day 2): ServiceImpl + 监听 SalesOrderFinanceApprovedEvent 异步持久化 + Flyway V20260601_01 + REST endpoint
 
+## Day 2 (2026-05-15) — organizer 拍板 ①②③④B 后
+
+- ✅ Flyway `V20260601_01__sales_order_shortage_report.sql` — `sales_order_shortage_report` 表 (id VARCHAR(36) + 5 列 JSONB + analysis_summary + soft-delete; idx 2 个)
+- ✅ Entity `SalesOrderShortageReport` + Repository `findByFactoryIdAndSalesOrderId`
+- ✅ `ShortageAnalysisServiceImpl` — read-only 编排 4 service, 多 SKU 共用原料聚合 (LinkedHashMap), Day 2 MVP supplier/三价/工序链 留空 (Day 3 接入)
+- ✅ `NotificationPort` SPI + `NoOpNotificationPort` (`@ConditionalOnMissingBean`) — Track B1 钉钉 PoC merge 后注册 Adapter 即可
+- ✅ `SalesOrderShortageReportListener` — `@Async @EventListener @Transactional(REQUIRES_NEW)` on `SalesOrderFinanceApprovedEvent`, 失败时写 FAILED 占位行
+- ✅ `SalesOrderShortageController` — `GET /api/mobile/{factoryId}/sales/orders/{orderId}/shortage-report` (NOT_AVAILABLE 占位响应)
+- ✅ 单测 `ShortageAnalysisServiceImplTest` — 3 用例: 充足 / FG缺料原料够 / 多 SKU 共用原料聚合
+- 🟡 待 push 前: mvn compile 本地校验 (CI 是 ground truth)
+- 明日计划 (Day 3): ShortageAnalysisTool (AI Tool) + intent SHORTAGE_ANALYSIS Flyway V20260601_02 + RN ShortageChainCard + SalesOrderShortageReviewScreen
+
+### Day 2 Commit 范围
+
+```
+backend/java/cretas-api/src/main/resources/db/flyway/V20260601_01__sales_order_shortage_report.sql
+backend/java/cretas-api/src/main/java/com/cretas/aims/entity/inventory/SalesOrderShortageReport.java
+backend/java/cretas-api/src/main/java/com/cretas/aims/repository/inventory/SalesOrderShortageReportRepository.java
+backend/java/cretas-api/src/main/java/com/cretas/aims/service/shortage/NotificationPort.java
+backend/java/cretas-api/src/main/java/com/cretas/aims/service/shortage/impl/NoOpNotificationPort.java
+backend/java/cretas-api/src/main/java/com/cretas/aims/service/shortage/impl/ShortageAnalysisServiceImpl.java
+backend/java/cretas-api/src/main/java/com/cretas/aims/service/shortage/SalesOrderShortageReportListener.java
+backend/java/cretas-api/src/main/java/com/cretas/aims/controller/inventory/SalesOrderShortageController.java
+backend/java/cretas-api/src/test/java/com/cretas/aims/service/shortage/ShortageAnalysisServiceImplTest.java
+```
+
+### Day 2 设计要点 (跟前面偏差一致)
+
+- **复用 event**: listener 监听 `SalesOrderFinanceApprovedEvent`, **不动 SalesController** (event 已由 `SalesServiceImpl.financeApproveOrder` line 366 publish)
+- **read-only**: `analyzeForSalesOrder` 只调 `checkAvailability` + `expandBOM` + `checkMaterialAvailability`, 不调 `reserveStock` / `generateSuggestions` / 不创建 PP — 副作用仍由现有 `SupplyChainOrchestrator.onSalesOrderFinanceApproved` 负责
+- **聚合**: 多 SKU 共用原料 (e.g. 都用面粉) 在 BOM 检查前合并 (`LinkedHashMap` keyed by materialTypeId), 避免 `checkMaterialAvailability` 产出重复 shortfall
+- **JSONB 列 5 个**: total_required (BOM 需求聚合) / available (FG 行项目匹配) / shortage (BOM 短缺) / procurement_suggestions / production_suggestions; 跟 brief §2 略不同但 superset
+- **Async**: `@Async + @EventListener + REQUIRES_NEW` 标配 (跟 `SupplyChainOrchestrator.onSalesOrderFinanceApproved` 同 pattern); `AsyncConfig` 已存在 main
+
 ### 与 Brief 的偏差 (需 organizer 知会)
 
 1. **Controller 名称**: brief 提的 `SalesOrderController.java` 不存在; 实际是 `controller/inventory/SalesController.java`, base path `/api/mobile/{factoryId}/sales/orders`。审批 endpoint 是 **3 段制**: `confirmOrder` (DRAFT→CONFIRMED) → `submitForFinanceReview` (CONFIRMED→PENDING_FINANCE_REVIEW) → `financeApproveOrder` (PENDING_FINANCE_REVIEW→FINANCE_APPROVED)。后者是真正的供应链触发点。
