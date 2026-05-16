@@ -59,6 +59,12 @@ backend/java/cretas-api/src/test/java/com/cretas/aims/service/shortage/ShortageA
 - `mvn -DskipTests test-compile`: **exit 0** (clean, 新 Tool 编译过)
 - `npm run typecheck`: 68 errors **全部为 main 既有 baseline 噪声** (expo/tsconfig.base 缺 + tsconfig 没启 ES2015 lib), 过滤后我新增文件 (shortage/chain) **0 错** — 跟 main 同噪声基线, 无 regression
 
+### Day 3 后置 refactor (commit `779ced3cb`)
+
+> Organizer 后续发现 main 已有 `NotificationService` (LoggingNotificationServiceImpl 默认, Track B1 ship 后 @Primary 切换), 重复建造 NotificationPort 是错误的。
+> 删 NotificationPort + NoOpNotificationPort, 把 SalesOrderShortageReportListener 改为注入 NotificationService.notifyRole(factoryId, "FACTORY_ADMIN", title, body)。
+> Day 2 测试仍 3/3 PASS, 整体行为不变 (LoggingImpl 跟 NoOp 等价)。
+
 ### Day 3 Commit 范围
 
 ```
@@ -70,6 +76,50 @@ frontend/CretasFoodTrace/src/components/chain/ShortageChainCard.tsx
 frontend/CretasFoodTrace/src/screens/factory-admin/inventory/SalesOrderShortageReviewScreen.tsx
 宏见竞品分析/04-最终决策/STATUS/TRACK_E_STATUS.md                       (modify)
 ```
+
+## Day 4 (2026-05-15) — navigator 接入 + handler 接线 + 收尾
+
+- ✅ 3 个 Navigator 接入 `SalesOrderShortageReview` 路由:
+  - `factory-admin/FAManagementStackNavigator.tsx` — `factory_admin` 角色 (含 options title)
+  - `SalesManagerNavigator.tsx` — `sales_manager` 角色 (SalesStack)
+  - `ViewerNavigator.tsx` — `viewer` 角色 (SalesViewStack, 只读)
+- ✅ `SalesOrderShortageReviewScreen` 3 handler 替换 Day 3 占位 Alert:
+  - `handleConfirmProcurement` — Alert 确认 + `navigation.navigate('PurchaseOrderCreate')` (prefill 待 Chat J 扩 ParamList)
+  - `handleConfirmProduction` — 保留 Alert (`ProductionPlanCreate` 路由当前未注册到 FAManagement / SalesManager / Viewer 任一 stack — 跨 Chat 依赖, dispatcher/workshop owner)
+  - `handleDingTalkPush` — Alert 说明已经通过 NotificationService 自动推送 (refactor 后)
+- 🟡 跨 Chat 已知阻塞 (不阻塞 ship):
+  - **PurchaseOrderCreate route prefill**: 跟 Chat J 协调扩 `FAManagementStackParamList.PurchaseOrderCreate: { prefillSuggestions?: ShortageProcurementSuggestion[] }`, 再改 PurchaseOrderCreateScreen 消费。本 PR 不做。
+  - **ProductionPlanCreate route**: dispatcher / workshop-supervisor stack 拥有, 不在 sales 路径。跟相关 Chat 协调后再接。
+- 🟡 Demo 录制 — 本 chat 无法录视频, 仅提供手工 demo 步骤 (PR body):
+  - 1. F006 销售员登录, 创销售单
+  - 2. CONFIRMED → submit-for-review → finance-approve (3 step)
+  - 3. finance-approve 触发 SalesOrderFinanceApprovedEvent → SalesOrderShortageReportListener (async)
+  - 4. 后台日志可见 `[ShortageReport] persisted COMPLETED snapshot`
+  - 5. RN 打开 SalesOrderShortageReview screen → 看到 chain-card (3 段)
+  - 6. AIChat 输入 "SO-001 缺什么" → ShortageAnalysisTool → 同结构 chain-card JSON
+
+### Day 4 验证
+
+- `npm run typecheck`: 错误数 = main baseline (broken tsconfig — `--jsx not set` / `Cannot find module 'react'` / `Number.isInteger` 等), 我新增的 3 个 navigator import + handler 修改 **0 个独有新错** (跟整个 RN 项目同噪声基线; CI 是 ground truth)
+- Java 侧 (`mvnw test`): Day 3 commit + refactor commit 均 exit 0 / 3 单测 PASS, Day 4 无 Java 改动
+
+### Day 4 Commit 范围
+
+```
+frontend/CretasFoodTrace/src/navigation/factory-admin/FAManagementStackNavigator.tsx  (modify, +1 import +1 Screen)
+frontend/CretasFoodTrace/src/navigation/SalesManagerNavigator.tsx                     (modify, +1 import +1 Screen)
+frontend/CretasFoodTrace/src/navigation/ViewerNavigator.tsx                           (modify, +1 import +1 Screen)
+frontend/CretasFoodTrace/src/screens/factory-admin/inventory/SalesOrderShortageReviewScreen.tsx  (modify, 3 handler)
+宏见竞品分析/04-最终决策/STATUS/TRACK_E_STATUS.md                                       (modify)
+```
+
+### PR 草稿 (待 organizer 拍板再 push)
+
+- **Title**: `[Sprint2-E] S-MRP-1 销售订单→采购自动分流`
+- **Branch**: `feature/sprint2-track-e-n31-shortage`
+- **Base**: `main`
+- **Commits**: 5 个 (`0ae4aaae3` Day1 + `844a21c3e` Day2 + `98c198974` Day3 + `779ced3cb` refactor + Day4 待)
+- **PR body** 草稿见下方 (commit Day 4 后生成)
 
 ### 与 Brief 的偏差 (需 organizer 知会)
 

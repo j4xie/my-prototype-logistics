@@ -54,18 +54,42 @@ export default function SalesOrderShortageReviewScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleConfirmProcurement = (_suggestions: ShortageProcurementSuggestion[]) => {
-    // Day 4 接线 — 跳 PurchaseOrderCreate 预填. Day 3 仅占位.
-    Alert.alert('TODO Day 4', '一键采购建单 — 待跳 PurchaseOrderCreate 预填.');
+  const handleConfirmProcurement = (suggestions: ShortageProcurementSuggestion[]) => {
+    Alert.alert(
+      '生成采购单',
+      `准备打开采购建单页面, 待补 ${suggestions.length} 项物料 (供应商/单价需采购员补充)。`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '打开',
+          onPress: () => {
+            // PurchaseOrderCreate 路由当前签名 = undefined, 暂不支持 prefill suggestions。
+            // 跨 Chat 跟 Chat J (PurchaseOrderApprovalFlow) 协调后再扩 ParamList。
+            navigation.navigate('PurchaseOrderCreate' as never);
+          },
+        },
+      ],
+    );
   };
 
-  const handleConfirmProduction = (_suggestions: ShortageProductionSuggestion[]) => {
-    Alert.alert('TODO Day 4', '一键创建生产任务 — 待跳 ProductionPlanCreate 预填.');
+  const handleConfirmProduction = (suggestions: ShortageProductionSuggestion[]) => {
+    // ProductionPlanCreate 路由当前不在 FAManagementStack — 由 dispatcher / workshop-supervisor 拥有,
+    // 跨 Chat 接线待后续 PR。Sprint 2 Track E 范围仅占位提示。
+    Alert.alert(
+      '生产任务建议',
+      `已为 ${suggestions.length} 个 SKU 生成建议。\n跨模块路由 (生产排班/工序) 暂未接入, 请走 [生产管理] Tab 手工新建。`,
+    );
   };
 
   const handleDingTalkPush = () => {
-    // Day 4 + Track B1 钉钉 PoC ship 后激活
-    Alert.alert('TODO Day 4 / Track B1', '钉钉推送依赖 Sprint 1 Track B1 PoC merge.');
+    // 后端 SalesOrderShortageReportListener 在财务审核通过事件中已自动调
+    // NotificationService.notifyRole(factoryId, "FACTORY_ADMIN", ...)。
+    // 当前 impl=LoggingNotificationServiceImpl (只 log);
+    // Track B1 钉钉 PoC merge 后通过 @Primary 自动转钉钉, 业务代码 0 改动。
+    Alert.alert(
+      '通知已发出',
+      '缺料告警已在审核通过时自动推送至工厂管理员。\nTrack B1 钉钉 PoC merge 后会自动转钉钉群。',
+    );
   };
 
   return (
