@@ -133,17 +133,30 @@ export function wrapForStorage(schema: PrintTemplateSchema): FormilyWrappedPrint
   return { type: 'object', properties: { _printSchema: schema } };
 }
 
-export function unwrapFromStorage(raw: string | null | undefined): PrintTemplateSchema | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed?.properties?._printSchema) {
-      return parsed.properties._printSchema as PrintTemplateSchema;
+export function unwrapFromStorage(raw: unknown): PrintTemplateSchema | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  // Issue #719: Spring may deliver schemaJson either as a JSON string (default
+  // String column serialization) or as an already-parsed Object (when the DTO
+  // field is typed Map<String,Object> / JsonNode). JSON.parse on an object
+  // coerces it to "[object Object]" and throws → silent null. Accept both.
+  let parsed: unknown;
+  if (typeof raw === 'string') {
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      console.error('[unwrapFromStorage] JSON.parse failed', { raw, error: e });
+      return null;
     }
-    return null;
-  } catch {
+  } else if (typeof raw === 'object') {
+    parsed = raw;
+  } else {
     return null;
   }
+  const props = (parsed as { properties?: { _printSchema?: unknown } } | null)?.properties;
+  if (props && props._printSchema) {
+    return props._printSchema as PrintTemplateSchema;
+  }
+  return null;
 }
 
 export const DEFAULT_A4_PORTRAIT: PrintCanvas = {

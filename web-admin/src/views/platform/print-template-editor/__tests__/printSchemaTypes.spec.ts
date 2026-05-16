@@ -4,7 +4,7 @@
  * boundary between FormTemplate.schemaJson (a string) and the editor's
  * in-memory PrintTemplateSchema.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   wrapForStorage,
   unwrapFromStorage,
@@ -48,6 +48,96 @@ describe('printSchemaTypes', () => {
     it('returns null when properties._printSchema is missing', () => {
       const bad = JSON.stringify({ type: 'object', properties: { other: 1 } });
       expect(unwrapFromStorage(bad)).toBeNull();
+    });
+
+    // --- Issue #719 P0: backend may return schemaJson already parsed -----
+    // FormTemplate.schemaJson is a TEXT column holding JSON. Spring/Jackson
+    // can deliver it either as a JSON string (default) OR — when wrapped in
+    // a DTO whose field is declared as `Map<String,Object>` / `JsonNode` —
+    // as an already-parsed Object. The legacy implementation called
+    // JSON.parse(raw) unconditionally, which coerces the object to the
+    // string "[object Object]" and throws, then the catch silently returned
+    // null → canvas rendered 0 of 65 backend-seeded elements (#719 repro).
+
+    describe('Issue #719 — schemaJson silent-drop (Jackson 直返 Object)', () => {
+      it('handles already-parsed Formily envelope object input', () => {
+        const schema: PrintTemplateSchema = {
+          version: 1,
+          canvas: { width: 595, height: 842, orientation: 'portrait' },
+          elements: [
+            { id: 'a', type: 'text', x: 10, y: 10, text: 'hi', fontSize: 12 },
+            { id: 'b', type: 'field', x: 10, y: 30, binding: '{{x}}', fontSize: 12 },
+          ],
+        };
+        // Plain object — NOT JSON.stringify'd
+        const rawObject = wrapForStorage(schema);
+        const restored = unwrapFromStorage(rawObject);
+        expect(restored).toEqual(schema);
+        expect(restored?.elements).toHaveLength(2);
+      });
+
+      it('handles already-parsed Formily envelope from real backend shape', () => {
+        // Mirrors V20260603_09 seed for PRINT_SALES_ORDER (11 elements).
+        const seed = {
+          type: 'object' as const,
+          properties: {
+            _printSchema: {
+              version: 1 as const,
+              canvas: { width: 595, height: 842, orientation: 'portrait' as const },
+              elements: Array.from({ length: 11 }, (_, i) => ({
+                id: `el-${i}`,
+                type: 'text' as const,
+                x: 0,
+                y: i * 30,
+                text: `Row ${i}`,
+                fontSize: 12,
+              })),
+            },
+          },
+        };
+        const restored = unwrapFromStorage(seed);
+        expect(restored).not.toBeNull();
+        expect(restored?.elements).toHaveLength(11);
+      });
+
+      it('returns null when raw object is missing properties._printSchema', () => {
+        // Object input but wrong shape (e.g. a different Formily form schema)
+        const wrongObject = { type: 'object', properties: { other: { x: 1 } } };
+        expect(unwrapFromStorage(wrongObject)).toBeNull();
+      });
+
+      it('returns null safely for non-Formily primitive object input', () => {
+        // Defensive: arbitrary object/array input should not throw
+        expect(unwrapFromStorage({ foo: 'bar' })).toBeNull();
+        expect(unwrapFromStorage([1, 2, 3])).toBeNull();
+        expect(unwrapFromStorage(42)).toBeNull();
+        expect(unwrapFromStorage(true)).toBeNull();
+      });
+    });
+
+    // --- Diagnostic logging (Issue #719 root-cause discoverability) ------
+    describe('Issue #719 — diagnostic logging on parse failure', () => {
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      it('logs console.error when malformed JSON string is received', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const result = unwrapFromStorage('{not-json');
+        expect(result).toBeNull();
+        expect(errorSpy).toHaveBeenCalled();
+        // Sanity: the log includes the unwrap helper name so devs can grep
+        const callArgs = errorSpy.mock.calls[0]?.join(' ') ?? '';
+        expect(callArgs).toMatch(/unwrapFromStorage/);
+      });
+
+      it('does NOT log for valid empty/null input (not an error path)', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        unwrapFromStorage(null);
+        unwrapFromStorage(undefined);
+        unwrapFromStorage('');
+        expect(errorSpy).not.toHaveBeenCalled();
+      });
     });
 
     it('survives a schema that includes all 7 element types', () => {
