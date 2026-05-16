@@ -76,7 +76,11 @@ function handleRowActionClick(actionId: string, row: TableRow) {
   }
 }
 function openAiForRow(row: TableRow) {
-  ElMessage.info(`AIChat: salesOrder/${row.orderNumber} — 接 AiEntryDrawer 待 Day 9`);
+  // Day 9: open existing AiEntryDrawer with row context. Drawer's seed-message
+  // hook is owned by useAiChat — we surface the row id via console for now;
+  // full availableActions surfacing waits on Track A AIChat schema.
+  console.info('[RowAction AI]', { entityType: 'salesOrder', entityId: row.id, orderNumber: row.orderNumber });
+  aiEntryVisible.value = true;
 }
 
 const loading = ref(false);

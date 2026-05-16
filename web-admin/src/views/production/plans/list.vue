@@ -46,7 +46,8 @@ function handleRowActionClick(actionId: string, row: TableRow) {
   }
 }
 function openAiForRow(row: TableRow) {
-  ElMessage.info(`AIChat: productionPlan/${row.planNumber} — 接 AiEntryDrawer 待 Day 9`);
+  console.info('[RowAction AI]', { entityType: 'productionPlan', entityId: row.id, planNumber: row.planNumber });
+  aiEntryVisible.value = true;
 }
 
 const loading = ref(false);

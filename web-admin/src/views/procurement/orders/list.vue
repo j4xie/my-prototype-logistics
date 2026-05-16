@@ -47,7 +47,8 @@ function handleRowActionClick(actionId: string, row: TableRow) {
   }
 }
 function openAiForRow(row: TableRow) {
-  ElMessage.info(`AIChat: purchaseOrder/${row.orderNumber} — 接 AiEntryDrawer 待 Day 9`);
+  console.info('[RowAction AI]', { entityType: 'purchaseOrder', entityId: row.id, orderNumber: row.orderNumber });
+  aiEntryVisible.value = true;
 }
 
 const loading = ref(false);
