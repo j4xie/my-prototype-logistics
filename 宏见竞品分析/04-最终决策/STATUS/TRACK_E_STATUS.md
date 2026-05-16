@@ -43,6 +43,34 @@ backend/java/cretas-api/src/test/java/com/cretas/aims/service/shortage/ShortageA
 - **JSONB 列 5 个**: total_required (BOM 需求聚合) / available (FG 行项目匹配) / shortage (BOM 短缺) / procurement_suggestions / production_suggestions; 跟 brief §2 略不同但 superset
 - **Async**: `@Async + @EventListener + REQUIRES_NEW` 标配 (跟 `SupplyChainOrchestrator.onSalesOrderFinanceApproved` 同 pattern); `AsyncConfig` 已存在 main
 
+## Day 3 (2026-05-15) — AI Tool + intent + RN chain-card
+
+- ✅ `ai/tool/impl/shortage/ShortageAnalysisTool.java` — extends `AbstractBusinessTool`, `@Lazy ShortageAnalysisService`, `getToolName()=shortage_analyze` (auto-derive ActionType=ANALYZE / RiskLevel=LOW)
+- ✅ Flyway `V20260601_02__shortage_intent.sql` — intent `SHORTAGE_ANALYSIS` → tool `shortage_analyze`, 10 keywords (缺料/缺什么/库存够吗/...), DATA_QUERY category, priority 80, sensitivity LOW
+- ✅ `salesApiClient.ts` 扩展 — 9 个 ShortageReport 相关 type + `getShortageReport(orderId)` 方法
+- ✅ `components/chain/ShortageChainCard.tsx` — 3 段 react-native-paper Card (摘要 / 缺料采购 / 生产建议), 3 个 callback props (`onConfirmProcurement` / `onConfirmProduction` / `onDingTalkPush` 留待 Day 4)
+- ✅ `screens/factory-admin/inventory/SalesOrderShortageReviewScreen.tsx` — useRoute<RouteProp<...>> 类型化, 处理 4 状态 (loading/NOT_AVAILABLE/PENDING/FAILED/COMPLETED), 并行 fetch report+order
+- ✅ `types/navigation.ts` — `FAManagementStackParamList.SalesOrderShortageReview: { orderId: string }` (Day 4 接入 navigator)
+- 🟡 Brief 偏差: brief 建议 `screens/sales/`, 实际 main 用 `screens/factory-admin/inventory/` — 跟 SalesOrderDetailScreen 同目录
+- 明日计划 (Day 4): 接入 navigator (3 处: FAManagementStackNavigator + SalesManagerNavigator + ViewerNavigator) + 一键采购/生产跳转预填 + DingTalk port adapter 设计 + PR
+
+### Day 3 验证
+
+- `mvn -DskipTests test-compile`: **exit 0** (clean, 新 Tool 编译过)
+- `npm run typecheck`: 68 errors **全部为 main 既有 baseline 噪声** (expo/tsconfig.base 缺 + tsconfig 没启 ES2015 lib), 过滤后我新增文件 (shortage/chain) **0 错** — 跟 main 同噪声基线, 无 regression
+
+### Day 3 Commit 范围
+
+```
+backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/shortage/ShortageAnalysisTool.java
+backend/java/cretas-api/src/main/resources/db/flyway/V20260601_02__shortage_intent.sql
+frontend/CretasFoodTrace/src/services/api/salesApiClient.ts            (modify)
+frontend/CretasFoodTrace/src/types/navigation.ts                       (modify, +1 route)
+frontend/CretasFoodTrace/src/components/chain/ShortageChainCard.tsx
+frontend/CretasFoodTrace/src/screens/factory-admin/inventory/SalesOrderShortageReviewScreen.tsx
+宏见竞品分析/04-最终决策/STATUS/TRACK_E_STATUS.md                       (modify)
+```
+
 ### 与 Brief 的偏差 (需 organizer 知会)
 
 1. **Controller 名称**: brief 提的 `SalesOrderController.java` 不存在; 实际是 `controller/inventory/SalesController.java`, base path `/api/mobile/{factoryId}/sales/orders`。审批 endpoint 是 **3 段制**: `confirmOrder` (DRAFT→CONFIRMED) → `submitForFinanceReview` (CONFIRMED→PENDING_FINANCE_REVIEW) → `financeApproveOrder` (PENDING_FINANCE_REVIEW→FINANCE_APPROVED)。后者是真正的供应链触发点。
