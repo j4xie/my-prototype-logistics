@@ -7,7 +7,9 @@
  *     mirrors backend `PermissionServiceImpl.PRICE_VIEW_ROLES`. Keep all three
  *     in sync when adding/removing a role.
  *   - STATUS_ACTIONS_MAP: per-entity-type → per-status → ordered list of
- *     COMMON_ACTIONS ids that should appear on that row.
+ *     COMMON_ACTIONS ids that should appear on that row. Status strings are
+ *     the actual backend enum values (uppercase) — see each entity's
+ *     ListScreen STATUS_MAP for the canonical list.
  *
  * useRowActions(...) does the actual filter + assembly.
  */
@@ -31,41 +33,44 @@ export const PRICE_VIEW_ROLES: ReadonlySet<string> = new Set([
 type ActionId = (typeof COMMON_ACTIONS)[keyof typeof COMMON_ACTIONS]['id'];
 
 /**
- * Per-entity status → action-id list. Status strings match the backend
- * enum names (uppercase). Unknown statuses fall back to VIEW_DETAIL only.
+ * Per-entity status → action-id list. Includes both the canonical workflow
+ * statuses (DRAFT/PENDING_APPROVAL/APPROVED/...) and the actual backend
+ * variants found in production list screens (CONFIRMED/SUBMITTED/REQUESTED/
+ * PARTIAL_DELIVERED/...). Unknown statuses fall back to view-detail only.
  *
- * The lists are intentionally short (4-10 items) so the BottomSheet/Menu
- * doesn't become a wall of buttons. Add new entries here, not at the
- * useRowActions call site.
+ * Lists are intentionally short (3-7 items) so the BottomSheet/Menu doesn't
+ * become a wall of buttons. Edit here, not at the call site.
  */
 export const STATUS_ACTIONS_MAP: Readonly<Record<EntityType, Readonly<Record<string, readonly ActionId[]>>>> = {
   salesOrder: {
     DRAFT: ['edit', 'submit', 'copy', 'delete', 'view-detail', 'edit-price'],
     PENDING_APPROVAL: ['approve', 'reject', 'view-price-history', 'view-detail'],
-    APPROVED: [
-      'convert-to-production',
-      'convert-to-purchase',
-      'print-pdf',
-      'undo-approval',
-      'cancel',
-      'view-detail',
-    ],
+    CONFIRMED: ['convert-to-production', 'convert-to-purchase', 'print-pdf', 'cancel', 'view-detail'],
+    APPROVED: ['convert-to-production', 'convert-to-purchase', 'print-pdf', 'undo-approval', 'cancel', 'view-detail'],
+    PROCESSING: ['view-detail', 'print-pdf'],
     IN_PRODUCTION: ['view-detail', 'print-pdf'],
+    PARTIAL_DELIVERED: ['view-detail', 'print-pdf', 'return'],
     SHIPPED: ['view-detail', 'print-pdf', 'return'],
-    COMPLETED: ['view-detail', 'print-pdf', 'copy'],
+    COMPLETED: ['view-detail', 'print-pdf', 'copy', 'return'],
     CANCELLED: ['view-detail', 'copy'],
   },
   purchaseOrder: {
     DRAFT: ['edit', 'submit', 'copy', 'delete', 'view-detail', 'edit-price'],
+    SUBMITTED: ['approve', 'reject', 'view-price-history', 'view-detail'],
     PENDING_APPROVAL: ['approve', 'reject', 'view-price-history', 'view-detail'],
     APPROVED: ['print-pdf', 'undo-approval', 'cancel', 'view-detail'],
+    REJECTED: ['edit', 'view-detail'],
+    PARTIAL_RECEIVED: ['view-detail', 'print-pdf'],
     RECEIVED: ['view-detail', 'print-pdf'],
-    COMPLETED: ['view-detail', 'print-pdf', 'copy'],
+    COMPLETED: ['view-detail', 'print-pdf', 'copy', 'return'],
     CANCELLED: ['view-detail', 'copy'],
   },
   productionPlan: {
     DRAFT: ['edit', 'submit', 'copy', 'delete', 'view-detail'],
+    PLANNED: ['edit', 'view-detail', 'cancel'],
+    PENDING: ['edit', 'view-detail', 'cancel'],
     PENDING_APPROVAL: ['approve', 'reject', 'view-detail'],
+    CONFIRMED: ['view-detail', 'print-pdf', 'cancel'],
     APPROVED: ['print-pdf', 'undo-approval', 'cancel', 'view-detail'],
     IN_PROGRESS: ['view-detail', 'print-pdf', 'lock'],
     COMPLETED: ['view-detail', 'print-pdf', 'copy'],
@@ -78,10 +83,17 @@ export const STATUS_ACTIONS_MAP: Readonly<Record<EntityType, Readonly<Record<str
     CANCELLED: ['view-detail'],
   },
   inventory: {
+    // Real screens (FinishedGoods/WHInventory) compute these from quantity
+    // ratios; pass the derived label through.
     IN_STOCK: ['transfer', 'view-detail', 'view-price-history'],
     LOW_STOCK: ['transfer', 'view-detail', 'view-price-history'],
     OUT_OF_STOCK: ['view-detail', 'view-price-history'],
     EXPIRED: ['view-detail', 'view-price-history'],
+    EXPIRE: ['view-detail', 'view-price-history'], // WHInventory warning string
+    LOW: ['transfer', 'view-detail', 'view-price-history'],
+    NORMAL: ['transfer', 'view-detail', 'view-price-history'],
+    SUFFICIENT: ['transfer', 'view-detail', 'view-price-history'],
+    SOLD_OUT: ['view-detail', 'view-price-history'],
   },
   whInbound: {
     PENDING: ['edit', 'submit', 'delete', 'view-detail'],
@@ -95,19 +107,31 @@ export const STATUS_ACTIONS_MAP: Readonly<Record<EntityType, Readonly<Record<str
   },
   returnOrder: {
     DRAFT: ['edit', 'submit', 'delete', 'view-detail'],
+    SUBMITTED: ['approve', 'reject', 'view-detail'],
     PENDING_APPROVAL: ['approve', 'reject', 'view-detail'],
     APPROVED: ['print-pdf', 'view-detail'],
-    COMPLETED: ['view-detail'],
+    REJECTED: ['edit', 'view-detail'],
+    PROCESSING: ['view-detail', 'print-pdf'],
+    COMPLETED: ['view-detail', 'print-pdf'],
   },
   transfer: {
     DRAFT: ['edit', 'submit', 'delete', 'view-detail'],
+    REQUESTED: ['approve', 'reject', 'view-detail'],
+    APPROVED: ['view-detail', 'print-pdf'],
+    REJECTED: ['edit', 'view-detail'],
+    SHIPPED: ['view-detail', 'print-pdf'],
     IN_TRANSIT: ['view-detail', 'print-pdf'],
+    RECEIVED: ['view-detail', 'print-pdf'],
+    CONFIRMED: ['view-detail', 'print-pdf'],
     COMPLETED: ['view-detail', 'print-pdf'],
+    CANCELLED: ['view-detail'],
   },
   wastage: {
     DRAFT: ['edit', 'submit', 'delete', 'view-detail'],
+    SUBMITTED: ['approve', 'reject', 'view-detail'],
     PENDING_APPROVAL: ['approve', 'reject', 'view-detail'],
     APPROVED: ['view-detail', 'print-pdf'],
+    REJECTED: ['edit', 'view-detail'],
   },
   sample: {
     DRAFT: ['edit', 'submit', 'copy', 'delete', 'view-detail'],

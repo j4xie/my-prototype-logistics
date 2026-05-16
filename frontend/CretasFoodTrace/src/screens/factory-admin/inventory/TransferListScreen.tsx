@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Chip, Button, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { transferApiClient, InternalTransfer } from '../../../services/api/transferApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { formatNumberWithCommas } from '../../../utils/formatters';
+import { RowActionBottomSheet } from '../../../components/list';
+import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -35,6 +37,8 @@ export default function TransferListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedTransfer, setSelectedTransfer] = useState<InternalTransfer | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -51,12 +55,26 @@ export default function TransferListScreen() {
   useEffect(() => { loadData(); }, [loadData]);
   const onRefresh = () => { setRefreshing(true); loadData(); };
 
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => navigation.navigate('TransferDetail', { transferId: e.id }),
+    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+  }), [navigation]);
+
+  const sheetCtx: RowContext = selectedTransfer
+    ? { status: selectedTransfer.status, id: selectedTransfer.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('transfer', sheetCtx, { handlers });
+
+  const openSheet = (transfer: InternalTransfer) => { setSelectedTransfer(transfer); setActionSheetVisible(true); };
+
   const renderTransfer = ({ item }: { item: InternalTransfer }) => {
     const status = STATUS_MAP[item.status] || { label: item.status, color: '#909399' };
     const isOutbound = item.sourceFactoryId === factoryId;
 
     return (
-      <Card style={styles.card} onPress={() => navigation.navigate('TransferDetail', { transferId: item.id })}>
+      <Card style={styles.card}
+        onPress={() => navigation.navigate('TransferDetail', { transferId: item.id })}
+        onLongPress={() => openSheet(item)}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -127,6 +145,21 @@ export default function TransferListScreen() {
           ListEmptyComponent={<Text style={styles.empty}>暂无调拨单</Text>}
         />
       )}
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedTransfer ? `调拨单 ${selectedTransfer.transferNumber}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedTransfer) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'TRANSFER', initialMessage: `${selectedTransfer.transferNumber}: ` },
+          }));
+        }}
+      />
     </View>
   );
 }

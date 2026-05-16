@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Chip, FAB, Portal, Modal, TextInput, Button, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -7,6 +7,8 @@ import { FAManagementStackParamList } from '../../../types/navigation';
 import { purchaseApiClient, PurchaseOrder } from '../../../services/api/purchaseApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { formatNumberWithCommas } from '../../../utils/formatters';
+import { RowActionBottomSheet } from '../../../components/list';
+import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -27,6 +29,8 @@ export default function PurchaseOrderListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -71,10 +75,29 @@ export default function PurchaseOrderListScreen() {
     } catch { Alert.alert('错误', '操作失败'); }
   };
 
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => navigation.navigate('PurchaseOrderDetail', { orderId: e.id }),
+    submit: (e: RowContext) => handleAction(e.id, 'submit'),
+    approve: (e: RowContext) => handleAction(e.id, 'approve'),
+    reject: (e: RowContext) => handleAction(e.id, 'reject'),
+    cancel: (e: RowContext) => handleAction(e.id, 'cancel'),
+    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    copy: (e: RowContext) => Alert.alert('复制', `复制单据 ${e.id} (待接 API)`),
+  }), [navigation]);
+
+  const sheetCtx: RowContext = selectedOrder
+    ? { status: selectedOrder.status, id: selectedOrder.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('purchaseOrder', sheetCtx, { handlers });
+
+  const openSheet = (order: PurchaseOrder) => { setSelectedOrder(order); setActionSheetVisible(true); };
+
   const renderOrder = ({ item }: { item: PurchaseOrder }) => {
     const status = STATUS_MAP[item.status] || { label: item.status, color: '#909399' };
     return (
-      <Card style={styles.card} onPress={() => navigation.navigate('PurchaseOrderDetail', { orderId: item.id })}>
+      <Card style={styles.card}
+        onPress={() => navigation.navigate('PurchaseOrderDetail', { orderId: item.id })}
+        onLongPress={() => openSheet(item)}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Text variant="titleMedium" style={styles.orderNumber}>{item.orderNumber}</Text>
@@ -150,6 +173,21 @@ export default function PurchaseOrderListScreen() {
         style={styles.fab}
         onPress={() => navigation.navigate('PurchaseOrderCreate')}
         label="新建采购单"
+      />
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedOrder ? `采购单 ${selectedOrder.orderNumber}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedOrder) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'PURCHASE', initialMessage: `${selectedOrder.orderNumber}: ` },
+          }));
+        }}
       />
     </View>
   );

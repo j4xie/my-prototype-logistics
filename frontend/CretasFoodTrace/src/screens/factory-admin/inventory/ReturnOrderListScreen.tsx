@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Chip, Button, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { returnOrderApiClient, ReturnOrder, ReturnType } from '../../../services/api/returnOrderApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
+import { RowActionBottomSheet } from '../../../components/list';
+import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -29,6 +31,8 @@ export default function ReturnOrderListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [returnType, setReturnType] = useState<ReturnType>('PURCHASE_RETURN');
+  const [selectedOrder, setSelectedOrder] = useState<ReturnOrder | null>(null);
+  const [actionSheetVisible, setActionSheetVisible] = useState(false);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -68,10 +72,27 @@ export default function ReturnOrderListScreen() {
     } catch { Alert.alert('错误', '操作失败'); }
   };
 
+  const handlers = useMemo(() => ({
+    'view-detail': (e: RowContext) => navigation.navigate('ReturnOrderDetail', { returnId: e.id }),
+    submit: (e: RowContext) => handleAction(e.id, 'submit'),
+    approve: (e: RowContext) => handleAction(e.id, 'approve'),
+    reject: (e: RowContext) => handleAction(e.id, 'reject'),
+    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+  }), [navigation]);
+
+  const sheetCtx: RowContext = selectedOrder
+    ? { status: selectedOrder.status, id: selectedOrder.id }
+    : { status: '', id: '' };
+  const rowActions = useRowActions('returnOrder', sheetCtx, { handlers });
+
+  const openSheet = (order: ReturnOrder) => { setSelectedOrder(order); setActionSheetVisible(true); };
+
   const renderOrder = ({ item }: { item: ReturnOrder }) => {
     const status = STATUS_MAP[item.status] || { label: item.status, color: '#909399' };
     return (
-      <Card style={styles.card} onPress={() => navigation.navigate('ReturnOrderDetail', { returnId: item.id })}>
+      <Card style={styles.card}
+        onPress={() => navigation.navigate('ReturnOrderDetail', { returnId: item.id })}
+        onLongPress={() => openSheet(item)}>
         <Card.Content>
           <View style={styles.cardHeader}>
             <Text variant="titleMedium" style={styles.orderNumber}>{item.returnNumber}</Text>
@@ -145,6 +166,21 @@ export default function ReturnOrderListScreen() {
           ListEmptyComponent={<Text style={styles.empty}>暂无退货单</Text>}
         />
       )}
+
+      <RowActionBottomSheet
+        visible={actionSheetVisible}
+        onClose={() => setActionSheetVisible(false)}
+        actions={rowActions}
+        title={selectedOrder ? `退货单 ${selectedOrder.returnNumber}` : ''}
+        aiTriggerEnabled
+        onAITrigger={() => {
+          if (!selectedOrder) return;
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: { entityType: 'RETURN_ORDER', initialMessage: `${selectedOrder.returnNumber}: ` },
+          }));
+        }}
+      />
     </View>
   );
 }
