@@ -29,6 +29,21 @@ const brandColors = {
   backdrop: 'rgba(0, 0, 0, 0.4)',
 };
 
+// Workflow node colors — Cretas Neo Minimal palette
+// Background/text pairs verified WCAG AA (>=4.5:1) on white surface.
+const workflowColors = {
+  pendingBg: '#FFE4B5',
+  pendingText: '#8B4513',
+  pendingBorder: '#F2C97D',
+  inProgressBg: '#D4EDDA',
+  inProgressText: '#155724',
+  inProgressBorder: '#A3D9A5',
+  doneBg: '#D1ECF1',
+  doneText: '#0C5460',
+  doneBorder: '#9FD0DC',
+  connector: '#9CA3AF',
+};
+
 export const theme = {
   ...DefaultTheme,
   colors: {
@@ -83,6 +98,7 @@ export const theme = {
   // 自定义属性 (非Paper标准属性, 但可在应用中使用)
   custom: {
     colors: brandColors,
+    workflow: workflowColors,
     spacing: {
       xs: 4,
       s: 8,
