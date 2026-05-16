@@ -113,6 +113,13 @@
         </el-table-column>
       </el-table>
 
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
+
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="pagination.page"
@@ -192,6 +199,9 @@ import { formatDate } from '@/utils/dateFormat';
 import type { WastageRecord } from '@/types/restaurant';
 import { handleCatchError } from '@/utils/errorToast';
 import AnalyticsStrip from '../components/AnalyticsStrip.vue';
+import { TableFooter } from '@/components/list';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const wastageTypeMap: Record<string, string> = {
   EXPIRED: '过期', DAMAGED: '破损', SPOILED: '变质', PROCESSING: '加工损耗', OTHER: '其他',
@@ -201,6 +211,10 @@ const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
 const canWrite = computed(() => permissionStore.canWrite('restaurant'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({ filterConditions: {} }));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('wastage', summaryRequest);
 
 const materialTypes = ref<{ id: string; name: string }[]>([]);
 const materialNameMap = computed(() => Object.fromEntries(materialTypes.value.map(m => [m.id, m.name])));

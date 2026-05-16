@@ -18,6 +18,9 @@ import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 import type { TableRow } from '@/types/api';
+import { TableFooter } from '@/components/list';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
@@ -87,6 +90,13 @@ const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
+
+// U-FOOTER-1: sticky summary stats
+const summaryRequest = computed<ListSummaryRequest>(() => ({
+  filterConditions: statusFilter.value ? { status: statusFilter.value } : {},
+}));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('salesOrder', summaryRequest);
+
 // Apr 20 Bug BR-07 fix: 客户报告"未见检索功能", 补 keyword 搜索 (订单号/客户名)
 const searchKeyword = ref('');
 const dialogVisible = ref(false);
@@ -844,6 +854,13 @@ async function submitQuickPayment() {
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7: SmartBI deep link */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.size"

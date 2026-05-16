@@ -10,6 +10,9 @@ import { Plus, Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
+import { TableFooter } from '@/components/list';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -22,6 +25,10 @@ const canViewPrice = computed(() => permissionStore.canViewPrice);
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({ filterConditions: {} }));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('internalTransfer', summaryRequest);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -300,6 +307,13 @@ function isOutbound(row: TableRow) { return row.sourceFactoryId === factoryId.va
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.size"

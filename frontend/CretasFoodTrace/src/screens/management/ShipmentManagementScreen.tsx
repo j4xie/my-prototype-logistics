@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { StickyFooterSummary } from '../../components/list';
+import { useListSummary } from '../../hooks/useListSummary';
 import {
   Text,
   Appbar,
@@ -45,6 +47,13 @@ export default function ShipmentManagementScreen() {
   const [editingShipment, setEditingShipment] = useState<ShipmentRecord | null>(null);
   const [customerMenuVisible, setCustomerMenuVisible] = useState(false);
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
+
+  // U-FOOTER-1
+  const summaryRequest = useMemo(
+    () => ({ filterConditions: filterStatus !== 'all' ? { status: filterStatus } : {} }),
+    [filterStatus],
+  );
+  const { summary, refresh: refreshSummary } = useListSummary('shipment', summaryRequest);
 
   // 权限控制
   const userType = user?.userType || 'factory';
@@ -605,6 +614,20 @@ export default function ShipmentManagementScreen() {
           </View>
         </Modal>
       </Portal>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab' as never, {
+            screen: 'AIChat',
+            params: {
+              entityType: 'SHIPMENT',
+              initialMessage: `分析当前出货 (筛选: ${filterStatus === 'all' ? '全部' : filterStatus})`,
+            },
+          } as never))
+        }
+      />
 
       {/* FAB */}
       {canManage && (

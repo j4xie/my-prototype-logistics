@@ -7,8 +7,9 @@ import { FAManagementStackParamList } from '../../../types/navigation';
 import { transferApiClient, InternalTransfer } from '../../../services/api/transferApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { formatNumberWithCommas } from '../../../utils/formatters';
-import { RowActionBottomSheet } from '../../../components/list';
+import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
+import { useListSummary } from '../../../hooks/useListSummary';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -55,6 +56,7 @@ export default function TransferListScreen() {
   useEffect(() => { loadData(); }, [loadData]);
   const onRefresh = () => { setRefreshing(true); loadData(); };
 
+  // UX-A2 (Track H): row-action bottom sheet
   const handlers = useMemo(() => ({
     'view-detail': (e: RowContext) => navigation.navigate('TransferDetail', { transferId: e.id }),
     'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
@@ -66,6 +68,14 @@ export default function TransferListScreen() {
   const rowActions = useRowActions('transfer', sheetCtx, { handlers });
 
   const openSheet = (transfer: InternalTransfer) => { setSelectedTransfer(transfer); setActionSheetVisible(true); };
+
+  // U-FOOTER-1 (Track I): sticky summary
+  const summaryRequest = useMemo(
+    () => ({ filterConditions: statusFilter !== 'all' ? { status: statusFilter } : {} }),
+    [statusFilter],
+  );
+  const { summary, refresh: refreshSummary } = useListSummary('internalTransfer', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing]);
 
   const renderTransfer = ({ item }: { item: InternalTransfer }) => {
     const status = STATUS_MAP[item.status] || { label: item.status, color: '#909399' };
@@ -133,18 +143,34 @@ export default function TransferListScreen() {
         />
       </View>
 
-      {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" />
-      ) : (
-        <FlatList
-          data={transfers}
-          keyExtractor={item => item.id}
-          renderItem={renderTransfer}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>暂无调拨单</Text>}
-        />
-      )}
+      <View style={styles.listWrap}>
+        {loading ? (
+          <ActivityIndicator style={styles.loader} size="large" />
+        ) : (
+          <FlatList
+            data={transfers}
+            keyExtractor={item => item.id}
+            renderItem={renderTransfer}
+            contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            ListEmptyComponent={<Text style={styles.empty}>暂无调拨单</Text>}
+          />
+        )}
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'INTERNAL_TRANSFER',
+              initialMessage: `分析当前调拨列表 (筛选: ${statusFilter === 'all' ? '全部' : statusFilter})`,
+            },
+          }))
+        }
+      />
 
       <RowActionBottomSheet
         visible={actionSheetVisible}
@@ -167,6 +193,7 @@ export default function TransferListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   filterRow: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#fff' },
+  listWrap: { flex: 1 },
   loader: { flex: 1, justifyContent: 'center' },
   list: { padding: 12, paddingBottom: 80 },
   card: { marginBottom: 10, borderRadius: 10 },

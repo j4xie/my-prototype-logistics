@@ -19,8 +19,9 @@ import { Searchbar } from 'react-native-paper';
 import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { DISPATCHER_THEME } from '../../../types/dispatcher';
 import { productionPlanApiClient } from '../../../services/api/productionPlanApiClient';
-import { RowActionBottomSheet } from '../../../components/list';
+import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
+import { useListSummary } from '../../../hooks/useListSummary';
 
 interface PlanItem {
   id: string;
@@ -153,6 +154,14 @@ export default function PlanListScreen() {
 
   useFocusEffect(useCallback(() => { loadPlans(1); }, [loadPlans]));
 
+  // U-FOOTER-1
+  const summaryRequest = useMemo(
+    () => ({ filterConditions: activeTab !== 'all' ? { status: activeTab } : {} }),
+    [activeTab],
+  );
+  const { summary, refresh: refreshSummary } = useListSummary('productionPlan', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing]);
+
   const onRefresh = () => { setRefreshing(true); loadPlans(1, true); };
   const onEndReached = () => { if (plans.length > 0 && plans.length < total) loadPlans(page + 1); };
 
@@ -277,7 +286,8 @@ export default function PlanListScreen() {
         <Text style={styles.totalText}>共 {total} 条</Text>
       </View>
 
-      {/* Plan List */}
+      {/* Plan List wrapped so sticky footer can sit below */}
+      <View style={{ flex: 1 }}>
       {loading && plans.length === 0 ? (
         <ActivityIndicator size="large" style={{ flex: 1 }} color={DISPATCHER_THEME.primary} />
       ) : (
@@ -303,6 +313,21 @@ export default function PlanListScreen() {
           }
         />
       )}
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'PRODUCTION_PLAN',
+              initialMessage: `分析当前生产计划列表 (筛选: ${activeTab === 'all' ? '全部' : activeTab})`,
+            },
+          }))
+        }
+      />
 
       <RowActionBottomSheet
         visible={actionSheetVisible}

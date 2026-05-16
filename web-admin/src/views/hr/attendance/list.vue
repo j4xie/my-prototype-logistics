@@ -6,6 +6,9 @@ import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh, Download } from '@element-plus/icons-vue';
 import type { TableRow } from '@/types/api';
+import { TableFooter } from '@/components/list';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -15,6 +18,10 @@ const canWrite = computed(() => permissionStore.canWrite('hr'));
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({ filterConditions: {} }));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('attendance', summaryRequest);
 // 默认查询最近30天
 const getDefaultDateRange = (): [Date, Date] => {
   const end = new Date();
@@ -399,6 +406,13 @@ function handleDetail(row: TableRow) {
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination

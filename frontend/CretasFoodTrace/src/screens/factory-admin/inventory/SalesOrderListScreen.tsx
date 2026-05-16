@@ -6,8 +6,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { salesApiClient, SalesOrder } from '../../../services/api/salesApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
-import { RowActionBottomSheet } from '../../../components/list';
+import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
+import { useListSummary } from '../../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -44,6 +46,14 @@ export default function SalesOrderListScreen() {
   useEffect(() => { loadOrders(); }, [loadOrders]);
   const onRefresh = () => { setRefreshing(true); loadOrders(); };
 
+  // U-FOOTER-1 (Track I): sticky footer summary, filter mirrors list filter
+  const summaryRequest = useMemo(
+    () => ({ filterConditions: statusFilter !== 'all' ? { status: statusFilter } : {} }),
+    [statusFilter],
+  );
+  const { summary, refresh: refreshSummary } = useListSummary('salesOrder', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing]);
+
   const handleAction = async (orderId: string, action: string) => {
     try {
       let res;
@@ -53,6 +63,7 @@ export default function SalesOrderListScreen() {
     } catch { Alert.alert('错误', '操作失败'); }
   };
 
+  // UX-A2 (Track H): row-action bottom sheet
   const handlers = useMemo(() => ({
     'view-detail': (e: RowContext) => navigation.navigate('SalesOrderDetail', { orderId: e.id }),
     submit: (e: RowContext) => handleAction(e.id, 'confirm'),
@@ -123,18 +134,34 @@ export default function SalesOrderListScreen() {
         />
       </View>
 
-      {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" />
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={item => item.id}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>暂无销售单</Text>}
-        />
-      )}
+      <View style={styles.listWrap}>
+        {loading ? (
+          <ActivityIndicator style={styles.loader} size="large" />
+        ) : (
+          <FlatList
+            data={orders}
+            keyExtractor={item => item.id}
+            renderItem={renderOrder}
+            contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            ListEmptyComponent={<Text style={styles.empty}>暂无销售单</Text>}
+          />
+        )}
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'SALES_ORDER',
+              initialMessage: `分析当前销售单列表${formatSummaryForAI(summary, { filter: { status: statusFilter } })}`,
+            },
+          }))
+        }
+      />
 
       <RowActionBottomSheet
         visible={actionSheetVisible}
@@ -157,6 +184,7 @@ export default function SalesOrderListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   filterRow: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#fff' },
+  listWrap: { flex: 1 },
   loader: { flex: 1, justifyContent: 'center' },
   list: { padding: 12, paddingBottom: 80 },
   card: { marginBottom: 10, borderRadius: 10 },

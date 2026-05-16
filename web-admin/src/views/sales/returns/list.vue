@@ -25,8 +25,10 @@ import { Refresh, Search, View } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { formatDateTime } from '@/utils/dateFormat';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu } from '@/components/list';
+import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -55,6 +57,10 @@ function openAiForRow(row: TableRow) {
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({ filterConditions: {} }));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('returnOrder', summaryRequest);
 const filterStatus = ref('');
 
 const STATUS_OPTIONS = [
@@ -171,6 +177,13 @@ function viewDetail(row: TableRow) { router.push(`/sales/returns/${row.id}`); }
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination

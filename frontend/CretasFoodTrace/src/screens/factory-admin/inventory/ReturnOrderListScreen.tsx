@@ -6,8 +6,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FAManagementStackParamList } from '../../../types/navigation';
 import { returnOrderApiClient, ReturnOrder, ReturnType } from '../../../services/api/returnOrderApiClient';
 import { formatNumberWithCommas } from '../../../utils/formatters';
-import { RowActionBottomSheet } from '../../../components/list';
+import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
+import { useListSummary } from '../../../hooks/useListSummary';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -55,6 +56,11 @@ export default function ReturnOrderListScreen() {
   useEffect(() => { setLoading(true); loadOrders(); }, [loadOrders]);
 
   const onRefresh = () => { setRefreshing(true); loadOrders(); };
+
+  // U-FOOTER-1
+  const summaryRequest = useMemo(() => ({ filterConditions: {} }), []);
+  const { summary, refresh: refreshSummary } = useListSummary('returnOrder', summaryRequest);
+  useEffect(() => { refreshSummary(); }, [refreshSummary, refreshing, returnType]);
 
   const handleAction = async (id: string, action: string) => {
     try {
@@ -154,18 +160,34 @@ export default function ReturnOrderListScreen() {
         />
       </View>
 
-      {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" />
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={item => item.id}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={<Text style={styles.empty}>暂无退货单</Text>}
-        />
-      )}
+      <View style={styles.listWrap}>
+        {loading ? (
+          <ActivityIndicator style={styles.loader} size="large" />
+        ) : (
+          <FlatList
+            data={orders}
+            keyExtractor={item => item.id}
+            renderItem={renderOrder}
+            contentContainerStyle={styles.list}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            ListEmptyComponent={<Text style={styles.empty}>暂无退货单</Text>}
+          />
+        )}
+      </View>
+
+      <StickyFooterSummary
+        stats={summary?.stats ?? []}
+        loading={summary == null && !loading}
+        onAIAnalyze={() =>
+          navigation.dispatch(CommonActions.navigate('FAAITab', {
+            screen: 'AIChat',
+            params: {
+              entityType: 'RETURN_ORDER',
+              initialMessage: `分析当前退货单列表 (类型: ${returnType === 'PURCHASE_RETURN' ? '采购退货' : '销售退货'})`,
+            },
+          }))
+        }
+      />
 
       <RowActionBottomSheet
         visible={actionSheetVisible}
@@ -189,6 +211,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   filterRow: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#fff' },
   segmented: {},
+  listWrap: { flex: 1 },
   loader: { flex: 1, justifyContent: 'center' },
   list: { padding: 12, paddingBottom: 80 },
   card: { marginBottom: 10, borderRadius: 10 },
