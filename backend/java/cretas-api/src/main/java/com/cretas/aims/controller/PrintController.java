@@ -239,6 +239,11 @@ public class PrintController {
         String url = pythonBaseUrl + "/api/printing/preview-template";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // Forward inbound Authorization so Python auth_middleware accepts
+        // the request (mirrors PR #692 fix to proxyToPython, 2026-05-16).
+        if (authorization != null && !authorization.isEmpty()) {
+            headers.set("Authorization", authorization);
+        }
         HttpEntity<Map<String, Object>> req = new HttpEntity<>(pythonBody, headers);
 
         try {
