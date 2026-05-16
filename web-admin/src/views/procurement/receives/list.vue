@@ -19,6 +19,8 @@ import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Check, Document } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 interface ReceiveRow {
   id: string;
@@ -57,6 +59,25 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function rowActionsFor(row: ReceiveRow) {
+  return computeRowActions(
+    'whInbound',
+    { status: String(row.status || 'PENDING'), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: ReceiveRow) {
+  switch (actionId) {
+    case 'view-detail': handleDetail(row); break;
+    case 'submit': handleConfirm(row); break;
+    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: ReceiveRow) {
+  ElMessage.info(`AIChat: whInbound/${row.receiveNumber} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const tableData = ref<ReceiveRow[]>([]);
@@ -325,7 +346,7 @@ onMounted(() => { loadData(); loadOptions(); });
         <el-table-column label="创建时间" width="170">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button size="small" :icon="Document" @click="handleDetail(row)">详情</el-button>
             <el-button
@@ -333,6 +354,12 @@ onMounted(() => { loadData(); loadOptions(); });
               type="success" size="small" :icon="Check"
               @click="handleConfirm(row)"
             >确认入库</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

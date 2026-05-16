@@ -14,6 +14,8 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -23,6 +25,30 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'purchaseOrder',
+    { status: String(row.status || ''), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': goDetail(String(row.id)); break;
+    case 'submit': handleAction(String(row.id), 'submit'); break;
+    case 'approve': handleAction(String(row.id), 'approve'); break;
+    case 'reject': handleAction(String(row.id), 'reject'); break;
+    case 'cancel': handleAction(String(row.id), 'cancel'); break;
+    case 'print-pdf': handleDownloadPdf(row); break;
+    case 'copy': ElMessage.info(`复制采购单 ${row.orderNumber} (待接 API)`); break;
+    case 'return': ElMessage.info(`发起退货 (待接 returnOrder API): ${row.id}`); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  ElMessage.info(`AIChat: purchaseOrder/${row.orderNumber} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -519,6 +545,12 @@ function handleAiFill(params: TableRow) {
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="warning" link size="small" @click="handleAction(row.id, 'submit')">提交</el-button>
             <el-button v-if="row.status === 'SUBMITTED' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'approve')">审批</el-button>
             <el-button v-if="['DRAFT','SUBMITTED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

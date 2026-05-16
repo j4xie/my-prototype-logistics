@@ -8,12 +8,40 @@ import { ElMessage } from 'element-plus';
 import { Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function deriveStockStatus(row: TableRow): string {
+  const available = Number((row as any).availableQuantity ?? (row as any).producedQuantity ?? 0);
+  const total = Number((row as any).producedQuantity ?? 1);
+  if (available <= 0) return 'OUT_OF_STOCK';
+  if (available < total * 0.2) return 'LOW_STOCK';
+  return 'IN_STOCK';
+}
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'inventory',
+    { status: deriveStockStatus(row), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': ElMessage.info(`查看批次 ${row.batchNumber || row.id}`); break;
+    case 'transfer': ElMessage.info(`调拨批次 ${row.batchNumber || row.id} (待接调拨流程)`); break;
+    case 'view-price-history': ElMessage.info(`价格历史 ${row.batchNumber || row.id}`); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  ElMessage.info(`AIChat: inventory/${row.batchNumber || row.id} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -112,6 +140,16 @@ function statusType(row: TableRow) {
             <el-tag :type="statusType(row)" size="small">
               {{ availableQty(row) <= 0 ? '已售罄' : availableQty(row) < (row.producedQuantity || 1) * 0.2 ? '库存低' : '充足' }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" align="center" fixed="right">
+          <template #default="{ row }">
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="操作"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>

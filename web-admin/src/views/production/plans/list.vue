@@ -19,6 +19,8 @@ import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 import type { TableRow } from '@/types/api';
+import { RowActionMenu } from '@/components/list';
+import { computeRowActions } from '@/composables/useRowActions';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -26,6 +28,26 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('production'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+function rowActionsFor(row: TableRow) {
+  return computeRowActions(
+    'productionPlan',
+    { status: String(row.status || ''), id: String(row.id || '') },
+    { canViewPrice: canViewPrice.value }
+  );
+}
+function handleRowActionClick(actionId: string, row: TableRow) {
+  switch (actionId) {
+    case 'view-detail': handleViewPlan(row); break;
+    case 'cancel': handleCancel(row); break;
+    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    case 'copy': ElMessage.info(`复制计划 ${row.planNumber} (待接 API)`); break;
+    default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+function openAiForRow(row: TableRow) {
+  ElMessage.info(`AIChat: productionPlan/${row.planNumber} — 接 AiEntryDrawer 待 Day 9`);
+}
 
 const loading = ref(false);
 const actionLoading = ref(false);
@@ -724,6 +746,12 @@ function handleAiFill(params: TableRow) {
               :disabled="actionLoading"
               @click="handleCancel(row)"
             >取消</el-button>
+            <RowActionMenu
+              :actions="rowActionsFor(row)"
+              button-label="更多"
+              @action-click="(id: string) => handleRowActionClick(id, row)"
+              @ai-trigger="() => openAiForRow(row)"
+            />
           </template>
         </el-table-column>
       </el-table>
