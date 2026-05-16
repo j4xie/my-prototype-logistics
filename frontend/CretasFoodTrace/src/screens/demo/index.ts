@@ -3,3 +3,4 @@
  */
 
 export { FormilyDemoScreen } from './FormilyDemoScreen';
+export { RowActionBottomSheetDemoScreen } from './RowActionBottomSheetDemoScreen';
