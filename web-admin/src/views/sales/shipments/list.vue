@@ -7,8 +7,10 @@ import { ElMessage, type FormInstance } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu } from '@/components/list';
+import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -38,6 +40,12 @@ function openAiForRow(row: TableRow) {
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({
+  filterConditions: statusFilter.value ? { status: statusFilter.value } : {},
+}));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('shipment', summaryRequest);
 const customerMap = ref<Record<string, string>>({});
 const searchKeyword = ref('');
 const dateRange = ref<[string, string] | null>(null);
@@ -335,6 +343,13 @@ async function submitCreateForm() {
           <el-descriptions-item label="出货时间">{{ viewRecord.createdAt || '-' }}</el-descriptions-item>
         </el-descriptions>
       </el-dialog>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
 
       <el-pagination
         v-model:current-page="pagination.page"

@@ -7,6 +7,9 @@ import { ElMessage } from 'element-plus';
 import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
+import { TableFooter } from '@/components/list';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -19,6 +22,10 @@ const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchKeyword = ref('');
 const statusFilter = ref('');
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({ filterConditions: {} }));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('inventory', summaryRequest);
 
 // 库存统计
 const statistics = ref({
@@ -375,6 +382,13 @@ function getStatusText(status: string) {
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination

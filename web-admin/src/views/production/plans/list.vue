@@ -19,8 +19,10 @@ import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu } from '@/components/list';
+import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -58,6 +60,12 @@ const searchForm = ref({
   keyword: '',
   status: ''
 });
+
+// U-FOOTER-1
+const summaryRequest = computed<ListSummaryRequest>(() => ({
+  filterConditions: searchForm.value.status ? { status: searchForm.value.status } : {},
+}));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('productionPlan', summaryRequest);
 
 // 新建计划对话框
 const dialogVisible = ref(false);
@@ -756,6 +764,13 @@ function handleAiFill(params: TableRow) {
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7 */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination

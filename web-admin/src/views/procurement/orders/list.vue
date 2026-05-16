@@ -14,8 +14,10 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu } from '@/components/list';
+import { RowActionMenu, TableFooter } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { useListSummary } from '@/composables/useListSummary';
+import type { ListSummaryRequest } from '@/types/listSummary';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -58,6 +60,12 @@ const statusFilter = ref('');
 const searchKeyword = ref('');
 const dateRange = ref<[string, string] | null>(null);
 const dialogVisible = ref(false);
+
+// U-FOOTER-1: sticky summary stats
+const summaryRequest = computed<ListSummaryRequest>(() => ({
+  filterConditions: statusFilter.value ? { status: statusFilter.value } : {},
+}));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('purchaseOrder', summaryRequest);
 
 interface ProcurementOrderItem {
   materialTypeId: string;
@@ -555,6 +563,13 @@ function handleAiFill(params: TableRow) {
           </template>
         </el-table-column>
       </el-table>
+
+      <TableFooter
+        :stats="footerSummary?.stats ?? []"
+        :loading="footerLoading"
+        :show-export="false"
+        @ai-analyze="() => { /* TODO Day 7: SmartBI deep link */ }"
+      />
 
       <div class="pagination-wrapper">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.size"
