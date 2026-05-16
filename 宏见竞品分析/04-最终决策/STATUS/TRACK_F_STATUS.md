@@ -83,3 +83,41 @@ PR 标题改成: `[Sprint2-F] 在 ProductSample 上加 自动 BOM + 销售通知
 4. mvn compile / 启动 verify
 
 ---
+
+## Day 2 (2026-05-15, 同日 continued) — SampleApprovedEventListener extended
+
+### ✅ 完成 (commit `65b201046`)
+
+- **重写 `event/listener/SampleApprovedEventListener.java`** — 从 ~60 行 → ~200 行, 加 BOM 自动建 + 销售通知, 拆 3 个 private helper:
+  - `createQuotationTask` — 原逻辑保留, 兼容
+  - `autoCreateBomDraft` — Best-effort, 失败 / 缺数据时返 null (不阻塞通知)
+  - `notifySalesManager` — `NotificationService.sendToRole(sales_manager, INFO, "RD", sampleId)`
+- **BOM 自动建 prerequisites 校验** (按顺序短路):
+  1. `sample.productTypeId` 非空 → 否则 log warn 跳过
+  2. `sample.mainMaterial` 非空 → 否则 log warn 跳过
+  3. `mainMaterial` 在 `raw_material_types` 字典 case-insensitive 找到 → 否则 log warn 跳过
+- **不改 RawMaterialTypeRepository** (ownership 外) — 用 `findByFactoryId(factoryId).stream().filter(...)` 过滤 name. 字典通常 < 500, 性能 OK
+- **写回 `sample.bomProductTypeId = recipe.id`** 让前端 detail screen approve 后跳 BomConfigScreen
+- **错误隔离**: BOM 失败不阻塞通知; 通知失败不阻塞主流程 — QuotationTask 已建可继续业务
+- **mvn compile exit 0** real verified (注: Day 1 之前用 `mvn ... | tail` exit 0 是 pipe artifact, mvn 实际 `command not found`; 已改用 `/c/tools/apache-maven-3.9.6/bin/mvn` full path)
+
+### 🟡 进行中 / 待 Day 3 早上做
+
+- **单测** `SampleApprovedEventListenerTest`:
+  - mock 5 deps (ProductSampleRepo / QuotationTaskRepo / BomRecipeService / RawMaterialTypeRepo / NotificationService)
+  - case 1: prerequisites OK → 验证 BomRecipeService.createRecipe + NotificationService.sendToRole 都被调
+  - case 2: productTypeId 空 → 跳 BOM, 仍 notify
+  - case 3: mainMaterial 字典缺 → 跳 BOM, 仍 notify
+  - case 4: NotificationService 抛异常 → 不影响 QuotationTask / BOM 持久化
+
+### Day 3 计划 (明日早上)
+
+1. 写 Day 2 单测 (~30 min)
+2. **AI SampleToBomTool** (per `.claude/rules/ai-intent-tool-skill-architecture.md`):
+   - `ai/tool/impl/sample/SampleToBomTool.java` extends `AbstractBusinessTool`
+   - toolName: `sample_to_bom`, params: `sampleId` (req) / `referenceSku` (opt) / `adjustments` (opt)
+   - 调 `PythonLLMClient` 生成 BOM draft JSON, 校验 materialId 在 `raw_material_types` 字典
+   - Flyway `V20260601_01__sample_to_bom_intent.sql` 绑定 `SAMPLE_TO_BOM` intent
+   - 单测 mock LLM 验证 prompt 含 sample 信息 + 非法 materialId 过滤
+
+---
