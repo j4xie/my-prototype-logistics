@@ -139,8 +139,19 @@ async function onSave() {
     editor.markClean()
     ElMessage.success(`模板已保存 (v${saved.version})`)
   } catch (e) {
-    const msg = (e instanceof Error ? e.message : String(e))
-    ElMessage.error(`保存失败: ${msg}`)
+    // Issue #721: surface the backend's actual message (e.g. validation
+    // detail "name 已存在 / schemaJson 过大") instead of a generic fallback.
+    // Sticky toast (duration:0 + showClose) so the user has time to read.
+    const err = e as { response?: { data?: { message?: string } }; message?: string }
+    const msg = err?.response?.data?.message
+      || err?.message
+      || '保存失败 — 请检查模板内容'
+    ElMessage({
+      message: msg,
+      type: 'error',
+      duration: 0,
+      showClose: true,
+    })
   } finally {
     saving.value = false
   }

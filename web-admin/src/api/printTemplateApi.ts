@@ -47,6 +47,28 @@ export interface PrintTemplateResponse {
 }
 
 /**
+ * Defensive envelope unwrap. The shared `request.ts` response interceptor
+ * returns the full ApiResponse envelope {success, data, message} (see
+ * canvasApi/permissionApi for sibling consumers that access `.data`).
+ * Some legacy printTemplate code cast through assuming `resp` was already
+ * unwrapped — that path made `resp.schemaJson` undefined (Issue #719),
+ * because the envelope has no top-level schemaJson, only nested under
+ * `resp.data.schemaJson`. Detect by checking for the `success` discriminant
+ * so we tolerate both shapes if a future interceptor change rewires this.
+ */
+export function unwrapApiEnvelope<T>(resp: unknown): T | null {
+  if (resp == null) return null
+  if (
+    typeof resp === 'object' &&
+    'success' in (resp as Record<string, unknown>) &&
+    'data' in (resp as Record<string, unknown>)
+  ) {
+    return ((resp as { data: T | null }).data) ?? null
+  }
+  return resp as T
+}
+
+/**
  * Fetch active template by factoryId + entityType, returning the unwrapped
  * PrintTemplateSchema (or null when no custom template exists).
  */
@@ -57,8 +79,7 @@ export async function getPrintTemplate(
   const resp = await request.get<PrintTemplateResponse | null>(
     `/${factoryId}/form-templates/${entityType}`,
   )
-  // request.ts unwraps {success, data} → resp IS the data payload here.
-  const data = resp as unknown as PrintTemplateResponse | null
+  const data = unwrapApiEnvelope<PrintTemplateResponse>(resp)
   if (!data) return null
   const schema = unwrapFromStorage(data.schemaJson)
   if (!schema) {
@@ -88,7 +109,11 @@ export async function savePrintTemplate(
     `/${factoryId}/form-templates/${entityType}`,
     body,
   )
-  return resp as unknown as FormTemplateRow
+  const saved = unwrapApiEnvelope<FormTemplateRow>(resp)
+  if (!saved) {
+    throw new Error('保存返回为空,请稍后重试')
+  }
+  return saved
 }
 
 /**
@@ -111,7 +136,7 @@ export async function listVersions(
   const resp = await request.get<PrintTemplateVersionMeta[]>(
     `/${factoryId}/form-templates/id/${templateId}/versions`,
   )
-  return (resp as unknown as PrintTemplateVersionMeta[]) ?? []
+  return unwrapApiEnvelope<PrintTemplateVersionMeta[]>(resp) ?? []
 }
 
 /**
