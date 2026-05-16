@@ -96,19 +96,16 @@
         </VueFlow>
       </div>
 
-      <!-- Right: Property panel (Day 7 fills in) -->
+      <!-- Right: Property panel -->
       <div class="properties-panel">
-        <h4>属性</h4>
-        <div v-if="selectedElement" class="placeholder">
-          <p>已选中: {{ selectedElement.type }}</p>
-          <p class="hint">ID: {{ selectedElement.id }}</p>
-          <el-alert title="属性配置 Day 7 上线" type="info" :closable="false" />
-        </div>
-        <el-empty
-          v-else
-          description="点击节点或边查看属性"
-          :image-size="80"
+        <PropertyPanel
+          v-if="selectedElement"
+          :key="selectedElement.id"
+          :element="selectedElement"
+          @update="onPropertyUpdate"
+          @delete="onDeleteSelected"
         />
+        <el-empty v-else description="点击节点或边查看属性" :image-size="80" />
       </div>
     </div>
   </div>
@@ -129,6 +126,7 @@ import ParallelNode from './components/nodes/ParallelNode.vue'
 import JoinNode from './components/nodes/JoinNode.vue'
 import NotifyNode from './components/nodes/NotifyNode.vue'
 import EndNode from './components/nodes/EndNode.vue'
+import PropertyPanel from './components/PropertyPanel.vue'
 import {
   getDecisionTypes,
   createWorkflow,
@@ -154,7 +152,14 @@ const saving = ref(false)
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
 const currentWorkflow = ref<ApprovalWorkflowDTO | null>(null)
-const selectedElement = ref<{ type: 'node' | 'edge'; id: string; data: Record<string, unknown> } | null>(null)
+
+interface SelectedElement {
+  kind: 'node' | 'edge'
+  id: string
+  type?: NodeType
+  data: Record<string, unknown>
+}
+const selectedElement = ref<SelectedElement | null>(null)
 
 // Custom node type registry — markRaw avoids Vue making components reactive.
 const nodeTypes = {
@@ -294,11 +299,72 @@ function onConnect(connection: Connection) {
 }
 
 function onNodeClick({ node }: { node: Node }) {
-  selectedElement.value = { type: 'node', id: node.id, data: { ...node.data } }
+  selectedElement.value = {
+    kind: 'node',
+    id: node.id,
+    type: node.type as NodeType,
+    data: { label: String(node.data?.label ?? ''), config: { ...(node.data?.config as Record<string, unknown> ?? {}) } },
+  }
 }
 
 function onEdgeClick({ edge }: { edge: Edge }) {
-  selectedElement.value = { type: 'edge', id: edge.id, data: { ...(edge.data ?? {}) } }
+  selectedElement.value = {
+    kind: 'edge',
+    id: edge.id,
+    data: {
+      label: edge.label ? String(edge.label) : '',
+      condition: (edge.data?.condition as string) ?? '',
+      priority: Number(edge.data?.priority ?? 0),
+    },
+  }
+}
+
+/** Property panel emits new data — apply to nodes/edges array. */
+function onPropertyUpdate(newData: Record<string, unknown>) {
+  if (!selectedElement.value) return
+  const sel = selectedElement.value
+  if (sel.kind === 'node') {
+    const idx = nodes.value.findIndex(n => n.id === sel.id)
+    if (idx !== -1) {
+      const node = nodes.value[idx]
+      nodes.value[idx] = {
+        ...node,
+        data: {
+          ...node.data,
+          label: newData.label,
+          config: { ...(newData.config as Record<string, unknown>) },
+        },
+      }
+    }
+  } else {
+    const idx = edges.value.findIndex(e => e.id === sel.id)
+    if (idx !== -1) {
+      const edge = edges.value[idx]
+      edges.value[idx] = {
+        ...edge,
+        label: String(newData.label ?? ''),
+        data: { condition: newData.condition, priority: newData.priority },
+      }
+    }
+  }
+  sel.data = { ...newData }
+}
+
+function onDeleteSelected() {
+  if (!selectedElement.value) return
+  const sel = selectedElement.value
+  if (sel.kind === 'node') {
+    if (sel.type === 'start') {
+      ElMessage.warning('start 节点不可删除 (工作流入口)')
+      return
+    }
+    nodes.value = nodes.value.filter(n => n.id !== sel.id)
+    // 删除所有以此 node 为端点的边
+    edges.value = edges.value.filter(e => e.source !== sel.id && e.target !== sel.id)
+  } else {
+    edges.value = edges.value.filter(e => e.id !== sel.id)
+  }
+  selectedElement.value = null
 }
 
 async function handleSave() {
