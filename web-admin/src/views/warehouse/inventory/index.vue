@@ -6,6 +6,8 @@ import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import { WorkflowBar } from '@/components/workflow';
+import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import type { TableRow } from '@/types/api';
 import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
@@ -16,6 +18,15 @@ const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'inventory');
+function handleWorkflowNodeClick(_nodeId: string) {
+  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
+}
+function handleWorkflowAITrigger() {
+  ElMessage.info('AI 入口待 Day 7 接入');
+}
 
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
@@ -270,6 +281,15 @@ function getStatusText(status: string) {
 
 <template>
   <div class="page-wrapper">
+    <!-- U-NAV-1 业务流程图导航 (Sprint 2 Track G) -->
+    <WorkflowBar
+      :nodes="workflowStats?.nodes ?? []"
+      :loading="workflowLoading"
+      title="库存状态"
+      :ai-trigger-enabled="true"
+      @node-click="handleWorkflowNodeClick"
+      @ai-trigger="handleWorkflowAITrigger"
+    />
     <ConceptDisambiguationAlert
       here-name="盘点管理"
       here="清点仓库实际库存与系统数对比，发现差异（盘盈 / 盘亏，不搬动物料）"

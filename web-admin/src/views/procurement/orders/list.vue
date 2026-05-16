@@ -9,6 +9,8 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, ChatDotRound, Download } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
+import { WorkflowBar } from '@/components/workflow';
+import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { formatAmount } from '@/utils/tableFormatters';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
@@ -51,6 +53,12 @@ function handleRowActionClick(actionId: string, row: TableRow) {
 function openAiForRow(row: TableRow) {
   console.info('[RowAction AI]', { entityType: 'purchaseOrder', entityId: row.id, orderNumber: row.orderNumber });
   aiEntryVisible.value = true;
+}
+
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'purchase');
+function handleWorkflowNodeClick(_nodeId: string) {
+  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
 }
 
 const loading = ref(false);
@@ -452,6 +460,15 @@ function handleAiFill(params: TableRow) {
 <template>
   <CanvasAwareWrapper module-code="purchase_order">
   <div class="page-wrapper">
+    <!-- U-NAV-1 业务流程图导航 (Sprint 2 Track G) -->
+    <WorkflowBar
+      :nodes="workflowStats?.nodes ?? []"
+      :loading="workflowLoading"
+      title="采购工作流"
+      :ai-trigger-enabled="true"
+      @node-click="handleWorkflowNodeClick"
+      @ai-trigger="aiEntryVisible = true"
+    />
     <ConceptDisambiguationAlert
       here-name="采购订单"
       here="我们向供应商下的订单（进货方向、应付账款）"
