@@ -84,10 +84,12 @@
         <VueFlow
           v-model:nodes="nodes"
           v-model:edges="edges"
+          :node-types="nodeTypes"
           :default-viewport="{ zoom: 0.9, x: 50, y: 50 }"
           fit-view-on-init
           @node-click="onNodeClick"
           @edge-click="onEdgeClick"
+          @connect="onConnect"
         >
           <Background />
           <Controls />
@@ -113,13 +115,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { VueFlow, type Node, type Edge } from '@vue-flow/core'
+import { markRaw, ref, computed, onMounted } from 'vue'
+import { VueFlow, type Connection, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { Download, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
+import StartNode from './components/nodes/StartNode.vue'
+import ApprovalNode from './components/nodes/ApprovalNode.vue'
+import ConditionNode from './components/nodes/ConditionNode.vue'
+import ParallelNode from './components/nodes/ParallelNode.vue'
+import JoinNode from './components/nodes/JoinNode.vue'
+import NotifyNode from './components/nodes/NotifyNode.vue'
+import EndNode from './components/nodes/EndNode.vue'
 import {
   getDecisionTypes,
   createWorkflow,
@@ -146,6 +155,37 @@ const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
 const currentWorkflow = ref<ApprovalWorkflowDTO | null>(null)
 const selectedElement = ref<{ type: 'node' | 'edge'; id: string; data: Record<string, unknown> } | null>(null)
+
+// Custom node type registry — markRaw avoids Vue making components reactive.
+const nodeTypes = {
+  start: markRaw(StartNode),
+  approval: markRaw(ApprovalNode),
+  condition: markRaw(ConditionNode),
+  parallel: markRaw(ParallelNode),
+  join: markRaw(JoinNode),
+  notify: markRaw(NotifyNode),
+  end: markRaw(EndNode),
+}
+
+/** Default config per node type — used when dragging from palette. */
+function defaultConfigFor(type: NodeType): Record<string, unknown> {
+  switch (type) {
+    case 'approval':
+      return { approverRoles: [], requiredApprovers: 1, timeoutMinutes: 0 }
+    case 'condition':
+      return { description: '' }
+    case 'parallel':
+      return {}
+    case 'join':
+      return { mode: 'ALL' }
+    case 'notify':
+      return { notifyRoles: [] }
+    case 'end':
+      return { outcome: 'APPROVED' }
+    default:
+      return {}
+  }
+}
 
 // Static node palette schemas (Day 6 will refine each)
 interface PaletteSchema {
@@ -222,16 +262,34 @@ function onCanvasDrop(event: DragEvent) {
     x: event.clientX - canvasRect.left,
     y: event.clientY - canvasRect.top,
   }
+  // Enforce singleton for start (only one entry node allowed).
+  if (schema.type === 'start' && nodes.value.some(n => n.type === 'start')) {
+    ElMessage.warning('工作流只能有一个 start 节点')
+    return
+  }
   const id = `${schema.type}_${Date.now()}`
   nodes.value.push({
     id,
-    type: 'default', // Day 6 swaps to custom node types per schema.type
+    type: schema.type,
     position,
     data: {
       label: schema.displayName,
       nodeType: schema.type,
-      config: {},
+      config: defaultConfigFor(schema.type),
     },
+  })
+}
+
+function onConnect(connection: Connection) {
+  const id = `e_${Date.now()}`
+  edges.value.push({
+    id,
+    source: connection.source,
+    target: connection.target,
+    sourceHandle: connection.sourceHandle ?? undefined,
+    targetHandle: connection.targetHandle ?? undefined,
+    label: '',
+    data: { condition: '', priority: 0 },
   })
 }
 
@@ -247,7 +305,7 @@ async function handleSave() {
   if (!factoryId.value || !canSave.value) return
   saving.value = true
   try {
-    const startNode = nodes.value.find(n => (n.data?.nodeType as NodeType) === 'start')
+    const startNode = nodes.value.find(n => n.type === 'start')
     if (!startNode) {
       ElMessage.warning('工作流必须包含一个 start 节点')
       return
@@ -255,7 +313,7 @@ async function handleSave() {
 
     const wireNodes: ApprovalWorkflowNode[] = nodes.value.map(n => ({
       id: n.id,
-      type: (n.data?.nodeType as NodeType) ?? 'approval',
+      type: (n.type as NodeType) ?? 'approval',
       label: String(n.data?.label ?? n.id),
       position: { x: n.position.x, y: n.position.y },
       config: (n.data?.config as Record<string, unknown>) ?? {},
