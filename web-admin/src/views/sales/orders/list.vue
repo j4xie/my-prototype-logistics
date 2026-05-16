@@ -828,6 +828,24 @@ async function submitQuickPayment() {
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <!--
+          Sprint3-G S-LOCK-1: 行内 锁/备/缺 3 chip. 销售员看销售单不用切去库存页.
+          数据源: SalesOrder @Transient getTotalLockedQty/getTotalReservedQty/getTotalShortageQty
+          (聚合 items[]). NOT @PriceSensitive — inventory 数据非价格 (跟 canViewPrice 解耦,
+          所有角色可见).
+          chip 垂直堆叠: 缺料 > 0 红色高亮, 一眼识别要不要催生产.
+        -->
+        <el-table-column label="锁/备/缺" width="120" align="center">
+          <template #default="{ row }">
+            <div class="lock-reserve-shortage">
+              <div class="chip chip-lock">锁:{{ Number(row.lockedQty || 0) }}</div>
+              <div class="chip chip-reserve">备:{{ Number(row.reservedQty || 0) }}</div>
+              <div class="chip" :class="Number(row.shortageQty || 0) > 0 ? 'chip-shortage' : 'chip-zero'">
+                缺:{{ Number(row.shortageQty || 0) }}
+              </div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="(statusMap[row.status]?.type) || 'info'" size="small">
@@ -1089,4 +1107,12 @@ async function submitQuickPayment() {
 .item-header { font-size: 13px; font-weight: 600; color: #606266; margin-bottom: 4px;
   span { text-align: center; display: inline-block; }
 }
+/* Sprint3-G S-LOCK-1: 行内 锁/备/缺 3 chip 垂直堆 */
+.lock-reserve-shortage { display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
+.chip { font-size: 11px; padding: 1px 6px; border-radius: 3px; text-align: center; line-height: 1.4; }
+.chip-lock { background: #f0f4ff; color: #2c5aa0; border: 1px solid #cfd8e8; }
+.chip-reserve { background: #f0f9eb; color: #67c23a; border: 1px solid #c2e7b0; }
+.chip-zero { background: #f4f4f5; color: #909399; border: 1px solid #e9e9eb; }
+/* 缺料 > 0 红色高亮 — 销售员触发催生产 / 紧急采购的视觉信号 */
+.chip-shortage { background: #fef0f0; color: #f56c6c; border: 1px solid #fbc4c4; font-weight: 600; }
 </style>

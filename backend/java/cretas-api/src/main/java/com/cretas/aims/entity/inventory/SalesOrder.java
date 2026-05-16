@@ -285,4 +285,37 @@ public class SalesOrder extends BaseEntity {
         if (paid.compareTo(total) >= 0) return "PAID";
         return "PARTIAL";
     }
+
+    // ==================== Sprint3-G S-LOCK-1 行内库存状态聚合 ====================
+    // 销售员看销售单列表时一眼看锁/备/缺. 行 chip 用 row.lockedQty / reservedQty /
+    // shortageQty (聚合 items[]). NOT @PriceSensitive — inventory 数据非价格 (见
+    // brief §risks point 5). items lazy-loaded via @OneToMany — 当 items 未加载时
+    // 返回 0 而不是 NPE.
+
+    @Transient
+    @JsonProperty("lockedQty")
+    public BigDecimal getTotalLockedQty() {
+        if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        return items.stream()
+                .map(it -> it.getLockedQty() != null ? it.getLockedQty() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transient
+    @JsonProperty("reservedQty")
+    public BigDecimal getTotalReservedQty() {
+        if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        return items.stream()
+                .map(it -> it.getReservedQty() != null ? it.getReservedQty() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transient
+    @JsonProperty("shortageQty")
+    public BigDecimal getTotalShortageQty() {
+        if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        return items.stream()
+                .map(SalesOrderItem::getShortageQty)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }
