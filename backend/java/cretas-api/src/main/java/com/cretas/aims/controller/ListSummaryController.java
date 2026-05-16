@@ -17,12 +17,15 @@ import org.springframework.web.bind.annotation.*;
  *
  * Path: POST /api/mobile/{factoryId}/list-summary/{entityType}
  *
- * Day 2 supports 5 entityType values:
- *   - salesOrder       — 销售订单 (sales_orders)
- *   - purchaseOrder    — 采购订单 (purchase_orders)
- *   - inventory        — 物料库存 (material_batches)
- *   - wastage          — 餐饮损耗 (wastage_records)
- *   - attendance       — 考勤打卡 (time_clock_records)
+ * Supported entityType values (Day 2 + Day 4-prep extension):
+ *   - salesOrder        — 销售订单 (sales_orders)
+ *   - purchaseOrder     — 采购订单 (purchase_orders)
+ *   - inventory         — 物料库存 (material_batches)
+ *   - wastage           — 餐饮损耗 (wastage_records)
+ *   - attendance        — 考勤打卡 (time_clock_records)
+ *   - returnOrder       — 退货单 (return_orders)
+ *   - internalTransfer  — 内部调拨 (internal_transfers; source 或 target = factoryId)
+ *   - qualityInspection — 质检 (quality_inspections; result PASS/FAIL/PENDING)
  *
  * Frontend: RN StickyFooterSummary + Vue TableFooter.
  */
@@ -42,7 +45,8 @@ public class ListSummaryController {
                         "procurement:read", "procurement:read_write",
                         "warehouse:read", "warehouse:read_write",
                         "restaurant:read", "restaurant:read_write",
-                        "hr:read", "hr:read_write"})
+                        "hr:read", "hr:read_write",
+                        "quality:read", "quality:read_write"})
     public ApiResponse<ListSummaryResponse> getSummary(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String entityType,

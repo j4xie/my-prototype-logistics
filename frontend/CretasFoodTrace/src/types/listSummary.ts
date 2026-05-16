@@ -56,4 +56,7 @@ export type SupportedSummaryEntityType =
   | 'purchaseOrder'
   | 'inventory'
   | 'wastage'
-  | 'attendance';
+  | 'attendance'
+  | 'returnOrder'
+  | 'internalTransfer'
+  | 'qualityInspection';

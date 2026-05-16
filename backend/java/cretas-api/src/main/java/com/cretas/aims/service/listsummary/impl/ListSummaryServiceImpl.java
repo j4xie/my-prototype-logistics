@@ -37,7 +37,8 @@ public class ListSummaryServiceImpl implements ListSummaryService {
     private EntityManager em;
 
     private static final Set<String> SUPPORTED = Set.of(
-            "salesOrder", "purchaseOrder", "inventory", "wastage", "attendance");
+            "salesOrder", "purchaseOrder", "inventory", "wastage", "attendance",
+            "returnOrder", "internalTransfer", "qualityInspection");
 
     @Override
     @Transactional(readOnly = true)
@@ -51,11 +52,14 @@ public class ListSummaryServiceImpl implements ListSummaryService {
         LocalDate dateFrom = request.getDateFrom();
         LocalDate dateTo = request.getDateTo();
         return switch (entityType) {
-            case "salesOrder"    -> computeSalesOrderSummary(factoryId, filter, dateFrom, dateTo);
-            case "purchaseOrder" -> computePurchaseOrderSummary(factoryId, filter, dateFrom, dateTo);
-            case "inventory"     -> computeInventorySummary(factoryId, filter);
-            case "wastage"       -> computeWastageSummary(factoryId, filter, dateFrom, dateTo);
-            case "attendance"    -> computeAttendanceSummary(factoryId, filter, dateFrom, dateTo);
+            case "salesOrder"        -> computeSalesOrderSummary(factoryId, filter, dateFrom, dateTo);
+            case "purchaseOrder"     -> computePurchaseOrderSummary(factoryId, filter, dateFrom, dateTo);
+            case "inventory"         -> computeInventorySummary(factoryId, filter);
+            case "wastage"           -> computeWastageSummary(factoryId, filter, dateFrom, dateTo);
+            case "attendance"        -> computeAttendanceSummary(factoryId, filter, dateFrom, dateTo);
+            case "returnOrder"       -> computeReturnOrderSummary(factoryId, filter, dateFrom, dateTo);
+            case "internalTransfer"  -> computeInternalTransferSummary(factoryId, filter, dateFrom, dateTo);
+            case "qualityInspection" -> computeQualityInspectionSummary(factoryId, filter, dateFrom, dateTo);
             default -> throw new IllegalStateException("unreachable");
         };
     }
@@ -170,6 +174,90 @@ public class ListSummaryServiceImpl implements ListSummaryService {
         stats.add(stat("共", count, "number", "条", false));
         stats.add(stat("打卡人数", distinctUsers, "number", "人", false));
         return ListSummaryResponse.builder().entityType("attendance").stats(stats).build();
+    }
+
+    // ==================== 退货单 ====================
+
+    private ListSummaryResponse computeReturnOrderSummary(String factoryId, Map<String, Object> filter,
+                                                           LocalDate from, LocalDate to) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*), COALESCE(SUM(total_amount), 0) FROM return_orders " +
+                "WHERE factory_id = :fid AND deleted_at IS NULL");
+        appendStatusFilter(sql, filter);
+        appendDateRange(sql, "return_date", from, to);
+        Query q = em.createNativeQuery(sql.toString());
+        bindParams(q, factoryId, filter, from, to);
+        Object[] row = (Object[]) q.getSingleResult();
+        long count = ((Number) row[0]).longValue();
+        BigDecimal total = (BigDecimal) row[1];
+        List<SummaryStat> stats = new ArrayList<>();
+        stats.add(stat("共", count, "number", "条", false));
+        stats.add(stat("退货金额", total, "currency", "¥", true));
+        return ListSummaryResponse.builder().entityType("returnOrder").stats(stats).build();
+    }
+
+    // ==================== 内部调拨 (multi-tenant: source 或 target = factory) ====================
+
+    private ListSummaryResponse computeInternalTransferSummary(String factoryId, Map<String, Object> filter,
+                                                                LocalDate from, LocalDate to) {
+        // 调拨单 source_factory_id 或 target_factory_id 等于当前 factory 都算
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*), COALESCE(SUM(total_amount), 0), " +
+                "       COUNT(*) FILTER (WHERE source_factory_id = :fid) AS outbound_cnt, " +
+                "       COUNT(*) FILTER (WHERE target_factory_id = :fid) AS inbound_cnt " +
+                "FROM internal_transfers WHERE (source_factory_id = :fid OR target_factory_id = :fid) " +
+                "AND deleted_at IS NULL");
+        appendStatusFilter(sql, filter);
+        appendDateRange(sql, "transfer_date", from, to);
+        Query q = em.createNativeQuery(sql.toString());
+        bindParams(q, factoryId, filter, from, to);
+        Object[] row = (Object[]) q.getSingleResult();
+        long count = ((Number) row[0]).longValue();
+        BigDecimal total = (BigDecimal) row[1];
+        long outbound = ((Number) row[2]).longValue();
+        long inbound = ((Number) row[3]).longValue();
+        List<SummaryStat> stats = new ArrayList<>();
+        stats.add(stat("共", count, "number", "条", false));
+        stats.add(stat("调出", outbound, "number", "条", false));
+        stats.add(stat("调入", inbound, "number", "条", false));
+        stats.add(stat("总金额", total, "currency", "¥", true));
+        return ListSummaryResponse.builder().entityType("internalTransfer").stats(stats).build();
+    }
+
+    // ==================== 质检 ====================
+
+    private ListSummaryResponse computeQualityInspectionSummary(String factoryId, Map<String, Object> filter,
+                                                                  LocalDate from, LocalDate to) {
+        // result 字段值: PASS / FAIL / PENDING
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*), " +
+                "       COUNT(*) FILTER (WHERE result = 'PASS') AS pass_cnt, " +
+                "       COUNT(*) FILTER (WHERE result = 'FAIL') AS fail_cnt " +
+                "FROM quality_inspections WHERE factory_id = :fid");
+        // quality_inspections 用 result 不是 status — 用专用 filter
+        if (filter.containsKey("result") && filter.get("result") != null) {
+            sql.append(" AND result = :resultFilter");
+        }
+        appendDateRange(sql, "inspection_date", from, to);
+        Query q = em.createNativeQuery(sql.toString());
+        q.setParameter("fid", factoryId);
+        if (filter.containsKey("result") && filter.get("result") != null) {
+            q.setParameter("resultFilter", String.valueOf(filter.get("result")));
+        }
+        if (from != null) q.setParameter("dateFrom", from);
+        if (to != null) q.setParameter("dateTo", to);
+        Object[] row = (Object[]) q.getSingleResult();
+        long count = ((Number) row[0]).longValue();
+        long pass = ((Number) row[1]).longValue();
+        long fail = ((Number) row[2]).longValue();
+        double passRate = count > 0 ? (pass * 100.0 / count) : 0.0;
+        List<SummaryStat> stats = new ArrayList<>();
+        stats.add(stat("共", count, "number", "项", false));
+        stats.add(stat("合格", pass, "number", "项", false));
+        stats.add(stat("不合格", fail, "number", "项", false));
+        stats.add(stat("合格率", BigDecimal.valueOf(passRate).setScale(1, RoundingMode.HALF_UP),
+                "percent", "%", false));
+        return ListSummaryResponse.builder().entityType("qualityInspection").stats(stats).build();
     }
 
     // ==================== Helpers ====================
