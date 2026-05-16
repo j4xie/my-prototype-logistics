@@ -45,6 +45,7 @@
           />
           <el-button :icon="Plus" @click="resetEditor">新建</el-button>
           <el-button :icon="View" @click="handleValidate" :disabled="nodes.length === 0">校验</el-button>
+          <el-button :icon="VideoPlay" :disabled="nodes.length === 0" @click="openSimulator">模拟</el-button>
           <el-button
             type="primary"
             :icon="Download"
@@ -131,6 +132,15 @@
         <el-empty v-else description="点击节点或边查看属性" :image-size="80" />
       </div>
     </div>
+
+    <!-- Simulator modal -->
+    <WorkflowSimulator
+      v-if="simulatorOpen && simulatorInput"
+      v-model="simulatorOpen"
+      :nodes="simulatorInput.nodes"
+      :edges="simulatorInput.edges"
+      :start-node-id="simulatorInput.startNodeId"
+    />
   </div>
 </template>
 
@@ -139,7 +149,7 @@ import { markRaw, ref, computed, onMounted } from 'vue'
 import { VueFlow, type Connection, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Download, Plus, Upload, View } from '@element-plus/icons-vue'
+import { Download, Plus, Upload, View, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
 import StartNode from './components/nodes/StartNode.vue'
@@ -150,6 +160,8 @@ import JoinNode from './components/nodes/JoinNode.vue'
 import NotifyNode from './components/nodes/NotifyNode.vue'
 import EndNode from './components/nodes/EndNode.vue'
 import PropertyPanel from './components/PropertyPanel.vue'
+import WorkflowSimulator from './components/WorkflowSimulator.vue'
+import type { SimulatorInput } from './composables/useSimulator'
 import {
   getDecisionTypes,
   getWorkflowsByDecisionType,
@@ -186,6 +198,10 @@ const edges = ref<Edge[]>([])
 const currentWorkflow = ref<ApprovalWorkflowDTO | null>(null)
 const workflowList = ref<ApprovalWorkflowDTO[]>([])
 const selectedWorkflowId = ref<string | undefined>(undefined)
+
+// Simulator modal state
+const simulatorOpen = ref(false)
+const simulatorInput = ref<SimulatorInput | null>(null)
 
 interface SelectedElement {
   kind: 'node' | 'edge'
@@ -553,6 +569,17 @@ async function handleDelete() {
   } else {
     ElMessage.error(res.message ?? '删除失败')
   }
+}
+
+function openSimulator() {
+  const payload = serializeGraph()
+  if (!payload) return
+  simulatorInput.value = {
+    startNodeId: payload.startNodeId,
+    nodes: payload.nodes,
+    edges: payload.edges,
+  }
+  simulatorOpen.value = true
 }
 
 async function handleValidate() {
