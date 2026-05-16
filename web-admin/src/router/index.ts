@@ -269,6 +269,24 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProcurementReceives',
             component: () => import('@/views/procurement/receives/list.vue'),
             meta: { requiresAuth: true, title: '采购入库', module: 'procurement' }
+          },
+          // Sprint2-J P-FIN-1 follow-up (Chat 6 Vue): 财务审核 PC 入口
+          // 后端 approveOrder 触发条件 (priceAlert OR totalAmount > 阈值) 满足时
+          // 自动进 PENDING_FINANCE_REVIEW, 财务在此审核. RBAC 由 detail.vue v-if + 后端
+          // @RequirePermission("finance:read_write") 双层保护. module: 'finance' 让
+          // finance_manager 可见 (web-admin 当前 matrix 把 finance_manager 的 finance
+          // 设为 'none', 上线后需配套调整 matrix 或 backend pull permissions).
+          {
+            path: 'finance-review',
+            name: 'PurchaseOrderFinanceReviewList',
+            component: () => import('@/views/procurement/finance-review/list.vue'),
+            meta: { requiresAuth: true, title: '财务待审采购单', module: 'finance' }
+          },
+          {
+            path: 'finance-review/:id',
+            name: 'PurchaseOrderFinanceReviewDetail',
+            component: () => import('@/views/procurement/finance-review/detail.vue'),
+            meta: { requiresAuth: true, title: '财务审核详情', module: 'finance', hidden: true }
           }
         ]
       },
