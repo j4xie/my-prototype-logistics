@@ -253,3 +253,9 @@ data/imports/_quarantine/**
 data/imports/_index.json
 !data/imports/restaurant-chains/.gitkeep
 !data/imports/_quarantine/.gitkeep
+
+# 宏见竞品分析 — exclude bulky playwright-mcp evidence (309MB) + random binaries
+宏见竞品分析/04-最终决策/evidence/playwright-mcp/
+宏见竞品分析/**/*.exe
+宏见竞品分析/**/*.webm
+宏见竞品分析/**/*.mp4
