@@ -115,6 +115,15 @@ public class PurchaseServiceImpl implements PurchaseService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private PurchaseOrderApprovalRuleRepository approvalRuleRepository;
 
+    /**
+     * Sprint2-J follow-up: 通用通知服务 (P1-5).
+     * approveOrder 触发 PENDING_FINANCE_REVIEW 时通知 finance_manager 角色.
+     * 当前 impl DbNotificationServiceImpl 持久化到 notifications 表,
+     * Track B1 (DingTalk) merge 后 @Primary 切换即转钉钉, 业务无需改动.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.service.notification.NotificationService notificationService;
+
     public PurchaseServiceImpl(PurchaseOrderRepository purchaseOrderRepository,
                                PurchaseOrderItemRepository purchaseOrderItemRepository,
                                PurchaseReceiveRecordRepository receiveRecordRepository,
@@ -340,7 +349,27 @@ public class PurchaseServiceImpl implements PurchaseService {
             log.info("审批采购订单: orderId={}, approvedBy={}", orderId, approvedBy);
         }
 
-        return purchaseOrderRepository.save(order);
+        PurchaseOrder saved = purchaseOrderRepository.save(order);
+
+        // Sprint2-J follow-up: 流入 PENDING_FINANCE_REVIEW 通知 finance_manager 角色.
+        // 业务: 财务及时看到待审 → 缩短审批等待 → 不阻塞采购履约.
+        // 当前 DbNotificationServiceImpl 写 notifications 表; Track B1 merge 后转钉钉.
+        if (eval.requiresFinanceReview() && notificationService != null) {
+            try {
+                notificationService.notifyRole(
+                        factoryId,
+                        "FINANCE_MANAGER",
+                        "采购单待财审",
+                        String.format("采购单 %s 已运营审批, 待财务复核 (%s, 总额 ¥%s)",
+                                saved.getOrderNumber(), eval.reason(), saved.getTotalAmount()));
+            } catch (Exception e) {
+                // 通知失败不应阻塞审批主流程 — 状态机已 commit, 业务正确性不受影响
+                log.warn("财务复核通知发送失败 (主流程不受影响): orderId={}, error={}",
+                        orderId, e.getMessage());
+            }
+        }
+
+        return saved;
     }
 
     /**
