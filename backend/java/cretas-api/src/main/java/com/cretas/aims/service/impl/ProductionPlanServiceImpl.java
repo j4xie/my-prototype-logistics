@@ -23,6 +23,7 @@ import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.entity.inventory.SalesOrderItem;
 import com.cretas.aims.service.BomService;
+import com.cretas.aims.service.LinkArrayService;
 import com.cretas.aims.service.ProductionPlanService;
 import com.cretas.aims.service.SchedulingService;
 import com.cretas.aims.utils.ExcelUtil;
@@ -73,6 +74,10 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
      * Optional 注入: 单测时可以省略 (无 BOM 配置即跳过校验, 不破坏现有行为).
      */
     private final BomService bomService;
+
+    /** Sprint 3 Track-F: unified cross-business link service (double-write w/ sourceOrderId). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private LinkArrayService linkArrayService;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
@@ -323,6 +328,21 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         // 创建生产计划
         ProductionPlan plan = productionPlanMapper.toEntity(request, factoryId, userId.longValue());
         plan = productionPlanRepository.save(plan);
+
+        // Sprint 3 Track-F (C-LINKARRAY-1): unified BusinessLink double-write.
+        // ProductionPlan.sourceOrderId stays for backward compat; new code reads via
+        // LinkArrayService.getOutboundLinks(PRODUCTION_PLAN, id).
+        if (linkArrayService != null && plan.getSourceOrderId() != null && !plan.getSourceOrderId().isBlank()) {
+            try {
+                linkArrayService.link(factoryId,
+                        "PRODUCTION_PLAN", plan.getId(),
+                        "sale",
+                        "SALES_ORDER", plan.getSourceOrderId(),
+                        "生产源单", userId != null ? userId.toString() : null);
+            } catch (Exception e) {
+                log.warn("BusinessLink double-write failed for production plan {}: {}", plan.getId(), e.getMessage());
+            }
+        }
 
         // Round 9 Fix (R8-α Gap #3 per-module template): persist Canvas V3 dynamic fields.
         // Customer-configured fields like 客户订单号, QC 等级, 特殊工艺参数, 成品包装要求

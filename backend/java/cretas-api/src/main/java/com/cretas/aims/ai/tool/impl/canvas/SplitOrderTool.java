@@ -6,6 +6,7 @@ import com.cretas.aims.entity.inventory.SalesOrderItem;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.inventory.SalesOrderItemRepository;
+import com.cretas.aims.service.LinkArrayService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,10 @@ public class SplitOrderTool extends AbstractBusinessTool {
 
     @Autowired
     private SalesOrderItemRepository salesOrderItemRepository;
+
+    /** Sprint 3 Track-F: unified BusinessLink — each child SO links back to source. */
+    @Autowired(required = false)
+    private LinkArrayService linkArrayService;
 
     @Override
     public String getToolName() {
@@ -158,6 +163,23 @@ public class SplitOrderTool extends AbstractBusinessTool {
 
             child.setTotalAmount(childTotal);
             salesOrderRepository.save(child);
+
+            // Sprint 3 Track-F (C-LINKARRAY-1): link child SO back to source SO.
+            // linkType "free" — the parent-child split isn't a sale relationship, it's
+            // a structural split (a tagged subset of the original demand).
+            if (linkArrayService != null) {
+                try {
+                    Long uid = getUserId(context);
+                    linkArrayService.link(factoryId,
+                            "SALES_ORDER", child.getId(),
+                            "free",
+                            "SALES_ORDER", sourceOrderId,
+                            "拆单源 / tag=" + tag,
+                            uid != null ? String.valueOf(uid) : null);
+                } catch (Exception e) {
+                    log.warn("BusinessLink double-write failed for split child {}: {}", child.getId(), e.getMessage());
+                }
+            }
 
             Map<String, Object> childInfo = new HashMap<>();
             childInfo.put("orderId", child.getId());
