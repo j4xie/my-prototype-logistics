@@ -21,6 +21,7 @@ import { Plus, Refresh, Check, Document } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { safePrint } from '@/api/printApi';
 
 interface ReceiveRow {
   id: string;
@@ -71,7 +72,8 @@ function handleRowActionClick(actionId: string, row: ReceiveRow) {
   switch (actionId) {
     case 'view-detail': handleDetail(row); break;
     case 'submit': handleConfirm(row); break;
-    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    // 入库单复用 material-requisition 模板 (warehouse:read 准入)
+    case 'print-pdf': void safePrint('material-requisition', factoryId.value, String(row.id), { fileName: `入库单_${row.receiveNumber || row.id}` }); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }

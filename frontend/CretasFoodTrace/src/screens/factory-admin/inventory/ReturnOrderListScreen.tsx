@@ -10,6 +10,7 @@ import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/l
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
 import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
+import { safePrint } from '../../../services/api/printApiClient';
 
 type Nav = NativeStackNavigationProp<FAManagementStackParamList>;
 
@@ -84,7 +85,12 @@ export default function ReturnOrderListScreen() {
     submit: (e: RowContext) => handleAction(e.id, 'submit'),
     approve: (e: RowContext) => handleAction(e.id, 'approve'),
     reject: (e: RowContext) => handleAction(e.id, 'reject'),
-    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    // 退货单复用上游单据模板 (sales-return → sales-order, purchase-return → purchase-order);
+    // 后端 RBAC 仍按 sales:read / procurement:read 校验
+    'print-pdf': (e: RowContext) => {
+      const docType = returnType === 'SALES_RETURN' ? 'sales-order' : 'purchase-order';
+      void safePrint(docType, e.id);
+    },
   }), [navigation]);
 
   const sheetCtx: RowContext = selectedOrder

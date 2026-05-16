@@ -15,6 +15,7 @@ import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { safePrint } from '@/api/printApi';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
@@ -76,7 +77,7 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     case 'edit': handleEdit(row); break;
     case 'submit': case 'approve': handleAction(String(row.id), 'confirm'); break;
     case 'cancel': handleAction(String(row.id), 'cancel'); break;
-    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    case 'print-pdf': void safePrint('sales-order', factoryId.value, String(row.id), { fileName: `销售订单_${row.orderNumber || row.id}` }); break;
     case 'copy': ElMessage.info(`复制单据 ${row.orderNumber} (待接 API)`); break;
     case 'convert-to-production': ElMessage.info('转生产任务 (待 Track E N31 集成)'); break;
     default: ElMessage.info(`Action: ${actionId}`);

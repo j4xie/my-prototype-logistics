@@ -27,6 +27,7 @@ import { computeRowActions } from '@/composables/useRowActions';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
+import { safePrint } from '@/api/printApi';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -46,7 +47,7 @@ function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': handleViewPlan(row); break;
     case 'cancel': handleCancel(row); break;
-    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    case 'print-pdf': void safePrint('production-task', factoryId.value, String(row.id), { fileName: `生产计划_${row.planNumber || row.id}` }); break;
     case 'copy': ElMessage.info(`复制计划 ${row.planNumber} (待接 API)`); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }

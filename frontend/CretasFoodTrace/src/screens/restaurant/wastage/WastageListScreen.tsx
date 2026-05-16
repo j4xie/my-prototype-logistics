@@ -18,6 +18,7 @@ import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/l
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
 import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
+import { safePrint } from '../../../services/api/printApiClient';
 
 type Nav = NativeStackNavigationProp<RWastageStackParamList>;
 
@@ -50,7 +51,8 @@ export function WastageListScreen() {
 
   const handlers = useMemo(() => ({
     'view-detail': (e: RowContext) => Alert.alert('查看详情', `损耗 ${e.id}`),
-    'print-pdf': () => Alert.alert('打印 PDF', '后端 PrintController 已 ship; RN 客户端待 Sprint 2 收尾'),
+    // 损耗单复用 material-requisition 模板 (warehouse:read / procurement:read 准入)
+    'print-pdf': (e: RowContext) => { void safePrint('material-requisition', e.id); },
   }), []);
 
   const sheetCtx: RowContext = selectedRecord

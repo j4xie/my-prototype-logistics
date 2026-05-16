@@ -11,6 +11,7 @@ import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguatio
 import type { TableRow } from '@/types/api';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import { safePrint } from '@/api/printApi';
 
 const router = useRouter();
 
@@ -31,7 +32,7 @@ function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': router.push(`/production/batches/${row.id}`); break;
     case 'edit': router.push(`/production/batches/${row.id}`); break;
-    case 'print-pdf': ElMessage.info('打印 PDF 接口待 Sprint 2 收尾'); break;
+    case 'print-pdf': void safePrint('production-task', factoryId.value, String(row.id), { fileName: `生产批次_${row.batchNumber || row.id}` }); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
