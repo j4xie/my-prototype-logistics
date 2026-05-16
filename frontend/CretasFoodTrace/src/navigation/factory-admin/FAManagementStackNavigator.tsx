@@ -88,6 +88,7 @@ import PurchaseOrderFinanceReviewListScreen from "../../screens/factory-admin/in
 import PurchaseOrderFinanceReviewScreen from "../../screens/factory-admin/inventory/PurchaseOrderFinanceReviewScreen";
 import SalesOrderListScreen from "../../screens/factory-admin/inventory/SalesOrderListScreen";
 import SalesOrderDetailScreen from "../../screens/factory-admin/inventory/SalesOrderDetailScreen";
+import SalesOrderShortageReviewScreen from "../../screens/factory-admin/inventory/SalesOrderShortageReviewScreen";
 import FinishedGoodsListScreen from "../../screens/factory-admin/inventory/FinishedGoodsListScreen";
 import TransferListScreen from "../../screens/factory-admin/inventory/TransferListScreen";
 import TransferDetailScreen from "../../screens/factory-admin/inventory/TransferDetailScreen";
@@ -509,6 +510,11 @@ export function FAManagementStackNavigator() {
         name="SalesOrderDetail"
         component={SalesOrderDetailScreen}
         options={{ title: "销售单详情" }}
+      />
+      <Stack.Screen
+        name="SalesOrderShortageReview"
+        component={SalesOrderShortageReviewScreen}
+        options={{ title: "销售单缺料分析" }}
       />
       <Stack.Screen
         name="FinishedGoodsList"

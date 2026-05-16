@@ -15,6 +15,7 @@ import HomeScreen from "../screens/main/HomeScreen";
 // 销售相关页面 - 复用 factory-admin 已有页面
 import SalesOrderListScreen from "../screens/factory-admin/inventory/SalesOrderListScreen";
 import SalesOrderDetailScreen from "../screens/factory-admin/inventory/SalesOrderDetailScreen";
+import SalesOrderShortageReviewScreen from "../screens/factory-admin/inventory/SalesOrderShortageReviewScreen";
 import ReturnOrderListScreen from "../screens/factory-admin/inventory/ReturnOrderListScreen";
 import ReturnOrderDetailScreen from "../screens/factory-admin/inventory/ReturnOrderDetailScreen";
 import PriceListScreen from "../screens/factory-admin/inventory/PriceListScreen";
@@ -40,6 +41,7 @@ function SalesStackNavigator() {
     <SalesStack.Navigator screenOptions={{ headerShown: false }}>
       <SalesStack.Screen name="SalesOrderList" component={SalesOrderListScreen} />
       <SalesStack.Screen name="SalesOrderDetail" component={SalesOrderDetailScreen} />
+      <SalesStack.Screen name="SalesOrderShortageReview" component={SalesOrderShortageReviewScreen} />
       <SalesStack.Screen name="ReturnOrderList" component={ReturnOrderListScreen} />
       <SalesStack.Screen name="ReturnOrderDetail" component={ReturnOrderDetailScreen} />
       <SalesStack.Screen name="PriceList" component={PriceListScreen} />

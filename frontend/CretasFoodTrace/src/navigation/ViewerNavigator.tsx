@@ -19,6 +19,7 @@ import HomeScreen from "../screens/main/HomeScreen";
 // 销售只读 - 列表 + 详情
 import SalesOrderListScreen from "../screens/factory-admin/inventory/SalesOrderListScreen";
 import SalesOrderDetailScreen from "../screens/factory-admin/inventory/SalesOrderDetailScreen";
+import SalesOrderShortageReviewScreen from "../screens/factory-admin/inventory/SalesOrderShortageReviewScreen";
 import PriceListScreen from "../screens/factory-admin/inventory/PriceListScreen";
 import ArApOverviewScreen from "../screens/factory-admin/inventory/ArApOverviewScreen";
 
@@ -46,6 +47,7 @@ function SalesViewStackNavigator() {
     <SalesViewStack.Navigator screenOptions={{ headerShown: false }}>
       <SalesViewStack.Screen name="SalesOrderList" component={SalesOrderListScreen} />
       <SalesViewStack.Screen name="SalesOrderDetail" component={SalesOrderDetailScreen} />
+      <SalesViewStack.Screen name="SalesOrderShortageReview" component={SalesOrderShortageReviewScreen} />
       <SalesViewStack.Screen name="PriceList" component={PriceListScreen} />
       <SalesViewStack.Screen name="ArApOverview" component={ArApOverviewScreen} />
     </SalesViewStack.Navigator>

@@ -110,6 +110,80 @@ export interface SalesStatistics {
   [key: string]: unknown;
 }
 
+// ========== Sprint 2 Track E (S-MRP-1 / N31) — 缺料分析报告 ==========
+
+export interface MaterialNeed {
+  materialTypeId: string;
+  materialTypeName?: string;
+  requiredQuantity: number;
+  wastageRate?: number;
+  sourceUnit?: string;
+}
+
+export interface FgLineItem {
+  productTypeId: string;
+  productTypeName?: string;
+  requiredQuantity: number;
+  availableQuantity: number;
+  shortfallQuantity: number;
+}
+
+export interface MaterialShortageItem {
+  materialTypeId: string;
+  materialTypeName?: string;
+  requiredQuantity: number;
+  availableQuantity: number;
+  shortfallQuantity: number;
+}
+
+export interface ShortagePriceComparison {
+  bomStandardPrice?: number;
+  movingAvgPrice?: number;
+  currentPrice?: number;
+  priceAlert?: string;
+}
+
+export interface ShortageProcurementSuggestion {
+  materialId: string;
+  materialName?: string;
+  suggestedQty: number;
+  unit?: string;
+  suggestedSupplierId?: string;
+  suggestedSupplierName?: string;
+  estimatedPrice?: number;
+  estimatedTotal?: number;
+  leadDays?: number;
+  priceComparison?: ShortagePriceComparison;
+}
+
+export interface ShortageProductionSuggestion {
+  productId: string;
+  productName?: string;
+  plannedQty: number;
+  workProcessIds?: string[];
+  workProcessNames?: string[];
+  startDate?: string;
+  endDate?: string;
+}
+
+export type ShortageAnalysisStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'NOT_AVAILABLE';
+
+export interface ShortageReport {
+  id?: string;
+  factoryId: string;
+  salesOrderId: string;
+  analysisStatus: ShortageAnalysisStatus;
+  totalRequired?: MaterialNeed[];
+  /** 后端 column 名 = available, 实际承载 FG 行项目匹配 (LineItemMatch). */
+  available?: FgLineItem[];
+  shortage?: MaterialShortageItem[];
+  procurementSuggestions?: ShortageProcurementSuggestion[];
+  productionSuggestions?: ShortageProductionSuggestion[];
+  analysisSummary?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
@@ -210,6 +284,17 @@ class SalesApiClient {
   /** 销售统计数据 */
   async getStatistics(factoryId?: string): Promise<{ success: boolean; data: SalesStatistics }> {
     return apiClient.get(this.getPath(factoryId) + '/statistics');
+  }
+
+  // ==================== 缺料分析 (Sprint 2 Track E / N31) ====================
+
+  /**
+   * 查询销售订单的缺料分析报告 (S-MRP-1)。
+   * 报告由后端 SalesOrderShortageReportListener 在财务审核通过后异步生成。
+   * 未生成时返回 analysisStatus='NOT_AVAILABLE' (HTTP 200) — 前端展示占位。
+   */
+  async getShortageReport(orderId: string, factoryId?: string): Promise<{ success: boolean; data: ShortageReport }> {
+    return apiClient.get(this.getPath(factoryId) + `/orders/${orderId}/shortage-report`);
   }
 }
 
