@@ -15,6 +15,11 @@ from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import Response
 
 from printing.services.pdf_renderer import RENDERERS
+from printing.services.template_renderer import (
+    load_template_from_db,
+    render_schema_to_pdf,
+    unwrap_schema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +78,57 @@ def print_material_requisition(payload: dict[str, Any] = Body(...)) -> Response:
     return _pdf_response(pdf, f"material-requisition-{payload.get('requisitionNumber', 'na')}")
 
 
+@router.post("/preview-template")
+async def preview_template(payload: dict[str, Any] = Body(...)) -> Response:
+    """C-PRT-EDITOR-1 — schema-driven print template preview.
+
+    Called by Java PrintController.printPreviewTemplate via the
+    pythonAiRestTemplate. Body shape:
+      {
+        "factoryId":        "F001",                  # required for RLS scope
+        "templateId":       "uuid" | null,           # load saved schema by id
+        "inlineSchemaJson": "..." | null,            # editor-side live preview
+        "entityType":       "PRINT_SALES_ORDER",
+        "entityData":       {...} | null,            # resolved against {{}} bindings
+      }
+
+    One of `templateId` or `inlineSchemaJson` must be supplied. `entityData`
+    is optional — if absent, all {{}} bindings render as their literal text
+    (useful for "what would this look like with no data" diagnostic).
+
+    Java applies canViewPrice masking on `entityData` BEFORE calling this
+    endpoint (per existing PrintController.applyPriceMask pattern).
+    """
+    factory_id = payload.get("factoryId")
+    if not factory_id or not isinstance(factory_id, str):
+        raise HTTPException(status_code=400, detail="factoryId required")
+
+    template_id = payload.get("templateId")
+    inline_schema_json = payload.get("inlineSchemaJson")
+    entity_data = payload.get("entityData") or {}
+    entity_type = payload.get("entityType", "")
+
+    if template_id:
+        schema = await load_template_from_db(factory_id, template_id)
+    elif inline_schema_json:
+        schema = unwrap_schema(inline_schema_json)
+    else:
+        raise HTTPException(status_code=400, detail="templateId or inlineSchemaJson required")
+
+    try:
+        pdf_bytes = render_schema_to_pdf(schema, entity_data)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("preview-template render failed: factory=%s template=%s entity_type=%s err=%s",
+                     factory_id, template_id, entity_type, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PDF 生成失败: {exc}")
+
+    if not pdf_bytes:
+        raise HTTPException(status_code=500, detail="PDF 生成失败 — empty output")
+
+    filename = f"preview-{entity_type or 'template'}"
+    return _pdf_response(pdf_bytes, filename)
+
+
 @router.get("/health")
 def health() -> dict[str, Any]:
     """Smoke-check: 字体可用 + 5 renderer 注册成功."""
@@ -82,4 +138,5 @@ def health() -> dict[str, Any]:
         "ok": True,
         "font": _register_chinese_font(),
         "renderers": list(RENDERERS.keys()),
+        "templateRenderer": "ready",
     }
