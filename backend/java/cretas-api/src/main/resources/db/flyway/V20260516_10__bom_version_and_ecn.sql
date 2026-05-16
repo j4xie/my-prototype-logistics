@@ -8,12 +8,11 @@
 -- 双轨过渡 (6 月期): bom_recipes.version Integer + bom_recipes.is_current Boolean 不删.
 --   BomRecipe.version 是 "快照式 latest", BomVersion 是历史追溯.
 --
--- Flyway 编号 (Sprint 3 Track-H): V20260516_14
+-- Flyway 编号 (Sprint 3 Track-H): V20260516_10
 --   Brief 原指定 _04, 实际 _01-_07 全部已在 origin/main (V20260516_04__bom_intent_configs.sql
---   等 7 个非 Sprint 3 migration; cleanup commit 47bd22302 已重命名过一轮). Track-H 取 _14,
---   留 _08-_13 buffer 给其他 5 并发 Sprint 3 chat (Track-E F-VFLAG-1 / Track-F C-LINKARRAY-1 /
---   Track-G S-LOCK-1 / Track-I C-APPROVAL-EDITOR-1 / Track-J C-PRT-EDITOR-1) 各自 shift,
---   避免 +N=1 共择同 slot 撞车.
+--   等 7 个非 Sprint 3 migration; cleanup commit 47bd22302 已重命名过一轮). Sprint 3 协调表:
+--   chat2 = _08 / chat1 amend = _09 / Track-H (me) = _10. (原我先选 _14 留 buffer,
+--   Steve organizer 协调后改回紧凑 _10.)
 --
 -- See docs/superpowers/dispatch/2026-05-16-sprint3-track-h-m-bom-ver-1-marching-order.md
 
