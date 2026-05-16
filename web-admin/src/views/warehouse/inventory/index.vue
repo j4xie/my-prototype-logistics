@@ -8,6 +8,7 @@ import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning } from '@e
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
+import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import type { TableRow } from '@/types/api';
 import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
@@ -19,10 +20,15 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('warehouse'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
-// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G + FU Chat 3 bucket-filter)
 const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'inventory');
-function handleWorkflowNodeClick(_nodeId: string) {
-  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
+function handleWorkflowNodeClick(nodeId: string) {
+  const primary = getBucketPrimaryStatus('inventory', nodeId);
+  if (!primary) return;
+  statusFilter.value = primary;
+  pagination.value.page = 1;
+  loadData();
+  ElMessage.success(`已切到 "${getBucketLabel('inventory', nodeId)}" (显示状态: ${primary}). bucket 含多个状态, 想看其他请打开状态下拉切换.`);
 }
 function handleWorkflowAITrigger() {
   ElMessage.info('AI 入口待 Day 7 接入');

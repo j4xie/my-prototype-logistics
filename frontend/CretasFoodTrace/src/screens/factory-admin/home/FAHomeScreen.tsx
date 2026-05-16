@@ -45,6 +45,7 @@ import {
   AddItemSheet,
 } from './components';
 import { WorkflowVisualizer } from '../../../components/workflow';
+import { getBucketPrimaryStatus } from '../../../types/workflow';
 import type { WorkflowModule, WorkflowAIEntryContext } from '../../../types/workflow';
 
 type NavigationProp = NativeStackNavigationProp<FAHomeStackParamList, 'FAHome'>;
@@ -60,8 +61,12 @@ const FA_WORKFLOW_MODULES: WorkflowModule[] = [
 function navigateToModuleList(
   navigation: NavigationProp,
   module: WorkflowModule,
-  statusFilter: string,
+  bucketId: string,
 ) {
+  // FU Chat 3: bucket (pending/in_progress/done) → 单值 status enum (lossy).
+  // 各 List screen filter 是单值, bucket 多状态时此处取 primary; 完整 bucket
+  // 需用户在 list 里手动展开 status 下拉切换.
+  const statusFilter = getBucketPrimaryStatus(module, bucketId);
   const params = { statusFilter };
   switch (module) {
     case 'sales':

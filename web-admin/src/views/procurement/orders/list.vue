@@ -11,6 +11,7 @@ import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
+import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
@@ -55,10 +56,15 @@ function openAiForRow(row: TableRow) {
   aiEntryVisible.value = true;
 }
 
-// U-NAV-1 业务流程图导航 (Sprint 2 Track G)
+// U-NAV-1 业务流程图导航 (Sprint 2 Track G + FU Chat 3 bucket-filter)
 const { stats: workflowStats, loading: workflowLoading } = useWorkflowStats(factoryId, 'purchase');
-function handleWorkflowNodeClick(_nodeId: string) {
-  ElMessage.info('点击节点已记录, 多状态筛选待 Day 9 接入');
+function handleWorkflowNodeClick(nodeId: string) {
+  const primary = getBucketPrimaryStatus('purchase', nodeId);
+  if (!primary) return;
+  statusFilter.value = primary;
+  pagination.value.page = 1;
+  loadData();
+  ElMessage.success(`已切到 "${getBucketLabel('purchase', nodeId)}" (显示状态: ${primary}). bucket 含多个状态, 想看其他请打开状态下拉切换.`);
 }
 
 const loading = ref(false);

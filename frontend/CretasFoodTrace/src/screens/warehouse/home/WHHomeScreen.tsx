@@ -44,6 +44,7 @@ import { handleError, getErrorMsg } from '../../../utils/errorHandler';
 import { logger } from '../../../utils/logger';
 import { formatDate, formatNumberWithCommas } from '../../../utils/formatters';
 import { WorkflowVisualizer } from '../../../components/workflow';
+import { getBucketPrimaryStatus } from '../../../types/workflow';
 import type { WorkflowModule } from '../../../types/workflow';
 
 const WH_WORKFLOW_MODULES: WorkflowModule[] = ['inventory'];
@@ -512,8 +513,8 @@ export default function WHHomeScreen() {
             modules={WH_WORKFLOW_MODULES}
             factoryId={user?.factoryId}
             aiTriggerEnabled
-            onNodePress={(_module, nodeId) =>
-              navigation.navigate('WHInventoryList' as never, { statusFilter: nodeId } as never)
+            onNodePress={(module, nodeId) =>
+              navigation.navigate('WHInventoryList' as never, { statusFilter: getBucketPrimaryStatus(module, nodeId) } as never)
             }
             onNodeLongPress={(_module, ctx) =>
               navigation.navigate('AIChat' as never, { entryContext: ctx } as never)

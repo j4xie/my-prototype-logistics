@@ -207,10 +207,11 @@ export default function DSHomeScreen() {
             factoryId={user?.factoryId}
             aiTriggerEnabled
             onNodePress={(module, nodeId) => {
+              const statusFilter = getBucketPrimaryStatus(module, nodeId);
               if (module === 'production') {
-                navigation.navigate('ProductionPlanManagement' as never, { statusFilter: nodeId } as never);
+                navigation.navigate('ProductionPlanManagement' as never, { statusFilter } as never);
               } else if (module === 'sales') {
-                navigation.navigate('SalesOrderList' as never, { statusFilter: nodeId } as never);
+                navigation.navigate('SalesOrderList' as never, { statusFilter } as never);
               }
             }}
             onNodeLongPress={(module, ctx) =>
