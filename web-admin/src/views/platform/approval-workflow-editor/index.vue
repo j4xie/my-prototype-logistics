@@ -23,11 +23,28 @@
               :value="dt.value"
             />
           </el-select>
+          <el-select
+            v-model="selectedWorkflowId"
+            placeholder="选择工作流"
+            clearable
+            :disabled="workflowList.length === 0"
+            style="width: 220px"
+            @change="onWorkflowSelectionChange"
+          >
+            <el-option
+              v-for="w in workflowList"
+              :key="w.id"
+              :label="`${w.name} (v${w.version} · ${w.publishStatus})`"
+              :value="w.id"
+            />
+          </el-select>
           <el-input
             v-model="workflowName"
             placeholder="工作流名称"
-            style="width: 220px"
+            style="width: 200px"
           />
+          <el-button :icon="Plus" @click="resetEditor">新建</el-button>
+          <el-button :icon="View" @click="handleValidate" :disabled="nodes.length === 0">校验</el-button>
           <el-button
             type="primary"
             :icon="Download"
@@ -35,7 +52,7 @@
             :loading="saving"
             @click="handleSave"
           >
-            保存草稿
+            {{ currentWorkflow ? '保存' : '保存草稿' }}
           </el-button>
           <el-button
             type="success"
@@ -44,6 +61,20 @@
             @click="handlePublish"
           >
             发布
+          </el-button>
+          <el-button
+            v-if="currentWorkflow && currentWorkflow.publishStatus === 'published'"
+            type="warning"
+            @click="handleArchive"
+          >
+            归档
+          </el-button>
+          <el-button
+            v-if="currentWorkflow"
+            type="danger"
+            @click="handleDelete"
+          >
+            删除
           </el-button>
         </div>
       </div>
@@ -69,14 +100,6 @@
             <span class="palette-desc">{{ schema.description }}</span>
           </div>
         </div>
-        <el-alert
-          title="Day 5 scaffold"
-          type="info"
-          :closable="false"
-          show-icon
-          description="完整拖拽 / 属性面板 / Simulator 在 Day 6-9 上线"
-          style="margin-top: 12px"
-        />
       </div>
 
       <!-- Center: VueFlow canvas -->
@@ -116,8 +139,8 @@ import { markRaw, ref, computed, onMounted } from 'vue'
 import { VueFlow, type Connection, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Download, Upload } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Download, Plus, Upload, View } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
 import StartNode from './components/nodes/StartNode.vue'
 import ApprovalNode from './components/nodes/ApprovalNode.vue'
@@ -129,10 +152,19 @@ import EndNode from './components/nodes/EndNode.vue'
 import PropertyPanel from './components/PropertyPanel.vue'
 import {
   getDecisionTypes,
+  getWorkflowsByDecisionType,
+  getWorkflowById,
   createWorkflow,
-  type DecisionType,
+  updateWorkflow,
+  deleteWorkflow,
+  publishWorkflow,
+  archiveWorkflow,
+  validateWorkflow,
   type ApprovalWorkflowDTO,
   type ApprovalWorkflowNode,
+  type ApprovalWorkflowEdge as ApiEdge,
+  type CreateWorkflowRequest,
+  type DecisionType,
   type NodeType,
 } from '@/api/approvalWorkflow'
 
@@ -152,6 +184,8 @@ const saving = ref(false)
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
 const currentWorkflow = ref<ApprovalWorkflowDTO | null>(null)
+const workflowList = ref<ApprovalWorkflowDTO[]>([])
+const selectedWorkflowId = ref<string | undefined>(undefined)
 
 interface SelectedElement {
   kind: 'node' | 'edge'
@@ -247,8 +281,9 @@ const publishStatusLabel = computed(() => {
 
 // ==================== Handlers ====================
 
-function onDecisionTypeChange() {
-  // Day 8: load existing workflows for this decision type from backend
+async function onDecisionTypeChange() {
+  resetEditor()
+  await refreshWorkflowList()
 }
 
 function onPaletteDragStart(event: DragEvent, schema: PaletteSchema) {
@@ -367,44 +402,84 @@ function onDeleteSelected() {
   selectedElement.value = null
 }
 
+/** Serialize current VueFlow graph state → CreateWorkflowRequest wire shape. */
+function serializeGraph(): CreateWorkflowRequest | null {
+  const startNode = nodes.value.find(n => n.type === 'start')
+  if (!startNode) {
+    ElMessage.warning('工作流必须包含一个 start 节点')
+    return null
+  }
+  const wireNodes: ApprovalWorkflowNode[] = nodes.value.map(n => ({
+    id: n.id,
+    type: (n.type as NodeType) ?? 'approval',
+    label: String(n.data?.label ?? n.id),
+    position: { x: n.position.x, y: n.position.y },
+    config: (n.data?.config as Record<string, unknown>) ?? {},
+  }))
+  const wireEdges: ApiEdge[] = edges.value.map(e => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    condition: (e.data?.condition as string) || undefined,
+    label: e.label ? String(e.label) : undefined,
+    priority: Number(e.data?.priority ?? 0),
+  }))
+  return {
+    decisionType: selectedDecisionType.value,
+    name: workflowName.value,
+    nodes: wireNodes,
+    edges: wireEdges,
+    startNodeId: startNode.id,
+  }
+}
+
+/** Deserialize a backend ApprovalWorkflowDTO → VueFlow nodes/edges arrays. */
+function deserializeGraph(dto: ApprovalWorkflowDTO) {
+  const parsedNodes: ApprovalWorkflowNode[] = JSON.parse(dto.nodesJson || '[]')
+  const parsedEdges: ApiEdge[] = JSON.parse(dto.edgesJson || '[]')
+  nodes.value = parsedNodes.map(n => ({
+    id: n.id,
+    type: n.type,
+    position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
+    data: { label: n.label ?? n.id, config: n.config ?? {} },
+  }))
+  edges.value = parsedEdges.map(e => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    label: e.label ?? '',
+    data: { condition: e.condition ?? '', priority: e.priority ?? 0 },
+  }))
+}
+
 async function handleSave() {
   if (!factoryId.value || !canSave.value) return
   saving.value = true
   try {
-    const startNode = nodes.value.find(n => n.type === 'start')
-    if (!startNode) {
-      ElMessage.warning('工作流必须包含一个 start 节点')
-      return
-    }
+    const payload = serializeGraph()
+    if (!payload) return
 
-    const wireNodes: ApprovalWorkflowNode[] = nodes.value.map(n => ({
-      id: n.id,
-      type: (n.type as NodeType) ?? 'approval',
-      label: String(n.data?.label ?? n.id),
-      position: { x: n.position.x, y: n.position.y },
-      config: (n.data?.config as Record<string, unknown>) ?? {},
-    }))
-
-    const wireEdges = edges.value.map(e => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      condition: (e.data?.condition as string) ?? undefined,
-      label: e.label ? String(e.label) : undefined,
-    }))
-
-    const res = await createWorkflow(factoryId.value, {
-      decisionType: selectedDecisionType.value,
-      name: workflowName.value,
-      nodes: wireNodes,
-      edges: wireEdges,
-      startNodeId: startNode.id,
-    })
-    if (res.success && res.data) {
-      currentWorkflow.value = res.data
-      ElMessage.success('草稿已保存')
+    if (currentWorkflow.value?.id) {
+      // Update existing
+      const res = await updateWorkflow(factoryId.value, currentWorkflow.value.id, payload)
+      if (res.success && res.data) {
+        currentWorkflow.value = res.data
+        ElMessage.success('已保存 (草稿)')
+        await refreshWorkflowList()
+      } else {
+        ElMessage.error(res.message ?? '保存失败')
+      }
     } else {
-      ElMessage.error(res.message ?? '保存失败')
+      // Create new
+      const res = await createWorkflow(factoryId.value, payload)
+      if (res.success && res.data) {
+        currentWorkflow.value = res.data
+        selectedWorkflowId.value = res.data.id
+        ElMessage.success('草稿已创建')
+        await refreshWorkflowList()
+      } else {
+        ElMessage.error(res.message ?? '保存失败')
+      }
     }
   } catch (e) {
     console.error('[save failed]', e)
@@ -413,20 +488,145 @@ async function handleSave() {
   }
 }
 
-function handlePublish() {
-  // Day 8 wires publishWorkflow API + handles errors
-  ElMessage.info('发布功能在 Day 8 上线')
+async function handlePublish() {
+  if (!factoryId.value || !currentWorkflow.value?.id) return
+  try {
+    await ElMessageBox.confirm(
+      '发布后, 同 decisionType 的新审批实例将走这个 graph workflow. 确认?',
+      '发布工作流',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    const res = await publishWorkflow(factoryId.value, currentWorkflow.value.id)
+    if (res.success && res.data) {
+      currentWorkflow.value = res.data
+      ElMessage.success('工作流已发布')
+      await refreshWorkflowList()
+    } else {
+      ElMessage.error(res.message ?? '发布失败')
+    }
+  } catch (e) {
+    console.error('[publish failed]', e)
+  }
+}
+
+async function handleArchive() {
+  if (!factoryId.value || !currentWorkflow.value?.id) return
+  try {
+    await ElMessageBox.confirm(
+      '归档后, 该工作流不再被 executor 选中. 已运行实例不受影响. 确认?',
+      '归档工作流',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  const res = await archiveWorkflow(factoryId.value, currentWorkflow.value.id)
+  if (res.success && res.data) {
+    currentWorkflow.value = res.data
+    ElMessage.success('已归档')
+    await refreshWorkflowList()
+  } else {
+    ElMessage.error(res.message ?? '归档失败')
+  }
+}
+
+async function handleDelete() {
+  if (!factoryId.value || !currentWorkflow.value?.id) return
+  try {
+    await ElMessageBox.confirm(
+      `确定删除工作流 "${currentWorkflow.value.name}" ? (软删除可恢复, 但 UI 上不再显示)`,
+      '删除工作流',
+      { type: 'error' },
+    )
+  } catch {
+    return
+  }
+  const res = await deleteWorkflow(factoryId.value, currentWorkflow.value.id)
+  if (res.success) {
+    ElMessage.success('已删除')
+    resetEditor()
+    await refreshWorkflowList()
+  } else {
+    ElMessage.error(res.message ?? '删除失败')
+  }
+}
+
+async function handleValidate() {
+  if (!factoryId.value) return
+  const payload = serializeGraph()
+  if (!payload) return
+  const res = await validateWorkflow(factoryId.value, payload)
+  if (res.success && res.data) {
+    const result = res.data
+    if (result.valid) {
+      ElMessage.success(`校验通过 ${result.warnings.length ? `(${result.warnings.length} 警告)` : ''}`)
+      if (result.warnings.length) {
+        ElMessageBox.alert(result.warnings.join('\n'), '校验警告', { type: 'warning' })
+      }
+    } else {
+      ElMessageBox.alert(result.errors.join('\n'), '校验失败', { type: 'error' })
+    }
+  } else {
+    ElMessage.error(res.message ?? '校验请求失败')
+  }
+}
+
+function resetEditor() {
+  nodes.value = []
+  edges.value = []
+  currentWorkflow.value = null
+  selectedWorkflowId.value = undefined
+  workflowName.value = ''
+  selectedElement.value = null
+}
+
+/** Load list of workflows for the currently selected decisionType. */
+async function refreshWorkflowList() {
+  if (!factoryId.value) return
+  try {
+    const res = await getWorkflowsByDecisionType(factoryId.value, selectedDecisionType.value)
+    if (res.success && res.data) {
+      workflowList.value = res.data
+    }
+  } catch (e) {
+    console.warn('[refreshWorkflowList failed]', e)
+  }
+}
+
+async function onWorkflowSelectionChange(id: string | undefined) {
+  if (!factoryId.value || !id) {
+    resetEditor()
+    return
+  }
+  try {
+    const res = await getWorkflowById(factoryId.value, id)
+    if (res.success && res.data) {
+      currentWorkflow.value = res.data
+      workflowName.value = res.data.name
+      selectedDecisionType.value = res.data.decisionType
+      deserializeGraph(res.data)
+      selectedElement.value = null
+      ElMessage.success(`已加载: ${res.data.name} v${res.data.version}`)
+    }
+  } catch (e) {
+    console.error('[load workflow failed]', e)
+    ElMessage.error('加载工作流失败')
+  }
 }
 
 // ==================== Lifecycle ====================
 
 onMounted(async () => {
   if (!factoryId.value) return
-  // Sanity-check backend connectivity (Day 8 will load existing workflow list)
   try {
     await getDecisionTypes(factoryId.value)
+    await refreshWorkflowList()
   } catch (e) {
-    console.warn('[approval-workflow-editor] 后端未就绪 (Day 5 scaffold, Day 8 完整接入)', e)
+    console.warn('[approval-workflow-editor] 后端未就绪或网络异常', e)
   }
 })
 </script>
