@@ -3,16 +3,14 @@ package com.cretas.aims.event.listener;
 import com.cretas.aims.dto.bom.CreateBomRecipeRequest;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.bom.BomRecipe;
-import com.cretas.aims.entity.enums.FactoryUserRole;
-import com.cretas.aims.entity.enums.NotificationType;
 import com.cretas.aims.entity.rd.ProductSample;
 import com.cretas.aims.entity.rd.QuotationTask;
 import com.cretas.aims.event.SampleApprovedEvent;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.rd.ProductSampleRepository;
 import com.cretas.aims.repository.rd.QuotationTaskRepository;
-import com.cretas.aims.service.NotificationService;
 import com.cretas.aims.service.bom.BomRecipeService;
+import com.cretas.aims.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -35,8 +33,9 @@ import java.util.Optional;
  *   <li><b>BomRecipe 草稿</b> — best-effort. 仅在 prerequisites 满足时建
  *       (sample.productTypeId 非空 + sample.mainMaterial 存在于 raw_material_types 字典).
  *       缺数据时跳过 (log warn), 不阻塞主流程; 用户后续在 BomConfigScreen 手动建.</li>
- *   <li><b>销售主管通知</b> — 必发. 调 NotificationService.sendToRole(sales_manager, INFO).
- *       内容根据 BOM 是否自动建成调整.</li>
+ *   <li><b>销售主管通知</b> — 必发. 调 NotificationService.notifyRole(factoryId, "SALES_MANAGER", title, body).
+ *       当前 impl=LoggingNotificationServiceImpl 只 log; Track B1 merge 后 @Primary 切到
+ *       DingTalkNotificationServiceImpl 业务代码 0 改. 内容根据 BOM 是否自动建成调整.</li>
  * </ol>
  *
  * <p>@Async + @Transactional: listener 异步执行, 不阻塞 approveSample HTTP 响应.
@@ -175,7 +174,7 @@ public class SampleApprovedEventListener {
                                      QuotationTask task, String bomRecipeId) {
         try {
             String title = "样品审核通过";
-            String content = bomRecipeId != null
+            String body = bomRecipeId != null
                     ? String.format(
                             "样品 [%s] %s 已审核通过. BOM 草稿已自动生成 (id=%s), 报价任务 [%s] 等待报价员处理. 请尽快联系客户确认报价.",
                             sample.getSampleCode(), sample.getName(), bomRecipeId, task.getTaskNumber())
@@ -183,15 +182,9 @@ public class SampleApprovedEventListener {
                             "样品 [%s] %s 已审核通过, 报价任务 [%s] 等待报价员处理. 注: BOM 需研发员手动建立 (sample 缺 productTypeId 或主原料未在字典).",
                             sample.getSampleCode(), sample.getName(), task.getTaskNumber());
 
-            notificationService.sendToRole(
-                    event.getFactoryId(),
-                    FactoryUserRole.sales_manager,
-                    title,
-                    content,
-                    NotificationType.INFO,
-                    "RD",
-                    sample.getId());
-            log.info("销售主管通知发送: factoryId={}, sampleId={}", event.getFactoryId(), sample.getId());
+            notificationService.notifyRole(event.getFactoryId(), "SALES_MANAGER", title, body);
+            log.info("销售主管通知发送 (via NotificationService.notifyRole): factoryId={}, sampleId={}",
+                    event.getFactoryId(), sample.getId());
         } catch (Exception e) {
             // 通知失败不阻塞主流程 — QuotationTask 已建, BOM 已建 (或 best-effort 失败), 业务可继续
             log.error("[销售通知发送失败 — 不阻塞主流程] sampleId={}: {}",

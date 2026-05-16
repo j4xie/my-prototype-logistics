@@ -225,6 +225,18 @@ Caveat: audit doc 不替代 worker 自己 grep verify (HARD rule).
 - STATUS Day 3-5 段更新 (本段)
 - `gh pr create` 推 PR `[Sprint2-F] N48 ProductSample → 自动 BOM + 销售通知 + AI Tool + RN MVP UI`
 
+### Day 5 mid-day correction — Switch to new NotificationService (organizer 指示)
+
+Organizer 撤回原 "DingTalkBotService → 老 service.NotificationService.sendToRole" 方案, 改用**新** `service/notification/NotificationService.notifyRole(factoryId, "SALES_MANAGER", title, body)` (4-arg, P1-5 通用通知). 当前 impl = `LoggingNotificationServiceImpl` 只 log; Track B1 merge 后 `@Primary` 切到 `DingTalkNotificationServiceImpl`, 业务代码 0 改.
+
+Edit `SampleApprovedEventListener.java`:
+- import `com.cretas.aims.service.notification.NotificationService` 取代 `com.cretas.aims.service.NotificationService`
+- 删 `FactoryUserRole` + `NotificationType` imports (新接口不需要 enum)
+- `notifySalesManager()` 改用 4-arg `notificationService.notifyRole(factoryId, "SALES_MANAGER", title, body)`
+- mvn compile exit 0 verified
+
+Also update `SPRINT2_BRIEF_AUDIT.md` Pattern 1 — 标 audit 第一版错的接口 + 解释为什么 (grep `class NotificationService` 命中老的, 没 glob `**/NotificationService.java` 找全部). 这是 audit caveat 第一条"audit 也可能错"的实例.
+
 ### Track F 整体 SUMMARY
 
 | Commit | Day | Files | Lines | Verified |

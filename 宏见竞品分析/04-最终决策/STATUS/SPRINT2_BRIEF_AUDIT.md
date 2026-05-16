@@ -27,32 +27,40 @@ Grep "useXxx|XxxScreen|XxxStore" path=frontend/CretasFoodTrace/src output_mode=f
 
 ## 跨 chat 共同 drift 模式 (高优先级 — 多 chat 撞同一坑)
 
-### Pattern 1 — `DingTalkBotService` 不存在 (E / F / J 都假设)
+### Pattern 1 — `DingTalkBotService` 不存在; 用 **新** `service/notification/NotificationService` (E / F / J 都假设)
 
-| Brief 假设 | 实际 |
-|---|---|
-| `service/dingtalk/DingTalkBotService.java` ship by Sprint 1 Track B1 | ⛔ **不存在**. grep `class DingTalkBotService` 0 hit |
-| `dingTalkBotService.sendNotification(factoryId, title, content)` | ⛔ method 不存在 |
+⚠️ **2026-05-15 更正** (organizer correction): 项目里**有两个** NotificationService, organizer 拍板用**新**那个 (`service/notification/NotificationService`):
 
-**实际替代**: `service/NotificationService.java` (interface, 已 ship)
+| Service | 路径 | 签名 | 状态 |
+|---|---|---|---|
+| ⛔ **老 service** (不要用) | `service/NotificationService.java` | `sendToRole(factoryId, FactoryUserRole role, title, content, NotificationType type, source, sourceId)` (7-arg) | legacy, 复杂签名 |
+| ✅ **新 service** (用这个) | `service/notification/NotificationService.java` | `notifyRole(factoryId, String roleCode, title, body)` (4-arg) | P1-5 通用通知, 当前 impl = `LoggingNotificationServiceImpl` (只 log); Track B1 merge 后 @Primary 切到 DingTalkNotificationServiceImpl, 业务代码 0 改 |
+
+**正确用法** (organizer 提供):
 ```java
-notificationService.sendToRole(
-    String factoryId,
-    FactoryUserRole role,           // e.g. FactoryUserRole.sales_manager
-    String title,
-    String content,
-    NotificationType type,          // ALERT / INFO / WARNING
-    String source,                  // e.g. "RD" / "MRP"
-    String sourceId                 // 业务 ID
-);
+import com.cretas.aims.service.notification.NotificationService;  // ⚠️ 必须是 notification 子包
+
+// 通知特定角色 (工厂内广播给该角色所有人)
+notificationService.notifyRole(factoryId, "SALES_MANAGER", title, body);
+
+// 通知特定用户
+notificationService.notifyUser(factoryId, userId, title, body);
+
+// 系统级工厂广播 (谨慎)
+notificationService.broadcastFactory(factoryId, title, body);
 ```
 
-**应用**:
-- Chat E (N31): 缺料告警通知销售 → 用 NotificationService.sendToRole(sales_manager, ...) 或 sendToAllUsers
-- Chat F (N48): 样品 approve 通知销售 → 同 ✅ (Chat F 已 fix in commit `65b201046`)
-- Chat J (P-FIN-1): 三价标红通知财务 → NotificationService.sendToRole(finance_manager, ...) (注: 自行 grep `FactoryUserRole` enum 确认有 finance_manager / accounting 等)
+**roleCode 字符串约定** (organizer 示例): `"SALES_MANAGER"` / `"FINANCE_MANAGER"` / `"FACTORY_ADMIN"` (全大写). 不是 `FactoryUserRole` enum.
 
-**注**: 项目实际有没有"钉钉"集成是另一回事 — `NotificationService.sendNotification` 默认实现是写 DB notifications 表, 推送到客户端. 钉钉群推送可能在另一个 service 或者根本没 ship. 各 chat 接到 task 时**自己 grep 'DingTalk|dingtalk|钉钉' 全仓 verify** 实际状态。
+**应用**:
+- Chat E (N31): `notifyRole(factoryId, "FACTORY_ADMIN", "缺料告警", "销售单 SO-XXX 缺 3 物料")` (organizer 直接指定)
+- Chat F (N48): `notifyRole(factoryId, "SALES_MANAGER", "样品审批通过", "...")` ✅ Chat F 已 fix in commit (listener 第二次更新)
+- Chat J (P-FIN-1): `notifyRole(factoryId, "FINANCE_MANAGER", "采购单待财审", "PO-XXX")` (organizer 指定)
+
+**为什么 audit 第一版给错的接口**:
+audit 跑时只 grep `class NotificationService` 命中老的 `service/NotificationService.java`, 没注意到新的 `service/notification/NotificationService.java`. 教训: glob `**/NotificationService.java` 才能列全部, 不要只 grep `class NotificationService`. 这也是 caveat 第一条 "audit 也可能错" 的实例。
+
+**注**: 钉钉真实推送 ship 是 Track B1 merge 后的事; 在此之前所有调用只 log. 业务代码用新 service 是 forward-compatible.
 
 ---
 
