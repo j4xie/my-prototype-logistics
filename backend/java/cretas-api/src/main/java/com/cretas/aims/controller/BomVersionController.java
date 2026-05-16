@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.bom.BomVersion;
 import com.cretas.aims.service.bom.BomVersionService;
@@ -22,8 +23,18 @@ import java.util.Optional;
  *
  * <p>路径前缀: {@code /api/mobile/{factoryId}/bom/versions}.
  *
- * <p>RBAC: {@code @PriceSensitive} on {@link BomVersion#getSnapshotJson()} strips cost for
- * non-procurement-price roles via {@code PriceFieldResponseAdvice}.
+ * <p>RBAC:
+ * <ul>
+ *   <li>Write 方法 (POST): 沿用 {@link BomController} / {@link BomRecipeController} 模式 —
+ *       {@code @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})}.
+ *       SCHEMA spec 提议的 {@code bom:write} 新权限码暂未引入 role binding, 故复用 production:* 系列.</li>
+ *   <li>Read 方法 (GET): 公开 (无 @RequirePermission), 但 {@code @PriceSensitive} on
+ *       {@link BomVersion#getSnapshotJson()} 通过 {@code PriceFieldResponseAdvice} 自动 strip
+ *       cost 字段 for non-procurement-price roles.</li>
+ * </ul>
+ *
+ * <p>Issue #710 fix (2026-05-16): 补全 4 个 write endpoint 缺失的 RBAC, 防止低权限 F006 用户
+ * (viewer/operator/quality_insp/...) 直接调 approve/reject 绕过审批 (P0 RBAC bypass).
  *
  * @author Cretas Team / Sprint 3 Track-H
  * @since 2026-05-16
@@ -38,6 +49,7 @@ public class BomVersionController {
 
     private final BomVersionService versionService;
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "为指定 BOM 创建新版本 DRAFT (snapshot 自动 from 当前 BomRecipe)")
     public ApiResponse<BomVersion> createDraft(
@@ -88,6 +100,7 @@ public class BomVersionController {
                 .orElseGet(() -> ApiResponse.error(404, "日期 " + date + " 无生效 BomVersion"));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{versionId}/submit")
     @Operation(summary = "提交审批 (DRAFT → PENDING_APPROVAL). 可关联 ECN.")
     public ApiResponse<BomVersion> submitForApproval(
@@ -98,6 +111,7 @@ public class BomVersionController {
         return ApiResponse.success(versionService.submitForApproval(factoryId, versionId, ecnId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{versionId}/approve")
     @Operation(summary = "审批通过 (PENDING/DRAFT → APPROVED, effective_from=today, 旧版自动 OBSOLETE)")
     public ApiResponse<BomVersion> approve(
@@ -109,6 +123,7 @@ public class BomVersionController {
         return ApiResponse.success(versionService.approve(factoryId, versionId, approverId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/{versionId}/reject")
     @Operation(summary = "拒绝 (PENDING_APPROVAL → REJECTED, terminal)")
     public ApiResponse<BomVersion> reject(
