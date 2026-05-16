@@ -12,6 +12,7 @@ import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguatio
 import type { TableRow } from '@/types/api';
 import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
+import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
 
 const router = useRouter();
@@ -312,7 +313,7 @@ function isOutbound(row: TableRow) { return row.sourceFactoryId === factoryId.va
         :stats="footerSummary?.stats ?? []"
         :loading="footerLoading"
         :show-export="false"
-        @ai-analyze="() => { /* TODO Day 7 */ }"
+        @ai-analyze="() => ElMessage.info({ message: `AI 分析 (待接 SmartBI): 分析当前调拨${formatSummaryForAI(footerSummary)}`, duration: 8000, showClose: true })"
       />
 
       <div class="pagination-wrapper">

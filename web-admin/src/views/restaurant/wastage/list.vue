@@ -117,7 +117,7 @@
         :stats="footerSummary?.stats ?? []"
         :loading="footerLoading"
         :show-export="false"
-        @ai-analyze="() => { /* TODO Day 7 */ }"
+        @ai-analyze="() => ElMessage.info({ message: `AI 分析 (待接 SmartBI): 分析当前损耗记录${formatSummaryForAI(footerSummary)}`, duration: 8000, showClose: true })"
       />
 
       <div class="pagination-wrapper">
@@ -201,6 +201,7 @@ import { handleCatchError } from '@/utils/errorToast';
 import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
+import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
 
 const wastageTypeMap: Record<string, string> = {

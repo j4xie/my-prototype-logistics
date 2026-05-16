@@ -17,6 +17,7 @@ import { formatShortDateTime } from '../../../utils/formatters';
 import { RowActionBottomSheet, StickyFooterSummary } from '../../../components/list';
 import { useRowActions, type RowContext } from '../../../hooks/useRowActions';
 import { useListSummary } from '../../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../../utils/aiSummaryContext';
 
 type Nav = NativeStackNavigationProp<RWastageStackParamList>;
 
@@ -174,7 +175,7 @@ export function WastageListScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'WASTAGE',
-              initialMessage: `分析当前损耗记录 (筛选: ${statusFilter === 'all' ? '全部' : statusFilter})`,
+              initialMessage: `分析当前损耗记录${formatSummaryForAI(summary, { filter: { status: statusFilter } })}`,
             },
           } as never))
         }

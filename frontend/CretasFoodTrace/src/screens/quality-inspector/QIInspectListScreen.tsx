@@ -24,6 +24,7 @@ import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
 import { useAuthStore } from '../../store/authStore';
 import { StickyFooterSummary } from '../../components/list';
 import { useListSummary } from '../../hooks/useListSummary';
+import { formatSummaryForAI } from '../../utils/aiSummaryContext';
 
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
@@ -240,7 +241,7 @@ export default function QIInspectListScreen() {
             screen: 'AIChat',
             params: {
               entityType: 'QUALITY_CHECK',
-              initialMessage: '分析当前质检列表 (合格率 / 不合格趋势)',
+              initialMessage: `分析当前质检列表 (合格率 / 不合格趋势)${formatSummaryForAI(summary)}`,
             },
           }))
         }
