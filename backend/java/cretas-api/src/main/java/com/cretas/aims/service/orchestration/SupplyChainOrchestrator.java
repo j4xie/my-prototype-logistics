@@ -11,6 +11,7 @@ import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.config.FactoryTriggerChainRepository;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.service.BatchConsumptionService;
+import com.cretas.aims.service.LinkArrayService;
 import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -64,6 +65,10 @@ public class SupplyChainOrchestrator {
 
     @Autowired(required = false)
     private FactoryTriggerChainRepository triggerChainRepository;
+
+    /** Sprint 3 Track-F (C-LINKARRAY-1): unified link service for auto-cascade path. */
+    @Autowired(required = false)
+    private LinkArrayService linkArrayService;
 
     /**
      * @deprecated Bug #296 design fix (2026-04-18): the "skip hardcoded if chain
@@ -290,6 +295,23 @@ public class SupplyChainOrchestrator {
         ProductionPlan saved = productionPlanRepository.save(plan);
         log.info("自动创建生产计划: PP={}, product={}, qty={}, sourceOrder={}",
                 saved.getPlanNumber(), productTypeId, shortfallQuantity, salesOrderId);
+
+        // Sprint 3 Track-F (C-LINKARRAY-1): unified BusinessLink for auto-cascade path.
+        // This path bypasses ProductionPlanService.createProductionPlan, so the link()
+        // call in that service does NOT fire here — must replicate.
+        if (linkArrayService != null && salesOrderId != null && !salesOrderId.isBlank()) {
+            try {
+                linkArrayService.link(factoryId,
+                        "PRODUCTION_PLAN", saved.getId(),
+                        "sale",
+                        "SALES_ORDER", salesOrderId,
+                        "财务审批自动触发",
+                        "1");
+            } catch (Exception e) {
+                log.warn("BusinessLink double-write failed for auto-created PP {}: {}",
+                        saved.getId(), e.getMessage());
+            }
+        }
 
         // ④ BOM展开 + ⑤ 原辅料检查
         try {

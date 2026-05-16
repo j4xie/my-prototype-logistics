@@ -20,6 +20,7 @@ import com.cretas.aims.service.ApprovalChainService;
 import com.cretas.aims.service.DecisionAuditService;
 import com.cretas.aims.service.ImpactAnalysisService;
 import com.cretas.aims.service.ImpactAnalysisService.*;
+import com.cretas.aims.service.LinkArrayService;
 import com.cretas.aims.service.PushNotificationService;
 import com.cretas.aims.service.UrgentInsertService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -57,6 +58,10 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
     private final ImpactAnalysisService impactAnalysisService;
     private final ApprovalChainService approvalChainService;
     private final PushNotificationService pushNotificationService;
+
+    /** Sprint 3 Track-F (C-LINKARRAY-1): unified link service for urgent-insert path. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private LinkArrayService linkArrayService;
 
     @Override
     @Transactional
@@ -296,6 +301,12 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         log.info("紧急插单创建成功: planId={}, planNumber={}", savedPlan.getId(), savedPlan.getPlanNumber());
 
+        // Sprint 3 Track-F (C-LINKARRAY-1): unified BusinessLink for urgent-insert path.
+        // Note: sourceOrderId here is customer-provided order number (not necessarily
+        // an internal SO UUID), so the link may be a dangling reference if customer's
+        // string doesn't match a real SalesOrder. Still useful for traceability.
+        linkUrgentInsertPlan(factoryId, savedPlan, userId);
+
         // 发送紧急插单推送通知
         try {
             pushNotificationService.sendUrgentInsertNotification(
@@ -359,6 +370,9 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         // 保存计划
         ProductionPlan savedPlan = productionPlanRepository.save(plan);
+
+        // Sprint 3 Track-F (C-LINKARRAY-1): unified BusinessLink for force-insert path.
+        linkUrgentInsertPlan(factoryId, savedPlan, userId);
 
         // 准备审计日志上下文
         Map<String, Object> inputContext = new HashMap<>();
@@ -933,6 +947,27 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
         plan.setCrValue(plan.calculateCrValue(1));  // 假设1天工期
 
         return plan;
+    }
+
+    /**
+     * Sprint 3 Track-F (C-LINKARRAY-1): unified BusinessLink for urgent-insert path.
+     * Called from both confirmUrgentInsert + forceInsert after repository.save.
+     */
+    private void linkUrgentInsertPlan(String factoryId, ProductionPlan savedPlan, Long userId) {
+        if (linkArrayService == null) return;
+        String sourceOrderId = savedPlan.getSourceOrderId();
+        if (sourceOrderId == null || sourceOrderId.isBlank()) return;
+        try {
+            linkArrayService.link(factoryId,
+                    "PRODUCTION_PLAN", savedPlan.getId(),
+                    "sale",
+                    "SALES_ORDER", sourceOrderId,
+                    "紧急插单源单",
+                    userId != null ? userId.toString() : null);
+        } catch (Exception e) {
+            log.warn("BusinessLink double-write failed for urgent-insert PP {}: {}",
+                    savedPlan.getId(), e.getMessage());
+        }
     }
 
     private int calculateRecommendScore(LocalDateTime slotStart) {
