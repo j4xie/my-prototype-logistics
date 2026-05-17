@@ -59,11 +59,17 @@ public class SalesNeedConvertTool extends AbstractBusinessTool {
 
         SalesOrder created = salesNeedService.convertToSalesOrder(factoryId, needId, userId);
 
+        // 防呆 R2: result message 必带身份上下文 (订单号 + 客户名).
+        String custLabel = created.getCustomerName() != null && !created.getCustomerName().isBlank()
+                ? created.getCustomerName() : created.getCustomerId();
+
         Map<String, Object> result = new HashMap<>();
-        result.put("message", "客户需求已转为销售订单");
+        result.put("message", String.format("已转为销售订单 %s (客户: %s, 状态: %s)",
+                created.getOrderNumber(), custLabel, created.getStatus()));
         result.put("needId", needId);
         result.put("salesOrderId", created.getId());
         result.put("orderNumber", created.getOrderNumber());
+        result.put("customerName", created.getCustomerName());
         return result;
     }
 

@@ -98,12 +98,21 @@ public class SalesNeedCreateTool extends AbstractBusinessTool {
 
         SalesNeed created = salesNeedService.create(factoryId, req, userId);
 
+        // 防呆 R2: result message 必带身份上下文 (客户名/产品名/数量+单位).
+        String custLabel = created.getCustomerName() != null && !created.getCustomerName().isBlank()
+                ? created.getCustomerName() : created.getCustomerId();
+        String prodLabel = created.getProductName() != null && !created.getProductName().isBlank()
+                ? created.getProductName() : created.getProductId();
+
         Map<String, Object> result = new HashMap<>();
-        result.put("message", "客户需求创建成功");
+        result.put("message", String.format("已创建客户需求: %s — %s %s %s (状态: DRAFT, 待销售员确认)",
+                custLabel, prodLabel, created.getQtyDemand(), created.getUnit()));
         result.put("needId", created.getId());
         result.put("status", created.getStatus().name());
         result.put("customerId", created.getCustomerId());
+        result.put("customerName", created.getCustomerName());
         result.put("productId", created.getProductId());
+        result.put("productName", created.getProductName());
         result.put("qtyDemand", created.getQtyDemand());
         result.put("unit", created.getUnit());
         return result;
