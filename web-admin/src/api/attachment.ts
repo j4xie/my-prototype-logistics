@@ -85,14 +85,23 @@ export interface UploadUrlResponse {
 function getFactoryId(override?: string): string {
   if (override) return override;
   const raw = localStorage.getItem('cretas_user');
-  if (!raw) throw new Error('未登录 — 找不到 factoryId');
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed?.factoryId) throw new Error('用户对象无 factoryId 字段');
-    return parsed.factoryId as string;
-  } catch (e) {
-    throw new Error('用户数据无效');
+  if (!raw || raw === 'undefined' || raw === 'null') {
+    throw new Error('未登录 — 请重新登录');
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('登录态损坏 — 请重新登录');
+  }
+  // User object 结构: { factoryUser: { factoryId, ... }, ... } (auth store schema)
+  // Also tolerate top-level factoryId for platform/legacy callers.
+  const p = parsed as { factoryId?: string; factoryUser?: { factoryId?: string } } | null;
+  const fid = p?.factoryUser?.factoryId ?? p?.factoryId;
+  if (!fid) {
+    throw new Error('当前账号未绑定工厂 — 无法查看/上传附件');
+  }
+  return fid;
 }
 
 function basePath(factoryId?: string): string {

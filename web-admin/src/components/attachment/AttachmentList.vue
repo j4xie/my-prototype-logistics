@@ -73,7 +73,18 @@ async function load(): Promise<void> {
     const r = await listAttachments(props.entityType, props.entityId, props.factoryId);
     list.value = r.data ?? [];
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : '加载附件失败';
+    // Issue #750 — 附件区显示"用户数据无效" multi-page bug.
+    // 区分两类错误:
+    //   (a) factoryId 解析失败 (auth/账号问题) → 友好显示空态, 不要红色 alert 吓客户
+    //   (b) API 调用失败 (网络/权限/服务) → 红色 alert
+    list.value = [];
+    const msg = e instanceof Error ? e.message : '加载附件失败';
+    const isAuthIssue = /未登录|登录态|绑定工厂|factoryId/i.test(msg);
+    if (isAuthIssue) {
+      error.value = null; // 走 el-empty 暂无附件
+    } else {
+      error.value = msg;
+    }
   } finally {
     loading.value = false;
   }

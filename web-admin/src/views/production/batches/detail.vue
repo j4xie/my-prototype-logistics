@@ -361,12 +361,14 @@ function getTimelineIcon(type: string) {
           <AttachmentList
             entity-type="PRODUCTION_BATCH"
             :entity-id="String(batchId)"
+            :factory-id="factoryId"
             :refresh-key="attachmentRefreshKey"
           />
           <div style="margin-top: 12px">
             <AttachmentUploadButton
               entity-type="PRODUCTION_BATCH"
               :entity-id="String(batchId)"
+              :factory-id="factoryId"
               business-tag="BATCH_EVIDENCE"
               @uploaded="attachmentRefreshKey++"
             />

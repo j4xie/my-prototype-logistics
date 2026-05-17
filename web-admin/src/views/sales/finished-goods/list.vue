@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get } from '@/api/request';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
@@ -31,12 +33,50 @@ function rowActionsFor(row: TableRow) {
     { canViewPrice: canViewPrice.value }
   );
 }
-function handleRowActionClick(actionId: string, row: TableRow) {
+
+// Issue #752: 操作按钮无响应 — 之前 view-detail/transfer/view-price-history 都只是 ElMessage.info 占位.
+// 现在接实际功能 (Issue #749 同时修: transfer 弹 confirm 跳工作流设计器, 不再 dead-end toast).
+async function handleRowActionClick(actionId: string, row: TableRow): Promise<void> {
+  const batchLabel = row.batchNumber || row.id || '-';
   switch (actionId) {
-    case 'view-detail': ElMessage.info(`查看批次 ${row.batchNumber || row.id}`); break;
-    case 'transfer': ElMessage.info(`调拨批次 ${row.batchNumber || row.id} (待接调拨流程)`); break;
-    case 'view-price-history': ElMessage.info(`价格历史 ${row.batchNumber || row.id}`); break;
-    default: ElMessage.info(`Action: ${actionId}`);
+    case 'view-detail': {
+      // 当前无独立 detail 路由 — 展示 batch 关键信息为只读弹窗
+      const fields = [
+        `批次号: ${batchLabel}`,
+        `产品: ${row.productName || row.productType?.name || '-'}`,
+        `生产: ${row.producedQuantity ?? '-'}  已发货: ${row.shippedQuantity ?? 0}  已预留: ${row.reservedQuantity ?? 0}`,
+        `生产日期: ${row.productionDate || '-'}  过期: ${row.expireDate || '-'}`,
+        `库位: ${row.storageLocation || '-'}`,
+      ];
+      ElMessageBox.alert(fields.join('\n'), '成品批次详情', { confirmButtonText: '关闭' })
+        .catch(() => {});
+      break;
+    }
+    case 'transfer': {
+      // Issue #749: 调拨工作流未配置时弹 confirm → 跳工作流设计器, 不再 dead-end toast.
+      try {
+        await ElMessageBox.confirm(
+          `批次 ${batchLabel} 的调拨工作流尚未配置. 是否前去工作流设计器配置 TRANSFER 流程?`,
+          '调拨工作流未配置',
+          { confirmButtonText: '去配置', cancelButtonText: '取消', type: 'info' }
+        );
+        router.push({ path: '/system/workflow-designer', query: { entityType: 'TRANSFER' } });
+      } catch {
+        // user cancel — no-op
+      }
+      break;
+    }
+    case 'view-price-history': {
+      // 价格历史 — 当前展示成本单价 (未来接 PriceHistoryDialog)
+      ElMessageBox.alert(
+        `批次 ${batchLabel} 当前成本单价: ${row.unitPrice ?? '-'}\n(历次价格变动列表待接 价格历史 API)`,
+        '价格历史',
+        { confirmButtonText: '关闭' }
+      ).catch(() => {});
+      break;
+    }
+    default:
+      ElMessage.info(`Action: ${actionId}`);
   }
 }
 function openAiForRow(row: TableRow) {
