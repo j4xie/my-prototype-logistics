@@ -1,5 +1,6 @@
 package com.cretas.aims.service.finance.impl;
 
+import com.cretas.aims.ai.client.DashScopeVisionClient;
 import com.cretas.aims.entity.finance.InvoiceRecord;
 import com.cretas.aims.entity.finance.InvoiceRecord.TaxBreakdownEntry;
 import com.cretas.aims.entity.inventory.SalesOrder;
@@ -44,6 +45,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final OssService ossService;
     private final ApplicationEventPublisher eventPublisher;
 
+    /** F-INV-1 gap-fill: PDF→PNG→vision OCR, 解析失败仅记 ocr_error_message。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DashScopeVisionClient dashScopeVisionClient;
+
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
@@ -71,10 +76,47 @@ public class InvoiceServiceImpl implements InvoiceService {
             "salesOrderId", salesOrderId != null ? salesOrderId : ""));
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("销售订单不存在: " + salesOrderId));
+
+        // Tenant isolation guard (parity with requestInvoiceFromOrder)
+        if (!factoryId.equals(so.getFactoryId())) {
+            throw new IllegalArgumentException("销售订单不存在或无权访问: " + salesOrderId);
+        }
+
         // R18 audit: enforce business invariant — only post-finance-approved SOs can be invoiced.
         // Previously only the dropdown UX (R17) gated this, but direct API POST would bypass.
         // Same whitelist as ReferenceDataController.findSalesOrders.
         validateInvoiceableStatus(so);
+
+        // 防呆 R4 (fool-proof-design 2026-05-17): dedup guard parity with
+        // requestInvoiceFromOrder. Free-form /request path 也走同套幂等检查 — 之前 漏
+        // 让前端 dedup 是 UI-only gate, 直接 POST API 仍可重复创建.
+        List<InvoiceRecord> dupActive = invoiceRecordRepository
+                .findByFactoryIdAndSalesOrderIdAndStatusInAndDeletedAtIsNull(
+                        factoryId, salesOrderId,
+                        List.of(InvoiceStatus.REQUESTED, InvoiceStatus.APPROVED));
+        if (!dupActive.isEmpty()) {
+            String existingNumbers = dupActive.stream()
+                    .map(InvoiceRecord::getInvoiceNumber)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            throw new com.cretas.aims.exception.BusinessException(409,
+                    "该销售订单已有待处理开票申请 (" + dupActive.size() + " 张: " + existingNumbers + "), 请先处理或撤销")
+                    .withHint("请在 \"开票申请\" Tab 里审核通过或驳回已有的发票, 再提交新的开票申请")
+                    .withHintTarget("开票申请");
+        }
+
+        // 防呆 R1: 总开票额不得超过订单未开金额 (server-side 防呆, 同 UI 双保险)
+        BigDecimal totalAmount = amount.add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
+        BigDecimal soTotal = so.getTotalAmount() != null ? so.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal alreadyInvoiced = so.getInvoicedAmount() != null
+                ? so.getInvoicedAmount() : BigDecimal.ZERO;
+        BigDecimal unbilled = soTotal.subtract(alreadyInvoiced);
+        if (totalAmount.compareTo(unbilled) > 0) {
+            throw new com.cretas.aims.exception.BusinessException(400,
+                    String.format("开票金额 ¥%s 超过订单未开金额 ¥%s (订单总额 ¥%s, 已开 ¥%s)",
+                            totalAmount.toPlainString(), unbilled.toPlainString(),
+                            soTotal.toPlainString(), alreadyInvoiced.toPlainString()))
+                    .withHint("请调低金额或使用 \"按订单一键生成\" 自动按未开金额申请");
+        }
 
         InvoiceRecord record = new InvoiceRecord();
         record.setFactoryId(factoryId);
@@ -85,7 +127,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                 customerRepository.findById(so.getCustomerId()).map(c -> c.getName()).orElse(null) : null);
         record.setAmount(amount);
         record.setTaxAmount(taxAmount);
-        record.setTotalAmount(amount.add(taxAmount != null ? taxAmount : BigDecimal.ZERO));
+        // Rebase merge (2026-05-17): keep #772's resolveInvoiceType chain (explicit > SO > customer > NORMAL)
+        // + 148e4784f's totalAmount local var reuse (computed earlier for R1 max-check).
+        record.setTotalAmount(totalAmount);
         record.setInvoiceType(resolveInvoiceType(invoiceType, so));
         record.setStatus(InvoiceStatus.REQUESTED);
         record.setRequestedBy(requestedBy);
@@ -329,6 +373,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         record.setInvoicePdfUrl(pdfUrl);
         record.setInvoiceFileName(pdfFile.getOriginalFilename());
 
+        // F-INV-1 gap-fill: OCR auto-parse 发票号 + 金额 (供财务核对申请金额)。
+        // 失败仅记 ocr_error_message, 不抛异常 — 财务可手动核对。
+        runInvoiceOcr(record, pdfFile);
+
         record.setStatus(InvoiceStatus.ISSUED);
         record.setIssuedAt(LocalDateTime.now());
         InvoiceRecord saved = invoiceRecordRepository.save(record);
@@ -382,6 +430,52 @@ public class InvoiceServiceImpl implements InvoiceService {
             so.setInvoiceStatus("PARTIAL_INVOICED");
         }
         salesOrderRepository.save(so);
+    }
+
+    /**
+     * F-INV-1 gap-fill: 调 DashScopeVisionClient.parseInvoicePdf 写回 OCR 字段。
+     *
+     * 策略 (no 降级):
+     * - vision client 未注入 → 跳过, 不报错 (LLM 服务可选);
+     * - 解析失败 → 记录 ocr_error_message + ocr_parsed_at, OCR 字段留 null;
+     * - 解析成功 → 写所有 ocr_* 字段 + parsed_at, 财务在 UI 上对比 record.amount。
+     *
+     * 永远不抛异常 — 发票开具流程不被 OCR 失败阻塞。
+     */
+    private void runInvoiceOcr(InvoiceRecord record, MultipartFile pdfFile) {
+        record.setOcrParsedAt(LocalDateTime.now());
+        if (dashScopeVisionClient == null) {
+            record.setOcrErrorMessage("Vision client 未配置, 跳过 OCR");
+            return;
+        }
+        try {
+            DashScopeVisionClient.InvoiceParseResult result =
+                    dashScopeVisionClient.parseInvoicePdf(pdfFile.getBytes());
+            if (result == null) {
+                record.setOcrErrorMessage("OCR 返回 null");
+                return;
+            }
+            if (!result.isSuccess()) {
+                record.setOcrErrorMessage(result.getMessage());
+                return;
+            }
+            record.setOcrInvoiceNumber(result.getInvoiceNumber());
+            record.setOcrAmount(result.getAmount());
+            record.setOcrTaxAmount(result.getTaxAmount());
+            if (result.getConfidence() >= 0) {
+                record.setOcrConfidence(
+                        BigDecimal.valueOf(result.getConfidence())
+                                .setScale(3, RoundingMode.HALF_UP));
+            }
+            record.setOcrRawJson(result.getRawResponse());
+            record.setOcrErrorMessage(null);
+            log.info("发票 OCR 成功: invoiceId={}, ocrNumber={}, ocrAmount={}, confidence={}",
+                    record.getId(), result.getInvoiceNumber(),
+                    result.getAmount(), result.getConfidence());
+        } catch (Exception e) {
+            log.warn("发票 OCR 异常 (不阻塞开具): {}", e.getMessage());
+            record.setOcrErrorMessage("OCR 异常: " + e.getMessage());
+        }
     }
 
     private String generateInvoiceNumber() {
