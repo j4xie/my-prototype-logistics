@@ -88,7 +88,24 @@ public class PurchaseController {
             @PathVariable @NotBlank String factoryId,
             @RequestParam PurchaseOrderStatus status,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader("Authorization") String authorization) {
+        // Issue #736 fix (2026-05-17): viewer 角色虽有 procurement:read 但不应看到 PENDING_FINANCE_REVIEW
+        // 状态采购单 (含供应商名、总金额、价格异常告警 — 业务敏感). 走独立 FINANCE_REVIEW_VIEW_PERMISSION
+        // 角色白名单 (procurement_manager / finance_manager / dispatcher / super_admin).
+        if (status == PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
+            User currentUser = resolveCurrentUser(authorization);
+            boolean canViewFinanceReview = currentUser != null
+                    && permissionService.hasPermission(currentUser,
+                            com.cretas.aims.service.impl.PermissionServiceImpl.FINANCE_REVIEW_VIEW_PERMISSION);
+            if (!canViewFinanceReview) {
+                log.warn("RBAC reject (#736): user={} role={} 无 procurement:finance_review:view, "
+                        + "status=PENDING_FINANCE_REVIEW 拒绝访问",
+                        currentUser != null ? currentUser.getUsername() : "<null>",
+                        currentUser != null ? currentUser.getRole() : "<null>");
+                throw new BusinessException(403, "无权查看待财审采购单");
+            }
+        }
         PageResponse<PurchaseOrder> result = purchaseService.getPurchaseOrdersByStatus(factoryId, status, page, size);
         return ApiResponse.success("查询成功", result);
     }

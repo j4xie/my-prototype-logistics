@@ -311,6 +311,53 @@ public class ProductionPlanController {
     }
 
     /**
+     * 锁定生产计划 (Issue #759, 2026-05-17).
+     *
+     * <p>锁定后该计划不可编辑数量/日期/取消 — 进入排产阶段后防误操作.
+     * 前端 (PR #755) 已加 banner + lock button; 本接口实现后端真实写入.
+     */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
+    @PostMapping("/{planId}/lock")
+    @Operation(summary = "锁定生产计划",
+            description = "锁定后不可编辑数量/日期/取消. 客户场景: 进入排产阶段后防误操作.")
+    public ApiResponse<ProductionPlanDTO> lockProductionPlan(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
+            @PathVariable @NotBlank String planId,
+            @Parameter(description = "锁定原因 (可选)", example = "排产已下达")
+            @RequestParam(required = false) String reason,
+            @RequestHeader("Authorization") String authorization) {
+
+        Long userId = extractUserId(authorization);
+        log.info("锁定生产计划: factoryId={}, planId={}, userId={}, reason={}",
+                factoryId, planId, userId, reason);
+        ProductionPlanDTO plan = productionPlanService.lockProductionPlan(factoryId, planId, reason, userId);
+        return ApiResponse.success("生产计划已锁定", plan);
+    }
+
+    /**
+     * 解锁生产计划 (Issue #759, 2026-05-17).
+     */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
+    @PostMapping("/{planId}/unlock")
+    @Operation(summary = "解锁生产计划")
+    public ApiResponse<ProductionPlanDTO> unlockProductionPlan(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
+            @PathVariable @NotBlank String planId,
+            @RequestHeader("Authorization") String authorization) {
+
+        Long userId = extractUserId(authorization);
+        log.info("解锁生产计划: factoryId={}, planId={}, userId={}", factoryId, planId, userId);
+        ProductionPlanDTO plan = productionPlanService.unlockProductionPlan(factoryId, planId, userId);
+        return ApiResponse.success("生产计划已解锁", plan);
+    }
+
+    /**
      * 暂停生产
      */
     @RequirePermission({"production:read_write", "scheduling:read_write"})
@@ -663,5 +710,14 @@ public class ProductionPlanController {
         }).collect(Collectors.toList());
 
         return ApiResponse.success(result);
+    }
+
+    /** Issue #759: shared user-id extraction for lock/unlock endpoints. */
+    private Long extractUserId(String authorization) {
+        String token = TokenUtils.extractToken(authorization);
+        if (token == null) {
+            throw new BusinessException(401, "Authorization header 缺失");
+        }
+        return mobileService.getUserFromToken(token).getId();
     }
 }

@@ -1,8 +1,10 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequirePermission;
+import com.cretas.aims.dto.template.PrintPreviewTemplateRequest;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.security.PriceMaskResolver;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -187,36 +189,26 @@ public class PrintController {
     @RequirePermission({"system:read", "system:read_write"})
     public ResponseEntity<byte[]> printPreviewTemplate(
             @PathVariable String factoryId,
-            @RequestBody Map<String, Object> body,
+            // Issue #712 fix (2026-05-17): typed DTO + @Valid replaces raw Map; either-or
+            // (templateId vs inlineSchemaJson) still enforced below since Bean Validation
+            // alone can't express that cross-field constraint without a custom validator.
+            @Valid @RequestBody PrintPreviewTemplateRequest req,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
 
-        // ── validate body ─────────────────────────────────────────────────
-        Object templateIdObj = body.get("templateId");
-        Object inlineSchemaJsonObj = body.get("inlineSchemaJson");
-        Object entityTypeObj = body.get("entityType");
-
-        String templateId = (templateIdObj instanceof String s) ? s : null;
-        String inlineSchemaJson = (inlineSchemaJsonObj instanceof String s) ? s : null;
-        String entityType = (entityTypeObj instanceof String s) ? s : null;
+        String templateId = req.getTemplateId();
+        String inlineSchemaJson = req.getInlineSchemaJson();
+        String entityType = req.getEntityType();
 
         if ((templateId == null || templateId.isBlank())
                 && (inlineSchemaJson == null || inlineSchemaJson.isBlank())) {
             throw new BusinessException(400, "templateId 或 inlineSchemaJson 至少一项");
         }
-        if (entityType == null || entityType.isBlank()) {
-            throw new BusinessException(400, "entityType 必填");
-        }
-        if (!entityType.startsWith("PRINT_")) {
-            throw new BusinessException(400, "entityType 必须以 PRINT_ 前缀 (e.g. PRINT_SALES_ORDER)");
-        }
+        // entityType + PRINT_ prefix already enforced by @NotBlank + @Pattern on DTO.
 
         // ── resolve entity data (mockData for editor / TODO: real entity for entityId) ─
-        Object mockDataObj = body.get("mockData");
         Map<String, Object> entityData;
-        if (mockDataObj instanceof Map<?, ?> m) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> typed = (Map<String, Object>) m;
-            entityData = new HashMap<>(typed);
+        if (req.getMockData() != null) {
+            entityData = new HashMap<>(req.getMockData());
         } else {
             entityData = new HashMap<>();
         }
@@ -244,11 +236,11 @@ public class PrintController {
         if (authorization != null && !authorization.isEmpty()) {
             headers.set("Authorization", authorization);
         }
-        HttpEntity<Map<String, Object>> req = new HttpEntity<>(pythonBody, headers);
+        HttpEntity<Map<String, Object>> httpRequest = new HttpEntity<>(pythonBody, headers);
 
         try {
             ResponseEntity<byte[]> resp = pythonRestTemplate.exchange(
-                    url, HttpMethod.POST, req, byte[].class);
+                    url, HttpMethod.POST, httpRequest, byte[].class);
             byte[] pdf = resp.getBody();
             if (pdf == null || pdf.length == 0) {
                 throw new BusinessException(502, "Python 打印服务返空 PDF");

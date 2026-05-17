@@ -2,12 +2,17 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.annotation.RequirePermission;
+import com.cretas.aims.dto.bom.ApproveBomVersionRequest;
+import com.cretas.aims.dto.bom.CreateBomDraftRequest;
+import com.cretas.aims.dto.bom.RejectBomVersionRequest;
+import com.cretas.aims.dto.bom.SubmitBomVersionRequest;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.bom.BomVersion;
 import com.cretas.aims.service.bom.BomVersionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -36,6 +40,9 @@ import java.util.Optional;
  * <p>Issue #710 fix (2026-05-16): 补全 4 个 write endpoint 缺失的 RBAC, 防止低权限 F006 用户
  * (viewer/operator/quality_insp/...) 直接调 approve/reject 绕过审批 (P0 RBAC bypass).
  *
+ * <p>Issue #712 fix (2026-05-17): 把 raw {@code Map<String, Object>} 全部换成 typed DTO
+ * + @Valid, 让错误请求返 400 而不是 500 NPE / ClassCastException.
+ *
  * @author Cretas Team / Sprint 3 Track-H
  * @since 2026-05-16
  */
@@ -54,11 +61,8 @@ public class BomVersionController {
     @Operation(summary = "为指定 BOM 创建新版本 DRAFT (snapshot 自动 from 当前 BomRecipe)")
     public ApiResponse<BomVersion> createDraft(
             @PathVariable String factoryId,
-            @RequestBody Map<String, Object> body) {
-        String bomRecipeId = (String) body.get("bomRecipeId");
-        Long createdBy = body.get("createdBy") == null ? null
-                : ((Number) body.get("createdBy")).longValue();
-        BomVersion draft = versionService.createDraft(factoryId, bomRecipeId, createdBy);
+            @Valid @RequestBody CreateBomDraftRequest req) {
+        BomVersion draft = versionService.createDraft(factoryId, req.getBomRecipeId(), req.getCreatedBy());
         return ApiResponse.success(draft);
     }
 
@@ -106,8 +110,8 @@ public class BomVersionController {
     public ApiResponse<BomVersion> submitForApproval(
             @PathVariable String factoryId,
             @PathVariable String versionId,
-            @RequestBody(required = false) Map<String, Object> body) {
-        String ecnId = body == null ? null : (String) body.get("ecnId");
+            @RequestBody(required = false) SubmitBomVersionRequest req) {
+        String ecnId = req == null ? null : req.getEcnId();
         return ApiResponse.success(versionService.submitForApproval(factoryId, versionId, ecnId));
     }
 
@@ -117,10 +121,8 @@ public class BomVersionController {
     public ApiResponse<BomVersion> approve(
             @PathVariable String factoryId,
             @PathVariable String versionId,
-            @RequestBody Map<String, Object> body) {
-        Long approverId = body.get("approverId") == null ? null
-                : ((Number) body.get("approverId")).longValue();
-        return ApiResponse.success(versionService.approve(factoryId, versionId, approverId));
+            @Valid @RequestBody ApproveBomVersionRequest req) {
+        return ApiResponse.success(versionService.approve(factoryId, versionId, req.getApproverId()));
     }
 
     @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
@@ -129,10 +131,8 @@ public class BomVersionController {
     public ApiResponse<BomVersion> reject(
             @PathVariable String factoryId,
             @PathVariable String versionId,
-            @RequestBody Map<String, Object> body) {
-        Long approverId = body.get("approverId") == null ? null
-                : ((Number) body.get("approverId")).longValue();
-        String reason = (String) body.get("rejectionReason");
-        return ApiResponse.success(versionService.reject(factoryId, versionId, approverId, reason));
+            @Valid @RequestBody RejectBomVersionRequest req) {
+        return ApiResponse.success(versionService.reject(factoryId, versionId, req.getApproverId(),
+                req.getRejectionReason()));
     }
 }

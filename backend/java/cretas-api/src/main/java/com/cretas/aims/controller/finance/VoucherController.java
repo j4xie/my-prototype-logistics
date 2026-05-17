@@ -1,11 +1,15 @@
 package com.cretas.aims.controller.finance;
 
 import com.cretas.aims.annotation.RequirePermission;
+import com.cretas.aims.dto.finance.VoucherBatchGenerateRequest;
+import com.cretas.aims.dto.finance.VoucherGenerateRequest;
+import com.cretas.aims.dto.finance.VoucherVoidRequest;
 import com.cretas.aims.entity.enums.VoucherStatus;
 import com.cretas.aims.entity.enums.VoucherType;
 import com.cretas.aims.entity.finance.Voucher;
 import com.cretas.aims.repository.VoucherRepository;
 import com.cretas.aims.service.voucher.VoucherService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -84,17 +88,14 @@ public class VoucherController {
 
     // ==================== Write ====================
 
+    // Issue #712 fix (2026-05-17): replaced raw Map<String,Object> bodies with typed DTOs + @Valid.
+
     @PostMapping("/generate")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> generate(
             @PathVariable String factoryId,
-            @RequestBody Map<String, Object> body) {
-        String businessType = (String) body.get("businessType");
-        String businessId = (String) body.get("businessId");
-        if (businessType == null || businessId == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必要参数: businessType / businessId"));
-        }
-        Voucher v = voucherService.createFromBusiness(factoryId, businessType, businessId);
+            @Valid @RequestBody VoucherGenerateRequest req) {
+        Voucher v = voucherService.createFromBusiness(factoryId, req.getBusinessType(), req.getBusinessId());
         return ResponseEntity.ok(Map.of("success", true, "data", v, "message", "凭证已生成"));
     }
 
@@ -102,14 +103,10 @@ public class VoucherController {
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> batchGenerate(
             @PathVariable String factoryId,
-            @RequestBody Map<String, Object> body) {
-        String businessType = (String) body.get("businessType");
-        if (businessType == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必要参数: businessType"));
-        }
-        int count = voucherService.batchCreateForFactory(factoryId, businessType);
+            @Valid @RequestBody VoucherBatchGenerateRequest req) {
+        int count = voucherService.batchCreateForFactory(factoryId, req.getBusinessType());
         Map<String, Object> data = new HashMap<>();
-        data.put("businessType", businessType);
+        data.put("businessType", req.getBusinessType());
         data.put("count", count);
         return ResponseEntity.ok(Map.of("success", true, "data", data, "message", "批量生成完成"));
     }
@@ -129,9 +126,9 @@ public class VoucherController {
     public ResponseEntity<?> voidVoucher(
             @PathVariable String factoryId,
             @PathVariable String id,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody VoucherVoidRequest req,
             @RequestAttribute(value = "userId", required = false) Long userId) {
-        String reason = (String) body.getOrDefault("reason", "未填写原因");
+        String reason = (req.getReason() == null || req.getReason().isBlank()) ? "未填写原因" : req.getReason();
         voucherService.voidVoucher(id, reason, userId);
         return ResponseEntity.ok(Map.of("success", true, "message", "凭证已作废"));
     }

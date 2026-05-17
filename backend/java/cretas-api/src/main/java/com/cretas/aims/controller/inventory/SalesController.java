@@ -8,11 +8,15 @@ import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
 import com.cretas.aims.dto.inventory.FinanceCostBreakdown;
 import com.cretas.aims.dto.inventory.FinanceReviewRequest;
 import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
 import com.cretas.aims.entity.inventory.SalesDeliveryRecord;
 import com.cretas.aims.entity.inventory.SalesOrder;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.MobileService;
+import com.cretas.aims.service.PermissionService;
 import com.cretas.aims.service.inventory.SalesService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +41,8 @@ public class SalesController {
 
     private final SalesService salesService;
     private final MobileService mobileService;
+    private final PermissionService permissionService;
+    private final UserRepository userRepository;
 
     // ==================== 销售订单 ====================
 
@@ -72,9 +78,39 @@ public class SalesController {
             @PathVariable @NotBlank String factoryId,
             @RequestParam SalesOrderStatus status,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader("Authorization") String authorization) {
+        // Issue #736 sister-sweep (2026-05-17): sales orders 也有 PENDING_FINANCE_REVIEW 工作流
+        // (SalesController:135 submit-for-review → status). viewer 不应看到该 list.
+        if (status == SalesOrderStatus.PENDING_FINANCE_REVIEW) {
+            User currentUser = resolveCurrentUser(authorization);
+            boolean canViewFinanceReview = currentUser != null
+                    && permissionService.hasPermission(currentUser,
+                            com.cretas.aims.service.impl.PermissionServiceImpl.FINANCE_REVIEW_VIEW_PERMISSION);
+            if (!canViewFinanceReview) {
+                log.warn("RBAC reject (#736): user={} role={} 无 finance_review 权限, "
+                        + "sales status=PENDING_FINANCE_REVIEW 拒绝访问",
+                        currentUser != null ? currentUser.getUsername() : "<null>",
+                        currentUser != null ? currentUser.getRole() : "<null>");
+                throw new BusinessException(403, "无权查看待财审销售单");
+            }
+        }
         PageResponse<SalesOrder> result = salesService.getSalesOrdersByStatus(factoryId, status, page, size);
         return ApiResponse.success("查询成功", result);
+    }
+
+    private User resolveCurrentUser(String authorization) {
+        if (authorization == null) return null;
+        try {
+            String token = TokenUtils.extractToken(authorization);
+            if (token == null) return null;
+            Long uid = mobileService.getUserFromToken(token).getId();
+            if (uid == null) return null;
+            return userRepository.findById(uid).orElse(null);
+        } catch (Exception e) {
+            log.warn("resolveCurrentUser failed: {}", e.getMessage());
+            return null;
+        }
     }
 
     @PutMapping("/orders/{orderId}")

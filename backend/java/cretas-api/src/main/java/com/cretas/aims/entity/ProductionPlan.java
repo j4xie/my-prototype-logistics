@@ -129,6 +129,24 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "assigned_supervisor_id")
     private Long assignedSupervisorId;
 
+    // ==================== 锁定字段 (Issue #759, 2026-05-17) ====================
+
+    /**
+     * 是否锁定. true = 不可编辑数量/日期/取消.
+     * 配合 lock/unlock endpoint 使用 (PR #755 frontend banner + button).
+     */
+    @Column(name = "is_locked", nullable = false)
+    private Boolean isLocked = false;
+
+    @Column(name = "lock_reason", columnDefinition = "TEXT")
+    private String lockReason;
+
+    @Column(name = "locked_at")
+    private java.time.LocalDateTime lockedAt;
+
+    @Column(name = "locked_by")
+    private Long lockedBy;
+
     // ==================== 调度员模块扩展字段 ====================
 
     /**
