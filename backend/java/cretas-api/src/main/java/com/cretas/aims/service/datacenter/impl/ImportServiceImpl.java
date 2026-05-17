@@ -19,6 +19,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 导入规则服务 — Rule CRUD + dryrun (Excel 解析 + validator) + commit 骨架.
@@ -35,6 +38,7 @@ public class ImportServiceImpl implements ImportService {
     private final ImportRuleRepository ruleRepo;
     private final ImportJobRepository jobRepo;
     private final ImportExecutor importExecutor;
+    private final ImportCommitter importCommitter;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Override
@@ -158,14 +162,46 @@ public class ImportServiceImpl implements ImportService {
             throw new BusinessException(
                     "存在 " + job.getErrorRows() + " 行错误未修正, 请下载修正后重新 dryrun");
         }
-        // TODO Day 5+ follow-up: reflection 写 target_entity 表 + dedup_strategy + 失败行反向 export.
-        // 当前 v1 仅做状态推进 — 实际批量写入需要 EntityManager + targetEntity reflection,
-        // 单独 commit 出来便于审阅.
-        job.setStatus("COMMITTED");
-        job.setCommittedRows(job.getValidRows() == null ? 0 : job.getValidRows());
-        job.setCompletedAt(LocalDateTime.now());
-        log.info("[ImportService] commit jobId={} (v1: 状态推进 only; entity writer Day 5+)", jobId);
-        return jobRepo.save(job);
+        if (job.getSourceFilePath() == null) {
+            throw new BusinessException("源文件已被清理, 请重新 dryrun");
+        }
+        File excelFile = new File(job.getSourceFilePath());
+        if (!excelFile.exists()) {
+            throw new BusinessException("源文件不存在: " + job.getSourceFilePath());
+        }
+
+        ImportRule rule = getRule(factoryId, job.getRuleId());
+        try {
+            ImportCommitter.CommitResult result =
+                    importCommitter.commit(rule, excelFile, factoryId);
+            job.setCommittedRows(result.committedRows);
+            if (!result.commitErrors.isEmpty()) {
+                // 部分失败 — 反向导出错误行
+                String errorFile = importCommitter.exportErrorRows(result.commitErrors, jobId);
+                job.setErrorFilePath(errorFile);
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> existingErrors = job.getErrors() == null
+                        ? new ArrayList<>() : new ArrayList<>(job.getErrors());
+                existingErrors.addAll(result.commitErrors);
+                job.setErrors(existingErrors);
+                job.setStatus("FAILED");
+                log.warn("[ImportService] commit jobId={} 部分失败: {} 行成功, {} 行失败",
+                        jobId, result.committedRows, result.commitErrors.size());
+            } else {
+                job.setStatus("COMMITTED");
+                log.info("[ImportService] commit jobId={} SUCCESS rows={}", jobId, result.committedRows);
+            }
+            job.setCompletedAt(LocalDateTime.now());
+            return jobRepo.save(job);
+        } catch (BusinessException be) {
+            throw be;
+        } catch (Exception ex) {
+            log.error("[ImportService] commit jobId={} 异常: {}", jobId, ex.getMessage(), ex);
+            job.setStatus("FAILED");
+            job.setCompletedAt(LocalDateTime.now());
+            jobRepo.save(job);
+            throw new BusinessException("提交失败: " + ex.getMessage());
+        }
     }
 
     @Override

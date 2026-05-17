@@ -57,6 +57,8 @@ public class EquipmentController {
     @RequireModule("equipment")
     @PostMapping
     @Operation(summary = "创建设备", description = "创建新的设备记录")
+    @com.cretas.aims.annotation.Loggable(module = "EQUIPMENT", action = "CREATE",
+            entityType = "Equipment", summary = "'创建设备 ' + #request.name")
     public ApiResponse<EquipmentDTO> createEquipment(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -79,6 +81,8 @@ public class EquipmentController {
     @RequireModule("equipment")
     @PutMapping("/{equipmentId}")
     @Operation(summary = "更新设备", description = "更新设备信息")
+    @com.cretas.aims.annotation.Loggable(module = "EQUIPMENT", action = "UPDATE",
+            entityType = "Equipment", entityIdParam = "equipmentId")
     public ApiResponse<EquipmentDTO> updateEquipment(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -98,6 +102,8 @@ public class EquipmentController {
     @RequireModule("equipment")
     @DeleteMapping("/{equipmentId}")
     @Operation(summary = "删除设备", description = "删除指定设备")
+    @com.cretas.aims.annotation.Loggable(module = "EQUIPMENT", action = "DELETE",
+            entityType = "Equipment", entityIdParam = "equipmentId")
     public ApiResponse<Void> deleteEquipment(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
