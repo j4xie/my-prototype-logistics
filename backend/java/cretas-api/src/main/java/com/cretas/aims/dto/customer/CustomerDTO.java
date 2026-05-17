@@ -79,6 +79,10 @@ public class CustomerDTO {
     /** Optimistic lock version — FE must send back on PUT to detect concurrent edits (409 Conflict on mismatch) */
     private Long version;
 
+    // Sprint 4 W1 S-CUSTOMER-TAB-1 (tab 20): current assigned sales user
+    private Long assignedSalesUserId;
+    private LocalDateTime assignedSalesUserAssignedAt;
+
     // ==================== 前端字段别名 ====================
 
     /**

@@ -6,6 +6,7 @@ import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.entity.Customer;
+import com.cretas.aims.entity.CustomerSalesUserHistory;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.mapper.CustomerMapper;
@@ -43,6 +44,10 @@ public class CustomerServiceImpl implements CustomerService {
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    /** Sprint 4 W1 S-CUSTOMER-TAB-1: tab 20 业务员变更 history (field injection — constructor manual) */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.repository.CustomerSalesUserHistoryRepository salesUserHistoryRepository;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public CustomerServiceImpl(CustomerRepository customerRepository, CustomerMapper customerMapper,
@@ -608,5 +613,54 @@ public class CustomerServiceImpl implements CustomerService {
         // 客户评级分布
         statistics.put("ratingDistribution", getCustomerRatingDistribution(factoryId));
         return statistics;
+    }
+
+    /**
+     * Sprint 4 W1 S-CUSTOMER-TAB-1 (tab 20): 变更客户当前业务员 + 记录 history.
+     * 防呆 R4 idempotent: 5min 内同 (factoryId, customerId, newSalesUserId) 二次调用
+     * 抛 BusinessException(409).withHint(跳转 history 详情).
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = {"customer", "customerStats"}, allEntries = true)
+    public CustomerDTO updateAssignedSalesUser(String factoryId, String customerId,
+                                               Long newSalesUserId, String reason, Long changedBy) {
+        Customer customer = customerRepository.findById(customerId)
+            .orElseThrow(() -> new EntityNotFoundException("客户不存在: " + customerId));
+
+        if (!factoryId.equals(customer.getFactoryId())) {
+            throw new BusinessException(403, "无权操作此客户 (跨工厂访问被拒)");
+        }
+
+        Long previous = customer.getAssignedSalesUserId();
+        LocalDateTime now = LocalDateTime.now();
+
+        // R4 dedup: 5min 窗口检查
+        var recent = salesUserHistoryRepository.findRecentChange(
+            factoryId, customerId, newSalesUserId, now.minusMinutes(5));
+        if (!recent.isEmpty()) {
+            String existingId = recent.get(0).getId();
+            throw new BusinessException(409,
+                "5 分钟内已变更过此客户的业务员 (history " + existingId + "). 请查看已有变更记录, 避免重复提交.")
+                .withHint("/sales/customers/" + customerId + "?tab=salesUserHist&highlight=" + existingId);
+        }
+
+        // Update customer + insert history
+        customer.setAssignedSalesUserId(newSalesUserId);
+        customer.setAssignedSalesUserAssignedAt(now);
+        customerRepository.save(customer);
+
+        CustomerSalesUserHistory history = new CustomerSalesUserHistory();
+        history.setFactoryId(factoryId);
+        history.setCustomerId(customerId);
+        history.setPreviousSalesUserId(previous);
+        history.setNewSalesUserId(newSalesUserId);
+        history.setChangedBy(changedBy);
+        history.setChangedAt(now);
+        history.setReason(reason);
+        salesUserHistoryRepository.save(history);
+
+        log.info("Customer {} 业务员变更: {} → {} (by user {})", customerId, previous, newSalesUserId, changedBy);
+        return customerMapper.toDTO(customer);
     }
 }
