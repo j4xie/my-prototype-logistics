@@ -50,7 +50,7 @@ BEFORE UPDATE ON workflow_rules
 FOR EACH ROW EXECUTE FUNCTION update_workflow_rules_updated_at();
 
 -- AIChat 意图绑定: workflow_rule_test tool
-INSERT INTO ai_intent_config (id, intent_code, intent_name, intent_category,
+INSERT INTO ai_intent_configs (id, intent_code, intent_name, intent_category,
     tool_name, keywords, is_active, sensitivity_level, created_at, updated_at)
 VALUES (gen_random_uuid(), 'WORKFLOW_RULE_TEST', '测试流转规则',
     'CONFIG_OPERATION', 'workflow_rule_test',
