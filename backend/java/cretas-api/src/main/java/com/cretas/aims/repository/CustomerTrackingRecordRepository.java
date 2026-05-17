@@ -34,4 +34,15 @@ public interface CustomerTrackingRecordRepository extends JpaRepository<Customer
             @Param("customerId") String customerId,
             @Param("content") String content,
             @Param("since") LocalDateTime since);
+
+    /** Sprint 5 Tool 2 (customer_tracking_recent_query): factoryId + customerId + recordTime range, paginated. */
+    @Query("SELECT t FROM CustomerTrackingRecord t " +
+           "WHERE t.factoryId = :factoryId AND t.customerId = :customerId " +
+           "AND t.recordTime >= :since AND t.deletedAt IS NULL " +
+           "ORDER BY t.recordTime DESC")
+    List<CustomerTrackingRecord> findRecentForCustomer(
+            @Param("factoryId") String factoryId,
+            @Param("customerId") String customerId,
+            @Param("since") LocalDateTime since,
+            Pageable pageable);
 }
