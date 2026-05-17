@@ -10,12 +10,10 @@ import com.cretas.aims.entity.config.ApprovalWorkflowNode;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.service.ApprovalWorkflowService;
 import com.cretas.aims.service.workflow.ApprovalWorkflowExecutor;
+import com.cretas.aims.service.workflow.SandboxedSpelEvaluator;
+import com.cretas.aims.service.workflow.SandboxedSpelEvaluator.SpelEvaluationFailure;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -40,11 +38,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ApprovalWorkflowExecutorImpl implements ApprovalWorkflowExecutor {
 
     private final ApprovalWorkflowService workflowService;
+    /**
+     * Sprint 4 W2 Chat J C-WF-VAR-1: 沙箱化 SpEL 求值器, 替代 Sprint 3 I 直接
+     * 使用的 StandardEvaluationContext (开放反射 / RCE attack vector).
+     */
+    private final SandboxedSpelEvaluator spelEvaluator;
 
     /** In-memory ExecutionContext store. Sprint 4 → Redis. */
     private final Map<String, ExecutionContext> contextStore = new ConcurrentHashMap<>();
-
-    private final ExpressionParser spelParser = new SpelExpressionParser();
 
     // ==================== 公开 API ====================
 
@@ -425,16 +426,14 @@ public class ApprovalWorkflowExecutorImpl implements ApprovalWorkflowExecutor {
     }
 
     boolean evaluateCondition(String spel, Map<String, Object> businessContext) {
+        // C-WF-VAR-1: 走 SandboxedSpelEvaluator. RCE attack vectors (T(Runtime), new ProcessBuilder,
+        // .getClass(), 写入) 全 throw SpelEvaluationFailure 而非 silent execute.
+        // 求值失败统一 fallback false (executor 行为不变), 但日志带 user-friendly message.
         try {
-            StandardEvaluationContext evalCtx = new StandardEvaluationContext();
-            for (Map.Entry<String, Object> entry : businessContext.entrySet()) {
-                evalCtx.setVariable(entry.getKey(), entry.getValue());
-            }
-            Expression expression = spelParser.parseExpression(spel);
-            Object result = expression.getValue(evalCtx);
-            return Boolean.TRUE.equals(result);
-        } catch (Exception e) {
-            log.error("SpEL 求值失败 - expression={}, error={}", spel, e.getMessage());
+            return spelEvaluator.evaluateBoolean(spel, businessContext);
+        } catch (SpelEvaluationFailure e) {
+            log.error("SpEL 求值失败 (workflow executor) - expression={}, message={}, hint={}",
+                    spel, e.getUserMessage(), e.getActionHint());
             return false;
         }
     }

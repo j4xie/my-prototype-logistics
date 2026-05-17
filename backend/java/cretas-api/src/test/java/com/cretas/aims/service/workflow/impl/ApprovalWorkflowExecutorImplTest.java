@@ -62,7 +62,8 @@ class ApprovalWorkflowExecutorImplTest {
     void setUp() {
         // 用真实 service 处理 serde + getById, repository mock 控制 workflow lookup
         workflowService = new ApprovalWorkflowServiceImpl(workflowRepository, objectMapper);
-        executor = new ApprovalWorkflowExecutorImpl(workflowService);
+        executor = new ApprovalWorkflowExecutorImpl(workflowService,
+                new com.cretas.aims.service.workflow.SandboxedSpelEvaluator());
     }
 
     // ==================== fixtures ====================
