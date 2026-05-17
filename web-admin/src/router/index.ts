@@ -381,6 +381,22 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SalesVehicles',
             component: () => import('@/views/sales/vehicles/list.vue'),
             meta: { requiresAuth: true, title: '车辆字典', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
+          },
+          // Sprint4-H F-AR-1 (Chat H): 销售订单财务审核 PC 入口.
+          // 销售员 submitForFinanceReview 后状态进 PENDING_FINANCE_REVIEW,
+          // 财务在此查看成本核算 (BOM 标准/预估/实际/利润) 并 approve/reject.
+          // RBAC: detail.vue v-if + 后端 @RequirePermission("finance:read_write") 双层保护.
+          {
+            path: 'finance-review',
+            name: 'SalesOrderFinanceReviewList',
+            component: () => import('@/views/sales/finance-review/list.vue'),
+            meta: { requiresAuth: true, title: '财务待审销售单', module: 'finance' }
+          },
+          {
+            path: 'finance-review/:id',
+            name: 'SalesOrderFinanceReviewDetail',
+            component: () => import('@/views/sales/finance-review/detail.vue'),
+            meta: { requiresAuth: true, title: '销售财务审核详情', module: 'finance', hidden: true }
           }
         ]
       },
@@ -600,6 +616,30 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemLLMUsage',
             component: () => import('@/views/system/llm-usage/index.vue'),
             meta: { requiresAuth: true, title: 'LLM 用量监控', module: 'system' }
+          },
+          {
+            // Sprint 4 Chat K C-LOG-AUDIT-1 (2026-05-16): 系统操作日志独立 menu.
+            // Tracks entity-level CRUD via @Loggable AOP. backend: OperationLogController.
+            path: 'operation-log',
+            name: 'SystemOperationLog',
+            component: () => import('@/views/system/operation-log/index.vue'),
+            meta: { requiresAuth: true, title: '操作日志', module: 'system' }
+          },
+          {
+            // Sprint 4 Chat K C-EXPORT-CENTER-1 (2026-05-16): 用户可配置的跨模块导出规则.
+            // backend: ExportRuleController + ExportExecutor (EntityManager + SpEL + EasyExcel).
+            path: 'export-center',
+            name: 'SystemExportCenter',
+            component: () => import('@/views/system/export-center/index.vue'),
+            meta: { requiresAuth: true, title: '导出中心', module: 'system' }
+          },
+          {
+            // Sprint 4 Chat K C-IMPORT-CENTER-1 (2026-05-16): 用户可配置的 Excel 导入规则 +
+            // dryrun + commit. backend: ImportRuleController + ImportExecutor + ImportCommitter.
+            path: 'import-center',
+            name: 'SystemImportCenter',
+            component: () => import('@/views/system/import-center/index.vue'),
+            meta: { requiresAuth: true, title: '导入中心', module: 'system' }
           },
           {
             // 数据织网 A spec admin audit page (Phase 3 Day 10 + Phase 4.5 wire-up)

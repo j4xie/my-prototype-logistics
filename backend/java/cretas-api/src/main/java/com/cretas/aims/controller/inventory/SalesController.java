@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateDeliveryRequest;
 import com.cretas.aims.dto.inventory.SignatureUploadRequest;
 import com.cretas.aims.dto.inventory.CreateSalesOrderRequest;
+import com.cretas.aims.dto.inventory.FinanceCostBreakdown;
 import com.cretas.aims.dto.inventory.FinanceReviewRequest;
 import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
@@ -171,6 +172,17 @@ public class SalesController {
         String notes = request != null ? request.getNotes() : null;
         SalesOrder order = salesService.financeRejectOrder(factoryId, orderId, notes, reviewerId);
         return ApiResponse.success("销售订单财务审核已驳回", order);
+    }
+
+    @GetMapping("/orders/{orderId}/cost-breakdown")
+    @Operation(summary = "财务成本核算",
+            description = "Sprint4-H F-AR-1: BOM 标准成本 + 预估成本 + 实际成本 + 利润对比")
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write"})
+    public ApiResponse<FinanceCostBreakdown> getOrderCostBreakdown(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        FinanceCostBreakdown breakdown = salesService.getOrderCostBreakdown(factoryId, orderId);
+        return ApiResponse.success("查询成功", breakdown);
     }
 
     // ==================== 发货/出库 ====================

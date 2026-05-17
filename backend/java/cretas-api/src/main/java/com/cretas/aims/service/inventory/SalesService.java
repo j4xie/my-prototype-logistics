@@ -46,6 +46,12 @@ public interface SalesService {
     /** 财务审核驳回: PENDING_FINANCE_REVIEW -> FINANCE_REJECTED */
     SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId);
 
+    /**
+     * Sprint4-H F-AR-1: 财务成本核算视图 — 拉 BOM 标准成本 + 当前预估成本 +
+     * (订单完成后) 实际生产成本, 自动计算预估利润 vs 实际利润对比.
+     */
+    com.cretas.aims.dto.inventory.FinanceCostBreakdown getOrderCostBreakdown(String factoryId, String orderId);
+
     SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request);
 
     SalesOrder cancelOrder(String factoryId, String orderId);

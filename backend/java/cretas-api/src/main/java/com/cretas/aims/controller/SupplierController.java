@@ -59,6 +59,8 @@ public class SupplierController {
     @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "创建供应商", description = "创建新的供应商信息，需要提供供应商名称、联系方式等基本信息")
+    @com.cretas.aims.annotation.Loggable(module = "SUPPLIER", action = "CREATE",
+            entityType = "Supplier", summary = "'创建供应商 ' + #request.name")
     public ApiResponse<SupplierDTO> createSupplier(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
@@ -81,6 +83,8 @@ public class SupplierController {
     @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PutMapping("/{supplierId}")
     @Operation(summary = "更新供应商", description = "更新指定供应商的信息 (partial update: 所有字段可选)")
+    @com.cretas.aims.annotation.Loggable(module = "SUPPLIER", action = "UPDATE",
+            entityType = "Supplier", entityIdParam = "supplierId")
     public ApiResponse<SupplierDTO> updateSupplier(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
@@ -99,6 +103,8 @@ public class SupplierController {
     @RequirePermission({"procurement:read_write", "finance:read_write"})
     @DeleteMapping("/{supplierId}")
     @Operation(summary = "删除供应商", description = "删除指定的供应商记录")
+    @com.cretas.aims.annotation.Loggable(module = "SUPPLIER", action = "DELETE",
+            entityType = "Supplier", entityIdParam = "supplierId")
     public ApiResponse<Void> deleteSupplier(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,

@@ -156,6 +156,8 @@ public class MaterialBatchController {
     @RequireModule("warehouse")
     @PostMapping
     @Operation(summary = "创建原材料批次", description = "创建新的原材料批次，记录入库信息")
+    @com.cretas.aims.annotation.Loggable(module = "MATERIAL_BATCH", action = "CREATE",
+            entityType = "MaterialBatch")
     public ApiResponse<MaterialBatchDTO> createMaterialBatch(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -194,6 +196,8 @@ public class MaterialBatchController {
     @RequireModule("warehouse")
     @PutMapping("/{batchId}")
     @Operation(summary = "更新原材料批次", description = "更新指定批次的信息 — 允许 partial body (qa-prompt Rule 17.6)")
+    @com.cretas.aims.annotation.Loggable(module = "MATERIAL_BATCH", action = "UPDATE",
+            entityType = "MaterialBatch", entityIdParam = "batchId")
     public ApiResponse<MaterialBatchDTO> updateMaterialBatch(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -213,6 +217,8 @@ public class MaterialBatchController {
     @RequireModule("warehouse")
     @DeleteMapping("/{batchId}")
     @Operation(summary = "删除原材料批次")
+    @com.cretas.aims.annotation.Loggable(module = "MATERIAL_BATCH", action = "DELETE",
+            entityType = "MaterialBatch", entityIdParam = "batchId")
     public ApiResponse<Void> deleteMaterialBatch(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,

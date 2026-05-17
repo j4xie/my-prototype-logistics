@@ -82,6 +82,10 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired
     private UserRepository userRepository;
 
+    /** Sprint4-H F-AR-1: BOM 标准成本查询. Optional — 模块未部署时 cost breakdown 仍可工作 (返 null). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.service.bom.BomRecipeService bomRecipeService;
+
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
@@ -389,6 +393,124 @@ public class SalesServiceImpl implements SalesService {
         log.info("销售订单财务审核驳回: orderId={}, orderNumber={}, reviewerId={}, reason={}",
                 orderId, saved.getOrderNumber(), reviewerId, reason);
         return saved;
+    }
+
+    /**
+     * Sprint4-H F-AR-1: 财务成本核算 — 拉 BOM 标准成本 + 当前预估成本 +
+     * (订单完成后) 实际生产成本, 自动计算预估利润 vs 实际利润对比.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public com.cretas.aims.dto.inventory.FinanceCostBreakdown getOrderCostBreakdown(
+            String factoryId, String orderId) {
+        SalesOrder order = getSalesOrderById(factoryId, orderId);
+        // 强制初始化 items (lazy)
+        order.getItems().size();
+
+        BigDecimal totalAmount = order.getTotalAmount() != null
+                ? order.getTotalAmount()
+                : BigDecimal.ZERO;
+        BigDecimal estimatedCost = order.getEstimatedCost();
+        BigDecimal estimatedProfit = order.getEstimatedProfit();
+
+        BigDecimal bomStandardCostSum = BigDecimal.ZERO;
+        BigDecimal actualCostSum = BigDecimal.ZERO;
+        boolean anyBomAvailable = false;
+        boolean anyActualMissing = false;
+
+        java.util.List<com.cretas.aims.dto.inventory.FinanceCostBreakdown.LineCostBreakdown> lines =
+                new java.util.ArrayList<>();
+
+        for (SalesOrderItem item : order.getItems()) {
+            BigDecimal qty = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO;
+            BigDecimal sellUnit = item.getUnitPrice();
+            BigDecimal costUnit = item.getCostUnitPrice();
+            BigDecimal lineAmount = (sellUnit != null)
+                    ? qty.multiply(sellUnit).setScale(2, java.math.RoundingMode.HALF_UP)
+                    : null;
+
+            BigDecimal bomUnit = null;
+            BigDecimal bomLine = null;
+            if (bomRecipeService != null && item.getProductTypeId() != null) {
+                try {
+                    java.util.Optional<com.cretas.aims.entity.bom.BomRecipe> recipeOpt =
+                            bomRecipeService.getCurrentRecipe(factoryId, item.getProductTypeId());
+                    if (recipeOpt.isPresent() && recipeOpt.get().getTotalCost() != null) {
+                        bomUnit = recipeOpt.get().getTotalCost();
+                        bomLine = qty.multiply(bomUnit).setScale(2, java.math.RoundingMode.HALF_UP);
+                        bomStandardCostSum = bomStandardCostSum.add(bomLine);
+                        anyBomAvailable = true;
+                    }
+                } catch (Exception e) {
+                    log.warn("BOM 标准成本查询失败 (productTypeId={}): {}", item.getProductTypeId(), e.getMessage());
+                }
+            }
+
+            BigDecimal actualLine = null;
+            if (costUnit != null) {
+                actualLine = qty.multiply(costUnit).setScale(2, java.math.RoundingMode.HALF_UP);
+                actualCostSum = actualCostSum.add(actualLine);
+            } else {
+                anyActualMissing = true;
+            }
+
+            lines.add(com.cretas.aims.dto.inventory.FinanceCostBreakdown.LineCostBreakdown.builder()
+                    .productId(item.getProductTypeId())
+                    .productName(item.getProductName())
+                    .quantity(qty)
+                    .unitPrice(sellUnit)
+                    .lineAmount(lineAmount)
+                    .bomStandardUnitCost(bomUnit)
+                    .bomStandardLineCost(bomLine)
+                    .actualLineCost(actualLine)
+                    .build());
+        }
+
+        BigDecimal bomStandardCost = anyBomAvailable ? bomStandardCostSum : null;
+        // actualCost: 任一行没有 costUnitPrice 即视为不完整 (订单未完成生产), 返 null
+        BigDecimal actualCost = (anyActualMissing || order.getItems().isEmpty())
+                ? null
+                : actualCostSum;
+        BigDecimal actualProfit = (actualCost != null)
+                ? totalAmount.subtract(actualCost)
+                : null;
+
+        BigDecimal marginEst = null;
+        BigDecimal marginAct = null;
+        if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+            if (estimatedProfit != null) {
+                marginEst = estimatedProfit
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(totalAmount, 2, java.math.RoundingMode.HALF_UP);
+            }
+            if (actualProfit != null) {
+                marginAct = actualProfit
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(totalAmount, 2, java.math.RoundingMode.HALF_UP);
+            }
+        }
+
+        StringBuilder hint = new StringBuilder();
+        if (bomStandardCost == null) {
+            hint.append("部分产品无 ACTIVE BOM 配方, BOM 标准成本暂不可用. ");
+        }
+        if (actualCost == null) {
+            hint.append("订单尚未完成生产, 实际成本数据暂不完整 (使用预估成本对比). ");
+        }
+        String hintStr = hint.length() > 0 ? hint.toString().trim() : null;
+
+        return com.cretas.aims.dto.inventory.FinanceCostBreakdown.builder()
+                .totalAmount(totalAmount)
+                .bomStandardCost(bomStandardCost)
+                .currentEstimatedCost(estimatedCost)
+                .currentEstimatedProfit(estimatedProfit)
+                .actualCost(actualCost)
+                .actualProfit(actualProfit)
+                .profitMarginEstimated(marginEst)
+                .profitMarginActual(marginAct)
+                .dataSourceHint(hintStr)
+                .lines(lines)
+                .build();
     }
 
     @Override

@@ -13,7 +13,13 @@ import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
-import { RowActionMenu } from '@/components/list';
+import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
+import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
+import request from '@/api/request';
+import type { ViewMode } from '@/types/viewMode';
+import type { CreateMode } from '@/types/createMode';
+import type { InlineIconId } from '@/types/inlineIcons';
+import type { RowMarkerColor } from '@/types/rowMarker';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
@@ -62,6 +68,114 @@ const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT'
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-VIEW-1 (Sprint 4 Wave 2 Chat L) — view-mode switcher (5 modes).
+// Persistence handled by ViewModeSwitcher via route.name + localStorage.
+const viewMode = ref<ViewMode>('table');
+const kanbanColumns = computed(() =>
+  Object.entries(statusMap).map(([status, v]: [string, { text: string }]) => ({ status, label: v.text }))
+);
+
+// U-NEW-1 (Sprint 4 Wave 2 Chat L) — create-mode selector. Pre-dialog
+// presenting normal/quick/batch/bom modes. quick + bom disabled until
+// Sprint 5 wires entity-specific quick-add + BomVersion expansion.
+const createModeSelectorVisible = ref(false);
+const batchCreateVisible = ref(false);
+function openCreateModeSelector(): void {
+  createModeSelectorVisible.value = true;
+}
+async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
+  if (mode === 'normal') {
+    await openCreateDialog();
+  } else if (mode === 'batch') {
+    // Ensure dropdowns are warm before showing batch dialog.
+    await Promise.all([loadCustomers(), loadProducts(), loadSalesEmployees()]);
+    batchCreateVisible.value = true;
+  } else {
+    // quick + bom are disabled in selector, but defend if external trigger arrives.
+    ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
+  }
+}
+// U-ICON-1 (Sprint 4 Wave 2 Chat L) — inline 7-icon hover toolbar handler.
+async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<void> {
+  switch (id) {
+    case 'copy':
+      handleRowActionClick('copy', row);
+      break;
+    case 'mark':
+      // U-MARKER-1 (Sprint 4 Wave 2 Chat L) — open the standalone marker cell.
+      // The marker dot in the "标记" column is the primary entry; the icon here
+      // is a fallback bringing visual parity with the 7-icon palette per brief.
+      ElMessage.info(`点击行末色点选择标记 (订单 ${row.orderNumber})`);
+      break;
+    case 'lock':
+      handleRowActionClick('lock', row);
+      break;
+    case 'forward':
+      ElMessage.info(`转发 ${row.orderNumber} (待接 share/email API)`);
+      break;
+    case 'print-pdf':
+      handleRowActionClick('print-pdf', row);
+      break;
+    case 'delete':
+      try {
+        await ElMessageBox.confirm(`确认删除订单 ${row.orderNumber}？`, '删除确认', { type: 'warning' });
+        handleRowActionClick('delete', row);
+      } catch {
+        // user cancelled
+      }
+      break;
+    case 'audit':
+      ElMessage.info(`审计日志 (待接 audit log API): ${row.orderNumber}`);
+      break;
+  }
+}
+
+// U-MARKER-1 (Sprint 4 Wave 2 Chat L) — PATCH marker color to backend.
+async function handleMarkerSelect(row: TableRow, color: RowMarkerColor | null): Promise<void> {
+  try {
+    const res = await request.patch(`/mobile/${factoryId.value}/markers/sales-order/${row.id}`, {
+      color,
+    });
+    if (res?.data?.success) {
+      // Optimistic local update so the dot reflects new state without refetch.
+      (row as TableRow & { markerColor?: string | null }).markerColor = color;
+      ElMessage.success(color ? `已标记为 ${color}` : '已清除标记');
+    } else {
+      throw new Error(res?.data?.message || '标记失败');
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '标记请求失败';
+    ElMessage.error(msg);
+  }
+}
+
+function batchOrderFactory(): { customerId: string; salesperson: string; requiredDeliveryDate: string; remark: string } {
+  return { customerId: '', salesperson: '', requiredDeliveryDate: '', remark: '' };
+}
+async function submitBatchOrders(orders: Array<{ customerId: string; salesperson: string; requiredDeliveryDate: string; remark: string }>): Promise<void> {
+  const created: string[] = [];
+  for (const order of orders) {
+    if (!order.customerId) continue;
+    const payload = {
+      customerId: order.customerId,
+      salesperson: order.salesperson || '',
+      requiredDeliveryDate: order.requiredDeliveryDate || null,
+      remark: order.remark || '',
+      shippingIncluded: false,
+      shippingFee: 0,
+      extraFees: [],
+      items: [],
+      customFields: {},
+    };
+    const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+    if (res?.success) created.push(String(res.data?.orderNumber || res.data?.id || ''));
+  }
+  if (!created.length) {
+    throw new Error('未能创建任何订单（请确认每行至少填写客户）');
+  }
+  await loadData();
+}
 
 /** UX-A2: secondary-action dropdown ("操作 ▾") shown last in row toolbar. */
 function rowActionsFor(row: TableRow) {
@@ -760,7 +874,7 @@ async function submitQuickPayment() {
             <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">新建{{ label('salesOrder') }}</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateModeSelector">新建{{ label('salesOrder') }}</el-button>
           </div>
         </div>
       </template>
@@ -780,9 +894,42 @@ async function submitQuickPayment() {
         </el-select>
         <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
+        <!-- U-VIEW-1 view-mode switcher (Sprint 4 Wave 2 Chat L) -->
+        <div style="margin-left: auto">
+          <ViewModeSwitcher v-model="viewMode" />
+        </div>
       </div>
 
-      <el-table :data="filteredTableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+      <GridView
+        v-if="viewMode === 'grid'"
+        :rows="filteredTableData"
+        title-field="orderNumber"
+        subtitle-field="customerName"
+        status-field="status"
+        row-key="id"
+      />
+      <KanbanView
+        v-else-if="viewMode === 'kanban'"
+        :rows="filteredTableData"
+        status-field="status"
+        title-field="orderNumber"
+        subtitle-field="customerName"
+        :columns="kanbanColumns"
+        row-key="id"
+      />
+      <TimelinePlaceholder v-else-if="viewMode === 'timeline'" />
+      <CalendarPlaceholder v-else-if="viewMode === 'calendar'" />
+      <el-table v-else :data="filteredTableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+        <!-- U-MARKER-1 row marker column (Sprint 4 Wave 2 Chat L) -->
+        <el-table-column label="" width="36" align="center">
+          <template #default="{ row }">
+            <RowMarkerCell
+              :value="row.markerColor"
+              :readonly="!canWrite"
+              @select="(c) => handleMarkerSelect(row, c)"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.customerName || row.customer?.name || row.customerId || '-' }}</template>
@@ -918,6 +1065,13 @@ async function submitQuickPayment() {
               size="small"
               @click="handleQuickPayment(row)"
             >收款</el-button>
+            <!-- U-ICON-1 (Sprint 4 Wave 2 Chat L) inline 7-icon hover toolbar -->
+            <InlineRowIcons
+              :row-actions="rowActionsFor(row)"
+              entity-type="salesOrder"
+              class="row-inline-icons"
+              @icon-click="(id: InlineIconId) => handleInlineIconClick(id, row)"
+            />
             <RowActionMenu
               :actions="rowActionsFor(row)"
               button-label="更多"
@@ -1135,6 +1289,35 @@ async function submitQuickPayment() {
       :order-total-amount="taxGroupInvoiceOrder.totalAmount"
       @success="loadData"
     />
+
+    <!-- U-NEW-1 (Sprint 4 Wave 2 Chat L) create-mode selector + batch dialog -->
+    <CreateModeSelector
+      v-model="createModeSelectorVisible"
+      :entity-label="label('salesOrder')"
+      :disabled-modes="['quick', 'bom']"
+      @mode-selected="handleCreateModeSelected"
+    />
+    <BatchCreateDialog
+      v-model="batchCreateVisible"
+      :title="`批量新建 ${label('salesOrder')}`"
+      :columns="[
+        { prop: 'customerId', label: '客户 ID', required: true, slotName: 'customer' },
+        { prop: 'salesperson', label: '业务员', width: 140 },
+        { prop: 'requiredDeliveryDate', label: '期望交货日', width: 160, slotName: 'date' },
+        { prop: 'remark', label: '备注' },
+      ]"
+      :row-factory="batchOrderFactory"
+      :submit="submitBatchOrders"
+    >
+      <template #customer="{ row }">
+        <el-select v-model="row.customerId" filterable size="small" placeholder="选择客户" style="width: 100%">
+          <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </template>
+      <template #date="{ row }">
+        <el-date-picker v-model="row.requiredDeliveryDate" type="date" size="small" value-format="YYYY-MM-DD" style="width: 100%" />
+      </template>
+    </BatchCreateDialog>
   </div>
   </CanvasAwareWrapper>
 </template>

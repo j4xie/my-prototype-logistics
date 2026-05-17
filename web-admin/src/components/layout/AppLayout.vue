@@ -3,6 +3,8 @@ import { computed, onMounted } from 'vue';
 import { useAppStore } from '@/store/modules/app';
 import AppSidebar from './AppSidebar.vue';
 import AppHeader from './AppHeader.vue';
+// U-FEED-1 (Sprint 4 Wave 2 Chat L) — in-app release-notes toast stack.
+import ReleaseNoteCard from '@/components/notification/ReleaseNoteCard.vue';
 
 const appStore = useAppStore();
 
@@ -36,6 +38,9 @@ const mainStyle = computed(() => ({
         </router-view>
       </main>
     </div>
+
+    <!-- U-FEED-1 (Sprint 4 Wave 2 Chat L) — release-notes toast stack -->
+    <ReleaseNoteCard />
   </div>
 </template>
 
