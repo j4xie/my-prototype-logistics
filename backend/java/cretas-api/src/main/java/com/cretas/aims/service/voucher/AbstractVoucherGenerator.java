@@ -3,11 +3,15 @@ package com.cretas.aims.service.voucher;
 import com.cretas.aims.entity.enums.VoucherStatus;
 import com.cretas.aims.entity.finance.Voucher;
 import com.cretas.aims.entity.finance.VoucherEntry;
+import com.cretas.aims.entity.finance.VoucherTemplate;
+import com.cretas.aims.service.VoucherTemplateService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Generator 公共基类 — 把 entries 装配成完整 Voucher, 自动调用 validateBalanced().
@@ -24,9 +28,28 @@ import java.util.Objects;
  */
 public abstract class AbstractVoucherGenerator<T> implements VoucherGenerator<T> {
 
+    /**
+     * Sprint 4 W2 Chat J C-VOUCHER-TPL-1: 模板服务. Optional 注入 (@Autowired required=false)
+     * 让单元测试 / Sprint 3 E 老 generator 测试不强依赖 — null 时 fall back 到 buildEntries
+     * hardcoded path, 保持完全 backward compat.
+     */
+    @Autowired(required = false)
+    protected VoucherTemplateService voucherTemplateService;
+
     @Override
     public Voucher generate(String factoryId, T businessEntity) {
-        List<VoucherEntry> entries = buildEntries(businessEntity);
+        // C-VOUCHER-TPL-1: template-first. 找 active template → 用 SpEL 渲染; 否则 fall back
+        // 到 子类 buildEntries hardcoded 路径 (backward compat: Sprint 3 E 5 prod voucher 数据
+        // 不受影响, 工厂未配置 template 时行为完全一致).
+        List<VoucherEntry> entries;
+        Optional<VoucherTemplate> tplOpt = voucherTemplateService != null
+                ? voucherTemplateService.findActiveTemplate(factoryId, getType())
+                : Optional.empty();
+        if (tplOpt.isPresent()) {
+            entries = voucherTemplateService.renderEntries(tplOpt.get(), businessEntity);
+        } else {
+            entries = buildEntries(businessEntity);
+        }
         BigDecimal totalDebit = entries.stream()
                 .map(e -> Objects.requireNonNullElse(e.getDebit(), BigDecimal.ZERO))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
