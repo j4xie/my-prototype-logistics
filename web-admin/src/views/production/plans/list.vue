@@ -37,11 +37,13 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 function rowActionsFor(row: TableRow) {
-  return computeRowActions(
+  // #751: 删除 dropdown 中的 'view-detail' (页面已有独立"查看" button, 避免 3 button 跳同页)
+  const all = computeRowActions(
     'productionPlan',
     { status: String(row.status || ''), id: String(row.id || '') },
     { canViewPrice: canViewPrice.value }
   );
+  return all.filter((a) => a.id !== 'view-detail');
 }
 function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
@@ -49,6 +51,14 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     case 'cancel': handleCancel(row); break;
     case 'print-pdf': void safePrint('production-task', factoryId.value, String(row.id), { fileName: `生产计划_${row.planNumber || row.id}` }); break;
     case 'copy': ElMessage.info(`复制计划 ${row.planNumber} (待接 API)`); break;
+    case 'lock':
+      // #747: 锁定动作目前后端 API 未实装, 给出明确提示而非静默 info
+      ElMessageBox.alert(
+        '锁定后该生产计划将不再允许修改数量/日期，进入排产保护阶段（避免生产中误改）。\n\n后端 API 正在对接中，暂时不可用。',
+        '锁定生产计划',
+        { confirmButtonText: '我知道了' }
+      ).catch(() => { /* dismiss */ });
+      break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
@@ -360,50 +370,113 @@ async function handleStart(row: TableRow) {
   }
 }
 
-async function handleComplete(row: TableRow) {
+// ==================== 完成生产 dialog (#742) ====================
+// 替代纯 prompt - 显示品名/计划数量,并 enforce 实际产量 ≤ 计划数量上限
+const completeDialogVisible = ref(false);
+const completeRow = ref<TableRow | null>(null);
+const completeForm = ref({ actualQuantity: 0 });
+const completeProductName = computed(() => {
+  const r = completeRow.value;
+  if (!r) return '';
+  return String(r.productTypeName || r.productName || r.productTypeId || '');
+});
+const completePlannedQuantity = computed(() => {
+  const r = completeRow.value;
+  if (!r) return 0;
+  return Number(r.plannedQuantity || 0);
+});
+
+function handleComplete(row: TableRow) {
   if (actionLoading.value) return;
+  completeRow.value = row;
+  // 默认填充计划数量, 便于一键提交; 用户可改
+  completeForm.value = { actualQuantity: Number(row.plannedQuantity || 0) };
+  completeDialogVisible.value = true;
+}
+
+async function submitComplete() {
+  if (!completeRow.value) return;
+  const planned = completePlannedQuantity.value;
+  const actual = Number(completeForm.value.actualQuantity || 0);
+  if (!actual || actual <= 0) {
+    ElMessage.warning('请输入有效的实际产量');
+    return;
+  }
+  if (planned > 0 && actual > planned) {
+    ElMessage.warning(`实际产量不能超过计划数量 ${planned}`);
+    return;
+  }
+  actionLoading.value = true;
   try {
-    const { value } = await ElMessageBox.prompt('请输入实际产量', '完成生产', {
-      inputPattern: /^\d+$/,
-      inputErrorMessage: '请输入有效数量'
-    });
-    actionLoading.value = true;
-    const response = await post(`/${factoryId.value}/production-plans/${row.id}/complete`, {
-      actualQuantity: parseInt(value)
+    const response = await post(`/${factoryId.value}/production-plans/${completeRow.value.id}/complete`, {
+      actualQuantity: actual
     });
     if (response.success) {
       ElMessage.success('生产已完成');
+      completeDialogVisible.value = false;
       loadData();
     } else {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error: any) {
-    // Interceptor already shows specific sticky toast for ApiError (request.ts).
-    // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
 }
 
-async function handleCancel(row: TableRow) {
+// ==================== 取消原因 dialog (#743) ====================
+// 快捷下拉 + 自定义补充, 替代纯 textarea
+const CANCEL_REASON_OPTIONS = [
+  { value: '客户撤单', label: '客户撤单' },
+  { value: '原料缺货', label: '原料缺货' },
+  { value: '质量问题', label: '质量问题' },
+  { value: '排程冲突', label: '排程冲突' },
+  { value: '其他', label: '其他（请补充说明）' },
+];
+const cancelDialogVisible = ref(false);
+const cancelRow = ref<TableRow | null>(null);
+const cancelForm = ref({ reasonOption: '', otherReason: '' });
+const cancelProductName = computed(() => {
+  const r = cancelRow.value;
+  if (!r) return '';
+  return String(r.productTypeName || r.productName || r.productTypeId || '');
+});
+
+function handleCancel(row: TableRow) {
   if (actionLoading.value) return;
+  cancelRow.value = row;
+  cancelForm.value = { reasonOption: '', otherReason: '' };
+  cancelDialogVisible.value = true;
+}
+
+async function submitCancel() {
+  if (!cancelRow.value) return;
+  const opt = cancelForm.value.reasonOption;
+  if (!opt) {
+    ElMessage.warning('请选择取消原因');
+    return;
+  }
+  let reason = opt;
+  if (opt === '其他') {
+    const other = (cancelForm.value.otherReason || '').trim();
+    if (!other) {
+      ElMessage.warning('请补充取消原因');
+      return;
+    }
+    reason = `其他: ${other}`;
+  }
+  actionLoading.value = true;
   try {
-    const { value } = await ElMessageBox.prompt('请输入取消原因', '取消计划', {
-      inputPattern: /.+/,
-      inputErrorMessage: '请输入取消原因'
-    });
-    actionLoading.value = true;
-    const response = await post(`/${factoryId.value}/production-plans/${row.id}/cancel?reason=${encodeURIComponent(value)}`);
+    const response = await post(`/${factoryId.value}/production-plans/${cancelRow.value.id}/cancel?reason=${encodeURIComponent(reason)}`);
     if (response.success) {
       ElMessage.success('计划已取消');
+      cancelDialogVisible.value = false;
       loadData();
     } else {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error: any) {
-    // Interceptor already shows specific sticky toast for ApiError (request.ts).
-    // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
@@ -413,8 +486,14 @@ async function handleCancel(row: TableRow) {
 async function handleCreateBatch(row: TableRow) {
   if (actionLoading.value) return;
   try {
+    // #748: 加流程决策提示 (基于 May10 六扇门会议确认)
     await ElMessageBox.confirm(
-      `确定将计划 "${row.planNumber}" 转为生产批次？\n\n转换后将自动创建批次并开始生产流程。`,
+      `确定将计划 "${row.planNumber}" 转为生产批次？\n\n` +
+      `转换后将自动创建批次并开始生产流程。\n\n` +
+      `⚠️ 流程提示：\n` +
+      `• 如果仓库尚未收到所需原料 → 请先点 "生成调拨单"，等仓库审批/出库后再转批次。\n` +
+      `• 如果原料已就位 → 直接转批次即可。\n` +
+      `• 转批次 = 开始生产；之后在 APP 报工审批，或在 PC 端"完成"录入实际产量。`,
       '转为批次',
       { type: 'warning', confirmButtonText: '确认转换', cancelButtonText: '取消' }
     );
@@ -656,6 +735,29 @@ function handleAiFill(params: TableRow) {
       other-path="/production/batches"
       consequence="计划批准后才会转为批次"
     />
+    <!-- #747 + #748: 生产/锁定/调拨 业务流程引导 banner (基于 May10 六扇门会议) -->
+    <el-alert
+      title="生产计划操作指引"
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 12px"
+    >
+      <template #default>
+        <div style="font-size: 13px; line-height: 1.7;">
+          <strong>计划确认后，根据 BOM 配方和库存情况选择以下路径之一：</strong>
+          <ul style="margin: 4px 0 4px 18px; padding: 0;">
+            <li><strong>生成调拨单</strong>：根据 BOM 自动计算所需原辅料/包材，发申请给仓库审批。库存不足或需要从其他仓库调料时使用。</li>
+            <li><strong>转为批次</strong>：直接将计划转为生产批次并开启生产（前提：仓库已收到所需原料）。</li>
+            <li><strong>开始</strong>：手动开启生产，与"转为批次"语义相近（建议系统会先校验库存是否足够）。</li>
+          </ul>
+          <strong>完成后</strong>：可通过 APP「报工审批」逐工序上报，或在 PC 端「完成生产」录入实际产量结束计划。
+          <span style="color: var(--text-color-secondary, #909399);">
+            进行中的计划支持"锁定"——锁定后该计划不再允许修改数量/日期，避免在生产过程中被误改。
+          </span>
+        </div>
+      </template>
+    </el-alert>
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">
@@ -950,6 +1052,81 @@ function handleAiFill(params: TableRow) {
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="dialogLoading" @click="submitPlan">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- #742 完成生产 dialog -->
+    <el-dialog
+      v-model="completeDialogVisible"
+      :title="completeProductName ? `完成生产 — ${completeProductName}` : '完成生产'"
+      width="460px"
+      destroy-on-close
+      append-to-body
+    >
+      <el-form label-width="100px">
+        <el-form-item label="品名">
+          <span>{{ completeProductName || '-' }}</span>
+        </el-form-item>
+        <el-form-item label="计划数量">
+          <span>{{ completePlannedQuantity }}</span>
+        </el-form-item>
+        <el-form-item label="实际产量" required>
+          <el-input-number
+            v-model="completeForm.actualQuantity"
+            :min="0"
+            :max="completePlannedQuantity > 0 ? completePlannedQuantity : undefined"
+            :precision="2"
+            style="width: 100%"
+          />
+          <div style="font-size: 12px; color: var(--text-color-secondary, #909399); margin-top: 4px;">
+            实际产量 ≤ {{ completePlannedQuantity }}（不能超过计划数量）
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="completeDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="actionLoading" @click="submitComplete">确定完成</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- #743 取消原因 dialog (快捷下拉 + 品名) -->
+    <el-dialog
+      v-model="cancelDialogVisible"
+      :title="cancelProductName ? `取消计划 — ${cancelProductName}` : '取消计划'"
+      width="460px"
+      destroy-on-close
+      append-to-body
+    >
+      <el-form label-width="100px">
+        <el-form-item label="品名">
+          <span>{{ cancelProductName || '-' }}</span>
+        </el-form-item>
+        <el-form-item label="取消原因" required>
+          <el-select
+            v-model="cancelForm.reasonOption"
+            placeholder="请选择取消原因"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="opt in CANCEL_REASON_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="cancelForm.reasonOption === '其他'" label="原因补充" required>
+          <el-input
+            v-model="cancelForm.otherReason"
+            type="textarea"
+            :rows="3"
+            placeholder="请说明具体取消原因"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="cancelDialogVisible = false">关闭</el-button>
+        <el-button type="danger" :loading="actionLoading" @click="submitCancel">确认取消计划</el-button>
       </template>
     </el-dialog>
 

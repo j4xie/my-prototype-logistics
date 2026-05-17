@@ -22,17 +22,24 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 function rowActionsFor(row: TableRow) {
-  return computeRowActions(
+  // #751: 删除 dropdown 中的 'view-detail' (页面已有独立"查看" button, 避免重复 button 跳同页)
+  const all = computeRowActions(
     'processTask',
     { status: String(row.status || 'IN_PROGRESS'), id: String(row.id || '') },
     { canViewPrice: canViewPrice.value }
   );
+  return all.filter((a) => a.id !== 'view-detail');
 }
 function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': router.push(`/production/batches/${row.id}`); break;
-    case 'edit': router.push(`/production/batches/${row.id}`); break;
+    // #751: 编辑跳详情页 + ?mode=edit hint, 让详情页区分 read-only vs edit (页面侧需消费 query)
+    case 'edit': router.push(`/production/batches/${row.id}?mode=edit`); break;
     case 'print-pdf': void safePrint('production-task', factoryId.value, String(row.id), { fileName: `生产批次_${row.batchNumber || row.id}` }); break;
+    case 'lock':
+      // #747 sister: 同步 plans 的提示文案
+      ElMessage.info('锁定后该批次将不再允许修改数量/报工记录，进入封存状态。后端 API 正在对接中，暂时不可用。');
+      break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
@@ -265,8 +272,9 @@ function getStatusText(status: string) {
         <el-table-column prop="createdAt" label="创建时间" width="180" :formatter="formatDateTimeCell" />
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
+            <!-- #751: 查看 vs 编辑 区分 — 详情页消费 ?mode=edit 决定 read-only / editable -->
             <el-button type="primary" link size="small" @click="router.push(`/production/batches/${row.id}`)">查看</el-button>
-            <el-button v-if="canWrite" type="primary" link size="small" @click="router.push(`/production/batches/${row.id}`)">编辑</el-button>
+            <el-button v-if="canWrite" type="warning" link size="small" @click="router.push(`/production/batches/${row.id}?mode=edit`)">编辑</el-button>
             <RowActionMenu
               :actions="rowActionsFor(row)"
               button-label="更多"
