@@ -88,6 +88,49 @@ public class ProductionPlanController {
     }
 
     /**
+     * 创建草稿态生产计划 (M-PREP-1, Sprint 4 W2) — status = PREPARED.
+     *
+     * <p>与 POST `/api/mobile/{factoryId}/production-plans` 区别: 初始状态为 PREPARED 而非 PENDING,
+     * 允许在正式提交前预览物料短缺情况, 然后通过 POST `/{planId}/commit` 提交到 PENDING。</p>
+     */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
+    @PostMapping("/draft")
+    @Operation(summary = "创建草稿态生产计划 (PREPARED)", description = "M-PREP-1: 创建草稿, 提交前可预览物料短缺")
+    public ApiResponse<ProductionPlanDTO> createDraftProductionPlan(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "访问令牌", required = true)
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody CreateProductionPlanRequest request) {
+
+        String token = TokenUtils.extractToken(authorization);
+        Long userId = mobileService.getUserFromToken(token).getId();
+
+        log.info("创建草稿生产计划: factoryId={}, productTypeId={}", factoryId, request.getProductTypeId());
+        ProductionPlanDTO plan = productionPlanService.createDraftProductionPlan(factoryId, request, userId);
+        return ApiResponse.success("草稿生产计划创建成功", plan);
+    }
+
+    /**
+     * 提交草稿态生产计划 (M-PREP-1, Sprint 4 W2) — PREPARED → PENDING.
+     */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
+    @PostMapping("/{planId}/commit")
+    @Operation(summary = "提交草稿生产计划 (PREPARED→PENDING)", description = "M-PREP-1: 将草稿态计划正式提交")
+    public ApiResponse<ProductionPlanDTO> commitDraftProductionPlan(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "计划ID", required = true)
+            @PathVariable @NotNull String planId) {
+
+        log.info("提交草稿生产计划: factoryId={}, planId={}", factoryId, planId);
+        ProductionPlanDTO plan = productionPlanService.commitDraftProductionPlan(factoryId, planId);
+        return ApiResponse.success("草稿生产计划已提交", plan);
+    }
+
+    /**
      * 更新生产计划
      */
     @RequirePermission({"production:read_write", "scheduling:read_write"})

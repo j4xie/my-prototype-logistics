@@ -25,6 +25,18 @@ public interface ProductionPlanService {
      */
     ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId);
      /**
+     * 创建草稿态 (PREPARED) 生产计划 — M-PREP-1, Sprint 4 W2.
+     * 与 createProductionPlan 相同, 但 status 初始化为 PREPARED 而非 PENDING。
+     * 用于先创建后预览物料短缺, 满足后再 commitDraft 提交到 PENDING。
+      */
+    ProductionPlanDTO createDraftProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId);
+     /**
+     * 提交草稿态生产计划 — M-PREP-1, Sprint 4 W2.
+     * 将 PREPARED 状态的计划转换为 PENDING (正式提交)。
+     * 仅允许 PREPARED → PENDING, 其他状态拒绝。
+      */
+    ProductionPlanDTO commitDraftProductionPlan(String factoryId, String planId);
+     /**
      * 更新生产计划
       */
     ProductionPlanDTO updateProductionPlan(String factoryId, String planId, CreateProductionPlanRequest request);
