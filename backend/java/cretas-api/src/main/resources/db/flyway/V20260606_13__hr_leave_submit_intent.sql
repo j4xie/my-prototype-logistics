@@ -20,9 +20,9 @@ VALUES (
     'DATA_OPERATION',
     'hr_leave_submit',
     'MEDIUM',
-    '["请假","请年假","请病假","事假","调休","休假申请","我要请","请假申请","调休申请",' ||
+    ('["请假","请年假","请病假","事假","调休","休假申请","我要请","请假申请","调休申请",' ||
      '"提交请假","申请请假","请假表","婚假","产假","陪产假","丧假","请几天假",' ||
-     '"明天请假","下周请假","年假申请","病假申请","调休申请","休产假","休病假"]',
+     '"明天请假","下周请假","年假申请","病假申请","休产假","休病假"]')::jsonb,
     'Sprint 5 Tool 4: 提交请假申请 (WRITE with preview). 自动检查余额 + 触发审批. 支持 ANNUAL/SICK/PERSONAL/COMPTIME/MARRIAGE/FUNERAL/MATERNITY/PATERNITY/OTHER. 防呆 R1 (preview 显示余额) + R2 (context 含 用户/类型/起止/时长) + R4 (Service 内 时段重叠 dedup, 409 转 actionHint).',
     90, true, NOW(), NOW()
 )
