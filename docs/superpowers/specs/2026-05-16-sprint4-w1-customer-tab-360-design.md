@@ -66,10 +66,11 @@
 │    ├─ <el-tabs v-model="activeTab"> 21 tab labels      │
 │    └─ <KeepAlive> + <component :is="currentTabComp" /> │
 │         │                                              │
-│         └─ tabs/ (新建 14 sub-component + PlaceholderTab) │
-│            ├─ 11 真做 (lazy via defineAsyncComponent)   │
-│            ├─ 1 价格记忆 (Chat B ship 前 placeholder)    │
-│            └─ 7 defer placeholder (复用 PlaceholderTab)  │
+│         └─ tabs/ (新建 14 .vue 文件)                     │
+│            ├─ PlaceholderTab.vue (通用 template, 8 defer tab 共用) │
+│            ├─ 12 真做 tab.vue (lazy via defineAsyncComponent) │
+│            │   含 SalesUserHistoryTab (tab 20, 含变更 dialog) │
+│            └─ PriceMemoryTab.vue (tab 19 integration, Chat B 未 ship 时内部 fallback) │
 │                                                       │
 │  router/index.ts: 加 1 route entry                     │
 └────────────────────────────────────────────────────────┘
@@ -133,7 +134,7 @@
 | 20 | `salesUserHist` | 业务员变更 | ✅ 真做 | `CustomerSalesUserHistory` (新建) | — |
 | 21 | `attachments` | 文件附件 | ✅ 真做 | `AttachmentController` (?entityType=CUSTOMER) | — |
 
-合计: 11 真做 + 1 集成 (tab 19 等 Chat B) + 7 defer placeholder. 6 mask tab.
+合计: **12 真做 + 1 integration (tab 19 等 Chat B) + 8 defer placeholder = 21**. 6 mask tab (7/9/13/15/16/17 + tab 19 一旦 ship).
 
 ---
 
@@ -207,10 +208,11 @@ const activeTab = ref<string>((route.query.tab as string) || 'tracking')
 const customer = ref<Customer | null>(null)
 const customerLoading = ref(false)
 
+// 完整 21 tab 见 §3 Tab 矩阵; 此处仅前 2 行示意结构
 const TAB_DEFS = [
   { key: 'tracking', label: '跟踪记录', component: defineAsyncComponent(() => import('./detail/tabs/TrackingTab.vue')) },
   { key: 'wechat',   label: '微信记录', component: null, deferReason: 'Sprint 5+' },
-  // ... (full 21 list, see Section 2 of decision)
+  // ... 余 19 tab 按 §3 矩阵填充, 真做 tab component 用 defineAsyncComponent, defer 用 component: null
 ]
 
 function onTabChange(key: string) {
@@ -569,7 +571,7 @@ web-admin/src/views/sales/customers/detail/__tests__/
 ```
 
 覆盖目标:
-- 11 真做 tab 每个 ≥1 spec
+- 12 真做 tab 每个 ≥1 spec
 - mask 切换 6 项
 - aggregation 边界 (空 / 单条 / 多条) 6 项
 
@@ -600,7 +602,7 @@ backend/java/cretas-api/src/test/java/com/cretas/aims/service/
 
 ## §9 验收清单
 
-- [ ] detail.vue 21 tab 全可见 (含 7 placeholder), F006 admin 验证
+- [ ] detail.vue 21 tab 全可见 (含 8 placeholder + 12 真做 + 1 integration), F006 admin 验证
 - [ ] lazy load: 首次进 detail 只下载 detail.vue + 当前 tab chunk (network 截图)
 - [ ] URL state restore: refresh 后 tab 仍原位
 - [ ] canViewPrice mask: F006 受限角色 6 tab 价格全 `****`
@@ -609,7 +611,7 @@ backend/java/cretas-api/src/test/java/com/cretas/aims/service/
 - [ ] tab 10/13 aggregation: SKU 分组 + 累加 + 排序正确 (跟订单 list 总和对账)
 - [ ] tab 19 价格记忆: Chat B 未 ship 则 placeholder, ship 后接 API 不破坏
 - [ ] Error 边界: 单 tab 后端 5xx 不影响其他 tab
-- [ ] 空 state: 新客户 11 真做 tab 全显 "暂无 XX" + CTA
+- [ ] 空 state: 新客户 12 真做 tab 全显 "暂无 XX" + CTA
 - [ ] `vite build` + `npx vitest run` 双 EXIT=0 (HARD rule)
 - [ ] 3 nginx vhost 同步 (新 backend 路径 `/customer-tracking` + `/customer-sales-user-history` 需 cover, per `feedback_nginx_3_vhost_sync.md` HARD)
 
@@ -632,7 +634,7 @@ Flyway migration 自动 apply on Spring Boot startup. 验证 `systemctl status c
 ```
 per `feedback_pick_deploy_script_by_pr_diff.md` HARD.
 
-**Nginx**: 仅在新 API 路径时同步 3 vhost (`web-admin.conf` + `admin.cretaceousfuture.com.conf` + `api.cretaceousfuture.com.conf`).
+**Nginx**: 本 Sprint **必同步** — 加了 2 个新 API 路径 (`/customer-tracking` + `/customer-sales-user-history`). 3 vhost 同步: `web-admin.conf` + `admin.cretaceousfuture.com.conf` + `api.cretaceousfuture.com.conf`. 走 `docs/superpowers/runbooks/nginx-vhost-sync-checklist.md`.
 
 ---
 
@@ -642,7 +644,7 @@ per `feedback_pick_deploy_script_by_pr_diff.md` HARD.
 |---|---|---|
 | 1 | Spec 完工 + 路由 + detail.vue skeleton | Flyway migration + Customer 字段 |
 | 2 | CustomerHeader + el-tabs 框架 + tab→router 同步 | CustomerSalesUserHistory entity + Repo + Service |
-| 3 | PlaceholderTab + 7 defer tab 接入 | CustomerSalesUserHistoryController + updateAssignedSalesUser |
+| 3 | PlaceholderTab + 8 defer tab 接入 | CustomerSalesUserHistoryController + updateAssignedSalesUser |
 | 4 | TrackingTab + OrdersTab (含 mask) | CustomerTrackingRecordController CRUD |
 | 5 | SamplesTab + QuotesTab | 6 controller 加 `?customerId=` |
 | 6 | InvoicesTab + PaymentsTab | Backend 单测 |
@@ -651,7 +653,7 @@ per `feedback_pick_deploy_script_by_pr_diff.md` HARD.
 | 9 | ShippingAddressTab + SalesUserHistoryTab (含变更 dialog) | — |
 | 10 | PriceMemoryTab placeholder + Chat B integration probe | — |
 | 11 | canViewPrice mask 6 tab 验收 + UI polish | — |
-| 12 | Vitest (18 spec) | — |
+| 12 | Vitest (≥12 spec: 12 真做 tab 各 1 + detail.spec + PlaceholderTab.spec) | — |
 | 13 | Playwright E2E 6 场景 depth-first | — |
 | 14 | E2E iteration + bug fix (per `depth-first-e2e` 11 rules) | — |
 | 15 | PR + `vite build` + `vitest run` + deploy backend (test→prod) + deploy web-admin + smoke | — |
@@ -666,7 +668,7 @@ per `feedback_pick_deploy_script_by_pr_diff.md` HARD.
 | 6 controller 加 `?customerId=` 并发编辑冲突 | per `concurrent-edit-safety.md` 规则 1 + 5b: 里程碑 commit + `safe-commit.sh` 锁定 scope |
 | tab 10/13 前端 aggregation 大数据慢 | 分页只取首 500 单 + warning "聚合基于近 500 单, 全量请用导出" |
 | systemd `cretas-backend-test` migration 跑失败阻塞 | Flyway 语法本地 PG container dry-run 再 commit |
-| F006 客户数据稀疏导致 demo 看空 | 11 真做 tab 全 empty state 友好 CTA, demo 引导 "创建跟踪记录 → 看到流程" |
+| F006 客户数据稀疏导致 demo 看空 | 12 真做 tab 全 empty state 友好 CTA, demo 引导 "创建跟踪记录 → 看到流程" |
 | 新 API 路径未同步 3 nginx vhost → 真客户 404 | per `feedback_nginx_3_vhost_sync.md` HARD: 加 backend 路径必走 3-vhost 同步 runbook |
 
 ---
