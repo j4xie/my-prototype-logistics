@@ -1,0 +1,75 @@
+import { describe, it, expect } from 'vitest';
+import {
+  INLINE_ICONS,
+  computeInlineIconStates,
+  type InlineIconId,
+} from '../inlineIcons';
+import type { RowAction } from '../rowActions';
+
+describe('INLINE_ICONS catalog', () => {
+  it('exposes 7 icons in canonical order', () => {
+    expect(INLINE_ICONS.map((d) => d.id)).toEqual([
+      'copy',
+      'mark',
+      'lock',
+      'forward',
+      'print-pdf',
+      'delete',
+      'audit',
+    ]);
+  });
+
+  it('marks 3 ids as inline-only (mark/forward/audit)', () => {
+    const inlineOnly = INLINE_ICONS.filter((d) => d.inlineOnly).map((d) => d.id);
+    expect(inlineOnly.sort()).toEqual(['audit', 'forward', 'mark']);
+  });
+
+  it('flags delete as danger + requiresConfirm', () => {
+    const del = INLINE_ICONS.find((d) => d.id === 'delete')!;
+    expect(del.danger).toBe(true);
+    expect(del.requiresConfirm).toBe(true);
+  });
+});
+
+describe('computeInlineIconStates', () => {
+  function makeAction(id: string, disabled = false): RowAction {
+    return { id, icon: '?', label: id, disabled };
+  }
+
+  it('always enables 3 inline-only ids regardless of rowActions', () => {
+    const states = computeInlineIconStates([]);
+    const inlineIds: InlineIconId[] = ['mark', 'forward', 'audit'];
+    for (const id of inlineIds) {
+      const s = states.find((x) => x.def.id === id)!;
+      expect(s.enabled).toBe(true);
+    }
+  });
+
+  it('disables known ids missing from rowActions', () => {
+    const states = computeInlineIconStates([makeAction('copy')]);
+    const copy = states.find((x) => x.def.id === 'copy')!;
+    const del = states.find((x) => x.def.id === 'delete')!;
+    expect(copy.enabled).toBe(true);
+    expect(del.enabled).toBe(false);
+    expect(del.disabledReason).toBe('当前状态不允许此操作');
+  });
+
+  it('disables known id when rowActions flagged disabled', () => {
+    const states = computeInlineIconStates([makeAction('copy', true)]);
+    const copy = states.find((x) => x.def.id === 'copy')!;
+    expect(copy.enabled).toBe(false);
+  });
+
+  it('preserves canonical 7-icon order', () => {
+    const states = computeInlineIconStates([]);
+    expect(states.map((s) => s.def.id)).toEqual([
+      'copy',
+      'mark',
+      'lock',
+      'forward',
+      'print-pdf',
+      'delete',
+      'audit',
+    ]);
+  });
+});

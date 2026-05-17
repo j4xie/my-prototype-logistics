@@ -123,6 +123,12 @@ public class PurchaseOrder extends BaseEntity {
     private String remark;
 
     /**
+     * U-MARKER-1 (Sprint 4 Wave 2 Chat L) — 行标颜色标记 (red/orange/yellow/green/blue/null).
+     */
+    @Column(name = "marker_color", length = 16)
+    private String markerColor;
+
+    /**
      * W-12 fix (Round 15): optional FK to sales_orders.id — when PO is created
      * to fulfill a specific SO ("定点追踪主原料防止多采"). Nullable for 无单采购.
      * SO detail page's "关联采购" tab depends on this column.

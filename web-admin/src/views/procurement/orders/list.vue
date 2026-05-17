@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import request, { get, post } from '@/api/request';
+// request.patch is used by U-MARKER-1 below; default export already imported.
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, ChatDotRound, Download } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
@@ -17,7 +18,12 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu, TableFooter } from '@/components/list';
+import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
+import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
+import type { ViewMode } from '@/types/viewMode';
+import type { CreateMode } from '@/types/createMode';
+import type { InlineIconId } from '@/types/inlineIcons';
+import type { RowMarkerColor } from '@/types/rowMarker';
 import { computeRowActions } from '@/composables/useRowActions';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
@@ -31,6 +37,99 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-VIEW-1 (Sprint 4 Wave 2 Chat L) — view-mode switcher (5 modes).
+const viewMode = ref<ViewMode>('table');
+
+// U-NEW-1 (Sprint 4 Wave 2 Chat L) — create-mode selector.
+const createModeSelectorVisible = ref(false);
+const batchCreateVisible = ref(false);
+function openCreateModeSelector(): void {
+  createModeSelectorVisible.value = true;
+}
+async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
+  if (mode === 'normal') {
+    await openCreateDialog();
+  } else if (mode === 'batch') {
+    await Promise.all([loadSuppliers(), loadMaterials(), loadSalesOrders()]);
+    batchCreateVisible.value = true;
+  } else {
+    ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
+  }
+}
+// U-ICON-1 (Sprint 4 Wave 2 Chat L) — inline 7-icon hover toolbar handler.
+async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<void> {
+  switch (id) {
+    case 'copy':
+      handleRowActionClick('copy', row);
+      break;
+    case 'mark':
+      // U-MARKER-1 — primary entry is the marker column dot; icon is parity fallback.
+      ElMessage.info(`点击行首色点选择标记 (采购单 ${row.orderNumber})`);
+      break;
+    case 'lock':
+      handleRowActionClick('lock', row);
+      break;
+    case 'forward':
+      ElMessage.info(`转发 ${row.orderNumber} (待接 share/email API)`);
+      break;
+    case 'print-pdf':
+      handleRowActionClick('print-pdf', row);
+      break;
+    case 'delete':
+      try {
+        await ElMessageBox.confirm(`确认删除采购单 ${row.orderNumber}？`, '删除确认', { type: 'warning' });
+        handleRowActionClick('delete', row);
+      } catch {
+        // user cancelled
+      }
+      break;
+    case 'audit':
+      ElMessage.info(`审计日志 (待接 audit log API): ${row.orderNumber}`);
+      break;
+  }
+}
+
+// U-MARKER-1 (Sprint 4 Wave 2 Chat L) — PATCH marker color to backend.
+async function handleMarkerSelect(row: TableRow, color: RowMarkerColor | null): Promise<void> {
+  try {
+    const res = await request.patch(`/mobile/${factoryId.value}/markers/purchase-order/${row.id}`, {
+      color,
+    });
+    if (res?.data?.success) {
+      (row as TableRow & { markerColor?: string | null }).markerColor = color;
+      ElMessage.success(color ? `已标记为 ${color}` : '已清除标记');
+    } else {
+      throw new Error(res?.data?.message || '标记失败');
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '标记请求失败';
+    ElMessage.error(msg);
+  }
+}
+
+function batchPurchaseFactory(): { supplierId: string; purchaseType: string; expectedDate: string; remark: string } {
+  return { supplierId: '', purchaseType: 'NORMAL', expectedDate: '', remark: '' };
+}
+async function submitBatchPurchaseOrders(orders: Array<{ supplierId: string; purchaseType: string; expectedDate: string; remark: string }>): Promise<void> {
+  const created: string[] = [];
+  for (const order of orders) {
+    if (!order.supplierId) continue;
+    const payload = {
+      supplierId: order.supplierId,
+      purchaseType: order.purchaseType || 'NORMAL',
+      expectedDate: order.expectedDate || null,
+      remark: order.remark || '',
+      items: [],
+    };
+    const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+    if (res?.success) created.push(String(res.data?.orderNumber || res.data?.id || ''));
+  }
+  if (!created.length) {
+    throw new Error('未能创建任何订单（请确认每行至少填写供应商）');
+  }
+  await loadData();
+}
 
 function rowActionsFor(row: TableRow) {
   return computeRowActions(
@@ -494,7 +593,7 @@ function handleAiFill(params: TableRow) {
             <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateModeSelector">
               新建{{ label('purchaseOrder') }}
             </el-button>
           </div>
@@ -525,9 +624,42 @@ function handleAiFill(params: TableRow) {
         </el-select>
         <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
+        <!-- U-VIEW-1 view-mode switcher (Sprint 4 Wave 2 Chat L) -->
+        <div style="margin-left: auto">
+          <ViewModeSwitcher v-model="viewMode" />
+        </div>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+      <GridView
+        v-if="viewMode === 'grid'"
+        :rows="tableData"
+        title-field="orderNumber"
+        subtitle-field="supplierName"
+        status-field="status"
+        row-key="id"
+      />
+      <KanbanView
+        v-else-if="viewMode === 'kanban'"
+        :rows="tableData"
+        status-field="status"
+        title-field="orderNumber"
+        subtitle-field="supplierName"
+        :columns="Object.entries(statusMap).map(([s, v]) => ({ status: s, label: v.text }))"
+        row-key="id"
+      />
+      <TimelinePlaceholder v-else-if="viewMode === 'timeline'" />
+      <CalendarPlaceholder v-else-if="viewMode === 'calendar'" />
+      <el-table v-else :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+        <!-- U-MARKER-1 row marker column (Sprint 4 Wave 2 Chat L) -->
+        <el-table-column label="" width="36" align="center">
+          <template #default="{ row }">
+            <RowMarkerCell
+              :value="row.markerColor"
+              :readonly="!canWrite"
+              @select="(c) => handleMarkerSelect(row, c)"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="供应商" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.supplierName || row.supplier?.name || row.supplierId || '-' }}</template>
@@ -578,6 +710,13 @@ function handleAiFill(params: TableRow) {
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="warning" link size="small" @click="handleAction(row.id, 'submit')">提交</el-button>
             <el-button v-if="row.status === 'SUBMITTED' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'approve')">审批</el-button>
             <el-button v-if="['DRAFT','SUBMITTED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
+            <!-- U-ICON-1 (Sprint 4 Wave 2 Chat L) inline 7-icon hover toolbar -->
+            <InlineRowIcons
+              :row-actions="rowActionsFor(row)"
+              entity-type="purchaseOrder"
+              class="row-inline-icons"
+              @icon-click="(id: InlineIconId) => handleInlineIconClick(id, row)"
+            />
             <RowActionMenu
               :actions="rowActionsFor(row)"
               button-label="更多"
@@ -700,6 +839,42 @@ function handleAiFill(params: TableRow) {
       :config="PURCHASE_ORDER_CONFIG"
       @fill-form="handleAiFill"
     />
+
+    <!-- U-NEW-1 (Sprint 4 Wave 2 Chat L) create-mode selector + batch dialog -->
+    <CreateModeSelector
+      v-model="createModeSelectorVisible"
+      :entity-label="label('purchaseOrder')"
+      :disabled-modes="['quick', 'bom']"
+      @mode-selected="handleCreateModeSelected"
+    />
+    <BatchCreateDialog
+      v-model="batchCreateVisible"
+      :title="`批量新建 ${label('purchaseOrder')}`"
+      :columns="[
+        { prop: 'supplierId', label: '供应商', required: true, slotName: 'supplier' },
+        { prop: 'purchaseType', label: '类型', width: 130, slotName: 'type' },
+        { prop: 'expectedDate', label: '期望交货日', width: 160, slotName: 'date' },
+        { prop: 'remark', label: '备注' },
+      ]"
+      :row-factory="batchPurchaseFactory"
+      :submit="submitBatchPurchaseOrders"
+    >
+      <template #supplier="{ row }">
+        <el-select v-model="row.supplierId" filterable size="small" placeholder="选择供应商" style="width: 100%">
+          <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
+      </template>
+      <template #type="{ row }">
+        <el-select v-model="row.purchaseType" size="small" style="width: 100%">
+          <el-option label="统一" value="NORMAL" />
+          <el-option label="直接" value="DIRECT" />
+          <el-option label="紧急" value="URGENT" />
+        </el-select>
+      </template>
+      <template #date="{ row }">
+        <el-date-picker v-model="row.expectedDate" type="date" size="small" value-format="YYYY-MM-DD" style="width: 100%" />
+      </template>
+    </BatchCreateDialog>
   </div>
   </CanvasAwareWrapper>
 </template>
