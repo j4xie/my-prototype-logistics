@@ -237,3 +237,148 @@ export const SALES_ORDER_CONFIG: AiEntryConfig = {
     { key: 'remark', label: '备注' },
   ],
 };
+
+// ===== Day 7 — Stocktaking (库存盘点调整) =====
+export const STOCKTAKING_CONFIG: AiEntryConfig = {
+  entityType: 'STOCKTAKING',
+  title: 'AI 智能盘点调整',
+  placeholder: '描述你要调整的批次和数量...',
+  welcomeMessage: '你好！我可以帮你快速录入盘点差异调整。',
+  scopeLabel: '仅限库存盘点调整',
+  examples: [
+    '批次号 PB-20260516-001 盘亏 5kg，原因实物清点少 5kg',
+    'PB-001 实物 30kg 系统 35kg 差 -5kg, 称重误差',
+    '盘点批次 RM-2026-100 多 2kg, 上次入库登记偏差',
+  ],
+  tutorialSteps: [
+    { title: '描述差异', description: '说出批次号、盘点结果（盘盈/盘亏多少）和原因', icon: '1' },
+    { title: '补充信息', description: 'AI 会追问缺少的批次号或调整数量、原因', icon: '2' },
+    { title: '确认预览', description: '信息收集完毕后会显示预览卡片，核对调整明细', icon: '3' },
+    { title: '填入表单', description: '点击「填入表单」自动打开调整对话框，确认后提交', icon: '4' },
+  ],
+  systemPrompt: `你是食品工厂的库存盘点助手。用户会用自然语言描述盘点差异，你需要通过对话收集以下字段：
+
+必填字段：
+- batchNumber: 批次号（如 "PB-20260516-001"、"RM-2026-100"）
+- adjustQuantity: 调整数量（数字，正数=盘盈/增加，负数=盘亏/减少）
+- reason: 调整原因（说明为什么需要调整）
+
+交互规则：
+1. 如果用户一次性提供了所有必填信息，直接返回 FILL_FORM
+2. 如果缺少必填字段，礼貌追问（每次只问1-2个问题）
+3. "盘亏"/"实物少" 等关键词 → 负数；"盘盈"/"多出来" 等关键词 → 正数
+4. 数量支持带单位（"5kg"→5）
+
+当所有必填字段收集完毕后，返回如下格式：
+\`\`\`json
+{"action":"FILL_FORM","params":{"batchNumber":"PB-20260516-001","adjustQuantity":-5,"reason":"实物清点少 5kg"}}
+\`\`\`
+
+在返回 JSON 之前，先用一句话总结。`,
+  fields: [
+    { key: 'batchNumber', label: '批次号', required: true },
+    { key: 'adjustQuantity', label: '调整数量', required: true },
+    { key: 'reason', label: '调整原因', required: true },
+  ],
+};
+
+// ===== Day 9 — Warehouse Inbound (采购入库) =====
+export const WH_INBOUND_CONFIG: AiEntryConfig = {
+  entityType: 'WH_INBOUND',
+  title: 'AI 智能创建入库单',
+  placeholder: '描述你的入库需求...',
+  welcomeMessage: '你好！我可以帮你快速创建采购入库单。',
+  scopeLabel: '仅限采购入库单',
+  examples: [
+    '从XX供应商收货 500kg 大豆，今天入库',
+    '紧急入库 200kg 小麦粉，供应商 YY，明天到货',
+    '关联采购订单 PO-001 收货 300kg 大豆',
+  ],
+  tutorialSteps: [
+    { title: '描述入库', description: '说出供应商、物料名称、数量、入库日期等', icon: '1' },
+    { title: '补充信息', description: 'AI 会追问缺少的供应商或物料明细信息', icon: '2' },
+    { title: '确认预览', description: '信息收集完毕后会显示预览卡片，核对供应商和物料明细', icon: '3' },
+    { title: '填入表单', description: '点击「填入表单」自动打开新建对话框，确认后提交', icon: '4' },
+  ],
+  systemPrompt: `你是食品工厂的入库助手。用户会用自然语言描述采购入库需求，你需要通过对话收集以下字段：
+
+必填字段：
+- supplierName: 供应商名称
+- receiveDate: 入库日期（YYYY-MM-DD 格式）
+- items: 入库明细数组，每项包含：
+  - materialName: 物料名称
+  - receivedQuantity: 收货数量（数字）
+  - unit: 单位（默认 kg）
+
+可选字段：
+- purchaseOrderNumber: 关联采购订单号（如 "PO-001"）
+- remark: 备注
+
+交互规则：
+1. 至少需要供应商、入库日期和一项物料明细
+2. 如果缺少必填信息，礼貌追问
+3. 支持一次添加多项物料
+4. 日期支持自然语言转换（"今天"→今天的日期；"明天"等）
+
+当信息收集完毕后，返回如下格式：
+\`\`\`json
+{"action":"FILL_FORM","params":{"supplierName":"XX供应商","receiveDate":"2026-05-17","purchaseOrderNumber":"","remark":"","items":[{"materialName":"大豆","receivedQuantity":500,"unit":"kg"}]}}
+\`\`\`
+
+在返回 JSON 之前，先用一句话总结。`,
+  fields: [
+    { key: 'supplierName', label: '供应商', required: true },
+    { key: 'receiveDate', label: '入库日期', required: true },
+    { key: 'purchaseOrderNumber', label: '采购订单号' },
+    { key: 'items', label: '入库明细', required: true },
+    { key: 'remark', label: '备注' },
+  ],
+};
+
+// ===== Day 9 — Process Task / Production Batch (生产批次) =====
+export const PROCESS_TASK_CONFIG: AiEntryConfig = {
+  entityType: 'PROCESS_TASK',
+  title: 'AI 智能创建生产批次',
+  placeholder: '描述你的生产批次...',
+  welcomeMessage: '你好！我可以帮你快速创建生产批次。',
+  scopeLabel: '仅限生产批次创建',
+  examples: [
+    '创建批次：豆腐干 500kg',
+    '新开生产批次，产品豆腐 300kg 单位 kg',
+    '豆皮 200kg 创建批次，备注客户永佑订单',
+  ],
+  tutorialSteps: [
+    { title: '描述批次', description: '说出产品名称和计划数量，批次号会自动生成', icon: '1' },
+    { title: '补充信息', description: 'AI 会追问缺少的产品类型或数量', icon: '2' },
+    { title: '确认预览', description: '信息收集完毕后会显示预览卡片，核对批次信息', icon: '3' },
+    { title: '填入表单', description: '点击「填入表单」自动打开创建对话框，确认后提交', icon: '4' },
+  ],
+  systemPrompt: `你是食品工厂的生产批次助手。用户会用自然语言描述生产批次需求，你需要通过对话收集以下字段：
+
+必填字段：
+- productTypeName: 产品名称（如 "豆腐干"、"豆腐"、"豆皮"）
+- plannedQuantity: 计划数量（数字）
+
+可选字段：
+- unit: 单位（kg / 箱 / 件 / 吨，默认 kg）
+- notes: 备注
+
+交互规则：
+1. 如果用户一次性提供了所有必填信息，直接返回 FILL_FORM
+2. 如果缺少必填字段，礼貌追问（每次只问1-2个问题）
+3. 数量支持带单位（"500kg"→500，单位填 "kg"）
+4. 批次号无需用户提供（系统自动生成 PB-YYYYMMDD-XXXXX）
+
+当所有必填字段收集完毕后，返回如下格式：
+\`\`\`json
+{"action":"FILL_FORM","params":{"productTypeName":"豆腐干","plannedQuantity":500,"unit":"kg","notes":""}}
+\`\`\`
+
+在返回 JSON 之前，先用一句话总结。`,
+  fields: [
+    { key: 'productTypeName', label: '产品名称', required: true },
+    { key: 'plannedQuantity', label: '计划数量', required: true },
+    { key: 'unit', label: '单位' },
+    { key: 'notes', label: '备注' },
+  ],
+};

@@ -17,11 +17,13 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, Check, Document } from '@element-plus/icons-vue';
+import { Plus, Refresh, Check, Document, ChatDotRound } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { WH_INBOUND_CONFIG } from '@/components/ai-entry/types';
 
 interface ReceiveRow {
   id: string;
@@ -77,8 +79,58 @@ function handleRowActionClick(actionId: string, row: ReceiveRow) {
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
-function openAiForRow(row: ReceiveRow) {
-  ElMessage.info(`AIChat: whInbound/${row.receiveNumber} — 接 AiEntryDrawer 待 Day 9`);
+// AI 智能创建入库单 (Day 9, Issue #780.2)
+const aiEntryVisible = ref(false);
+function openAiForRow(_row: ReceiveRow) {
+  // Row-context AI is future scope; current Day 9 opens drawer for CREATE flow
+  aiEntryVisible.value = true;
+}
+function openAiCreate() {
+  aiEntryVisible.value = true;
+}
+function handleAiFill(params: Record<string, unknown>) {
+  // Pre-fill the create dialog with AI-collected data, then open it for user confirmation
+  const supplierName = String(params.supplierName || '');
+  const matchedSupplier = supplierOptions.value.find(
+    (s) => String(s.name || '').includes(supplierName) || supplierName.includes(String(s.name || ''))
+  );
+  const poNumber = String(params.purchaseOrderNumber || '');
+  const matchedPo = poNumber
+    ? purchaseOrderOptions.value.find(
+        (p) => String(p.orderNumber || '').toUpperCase() === poNumber.toUpperCase()
+      )
+    : undefined;
+
+  form.value = {
+    purchaseOrderId: matchedPo ? String(matchedPo.id) : '',
+    supplierId: matchedSupplier ? String(matchedSupplier.id) : (matchedPo?.supplierId || ''),
+    receiveDate: String(params.receiveDate || new Date().toISOString().slice(0, 10)),
+    warehouseId: '',
+    remark: String(params.remark || ''),
+    items: [],
+  };
+
+  if (Array.isArray(params.items) && params.items.length > 0) {
+    form.value.items = (params.items as Array<Record<string, unknown>>).map((it) => {
+      const matName = String(it.materialName || '');
+      const matched = materialOptions.value.find(
+        (m) => String(m.name || '').includes(matName) || matName.includes(String(m.name || ''))
+      );
+      return {
+        materialTypeId: matched ? String(matched.id) : '',
+        materialName: matched ? matched.name : matName,
+        receivedQuantity: Number(it.receivedQuantity || 0),
+        unit: String(it.unit || matched?.unit || 'kg'),
+        unitPrice: matched?.unitPrice,
+        qcResult: '',
+        remark: '',
+      };
+    });
+  }
+
+  // Open create dialog (loadOptions handled by handleCreate, but we want pre-fill not reset)
+  if (supplierOptions.value.length === 0) loadOptions();
+  createVisible.value = true;
 }
 
 const loading = ref(false);
@@ -388,6 +440,7 @@ onMounted(() => { loadData(); loadOptions(); });
           <span style="font-size:16px;font-weight:600">采购入库管理</span>
           <div style="display:flex;gap:8px">
             <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="openAiCreate">AI 入库</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建入库单</el-button>
           </div>
         </div>
@@ -591,6 +644,13 @@ onMounted(() => { loadData(); loadOptions(); });
         >确认入库</el-button>
       </template>
     </el-dialog>
+
+    <!-- AI 入库录入抽屉 (Day 9, Issue #780.2) -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="WH_INBOUND_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 

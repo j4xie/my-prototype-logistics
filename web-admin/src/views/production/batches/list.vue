@@ -5,13 +5,15 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
-import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { Plus, Search, Refresh, ChatDotRound } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { PROCESS_TASK_CONFIG } from '@/components/ai-entry/types';
 
 const router = useRouter();
 
@@ -43,8 +45,49 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
-function openAiForRow(row: TableRow) {
-  ElMessage.info(`AIChat: processTask/${row.batchNumber || row.id} — 接 AiEntryDrawer 待 Day 9`);
+// AI 智能创建生产批次 (Day 9, Issue #780.3)
+const aiEntryVisible = ref(false);
+function openAiForRow(_row: TableRow) {
+  // Row-context AI is future scope; current Day 9 opens drawer for CREATE flow
+  aiEntryVisible.value = true;
+}
+function openAiCreate() {
+  aiEntryVisible.value = true;
+}
+async function handleAiFill(params: Record<string, unknown>) {
+  // Load product types if not already cached so name-matching can work
+  if (productTypes.value.length === 0 && factoryId.value) {
+    try {
+      const res = await get(`/${factoryId.value}/product-types/active`);
+      if (res.success) {
+        productTypes.value = res.data || [];
+      }
+    } catch (e: unknown) {
+      console.error('加载产品类型失败:', e);
+    }
+  }
+
+  const productName = String(params.productTypeName || '');
+  const matched = productTypes.value.find(
+    (p) => {
+      const name = String(p.name || p.productName || '');
+      return name.includes(productName) || productName.includes(name);
+    }
+  );
+
+  createForm.value = {
+    batchNumber: generateBatchNumber(),
+    productTypeId: matched ? String(matched.id) : '',
+    plannedQuantity: Number(params.plannedQuantity || 0) || null,
+    unit: String(params.unit || 'kg'),
+    notes: String(params.notes || ''),
+  };
+
+  if (!matched && productName) {
+    ElMessage.warning(`未找到匹配的产品类型 "${productName}"，请手动选择`);
+  }
+
+  createDialogVisible.value = true;
 }
 
 const loading = ref(false);
@@ -227,6 +270,9 @@ function getStatusText(status: string) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="openAiCreate">
+              AI 创建批次
+            </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">
               创建批次
             </el-button>
@@ -333,6 +379,13 @@ function getStatusText(status: string) {
         <el-button type="primary" :loading="creating" @click="submitCreate">创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- AI 智能创建生产批次抽屉 (Day 9, Issue #780.3) -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="PROCESS_TASK_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 

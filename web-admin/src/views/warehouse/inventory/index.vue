@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
-import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning } from '@element-plus/icons-vue';
+import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning, ChatDotRound } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
@@ -14,6 +14,8 @@ import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
+import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import { STOCKTAKING_CONFIG } from '@/components/ai-entry/types';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -31,8 +33,30 @@ function handleWorkflowNodeClick(nodeId: string) {
   loadData();
   ElMessage.success(`已切到 "${getBucketLabel('inventory', nodeId)}" (显示状态: ${primary}). bucket 含多个状态, 想看其他请打开状态下拉切换.`);
 }
+// AI 盘点调整 (Day 7) — Issue #780.1
+const aiEntryVisible = ref(false);
 function handleWorkflowAITrigger() {
-  ElMessage.info('AI 入口待 Day 7 接入');
+  aiEntryVisible.value = true;
+}
+function handleAiFill(params: Record<string, unknown>) {
+  const batchNumber = String(params.batchNumber || '');
+  // Try to match batch in current table; if not found, leave fields blank but pre-fill batchNumber
+  const matched = tableData.value.find(
+    (r) => String(r.batchNumber || '').toUpperCase() === batchNumber.toUpperCase()
+  );
+  adjustForm.value = {
+    batchId: matched ? String(matched.id) : '',
+    batchNumber: matched ? String(matched.batchNumber) : batchNumber,
+    currentQuantity: matched ? Number(matched.currentQuantity ?? matched.quantity ?? 0) : 0,
+    adjustQuantity: Number(params.adjustQuantity || 0),
+    reason: String(params.reason || ''),
+  };
+  if (!matched) {
+    ElMessage.warning(
+      `未在当前列表找到批次 ${batchNumber}，请确认批次号或先搜索后再调整`
+    );
+  }
+  adjustDialogVisible.value = true;
 }
 
 const loading = ref(false);
@@ -340,6 +364,9 @@ function getStatusText(status: string) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+              AI 盘点
+            </el-button>
             <el-button :icon="Download" @click="handleExport">导出报告</el-button>
             <el-button :icon="DataAnalysis" @click="loadStatistics">刷新统计</el-button>
           </div>
@@ -544,6 +571,13 @@ function getStatusText(status: string) {
         <el-icon class="is-loading"><DataAnalysis /></el-icon> 加载中...
       </div>
     </el-dialog>
+
+    <!-- AI 盘点调整对话框 (Day 7, Issue #780.1) -->
+    <AiEntryDrawer
+      v-model="aiEntryVisible"
+      :config="STOCKTAKING_CONFIG"
+      @fill-form="handleAiFill"
+    />
   </div>
 </template>
 
