@@ -55,8 +55,30 @@ public class QualityInspection extends BaseEntity {
     private BigDecimal passRate;
     @Column(name = "result", length = 20)
     private String result;  // PASS, FAIL, CONDITIONAL
+
+    /**
+     * Sprint 4 W1 Q-MODE-1: 检验模式 (全检 vs 抽检). nullable for backfill compat.
+     * 全检 (FULL_INSPECTION) 意味 sample_size == 生产批量;
+     * 抽检 (SAMPLING) 意味 sample_size < 生产批量, sampleSize 应反映实际抽样数.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inspection_mode", length = 20)
+    private InspectionMode inspectionMode;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    /**
+     * 检验模式枚举.
+     * <ul>
+     *   <li>FULL_INSPECTION - 全检 (逐件检验, sample_size == 生产批量)</li>
+     *   <li>SAMPLING - 抽检 (按抽样标准检验部分样本)</li>
+     * </ul>
+     */
+    public enum InspectionMode {
+        FULL_INSPECTION,
+        SAMPLING
+    }
 
     /**
      * 持久化前自动生成 ID
