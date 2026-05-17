@@ -339,6 +339,19 @@ const businessRoutes: RouteRecordRaw[] = [
               hidden: true,
               roles: ['factory_super_admin', 'platform_admin', 'procurement_manager', 'finance_manager', 'dispatcher', 'permission_admin', 'department_admin']
             }
+          },
+          // P-NUCLEAR-1 (28-Backlog #30): 核价单 询价 → 核价 → 采购 pipeline
+          {
+            path: 'inquiry-quotes',
+            name: 'InquiryQuoteList',
+            component: () => import('@/views/procurement/inquiry-quotes/list.vue'),
+            meta: { requiresAuth: true, title: '核价单', module: 'procurement' }
+          },
+          {
+            path: 'inquiry-quotes/:id',
+            name: 'InquiryQuoteDetail',
+            component: () => import('@/views/procurement/inquiry-quotes/detail.vue'),
+            meta: { requiresAuth: true, title: '核价单详情', module: 'procurement', hidden: true }
           }
         ]
       },
