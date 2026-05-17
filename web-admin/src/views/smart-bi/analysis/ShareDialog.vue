@@ -1,5 +1,10 @@
 <template>
-  <el-dialog v-model="visible" title="分享分析报告" width="500px">
+  <DesktopModal
+    v-model="visible"
+    action="分享分析报告"
+    :context-label="reportContextLabel"
+    width="500px"
+  >
     <div v-if="!shareLink" style="text-align: center; padding: 20px;">
       <p style="margin-bottom: 16px; color: var(--color-text-regular, #606266);">生成公开链接，无需登录即可查看分析报告</p>
       <el-form label-width="80px" style="max-width: 380px; margin: 0 auto;">
@@ -35,14 +40,15 @@
         </template>
       </el-result>
     </div>
-  </el-dialog>
+  </DesktopModal>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Link, CopyDocument } from '@element-plus/icons-vue';
 import { post } from '@/api/request';
+import { DesktopModal } from '@/components/dialog';
 
 interface BatchInfo {
   uploadId?: number | string;
@@ -64,26 +70,36 @@ const shareTitle = ref('');
 const shareTTL = ref(7);
 const shareCreating = ref(false);
 
-let currentBatch: BatchInfo | null = null;
+const currentBatchRef = ref<BatchInfo | null>(null);
+
+// 防呆 R2: title shows entity identity (file name + batch id).
+const reportContextLabel = computed(() => {
+  const b = currentBatchRef.value;
+  if (!b) return '';
+  const name = b.fileName || b.batchName || '';
+  const id = b.uploadId || b.id || '';
+  return name && id ? `${name} (#${id})` : name || (id ? `#${id}` : '');
+});
 
 const open = (batch: BatchInfo | null | undefined) => {
   shareLink.value = '';
   shareFullUrl.value = '';
-  currentBatch = batch ?? null;
+  currentBatchRef.value = batch ?? null;
   shareTitle.value = batch?.fileName || batch?.batchName || '数据分析报告';
   shareTTL.value = 7;
   visible.value = true;
 };
 
 const createShareLink = async () => {
-  if (!currentBatch?.uploadId && !currentBatch?.id) {
+  const cur = currentBatchRef.value;
+  if (!cur?.uploadId && !cur?.id) {
     ElMessage.warning('请先选择一个上传数据');
     return;
   }
   shareCreating.value = true;
   try {
     const fId = props.factoryId;
-    const uploadId = currentBatch.uploadId || currentBatch.id;
+    const uploadId = cur.uploadId || cur.id;
     const resp = await post(`/${fId}/smart-bi/share`, {
       uploadId,
       title: shareTitle.value,

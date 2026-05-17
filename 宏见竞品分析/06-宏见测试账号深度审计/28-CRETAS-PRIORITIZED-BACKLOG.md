@@ -165,7 +165,7 @@
 | 59 | U-ICON-1 | 行内 7 icon 工具集 | 3d | ❌ |
 | 60 | U-MARKER-1 | 订单标记 7 色 | 1d | ❌ |
 | 61 | U-FEED-1 | 升级日志 in-app feed | 2d | ❌ |
-| 62 | U-DESKTOP-MODAL-1 | layui-layer 桌面级 modal (4 操作) | 3d | ❌ |
+| 62 | U-DESKTOP-MODAL-1 | layui-layer 桌面级 modal (4 操作) | 3d | ✅ |
 | 63 | U-DEPT-1 | 部门切换 button row | 1d | ❌ |
 | 64 | U-CHIP-MULTI-1 | 行内多 chip 状态 (4 chip 垂直堆) | 1d | ❌ |
 | 65 | C-WIDGET-1 | dashboard 卡片插件式 (10 独立 endpoint 渲染) | 5d | ❌ |
