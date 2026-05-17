@@ -49,8 +49,7 @@ CREATE TRIGGER trigger_cph_updated_at
     FOR EACH ROW EXECUTE FUNCTION trg_cph_set_updated_at();
 
 COMMENT ON TABLE customer_price_history IS
-    'Sprint 4 W2 S-PRICE-1 客户记忆价 — append-only, 每次 SO confirm 写入. ' ||
-    'Query: latest by (factory, customer, product) ORDER BY order_date DESC, created_at DESC.';
+    'Sprint 4 W2 S-PRICE-1 客户记忆价 — append-only, 每次 SO confirm 写入. Query: latest by (factory, customer, product) ORDER BY order_date DESC, created_at DESC.';
 COMMENT ON COLUMN customer_price_history.source_sales_order_id IS
     '来源销售订单 ID + UNIQUE 组成 R4 idempotency key — 同 SO+customer+product 只 1 row';
 COMMENT ON COLUMN customer_price_history.source_order_number IS
