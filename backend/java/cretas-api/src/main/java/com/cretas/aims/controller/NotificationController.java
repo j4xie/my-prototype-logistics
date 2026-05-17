@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.notification.CreateNotificationRequest;
@@ -207,8 +208,14 @@ public class NotificationController {
 
     /**
      * 创建通知（系统内部使用）
+     *
+     * Issue #718 (2026-05-17): @RequireRole added — prevent any auth user from
+     * spamming notifications to all factory users. Comment said 系统内部使用 but
+     * had zero gating. Restricted to factory_super_admin + permission_admin +
+     * platform admins (system-level operations).
      */
     @PostMapping
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin", "super_admin"})
     @Operation(summary = "创建通知", description = "创建新的通知消息，系统内部使用。默认通知类型为INFO，默认未读状态")
     public ApiResponse<Notification> createNotification(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
@@ -267,8 +274,12 @@ public class NotificationController {
 
     /**
      * 删除通知
+     *
+     * Issue #718 (2026-05-17): @RequireRole added — prevent any auth user from
+     * permanently deleting factory notifications. Restricted to admin roles.
      */
     @DeleteMapping("/{id}")
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin", "super_admin"})
     @Operation(summary = "删除通知", description = "永久删除指定的通知记录，此操作不可逆")
     @Transactional
     public ApiResponse<Void> deleteNotification(

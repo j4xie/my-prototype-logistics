@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.voice.BatchVoiceTaskRequest;
 import com.cretas.aims.dto.voice.VoiceRecognitionConfigDTO;
@@ -244,6 +245,7 @@ public class VoiceRecognitionController {
      */
     @Operation(summary = "更新语音识别配置", description = "更新工厂的语音识别配置，包括默认语言、采样率、限额等")
     @PutMapping("/{factoryId}/voice/config")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<VoiceRecognitionConfig>> updateConfig(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @Parameter(description = "操作用户ID", example = "1") @RequestParam Long userId,
