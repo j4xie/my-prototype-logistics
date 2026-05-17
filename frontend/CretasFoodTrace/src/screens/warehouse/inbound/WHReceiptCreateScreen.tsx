@@ -9,13 +9,13 @@
  * - "做仓管的他年纪都比较大文化素质很低的"
  * - "对于那个仓管员来说他的任务很简单就是我核对数量核对那个商品的日期这两个"
  * - "其他的话就尽量少让那个仓管员去参与什么什么价格类的"
+ * - L177-180: "拍照也可以留个单谱吧, 就是你留个附件类似一个拍照然后一个附件吗也可以的呀"
  *
  * 提交流程:
  *   1. POST /purchase/receives  (创建草稿入库单, 含全部 items)
  *   2. POST /purchase/receives/{id}/confirm  (确认 → 触发 material_batches 创建)
  *   3. 对每个抄码品行: POST /material/abaca-log (用 batchNumber 自动解析 batchId)
- *
- * 拍照附件: Phase 2 (等 Track C Attachment API ready).
+ *   4. Issue #794: 把预先拍的照片上传到 OSS, 注册 entityType=PURCHASE_RECEIPT, entityId=receive.id
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,8 +24,10 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import {
   ActivityIndicator,
@@ -39,6 +41,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 import { WHInboundStackParamList } from '../../../types/navigation';
 import {
@@ -54,6 +58,7 @@ import {
   MaterialType,
 } from '../../../services/api/materialTypeApiClient';
 import { abacaApiClient } from '../../../services/api/abacaApiClient';
+import { attachmentApi } from '../../../services/api/attachmentApi';
 import { handleError } from '../../../utils/errorHandler';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -63,6 +68,14 @@ type RouteProps = RouteProp<WHInboundStackParamList, 'WHReceiptCreate'>;
 interface RowDraft {
   receivedQuantity: string;
   productionDate: string;       // YYYY-MM-DD
+}
+
+// Issue #794: 收货拍照 — 提交前拍, 提交后批量上传到 entity=PURCHASE_RECEIPT
+interface PendingPhoto {
+  uri: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
 }
 
 const todayStr = (): string => {
@@ -82,6 +95,8 @@ export default function WHReceiptCreateScreen() {
   const [rows, setRows] = useState<Record<string, RowDraft>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  // Issue #794: 提交前 stash 照片, 提交成功后批量上传
+  const [photos, setPhotos] = useState<PendingPhoto[]>([]);
 
   // ============================================================
   // 加载 PO + 关联 MaterialType (含 abaca flag)
@@ -155,6 +170,64 @@ export default function WHReceiptCreateScreen() {
       ...prev,
       [itemId]: { ...(prev[itemId] || { receivedQuantity: '', productionDate: todayStr() }), ...patch },
     }));
+  };
+
+  // ============================================================
+  // Issue #794: 拍照附件
+  // ============================================================
+  const guessExt = (uri: string, mime?: string): string => {
+    if (mime?.startsWith('image/')) return mime.replace('image/', '');
+    const dot = uri.lastIndexOf('.');
+    return dot > 0 ? uri.substring(dot + 1) : 'jpg';
+  };
+
+  const addPhotoFromAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
+    let size = asset.fileSize ?? 0;
+    if (!size) {
+      const info = await FileSystem.getInfoAsync(asset.uri, { size: true });
+      size = info.exists && 'size' in info ? (info.size as number) : 0;
+    }
+    const fileName = asset.fileName
+      ?? `receipt_${Date.now()}.${guessExt(asset.uri, asset.mimeType)}`;
+    const mimeType = asset.mimeType ?? 'image/jpeg';
+    setPhotos((prev) => [...prev, { uri: asset.uri, fileName, mimeType, size }]);
+  }, []);
+
+  const takePhoto = useCallback(async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('需要相机权限', '请在设置中开启相机权限以拍照存档');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await addPhotoFromAsset(result.assets[0]);
+    }
+  }, [addPhotoFromAsset]);
+
+  const pickPhotoFromGallery = useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('需要相册权限');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsMultipleSelection: true,
+    });
+    if (!result.canceled) {
+      for (const a of result.assets) {
+        await addPhotoFromAsset(a);
+      }
+    }
+  }, [addPhotoFromAsset]);
+
+  const removePhoto = (idx: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   // ============================================================
@@ -239,18 +312,45 @@ export default function WHReceiptCreateScreen() {
         }
       }
 
+      // 4. Issue #794: 上传所有 stash 的照片到 PURCHASE_RECEIPT/{receive.id}
+      let photosUploaded = 0;
+      const photoErrors: string[] = [];
+      for (const p of photos) {
+        try {
+          await attachmentApi.uploadAndRegister(
+            { uri: p.uri, name: p.fileName, type: p.mimeType, size: p.size },
+            'PURCHASE_RECEIPT',
+            receive.id,
+            { businessTag: 'RECEIVE_PHOTO', fileCategory: 'PHOTO' },
+            factoryId,
+          );
+          photosUploaded += 1;
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : '照片上传失败';
+          photoErrors.push(`${p.fileName}: ${msg}`);
+        }
+      }
+
       const summary = [
         `入库单 ${confirmed.receiveNumber || receive.id} 创建并确认成功`,
         `共 ${validItems.length} 行`,
         abacaItems.length > 0
           ? `抄码品自动落称重日志: ${abacaLogged}/${abacaItems.length}`
           : null,
+        photos.length > 0
+          ? `照片上传: ${photosUploaded}/${photos.length}`
+          : null,
       ]
         .filter(Boolean)
         .join('\n');
-      const finalMsg = abacaErrors.length > 0
-        ? `${summary}\n\n抄码日志失败 (可手工补录):\n- ${abacaErrors.join('\n- ')}`
-        : summary;
+      const errLines: string[] = [];
+      if (abacaErrors.length > 0) {
+        errLines.push(`抄码日志失败 (可手工补录):\n- ${abacaErrors.join('\n- ')}`);
+      }
+      if (photoErrors.length > 0) {
+        errLines.push(`照片上传失败:\n- ${photoErrors.join('\n- ')}`);
+      }
+      const finalMsg = errLines.length > 0 ? `${summary}\n\n${errLines.join('\n\n')}` : summary;
 
       Alert.alert('入库成功', finalMsg, [
         { text: '确定', onPress: () => navigation.goBack() },
@@ -260,7 +360,7 @@ export default function WHReceiptCreateScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [order, rows, orderNumber, factoryId, navigation, unitFor, isAbacaItem]);
+  }, [order, rows, orderNumber, factoryId, navigation, unitFor, isAbacaItem, photos]);
 
   // ============================================================
   // Render
@@ -418,14 +518,55 @@ export default function WHReceiptCreateScreen() {
             );
           })}
 
-          {/* 拍照附件 — Phase 2 (Track C Attachment API ready 后) */}
+          {/* Issue #794: 收货拍照附件 — 提交后随入库单一起上传 */}
           <Card style={styles.card}>
             <Card.Content>
-              <Text style={styles.sectionTitle}>拍照附件</Text>
-              <Text style={styles.todoText}>
-                📷 收货拍照功能 Phase 2 接入 (依赖 Track C 通用 Attachment 系统).
-                {'\n'}当前提交不含照片. 仓管员可手工拍照存档.
+              <Text style={styles.sectionTitle}>
+                收货照片 ({photos.length})
               </Text>
+              <Text style={styles.helperText}>
+                拍照留单, 提交后随入库单一起保存。可点缩略图删除。
+              </Text>
+
+              {photos.length > 0 && (
+                <View style={styles.photoGrid}>
+                  {photos.map((p, idx) => (
+                    <View key={`${p.uri}-${idx}`} style={styles.photoThumbWrap}>
+                      <Image source={{ uri: p.uri }} style={styles.photoThumb} />
+                      <TouchableOpacity
+                        style={styles.photoDeleteBtn}
+                        onPress={() => removePhoto(idx)}
+                        accessibilityLabel="删除此照片"
+                      >
+                        <Text style={styles.photoDeleteIcon}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.photoButtonRow}>
+                <Button
+                  mode="outlined"
+                  icon="camera"
+                  onPress={takePhoto}
+                  disabled={submitting}
+                  style={styles.photoButton}
+                  compact
+                >
+                  拍照
+                </Button>
+                <Button
+                  mode="outlined"
+                  icon="image-multiple"
+                  onPress={pickPhotoFromGallery}
+                  disabled={submitting}
+                  style={styles.photoButton}
+                  compact
+                >
+                  从相册
+                </Button>
+              </View>
             </Card.Content>
           </Card>
 
@@ -491,7 +632,50 @@ const styles = StyleSheet.create({
   field: { backgroundColor: 'transparent' },
   flex1: { flex: 1 },
 
-  todoText: { fontSize: 12, color: '#888', lineHeight: 18 },
+  helperText: { fontSize: 12, color: '#718096', lineHeight: 18, marginBottom: 8 },
+
+  // Issue #794: 拍照附件样式
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  photoThumbWrap: {
+    position: 'relative',
+    width: 72,
+    height: 72,
+  },
+  photoThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 6,
+    backgroundColor: '#f4f4f5',
+  },
+  photoDeleteBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoDeleteIcon: {
+    color: '#fff',
+    fontSize: 16,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  photoButtonRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  photoButton: {
+    flex: 1,
+  },
 
   bottomSpacer: { height: 24 },
 
