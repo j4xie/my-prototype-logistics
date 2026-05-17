@@ -322,6 +322,14 @@ const businessRoutes: RouteRecordRaw[] = [
             component: () => import('@/views/sales/orders/detail.vue'),
             meta: { requiresAuth: true, title: '销售订单详情', module: 'sales', hidden: true }
           },
+          // Sprint 4 Wave 2 S-PROFIT-DETAIL-1: per-product profit drill-down (11 cols).
+          // Hidden from sidebar; reached via button on detail.vue.
+          {
+            path: 'orders/:id/profit',
+            name: 'SalesOrderProfitDetail',
+            component: () => import('@/views/sales/orders/profit-detail.vue'),
+            meta: { requiresAuth: true, title: '产品级利润详情', module: 'sales', hidden: true }
+          },
           {
             path: 'quotes',
             name: 'SalesQuotes',

@@ -6,6 +6,7 @@ import com.cretas.aims.dto.report.CostVarianceReportDTO;
 import com.cretas.aims.dto.report.KpiMetricsDTO;
 import com.cretas.aims.dto.report.OeeReportDTO;
 import com.cretas.aims.dto.report.ProductionByProductDTO;
+import com.cretas.aims.dto.report.SalesProductProfitRowDTO;
 import com.cretas.aims.security.PriceMaskResolver;
 import com.cretas.aims.service.ReportService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -506,5 +507,31 @@ public class ReportController {
 
         Map<String, Object> report = reportService.getOnTimeDeliveryReport(factoryId, startDate, endDate);
         return ApiResponse.success(report);
+    }
+
+    /**
+     * 获取销售订单产品级利润详情 (Sprint 4 Wave 2 S-PROFIT-DETAIL-1).
+     *
+     * <p>Returns one row per line item with 11 fields:
+     * product / quantity / unitPrice / costUnitPrice / grossProfit / grossMarginPct /
+     * discountAmount / taxAmount / netProfit / historicalAvgPrice / priceTrend.
+     *
+     * <p>Price-sensitive fields are stripped to null for non-price roles
+     * (warehouse_manager, etc.) by the framework. Frontend additionally hides those
+     * columns via canViewPrice v-if (defense in depth, mirrors PR #520 35-view pattern).
+     */
+    @GetMapping("/sales/profit-detail/{salesOrderId}")
+    @Operation(summary = "销售订单产品级利润详情",
+               description = "11-col per-line: 产品/数量/单价/成本/毛利/毛利率/折让/税额/净利/历史均价/趋势")
+    public ApiResponse<List<SalesProductProfitRowDTO>> getSalesOrderProductProfitDetail(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "销售订单ID") String salesOrderId,
+            @RequestParam(required = false, defaultValue = "90")
+            @Parameter(description = "历史均价回溯天数 (默认 90 天)") Integer lookbackDays) {
+        log.info("获取销售订单利润详情: factoryId={}, salesOrderId={}, lookbackDays={}",
+                factoryId, salesOrderId, lookbackDays);
+        List<SalesProductProfitRowDTO> rows =
+                reportService.getSalesOrderProductProfitDetail(factoryId, salesOrderId, lookbackDays);
+        return ApiResponse.success(rows);
     }
 }
