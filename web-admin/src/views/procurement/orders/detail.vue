@@ -191,7 +191,14 @@ async function handleCreateReceive() {
     if (res.success) {
       ElMessage.success('收货单创建成功');
       receiveDialogVisible.value = false;
-      loadOrder(); loadReceives();
+      loadOrder();
+      loadReceives();
+      // Issue #781: 入库 (新建收货) 后强制刷新三价对比缓存.
+      // 入库价是三价对比的"当前价"数据源 (May 7 part1 line 27-31), 入库完必须重拉,
+      // 否则 collapse 已展开过的用户看到的还是上一次的 stale comparison.
+      if (priceComparisons.value.length > 0 || priceLoading.value) {
+        loadPriceComparison();
+      }
     } else { ElMessage.error(res.message || '创建失败，请重试'); }
   } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
@@ -275,7 +282,15 @@ async function confirmReceive(receiveId: string) {
   submitting.value = true;
   try {
     const res = await post(`/${factoryId.value}/purchase/receives/${receiveId}/confirm`);
-    if (res.success) { ElMessage.success('入库确认成功'); loadReceives(); loadOrder(); }
+    if (res.success) {
+      ElMessage.success('入库确认成功');
+      loadReceives();
+      loadOrder();
+      // Issue #781: 确认入库后入库价被记入 raw_material — 强制刷新三价对比.
+      if (priceComparisons.value.length > 0 || priceLoading.value) {
+        loadPriceComparison();
+      }
+    }
     else { ElMessage.error(res.message || '入库确认失败，请重试'); }
   } catch (e) { handleCatchError(e, '入库确认失败，请检查网络'); }
   finally { submitting.value = false; }
@@ -402,7 +417,10 @@ async function confirmReceive(receiveId: string) {
                   </template>
                 </el-table-column>
               </el-table>
-              <el-empty v-else-if="priceLoaded" description="暂无三价对比数据" :image-size="60" />
+              <!-- Issue #781: priceLoaded 短路已 Day 8-9 移除 (line 71-75 comment).
+                   旧 template 仍引用 priceLoaded 是死引用 (undefined), 始终为 falsy
+                   → empty 永不显示. 修法: 直接用 !priceLoading + length===0 判定. -->
+              <el-empty v-else-if="!priceLoading && priceComparisons.length === 0" description="暂无三价对比数据" :image-size="60" />
             </div>
           </el-collapse-item>
         </el-collapse>

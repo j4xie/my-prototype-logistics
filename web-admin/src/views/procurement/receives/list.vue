@@ -286,6 +286,82 @@ function totalReceivedQuantity(row: ReceiveRow): string {
     .join(' + ');
 }
 
+/**
+ * Issue #775: F006 客户要求列表显示分次收货进度.
+ * "本次收货 vs 累计已收 / 下单数" — 让用户直接看出"第一次 100 / 第二次 200 / 共 300"形态.
+ *
+ * 实现策略: 仅聚合**当前页已加载的 rows** 同一 PO 的 items 累加, 不发额外 HTTP.
+ * 跨页/历史收货请进入采购单详情查看完整进度.
+ *
+ * 返回 {cumulative, ordered, percent}; ordered 在当前页 rows 中找不到时返回 null.
+ */
+interface CumulativeStats {
+  cumulative: number;
+  ordered: number | null;
+  byUnit: Map<string, number>;
+  unit: string;
+}
+function cumulativeForRow(row: ReceiveRow): CumulativeStats | null {
+  if (!row.purchaseOrderId) return null;
+  const poId = row.purchaseOrderId;
+  // 同 PO 全部 rows (当前页内, 含本行)
+  const sameOrderRows = tableData.value.filter(r => r.purchaseOrderId === poId);
+  let cumulative = 0;
+  let ordered = 0;
+  let hasOrdered = false;
+  const byUnit = new Map<string, number>();
+  let firstUnit = '';
+  for (const r of sameOrderRows) {
+    for (const it of r.items || []) {
+      const qty = Number(it.receivedQuantity) || 0;
+      cumulative += qty;
+      const u = (it.unit || '').trim();
+      if (u) {
+        byUnit.set(u, (byUnit.get(u) || 0) + qty);
+        if (!firstUnit) firstUnit = u;
+      }
+      // PO 下单数 (orderedQuantity) — 若 backend 在 receive item 上回传 PO 计划量
+      const planned = Number((it as Record<string, unknown>).orderedQuantity ?? (it as Record<string, unknown>).plannedQuantity ?? 0);
+      if (planned > 0) {
+        ordered += planned;
+        hasOrdered = true;
+      }
+    }
+  }
+  return {
+    cumulative,
+    ordered: hasOrdered ? ordered : null,
+    byUnit,
+    unit: firstUnit,
+  };
+}
+
+function cumulativeDisplay(row: ReceiveRow): string {
+  const stats = cumulativeForRow(row);
+  if (!stats) return '-';
+  const fmt = (n: number) => {
+    const s = n.toFixed(3);
+    return s.replace(/\.?0+$/, '');
+  };
+  // 单位混合 → 列出全部
+  if (stats.byUnit.size > 1) {
+    return Array.from(stats.byUnit.entries())
+      .map(([u, q]) => `${fmt(q)} ${u}`)
+      .join(' + ');
+  }
+  const cumStr = `${fmt(stats.cumulative)} ${stats.unit || ''}`.trim();
+  if (stats.ordered != null && stats.ordered > 0) {
+    return `${cumStr} / 计划 ${fmt(stats.ordered)}`;
+  }
+  return cumStr;
+}
+
+function cumulativeProgress(row: ReceiveRow): number | null {
+  const stats = cumulativeForRow(row);
+  if (!stats || stats.ordered == null || stats.ordered <= 0) return null;
+  return Math.min(100, Math.round((stats.cumulative / stats.ordered) * 100));
+}
+
 function formatDate(s: string): string {
   if (!s) return '';
   return new Date(s).toLocaleString('zh-CN', { hour12: false });
@@ -341,8 +417,22 @@ onMounted(() => { loadData(); loadOptions(); });
         <el-table-column prop="itemCount" label="物料行数" width="90" align="center">
           <template #default="{ row }">{{ row.itemCount ?? row.items?.length ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="收货数量" min-width="140" align="right" show-overflow-tooltip>
+        <!-- Issue #775: 本次 vs 累计/计划 — 分次收货进度可见. -->
+        <el-table-column label="本次收货" min-width="120" align="right" show-overflow-tooltip>
           <template #default="{ row }">{{ totalReceivedQuantity(row) }}</template>
+        </el-table-column>
+        <el-table-column label="累计已收 / 计划" min-width="170" align="right" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span>{{ cumulativeDisplay(row) }}</span>
+            <el-progress
+              v-if="cumulativeProgress(row) != null"
+              :percentage="cumulativeProgress(row) as number"
+              :show-text="false"
+              :stroke-width="4"
+              :status="cumulativeProgress(row) === 100 ? 'success' : ''"
+              style="margin-top:4px"
+            />
+          </template>
         </el-table-column>
         <el-table-column prop="createdByName" label="创建人" width="110" show-overflow-tooltip />
         <el-table-column label="创建时间" width="170">
