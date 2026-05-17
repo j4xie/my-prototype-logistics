@@ -308,6 +308,9 @@ interface OrderItem {
   sourceWarehouseCode?: string;
   // Sprint 4 W2 S-PRICE-1 (R1) — 上次成交价 hint, 不入库 (仅 UI). 由 onProductSelect 异步填.
   priceMemoryHint?: { unitPrice: number; sourceOrderNumber: string; orderDate: string } | null;
+  // Issue #793 — 客户协议价 hint, 不入库 (仅 UI). 由 onProductSelect 异步填.
+  // source: 'CUSTOMER' (客户专属, 会自动覆盖 unitPrice) | 'GLOBAL' (全局价, 仅提示)
+  contractPriceHint?: { price: number; source: string; priceListName: string } | null;
 }
 
 const form = ref({
@@ -502,9 +505,50 @@ function onProductSelect(item: TableRow, productId: string) {
     // P1-3: spec 自动填后立即调 calcBox, 抄码品会清空 boxQuantity (内部判断)
     if (item.quantity) calcBox(item);
   }
+  // Issue #793 — 客户协议价 lookup. Customer + product 都选好后查协议价, 命中即覆盖 unitPrice.
+  // Priority: 协议价 (合同) > 上次成交价 > BOM 默认价. 用户仍可手动覆盖.
+  fetchContractPrice(item, productId);
   // Sprint 4 W2 S-PRICE-1 (R1) — 上次成交价 hint:
   // 选完产品立即异步查记忆价, 显在 unitPrice 输入框下. 用户**预先看到**, 不是输完后再被告知偏离.
   fetchPriceMemory(item, productId);
+}
+
+/**
+ * Issue #793: 查询客户协议价 (合同价).
+ * - 命中客户专属价格 → 自动覆盖 unitPrice + 显示 "协议价 (来自 X)" 提示
+ * - 命中全局价格 → 设置 hint 但不强制覆盖 (因 BOM/product.unitPrice 已带入)
+ * - 都不命中 → 清空 hint
+ *
+ * 用户可在 unitPrice 输入框手动修改, 协议价提示不阻塞.
+ */
+async function fetchContractPrice(item: TableRow, productTypeId: string) {
+  if (!form.value.customerId || !productTypeId || !factoryId.value) {
+    item.contractPriceHint = null;
+    return;
+  }
+  try {
+    const res = await get<{ found: boolean; price: number | null; source: string | null; priceListName: string | null }>(
+      `/${factoryId.value}/price-lists/lookup`,
+      { params: { customerId: form.value.customerId, productTypeId } },
+    );
+    if (res.success && res.data?.found && res.data.price != null) {
+      item.contractPriceHint = {
+        price: Number(res.data.price),
+        source: String(res.data.source || ''),
+        priceListName: String(res.data.priceListName || ''),
+      };
+      // Customer-specific 协议价命中时, 主动覆盖 unitPrice (用户仍可手动改).
+      // 全局价仅作提示, 不覆盖 BOM/product 默认价 (那个已在 onProductSelect 前段填好).
+      if (res.data.source === 'CUSTOMER') {
+        item.unitPrice = Number(res.data.price);
+      }
+    } else {
+      item.contractPriceHint = null;
+    }
+  } catch {
+    // 静默失败 — hint 是 UX nice-to-have, 不阻塞下单. 后端会在 createOrder 时仍 auto-apply.
+    item.contractPriceHint = null;
+  }
 }
 
 async function fetchPriceMemory(item: TableRow, productTypeId: string) {
@@ -1284,8 +1328,24 @@ async function submitQuickPayment() {
           <el-input-number v-model="item.quantity" :min="1" style="width: 100px" @change="() => calcBox(item)" />
           <el-input v-model="item.unit" style="width: 80px" />
           <!-- Sprint 4 W2 S-PRICE-1 R1: unitPrice + 上次成交价 hint chip (一键采纳) -->
+          <!-- Issue #793: 客户协议价 hint (CUSTOMER 自动覆盖, GLOBAL 仅提示) -->
           <div class="unit-price-wrap">
             <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
+            <el-tooltip
+              v-if="item.contractPriceHint"
+              :content="`${item.contractPriceHint.source === 'CUSTOMER' ? '协议价' : '全局价'} ¥${item.contractPriceHint.price} · ${item.contractPriceHint.priceListName}${item.contractPriceHint.source === 'CUSTOMER' ? ' · 已自动应用' : ' · 点击采用'}`"
+              placement="top"
+            >
+              <el-tag
+                :type="item.contractPriceHint.source === 'CUSTOMER' ? 'primary' : 'info'"
+                effect="plain"
+                size="small"
+                class="contract-price-chip"
+                @click="item.unitPrice = Number(item.contractPriceHint.price)"
+              >
+                {{ item.contractPriceHint.source === 'CUSTOMER' ? '协议' : '统一' }} ¥{{ item.contractPriceHint.price }}
+              </el-tag>
+            </el-tooltip>
             <el-tooltip
               v-if="item.priceMemoryHint"
               :content="`上次成交 ¥${item.priceMemoryHint.unitPrice} · ${item.priceMemoryHint.orderDate} · ${item.priceMemoryHint.sourceOrderNumber} · 点击采用`"
@@ -1397,6 +1457,9 @@ async function submitQuickPayment() {
 .unit-price-wrap { display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
 .price-memory-chip { cursor: pointer; font-size: 11px; line-height: 1.2; padding: 1px 4px; }
 .price-memory-chip:hover { opacity: 0.85; }
+/* Issue #793: 客户协议价 hint chip */
+.contract-price-chip { cursor: pointer; font-size: 11px; line-height: 1.2; padding: 1px 4px; }
+.contract-price-chip:hover { opacity: 0.85; }
 .item-header { font-size: 13px; font-weight: 600; color: #606266; margin-bottom: 4px;
   span { text-align: center; display: inline-block; }
 }

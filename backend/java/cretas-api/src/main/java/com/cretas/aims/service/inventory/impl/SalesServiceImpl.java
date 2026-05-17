@@ -86,6 +86,14 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.service.bom.BomRecipeService bomRecipeService;
 
+    /**
+     * Issue #793: 客户协议价 lookup — auto-applies customer-specific or global selling price
+     * at SO creation when caller does not explicitly set {@code unitPrice}.
+     * Optional injection so unit tests with mocked deps can run without booting price-list module.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.service.inventory.PriceListService priceListService;
+
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
@@ -195,7 +203,25 @@ public class SalesServiceImpl implements SalesService {
             item.setProductName(productName);
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
-            item.setUnitPrice(itemDTO.getUnitPrice());
+            // Issue #793: auto-apply 客户协议价 when caller did not provide explicit unitPrice.
+            // Resolution: customer-specific selling price → global selling price → caller's value.
+            // User-provided price always wins (per May 7 part2 L284-303 — manual override allowed).
+            BigDecimal resolvedUnitPrice = itemDTO.getUnitPrice();
+            if (priceListService != null
+                    && (resolvedUnitPrice == null || resolvedUnitPrice.signum() == 0)) {
+                BigDecimal contractPrice = priceListService.findActivePriceForOrder(
+                        factoryId,
+                        request.getCustomerId(),
+                        itemDTO.getProductTypeId(),
+                        order.getOrderDate()).orElse(null);
+                if (contractPrice != null) {
+                    resolvedUnitPrice = contractPrice;
+                    log.info("Issue #793: auto-applied 协议价 — SO={}, customerId={}, productId={}, "
+                            + "price={}", order.getOrderNumber(), request.getCustomerId(),
+                            itemDTO.getProductTypeId(), contractPrice);
+                }
+            }
+            item.setUnitPrice(resolvedUnitPrice);
             // Sprint 4 W2 S-INVOICE-CLIENT-1 Option 3 三层 default 链 — 第 2→3 层 prefill:
             // Item 显式 > SO defaultTaxRate (已 prefill 自客户) > 0. 用户改 SO 级 default 触发批量重算
             // 由前端 watch 处理, 后端只兜底防 NPE.
