@@ -70,7 +70,13 @@
               placeholder="如: 按金额阈值分流"
               @change="syncConfig({ description })"
             />
-            <div class="hint">实际分支条件在 outgoing edges 的 condition 字段配置</div>
+            <div class="hint">分支条件可走两种配置: (1) 结构化 WorkflowRule (推荐); (2) edge.condition (raw SpEL)</div>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" plain size="small" @click="$emit('manage-rules')">
+              管理流转规则 (WorkflowRule)
+            </el-button>
+            <div class="hint">Sprint 4 Wave 1 (C-WF-RULE-1) — 金额/部门/角色/SpEL 4 类规则, executor 优先评估</div>
           </el-form-item>
         </template>
 
@@ -197,6 +203,7 @@ const props = defineProps<{ element: SelectedElement }>()
 const emit = defineEmits<{
   update: [data: Record<string, unknown>]
   delete: []
+  'manage-rules': []
 }>()
 
 const kind = computed(() => props.element.kind)

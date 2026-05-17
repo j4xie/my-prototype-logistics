@@ -3,13 +3,18 @@ package com.cretas.aims.service.workflow.impl;
 import com.cretas.aims.dto.approval.ApprovalDecision;
 import com.cretas.aims.dto.approval.ExecutionContext;
 import com.cretas.aims.dto.approval.PendingApproval;
+import com.cretas.aims.engine.SpelConditionEvaluator;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
 import com.cretas.aims.entity.config.ApprovalWorkflow;
 import com.cretas.aims.entity.config.ApprovalWorkflowEdge;
 import com.cretas.aims.entity.config.ApprovalWorkflowNode;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.config.ApprovalWorkflowRepository;
+import com.cretas.aims.repository.config.WorkflowRuleRepository;
 import com.cretas.aims.service.impl.ApprovalWorkflowServiceImpl;
+import com.cretas.aims.service.workflow.SandboxedSpelEvaluator;
+import com.cretas.aims.service.workflow.WorkflowRuleEvaluator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +54,12 @@ class ApprovalWorkflowExecutorImplTest {
     @Mock
     private ApprovalWorkflowRepository workflowRepository;
 
+    @Mock
+    private WorkflowRuleRepository workflowRuleRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
     private ApprovalWorkflowServiceImpl workflowService;
     private ApprovalWorkflowExecutorImpl executor;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -62,8 +73,18 @@ class ApprovalWorkflowExecutorImplTest {
     void setUp() {
         // 用真实 service 处理 serde + getById, repository mock 控制 workflow lookup
         workflowService = new ApprovalWorkflowServiceImpl(workflowRepository, objectMapper);
-        executor = new ApprovalWorkflowExecutorImpl(workflowService,
-                new com.cretas.aims.service.workflow.SandboxedSpelEvaluator());
+        // Sprint 4 W2 Chat J (C-WF-VAR-1) SEC-2 fix: executor now uses SandboxedSpelEvaluator.
+        // Sprint 4 W1 Chat D (C-WF-RULE-1): WorkflowRuleEvaluator still on SpelConditionEvaluator
+        // for SPEL_CUSTOM evaluation (separate SpEL sandbox layer, both real, no side effects).
+        SandboxedSpelEvaluator sandboxedSpelEvaluator = new SandboxedSpelEvaluator();
+        SpelConditionEvaluator spelConditionEvaluator = new SpelConditionEvaluator();
+        WorkflowRuleEvaluator ruleEvaluator = new WorkflowRuleEvaluator(spelConditionEvaluator, objectMapper);
+        // Default: no rules — Sprint 3 I edge-based path preserved.
+        lenient().when(workflowRuleRepository
+                .findByWorkflowIdAndNodeIdAndEnabledTrueOrderByPriorityAsc(anyString(), anyString()))
+                .thenReturn(List.of());
+        executor = new ApprovalWorkflowExecutorImpl(
+                workflowService, sandboxedSpelEvaluator, workflowRuleRepository, ruleEvaluator, userRepository);
     }
 
     // ==================== fixtures ====================
