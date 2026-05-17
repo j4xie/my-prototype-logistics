@@ -29,7 +29,15 @@ public enum MaterialBatchStatus {
     /** 已预留 */
     RESERVED("已预留", "批次已被预留，等待使用"),
     /** 生产预留 (在制品 WIP) - 关联到进行中的生产批次 */
-    PRODUCING_RESERVED("生产预留", "批次已被进行中的生产批次占用 (在制品 WIP)");
+    PRODUCING_RESERVED("生产预留", "批次已被进行中的生产批次占用 (在制品 WIP)"),
+    /**
+     * 不良品 (issue #795 PURCHASE_RETURN with-goods 不良品入库).
+     * <p>PURCHASE_RETURN with-goods 完成时, 物料退回到 WH-LOG, 状态置为 DEFECTIVE.
+     * 与 SALES_RETURN with-goods 在 FinishedGoodsBatch 上用 status='DEFECTIVE'
+     * 形成对称语义. 现有 FEFO / sumAvailable / findAvailable 查询都过滤
+     * status='AVAILABLE', 自动排除 DEFECTIVE, 无需重构 repository.
+     */
+    DEFECTIVE("不良品", "批次为不良品 (退货回库, 需单独处理, 不可用于生产/销售)");
 
     private final String displayName;
     private final String description;

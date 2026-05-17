@@ -2,6 +2,9 @@ package com.cretas.aims.service.inventory.impl;
 
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreateReturnOrderRequest;
+import com.cretas.aims.entity.MaterialBatch;
+import com.cretas.aims.entity.enums.InboundType;
+import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import com.cretas.aims.entity.enums.ReturnOrderStatus;
 import com.cretas.aims.entity.enums.ReturnType;
 import com.cretas.aims.entity.inventory.FinishedGoodsBatch;
@@ -9,6 +12,7 @@ import com.cretas.aims.entity.inventory.ReturnOrder;
 import com.cretas.aims.entity.inventory.ReturnOrderItem;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.inventory.FinishedGoodsBatchRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderItemRepository;
 import com.cretas.aims.repository.inventory.ReturnOrderRepository;
@@ -49,6 +53,15 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private WarehouseResolver warehouseResolver;
+
+    /**
+     * Issue #795 — PURCHASE_RETURN with-goods 不良品入库.
+     * 镜像 SALES_RETURN with-goods 在 FinishedGoodsBatchRepository 上的写入语义,
+     * 但作用于 MaterialBatch (原料退给供应商前先入库到 WH-LOG, status=DEFECTIVE).
+     * required=false 兼容单元测试 mock 场景.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private MaterialBatchRepository materialBatchRepository;
 
     /** Round 11 T2 — Canvas Integration Template hook 1: DB-driven validation. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -338,8 +351,12 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
             // T-RTA Phase C (issue #571): SALES_RETURN with-goods → create DEFECTIVE
             // FinishedGoodsBatch in WH-LOG. status='DEFECTIVE' auto-excludes from existing
             // `WHERE status='AVAILABLE'` queries (调拨/销售/生产 pickers), so no schema or
-            // repository refactor needed. PURCHASE_RETURN 不良品入库 暂不实现 (MaterialBatch
-            // path different, covered by separate ticket if needed).
+            // repository refactor needed.
+            //
+            // Issue #795 (this commit): PURCHASE_RETURN with-goods → 镜像逻辑, 写入 MaterialBatch
+            // (原料退回总仓 WH-LOG, status=DEFECTIVE). MaterialBatchStatus.DEFECTIVE 加在
+            // MaterialBatchStatus enum 里; FEFO / sumAvailable / findAvailable queries 现有
+            // 都过滤 status='AVAILABLE', 自动排除 DEFECTIVE, 无需 repository 重构.
             if (order.getReturnType() == ReturnType.SALES_RETURN
                     && finishedGoodsBatchRepository != null && warehouseResolver != null) {
                 try {
@@ -378,8 +395,59 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
                     log.error("销售退货 不良品入库失败 (status flip + AR冲减 仍生效): returnOrderId={}",
                             returnOrderId, e);
                 }
-            } else if (order.getReturnType() == ReturnType.PURCHASE_RETURN) {
-                log.info("采购退货完成(有货): MaterialBatch 不良品入库 暂未实现 (Phase C scope limited to SALES_RETURN, issue #571).");
+            } else if (order.getReturnType() == ReturnType.PURCHASE_RETURN
+                    && materialBatchRepository != null && warehouseResolver != null) {
+                // Issue #795: PURCHASE_RETURN with-goods → 不良品入库 (镜像 SALES_RETURN logic).
+                // 顾客 (六扇门第四次 May 10 L980-1011): "有食物的话, 库存入库到总仓 + 不良品状态".
+                // 现实场景: 采购退货发现质量问题, 物料先回 WH-LOG, 后续仓管员决定丢弃 / 退给供应商.
+                try {
+                    String whLogId = warehouseResolver.resolveLogisticsId(factoryId);
+                    int itemIdx = 0;
+                    int created = 0;
+                    for (ReturnOrderItem item : order.getItems()) {
+                        itemIdx++;
+                        if (item.getMaterialTypeId() == null || item.getQuantity() == null
+                                || item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                            // Skip 行: PURCHASE_RETURN items 必须有 materialTypeId.
+                            // 历史脏数据 / 误填 productTypeId 的 row, 跳过 inventory 创建,
+                            // status flip + AR/AP 冲减 仍然 OK.
+                            continue;
+                        }
+                        MaterialBatch batch = new MaterialBatch();
+                        batch.setId(UUID.randomUUID().toString());
+                        batch.setFactoryId(factoryId);
+                        batch.setBatchNumber("RTN-" + order.getReturnNumber() + "-" + itemIdx);
+                        batch.setMaterialTypeId(item.getMaterialTypeId());
+                        batch.setReceiptQuantity(item.getQuantity());
+                        batch.setUsedQuantity(BigDecimal.ZERO);
+                        batch.setReservedQuantity(BigDecimal.ZERO);
+                        // 单位 — ReturnOrderItem 没有 unit 字段, 默认 "件" 跟 SALES_RETURN 对齐.
+                        // 仓管员后续 disposal 流程可纠正.
+                        batch.setQuantityUnit("件");
+                        batch.setUnitPrice(item.getUnitPrice());
+                        batch.setReceiptDate(LocalDate.now());
+                        batch.setPurchaseDate(LocalDate.now());
+                        batch.setWarehouseId(whLogId);
+                        batch.setStatus(MaterialBatchStatus.DEFECTIVE);
+                        batch.setInboundType(InboundType.SUPPLIER_RETURN);
+                        // P0-17 source doc traceability (镜像采购入库 createMaterialBatchFromReceiveItem 的语义).
+                        batch.setSourceDocType("PURCHASE_RETURN");
+                        batch.setSourceDocId(order.getId());
+                        batch.setCreatedBy(order.getApprovedBy());
+                        batch.setNotes("采购退货入库(不良品) - " + order.getReturnNumber()
+                                + " - 原因: " + (item.getReason() != null ? item.getReason() : order.getReason()));
+                        materialBatchRepository.save(batch);
+                        created++;
+                    }
+                    log.info("采购退货 不良品入库完成 (issue #795): returnNumber={}, batches={}/{} items, warehouse=WH-LOG",
+                            order.getReturnNumber(), created,
+                            order.getItems() != null ? order.getItems().size() : 0);
+                } catch (Exception e) {
+                    // Non-blocking — AR/AP 冲减 + status flip 必须生效. 库存入库失败仅影响 traceability,
+                    // 仓管员可手动补录. 镜像 SALES_RETURN 的错误恢复策略.
+                    log.error("采购退货 不良品入库失败 (status flip + AP冲减 仍生效, issue #795): returnOrderId={}",
+                            returnOrderId, e);
+                }
             }
         }
 
