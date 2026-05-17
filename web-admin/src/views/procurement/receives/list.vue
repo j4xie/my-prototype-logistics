@@ -24,6 +24,10 @@ import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { WH_INBOUND_CONFIG } from '@/components/ai-entry/types';
+// Issue #794: 采购入库拍照附件 UI (六扇门 May 7 part 2 L177-180)
+// "拍照也可以留个单谱吧... 留个附件类似一个拍照然后一个附件吗也可以的呀"
+import AttachmentList from '@/components/attachment/AttachmentList.vue';
+import AttachmentUploadButton from '@/components/attachment/AttachmentUploadButton.vue';
 
 interface ReceiveRow {
   id: string;
@@ -140,6 +144,9 @@ const pagination = ref({ page: 1, size: 20, total: 0 });
 // Detail dialog
 const detailVisible = ref(false);
 const detailData = ref<ReceiveRow | null>(null);
+
+// Issue #794: 附件刷新 key — 上传后递增触发 AttachmentList 重拉
+const attachmentRefreshKey = ref(0);
 
 // Create dialog
 const createVisible = ref(false);
@@ -635,6 +642,35 @@ onMounted(() => { loadData(); loadOptions(); });
         <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
       </el-table>
       <el-empty v-else description="无物料明细" />
+
+      <!--
+        Issue #794: 拍照附件 (六扇门 May 7 part 2 L177-180).
+        客户原话: "拍照也可以留个单谱吧, 就是你留个附件类似一个拍照然后一个附件吗也可以的呀"
+        Reuses C-ATT-1 通用附件组件 (entityType=PURCHASE_RECEIPT, Attachment.java:115 enum 已支持).
+      -->
+      <template v-if="detailData?.id">
+        <el-divider content-position="left">收货照片 / 附件</el-divider>
+        <AttachmentList
+          entity-type="PURCHASE_RECEIPT"
+          :entity-id="String(detailData.id)"
+          :factory-id="factoryId"
+          :refresh-key="attachmentRefreshKey"
+          empty-text="暂无收货照片"
+        />
+        <div v-if="canWrite" style="margin-top: 12px">
+          <AttachmentUploadButton
+            entity-type="PURCHASE_RECEIPT"
+            :entity-id="String(detailData.id)"
+            :factory-id="factoryId"
+            business-tag="RECEIVE_PHOTO"
+            file-category="PHOTO"
+            accept="image/*"
+            button-label="拍照 / 上传照片"
+            @uploaded="attachmentRefreshKey++"
+          />
+        </div>
+      </template>
+
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
         <el-button
