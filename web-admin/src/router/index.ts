@@ -82,6 +82,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '生产计划', module: 'production' }
           },
           {
+            path: 'delivery-warnings',
+            name: 'ProductionDeliveryWarnings',
+            component: () => import('@/views/production/delivery-warnings/list.vue'),
+            meta: { requiresAuth: true, title: '交货预警', module: 'production' }
+          },
+          {
             path: 'conversions',
             name: 'ProductionConversions',
             redirect: '/production/bom?tab=conversion',

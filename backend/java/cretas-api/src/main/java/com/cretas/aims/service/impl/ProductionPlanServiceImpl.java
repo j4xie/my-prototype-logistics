@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
+import com.cretas.aims.dto.production.DeliveryWarnDTO;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.production.ProductionPlanImportDTO;
 import com.cretas.aims.entity.*;
@@ -40,6 +41,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -423,6 +425,69 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
         log.info("[M-PREP-1] 提交草稿生产计划: planId={}, planNumber={}", plan.getId(), plan.getPlanNumber());
         return toDTOWithConversionInfo(plan);
+    }
+
+    /**
+     * M-DELIVERY-WARN-1 (Sprint 4 W2): 获取交货预警列表.
+     *
+     * <p>查询 expectedCompletionDate &lt; today + windowDays 且状态非 COMPLETED/CANCELLED
+     * 的生产计划, 然后按距交期天数分级 (OVERDUE / URGENT / WARN / NORMAL)。</p>
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeliveryWarnDTO> getDeliveryWarnings(String factoryId, int windowDays) {
+        if (windowDays <= 0) windowDays = 7;  // 默认 7 天
+        LocalDate today = LocalDate.now();
+        LocalDate upperBound = today.plusDays(windowDays);
+        List<ProductionPlan> plans = productionPlanRepository.findDeliveryWarnPlans(factoryId, upperBound);
+        return plans.stream()
+                .map(p -> classifyDeliveryWarn(p, today))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 计算单条生产计划的交货预警等级.
+     * <ul>
+     *   <li>OVERDUE: daysUntilDeadline &lt; 0 (已超期)</li>
+     *   <li>URGENT:  0 &le; daysUntilDeadline &lt; 3</li>
+     *   <li>WARN:    3 &le; daysUntilDeadline &lt; 7</li>
+     *   <li>NORMAL:  daysUntilDeadline &ge; 7</li>
+     * </ul>
+     */
+    private DeliveryWarnDTO classifyDeliveryWarn(ProductionPlan plan, LocalDate today) {
+        long days = ChronoUnit.DAYS.between(today, plan.getExpectedCompletionDate());
+        String level;
+        if (days < 0) {
+            level = "OVERDUE";
+        } else if (days < 3) {
+            level = "URGENT";
+        } else if (days < 7) {
+            level = "WARN";
+        } else {
+            level = "NORMAL";
+        }
+        String productTypeName = null;
+        try {
+            if (plan.getProductType() != null) {
+                productTypeName = plan.getProductType().getName();
+            }
+        } catch (Exception ignored) {
+            // 容忍 lazy-load 失败 — productTypeName 为 null 由前端兜底
+        }
+        return DeliveryWarnDTO.builder()
+                .planId(plan.getId())
+                .planNumber(plan.getPlanNumber())
+                .factoryId(plan.getFactoryId())
+                .productTypeId(plan.getProductTypeId())
+                .productTypeName(productTypeName)
+                .plannedQuantity(plan.getPlannedQuantity())
+                .actualQuantity(plan.getActualQuantity())
+                .expectedCompletionDate(plan.getExpectedCompletionDate())
+                .status(plan.getStatus() != null ? plan.getStatus().name() : null)
+                .daysUntilDeadline(days)
+                .warnLevel(level)
+                .sourceCustomerName(plan.getSourceCustomerName())
+                .build();
     }
 
     @Override

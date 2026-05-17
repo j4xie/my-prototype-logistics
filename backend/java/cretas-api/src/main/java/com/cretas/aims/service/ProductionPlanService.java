@@ -37,6 +37,15 @@ public interface ProductionPlanService {
       */
     ProductionPlanDTO commitDraftProductionPlan(String factoryId, String planId);
      /**
+     * 获取交货预警列表 (M-DELIVERY-WARN-1, Sprint 4 W2).
+     * 返回 expectedCompletionDate &lt; today + windowDays 且状态非 COMPLETED/CANCELLED 的生产计划,
+     * 按 warnLevel 分级 (OVERDUE / URGENT / WARN / NORMAL)。
+     *
+     * @param factoryId  工厂 ID
+     * @param windowDays 预警窗口天数 (默认 7d, 即 expectedCompletionDate &lt; today + 7d)
+      */
+    java.util.List<com.cretas.aims.dto.production.DeliveryWarnDTO> getDeliveryWarnings(String factoryId, int windowDays);
+     /**
      * 更新生产计划
       */
     ProductionPlanDTO updateProductionPlan(String factoryId, String planId, CreateProductionPlanRequest request);
