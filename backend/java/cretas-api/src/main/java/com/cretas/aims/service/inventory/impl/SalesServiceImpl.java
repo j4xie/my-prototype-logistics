@@ -431,10 +431,10 @@ public class SalesServiceImpl implements SalesService {
 
             BigDecimal bomUnit = null;
             BigDecimal bomLine = null;
-            if (bomRecipeService != null && item.getProductId() != null) {
+            if (bomRecipeService != null && item.getProductTypeId() != null) {
                 try {
                     java.util.Optional<com.cretas.aims.entity.bom.BomRecipe> recipeOpt =
-                            bomRecipeService.getCurrentRecipe(factoryId, item.getProductId());
+                            bomRecipeService.getCurrentRecipe(factoryId, item.getProductTypeId());
                     if (recipeOpt.isPresent() && recipeOpt.get().getTotalCost() != null) {
                         bomUnit = recipeOpt.get().getTotalCost();
                         bomLine = qty.multiply(bomUnit).setScale(2, java.math.RoundingMode.HALF_UP);
@@ -442,7 +442,7 @@ public class SalesServiceImpl implements SalesService {
                         anyBomAvailable = true;
                     }
                 } catch (Exception e) {
-                    log.warn("BOM 标准成本查询失败 (productId={}): {}", item.getProductId(), e.getMessage());
+                    log.warn("BOM 标准成本查询失败 (productTypeId={}): {}", item.getProductTypeId(), e.getMessage());
                 }
             }
 
@@ -455,7 +455,7 @@ public class SalesServiceImpl implements SalesService {
             }
 
             lines.add(com.cretas.aims.dto.inventory.FinanceCostBreakdown.LineCostBreakdown.builder()
-                    .productId(item.getProductId())
+                    .productId(item.getProductTypeId())
                     .productName(item.getProductName())
                     .quantity(qty)
                     .unitPrice(sellUnit)
