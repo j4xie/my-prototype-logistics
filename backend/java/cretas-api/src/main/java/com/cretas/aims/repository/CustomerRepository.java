@@ -78,9 +78,9 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
      */
     @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
            "AND (CAST(:keyword AS string) IS NULL " +
-           "     OR c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
-           "     OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
-           "     OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\') " +
+           "     OR c.name LIKE CONCAT('%', CAST(:keyword AS string), '%') ESCAPE '\\' " +
+           "     OR c.customerCode LIKE CONCAT(CAST(:keyword AS string), '%') ESCAPE '\\' " +
+           "     OR c.contactPerson LIKE CONCAT('%', CAST(:keyword AS string), '%') ESCAPE '\\') " +
            "AND (CAST(:customerStatus AS string) IS NULL OR c.customerStatus = :customerStatus) " +
            "AND (CAST(:importance AS string) IS NULL OR c.importance = :importance) " +
            "AND (CAST(:source AS string) IS NULL OR c.source = :source)")
