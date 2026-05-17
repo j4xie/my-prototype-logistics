@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import com.cretas.aims.annotation.RequirePermission;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -42,6 +43,7 @@ import com.cretas.aims.annotation.RequireModule;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/purchase")
 @RequiredArgsConstructor
+@org.springframework.validation.annotation.Validated  // Issue #816: enable @Min(1) on @RequestParam page/size
 @Tag(name = "采购管理", description = "采购订单与入库管理（工厂/餐饮通用）")
 public class PurchaseController {
 
@@ -73,8 +75,8 @@ public class PurchaseController {
     public ApiResponse<PageResponse<PurchaseOrder>> listOrders(
             @PathVariable @NotBlank String factoryId,
             @RequestParam(required = false) String salesOrderId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页大小必须大于0") int size) {
         PageResponse<PurchaseOrder> result = (salesOrderId != null && !salesOrderId.isBlank())
                 ? purchaseService.getPurchaseOrdersBySalesOrder(factoryId, salesOrderId, page, size)
                 : purchaseService.getPurchaseOrders(factoryId, page, size);
@@ -87,8 +89,8 @@ public class PurchaseController {
     public ApiResponse<PageResponse<PurchaseOrder>> listOrdersByStatus(
             @PathVariable @NotBlank String factoryId,
             @RequestParam PurchaseOrderStatus status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页大小必须大于0") int size,
             @RequestHeader("Authorization") String authorization) {
         // Issue #736 fix (2026-05-17): viewer 角色虽有 procurement:read 但不应看到 PENDING_FINANCE_REVIEW
         // 状态采购单 (含供应商名、总金额、价格异常告警 — 业务敏感). 走独立 FINANCE_REVIEW_VIEW_PERMISSION
@@ -298,8 +300,8 @@ public class PurchaseController {
     @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<PurchaseReceiveRecord>> listReceives(
             @PathVariable @NotBlank String factoryId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") int page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页大小必须大于0") int size) {
         PageResponse<PurchaseReceiveRecord> result = purchaseService.getReceiveRecords(factoryId, page, size);
         return ApiResponse.success("查询成功", result);
     }

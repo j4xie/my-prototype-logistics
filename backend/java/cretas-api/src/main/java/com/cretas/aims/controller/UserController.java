@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.utils.SecurityUtils;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -45,6 +46,7 @@ import com.cretas.aims.annotation.RequireModule;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/users")
 @RequiredArgsConstructor
+@org.springframework.validation.annotation.Validated  // Issue #816: enable @Min(1) on @RequestParam page/size for join-date-range
 @Tag(name = "用户管理", description = "用户管理相关接口")
 public class UserController {
 
@@ -381,10 +383,10 @@ public class UserController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "结束日期 (yyyy-MM-dd)", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "页码", example = "1")
-            @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "页码 (1-indexed)", example = "1")
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") Integer page,
             @Parameter(description = "每页大小", example = "20")
-            @RequestParam(defaultValue = "20") Integer size) {
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页大小必须大于0") Integer size) {
 
         log.info("获取入职日期范围内用户: factoryId={}, startDate={}, endDate={}, page={}, size={}",
                 factoryId, startDate, endDate, page, size);

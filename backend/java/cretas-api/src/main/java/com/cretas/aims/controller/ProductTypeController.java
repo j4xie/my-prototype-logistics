@@ -21,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -166,8 +167,8 @@ public class ProductTypeController {
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam(required = false) @Parameter(description = "产品大类: FINISHED_PRODUCT/RAW_MATERIAL/PACKAGING/SEASONING/CUSTOMER_MATERIAL") String productCategory,
             @RequestParam(required = false) @Parameter(description = "关键词 (搜索 name/code)") String keyword,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") @Parameter(description = "页码 (1-indexed)") Integer page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页大小必须大于0") @Parameter(description = "每页大小") Integer size) {
         log.info("获取产品类型列表: factoryId={}, productCategory={}, keyword={}, page={}, size={}",
                 factoryId, productCategory, keyword, page, size);
         PageRequest pageRequest = new PageRequest();
@@ -211,8 +212,8 @@ public class ProductTypeController {
     public ApiResponse<PageResponse<ProductTypeDTO>> searchProductTypes(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam @Parameter(description = "搜索关键字") String keyword,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码必须大于0") @Parameter(description = "页码 (1-indexed)") Integer page,
+            @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页大小必须大于0") @Parameter(description = "每页大小") Integer size) {
         log.info("搜索产品类型: factoryId={}, keyword={}", factoryId, keyword);
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);

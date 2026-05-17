@@ -51,9 +51,22 @@ public class VoucherController {
             @PathVariable String factoryId,
             @RequestParam(value = "status", required = false) VoucherStatus status,
             @RequestParam(value = "type", required = false) VoucherType type,
-            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "voucherDate", "createdAt"));
+        // Issues #815/#816 fix (2026-05-17): unify on UI 1-idx convention to match
+        // PurchaseController / UserController / ProductTypeController. Previously this
+        // endpoint used Spring native 0-idx → ?page=1 returned silent empty content:[]
+        // while totalElements > 0 (customer-visible bug F006 finance vouchers).
+        // Reject page<1 / size<1 with 400 (consistent with PageRequest DTO @Min(1)).
+        if (page < 1) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "页码必须大于0", "code", "INVALID_PAGE"));
+        }
+        if (size < 1) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "每页大小必须大于0", "code", "INVALID_SIZE"));
+        }
+        PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "voucherDate", "createdAt"));
         Page<Voucher> result;
         if (status != null) {
             result = voucherRepo.findByFactoryIdAndStatusAndDeletedAtIsNull(factoryId, status, pageable);
