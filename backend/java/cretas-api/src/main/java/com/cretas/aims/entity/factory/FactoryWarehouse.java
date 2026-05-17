@@ -71,15 +71,39 @@ public class FactoryWarehouse extends BaseEntity {
 
     /**
      * 仓库类型枚举.
-     * <ul>
-     *   <li>LOGISTICS - 物流仓 (长期存储)</li>
-     *   <li>WORKSHOP - 鲜棉仓 / 车间仓 (当天清仓, 不留原辅料)</li>
-     *   <li>OTHER - 其他 (扩展用)</li>
-     * </ul>
+     *
+     * <p>Sprint 4 W1 W-CLASS-1: 扩 10 个阶段语义类型 (RAW/WIP/.../TRANSFER). 旧 3 类
+     * (LOGISTICS/WORKSHOP/OTHER) 仅为 backwards-compat, 新仓库录入应使用阶段语义类型.
      */
     public enum WarehouseType {
+        /** @deprecated W-CLASS-1: 用 RAW / FINISHED / TEMP 等阶段语义类型替代 */
+        @Deprecated
         LOGISTICS,
+        /** @deprecated W-CLASS-1: 用 WIP / LINESIDE 等阶段语义类型替代 */
+        @Deprecated
         WORKSHOP,
-        OTHER
+        /** @deprecated W-CLASS-1: 显式指定阶段语义类型 */
+        @Deprecated
+        OTHER,
+        /** 原料仓 - 存放采购入库的原辅料 */
+        RAW,
+        /** 在制品仓 - 存放未完工的中间产品 (WIP = work-in-progress) */
+        WIP,
+        /** 成品仓 - 存放完工待出库的成品 */
+        FINISHED,
+        /** 线边仓 - 紧邻产线的物料缓冲区 */
+        LINESIDE,
+        /** 退货仓 - 客户退货 / 供应商退回的物料 */
+        RETURNS,
+        /** 废料仓 - 报废 / 不合格物料隔离区 */
+        SCRAP,
+        /** 暂存仓 - 临时存放, 未分类 */
+        TEMP,
+        /** 质检仓 - 待检验 / 检验中的物料 */
+        QC,
+        /** 委外仓 - 委外加工方持有的物料 */
+        OUTSOURCE,
+        /** 调拨在途仓 - 跨厂 / 跨仓库调拨中物料 */
+        TRANSFER
     }
 }
