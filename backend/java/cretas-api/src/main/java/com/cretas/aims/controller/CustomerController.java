@@ -61,6 +61,8 @@ public class CustomerController {
     @RequirePermission({"sales:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "创建客户", description = "在指定工厂下创建新客户，包括客户基本信息、联系方式、信用额度等")
+    @com.cretas.aims.annotation.Loggable(module = "CUSTOMER", action = "CREATE",
+            entityType = "Customer", summary = "'创建客户 ' + #request.name")
     public ApiResponse<CustomerDTO> createCustomer(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
@@ -84,6 +86,8 @@ public class CustomerController {
     @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}")
     @Operation(summary = "更新客户", description = "更新指定客户的信息 (partial update: 所有字段可选)")
+    @com.cretas.aims.annotation.Loggable(module = "CUSTOMER", action = "UPDATE",
+            entityType = "Customer", entityIdParam = "customerId")
     public ApiResponse<CustomerDTO> updateCustomer(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
@@ -103,6 +107,8 @@ public class CustomerController {
     @RequirePermission({"sales:read_write", "finance:read_write"})
     @DeleteMapping("/{customerId}")
     @Operation(summary = "删除客户", description = "删除指定客户记录（软删除），有关联订单的客户不可删除")
+    @com.cretas.aims.annotation.Loggable(module = "CUSTOMER", action = "DELETE",
+            entityType = "Customer", entityIdParam = "customerId")
     public ApiResponse<Void> deleteCustomer(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,

@@ -71,6 +71,8 @@ public class ProductionPlanController {
     @RequireModule("production_plan")
     @PostMapping
     @Operation(summary = "创建生产计划")
+    @com.cretas.aims.annotation.Loggable(module = "PRODUCTION_PLAN", action = "CREATE",
+            entityType = "ProductionPlan")
     public ApiResponse<ProductionPlanDTO> createProductionPlan(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -137,6 +139,8 @@ public class ProductionPlanController {
     @RequireModule("production_plan")
     @PutMapping("/{planId}")
     @Operation(summary = "更新生产计划")
+    @com.cretas.aims.annotation.Loggable(module = "PRODUCTION_PLAN", action = "UPDATE",
+            entityType = "ProductionPlan", entityIdParam = "planId")
     public ApiResponse<ProductionPlanDTO> updateProductionPlan(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
@@ -156,6 +160,8 @@ public class ProductionPlanController {
     @RequireModule("production_plan")
     @DeleteMapping("/{planId}")
     @Operation(summary = "删除生产计划")
+    @com.cretas.aims.annotation.Loggable(module = "PRODUCTION_PLAN", action = "DELETE",
+            entityType = "ProductionPlan", entityIdParam = "planId")
     public ApiResponse<Void> deleteProductionPlan(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
