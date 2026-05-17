@@ -12,7 +12,9 @@
 import { ref, computed, watch } from 'vue';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+// Sprint 4 W2 S-INVOICE-CLIENT-1 — 防呆 R3 dropdown + R1 default preview
+import { INVOICE_TYPE_OPTIONS, getInvoiceTypeOption, type InvoiceTypeValue } from '@/constants/customerEnums';
 
 const permissionStore = usePermissionStore();
 const canViewPrice = computed(() => permissionStore.canViewPrice);
@@ -41,6 +43,9 @@ const props = defineProps<{
   orderNumber?: string;
   customerName?: string;
   orderTotalAmount?: number | string;
+  /** Sprint 4 W2 S-INVOICE-CLIENT-1: SO 行带来的 defaultInvoiceType (后端已 prefill 自 customer).
+   *  用于 R1 — dialog 打开即显默认值, 用户可改可保留. */
+  defaultInvoiceType?: string;
 }>();
 
 const emit = defineEmits<{
@@ -57,6 +62,11 @@ const loading = ref(false);
 const issued = ref(false);
 const record = ref<InvoiceRecord | null>(null);
 const errorMsg = ref('');
+// Sprint 4 W2 S-INVOICE-CLIENT-1 — R3 dropdown 状态. 默认值来自 SO/customer, 用户可改。
+const selectedInvoiceType = ref<InvoiceTypeValue>('NORMAL');
+const defaultSource = computed(() => props.defaultInvoiceType
+  ? `单据/客户默认: ${getInvoiceTypeOption(props.defaultInvoiceType)?.label || props.defaultInvoiceType}`
+  : '系统默认: 普通发票 (客户未设默认)');
 
 const breakdown = computed<TaxBreakdownEntry[]>(
   () => record.value?.taxBreakdown || [],
@@ -99,7 +109,8 @@ async function generateInvoices() {
       `/${props.factoryId}/finance/invoices/request-from-order`,
       {
         salesOrderId: props.salesOrderId,
-        invoiceType: 'NORMAL',
+        // Sprint 4 W2 S-INVOICE-CLIENT-1: dropdown 选中值, 后端 resolveInvoiceType 仍会做 fallback
+        invoiceType: selectedInvoiceType.value,
         remark: `税率分组开票 — 订单 ${props.orderNumber || props.salesOrderId}`,
       },
     );
@@ -118,9 +129,26 @@ async function generateInvoices() {
       ElMessage.error(errorMsg.value);
     }
   } catch (e) {
-    const err = e as { message?: string };
+    // 防呆 R4 — 409 duplicate (backend Bug #2 dedup): 给用户 ElMessageBox 而非干瘪 toast.
+    // 后端 BusinessException 已含 actionHint, 全局 interceptor 已 sticky toast; 此处只补 dialog 关闭逻辑.
+    const err = e as { status?: number; message?: string; actionHint?: string | null };
+    if (err?.status === 409) {
+      try {
+        await ElMessageBox.confirm(
+          err.message || '该销售订单已有待处理开票申请',
+          '开票申请已存在',
+          {
+            type: 'warning',
+            confirmButtonText: '前往开票申请页查看',
+            cancelButtonText: '关闭',
+          },
+        );
+        // 用户确认 → close 此 dialog (实际跳转由父组件或全局 actionHint 处理)
+        visible.value = false;
+      } catch { /* user cancelled — keep dialog */ }
+    }
     errorMsg.value = err?.message || '开票失败';
-    ElMessage.error(errorMsg.value);
+    // Interceptor already shows sticky toast; avoid double-toast.
   } finally {
     loading.value = false;
   }
@@ -130,12 +158,14 @@ function handleClose() {
   visible.value = false;
 }
 
-// 重置
+// 重置 + S-INVOICE-CLIENT-1 prefill invoiceType from prop on open
 watch(visible, (v) => {
   if (v) {
     issued.value = false;
     record.value = null;
     errorMsg.value = '';
+    // 防呆 R1 — dialog 打开即 prefill 默认值 (来自 SO/customer 链, 后端已 prefill 到 SO)
+    selectedInvoiceType.value = (props.defaultInvoiceType as InvoiceTypeValue) || 'NORMAL';
   }
 });
 </script>
@@ -174,6 +204,26 @@ watch(visible, (v) => {
         title="一笔订单可同时含 9% 原料 + 13% 加工费,系统将按税率自动分组拆分开票"
         show-icon
       />
+
+      <!-- Sprint 4 W2 S-INVOICE-CLIENT-1 — R3 dropdown + R1 默认值预览 -->
+      <div class="invoice-type-row">
+        <label class="invoice-type-label">开票类型:</label>
+        <el-select v-model="selectedInvoiceType" style="width: 220px">
+          <el-option
+            v-for="opt in INVOICE_TYPE_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          >
+            <span style="float: left">{{ opt.label }}</span>
+            <span style="float: right; color: var(--el-text-color-secondary); font-size: 12px">
+              {{ opt.description }}
+            </span>
+          </el-option>
+        </el-select>
+        <span class="invoice-type-hint">{{ defaultSource }}</span>
+      </div>
+
       <div v-if="errorMsg" class="error-box">
         <el-alert type="error" :closable="false" :title="errorMsg" />
       </div>
@@ -371,5 +421,26 @@ watch(visible, (v) => {
 }
 .empty-note {
   margin-bottom: 12px;
+}
+
+/* Sprint 4 W2 S-INVOICE-CLIENT-1 — invoice type R3 dropdown + R1 default hint */
+.invoice-type-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 4px;
+}
+.invoice-type-label {
+  color: #606266;
+  font-size: 14px;
+  font-weight: 500;
+}
+.invoice-type-hint {
+  color: var(--text-color-secondary, #909399);
+  font-size: 12px;
+  margin-left: auto;
 }
 </style>

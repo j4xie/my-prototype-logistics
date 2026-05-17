@@ -34,9 +34,16 @@ import { formatSummaryForAI } from '@/utils/aiSummaryContext';
 import type { ListSummaryRequest } from '@/types/listSummary';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
+// Sprint 4 W2 S-INVOICE-CLIENT-1: defaultInvoiceType 字段从 SO 行带过来 (后端在 SO 创建时已 prefill 自 customer)
 const taxGroupInvoiceVisible = ref(false);
-const taxGroupInvoiceOrder = ref<{ id: string; orderNumber: string; customerName: string; totalAmount: number | string }>({
-  id: '', orderNumber: '', customerName: '', totalAmount: 0,
+const taxGroupInvoiceOrder = ref<{
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  totalAmount: number | string;
+  defaultInvoiceType: string;
+}>({
+  id: '', orderNumber: '', customerName: '', totalAmount: 0, defaultInvoiceType: '',
 });
 function openTaxGroupInvoice(row: TableRow) {
   taxGroupInvoiceOrder.value = {
@@ -44,6 +51,7 @@ function openTaxGroupInvoice(row: TableRow) {
     orderNumber: String(row.orderNumber || ''),
     customerName: String(row.customerName || ''),
     totalAmount: (row.totalAmount as number | string) ?? 0,
+    defaultInvoiceType: String(row.defaultInvoiceType || ''),
   };
   taxGroupInvoiceVisible.value = true;
 }
@@ -1279,7 +1287,7 @@ async function submitQuickPayment() {
       @fill-form="handleAiFill"
     />
 
-    <!-- G1: 税率分组开票对话框 -->
+    <!-- G1: 税率分组开票对话框 (Sprint 4 W2 S-INVOICE-CLIENT-1: 传入 default-invoice-type 用于 R3 dropdown prefill) -->
     <TaxGroupInvoiceDialog
       v-model="taxGroupInvoiceVisible"
       :factory-id="factoryId || ''"
@@ -1287,6 +1295,7 @@ async function submitQuickPayment() {
       :order-number="taxGroupInvoiceOrder.orderNumber"
       :customer-name="taxGroupInvoiceOrder.customerName"
       :order-total-amount="taxGroupInvoiceOrder.totalAmount"
+      :default-invoice-type="taxGroupInvoiceOrder.defaultInvoiceType"
       @success="loadData"
     />
 
