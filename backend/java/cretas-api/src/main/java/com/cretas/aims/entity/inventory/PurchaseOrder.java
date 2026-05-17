@@ -145,6 +145,14 @@ public class PurchaseOrder extends BaseEntity {
     private String salesOrderId;
 
     /**
+     * P-NUCLEAR-1 (28-Backlog #30): optional FK to inquiry_quotes.id — when PO is
+     * created via 询价 → 核价 → 采购 pipeline. Nullable for direct PO (无核价单).
+     * Used by inquiry detail page's "关联采购单" link + idempotent convert guard.
+     */
+    @Column(name = "inquiry_quote_id", length = 191)
+    private String inquiryQuoteId;
+
+    /**
      * Rule 2 hydration (2026-04-24): 前端"关联销售订单"展示需 orderNumber,
      * 但 entity 只存 salesOrderId. 以前 UI 要为每行 PO 再 fetch SO detail —
      * 1+N 查询. 这里用 @Transient 字段让 service 层 hydrate 一次, 前端直接读.
