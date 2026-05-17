@@ -128,6 +128,7 @@
           :element="selectedElement"
           @update="onPropertyUpdate"
           @delete="onDeleteSelected"
+          @manage-rules="openRulesPanel"
         />
         <el-empty v-else description="点击节点或边查看属性" :image-size="80" />
       </div>
@@ -140,6 +141,17 @@
       :nodes="simulatorInput.nodes"
       :edges="simulatorInput.edges"
       :start-node-id="simulatorInput.startNodeId"
+    />
+
+    <!-- Sprint 4 Wave 1 (C-WF-RULE-1): WorkflowRule 管理 drawer -->
+    <ConditionRulesPanel
+      v-if="rulesPanelOpen && rulesPanelNodeId && currentWorkflow && factoryId"
+      v-model:visible="rulesPanelOpen"
+      :factory-id="factoryId"
+      :workflow-id="currentWorkflow.id"
+      :node-id="rulesPanelNodeId"
+      :node-label="rulesPanelNodeLabel"
+      :candidate-nodes="rulesPanelCandidateNodes"
     />
   </div>
 </template>
@@ -161,6 +173,7 @@ import NotifyNode from './components/nodes/NotifyNode.vue'
 import EndNode from './components/nodes/EndNode.vue'
 import PropertyPanel from './components/PropertyPanel.vue'
 import WorkflowSimulator from './components/WorkflowSimulator.vue'
+import ConditionRulesPanel from './components/ConditionRulesPanel.vue'
 import type { SimulatorInput } from './composables/useSimulator'
 import {
   getDecisionTypes,
@@ -210,6 +223,35 @@ interface SelectedElement {
   data: Record<string, unknown>
 }
 const selectedElement = ref<SelectedElement | null>(null)
+
+// Sprint 4 Wave 1 (C-WF-RULE-1): WorkflowRule 管理 drawer state
+const rulesPanelOpen = ref(false)
+const rulesPanelNodeId = ref<string>('')
+const rulesPanelNodeLabel = ref<string>('')
+const rulesPanelCandidateNodes = ref<ApprovalWorkflowNode[]>([])
+
+function openRulesPanel() {
+  const sel = selectedElement.value
+  if (!sel || sel.kind !== 'node' || sel.type !== 'condition') {
+    ElMessage.warning('仅 condition 节点支持流转规则')
+    return
+  }
+  if (!currentWorkflow.value?.id) {
+    ElMessage.warning('请先保存工作流后再配置规则')
+    return
+  }
+  rulesPanelNodeId.value = sel.id
+  rulesPanelNodeLabel.value = (sel.data.label as string) || sel.id
+  // 候选目标节点 = 全图 nodes (排除 start)
+  rulesPanelCandidateNodes.value = nodes.value
+    .filter((n) => n.type !== 'start')
+    .map((n) => ({
+      id: n.id,
+      type: (n.type ?? 'approval') as NodeType,
+      label: (n.data?.label as string) ?? n.id,
+    }))
+  rulesPanelOpen.value = true
+}
 
 // Custom node type registry — markRaw avoids Vue making components reactive.
 const nodeTypes = {
