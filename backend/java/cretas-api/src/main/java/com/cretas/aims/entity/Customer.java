@@ -124,6 +124,17 @@ public class Customer extends BaseEntity {
     @Column(name = "last_contacted_at")
     private java.time.LocalDateTime lastContactedAt;
 
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1: 客户级开票默认 (Option 3 三层 default 链第 1 层) ====================
+
+    /** 客户级默认税率 (%) — SalesOrder 创建时 prefill 到 SO.defaultTaxRate, 再下放到 Item.taxRate */
+    @Column(name = "default_tax_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal defaultTaxRate;
+
+    /** 客户级默认开票类型 — 同上 3 层 default 链, 最终落到 InvoiceRecord.invoiceType */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_invoice_type", length = 20)
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
     @Column(name = "notes", columnDefinition = "TEXT")

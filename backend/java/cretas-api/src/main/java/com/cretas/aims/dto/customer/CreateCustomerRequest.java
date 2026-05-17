@@ -100,6 +100,14 @@ public class CreateCustomerRequest {
     @Schema(description = "客户来源渠道")
     private com.cretas.aims.entity.enums.CustomerSource source;
 
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1: 开票默认 ====================
+
+    @Schema(description = "客户级默认税率 (%) — SO 创建时自动 prefill")
+    private java.math.BigDecimal defaultTaxRate;
+
+    @Schema(description = "客户级默认开票类型 (NORMAL/SPECIAL/DIGITAL/RECEIPT/NONE/OTHER)")
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     /**
      * Optimistic lock version — echoed from GET response.
      * On UPDATE: if server detects version mismatch → 409 Conflict.

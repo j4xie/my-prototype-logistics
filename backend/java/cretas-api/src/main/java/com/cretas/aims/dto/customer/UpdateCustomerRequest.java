@@ -99,6 +99,14 @@ public class UpdateCustomerRequest {
     @Schema(description = "最近接洽时间 — 显式更新或由销售活动 hook 自动更新")
     private java.time.LocalDateTime lastContactedAt;
 
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1: 开票默认 ====================
+
+    @Schema(description = "客户级默认税率 (%) — SO 创建时自动 prefill")
+    private java.math.BigDecimal defaultTaxRate;
+
+    @Schema(description = "客户级默认开票类型 (NORMAL/SPECIAL/DIGITAL/RECEIPT/NONE/OTHER)")
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     /** 乐观锁版本号 (编辑时必传, 来自 GET 响应); mismatch → 409 Conflict */
     @Schema(description = "乐观锁版本号")
     private Long version;

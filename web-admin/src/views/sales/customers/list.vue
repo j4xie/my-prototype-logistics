@@ -15,12 +15,15 @@ import {
   CUSTOMER_STATUS_OPTIONS,
   CUSTOMER_IMPORTANCE_OPTIONS,
   CUSTOMER_SOURCE_OPTIONS,
+  INVOICE_TYPE_OPTIONS,
   getCustomerStatusOption,
   getCustomerImportanceOption,
   getCustomerSourceOption,
+  getInvoiceTypeOption,
   type CustomerStatusValue,
   type CustomerImportanceValue,
   type CustomerSourceValue,
+  type InvoiceTypeValue,
 } from '@/constants/customerEnums';
 
 // 客户扩展字段 — 添加新字段只需在此数组加一行
@@ -129,6 +132,9 @@ const defaultForm = {
   importance: 'NORMAL' as CustomerImportanceValue,
   source: '' as CustomerSourceValue | '',
   lastContactedAt: null as string | null,
+  // Sprint 4 W2 S-INVOICE-CLIENT-1 — 客户级开票默认 (Option 3 三层链第 1 层)
+  defaultTaxRate: null as number | null,
+  defaultInvoiceType: '' as InvoiceTypeValue | '',
   version: null as number | null,  // optimistic lock — echoed on PUT, server returns 409 on mismatch
 };
 const formData = reactive({ ...defaultForm });
@@ -178,6 +184,9 @@ function handleView(row: TableRow) {
     importance: (row.importance as CustomerImportanceValue) || 'NORMAL',
     source: (row.source as CustomerSourceValue) || '',
     lastContactedAt: (row.lastContactedAt as string) || null,
+    // Sprint 4 W2 S-INVOICE-CLIENT-1
+    defaultTaxRate: (row.defaultTaxRate as number | null) ?? null,
+    defaultInvoiceType: (row.defaultInvoiceType as InvoiceTypeValue) || '',
   });
   dialogVisible.value = true;
 }
@@ -202,6 +211,9 @@ function handleEdit(row: TableRow) {
     importance: (row.importance as CustomerImportanceValue) || 'NORMAL',
     source: (row.source as CustomerSourceValue) || '',
     lastContactedAt: (row.lastContactedAt as string) || null,
+    // Sprint 4 W2 S-INVOICE-CLIENT-1
+    defaultTaxRate: (row.defaultTaxRate as number | null) ?? null,
+    defaultInvoiceType: (row.defaultInvoiceType as InvoiceTypeValue) || '',
   });
   dialogVisible.value = true;
 }
@@ -226,6 +238,9 @@ async function handleSubmit() {
       importance: formData.importance,
       source: formData.source || undefined,
       lastContactedAt: formData.lastContactedAt || undefined,
+      // Sprint 4 W2 S-INVOICE-CLIENT-1
+      defaultTaxRate: formData.defaultTaxRate ?? undefined,
+      defaultInvoiceType: formData.defaultInvoiceType || undefined,
       // 扩展字段自动收集
       ...Object.fromEntries(
         customerExtendedFields.map(f => [f.key, (formData as TableRow)[f.key] ?? null])
@@ -545,6 +560,38 @@ async function handleDelete(row: TableRow) {
           />
         </el-form-item>
 
+        <!-- Sprint 4 W2 S-INVOICE-CLIENT-1 — 客户级开票默认 (Option 3 三层链第 1 层, R3 dropdown) -->
+        <el-divider content-position="left">开票默认 (新建销售单自动 prefill)</el-divider>
+        <el-form-item label="默认税率" prop="defaultTaxRate">
+          <el-input-number
+            v-model="formData.defaultTaxRate"
+            :precision="2"
+            :step="1"
+            :min="0"
+            :max="100"
+            placeholder="未设 (开票时再选)"
+            style="width: 100%"
+          >
+            <template #suffix>%</template>
+          </el-input-number>
+          <div class="form-hint">销售单/开票申请创建时, 此税率自动 prefill 到行项目 (用户仍可逐行调整)</div>
+        </el-form-item>
+        <el-form-item label="默认开票类型" prop="defaultInvoiceType">
+          <el-select v-model="formData.defaultInvoiceType" placeholder="请选择默认开票类型" clearable style="width: 100%">
+            <el-option
+              v-for="opt in INVOICE_TYPE_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            >
+              <span style="float: left">{{ opt.label }}</span>
+              <span style="float: right; color: var(--el-text-color-secondary); font-size: 12px">
+                {{ opt.description }}
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+
         <!-- 扩展字段 (动态渲染) -->
         <el-divider content-position="left">扩展信息</el-divider>
         <DynamicEntityForm
@@ -673,5 +720,13 @@ async function handleDelete(row: TableRow) {
 .cell-empty {
   color: var(--text-color-disabled, #c0c4cc);
   font-size: 12px;
+}
+
+/* Sprint 4 W2 S-INVOICE-CLIENT-1 — form hint under input */
+.form-hint {
+  font-size: 12px;
+  color: var(--text-color-secondary, #909399);
+  line-height: 1.4;
+  margin-top: 4px;
 }
 </style>

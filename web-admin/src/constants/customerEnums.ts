@@ -84,11 +84,25 @@ export const CUSTOMER_SOURCE_OPTIONS: EnumOption<CustomerSourceValue>[] = [
   { value: 'OTHER',           label: '其他'           },
 ];
 
+// ==================== 开票类型 (Sprint 4 W2 S-INVOICE-CLIENT-1, 6 类) ====================
+
+export type InvoiceTypeValue = 'NORMAL' | 'SPECIAL' | 'DIGITAL' | 'RECEIPT' | 'NONE' | 'OTHER';
+
+export const INVOICE_TYPE_OPTIONS: EnumOption<InvoiceTypeValue>[] = [
+  { value: 'NORMAL',  label: '普通发票',   description: '增值税普票' },
+  { value: 'SPECIAL', label: '增值税专票', description: '可抵扣进项' },
+  { value: 'DIGITAL', label: '数电票',     description: '电子发票 (数电化)' },
+  { value: 'RECEIPT', label: '收据',       description: '收款收据 (非税务发票)' },
+  { value: 'NONE',    label: '不开票',     description: '明确不开票' },
+  { value: 'OTHER',   label: '其他',       description: '其他类型, 备注说明' },
+];
+
 // ==================== Helpers ====================
 
 const STATUS_LABEL_MAP = new Map(CUSTOMER_STATUS_OPTIONS.map(o => [o.value, o]));
 const IMPORTANCE_LABEL_MAP = new Map(CUSTOMER_IMPORTANCE_OPTIONS.map(o => [o.value, o]));
 const SOURCE_LABEL_MAP = new Map(CUSTOMER_SOURCE_OPTIONS.map(o => [o.value, o]));
+const INVOICE_TYPE_LABEL_MAP = new Map(INVOICE_TYPE_OPTIONS.map(o => [o.value, o]));
 
 export function getCustomerStatusOption(value?: string | null): EnumOption<CustomerStatusValue> | undefined {
   return value ? STATUS_LABEL_MAP.get(value as CustomerStatusValue) : undefined;
@@ -100,4 +114,8 @@ export function getCustomerImportanceOption(value?: string | null): EnumOption<C
 
 export function getCustomerSourceOption(value?: string | null): EnumOption<CustomerSourceValue> | undefined {
   return value ? SOURCE_LABEL_MAP.get(value as CustomerSourceValue) : undefined;
+}
+
+export function getInvoiceTypeOption(value?: string | null): EnumOption<InvoiceTypeValue> | undefined {
+  return value ? INVOICE_TYPE_LABEL_MAP.get(value as InvoiceTypeValue) : undefined;
 }

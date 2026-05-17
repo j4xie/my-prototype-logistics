@@ -86,7 +86,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         record.setAmount(amount);
         record.setTaxAmount(taxAmount);
         record.setTotalAmount(amount.add(taxAmount != null ? taxAmount : BigDecimal.ZERO));
-        record.setInvoiceType(invoiceType != null ? InvoiceType.valueOf(invoiceType) : InvoiceType.NORMAL);
+        record.setInvoiceType(resolveInvoiceType(invoiceType, so));
         record.setStatus(InvoiceStatus.REQUESTED);
         record.setRequestedBy(requestedBy);
         record.setRequestedAt(LocalDateTime.now());
@@ -99,6 +99,28 @@ public class InvoiceServiceImpl implements InvoiceService {
         } catch (Exception e) { log.warn("Publish InvoiceRequestedEvent failed: {}", e.getMessage()); }
         log.info("开票申请创建: orderId={}, amount={}", salesOrderId, saved.getTotalAmount());
         return saved;
+    }
+
+    /**
+     * Sprint 4 W2 S-INVOICE-CLIENT-1 Option 3 三层 default 链 — 第 3 层 (最终落地) resolver.
+     *
+     * 顺序: 显式参数 > SO.defaultInvoiceType > customer.defaultInvoiceType > InvoiceType.NORMAL.
+     * 显式参数 invalid (非 enum 值) → 抛 IllegalArgumentException (caller 应捕获).
+     */
+    private InvoiceType resolveInvoiceType(String explicit, SalesOrder so) {
+        if (explicit != null && !explicit.isBlank()) {
+            return InvoiceType.valueOf(explicit);
+        }
+        if (so != null && so.getDefaultInvoiceType() != null) {
+            return so.getDefaultInvoiceType();
+        }
+        if (so != null && so.getCustomerId() != null) {
+            InvoiceType cust = customerRepository.findById(so.getCustomerId())
+                    .map(com.cretas.aims.entity.Customer::getDefaultInvoiceType)
+                    .orElse(null);
+            if (cust != null) return cust;
+        }
+        return InvoiceType.NORMAL;
     }
 
     @Override
@@ -164,7 +186,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         record.setTaxAmount(totalTax);
         record.setTotalAmount(totalTaxable.add(totalTax));
         record.setTaxBreakdown(breakdown);
-        record.setInvoiceType(invoiceType != null ? InvoiceType.valueOf(invoiceType) : InvoiceType.NORMAL);
+        record.setInvoiceType(resolveInvoiceType(invoiceType, so));
         record.setStatus(InvoiceStatus.REQUESTED);
         record.setRequestedBy(requestedBy);
         record.setRequestedAt(LocalDateTime.now());
