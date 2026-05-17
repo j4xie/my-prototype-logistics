@@ -153,4 +153,37 @@ public class InvoiceRecord extends BaseEntity {
 
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
+
+    // ==================== OCR (F-INV-1 gap-fill 2026-05-16) ====================
+    // PDF 上传时调 DashScopeVisionClient.parseInvoicePdf, 结果回写下列字段供财务核对。
+    // 解析失败仅记 ocr_error_message, 不阻塞发票开具流程。
+
+    /** OCR 识别的发票号 (供财务核对 invoice_number) */
+    @Column(name = "ocr_invoice_number", length = 50)
+    private String ocrInvoiceNumber;
+
+    /** OCR 识别的不含税金额 */
+    @PriceSensitive
+    @Column(name = "ocr_amount", precision = 15, scale = 2)
+    private BigDecimal ocrAmount;
+
+    /** OCR 识别的税额 */
+    @PriceSensitive
+    @Column(name = "ocr_tax_amount", precision = 15, scale = 2)
+    private BigDecimal ocrTaxAmount;
+
+    /** OCR 置信度 0.000-1.000 */
+    @Column(name = "ocr_confidence", precision = 4, scale = 3)
+    private BigDecimal ocrConfidence;
+
+    /** 原始 LLM 响应 JSON (debug) */
+    @Column(name = "ocr_raw_json", columnDefinition = "TEXT")
+    private String ocrRawJson;
+
+    /** 解析失败原因 */
+    @Column(name = "ocr_error_message", columnDefinition = "TEXT")
+    private String ocrErrorMessage;
+
+    @Column(name = "ocr_parsed_at")
+    private LocalDateTime ocrParsedAt;
 }

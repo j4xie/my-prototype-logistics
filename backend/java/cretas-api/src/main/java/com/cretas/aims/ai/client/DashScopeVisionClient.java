@@ -746,6 +746,146 @@ public class DashScopeVisionClient {
         return node.asDouble(defaultValue);
     }
 
+    // ==================== 发票 PDF OCR (F-INV-1 gap-fill 2026-05-16) ====================
+
+    /**
+     * 解析发票 PDF — 提取发票号 / 不含税金额 / 税额, 供财务核对申请金额。
+     *
+     * 流程: PDFBox 渲染第一页 → PNG → PythonLLMClient.visionChat → JSON 解析。
+     *
+     * <p>策略 (no 降级): 任何环节失败返回 success=false + reason,
+     * 不抛异常 — 调用方在 PDF 上传成功后单独写 ocr_error_message,
+     * 财务可手工核对,流程不阻塞。</p>
+     *
+     * @param pdfBytes 发票 PDF 字节内容 (issueInvoice 入参)
+     * @return 解析结果 (成功含 invoiceNumber/amount/taxAmount/totalAmount;失败含 message)
+     */
+    public InvoiceParseResult parseInvoicePdf(byte[] pdfBytes) {
+        if (pdfBytes == null || pdfBytes.length == 0) {
+            return InvoiceParseResult.error("PDF 内容为空");
+        }
+        if (!delegate.isAvailable()) {
+            return InvoiceParseResult.error("Python LLM 服务未配置");
+        }
+
+        // Render page 1 to PNG via PDFBox
+        byte[] pngBytes;
+        try (org.apache.pdfbox.pdmodel.PDDocument doc =
+                     org.apache.pdfbox.pdmodel.PDDocument.load(pdfBytes)) {
+            if (doc.getNumberOfPages() == 0) {
+                return InvoiceParseResult.error("PDF 无页面");
+            }
+            org.apache.pdfbox.rendering.PDFRenderer renderer =
+                    new org.apache.pdfbox.rendering.PDFRenderer(doc);
+            // 150 DPI 平衡识别精度和图片体积 (发票通常 A5/A6, 150dpi 出图 ~800x500)
+            java.awt.image.BufferedImage img = renderer.renderImageWithDPI(0, 150);
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(img, "png", baos);
+            pngBytes = baos.toByteArray();
+        } catch (Exception e) {
+            log.warn("发票 PDF 渲染失败: {}", ErrorSanitizer.sanitize(e));
+            return InvoiceParseResult.error("PDF 渲染失败: " + ErrorSanitizer.sanitize(e));
+        }
+
+        // Call vision LLM
+        String llmResponse;
+        try {
+            llmResponse = delegate.visionChat(pngBytes, "image/png", INVOICE_OCR_PROMPT);
+        } catch (Exception e) {
+            log.warn("发票 OCR vision 调用失败", e);
+            return InvoiceParseResult.error("Vision 调用失败: " + ErrorSanitizer.sanitize(e));
+        }
+        if (llmResponse == null || llmResponse.isBlank()) {
+            return InvoiceParseResult.error("Vision 返回空响应");
+        }
+
+        return parseInvoiceJson(llmResponse);
+    }
+
+    /**
+     * 发票 OCR 提示词 — 仅识别核心字段, 减少 hallucination 风险。
+     */
+    private static final String INVOICE_OCR_PROMPT = """
+            你是一个中国增值税发票识别专家。请仔细识别这张发票图片,提取以下字段。
+
+            请严格以 JSON 格式返回 (不要包含其他文字或代码块):
+            {
+                "invoice_number": "发票号码 (8-20 位数字)",
+                "amount": 不含税金额数值,
+                "tax_amount": 税额数值,
+                "total_amount": 价税合计数值,
+                "seller_name": "销售方名称",
+                "buyer_name": "购买方名称",
+                "invoice_date": "开票日期 YYYY-MM-DD",
+                "tax_rate": 税率百分比数值 (如 9 / 13),
+                "confidence": 0.0-1.0 的整体置信度
+            }
+
+            要点:
+            1. amount / tax_amount / total_amount 为纯数字 (无 ¥/元 等单位)
+            2. 关系: amount + tax_amount = total_amount, 自查无误
+            3. 任一字段无法识别返回 null, 不要猜测
+            4. confidence < 0.5 时,只返回 confidence 字段, 其余 null
+            5. 仅返回 JSON, 不要任何额外文字
+            """;
+
+    /**
+     * 解析 LLM 返回的发票 JSON。
+     */
+    private InvoiceParseResult parseInvoiceJson(String content) {
+        try {
+            Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}");
+            Matcher matcher = pattern.matcher(content);
+            if (!matcher.find()) {
+                return InvoiceParseResult.builder()
+                        .success(false)
+                        .message("无法从 LLM 响应中提取 JSON")
+                        .rawResponse(content)
+                        .build();
+            }
+            String json = matcher.group();
+            JsonNode node = objectMapper.readTree(json);
+
+            String invoiceNumber = getJsonString(node, "invoice_number");
+            java.math.BigDecimal amount = getJsonBigDecimal(node, "amount");
+            java.math.BigDecimal taxAmount = getJsonBigDecimal(node, "tax_amount");
+            java.math.BigDecimal totalAmount = getJsonBigDecimal(node, "total_amount");
+            double confidence = getJsonDouble(node, "confidence", 0.0);
+
+            return InvoiceParseResult.builder()
+                    .success(true)
+                    .invoiceNumber(invoiceNumber)
+                    .amount(amount)
+                    .taxAmount(taxAmount)
+                    .totalAmount(totalAmount)
+                    .sellerName(getJsonString(node, "seller_name"))
+                    .buyerName(getJsonString(node, "buyer_name"))
+                    .invoiceDate(getJsonString(node, "invoice_date"))
+                    .taxRate(getJsonBigDecimal(node, "tax_rate"))
+                    .confidence(confidence)
+                    .rawResponse(json)
+                    .message(String.format("识别完成,置信度 %.0f%%", confidence * 100))
+                    .build();
+        } catch (JsonProcessingException e) {
+            log.warn("发票 OCR JSON 解析失败", e);
+            return InvoiceParseResult.builder()
+                    .success(false)
+                    .message("JSON 解析失败: " + ErrorSanitizer.sanitize(e))
+                    .rawResponse(content)
+                    .build();
+        }
+    }
+
+    private java.math.BigDecimal getJsonBigDecimal(JsonNode json, String field) {
+        JsonNode n = json.get(field);
+        if (n == null || n.isNull()) return null;
+        try {
+            return new java.math.BigDecimal(n.asText().trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // ==================== 识别结果 DTO ====================
 
     /**
@@ -920,6 +1060,36 @@ public class DashScopeVisionClient {
                 case "LOW" -> 1;
                 default -> 0;
             };
+        }
+    }
+
+    /**
+     * 发票 PDF OCR 结果 — F-INV-1 gap-fill。
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class InvoiceParseResult {
+        private boolean success;
+        private String invoiceNumber;
+        private java.math.BigDecimal amount;       // 不含税
+        private java.math.BigDecimal taxAmount;
+        private java.math.BigDecimal totalAmount;  // 价税合计
+        private String sellerName;
+        private String buyerName;
+        private String invoiceDate;
+        private java.math.BigDecimal taxRate;
+        private double confidence;
+        private String message;
+        private String rawResponse;
+
+        public static InvoiceParseResult error(String message) {
+            return InvoiceParseResult.builder()
+                    .success(false)
+                    .confidence(0.0)
+                    .message(message)
+                    .build();
         }
     }
 }

@@ -145,23 +145,71 @@ const issueTargetId = ref('');
 const issuePdfFile = ref<File | null>(null);
 const issuing = ref(false);
 
+// F-INV-1 gap-fill: 开具成功后展示 OCR 结果, 与申请金额对比
+interface IssueResponse {
+  success: boolean;
+  data?: {
+    amount?: number;
+    ocrInvoiceNumber?: string | null;
+    ocrAmount?: number | null;
+    ocrTaxAmount?: number | null;
+    ocrConfidence?: number | null;
+    ocrErrorMessage?: string | null;
+  };
+  message?: string;
+}
+
 async function submitIssue() {
   if (!issuePdfFile.value) { ElMessage.warning('请选择发票 PDF 文件'); return; }
   issuing.value = true;
   try {
     const formData = new FormData();
     formData.append('file', issuePdfFile.value);
-    await post(`/${factoryId.value}/finance/invoices/${issueTargetId.value}/issue`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const res = await post<IssueResponse['data']>(
+      `/${factoryId.value}/finance/invoices/${issueTargetId.value}/issue`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
     ElMessage.success('开具发票成功');
     issueDialogVisible.value = false;
+    surfaceOcrResult(res.data);
     loadData();
   } catch (e) {
-    ElMessage.error('开具失败');
+    handleCatchError(e, '开具失败');
   } finally {
     issuing.value = false;
   }
+}
+
+function surfaceOcrResult(data?: IssueResponse['data']) {
+  if (!data) return;
+  if (data.ocrErrorMessage) {
+    ElMessage({
+      message: `发票已开具,但 OCR 识别失败: ${data.ocrErrorMessage} — 请人工核对金额`,
+      type: 'warning',
+      duration: 6000,
+    });
+    return;
+  }
+  if (data.ocrInvoiceNumber != null || data.ocrAmount != null) {
+    const conf = data.ocrConfidence != null ? Math.round(data.ocrConfidence * 100) : null;
+    const mismatch = data.ocrAmount != null && data.amount != null
+        && Math.abs(Number(data.ocrAmount) - Number(data.amount)) > 0.01;
+    ElMessage({
+      message: mismatch
+        ? `OCR: 发票号 ${data.ocrInvoiceNumber || '?'}, 金额 ¥${data.ocrAmount} ` +
+          `(置信度 ${conf}%) — 与申请金额 ¥${data.amount} 不一致, 请核对`
+        : `OCR 识别: 发票号 ${data.ocrInvoiceNumber || '?'}, 金额 ¥${data.ocrAmount} (置信度 ${conf}%)`,
+      type: mismatch ? 'warning' : 'success',
+      duration: 5000,
+    });
+  }
+}
+
+function isOcrMatch(row: TableRow): boolean {
+  // F-INV-1 gap-fill: 金额相差 ≤ ¥0.01 视为匹配 (浮点容差)
+  if (row.ocrAmount == null || row.amount == null) return false;
+  return Math.abs(Number(row.ocrAmount) - Number(row.amount)) <= 0.01;
 }
 
 function handlePdfChange(file: { raw: File } | File) {
@@ -244,6 +292,39 @@ async function handleRequestSubmit() {
           <template #default="{ row }">
             <a v-if="row.invoicePdfUrl" :href="row.invoicePdfUrl" target="_blank">查看</a>
             <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <!-- F-INV-1 gap-fill: OCR 识别结果 (供财务核对) -->
+        <el-table-column label="OCR" width="110" align="center">
+          <template #default="{ row }">
+            <template v-if="row.status !== 'ISSUED'">
+              <span style="color:#bbb">-</span>
+            </template>
+            <el-tooltip
+              v-else-if="row.ocrErrorMessage"
+              :content="`OCR 失败: ${row.ocrErrorMessage}`"
+              placement="top"
+            >
+              <el-tag type="danger" size="small">失败</el-tag>
+            </el-tooltip>
+            <el-tooltip
+              v-else-if="row.ocrInvoiceNumber || row.ocrAmount"
+              placement="top"
+            >
+              <template #content>
+                <div>OCR 发票号: {{ row.ocrInvoiceNumber || '-' }}</div>
+                <div v-if="canViewPrice">OCR 金额: ¥{{ row.ocrAmount ?? '-' }}</div>
+                <div v-if="canViewPrice">OCR 税额: ¥{{ row.ocrTaxAmount ?? '-' }}</div>
+                <div>置信度: {{ row.ocrConfidence != null ? Math.round(Number(row.ocrConfidence) * 100) + '%' : '-' }}</div>
+              </template>
+              <el-tag
+                :type="isOcrMatch(row) ? 'success' : 'warning'"
+                size="small"
+              >
+                {{ isOcrMatch(row) ? '匹配' : '待核对' }}
+              </el-tag>
+            </el-tooltip>
+            <span v-else style="color:#bbb">未识别</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" align="center" v-if="canWrite">

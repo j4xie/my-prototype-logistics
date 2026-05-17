@@ -1,5 +1,6 @@
 package com.cretas.aims.service.finance.impl;
 
+import com.cretas.aims.ai.client.DashScopeVisionClient;
 import com.cretas.aims.entity.finance.InvoiceRecord;
 import com.cretas.aims.entity.finance.InvoiceRecord.TaxBreakdownEntry;
 import com.cretas.aims.entity.inventory.SalesOrder;
@@ -43,6 +44,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final CustomerRepository customerRepository;
     private final OssService ossService;
     private final ApplicationEventPublisher eventPublisher;
+
+    /** F-INV-1 gap-fill: PDF→PNG→vision OCR, 解析失败仅记 ocr_error_message。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DashScopeVisionClient dashScopeVisionClient;
 
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -307,6 +312,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         record.setInvoicePdfUrl(pdfUrl);
         record.setInvoiceFileName(pdfFile.getOriginalFilename());
 
+        // F-INV-1 gap-fill: OCR auto-parse 发票号 + 金额 (供财务核对申请金额)。
+        // 失败仅记 ocr_error_message, 不抛异常 — 财务可手动核对。
+        runInvoiceOcr(record, pdfFile);
+
         record.setStatus(InvoiceStatus.ISSUED);
         record.setIssuedAt(LocalDateTime.now());
         InvoiceRecord saved = invoiceRecordRepository.save(record);
@@ -360,6 +369,52 @@ public class InvoiceServiceImpl implements InvoiceService {
             so.setInvoiceStatus("PARTIAL_INVOICED");
         }
         salesOrderRepository.save(so);
+    }
+
+    /**
+     * F-INV-1 gap-fill: 调 DashScopeVisionClient.parseInvoicePdf 写回 OCR 字段。
+     *
+     * 策略 (no 降级):
+     * - vision client 未注入 → 跳过, 不报错 (LLM 服务可选);
+     * - 解析失败 → 记录 ocr_error_message + ocr_parsed_at, OCR 字段留 null;
+     * - 解析成功 → 写所有 ocr_* 字段 + parsed_at, 财务在 UI 上对比 record.amount。
+     *
+     * 永远不抛异常 — 发票开具流程不被 OCR 失败阻塞。
+     */
+    private void runInvoiceOcr(InvoiceRecord record, MultipartFile pdfFile) {
+        record.setOcrParsedAt(LocalDateTime.now());
+        if (dashScopeVisionClient == null) {
+            record.setOcrErrorMessage("Vision client 未配置, 跳过 OCR");
+            return;
+        }
+        try {
+            DashScopeVisionClient.InvoiceParseResult result =
+                    dashScopeVisionClient.parseInvoicePdf(pdfFile.getBytes());
+            if (result == null) {
+                record.setOcrErrorMessage("OCR 返回 null");
+                return;
+            }
+            if (!result.isSuccess()) {
+                record.setOcrErrorMessage(result.getMessage());
+                return;
+            }
+            record.setOcrInvoiceNumber(result.getInvoiceNumber());
+            record.setOcrAmount(result.getAmount());
+            record.setOcrTaxAmount(result.getTaxAmount());
+            if (result.getConfidence() >= 0) {
+                record.setOcrConfidence(
+                        BigDecimal.valueOf(result.getConfidence())
+                                .setScale(3, RoundingMode.HALF_UP));
+            }
+            record.setOcrRawJson(result.getRawResponse());
+            record.setOcrErrorMessage(null);
+            log.info("发票 OCR 成功: invoiceId={}, ocrNumber={}, ocrAmount={}, confidence={}",
+                    record.getId(), result.getInvoiceNumber(),
+                    result.getAmount(), result.getConfidence());
+        } catch (Exception e) {
+            log.warn("发票 OCR 异常 (不阻塞开具): {}", e.getMessage());
+            record.setOcrErrorMessage("OCR 异常: " + e.getMessage());
+        }
     }
 
     private String generateInvoiceNumber() {
