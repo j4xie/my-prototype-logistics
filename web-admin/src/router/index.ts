@@ -228,6 +228,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'QualityStandards',
             component: () => import('@/views/quality/standards/list.vue'),
             meta: { requiresAuth: true, title: '质检标准', module: 'quality' }
+          },
+          // Sprint4-H Q-PROCESS-1: 工序质检不良记录闭环
+          {
+            path: 'defects',
+            name: 'QualityDefects',
+            component: () => import('@/views/quality/defects/list.vue'),
+            meta: { requiresAuth: true, title: '工序质检不良', module: 'quality' }
           }
         ]
       },

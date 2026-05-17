@@ -123,7 +123,9 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/quality/inspections', title: '质检记录', icon: '', module: 'quality' },
       { path: '/quality/disposals', title: '废弃处理', icon: '', module: 'quality' },
-      { path: '/quality/standards', title: '质检标准', icon: '', module: 'quality' }
+      { path: '/quality/standards', title: '质检标准', icon: '', module: 'quality' },
+      // Sprint4-H Q-PROCESS-1: 工序质检不良闭环
+      { path: '/quality/defects', title: '工序质检不良', icon: '', module: 'quality' }
     ]
   },
   {
