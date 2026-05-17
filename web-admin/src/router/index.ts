@@ -404,6 +404,13 @@ const businessRoutes: RouteRecordRaw[] = [
             component: () => import('@/views/sales/customers/list.vue'),
             meta: { requiresAuth: true, title: '客户管理', module: 'sales' }
           },
+          // P1 #21 S-CRM-1: customer tracking record Vue UI (backend Sprint 4 W2 #727)
+          {
+            path: 'customer-tracking',
+            name: 'SalesCustomerTracking',
+            component: () => import('@/views/sales/customer-tracking/list.vue'),
+            meta: { requiresAuth: true, title: '客户跟踪记录', module: 'sales' }
+          },
           {
             path: 'shipments',
             name: 'SalesShipments',
