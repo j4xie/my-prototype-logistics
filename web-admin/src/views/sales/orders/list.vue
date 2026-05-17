@@ -14,7 +14,9 @@ import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
 import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder } from '@/components/list';
+import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
 import type { ViewMode } from '@/types/viewMode';
+import type { CreateMode } from '@/types/createMode';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
@@ -70,6 +72,53 @@ const viewMode = ref<ViewMode>('table');
 const kanbanColumns = computed(() =>
   Object.entries(statusMap).map(([status, v]: [string, { text: string }]) => ({ status, label: v.text }))
 );
+
+// U-NEW-1 (Sprint 4 Wave 2 Chat L) — create-mode selector. Pre-dialog
+// presenting normal/quick/batch/bom modes. quick + bom disabled until
+// Sprint 5 wires entity-specific quick-add + BomVersion expansion.
+const createModeSelectorVisible = ref(false);
+const batchCreateVisible = ref(false);
+function openCreateModeSelector(): void {
+  createModeSelectorVisible.value = true;
+}
+async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
+  if (mode === 'normal') {
+    await openCreateDialog();
+  } else if (mode === 'batch') {
+    // Ensure dropdowns are warm before showing batch dialog.
+    await Promise.all([loadCustomers(), loadProducts(), loadSalesEmployees()]);
+    batchCreateVisible.value = true;
+  } else {
+    // quick + bom are disabled in selector, but defend if external trigger arrives.
+    ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
+  }
+}
+function batchOrderFactory(): { customerId: string; salesperson: string; requiredDeliveryDate: string; remark: string } {
+  return { customerId: '', salesperson: '', requiredDeliveryDate: '', remark: '' };
+}
+async function submitBatchOrders(orders: Array<{ customerId: string; salesperson: string; requiredDeliveryDate: string; remark: string }>): Promise<void> {
+  const created: string[] = [];
+  for (const order of orders) {
+    if (!order.customerId) continue;
+    const payload = {
+      customerId: order.customerId,
+      salesperson: order.salesperson || '',
+      requiredDeliveryDate: order.requiredDeliveryDate || null,
+      remark: order.remark || '',
+      shippingIncluded: false,
+      shippingFee: 0,
+      extraFees: [],
+      items: [],
+      customFields: {},
+    };
+    const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+    if (res?.success) created.push(String(res.data?.orderNumber || res.data?.id || ''));
+  }
+  if (!created.length) {
+    throw new Error('未能创建任何订单（请确认每行至少填写客户）');
+  }
+  await loadData();
+}
 
 /** UX-A2: secondary-action dropdown ("操作 ▾") shown last in row toolbar. */
 function rowActionsFor(row: TableRow) {
@@ -765,7 +814,7 @@ async function submitQuickPayment() {
             <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">新建{{ label('salesOrder') }}</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateModeSelector">新建{{ label('salesOrder') }}</el-button>
           </div>
         </div>
       </template>
@@ -1116,6 +1165,35 @@ async function submitQuickPayment() {
       :order-total-amount="taxGroupInvoiceOrder.totalAmount"
       @success="loadData"
     />
+
+    <!-- U-NEW-1 (Sprint 4 Wave 2 Chat L) create-mode selector + batch dialog -->
+    <CreateModeSelector
+      v-model="createModeSelectorVisible"
+      :entity-label="label('salesOrder')"
+      :disabled-modes="['quick', 'bom']"
+      @mode-selected="handleCreateModeSelected"
+    />
+    <BatchCreateDialog
+      v-model="batchCreateVisible"
+      :title="`批量新建 ${label('salesOrder')}`"
+      :columns="[
+        { prop: 'customerId', label: '客户 ID', required: true, slotName: 'customer' },
+        { prop: 'salesperson', label: '业务员', width: 140 },
+        { prop: 'requiredDeliveryDate', label: '期望交货日', width: 160, slotName: 'date' },
+        { prop: 'remark', label: '备注' },
+      ]"
+      :row-factory="batchOrderFactory"
+      :submit="submitBatchOrders"
+    >
+      <template #customer="{ row }">
+        <el-select v-model="row.customerId" filterable size="small" placeholder="选择客户" style="width: 100%">
+          <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </template>
+      <template #date="{ row }">
+        <el-date-picker v-model="row.requiredDeliveryDate" type="date" size="small" value-format="YYYY-MM-DD" style="width: 100%" />
+      </template>
+    </BatchCreateDialog>
   </div>
   </CanvasAwareWrapper>
 </template>

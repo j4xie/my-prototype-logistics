@@ -18,7 +18,9 @@ import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder } from '@/components/list';
+import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
 import type { ViewMode } from '@/types/viewMode';
+import type { CreateMode } from '@/types/createMode';
 import { computeRowActions } from '@/composables/useRowActions';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
@@ -35,6 +37,45 @@ const canViewPrice = computed(() => permissionStore.canViewPrice);
 
 // U-VIEW-1 (Sprint 4 Wave 2 Chat L) — view-mode switcher (5 modes).
 const viewMode = ref<ViewMode>('table');
+
+// U-NEW-1 (Sprint 4 Wave 2 Chat L) — create-mode selector.
+const createModeSelectorVisible = ref(false);
+const batchCreateVisible = ref(false);
+function openCreateModeSelector(): void {
+  createModeSelectorVisible.value = true;
+}
+async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
+  if (mode === 'normal') {
+    await openCreateDialog();
+  } else if (mode === 'batch') {
+    await Promise.all([loadSuppliers(), loadMaterials(), loadSalesOrders()]);
+    batchCreateVisible.value = true;
+  } else {
+    ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
+  }
+}
+function batchPurchaseFactory(): { supplierId: string; purchaseType: string; expectedDate: string; remark: string } {
+  return { supplierId: '', purchaseType: 'NORMAL', expectedDate: '', remark: '' };
+}
+async function submitBatchPurchaseOrders(orders: Array<{ supplierId: string; purchaseType: string; expectedDate: string; remark: string }>): Promise<void> {
+  const created: string[] = [];
+  for (const order of orders) {
+    if (!order.supplierId) continue;
+    const payload = {
+      supplierId: order.supplierId,
+      purchaseType: order.purchaseType || 'NORMAL',
+      expectedDate: order.expectedDate || null,
+      remark: order.remark || '',
+      items: [],
+    };
+    const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+    if (res?.success) created.push(String(res.data?.orderNumber || res.data?.id || ''));
+  }
+  if (!created.length) {
+    throw new Error('未能创建任何订单（请确认每行至少填写供应商）');
+  }
+  await loadData();
+}
 
 function rowActionsFor(row: TableRow) {
   return computeRowActions(
@@ -498,7 +539,7 @@ function handleAiFill(params: TableRow) {
             <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateModeSelector">
               新建{{ label('purchaseOrder') }}
             </el-button>
           </div>
@@ -727,6 +768,42 @@ function handleAiFill(params: TableRow) {
       :config="PURCHASE_ORDER_CONFIG"
       @fill-form="handleAiFill"
     />
+
+    <!-- U-NEW-1 (Sprint 4 Wave 2 Chat L) create-mode selector + batch dialog -->
+    <CreateModeSelector
+      v-model="createModeSelectorVisible"
+      :entity-label="label('purchaseOrder')"
+      :disabled-modes="['quick', 'bom']"
+      @mode-selected="handleCreateModeSelected"
+    />
+    <BatchCreateDialog
+      v-model="batchCreateVisible"
+      :title="`批量新建 ${label('purchaseOrder')}`"
+      :columns="[
+        { prop: 'supplierId', label: '供应商', required: true, slotName: 'supplier' },
+        { prop: 'purchaseType', label: '类型', width: 130, slotName: 'type' },
+        { prop: 'expectedDate', label: '期望交货日', width: 160, slotName: 'date' },
+        { prop: 'remark', label: '备注' },
+      ]"
+      :row-factory="batchPurchaseFactory"
+      :submit="submitBatchPurchaseOrders"
+    >
+      <template #supplier="{ row }">
+        <el-select v-model="row.supplierId" filterable size="small" placeholder="选择供应商" style="width: 100%">
+          <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
+      </template>
+      <template #type="{ row }">
+        <el-select v-model="row.purchaseType" size="small" style="width: 100%">
+          <el-option label="统一" value="NORMAL" />
+          <el-option label="直接" value="DIRECT" />
+          <el-option label="紧急" value="URGENT" />
+        </el-select>
+      </template>
+      <template #date="{ row }">
+        <el-date-picker v-model="row.expectedDate" type="date" size="small" value-format="YYYY-MM-DD" style="width: 100%" />
+      </template>
+    </BatchCreateDialog>
   </div>
   </CanvasAwareWrapper>
 </template>
