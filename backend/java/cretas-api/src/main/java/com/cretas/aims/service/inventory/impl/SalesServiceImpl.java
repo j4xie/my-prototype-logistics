@@ -594,6 +594,24 @@ public class SalesServiceImpl implements SalesService {
                 throw new BusinessException(409, "只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单")
                         .withHint("请刷新订单列表查看最新状态");
             }
+
+            // Issue #739 idempotency: if an in-progress draft already exists for this SO,
+            // return it instead of creating a duplicate (六扇门 客户手测 2026-05-17: SO-20260511-0001
+            // 有 2 个草稿 DLV — DLV-20260511-0337 / DLV-20260517-9640).
+            List<SalesDeliveryRecord> existing = deliveryRecordRepository.findInProgressBySalesOrderId(
+                    factoryId, request.getSalesOrderId(),
+                    List.of(SalesDeliveryStatus.DRAFT,
+                            SalesDeliveryStatus.PENDING_WAREHOUSE_CONFIRM,
+                            SalesDeliveryStatus.PICKED));
+            if (!existing.isEmpty()) {
+                SalesDeliveryRecord prev = existing.get(0);
+                log.info("发货单幂等命中: factoryId={}, salesOrderId={}, existingDeliveryNumber={}, status={}",
+                        factoryId, request.getSalesOrderId(), prev.getDeliveryNumber(), prev.getStatus());
+                throw new BusinessException(409,
+                        "该销售订单已有草稿发货单 " + prev.getDeliveryNumber() + " (" + prev.getStatus().getDisplayName() + ")")
+                        .withHint("请查看现有发货单, 不要重复创建. 如需多次发货, 请先完成或取消现有草稿.")
+                        .withHintTarget("发货记录 Tab");
+            }
         }
 
         String deliveryNumber = generateDeliveryNumber(factoryId);
@@ -607,7 +625,11 @@ public class SalesServiceImpl implements SalesService {
         record.setDeliveryAddress(request.getDeliveryAddress());
         record.setLogisticsCompany(request.getLogisticsCompany());
         record.setTrackingNumber(request.getTrackingNumber());
-        record.setStatus(SalesDeliveryStatus.DRAFT);
+        // Issue #740: 销售创建后直接进入 PENDING_WAREHOUSE_CONFIRM, 等仓库确认
+        // (DRAFT 留给无 salesOrderId 的临时草稿, e.g. 内部样品 / 营销赠品).
+        record.setStatus(request.getSalesOrderId() != null && !request.getSalesOrderId().isEmpty()
+                ? SalesDeliveryStatus.PENDING_WAREHOUSE_CONFIRM
+                : SalesDeliveryStatus.DRAFT);
         record.setShippedBy(userId);
         record.setRemark(request.getRemark());
 
@@ -676,8 +698,10 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesDeliveryRecord shipDelivery(String factoryId, String deliveryId, Long userId) {
         SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
-        if (record.getStatus() != SalesDeliveryStatus.DRAFT && record.getStatus() != SalesDeliveryStatus.PICKED) {
-            throw new BusinessException(409, "只有草稿或已拣货状态的发货单可以发货")
+        if (record.getStatus() != SalesDeliveryStatus.DRAFT
+                && record.getStatus() != SalesDeliveryStatus.PICKED
+                && record.getStatus() != SalesDeliveryStatus.PENDING_WAREHOUSE_CONFIRM) {
+            throw new BusinessException(409, "只有草稿/待仓库确认/已拣货状态的发货单可以发货")
                     .withHint("请刷新发货单列表查看最新状态");
         }
 
@@ -768,6 +792,88 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public List<SalesDeliveryRecord> getDeliveryRecordsByOrder(String salesOrderId) {
         return deliveryRecordRepository.findBySalesOrderId(salesOrderId);
+    }
+
+    // ==================== Issue #740 仓库侧 confirm 流程 ====================
+
+    @Override
+    public PageResponse<SalesDeliveryRecord> getPendingWarehouseDeliveries(String factoryId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<SalesDeliveryRecord> result = deliveryRecordRepository.findByFactoryIdAndStatusIn(
+                factoryId,
+                List.of(SalesDeliveryStatus.DRAFT,
+                        SalesDeliveryStatus.PENDING_WAREHOUSE_CONFIRM,
+                        SalesDeliveryStatus.PICKED),
+                pageRequest);
+        return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+    }
+
+    /**
+     * Issue #740: warehouse-side confirm. Allows override of 实际发货数量 per-line
+     * (车装不下 / 现场少装 等场景), then 扣库存 + 转 SHIPPED + auto AR.
+     *
+     * <p>actualQuantities map: key = deliveryItemId (String), value = actual qty.
+     * Items not in map keep original deliveredQuantity (sales-planned).
+     *
+     * <p>客户原话 (六扇门 May10 L825-830):
+     *   "确认发货, 他肯定去看一下库存, 实际发了多少, 他肯定手动要填一下.
+     *    比如说我可能计划发发一版, 那但是可能车或者是没装下什么的, 各种各样的因素,
+     *    然后他可能就发了八十"
+     */
+    @Override
+    @Transactional
+    public SalesDeliveryRecord warehouseConfirmDelivery(String factoryId, String deliveryId,
+                                                        java.util.Map<String, java.math.BigDecimal> actualQuantities,
+                                                        Long userId) {
+        SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
+
+        if (record.getStatus() != SalesDeliveryStatus.DRAFT
+                && record.getStatus() != SalesDeliveryStatus.PENDING_WAREHOUSE_CONFIRM
+                && record.getStatus() != SalesDeliveryStatus.PICKED) {
+            throw new BusinessException(409, "只有 草稿/待仓库确认/已拣货 状态的发货单可以确认")
+                    .withHint("请刷新发货单列表查看最新状态");
+        }
+
+        // 应用 actualQuantities 覆盖 — 仅覆盖, 不删行
+        // NOTE: 若 actual < planned, 之前的批次分配 (P0-13 enforce 总量==deliveredQuantity) 会
+        // 不再匹配 → shipDelivery 会 reject. 仓库需先到 "发货记录 → 分配批次" 重新分配再 confirm.
+        // 此 spec 妥协: warehouse confirm 是 happy-path (车装下了就发完); actual<planned 需要
+        // 走"重新分配批次"的 explicit flow. 后续 follow-up: confirm UI 同时支持调整分配.
+        boolean qtyOverridden = false;
+        if (actualQuantities != null && !actualQuantities.isEmpty()) {
+            for (SalesDeliveryItem item : record.getItems()) {
+                String itemIdKey = item.getId() == null ? null : String.valueOf(item.getId());
+                if (itemIdKey == null) continue;
+                java.math.BigDecimal actual = actualQuantities.get(itemIdKey);
+                if (actual != null) {
+                    if (actual.signum() < 0) {
+                        throw new BusinessException(400, "发货行 " + itemIdKey + " 的实际发货数量不能为负")
+                                .withHint("请检查输入");
+                    }
+                    if (item.getDeliveredQuantity() != null
+                            && actual.compareTo(item.getDeliveredQuantity()) != 0) {
+                        log.info("仓库 confirm 调整数量: deliveryId={}, itemId={}, plannedQty={} → actualQty={}",
+                                deliveryId, itemIdKey, item.getDeliveredQuantity(), actual);
+                        item.setDeliveredQuantity(actual);
+                        qtyOverridden = true;
+                    }
+                }
+            }
+            if (qtyOverridden) {
+                // 重新计算 totalAmount
+                BigDecimal total = BigDecimal.ZERO;
+                for (SalesDeliveryItem item : record.getItems()) {
+                    if (item.getUnitPrice() != null && item.getDeliveredQuantity() != null) {
+                        total = total.add(item.getDeliveredQuantity().multiply(item.getUnitPrice()));
+                    }
+                }
+                record.setTotalAmount(total);
+                record = deliveryRecordRepository.save(record);
+            }
+        }
+
+        // 复用 shipDelivery 逻辑 — 含批次分配校验 + 扣库存 + 自动 AR
+        return shipDelivery(factoryId, deliveryId, userId);
     }
 
     @Override

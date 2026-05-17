@@ -146,6 +146,26 @@ public interface ArApTransactionRepository extends JpaRepository<ArApTransaction
     boolean existsByFactoryIdAndPaymentReference(String factoryId, String paymentReference);
 
     /**
+     * Issue #739: AR_PAYMENT idempotency for SO-bound 快速收款 (no paymentReference).
+     * Find recent (last N minutes) AR_PAYMENT for same SO with same |amount|. Triggered when
+     * user double-clicks "收款" — without this, second click silently creates duplicate 收款记录.
+     *
+     * NOTE: amount stored NEGATIVE on AR_PAYMENT (冲减), so caller passes negated amount.
+     */
+    @Query("SELECT t FROM ArApTransaction t "
+            + "WHERE t.factoryId = :factoryId AND t.salesOrderId = :salesOrderId "
+            + "AND t.transactionType = com.cretas.aims.entity.enums.ArApTransactionType.AR_PAYMENT "
+            + "AND t.amount = :amount "
+            + "AND t.createdAt > :since "
+            + "AND t.deletedAt IS NULL "
+            + "ORDER BY t.createdAt DESC")
+    List<ArApTransaction> findRecentArPaymentsForSO(
+            @Param("factoryId") String factoryId,
+            @Param("salesOrderId") String salesOrderId,
+            @Param("amount") BigDecimal amount,
+            @Param("since") java.time.LocalDateTime since);
+
+    /**
      * Issue #317 fix: sum AR_PAYMENT amounts for a SO so SO.paidAmount/payment_status
      * can be derived. amounts on AR_PAYMENT rows are stored NEGATIVE (冲减应收), so
      * we negate before sum to return positive 累计收款.
