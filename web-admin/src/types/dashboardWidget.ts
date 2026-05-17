@@ -1,14 +1,45 @@
 // C-WIDGET-1 (Sprint 4 Wave 2 Chat L) — dashboard widget plug system.
 //
-// Brief calls for 10 widget impls; this PR ships the interface + 3 impls
-// (KPI / Chart / List). Remaining 7 (Alert / QuickAction / Calendar / Map /
-// News / AIAssistant / CustomHtml) deferred to follow-up. The interface is
-// stable enough that follow-up widgets are pure additions.
+// Brief calls for 10 widget impls; Sprint 4 Chat L shipped 3 raw kinds
+// (kpi / chart / list). P1 #65 (this PR) graduates 7 of the previously
+// "coming soon" kinds to live endpoint-bound widgets that fetch their own
+// data from real backend APIs via `useWidgetData`. The interface remains
+// stable; new kinds are pure additions.
 
 import type { Component } from 'vue';
 
-/** Stable widget kind. New kinds get added here; old kinds never renamed. */
-export type WidgetKind = 'kpi' | 'chart' | 'list' | 'alert' | 'quick-action' | 'calendar' | 'map' | 'news' | 'ai-assistant' | 'custom-html';
+/**
+ * Stable widget kind. New kinds get added here; old kinds never renamed.
+ *
+ * Raw kinds (Sprint 4 Chat L) — config supplied externally:
+ *   kpi, chart, list
+ *
+ * Endpoint-bound kinds (P1 #65) — self-fetch from a real endpoint:
+ *   kpi-today-production, wip-batch-count, delivery-warn,
+ *   pending-reminders, equipment-status, quality-rate,
+ *   scheduling-alerts
+ *
+ * Reserved kinds (coming soon):
+ *   alert, quick-action, calendar, map, news, ai-assistant, custom-html
+ */
+export type WidgetKind =
+  | 'kpi'
+  | 'chart'
+  | 'list'
+  | 'kpi-today-production'
+  | 'wip-batch-count'
+  | 'delivery-warn'
+  | 'pending-reminders'
+  | 'equipment-status'
+  | 'quality-rate'
+  | 'scheduling-alerts'
+  | 'alert'
+  | 'quick-action'
+  | 'calendar'
+  | 'map'
+  | 'news'
+  | 'ai-assistant'
+  | 'custom-html';
 
 /** Persisted layout entry per widget instance. */
 export interface DashboardWidget {
@@ -66,7 +97,10 @@ export function saveLayout(routeName: string, widgets: DashboardWidget[]): void 
   }
 }
 
-export function newWidget(kind: WidgetKind, registry: Map<WidgetKind, WidgetRegistration>): DashboardWidget {
+export function newWidget(
+  kind: WidgetKind,
+  registry: ReadonlyMap<WidgetKind, WidgetRegistration>,
+): DashboardWidget {
   const reg = registry.get(kind);
   return {
     id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

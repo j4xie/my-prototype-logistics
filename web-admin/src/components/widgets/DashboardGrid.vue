@@ -53,7 +53,7 @@ function addWidget(kind: WidgetKind): void {
     ElMessage.info(`${reg.defaultTitle} 将在 Sprint 5 上线`);
     return;
   }
-  widgets.value = [...widgets.value, newWidget(kind, widgetRegistry as Map<WidgetKind, never>)];
+  widgets.value = [...widgets.value, newWidget(kind, widgetRegistry)];
   paletteVisible.value = false;
 }
 
