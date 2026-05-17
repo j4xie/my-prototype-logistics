@@ -1,6 +1,6 @@
 package com.cretas.aims.controller;
 
-import com.cretas.aims.security.RequirePermission;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;

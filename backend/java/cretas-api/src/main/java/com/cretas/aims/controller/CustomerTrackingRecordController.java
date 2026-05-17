@@ -2,7 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.CustomerTrackingRecord;
 import com.cretas.aims.repository.CustomerTrackingRecordRepository;
-import com.cretas.aims.security.RequirePermission;
+import com.cretas.aims.annotation.RequirePermission;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
