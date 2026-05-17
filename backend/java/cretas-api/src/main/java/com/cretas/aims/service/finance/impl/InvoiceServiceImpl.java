@@ -76,10 +76,47 @@ public class InvoiceServiceImpl implements InvoiceService {
             "salesOrderId", salesOrderId != null ? salesOrderId : ""));
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("销售订单不存在: " + salesOrderId));
+
+        // Tenant isolation guard (parity with requestInvoiceFromOrder)
+        if (!factoryId.equals(so.getFactoryId())) {
+            throw new IllegalArgumentException("销售订单不存在或无权访问: " + salesOrderId);
+        }
+
         // R18 audit: enforce business invariant — only post-finance-approved SOs can be invoiced.
         // Previously only the dropdown UX (R17) gated this, but direct API POST would bypass.
         // Same whitelist as ReferenceDataController.findSalesOrders.
         validateInvoiceableStatus(so);
+
+        // 防呆 R4 (fool-proof-design 2026-05-17): dedup guard parity with
+        // requestInvoiceFromOrder. Free-form /request path 也走同套幂等检查 — 之前 漏
+        // 让前端 dedup 是 UI-only gate, 直接 POST API 仍可重复创建.
+        List<InvoiceRecord> dupActive = invoiceRecordRepository
+                .findByFactoryIdAndSalesOrderIdAndStatusInAndDeletedAtIsNull(
+                        factoryId, salesOrderId,
+                        List.of(InvoiceStatus.REQUESTED, InvoiceStatus.APPROVED));
+        if (!dupActive.isEmpty()) {
+            String existingNumbers = dupActive.stream()
+                    .map(InvoiceRecord::getInvoiceNumber)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            throw new com.cretas.aims.exception.BusinessException(409,
+                    "该销售订单已有待处理开票申请 (" + dupActive.size() + " 张: " + existingNumbers + "), 请先处理或撤销")
+                    .withHint("请在 \"开票申请\" Tab 里审核通过或驳回已有的发票, 再提交新的开票申请")
+                    .withHintTarget("开票申请");
+        }
+
+        // 防呆 R1: 总开票额不得超过订单未开金额 (server-side 防呆, 同 UI 双保险)
+        BigDecimal totalAmount = amount.add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
+        BigDecimal soTotal = so.getTotalAmount() != null ? so.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal alreadyInvoiced = so.getInvoicedAmount() != null
+                ? so.getInvoicedAmount() : BigDecimal.ZERO;
+        BigDecimal unbilled = soTotal.subtract(alreadyInvoiced);
+        if (totalAmount.compareTo(unbilled) > 0) {
+            throw new com.cretas.aims.exception.BusinessException(400,
+                    String.format("开票金额 ¥%s 超过订单未开金额 ¥%s (订单总额 ¥%s, 已开 ¥%s)",
+                            totalAmount.toPlainString(), unbilled.toPlainString(),
+                            soTotal.toPlainString(), alreadyInvoiced.toPlainString()))
+                    .withHint("请调低金额或使用 \"按订单一键生成\" 自动按未开金额申请");
+        }
 
         InvoiceRecord record = new InvoiceRecord();
         record.setFactoryId(factoryId);
@@ -90,7 +127,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                 customerRepository.findById(so.getCustomerId()).map(c -> c.getName()).orElse(null) : null);
         record.setAmount(amount);
         record.setTaxAmount(taxAmount);
-        record.setTotalAmount(amount.add(taxAmount != null ? taxAmount : BigDecimal.ZERO));
+        // Rebase merge (2026-05-17): keep #772's resolveInvoiceType chain (explicit > SO > customer > NORMAL)
+        // + 148e4784f's totalAmount local var reuse (computed earlier for R1 max-check).
+        record.setTotalAmount(totalAmount);
         record.setInvoiceType(resolveInvoiceType(invoiceType, so));
         record.setStatus(InvoiceStatus.REQUESTED);
         record.setRequestedBy(requestedBy);
