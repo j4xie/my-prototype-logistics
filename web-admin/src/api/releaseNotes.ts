@@ -17,7 +17,8 @@ interface ListResponse {
 }
 
 export async function fetchActiveReleaseNotes(limit = 10): Promise<ReleaseNote[]> {
-  const res = await get<ListResponse>('/mobile/system/release-notes', { params: { limit } });
+  // #820 fix: baseURL 已是 /api/mobile, 这里不能再加 /mobile 否则成 /api/mobile/mobile/...
+  const res = await get<ListResponse>('/system/release-notes', { params: { limit } });
   if (!res.success || !res.data) return [];
   return res.data.content ?? [];
 }

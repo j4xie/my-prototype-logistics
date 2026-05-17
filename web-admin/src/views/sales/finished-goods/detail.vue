@@ -8,9 +8,8 @@
  *   - 价格信息 (canViewPrice 网控)
  *   - 价格历史 占位 table (后端 /price-history endpoint 待接, P3 follow-up)
  *
- * 后端 endpoint: GET /api/mobile/{factoryId}/sales/finished-goods/{batchId} 待补.
- * 当前 fallback: list 列表已有的全部字段都通过 router.push 的 state 或 batch
- *               GET /sales/finished-goods?keyword=batchNumber 来取.
+ * #809 (2026-05-17): 切换到 PR #791 引入的 GET /sales/finished-goods/{id} endpoint,
+ * 取消之前的 list-filter fallback. 大工厂 ( >200 batches) 之前会假报"未找到".
  */
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -21,6 +20,7 @@ import { ElMessage } from 'element-plus';
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
+import { ApiError } from '@/types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -45,24 +45,22 @@ async function loadBatch() {
   if (!factoryId.value || !batchId.value) return;
   loading.value = true;
   try {
-    // 后端尚无 /finished-goods/{id} 独立 detail endpoint
-    // (per SalesController.java 仅 listFinishedGoods + getAvailableBatches).
-    // 临时方案: 拉列表 + 客户端 filter — TODO 后端补 GET /finished-goods/{id} 后改单查.
-    const res = await get(`/${factoryId.value}/sales/finished-goods`, {
-      params: { page: 1, size: 200 },
-    });
+    // #809 (2026-05-17): 切到 PR #791 的 GET /sales/finished-goods/{id} endpoint.
+    const res = await get<TableRow>(`/${factoryId.value}/sales/finished-goods/${batchId.value}`);
     if (res.success && res.data) {
-      const all = (res.data.content || []) as TableRow[];
-      batch.value = all.find((r) => String(r.id || '') === batchId.value) || null;
-      if (!batch.value) {
-        ElMessage.warning('未找到该成品批次 (可能已被删除)');
-      } else {
-        // Seed price-history with at least current entry
-        seedPriceHistory();
-      }
+      batch.value = res.data;
+      seedPriceHistory();
+    } else {
+      batch.value = null;
+      ElMessage.warning('未找到该成品批次 (可能已被删除)');
     }
-  } catch {
-    /* interceptor */
+  } catch (e) {
+    batch.value = null;
+    // 404 → 友好提示 (interceptor 已抛 ApiError, NOT_FOUND code)
+    if (e instanceof ApiError && e.status === 404) {
+      ElMessage.warning('未找到该成品批次 (可能已被删除)');
+    }
+    /* 其他错误已由 interceptor 处理 */
   } finally {
     loading.value = false;
   }

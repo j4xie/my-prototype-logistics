@@ -206,6 +206,11 @@ public class SalesController {
             @RequestBody(required = false) FinanceReviewRequest request) {
         Long reviewerId = extractUserId(authorization);
         String notes = request != null ? request.getNotes() : null;
+        // #818 fix (2026-05-17): mirror PR #704 Purchase fix — 驳回必须填写原因,
+        // 拒绝 null / 空字符串 / 纯空白 notes.
+        if (notes == null || notes.trim().isEmpty()) {
+            throw new BusinessException(400, "驳回必须填写原因 (notes 不能为空)");
+        }
         SalesOrder order = salesService.financeRejectOrder(factoryId, orderId, notes, reviewerId);
         return ApiResponse.success("销售订单财务审核已驳回", order);
     }
