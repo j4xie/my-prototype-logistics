@@ -458,6 +458,30 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'HRWorkTypes',
             component: () => import('@/views/hr/work-types/list.vue'),
             meta: { requiresAuth: true, title: '工种字典', module: 'hr' }
+          },
+          {
+            path: 'leave-requests',
+            name: 'HRLeaveRequests',
+            component: () => import('@/views/hr/leave-requests/list.vue'),
+            meta: { requiresAuth: true, title: '请假申请', module: 'hr' }
+          },
+          {
+            path: 'overtime-requests',
+            name: 'HROvertimeRequests',
+            component: () => import('@/views/hr/overtime-requests/list.vue'),
+            meta: { requiresAuth: true, title: '加班/调休申请', module: 'hr' }
+          },
+          {
+            path: 'expense-requests',
+            name: 'HRExpenseRequests',
+            component: () => import('@/views/hr/expense-requests/list.vue'),
+            meta: { requiresAuth: true, title: '报销申请', module: 'hr' }
+          },
+          {
+            path: 'leave-balances',
+            name: 'HRLeaveBalances',
+            component: () => import('@/views/hr/leave-balances/list.vue'),
+            meta: { requiresAuth: true, title: '假期余额', module: 'hr' }
           }
         ]
       },
