@@ -192,6 +192,21 @@ public class ApprovalChainConfig extends BaseEntity {
         EQUIPMENT_STATUS_CHANGE,
 
         /**
+         * 请假审批 (Sprint 4 W2 H-LEAVE-1)
+         */
+        LEAVE_APPROVAL,
+
+        /**
+         * 加班/调休审批 (Sprint 4 W2 H-OVT-1)
+         */
+        OVERTIME_APPROVAL,
+
+        /**
+         * 报销审批 (Sprint 4 W2 H-EXP-1)
+         */
+        EXPENSE_APPROVAL,
+
+        /**
          * 其他自定义
          */
         CUSTOM
