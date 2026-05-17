@@ -253,6 +253,7 @@ public class SupplierAdmissionRuleServiceImpl implements SupplierAdmissionRuleSe
         long availableCount = supplyHistory.stream()
                 .filter(batch -> batch.getStatus() == MaterialBatchStatus.AVAILABLE
                         || batch.getStatus() == MaterialBatchStatus.RESERVED
+                        || batch.getStatus() == MaterialBatchStatus.PRODUCING_RESERVED  // M-WIP-1: WIP 也算合格
                         || batch.getStatus() == MaterialBatchStatus.DEPLETED)
                 .count();
         long expiredOrRejected = supplyHistory.stream()

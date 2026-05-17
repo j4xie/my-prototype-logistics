@@ -146,6 +146,13 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
     List<MaterialBatch> findByFactoryIdAndStatus(String factoryId, MaterialBatchStatus status);
 
     /**
+     * 跨工厂查找指定状态的批次 (M-WIP-1: 在制品 WIP 全局视图, admin scope).
+     * EntityGraph 一并加载 materialType + supplier 以减少 N+1 query.
+     */
+    @EntityGraph(attributePaths = {"materialType", "supplier"})
+    List<MaterialBatch> findByStatus(MaterialBatchStatus status);
+
+    /**
      * 查找可用的批次（FIFO - 按购买日期排序）
      */
     @Query("SELECT m FROM MaterialBatch m WHERE m.factoryId = :factoryId " +

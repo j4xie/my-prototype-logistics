@@ -112,6 +112,7 @@ public class WorkflowStatsService {
         long inProgress = countMaterialBatch(factoryId, List.of(
                 MaterialBatchStatus.INSPECTING,
                 MaterialBatchStatus.RESERVED,
+                MaterialBatchStatus.PRODUCING_RESERVED,  // M-WIP-1: 在制品也算 in-progress
                 MaterialBatchStatus.DEPLETED));
         long done = countMaterialBatch(factoryId, List.of(
                 MaterialBatchStatus.IN_STOCK,

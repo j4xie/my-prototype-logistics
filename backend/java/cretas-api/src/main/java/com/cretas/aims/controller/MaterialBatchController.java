@@ -331,6 +331,25 @@ public class MaterialBatchController {
     }
 
     /**
+     * 获取在制品 (WIP) 批次列表 (Sprint 4 Wave 2 M-WIP-1).
+     *
+     * <p>"在制品" 指 status = PRODUCING_RESERVED 的原材料批次 —
+     * 即已被进行中的生产批次 (ProductionBatch.status IN_PROGRESS) 占用的物料。</p>
+     *
+     * <p>当前为工厂作用域。跨工厂全局视图 (admin scope) 由 {@link MaterialBatchService#getAllWipBatches()} 提供,
+     * 后续接入独立 admin endpoint 暴露 (需 platform_super_admin 角色)。</p>
+     */
+    @GetMapping("/wip")
+    @Operation(summary = "获取在制品 (WIP) 批次列表", description = "查询本工厂 PRODUCING_RESERVED 状态批次 (在制品)。")
+    public ApiResponse<List<MaterialBatchDTO>> getWipBatches(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId) {
+
+        List<MaterialBatchDTO> batches = materialBatchService.getWipBatches(factoryId);
+        return ApiResponse.success(batches);
+    }
+
+    /**
      * 获取FIFO批次（先进先出）
      *
      * <p>根据先进先出原则获取指定材料类型的批次，用于生产消耗推荐。</p>
