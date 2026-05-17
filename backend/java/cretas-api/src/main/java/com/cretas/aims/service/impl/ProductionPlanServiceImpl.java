@@ -384,6 +384,47 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         return toDTOWithConversionInfo(plan);
     }
 
+    /**
+     * M-PREP-1 (Sprint 4 W2): 创建草稿态生产计划 — status=PREPARED.
+     *
+     * <p>调用 {@link #createProductionPlan} 走完正常创建流程后,
+     * 把 status 从 PENDING 翻成 PREPARED 并保存。
+     * 这样 validation / sales-order-source 校验等业务逻辑全部复用。</p>
+     */
+    @Override
+    @Transactional
+    public ProductionPlanDTO createDraftProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId) {
+        ProductionPlanDTO created = createProductionPlan(factoryId, request, userId);
+        ProductionPlan plan = productionPlanRepository.findById(created.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", created.getId()));
+        plan.setStatus(ProductionPlanStatus.PREPARED);
+        plan = productionPlanRepository.save(plan);
+        log.info("[M-PREP-1] 创建草稿生产计划: planId={}, planNumber={}", plan.getId(), plan.getPlanNumber());
+        return toDTOWithConversionInfo(plan);
+    }
+
+    /**
+     * M-PREP-1 (Sprint 4 W2): 提交草稿态生产计划 — PREPARED → PENDING.
+     */
+    @Override
+    @Transactional
+    public ProductionPlanDTO commitDraftProductionPlan(String factoryId, String planId) {
+        ProductionPlan plan = productionPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
+        if (!plan.getFactoryId().equals(factoryId)) {
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
+        }
+        if (plan.getStatus() != ProductionPlanStatus.PREPARED) {
+            throw new BusinessException(409, "只能提交草稿态 (PREPARED) 的生产计划, 当前状态: " + plan.getStatus())
+                    .withHint("请刷新生产计划列表查看最新状态");
+        }
+        plan.setStatus(ProductionPlanStatus.PENDING);
+        plan = productionPlanRepository.save(plan);
+        log.info("[M-PREP-1] 提交草稿生产计划: planId={}, planNumber={}", plan.getId(), plan.getPlanNumber());
+        return toDTOWithConversionInfo(plan);
+    }
+
     @Override
     @Transactional
     public ProductionPlanDTO updateProductionPlan(String factoryId, String planId, CreateProductionPlanRequest request) {
@@ -407,9 +448,10 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                     .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
-        // 只能更新待处理的计划
-        if (plan.getStatus() != ProductionPlanStatus.PENDING) {
-            throw new BusinessException(409, "只能修改待处理的生产计划")
+        // M-PREP-1: 草稿态 (PREPARED) 也允许更新, 与 PENDING 相同
+        if (plan.getStatus() != ProductionPlanStatus.PENDING
+                && plan.getStatus() != ProductionPlanStatus.PREPARED) {
+            throw new BusinessException(409, "只能修改待处理或草稿态的生产计划")
                     .withHint("请刷新生产计划列表查看最新状态");
         }
 
@@ -436,9 +478,10 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                     .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
-        // 只能删除待处理的计划
-        if (plan.getStatus() != ProductionPlanStatus.PENDING) {
-            throw new BusinessException(409, "只能删除待处理的生产计划")
+        // M-PREP-1: 草稿态 (PREPARED) 也允许删除 (丢弃草稿)
+        if (plan.getStatus() != ProductionPlanStatus.PENDING
+                && plan.getStatus() != ProductionPlanStatus.PREPARED) {
+            throw new BusinessException(409, "只能删除待处理或草稿态的生产计划")
                     .withHint("已开始或已完成的计划不可删除, 请取消代替");
         }
 

@@ -482,9 +482,11 @@ function getStatusType(status: string) {
   const map: Record<string, string> = {
     PLANNED: 'info',
     PENDING: 'info',
+    PREPARED: 'info',  // M-PREP-1: 草稿态
     IN_PROGRESS: 'warning',
     COMPLETED: 'success',
-    CANCELLED: 'danger'
+    CANCELLED: 'danger',
+    PAUSED: 'warning'
   };
   return map[status?.toUpperCase()] || 'info';
 }
@@ -493,9 +495,11 @@ function getStatusText(status: string) {
   const map: Record<string, string> = {
     PLANNED: '待执行',
     PENDING: '待执行',
+    PREPARED: '草稿',  // M-PREP-1: 草稿态
     IN_PROGRESS: '进行中',
     COMPLETED: '已完成',
-    CANCELLED: '已取消'
+    CANCELLED: '已取消',
+    PAUSED: '暂停'
   };
   return map[status?.toUpperCase()] || status;
 }
@@ -697,8 +701,11 @@ function handleAiFill(params: TableRow) {
           @keyup.enter="handleSearch"
         />
         <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 150px">
+          <el-option label="草稿" value="PREPARED" />
           <el-option label="待执行" value="PLANNED" />
+          <el-option label="待执行 (PENDING)" value="PENDING" />
           <el-option label="进行中" value="IN_PROGRESS" />
+          <el-option label="暂停" value="PAUSED" />
           <el-option label="已完成" value="COMPLETED" />
           <el-option label="已取消" value="CANCELLED" />
         </el-select>

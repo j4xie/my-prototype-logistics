@@ -13,6 +13,13 @@ public enum ProductionPlanStatus {
      */
     PLANNED("已计划", "计划已创建"),
     /**
+     * 草稿态 (M-PREP-1, Sprint 4 W2): 计划已创建但未提交。
+     * 用于在正式提交 (PENDING) 之前预览物料短缺情况, 可编辑或删除。
+     * 转换规则: PREPARED → PENDING (提交) 或 PREPARED → CANCELLED (丢弃)。
+     * 不允许直接 PREPARED → IN_PROGRESS, 必须先 commit 到 PENDING。
+     */
+    PREPARED("草稿", "草稿态, 可预览物料短缺后提交或丢弃"),
+    /**
      * 待处理
      */
     PENDING("待处理", "计划已创建，等待开始"),
