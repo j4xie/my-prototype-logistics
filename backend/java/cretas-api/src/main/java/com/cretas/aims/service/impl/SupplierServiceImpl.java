@@ -191,6 +191,17 @@ public class SupplierServiceImpl implements SupplierService {
                 .collect(Collectors.toList());
     }
     @Override
+    @Transactional(readOnly = true)
+    public List<SupplierDTO> getSuppliersByMaterialTypeId(String factoryId, String materialTypeId) {
+        // Issue #788 follow-up: reverse direction by material_type_id, history-based M:N.
+        // Differs from getSuppliersByMaterialType (which uses declared supplied_materials by name).
+        List<Supplier> suppliers = supplierRepository.findDistinctSuppliersByMaterialTypeId(
+                factoryId, materialTypeId);
+        return suppliers.stream()
+                .map(supplierMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+    @Override
     @Transactional
     public SupplierDTO toggleSupplierStatus(String factoryId, String supplierId, Boolean isActive) {
         log.info("切换供应商状态: factoryId={}, supplierId={}, isActive={}",

@@ -5,7 +5,9 @@ import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.RawMaterialTypeDTO;
+import com.cretas.aims.dto.supplier.SupplierDTO;
 import com.cretas.aims.service.RawMaterialTypeService;
+import com.cretas.aims.service.SupplierService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +40,7 @@ public class RawMaterialTypeController {
 
     private final RawMaterialTypeService materialTypeService;
     private final MobileService mobileService;
+    private final SupplierService supplierService;
 
     /**
      * 创建原材料类型
@@ -253,5 +256,29 @@ public class RawMaterialTypeController {
         log.info("检查原材料编码: factoryId={}, code={}, excludeId={}", factoryId, code, excludeId);
         boolean exists = materialTypeService.checkCodeExists(factoryId, code, excludeId);
         return ApiResponse.success(exists);
+    }
+
+    /**
+     * Issue #788 follow-up to PR #782 / #779: reverse direction — material → suppliers.
+     *
+     * <p>之前前端"供应原料"反查走 /suppliers/{id}/history (history-based, 显示"采过 n 次")
+     * — 那是 supplier→material 方向, 不是真 M:N 关联. 现在加 material → suppliers
+     * (history-based distinct list).
+     *
+     * <p>区别于 {@code /api/mobile/{factoryId}/suppliers/by-material?materialType={NAME}}:
+     * <ul>
+     *   <li>by-material 用 materialType **name** + 走 Supplier.suppliedMaterials 数组 (declared)</li>
+     *   <li>本 endpoint 用 material **ID** + 走 PurchaseOrderItem → PurchaseOrder.supplierId (actual)</li>
+     * </ul>
+     */
+    @GetMapping("/{id}/suppliers")
+    @Operation(summary = "查询供应此原材料的供应商列表 (反向 M:N, Issue #788)",
+            description = "按 material_type_id 反查所有曾供应该原料的 distinct supplier 列表 — 真 M:N 关联 (基于 PurchaseOrderItem 历史).")
+    public ApiResponse<List<SupplierDTO>> getSuppliersForMaterial(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "原材料类型ID", example = "RMT-F001-001") String id) {
+        log.info("按 material_type_id 查询供应商列表: factoryId={}, materialTypeId={}", factoryId, id);
+        List<SupplierDTO> suppliers = supplierService.getSuppliersByMaterialTypeId(factoryId, id);
+        return ApiResponse.success(suppliers);
     }
 }

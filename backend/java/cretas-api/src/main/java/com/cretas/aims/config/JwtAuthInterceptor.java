@@ -224,8 +224,11 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                uri.equals("/api/mobile/ai/health") ||  // AI模块健康检查
                uri.startsWith("/api/mobile/edge/upload") ||  // IoT 边缘设备上传（无 JWT）
                uri.startsWith("/api/mobile/voice/") ||  // 语音识别接口（顶层，无工厂）
-               uri.endsWith("/link-survey-company") ||  // Python→Java 内部调用
-               uri.endsWith("/field-visibility/recompute") ||  // Python→Java 内部调用
+               // Issue #789 follow-up to PR #785 / #718 (2026-05-17): /link-survey-company
+               // and /field-visibility/recompute have been moved to /api/internal/* which is
+               // protected by X-Internal-Key header check at line 155 above. The previous
+               // public-endpoint carve-outs allowed any unauthenticated client to trigger
+               // schema-level recompute / re-link survey company — that gap is now closed.
                uri.startsWith("/api/public/");  // 公开溯源查询接口（SmartBI分享等）
     }
 

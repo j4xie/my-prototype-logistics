@@ -96,6 +96,16 @@ public interface SalesService {
 
     PageResponse<FinishedGoodsBatch> getFinishedGoodsBatches(String factoryId, int page, int size);
 
+    /**
+     * Issue #786 follow-up to #761: single-item lookup for finished-goods detail page.
+     * Previous detail.vue used FE list-filter fallback (TODO comment) — cross-page
+     * miss, performance hit. This method enables direct fetch-by-ID.
+     *
+     * @throws com.cretas.aims.exception.ResourceNotFoundException 找不到该批次
+     * @throws com.cretas.aims.exception.BusinessException 403 跨工厂访问
+     */
+    FinishedGoodsBatch getFinishedGoodsBatchById(String factoryId, String batchId);
+
     List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId);
 
     /**

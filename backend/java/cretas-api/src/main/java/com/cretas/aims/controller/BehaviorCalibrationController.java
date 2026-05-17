@@ -19,7 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -76,7 +75,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/dashboard")
     @Operation(summary = "获取行为校准仪表盘数据",
                description = "获取校准系统的综合仪表盘数据，包括核心指标、趋势、工具排名等（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<CalibrationDashboardDTO> getDashboard(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId) {
@@ -111,7 +110,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/metrics/realtime")
     @Operation(summary = "获取实时指标",
                description = "获取当前实时的行为校准指标，每次请求重新计算（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<CalibrationDashboardDTO.CurrentMetrics> getRealtimeMetrics(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId) {
@@ -139,7 +138,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/metrics/trend")
     @Operation(summary = "获取指标趋势数据",
                description = "获取指定时间范围和周期类型的指标趋势数据（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<List<BehaviorCalibrationMetrics>> getMetricsTrend(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId,
@@ -180,7 +179,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/tools/reliability")
     @Operation(summary = "获取工具可靠性排名",
                description = "获取指定日期的工具可靠性排名，按成功率降序（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<List<ToolReliabilityStats>> getToolReliabilityRanking(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId,
@@ -212,7 +211,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/calls")
     @Operation(summary = "分页获取工具调用记录",
                description = "获取工具调用记录列表，支持多条件过滤和分页（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<Page<ToolCallRecord>> getToolCallRecords(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId,
@@ -268,7 +267,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/factory-ranking")
     @Operation(summary = "获取工厂综合得分排名",
                description = "获取所有工厂的综合得分排名，按得分降序（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<List<FactoryRankingItem>> getFactoryRanking(
             @Parameter(description = "统计日期 (yyyy-MM-dd)，默认今天")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -322,15 +321,14 @@ public class BehaviorCalibrationController {
      *
      * 用于重新计算指定工厂和日期的指标
      */
-    // Issue #718 (2026-05-17): @PreAuthorize is silently NO-OP (Spring Security
-    // method-security disabled — see RequireRole.java:11). Added @RequireRole so
-    // role-tier actually enforced. Path /api/admin/calibration is JWT-protected
-    // via interceptor (auth required) but role-tier was previously bypassable.
+    // Issue #718 (2026-05-17) + Issue #789 cleanup (2026-05-17): NO-OP @PreAuthorize
+    // removed (Spring Security method-security disabled — see RequireRole.java:11),
+    // @RequireRole sweep applied to entire controller. Path /api/admin/calibration
+    // is JWT-protected via interceptor (auth required), role-tier now enforced.
     @PostMapping("/metrics/calculate")
     @Operation(summary = "手动触发指标计算",
                description = "手动重新计算指定工厂和日期的校准指标（仅平台管理员）")
     @RequireRole({"platform_admin", "super_admin", "developer"})
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
     public ApiResponse<BehaviorCalibrationMetrics> calculateMetrics(
             @Valid @RequestBody CalculateMetricsRequest request) {
 
@@ -368,7 +366,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/tools/low-reliability")
     @Operation(summary = "获取低可靠性工具列表",
                description = "获取成功率低于指定阈值的工具列表（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<List<ToolReliabilityStats>> getLowReliabilityTools(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId,
@@ -401,7 +399,7 @@ public class BehaviorCalibrationController {
     @GetMapping("/metrics/average-score")
     @Operation(summary = "获取平均综合得分",
                description = "获取指定时间范围内的平均综合得分（仅平台管理员）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<Map<String, Object>> getAverageCompositeScore(
             @Parameter(description = "工厂ID，不传则获取全平台数据")
             @RequestParam(required = false) String factoryId,
