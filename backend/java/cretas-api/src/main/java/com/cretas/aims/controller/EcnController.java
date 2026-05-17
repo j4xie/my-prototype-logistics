@@ -2,8 +2,11 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.annotation.RequirePermission;
+import com.cretas.aims.dto.bom.EcnApprovalRequest;
 import com.cretas.aims.dto.bom.EcnCreateRequest;
+import com.cretas.aims.dto.bom.EcnImpactCalculateRequest;
 import com.cretas.aims.dto.bom.EcnImpactReport;
+import com.cretas.aims.dto.bom.EcnRejectRequest;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.bom.EngineeringChangeNotice;
 import com.cretas.aims.service.bom.ECNService;
@@ -13,8 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * ECN REST Controller (Sprint 3 Track-H / M-BOM-VER-1).
@@ -80,10 +81,8 @@ public class EcnController {
     public ApiResponse<EngineeringChangeNotice> approve(
             @PathVariable String factoryId,
             @PathVariable String ecnId,
-            @RequestBody Map<String, Object> body) {
-        Long approverId = body.get("approverId") == null ? null
-                : ((Number) body.get("approverId")).longValue();
-        return ApiResponse.success(ecnService.approve(factoryId, ecnId, approverId));
+            @Valid @RequestBody EcnApprovalRequest req) {
+        return ApiResponse.success(ecnService.approve(factoryId, ecnId, req.getApproverId()));
     }
 
     @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
@@ -92,11 +91,9 @@ public class EcnController {
     public ApiResponse<EngineeringChangeNotice> reject(
             @PathVariable String factoryId,
             @PathVariable String ecnId,
-            @RequestBody Map<String, Object> body) {
-        Long approverId = body.get("approverId") == null ? null
-                : ((Number) body.get("approverId")).longValue();
-        String reason = (String) body.get("rejectionReason");
-        return ApiResponse.success(ecnService.reject(factoryId, ecnId, approverId, reason));
+            @Valid @RequestBody EcnRejectRequest req) {
+        return ApiResponse.success(ecnService.reject(factoryId, ecnId, req.getApproverId(),
+                req.getRejectionReason()));
     }
 
     @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
@@ -114,11 +111,9 @@ public class EcnController {
     @Operation(summary = "计算 ECN 影响范围 (read-only, 不创建 ECN)")
     public ApiResponse<EcnImpactReport> calculateImpact(
             @PathVariable String factoryId,
-            @RequestBody Map<String, Object> body) {
-        String bomRecipeId = (String) body.get("bomRecipeId");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> changeContext = (Map<String, Object>) body.get("changeContext");
-        return ApiResponse.success(ecnService.calculateImpact(factoryId, bomRecipeId, changeContext));
+            @Valid @RequestBody EcnImpactCalculateRequest req) {
+        return ApiResponse.success(ecnService.calculateImpact(factoryId, req.getBomRecipeId(),
+                req.getChangeContext()));
     }
 
     @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})

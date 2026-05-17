@@ -77,6 +77,14 @@ public interface ProductionPlanService {
       */
     void cancelProductionPlan(String factoryId, String planId, String reason);
      /**
+     * 锁定生产计划 (Issue #759, 2026-05-17). 锁定后不可编辑数量/日期/取消.
+     */
+    ProductionPlanDTO lockProductionPlan(String factoryId, String planId, String reason, Long userId);
+     /**
+     * 解锁生产计划 (Issue #759, 2026-05-17).
+     */
+    ProductionPlanDTO unlockProductionPlan(String factoryId, String planId, Long userId);
+     /**
      * 暂停生产
       */
     ProductionPlanDTO pauseProduction(String factoryId, String planId);

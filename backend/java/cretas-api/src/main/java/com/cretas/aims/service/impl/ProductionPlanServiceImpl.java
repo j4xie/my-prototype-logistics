@@ -455,6 +455,12 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                     .withHint("请刷新生产计划列表查看最新状态");
         }
 
+        // Issue #759: 锁定的计划不可编辑
+        if (Boolean.TRUE.equals(plan.getIsLocked())) {
+            throw new BusinessException(409, "生产计划已锁定, 不可编辑")
+                    .withHint("先解锁该计划再尝试修改");
+        }
+
         // P0-12: 校验销售订单来源 + 回填客户名
         validateAndEnrichSalesOrderSource(factoryId, request);
 
@@ -673,6 +679,12 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                     .withHint("请刷新生产计划列表查看最新状态");
         }
 
+        // Issue #759: 锁定的计划不可取消
+        if (Boolean.TRUE.equals(plan.getIsLocked())) {
+            throw new BusinessException(409, "生产计划已锁定, 不可取消")
+                    .withHint("先解锁该计划再尝试取消");
+        }
+
         // 更新状态
         plan.setStatus(ProductionPlanStatus.CANCELLED);
         plan.setNotes(plan.getNotes() != null ?
@@ -699,6 +711,68 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         }
 
         log.info("取消生产计划: planId={}, reason={}", planId, reason);
+    }
+
+    /**
+     * 锁定生产计划 (Issue #759, 2026-05-17).
+     */
+    @Override
+    @Transactional
+    public ProductionPlanDTO lockProductionPlan(String factoryId, String planId, String reason, Long userId) {
+        ProductionPlan plan = productionPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
+
+        if (!plan.getFactoryId().equals(factoryId)) {
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
+        }
+
+        // 已取消/已完成的计划不需要锁定
+        if (plan.getStatus() == ProductionPlanStatus.CANCELLED
+                || plan.getStatus() == ProductionPlanStatus.COMPLETED) {
+            throw new BusinessException(409, "已取消或已完成的生产计划无需锁定");
+        }
+
+        if (Boolean.TRUE.equals(plan.getIsLocked())) {
+            log.info("生产计划已处于锁定状态, 重复 lock 调用: planId={}", planId);
+            return toDTOWithConversionInfo(plan);
+        }
+
+        plan.setIsLocked(true);
+        plan.setLockReason(reason);
+        plan.setLockedAt(java.time.LocalDateTime.now());
+        plan.setLockedBy(userId);
+        productionPlanRepository.save(plan);
+
+        log.info("锁定生产计划: planId={}, userId={}, reason={}", planId, userId, reason);
+        return toDTOWithConversionInfo(plan);
+    }
+
+    /**
+     * 解锁生产计划 (Issue #759, 2026-05-17).
+     */
+    @Override
+    @Transactional
+    public ProductionPlanDTO unlockProductionPlan(String factoryId, String planId, Long userId) {
+        ProductionPlan plan = productionPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
+
+        if (!plan.getFactoryId().equals(factoryId)) {
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
+        }
+
+        if (!Boolean.TRUE.equals(plan.getIsLocked())) {
+            log.info("生产计划未锁定, 重复 unlock 调用: planId={}", planId);
+            return toDTOWithConversionInfo(plan);
+        }
+
+        plan.setIsLocked(false);
+        // 保留 lock_reason / locked_at / locked_by 作为最后一次记录
+        productionPlanRepository.save(plan);
+
+        log.info("解锁生产计划: planId={}, userId={}", planId, userId);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override

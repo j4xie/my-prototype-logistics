@@ -280,6 +280,30 @@ public class PermissionServiceImpl implements PermissionService {
     /** 价格查看权限代码 (与 PriceFieldResponseAdvice.PRICE_VIEW_PERMISSION 一致). */
     private static final String PRICE_VIEW_PERMISSION = "procurement:price:view";
 
+    /**
+     * 角色白名单 — 允许查看财务待审采购单 (Issue #736 fix, 2026-05-17).
+     *
+     * <p>{@code /procurement/finance-review} 列表暴露 PENDING_FINANCE_REVIEW 状态的采购订单，
+     * 含供应商名、总金额、价格异常告警等业务敏感数据。viewer 角色虽然有 procurement:read,
+     * 但本不该看到这个工作流, 必须显式 deny.
+     *
+     * <p>白名单: factory_super_admin / platform_admin (兜底) / procurement_manager (流程发起方) /
+     * finance_manager (审核执行方) / dispatcher (协调). 其余一律不可见.
+     */
+    private static final Set<FactoryUserRole> FINANCE_REVIEW_VIEW_ROLES = Set.of(
+            FactoryUserRole.factory_super_admin,
+            FactoryUserRole.platform_admin,
+            FactoryUserRole.procurement_manager,
+            FactoryUserRole.finance_manager,
+            FactoryUserRole.dispatcher,
+            // 向后兼容
+            FactoryUserRole.permission_admin,
+            FactoryUserRole.department_admin
+    );
+
+    /** 财务待审采购单查看权限代码 (Issue #736). */
+    public static final String FINANCE_REVIEW_VIEW_PERMISSION = "procurement:finance_review:view";
+
     @Override
     public boolean hasPermission(User user, String permissionCode) {
         if (user == null || permissionCode == null || permissionCode.isEmpty()) {
@@ -300,6 +324,12 @@ public class PermissionServiceImpl implements PermissionService {
         // 走独立角色白名单, 不复用 module:action 矩阵 (该矩阵只支持 read/write 二元).
         if (PRICE_VIEW_PERMISSION.equals(permissionCode)) {
             return PRICE_VIEW_ROLES.contains(role);
+        }
+
+        // procurement:finance_review:view — 财务待审采购单查看 (Issue #736 fix).
+        // 走独立角色白名单, viewer 不在内 (修复 P0 RBAC bypass).
+        if (FINANCE_REVIEW_VIEW_PERMISSION.equals(permissionCode)) {
+            return FINANCE_REVIEW_VIEW_ROLES.contains(role);
         }
 
         // 解析权限代码 (格式: module:action)

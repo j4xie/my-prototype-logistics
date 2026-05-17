@@ -139,6 +139,11 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         if (existingOpt.isPresent()) {
             // 更新现有模板
             FormTemplate existing = existingOpt.get();
+            // Issue #725 fix (2026-05-17): snapshot before mutating so /versions / /rollback work.
+            FormTemplateVersion snapshot = FormTemplateVersion.fromTemplate(existing,
+                    "Auto-saved before createOrUpdate");
+            versionRepository.save(snapshot);
+
             existing.setName(name);
             existing.setSchemaJson(schemaJson);
             existing.incrementVersion();
@@ -198,6 +203,12 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("表单模板不存在: " + id));
 
+        // Issue #725 fix (2026-05-17): snapshot current state to FormTemplateVersion BEFORE mutating.
+        // Without this snapshot, /versions endpoint always returns [] and /rollback can't find any
+        // version to roll back to (the whole version-history feature was non-functional pre-fix).
+        FormTemplateVersion snapshot = FormTemplateVersion.fromTemplate(template, "Auto-saved before update");
+        versionRepository.save(snapshot);
+
         if (name != null && !name.isEmpty()) {
             template.setName(name);
         }
@@ -212,7 +223,8 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         template.incrementVersion();
         template = formTemplateRepository.save(template);
 
-        log.info("表单模板更新成功: id={}, version={}", template.getId(), template.getVersion());
+        log.info("表单模板更新成功: id={}, version={}, snapshotVersion={}",
+                template.getId(), template.getVersion(), snapshot.getVersion());
         return template;
     }
 
@@ -254,7 +266,10 @@ public class FormTemplateServiceImpl implements FormTemplateService {
     @Override
     @Transactional(readOnly = true)
     public Page<FormTemplate> getByFactoryId(String factoryId, Pageable pageable) {
-        return formTemplateRepository.findByFactoryIdAndIsActiveTrue(factoryId, pageable);
+        // Issue #714 fix (2026-05-17): include system templates (factory_id IS NULL).
+        // V20260603_09 seeds 6 PRINT_* templates with factory_id=NULL shared across all factories;
+        // previous query was factory-scoped only, so list returned 0 even though DB had system rows.
+        return formTemplateRepository.findByFactoryOrSystemAndActive(factoryId, pageable);
     }
 
     @Override

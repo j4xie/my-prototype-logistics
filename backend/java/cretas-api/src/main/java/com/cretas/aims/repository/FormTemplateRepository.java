@@ -65,6 +65,22 @@ public interface FormTemplateRepository extends JpaRepository<FormTemplate, Stri
     Page<FormTemplate> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
 
     /**
+     * 根据工厂ID分页查询所有模板 (包含系统级模板 factory_id IS NULL).
+     *
+     * <p>Issue #714 fix (2026-05-17): GET /form-templates 必须包含系统级模板.
+     * V20260603_09 seeded 6 PRINT_* 模板 with factory_id=NULL (共享给所有工厂),
+     * 但 {@link #findByFactoryIdAndIsActiveTrue} 只过滤 factory_id=? 错过 NULL 系统模板,
+     * 导致 F006 列表显示 totalElements=0 (实际 DB 有 6 条系统级 + 任何工厂级).
+     *
+     * @param factoryId 工厂ID
+     * @param pageable 分页参数
+     * @return 分页模板列表 (含工厂级 + 系统级)
+     */
+    @Query("SELECT f FROM FormTemplate f WHERE f.isActive = true " +
+           "AND (f.factoryId = :factoryId OR f.factoryId IS NULL)")
+    Page<FormTemplate> findByFactoryOrSystemAndActive(@Param("factoryId") String factoryId, Pageable pageable);
+
+    /**
      * 查询系统级模板（factoryId = null）
      *
      * @param pageable 分页参数

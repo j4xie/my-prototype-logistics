@@ -296,16 +296,30 @@ const businessRoutes: RouteRecordRaw[] = [
           // finance_manager 可见 (web-admin 当前 matrix 把 finance_manager 的 finance
           // 设为 'none', 上线后需配套调整 matrix 或 backend pull permissions).
           {
+            // Issue #736 fix (2026-05-17): 显式 roles 白名单, 防 viewer 凭 finance:r 进入.
+            // 后端 PurchaseController.listOrdersByStatus 也加了 procurement:finance_review:view
+            // 双层防御 (前端路由 + 后端 API 都拒绝 viewer).
             path: 'finance-review',
             name: 'PurchaseOrderFinanceReviewList',
             component: () => import('@/views/procurement/finance-review/list.vue'),
-            meta: { requiresAuth: true, title: '财务待审采购单', module: 'finance' }
+            meta: {
+              requiresAuth: true,
+              title: '财务待审采购单',
+              module: 'finance',
+              roles: ['factory_super_admin', 'platform_admin', 'procurement_manager', 'finance_manager', 'dispatcher', 'permission_admin', 'department_admin']
+            }
           },
           {
             path: 'finance-review/:id',
             name: 'PurchaseOrderFinanceReviewDetail',
             component: () => import('@/views/procurement/finance-review/detail.vue'),
-            meta: { requiresAuth: true, title: '财务审核详情', module: 'finance', hidden: true }
+            meta: {
+              requiresAuth: true,
+              title: '财务审核详情',
+              module: 'finance',
+              hidden: true,
+              roles: ['factory_super_admin', 'platform_admin', 'procurement_manager', 'finance_manager', 'dispatcher', 'permission_admin', 'department_admin']
+            }
           }
         ]
       },
