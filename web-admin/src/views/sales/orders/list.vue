@@ -13,7 +13,8 @@ import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
-import { RowActionMenu } from '@/components/list';
+import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder } from '@/components/list';
+import type { ViewMode } from '@/types/viewMode';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
@@ -62,6 +63,13 @@ const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT'
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-VIEW-1 (Sprint 4 Wave 2 Chat L) — view-mode switcher (5 modes).
+// Persistence handled by ViewModeSwitcher via route.name + localStorage.
+const viewMode = ref<ViewMode>('table');
+const kanbanColumns = computed(() =>
+  Object.entries(statusMap).map(([status, v]: [string, { text: string }]) => ({ status, label: v.text }))
+);
 
 /** UX-A2: secondary-action dropdown ("操作 ▾") shown last in row toolbar. */
 function rowActionsFor(row: TableRow) {
@@ -777,9 +785,32 @@ async function submitQuickPayment() {
         </el-select>
         <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
+        <!-- U-VIEW-1 view-mode switcher (Sprint 4 Wave 2 Chat L) -->
+        <div style="margin-left: auto">
+          <ViewModeSwitcher v-model="viewMode" />
+        </div>
       </div>
 
-      <el-table :data="filteredTableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+      <GridView
+        v-if="viewMode === 'grid'"
+        :rows="filteredTableData"
+        title-field="orderNumber"
+        subtitle-field="customerName"
+        status-field="status"
+        row-key="id"
+      />
+      <KanbanView
+        v-else-if="viewMode === 'kanban'"
+        :rows="filteredTableData"
+        status-field="status"
+        title-field="orderNumber"
+        subtitle-field="customerName"
+        :columns="kanbanColumns"
+        row-key="id"
+      />
+      <TimelinePlaceholder v-else-if="viewMode === 'timeline'" />
+      <CalendarPlaceholder v-else-if="viewMode === 'calendar'" />
+      <el-table v-else :data="filteredTableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.customerName || row.customer?.name || row.customerId || '-' }}</template>

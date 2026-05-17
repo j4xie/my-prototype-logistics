@@ -17,7 +17,8 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu, TableFooter } from '@/components/list';
+import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder } from '@/components/list';
+import type { ViewMode } from '@/types/viewMode';
 import { computeRowActions } from '@/composables/useRowActions';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
@@ -31,6 +32,9 @@ const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('procurement'));
 
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+
+// U-VIEW-1 (Sprint 4 Wave 2 Chat L) — view-mode switcher (5 modes).
+const viewMode = ref<ViewMode>('table');
 
 function rowActionsFor(row: TableRow) {
   return computeRowActions(
@@ -525,9 +529,32 @@ function handleAiFill(params: TableRow) {
         </el-select>
         <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
+        <!-- U-VIEW-1 view-mode switcher (Sprint 4 Wave 2 Chat L) -->
+        <div style="margin-left: auto">
+          <ViewModeSwitcher v-model="viewMode" />
+        </div>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+      <GridView
+        v-if="viewMode === 'grid'"
+        :rows="tableData"
+        title-field="orderNumber"
+        subtitle-field="supplierName"
+        status-field="status"
+        row-key="id"
+      />
+      <KanbanView
+        v-else-if="viewMode === 'kanban'"
+        :rows="tableData"
+        status-field="status"
+        title-field="orderNumber"
+        subtitle-field="supplierName"
+        :columns="Object.entries(statusMap).map(([s, v]) => ({ status: s, label: v.text }))"
+        row-key="id"
+      />
+      <TimelinePlaceholder v-else-if="viewMode === 'timeline'" />
+      <CalendarPlaceholder v-else-if="viewMode === 'calendar'" />
+      <el-table v-else :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="供应商" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.supplierName || row.supplier?.name || row.supplierId || '-' }}</template>
