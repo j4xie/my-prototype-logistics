@@ -356,17 +356,25 @@ class LeaveRequestSubmitToolTest {
     }
 
     @Test
-    @DisplayName("UT-LV-11: Invalid leaveType throws BusinessException with helpful message")
-    void invalidLeaveTypeThrowsFriendly() {
+    @DisplayName("UT-LV-11: Invalid leaveType returns PREVIEW_INVALID with friendly message (post-#810 audit fix)")
+    void invalidLeaveTypeReturnsFriendlyPreviewInvalid() throws Exception {
+        // Per audit fix #810: BusinessException at param-parse stage is now CAUGHT in doPreview
+        // and returned as structured PREVIEW_INVALID map (instead of propagating + getting
+        // sanitized to generic "操作执行失败" by AbstractBusinessTool framework wrap).
         Map<String, Object> params = new HashMap<>();
         params.put("leaveType", "INVALID_TYPE");
         params.put("startDate", "2026-06-01");
         params.put("endDate", "2026-06-01");
 
-        BusinessException ex = assertThrows(BusinessException.class,
-                () -> invokeDoPreview(submitTool, FACTORY_ID, params, ctx()));
-        assertTrue(ex.getMessage().contains("不支持的请假类型"));
-        assertTrue(ex.getMessage().contains("ANNUAL"));
+        Map<String, Object> result = invokeDoPreview(submitTool, FACTORY_ID, params, ctx());
+
+        assertEquals("PREVIEW_INVALID", result.get("status"));
+        assertEquals(400, ((Number) result.get("code")).intValue());
+        String message = String.valueOf(result.get("message"));
+        assertTrue(message.contains("不支持的请假类型"),
+                "Expected message to mention 不支持的请假类型, got: " + message);
+        assertTrue(message.contains("ANNUAL"),
+                "Expected message to list ANNUAL as valid option, got: " + message);
     }
 
     // ─────────── Helpers ───────────
