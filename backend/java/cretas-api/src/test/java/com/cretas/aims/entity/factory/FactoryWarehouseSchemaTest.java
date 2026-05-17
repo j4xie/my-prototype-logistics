@@ -35,9 +35,12 @@ class FactoryWarehouseSchemaTest {
     }
 
     @Test
-    void warehouseTypeEnum_shouldHaveThreeValues() {
+    void warehouseTypeEnum_shouldHave13Values() {
+        // Sprint 4 W1 W-CLASS-1: expanded from 3 legacy types (LOGISTICS/WORKSHOP/OTHER, now @Deprecated)
+        // to 13 total with 10 new phase-semantic types (RAW/WIP/etc).
         WarehouseType[] values = WarehouseType.values();
-        assertEquals(3, values.length);
+        assertEquals(13, values.length);
+        // Legacy 3 (backwards-compat, deprecated)
         assertNotNull(WarehouseType.valueOf("LOGISTICS"));
         assertNotNull(WarehouseType.valueOf("WORKSHOP"));
         assertNotNull(WarehouseType.valueOf("OTHER"));

@@ -85,6 +85,14 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "purchase_type", nullable = false, length = 32)
     private PurchaseType purchaseType = PurchaseType.DIRECT;
 
+    /**
+     * Sprint 4 W1 P-IMPORT-1: 是否进口采购. null=未指定 (老数据 / 暂未维护),
+     * TRUE=进口 (需海关报关), FALSE=正常境内采购. 跟 purchaseType (业务流向, 直采/总部统采/紧急)
+     * 正交, 两个维度独立维护.
+     */
+    @Column(name = "is_imported")
+    private Boolean isImported;
+
     @NotNull(message = "下单日期不能为空")
     @Column(name = "order_date", nullable = false)
     private LocalDate orderDate;
