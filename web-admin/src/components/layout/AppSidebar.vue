@@ -78,7 +78,9 @@ const financeManagerMenu: MenuItem[] = [
   { path: '/finance/invoices?status=REQUESTED', title: '开票审核', icon: 'Tickets', module: 'finance' },
   { path: '/finance/payments', title: '收款管理', icon: 'Money', module: 'finance' },
   // Smoke v2 Bug #2: 财务审核采购单 — finance_manager 是该列表的主审核人
-  { path: '/procurement/finance-review', title: '财务待审采购单', icon: 'ShoppingCart', module: 'finance' }
+  { path: '/procurement/finance-review', title: '财务待审采购单', icon: 'ShoppingCart', module: 'finance' },
+  // Sprint4-H F-AR-1: 财务审核销售单 — finance_manager 复核成本/利润/BOM 标准
+  { path: '/sales/finance-review', title: '财务待审销售单', icon: 'Goods', module: 'finance' }
 ];
 
 const menuConfig: MenuItem[] = [
@@ -158,7 +160,11 @@ const menuConfig: MenuItem[] = [
       // Now discoverable for 历史退货 review + status-tracking workflows.
       { path: '/sales/returns', title: '销售退货', icon: '', module: 'sales' },
       { path: '/sales/vehicles', title: '车辆字典', icon: '', module: 'sales',
-        hideForFactoryTypes: ['RESTAURANT'] }
+        hideForFactoryTypes: ['RESTAURANT'] },
+      // Sprint4-H F-AR-1: 销售单财务审核 (镜像 /procurement/finance-review).
+      // module:'finance' 让 finance_manager 在 /sales 组下也可见. 销售员可看但
+      // 后端 @RequirePermission("finance:read_write") 限制操作权.
+      { path: '/sales/finance-review', title: '财务待审销售单', icon: '', module: 'finance' }
     ]
   },
   {
