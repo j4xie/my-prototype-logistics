@@ -46,6 +46,15 @@ public class OvertimeRequestServiceImpl implements OvertimeRequestService {
                                   LocalDateTime startTime, LocalDateTime endTime,
                                   BigDecimal hours, CompensationType compensationType, String reason) {
         validate(startTime, endTime, hours, type, compensationType);
+        // R4 防呆: 时段重叠拒绝
+        var overlapping = repository.findOverlappingActive(factoryId, userId, startTime, endTime);
+        if (!overlapping.isEmpty()) {
+            var existing = overlapping.get(0);
+            throw new BusinessException(409, String.format(
+                    "您在 %s ~ %s 已有加班申请 (%s, 状态=%s), 请先撤回",
+                    existing.getStartTime(), existing.getEndTime(),
+                    existing.getId(), existing.getStatus()));
+        }
         return repository.save(OvertimeRequest.builder()
                 .factoryId(factoryId)
                 .userId(userId)

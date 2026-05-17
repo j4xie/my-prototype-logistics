@@ -52,6 +52,15 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                                LocalDate startDate, LocalDate endDate,
                                BigDecimal durationHours, String reason) {
         validateDates(startDate, endDate, durationHours);
+        // R4 防呆: 同期间已有 DRAFT/SUBMITTED/APPROVED 拒绝
+        var overlapping = repository.findOverlappingActive(factoryId, userId, startDate, endDate);
+        if (!overlapping.isEmpty()) {
+            var existing = overlapping.get(0);
+            throw new BusinessException(409, String.format(
+                    "您在 %s ~ %s 期间已有请假申请 (%s, 状态=%s), 请先撤回或修改原申请",
+                    existing.getStartDate(), existing.getEndDate(),
+                    existing.getId(), existing.getStatus()));
+        }
         LeaveRequest req = LeaveRequest.builder()
                 .factoryId(factoryId)
                 .userId(userId)

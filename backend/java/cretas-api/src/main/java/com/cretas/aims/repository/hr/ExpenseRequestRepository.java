@@ -33,6 +33,31 @@ public interface ExpenseRequestRepository extends JpaRepository<ExpenseRequest, 
     Optional<ExpenseRequest> findByFactoryIdAndPaymentRecordId(
             String factoryId, String paymentRecordId);
 
+    /**
+     * R4 防呆: 5min 窗口内同 user/category/amount/date 已有 DRAFT/SUBMITTED 报销
+     * (防 double-click 重复创建).
+     */
+    @Query("""
+            SELECT r FROM ExpenseRequest r
+            WHERE r.factoryId = :factoryId
+              AND r.userId = :userId
+              AND r.category = :category
+              AND r.amount = :amount
+              AND r.expenseDate = :expenseDate
+              AND r.status IN (
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.DRAFT,
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.SUBMITTED,
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.APPROVED)
+              AND r.createdAt >= :since
+            """)
+    List<ExpenseRequest> findRecentDuplicates(
+            @Param("factoryId") String factoryId,
+            @Param("userId") Long userId,
+            @Param("category") ExpenseCategory category,
+            @Param("amount") BigDecimal amount,
+            @Param("expenseDate") LocalDate expenseDate,
+            @Param("since") java.time.LocalDateTime since);
+
     /** 月度类目汇总. */
     @Query("""
             SELECT r.category, SUM(r.amount)

@@ -29,6 +29,26 @@ public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest
 
     Page<OvertimeRequest> findByFactoryId(String factoryId, Pageable pageable);
 
+    /**
+     * R4 防呆: 同 user 同期间已有 DRAFT/SUBMITTED/APPROVED 加班申请 (避免重复提交).
+     */
+    @Query("""
+            SELECT r FROM OvertimeRequest r
+            WHERE r.factoryId = :factoryId
+              AND r.userId = :userId
+              AND r.status IN (
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.DRAFT,
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.SUBMITTED,
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.APPROVED)
+              AND r.startTime < :endTime
+              AND r.endTime > :startTime
+            """)
+    List<OvertimeRequest> findOverlappingActive(
+            @Param("factoryId") String factoryId,
+            @Param("userId") Long userId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
     /** 已批准 + 补偿方式 + 时间范围. */
     @Query("""
             SELECT r FROM OvertimeRequest r

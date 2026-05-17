@@ -83,6 +83,37 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
         return paymentRecordRepository.save(record);
     }
 
+    /**
+     * Sprint 4 W2 H-EXP-1: 报销付款 (AP). 不 validate SalesOrder, 不查 customer,
+     * salesOrderId/customerId/customerName 全 null. remark 加 EXPENSE_REIMBURSEMENT:<id>
+     * 前缀作为追溯标记 (后续 verifyPayment 凭此判断走 AP 分支跳过 ArApTransaction).
+     */
+    @Override
+    @Transactional
+    public PaymentRecord recordExpenseReimbursement(String factoryId, String expenseRequestId,
+                                                    BigDecimal amount, Long recordedBy, String remark) {
+        PaymentRecord record = new PaymentRecord();
+        record.setFactoryId(factoryId);
+        record.setPaymentNumber(generatePaymentNumber());
+        // SO/customer fields 留 null (AP, 不关联销售订单)
+        record.setAmount(amount);
+        record.setPaymentDate(LocalDate.now());
+        record.setStatus(PaymentRecordStatus.PENDING);
+        record.setRecordedBy(recordedBy);
+        record.setRemark("EXPENSE_REIMBURSEMENT:" + expenseRequestId
+                + (remark != null && !remark.isBlank() ? " | " + remark : ""));
+        log.info("报销付款创建: expenseRequestId={}, amount={}, recordedBy={}",
+                expenseRequestId, amount, recordedBy);
+        return paymentRecordRepository.save(record);
+    }
+
+    /** EXPENSE_REIMBURSEMENT 标记判断 — verifyPayment 凭此跳过 SO/AR 分支. */
+    private boolean isExpenseReimbursement(PaymentRecord record) {
+        return record.getSalesOrderId() == null
+                && record.getRemark() != null
+                && record.getRemark().startsWith("EXPENSE_REIMBURSEMENT:");
+    }
+
     @Override
     @Transactional
     public PaymentRecord verifyPayment(String paymentId, Long verifiedBy) {
@@ -102,6 +133,15 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
         record.setVerifiedBy(verifiedBy);
         record.setVerifiedAt(LocalDateTime.now());
         PaymentRecord saved = paymentRecordRepository.save(record);
+
+        // Sprint 4 W2 H-EXP-1: 报销付款 (AP) 跳过 AR_PAYMENT + SO 更新分支.
+        // remark 'EXPENSE_REIMBURSEMENT:<id>' 标记由 recordExpenseReimbursement 写入.
+        // ExpenseRequest.status=PAID 由 finance 团队显式调 /mark-paid 端点设置.
+        if (isExpenseReimbursement(saved)) {
+            log.info("报销付款已验证 (跳过 AR/SO 联动): paymentId={}, amount={}",
+                    paymentId, record.getAmount());
+            return saved;
+        }
 
         // 同步创建 ArApTransaction (AR_PAYMENT)
         // Issue #317 fix: thread salesOrderId so SO 收款记录 tab finds the row +

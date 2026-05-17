@@ -8,6 +8,7 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.ExpenseRequestRepository;
 import com.cretas.aims.service.ApprovalChainService;
+import com.cretas.aims.service.finance.PaymentRecordService;
 import com.cretas.aims.service.hr.ExpenseRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import java.util.Optional;
 public class ExpenseRequestServiceImpl implements ExpenseRequestService {
 
     private final ExpenseRequestRepository repository;
+    private final PaymentRecordService paymentRecordService;
 
     @Autowired
     @Lazy
@@ -42,6 +44,15 @@ public class ExpenseRequestServiceImpl implements ExpenseRequestService {
     public ExpenseRequest create(String factoryId, Long userId, ExpenseCategory category,
                                  BigDecimal amount, LocalDate expenseDate, String reason) {
         validate(category, amount, expenseDate);
+        // R4 防呆: 5min 窗口同 user/category/amount/date 重复 → 409
+        var since = LocalDateTime.now().minusMinutes(5);
+        var dupes = repository.findRecentDuplicates(factoryId, userId, category, amount, expenseDate, since);
+        if (!dupes.isEmpty()) {
+            var existing = dupes.get(0);
+            throw new BusinessException(409, String.format(
+                    "5 分钟内您已创建相同报销申请 (%s, ¥%s, %s), 请勿重复提交",
+                    existing.getId(), existing.getAmount(), existing.getCategory()));
+        }
         return repository.save(ExpenseRequest.builder()
                 .factoryId(factoryId)
                 .userId(userId)
@@ -107,11 +118,26 @@ public class ExpenseRequestServiceImpl implements ExpenseRequestService {
         req.setStatus(HrRequestStatus.APPROVED);
         req.setApprovedAt(LocalDateTime.now());
         req.setApproverIds("[" + approverId + "]");
-        // Day 12: 创建 PaymentRecord PENDING (AP — 报销付款), set paymentRecordId.
-        // 当前 paymentRecordId 留 null, 走标准 APPROVED 流程, 财务侧手工标 PAID 走 markPaid().
-        log.info("ExpenseRequest {} APPROVED by {} amount={} category={}",
-                req.getId(), approverId, req.getAmount(), req.getCategory());
-        return repository.save(req);
+        ExpenseRequest saved = repository.save(req);
+
+        // Day 12 PaymentRecord 联动: 创建 PENDING AP record, 反向链接 paymentRecordId.
+        // Finance verify 后 ExpenseRequest 手工调 /mark-paid (或通过事件回写 — 见 markPaid).
+        try {
+            var payment = paymentRecordService.recordExpenseReimbursement(
+                    req.getFactoryId(), req.getId(), req.getAmount(),
+                    approverId,
+                    String.format("[%s] %s", req.getCategory(),
+                            req.getReason() == null ? "" : req.getReason()));
+            saved.setPaymentRecordId(payment.getId());
+            saved = repository.save(saved);
+            log.info("ExpenseRequest {} APPROVED + PaymentRecord {} PENDING (AP) amount={}",
+                    req.getId(), payment.getId(), req.getAmount());
+        } catch (Exception e) {
+            // Soft-fail: ExpenseRequest 已 APPROVED, 财务可手工创建 PaymentRecord + /mark-paid
+            log.warn("ExpenseRequest {} APPROVED but PaymentRecord creation failed: {}",
+                    req.getId(), e.getMessage());
+        }
+        return saved;
     }
 
     @Override

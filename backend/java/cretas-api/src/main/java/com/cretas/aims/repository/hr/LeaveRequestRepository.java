@@ -29,6 +29,27 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Stri
 
     Page<LeaveRequest> findByFactoryId(String factoryId, Pageable pageable);
 
+    /**
+     * R4 防呆: 同 user 同期间已有 DRAFT/SUBMITTED 申请 (避免重复提交).
+     * 返回 list, 调用方取 first 显示 existingId.
+     */
+    @Query("""
+            SELECT r FROM LeaveRequest r
+            WHERE r.factoryId = :factoryId
+              AND r.userId = :userId
+              AND r.status IN (
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.DRAFT,
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.SUBMITTED,
+                com.cretas.aims.entity.hr.enums.HrRequestStatus.APPROVED)
+              AND r.startDate <= :endDate
+              AND r.endDate >= :startDate
+            """)
+    List<LeaveRequest> findOverlappingActive(
+            @Param("factoryId") String factoryId,
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
     /** 已批准 + 类型 + 时间范围 (用于 HR 月报表和余额计算). */
     @Query("""
             SELECT r FROM LeaveRequest r

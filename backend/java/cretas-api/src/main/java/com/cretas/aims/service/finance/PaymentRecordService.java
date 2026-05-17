@@ -16,6 +16,23 @@ public interface PaymentRecordService {
                                  String paymentReference, String receiptUrl,
                                  Long recordedBy, String remark);
 
+    /**
+     * 报销付款 (AP — accounts payable, 出向员工).
+     *
+     * <p>跟 {@link #recordPayment} 区别:
+     * <ul>
+     *   <li>无 SalesOrder 关联 (salesOrderId/customerId/customerName 全 null)</li>
+     *   <li>remark 自动加 {@code EXPENSE_REIMBURSEMENT:<expenseRequestId>} 前缀作为追溯标记</li>
+     *   <li>status=PENDING, 等财务确认转账后调 {@link #verifyPayment}</li>
+     * </ul>
+     *
+     * <p>Sprint 4 W2 H-EXP-1: ExpenseRequest.approve() 触发, paymentRecordId 双向链接.
+     *
+     * @since 2026-05-17
+     */
+    PaymentRecord recordExpenseReimbursement(String factoryId, String expenseRequestId,
+                                             BigDecimal amount, Long recordedBy, String remark);
+
     PaymentRecord verifyPayment(String paymentId, Long verifiedBy);
 
     PaymentRecord rejectPayment(String paymentId, Long verifiedBy, String reason);
