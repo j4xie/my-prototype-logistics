@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Where;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -134,6 +135,15 @@ public class Customer extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "default_invoice_type", length = 20)
     private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
+    // ==================== Sprint 4 W1 S-CUSTOMER-TAB-1: 业务员归属 (tab 20 业务员变更 history) ====================
+
+    /** Sprint 4 W1 S-CUSTOMER-TAB-1: 当前业务员 (tab 20 业务员变更 history 跟踪起点) */
+    @Column(name = "assigned_sales_user_id")
+    private Long assignedSalesUserId;
+
+    @Column(name = "assigned_sales_user_assigned_at")
+    private LocalDateTime assignedSalesUserAssignedAt;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
