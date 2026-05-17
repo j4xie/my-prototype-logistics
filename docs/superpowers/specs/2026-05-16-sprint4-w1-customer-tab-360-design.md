@@ -614,6 +614,13 @@ backend/java/cretas-api/src/test/java/com/cretas/aims/service/
 - [ ] 空 state: 新客户 12 真做 tab 全显 "暂无 XX" + CTA
 - [ ] `vite build` + `npx vitest run` 双 EXIT=0 (HARD rule)
 - [ ] 3 nginx vhost 同步 (新 backend 路径 `/customer-tracking` + `/customer-sales-user-history` 需 cover, per `feedback_nginx_3_vhost_sync.md` HARD)
+- [ ] **防呆 R1**: tab 20 变更业务员 dialog 打开即显当前业务员 + 选同业务员 disable
+- [ ] **防呆 R2**: CustomerHeader sticky 显客户名 + 编号 + 当前业务员; 全 tab dialog header 带 `{action} — {客户名} ({customerCode})`
+- [ ] **防呆 R3**: tab 20 变更原因 6 个 dropdown ("其他"才显 textarea); tab 1 跟踪类型 6 个 dropdown
+- [ ] **防呆 R4**: 后端幂等 (5min 内同 customerId+newSalesUserId 返 409); 前端 catch 409 跳已有
+- [ ] **防呆 R5**: 8 defer tab + tab 19 全部有 next action button (跳替代方案 tab), 不 dead-end
+- [ ] **4 位一体 error toast**: 所有 tab 错误 sticky (duration:0 + showClose) + 显后端 message 原文 + 含 actionHint
+- [ ] PR description 显式列出: "防呆 R1/R2/R3/R4/R5 + 4 位一体 ✓"
 
 ---
 
@@ -673,10 +680,107 @@ per `feedback_pick_deploy_script_by_pr_diff.md` HARD.
 
 ---
 
+## §12.5 防呆设计 (Fool-Proof Design) 应用
+
+per `.claude/rules/fool-proof-design.md` (2026-05-17 graduate). Chat F 触发 4 个规则:
+
+### R1 — 预先显示边界 (tab 20 业务员变更 dialog)
+- Dialog 打开即显: "当前业务员: {currentAssignedUserName}" (大字明示)
+- 选 newSalesUserId dropdown 时, 若选中 === current → submit button disable + hint "已是该业务员"
+- 不允许提交空 reason → button disable
+
+### R2 — 上下文必带身份 (整页 + 全 tab)
+- detail.vue header: `<CustomerHeader>` 显 客户名 + 编号 + 当前业务员 + 余额 + 评级 (sticky, 滚动可见)
+- 每 tab 写操作 dialog header 模板: `{action} — {客户名} ({customerCode})`
+  - tab 1 跟踪记录新增: "新增跟踪 — 六腾门食品 (CUST-F006-0001)"
+  - tab 20 业务员变更: "变更业务员 — 六腾门食品 (CUST-F006-0001)"
+- AIChat tool description (若 Sprint 4 后接): `"为 {customerName} ({customerCode}) 执行 {action}"`
+
+### R3 — 自由文本改 dropdown (tab 20 变更原因 + tab 1 跟踪类型)
+- **变更业务员 dialog 的 reason**: el-select 标准原因 + "其他":
+  - 离职交接
+  - 区域调整
+  - 客户要求
+  - 业绩重分配
+  - 试用期到期
+  - 其他 → 显 textarea (必填)
+- **tab 1 跟踪记录 type**: dropdown 不让自由填:
+  - 电话沟通 / 微信沟通 / 邮件沟通 / 上门拜访 / 视频会议 / 其他
+
+### R4 — 写操作幂等 (tab 20 变更业务员 + tab 1 跟踪新增)
+- **后端 CustomerServiceImpl.updateAssignedSalesUser**:
+  - 创建前 check: 若 5min 内已对同 customerId 有相同 newSalesUserId 变更 → 返 409 + existingHistoryId + actionHint
+  - 前端 catch 409 → ElMessageBox.confirm "5 分钟内已变更过, 是否查看变更记录?" + router 跳 tab 20
+- **tab 1 跟踪记录 CRUD**:
+  - 后端 dedup: 5min 内同 (customerId, content) → 409 + existingId
+  - 前端 catch 409 → 友好提示 + 跳已有条目
+
+### R5 — Dead-end 改导航 (8 defer tab + 1 Chat B integration tab)
+
+defer 8 tab + tab 19 Chat B-pending **不能** 单纯显示 "功能开发中". 必给 next action:
+
+| Tab | Defer Reason | Next Action |
+|---|---|---|
+| 2 微信记录 | Sprint 5+ 接入企微 API | "暂未对接企微, **当前请用「跟踪记录」tab 手工补录**" + button 跳 tab 1 |
+| 3 通话记录 | Sprint 5+ 接入呼叫中心 | 同上 → 跳 tab 1 |
+| 4 短信记录 | Sprint 5+ | 同上 |
+| 5 谈话录音 | Sprint 6+ | 同上 |
+| 6 邮件列表 | Sprint 5+ | 同上 |
+| 11 活动管理 | Sprint 5+ (CRM 模块) | "暂未上线 — 临时方案: 在「跟踪记录」记录活动" + button 跳 tab 1 |
+| 12 商机管理 | Sprint 5+ | 同上 |
+| 18 售后 | Sprint 6+ | "暂未上线 — 临时方案: 用「退货」tab 处理" + button 跳 tab 17 |
+| 19 价格记忆 (integration) | 等 Chat B S-PRICE-1 ship | Chat B 未 ship: "价格记忆功能即将上线 (Chat B 开发中) — 当前请查「报价单」tab 看历史价" + button 跳 tab 9 |
+
+PlaceholderTab.vue props 加 `actionText` + `actionRoute`:
+```vue
+<el-empty :image-size="120">
+  <template #description>
+    <p>「{{ tabName }}」{{ status }}</p>
+    <p class="hint">{{ workaroundHint }}</p>
+  </template>
+  <el-button v-if="actionText" type="primary" @click="$router.push(actionRoute)">
+    {{ actionText }}
+  </el-button>
+</el-empty>
+```
+
+### 4 位一体 — 所有 tab error toast 必满足
+
+per `.claude/rules/fool-proof-design.md` 跨规则铁律. 复用 `web-admin/src/api/request.ts` 的 sticky error 实现:
+
+```typescript
+catch (e) {
+  if (isAxiosError(e)) {
+    const status = e.response?.status
+    const backendMessage = e.response?.data?.message  // ← 后端原文
+    const actionHint = e.response?.data?.actionHint   // ← 后端 next action
+
+    if (status === 409 && e.response?.data?.existingId) {
+      // R4 幂等: 跳已有
+      ElMessageBox.confirm(`${backendMessage}, 是否查看?`, '操作冲突', { ... })
+        .then(() => router.push(actionHint || routeToExisting(e.response.data.existingId)))
+    } else {
+      ElMessage({
+        message: backendMessage || '操作失败 (请重试)',  // a + b
+        type: 'error',
+        duration: 0,        // c sticky
+        showClose: true,    // c 手动关
+        // d: 若后端含 actionHint, 提示用户
+      })
+    }
+  }
+}
+```
+
+**禁止** `ElMessage.error('操作失败')` generic 替换 backend message.
+
+---
+
 ## §13 关键 rule reference (须遵)
 
 | Rule | 适用 |
 |---|---|
+| `.claude/rules/fool-proof-design.md` 5 大规则 + 4 位一体 (HARD) | R1 边界预显 / R2 context 全 tab / R3 dropdown / R4 幂等 / R5 defer 给 next action / error toast sticky |
 | `concurrent-edit-safety.md` 规则 1 / 5b | 里程碑 commit + `safe-commit.sh -- file1 file2` 锁定 scope |
 | `feedback_vitest_invariant_tests_not_run_by_vite_build.md` HARD | push 前 `vite build` AND `npx vitest run` 双 EXIT=0 |
 | `feedback_pick_deploy_script_by_pr_diff.md` HARD | 前端用 `deploy-web-admin.sh`, 后端 `deploy-backend.sh`, 不混 |
