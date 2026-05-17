@@ -13,10 +13,11 @@ import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
-import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder } from '@/components/list';
+import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons } from '@/components/list';
 import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
+import type { InlineIconId } from '@/types/inlineIcons';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
@@ -93,6 +94,39 @@ async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
     ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
   }
 }
+// U-ICON-1 (Sprint 4 Wave 2 Chat L) — inline 7-icon hover toolbar handler.
+async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<void> {
+  switch (id) {
+    case 'copy':
+      handleRowActionClick('copy', row);
+      break;
+    case 'mark':
+      // U-MARKER-1 (PR 4) will wire this to mark_color update. Placeholder for now.
+      ElMessage.info(`标记功能将在 U-MARKER-1 上线 (订单 ${row.orderNumber})`);
+      break;
+    case 'lock':
+      handleRowActionClick('lock', row);
+      break;
+    case 'forward':
+      ElMessage.info(`转发 ${row.orderNumber} (待接 share/email API)`);
+      break;
+    case 'print-pdf':
+      handleRowActionClick('print-pdf', row);
+      break;
+    case 'delete':
+      try {
+        await ElMessageBox.confirm(`确认删除订单 ${row.orderNumber}？`, '删除确认', { type: 'warning' });
+        handleRowActionClick('delete', row);
+      } catch {
+        // user cancelled
+      }
+      break;
+    case 'audit':
+      ElMessage.info(`审计日志 (待接 audit log API): ${row.orderNumber}`);
+      break;
+  }
+}
+
 function batchOrderFactory(): { customerId: string; salesperson: string; requiredDeliveryDate: string; remark: string } {
   return { customerId: '', salesperson: '', requiredDeliveryDate: '', remark: '' };
 }
@@ -968,6 +1002,13 @@ async function submitQuickPayment() {
               size="small"
               @click="handleQuickPayment(row)"
             >收款</el-button>
+            <!-- U-ICON-1 (Sprint 4 Wave 2 Chat L) inline 7-icon hover toolbar -->
+            <InlineRowIcons
+              :row-actions="rowActionsFor(row)"
+              entity-type="salesOrder"
+              class="row-inline-icons"
+              @icon-click="(id: InlineIconId) => handleInlineIconClick(id, row)"
+            />
             <RowActionMenu
               :actions="rowActionsFor(row)"
               button-label="更多"

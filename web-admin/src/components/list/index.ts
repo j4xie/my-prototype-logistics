@@ -9,3 +9,5 @@ export { default as GridView } from './GridView.vue';
 export { default as KanbanView } from './KanbanView.vue';
 export { default as TimelinePlaceholder } from './TimelinePlaceholder.vue';
 export { default as CalendarPlaceholder } from './CalendarPlaceholder.vue';
+// U-ICON-1 Sprint 4 Wave 2 Chat L — inline 7-icon hover toolbar.
+export { default as InlineRowIcons } from './InlineRowIcons.vue';
