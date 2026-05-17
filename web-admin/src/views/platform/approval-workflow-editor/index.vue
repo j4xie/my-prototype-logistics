@@ -237,7 +237,14 @@ function openRulesPanel() {
     return
   }
   if (!currentWorkflow.value?.id) {
-    ElMessage.warning('请先保存工作流后再配置规则')
+    // R5 (fool-proof): 不要 dead-end. 提示用户去保存草稿后再回来.
+    ElMessageBox.confirm(
+      '配置流转规则需要先保存工作流草稿. 是否立即保存当前编辑内容为草稿?',
+      '未保存工作流',
+      { confirmButtonText: '保存草稿并继续', cancelButtonText: '取消', type: 'info' },
+    )
+      .then(() => handleSave())
+      .catch(() => {})
     return
   }
   rulesPanelNodeId.value = sel.id

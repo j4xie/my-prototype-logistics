@@ -20,7 +20,13 @@
     <el-divider />
 
     <div v-loading="loading" class="rules-list">
-      <el-empty v-if="!loading && rules.length === 0" description="暂无规则 — 将走 edge.condition (Sprint 3 I 逻辑)" />
+      <!-- R5 (fool-proof): empty 状态给明确 next action, 不留 dead-end -->
+      <el-empty
+        v-if="!loading && rules.length === 0"
+        description="此节点暂无 WorkflowRule. 不配置 → 走 edge.condition (raw SpEL); 想用结构化规则 → 添加规则."
+      >
+        <el-button type="primary" @click="addRule">添加第一条规则</el-button>
+      </el-empty>
       <RuleEditor
         v-for="(r, idx) in rules"
         :key="r.id"
