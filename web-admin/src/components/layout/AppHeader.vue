@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/modules/app';
 import { useAuthStore } from '@/store/modules/auth';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { Fold, Expand, User, SwitchButton, Refresh, Moon, Sunny } from '@element-plus/icons-vue';
+import ReminderBell from '@/components/notifications/ReminderBell.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -88,6 +89,9 @@ async function handleLogout() {
           <Sunny v-else />
         </el-icon>
       </el-tooltip>
+
+      <!-- Sprint 4 W2 S-REMIND-1: 我的提醒 bell badge -->
+      <ReminderBell />
 
       <!-- 刷新按钮 -->
       <el-tooltip content="刷新页面" placement="bottom">

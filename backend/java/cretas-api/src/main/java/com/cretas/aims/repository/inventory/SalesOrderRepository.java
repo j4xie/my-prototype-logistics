@@ -67,4 +67,28 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> 
             "LOWER(COALESCE(so.remark, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\'" +
             ") ORDER BY so.createdAt DESC")
     Page<SalesOrder> searchByFactoryAndKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Sprint 4 W2 S-REMIND-1 — Reminder scanner 用. 查找未结清且 requiredDeliveryDate
+     * 在 [today - 365d, today + thresholdDays] 区间的订单. 用 paidAmount &lt; totalAmount
+     * (NULL paidAmount 视为 0) 判定未结清, 排除草稿 / 已取消状态.
+     */
+    @Query("SELECT so FROM SalesOrder so WHERE so.factoryId = :factoryId " +
+            "AND so.status NOT IN (com.cretas.aims.entity.enums.SalesOrderStatus.DRAFT, " +
+            "                       com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED) " +
+            "AND so.requiredDeliveryDate IS NOT NULL " +
+            "AND so.requiredDeliveryDate BETWEEN :startDate AND :endDate " +
+            "AND so.totalAmount IS NOT NULL " +
+            "AND COALESCE(so.paidAmount, 0) < so.totalAmount " +
+            "AND so.salespersonId IS NOT NULL")
+    List<SalesOrder> findUnpaidForReminderScan(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    /** Scanner: 列出所有工厂 (distinct), 供 per-factory 扫描. */
+    @Query("SELECT DISTINCT so.factoryId FROM SalesOrder so WHERE so.status NOT IN " +
+            "(com.cretas.aims.entity.enums.SalesOrderStatus.DRAFT, " +
+            " com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED)")
+    List<String> findDistinctFactoryIds();
 }

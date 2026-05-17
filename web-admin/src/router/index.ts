@@ -418,6 +418,57 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SalesOrderFinanceReviewDetail',
             component: () => import('@/views/sales/finance-review/detail.vue'),
             meta: { requiresAuth: true, title: '销售财务审核详情', module: 'finance', hidden: true }
+          },
+          // Sprint 4 W2 S-REMIND-1: 我的提醒
+          {
+            path: 'reminders',
+            name: 'SalesReminders',
+            component: () => import('@/views/sales/reminders/MyReminders.vue'),
+            meta: { requiresAuth: true, title: '我的提醒', module: 'sales' }
+          },
+          // Sprint 4 W2 S-NEED-1: 客户需求
+          {
+            path: 'needs',
+            name: 'SalesNeeds',
+            component: () => import('@/views/sales/needs/list.vue'),
+            meta: { requiresAuth: true, title: '客户需求', module: 'sales' }
+          },
+          // Sprint 4 W2 S-REPORTS-PRESETS: 销售报表 (5 active + 9 Sprint 5 stub)
+          {
+            path: 'reports',
+            name: 'SalesReports',
+            component: () => import('@/views/sales/reports/dashboard.vue'),
+            meta: { requiresAuth: true, title: '销售报表', module: 'sales' }
+          },
+          {
+            path: 'reports/daily',
+            name: 'SalesReportDaily',
+            component: () => import('@/views/sales/reports/daily.vue'),
+            meta: { requiresAuth: true, title: '销售额日报', module: 'sales', hidden: true }
+          },
+          {
+            path: 'reports/monthly',
+            name: 'SalesReportMonthly',
+            component: () => import('@/views/sales/reports/monthly.vue'),
+            meta: { requiresAuth: true, title: '销售额月报', module: 'sales', hidden: true }
+          },
+          {
+            path: 'reports/yearly',
+            name: 'SalesReportYearly',
+            component: () => import('@/views/sales/reports/yearly.vue'),
+            meta: { requiresAuth: true, title: '销售额年报', module: 'sales', hidden: true }
+          },
+          {
+            path: 'reports/customer-rank',
+            name: 'SalesReportCustomerRank',
+            component: () => import('@/views/sales/reports/customer-rank.vue'),
+            meta: { requiresAuth: true, title: '客户销售排行', module: 'sales', hidden: true }
+          },
+          {
+            path: 'reports/product-rank',
+            name: 'SalesReportProductRank',
+            component: () => import('@/views/sales/reports/product-rank.vue'),
+            meta: { requiresAuth: true, title: '产品销售排行', module: 'sales', hidden: true }
           }
         ]
       },
