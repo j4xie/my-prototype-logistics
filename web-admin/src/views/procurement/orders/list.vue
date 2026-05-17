@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import request, { get, post } from '@/api/request';
+// request.patch is used by U-MARKER-1 below; default export already imported.
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, ChatDotRound, Download } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
@@ -17,11 +18,12 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
-import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons } from '@/components/list';
+import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
 import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
 import type { InlineIconId } from '@/types/inlineIcons';
+import type { RowMarkerColor } from '@/types/rowMarker';
 import { computeRowActions } from '@/composables/useRowActions';
 import { useListSummary } from '@/composables/useListSummary';
 import { formatSummaryForAI } from '@/utils/aiSummaryContext';
@@ -62,7 +64,8 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       handleRowActionClick('copy', row);
       break;
     case 'mark':
-      ElMessage.info(`标记功能将在 U-MARKER-1 上线 (订单 ${row.orderNumber})`);
+      // U-MARKER-1 — primary entry is the marker column dot; icon is parity fallback.
+      ElMessage.info(`点击行首色点选择标记 (采购单 ${row.orderNumber})`);
       break;
     case 'lock':
       handleRowActionClick('lock', row);
@@ -84,6 +87,24 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
     case 'audit':
       ElMessage.info(`审计日志 (待接 audit log API): ${row.orderNumber}`);
       break;
+  }
+}
+
+// U-MARKER-1 (Sprint 4 Wave 2 Chat L) — PATCH marker color to backend.
+async function handleMarkerSelect(row: TableRow, color: RowMarkerColor | null): Promise<void> {
+  try {
+    const res = await request.patch(`/mobile/${factoryId.value}/markers/purchase-order/${row.id}`, {
+      color,
+    });
+    if (res?.data?.success) {
+      (row as TableRow & { markerColor?: string | null }).markerColor = color;
+      ElMessage.success(color ? `已标记为 ${color}` : '已清除标记');
+    } else {
+      throw new Error(res?.data?.message || '标记失败');
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '标记请求失败';
+    ElMessage.error(msg);
   }
 }
 
@@ -629,6 +650,16 @@ function handleAiFill(params: TableRow) {
       <TimelinePlaceholder v-else-if="viewMode === 'timeline'" />
       <CalendarPlaceholder v-else-if="viewMode === 'calendar'" />
       <el-table v-else :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+        <!-- U-MARKER-1 row marker column (Sprint 4 Wave 2 Chat L) -->
+        <el-table-column label="" width="36" align="center">
+          <template #default="{ row }">
+            <RowMarkerCell
+              :value="row.markerColor"
+              :readonly="!canWrite"
+              @select="(c) => handleMarkerSelect(row, c)"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="供应商" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.supplierName || row.supplier?.name || row.supplierId || '-' }}</template>

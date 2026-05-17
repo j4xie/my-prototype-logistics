@@ -127,6 +127,13 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 
+    /**
+     * U-MARKER-1 (Sprint 4 Wave 2 Chat L) — 行标颜色标记 (red/orange/yellow/green/blue/null).
+     * 仅作 UI 视觉标记用途，与业务状态分离。
+     */
+    @Column(name = "marker_color", length = 16)
+    private String markerColor;
+
     // ==================== 销售扩展字段 ====================
 
     /** 业务员 */

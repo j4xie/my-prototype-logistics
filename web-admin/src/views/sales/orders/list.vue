@@ -13,11 +13,13 @@ import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
-import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons } from '@/components/list';
+import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
 import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
+import request from '@/api/request';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
 import type { InlineIconId } from '@/types/inlineIcons';
+import type { RowMarkerColor } from '@/types/rowMarker';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
@@ -101,8 +103,10 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       handleRowActionClick('copy', row);
       break;
     case 'mark':
-      // U-MARKER-1 (PR 4) will wire this to mark_color update. Placeholder for now.
-      ElMessage.info(`标记功能将在 U-MARKER-1 上线 (订单 ${row.orderNumber})`);
+      // U-MARKER-1 (Sprint 4 Wave 2 Chat L) — open the standalone marker cell.
+      // The marker dot in the "标记" column is the primary entry; the icon here
+      // is a fallback bringing visual parity with the 7-icon palette per brief.
+      ElMessage.info(`点击行末色点选择标记 (订单 ${row.orderNumber})`);
       break;
     case 'lock':
       handleRowActionClick('lock', row);
@@ -124,6 +128,25 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
     case 'audit':
       ElMessage.info(`审计日志 (待接 audit log API): ${row.orderNumber}`);
       break;
+  }
+}
+
+// U-MARKER-1 (Sprint 4 Wave 2 Chat L) — PATCH marker color to backend.
+async function handleMarkerSelect(row: TableRow, color: RowMarkerColor | null): Promise<void> {
+  try {
+    const res = await request.patch(`/mobile/${factoryId.value}/markers/sales-order/${row.id}`, {
+      color,
+    });
+    if (res?.data?.success) {
+      // Optimistic local update so the dot reflects new state without refetch.
+      (row as TableRow & { markerColor?: string | null }).markerColor = color;
+      ElMessage.success(color ? `已标记为 ${color}` : '已清除标记');
+    } else {
+      throw new Error(res?.data?.message || '标记失败');
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '标记请求失败';
+    ElMessage.error(msg);
   }
 }
 
@@ -894,6 +917,16 @@ async function submitQuickPayment() {
       <TimelinePlaceholder v-else-if="viewMode === 'timeline'" />
       <CalendarPlaceholder v-else-if="viewMode === 'calendar'" />
       <el-table v-else :data="filteredTableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+        <!-- U-MARKER-1 row marker column (Sprint 4 Wave 2 Chat L) -->
+        <el-table-column label="" width="36" align="center">
+          <template #default="{ row }">
+            <RowMarkerCell
+              :value="row.markerColor"
+              :readonly="!canWrite"
+              @select="(c) => handleMarkerSelect(row, c)"
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.customerName || row.customer?.name || row.customerId || '-' }}</template>

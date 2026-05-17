@@ -11,3 +11,5 @@ export { default as TimelinePlaceholder } from './TimelinePlaceholder.vue';
 export { default as CalendarPlaceholder } from './CalendarPlaceholder.vue';
 // U-ICON-1 Sprint 4 Wave 2 Chat L — inline 7-icon hover toolbar.
 export { default as InlineRowIcons } from './InlineRowIcons.vue';
+// U-MARKER-1 Sprint 4 Wave 2 Chat L — 5-color row marker cell + popover.
+export { default as RowMarkerCell } from './RowMarkerCell.vue';
