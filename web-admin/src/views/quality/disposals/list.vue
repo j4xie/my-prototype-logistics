@@ -120,9 +120,22 @@ async function submitDisposal() {
     return;
   }
 
+  // Issue #811 fix — rename FE form fields to match backend wire contract
+  // (CreateDisposalRecordRequest DTO). FE form uses {batchId, quantity, reason}
+  // but backend expects {materialBatchId, disposalQuantity, disposalReason}.
+  // The batches dropdown is populated from /material-batches, so batchId is a
+  // materialBatchId on the wire.
+  const payload = {
+    materialBatchId: disposalForm.value.batchId,
+    disposalType: disposalForm.value.disposalType,
+    disposalQuantity: disposalForm.value.quantity,
+    disposalReason: disposalForm.value.reason,
+    notes: disposalForm.value.notes
+  };
+
   dialogLoading.value = true;
   try {
-    const response = await post(`/${factoryId.value}/disposal-records`, disposalForm.value);
+    const response = await post(`/${factoryId.value}/disposal-records`, payload);
     if (response.success) {
       ElMessage.success('创建成功，等待审批');
       dialogVisible.value = false;
