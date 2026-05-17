@@ -93,6 +93,20 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
     /**
      * 统计生产计划状态
      */
+    /**
+     * 交货预警查询 (M-DELIVERY-WARN-1, Sprint 4 W2).
+     * 查找当前未完成且 expectedCompletionDate &lt; today + windowDays 的生产计划。
+     * 包括已超期 (expectedCompletionDate &lt; today) — 由 Service 分级。
+     */
+    @Query("SELECT p FROM ProductionPlan p " +
+           "WHERE p.factoryId = :factoryId " +
+           "AND p.expectedCompletionDate IS NOT NULL " +
+           "AND p.expectedCompletionDate < :upperBound " +
+           "AND p.status NOT IN ('COMPLETED', 'CANCELLED') " +
+           "ORDER BY p.expectedCompletionDate ASC NULLS LAST")
+    List<ProductionPlan> findDeliveryWarnPlans(@Param("factoryId") String factoryId,
+                                                @Param("upperBound") java.time.LocalDate upperBound);
+
     @Query("SELECT p.status, COUNT(p) FROM ProductionPlan p " +
            "WHERE p.factoryId = :factoryId GROUP BY p.status")
     List<Object[]> countByStatus(@Param("factoryId") String factoryId);

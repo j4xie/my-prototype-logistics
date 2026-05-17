@@ -6,6 +6,7 @@ import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
+import com.cretas.aims.dto.production.DeliveryWarnDTO;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
@@ -245,6 +246,30 @@ public class ProductionPlanController {
 
         List<ProductionPlanDTO> plans = productionPlanService.getTodayProductionPlans(factoryId);
         return ApiResponse.success(plans);
+    }
+
+    /**
+     * 获取交货预警列表 (M-DELIVERY-WARN-1, Sprint 4 W2).
+     *
+     * <p>返回 expectedCompletionDate 在 (今日, 今日+windowDays) 之间且状态非 COMPLETED/CANCELLED
+     * 的生产计划, 按预警等级分级:</p>
+     * <ul>
+     *   <li><b>OVERDUE</b>: 已超期 (expectedCompletionDate &lt; today)</li>
+     *   <li><b>URGENT</b>: &lt; 3 天到期</li>
+     *   <li><b>WARN</b>: 3 - 7 天到期</li>
+     *   <li><b>NORMAL</b>: &ge; 7 天到期 (windowDays 较大时可能包含)</li>
+     * </ul>
+     */
+    @GetMapping("/delivery-warnings")
+    @Operation(summary = "获取交货预警列表", description = "M-DELIVERY-WARN-1: 按 expectedCompletionDate 分级预警 (OVERDUE/URGENT/WARN/NORMAL)")
+    public ApiResponse<List<DeliveryWarnDTO>> getDeliveryWarnings(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "预警窗口天数 (默认 7)", example = "7")
+            @RequestParam(value = "windowDays", required = false, defaultValue = "7") int windowDays) {
+
+        List<DeliveryWarnDTO> warnings = productionPlanService.getDeliveryWarnings(factoryId, windowDays);
+        return ApiResponse.success(warnings);
     }
 
     /**
