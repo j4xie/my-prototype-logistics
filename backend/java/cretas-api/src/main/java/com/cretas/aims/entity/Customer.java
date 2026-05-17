@@ -85,6 +85,17 @@ public class Customer extends BaseEntity {
     private String businessLicense;
     @Column(name = "payment_terms", length = 200)
     private String paymentTerms;
+
+    /**
+     * Sprint 4 W1 S-PAYMENT-DATE-1: 客户级对账日期 (每月几号对账). 1-31, nullable.
+     * 业务日期, 由 DB CHECK 约束 (settlement_date BETWEEN 1 AND 31) 防越界.
+     * 月底特殊值 31 在 2/4/6/9/11 月由调用方降级为月末.
+     */
+    @jakarta.validation.constraints.Min(value = 1, message = "对账日须在 1-31 之间")
+    @jakarta.validation.constraints.Max(value = 31, message = "对账日须在 1-31 之间")
+    @Column(name = "settlement_date")
+    private Integer settlementDate;
+
     @PriceSensitive
     @Column(name = "credit_limit", precision = 12, scale = 2)
     private java.math.BigDecimal creditLimit;
