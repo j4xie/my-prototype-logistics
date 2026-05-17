@@ -93,6 +93,12 @@ function onFailChange(v: number | null | undefined) {
 }
 
 // 派生显示: 是否一致 + 提示文案
+// Issue #825 fix (2026-05-17): under-balance (sum<sample) was previously ok:true
+// with informational "剩余 N 件" message — user could still submit incomplete
+// inspections, leaving data integrity gap (实际抽样数 != 报告的抽样数).
+// Now blocks submit with sticky-style toast prompting user to fill remaining
+// or reduce sampleSize. Matches over-balance (sum>sample) behavior introduced
+// in #745. Customer expects 强制平衡 (May 7 data-integrity discussion spirit).
 const balanceStatus = computed<{ ok: boolean; msg: string }>(() => {
   const s = dialogForm.value.sampleSize;
   const p = dialogForm.value.passCount;
@@ -105,7 +111,7 @@ const balanceStatus = computed<{ ok: boolean; msg: string }>(() => {
     return { ok: false, msg: `合格 ${p} + 不合格 ${f} = ${sum} > 抽样 ${s} (请调整)` };
   }
   if (sum < Number(s)) {
-    return { ok: true, msg: `剩余 ${Number(s) - sum} 件 (待复检/有条件放行)` };
+    return { ok: false, msg: `请填满合格+不合格数 (剩余 ${Number(s) - sum} 件未分类)` };
   }
   return { ok: true, msg: '数字一致' };
 });
@@ -209,7 +215,11 @@ async function submitCreateForm() {
     return;
   }
   if (!balanceStatus.value.ok) {
-    ElMessage.warning(balanceStatus.value.msg);
+    // Issue #825 fix (2026-05-17): use .error (globally overridden to sticky
+    // duration:0 + showClose in main.ts) so user can't dismiss accidentally
+    // while still reading the count. .warning auto-dismisses in 3s and the
+    // 剩余 N 数字 was easy to miss.
+    ElMessage.error(balanceStatus.value.msg);
     return;
   }
   if (!dialogForm.value.result) {

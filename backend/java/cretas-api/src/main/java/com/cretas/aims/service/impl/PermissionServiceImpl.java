@@ -146,10 +146,16 @@ public class PermissionServiceImpl implements PermissionService {
         PERMISSION_MATRIX.put(FactoryUserRole.group_leader, groupLeaderPerms);
 
         // quality_inspector
+        // Issue #812 fix (2026-05-17): grant read_write (was "write" only).
+        // Inspector needs to GET inspection records they created + GET defect
+        // lists (which require quality:read / quality:read_write). The "write"
+        // legacy level fails checkAction("read_write") AND checkAction("read"),
+        // blocking both POST /quality/inspections AND GET /quality-defects.
+        // The role name literally is "inspector" — they need both read AND write.
         Map<String, String> inspectorPerms = new HashMap<>();
         inspectorPerms.put("dashboard", "read");
         inspectorPerms.put("production", "read");
-        inspectorPerms.put("quality", "write");
+        inspectorPerms.put("quality", "read_write");
         inspectorPerms.put("work_report", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.quality_inspector, inspectorPerms);
 

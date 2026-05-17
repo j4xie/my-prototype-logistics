@@ -594,6 +594,17 @@ public class ProcessingServiceImpl implements ProcessingService {
         productionBatchRepository.save(productionBatch);
     }
     // ========== 质量检验 ==========
+    /**
+     * PASS 阈值 (合格率 >=) — 与 {@link QualityInspection#getQualityGrade()} A 级阈值对齐.
+     * Issue #813 (2026-05-17).
+     */
+    private static final BigDecimal PASS_THRESHOLD = new BigDecimal("95");
+    /**
+     * FAIL 阈值 (合格率 <) — 与 QualityInspection.getQualityGrade() C/D 分界对齐.
+     * Issue #813 (2026-05-17).
+     */
+    private static final BigDecimal FAIL_THRESHOLD = new BigDecimal("70");
+
     public Map<String, Object> submitInspection(String factoryId, String batchId, Map<String, Object> inspection) {
         log.info("提交质检记录: factoryId={}, batchId={}", factoryId, batchId);
         BigDecimal sampleSize = new BigDecimal(inspection.get("sampleSize").toString());
@@ -608,6 +619,24 @@ public class ProcessingServiceImpl implements ProcessingService {
         if (passCount.add(failCount).compareTo(sampleSize) > 0) {
             throw new com.cretas.aims.exception.BusinessException("合格数+不合格数不能超过抽样数量");
         }
+        // Issue #813 fix A (2026-05-17): reject result=null. FE form already requires
+        // it; this guards API-direct callers (curl, dev console, future mobile app).
+        Object resultRaw = inspection.get("result");
+        String resultStr = resultRaw == null ? null : resultRaw.toString().trim();
+        if (resultStr == null || resultStr.isEmpty()) {
+            throw new com.cretas.aims.exception.BusinessException("检验结果 (result) 不能为空, 需为 PASS / FAIL / CONDITIONAL / PENDING 之一");
+        }
+        // Issue #813 fix B (2026-05-17): reject user-supplied result that contradicts
+        // computed passRate. Auditor's nightmare avoided: a 43% defective batch
+        // can no longer be marked PASS.
+        //   PASS         requires passRate >= 95   (A grade)
+        //   FAIL         requires passRate <  70   (D grade)
+        //   CONDITIONAL  requires 70 <= passRate < 95 (B/C grade)
+        //   PENDING      always allowed (待复检, no verdict yet)
+        BigDecimal passRate = passCount
+                .divide(sampleSize, 2, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(100));
+        validateResultVsPassRate(resultStr, passRate);
         QualityInspection qualityInspection = new QualityInspection();
         qualityInspection.setFactoryId(factoryId);
         qualityInspection.setProductionBatchId(parseBatchId(batchId));
@@ -617,11 +646,8 @@ public class ProcessingServiceImpl implements ProcessingService {
         qualityInspection.setSampleSize(sampleSize);
         qualityInspection.setPassCount(passCount);
         qualityInspection.setFailCount(failCount);
-        BigDecimal passRate = qualityInspection.getPassCount()
-                .divide(qualityInspection.getSampleSize(), 2, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal(100));
         qualityInspection.setPassRate(passRate);
-        qualityInspection.setResult((String) inspection.get("result"));
+        qualityInspection.setResult(resultStr);
         qualityInspection.setNotes((String) inspection.get("notes"));
         // Round 10 Fix Task 4 (R8-α Gap #3 per-module template): forward customFields
         // from the incoming payload to the entity so QualityInspectionServiceImpl's
@@ -641,6 +667,47 @@ public class ProcessingServiceImpl implements ProcessingService {
         result.put("passRate", passRate);
         return result;
     }
+
+    /**
+     * Issue #813 fix B (2026-05-17) — 校验用户填的 result 与计算 passRate 不冲突.
+     *
+     * 阈值 (与 {@link QualityInspection#getQualityGrade()} 对齐):
+     *   PASS         需 passRate >= 95   (A 级)
+     *   FAIL         需 passRate <  70   (D 级)
+     *   CONDITIONAL  需 70 <= passRate < 95 (B/C 级)
+     *   PENDING      永远允许 (待复检, 无最终结论)
+     *
+     * 不在白名单的字符串 (大小写不敏感) 抛 BusinessException —
+     * 避免诡异值如 result="UNKNOWN" 静默落库.
+     */
+    private void validateResultVsPassRate(String result, BigDecimal passRate) {
+        if (result == null) return;  // 上游已 null-check
+        String r = result.toUpperCase(Locale.ROOT);
+        // 允许 "PENDING" (待复检) 无视 passRate
+        if ("PENDING".equals(r)) return;
+        // PASSED / FAILED 是旧式 alias, 与 PASS / FAIL 等价处理
+        if ("PASSED".equals(r)) r = "PASS";
+        if ("FAILED".equals(r)) r = "FAIL";
+        if (!"PASS".equals(r) && !"FAIL".equals(r) && !"CONDITIONAL".equals(r)) {
+            throw new com.cretas.aims.exception.BusinessException(
+                    "无效的检验结果 [" + result + "], 需为 PASS / FAIL / CONDITIONAL / PENDING 之一");
+        }
+        if ("PASS".equals(r) && passRate.compareTo(PASS_THRESHOLD) < 0) {
+            throw new com.cretas.aims.exception.BusinessException(
+                    "合格率 " + passRate + "% < " + PASS_THRESHOLD + "% 不能判为 PASS, 请选择 CONDITIONAL 或 FAIL");
+        }
+        if ("FAIL".equals(r) && passRate.compareTo(FAIL_THRESHOLD) >= 0) {
+            throw new com.cretas.aims.exception.BusinessException(
+                    "合格率 " + passRate + "% >= " + FAIL_THRESHOLD + "% 不能判为 FAIL, 请选择 CONDITIONAL 或 PASS");
+        }
+        if ("CONDITIONAL".equals(r)
+                && (passRate.compareTo(FAIL_THRESHOLD) < 0
+                    || passRate.compareTo(PASS_THRESHOLD) >= 0)) {
+            throw new com.cretas.aims.exception.BusinessException(
+                    "合格率 " + passRate + "% 不在 CONDITIONAL 区间 [" + FAIL_THRESHOLD + "%, " + PASS_THRESHOLD + "%), 请选择 PASS 或 FAIL");
+        }
+    }
+
     public PageResponse<Map<String, Object>> getInspections(String factoryId, String batchId, PageRequest pageRequest) {
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPage() - 1,
