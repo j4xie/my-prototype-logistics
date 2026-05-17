@@ -223,6 +223,24 @@ public class ArApServiceImpl implements ArApService {
                     .withHint("请使用其他收款单号, 或刷新查看已有记录").withHintTarget("paymentReference");
         }
 
+        // Issue #739: SO-bound 快速收款 idempotency. 防御双击 / 短时间内重复点击 "收款".
+        // 5 分钟内同一 SO + 同一金额视为 dupe (业务上极少 5min 内两次同额收款).
+        // amount 在表中存负数 (冲减应收), 所以这里 negate 进 query.
+        if (salesOrderId != null && !salesOrderId.isBlank()) {
+            java.time.LocalDateTime since = java.time.LocalDateTime.now().minusMinutes(5);
+            List<ArApTransaction> recent = transactionRepository.findRecentArPaymentsForSO(
+                    factoryId, salesOrderId, amount.negate(), since);
+            if (!recent.isEmpty()) {
+                ArApTransaction prev = recent.get(0);
+                log.info("AR 收款幂等命中: factoryId={}, salesOrderId={}, amount={}, prevId={}, prevAt={}",
+                        factoryId, salesOrderId, amount, prev.getId(), prev.getCreatedAt());
+                throw new BusinessException(409,
+                        "5 分钟内已有相同金额(¥" + amount + ")的收款记录")
+                        .withHint("请刷新查看现有收款. 如确实需要再次收款, 请填写不同的收款单号 (paymentReference)")
+                        .withHintTarget("amount");
+            }
+        }
+
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
 

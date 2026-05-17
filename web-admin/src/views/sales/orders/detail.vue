@@ -21,6 +21,8 @@ const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 const canViewPrice = computed(() => permissionStore.canViewPrice);
+// Issue #740 (六扇门 May10): 仓库角色才能 confirm 发货 (扣库存). 销售只看不动.
+const canWarehouseConfirm = computed(() => permissionStore.canWrite('warehouse'));
 const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
@@ -103,6 +105,8 @@ const statusMap: Record<string, { text: string; type: string }> = {
 
 const delStatusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
+  // Issue #740: 销售创建后等仓库 confirm 的中间态
+  PENDING_WAREHOUSE_CONFIRM: { text: '待仓库确认', type: 'warning' },
   PICKED: { text: '已拣货', type: '' },
   SHIPPED: { text: '已发货', type: 'warning' },
   DELIVERED: { text: '已签收', type: 'success' },
@@ -1217,10 +1221,22 @@ async function handleQuickPayFull() {
               <el-table-column v-if="canViewPrice" prop="totalAmount" label="金额" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="230" align="center">
+              <el-table-column label="操作" width="260" align="center">
                 <template #default="{ row }">
-                  <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="primary" link size="small" :disabled="submitting || batchAllocLoading" :loading="batchAllocLoading" @click="openBatchAllocDialog(row.id, row.deliveryNumber)">分配批次</el-button>
-                  <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="warning" link size="small" :disabled="submitting" @click="handleShip(row.id)">发货</el-button>
+                  <!-- 分配批次: 销售/仓库均可 (planning 阶段) -->
+                  <el-button v-if="['DRAFT','PENDING_WAREHOUSE_CONFIRM','PICKED'].includes(row.status) && canWrite" type="primary" link size="small" :disabled="submitting || batchAllocLoading" :loading="batchAllocLoading" @click="openBatchAllocDialog(row.id, row.deliveryNumber)">分配批次</el-button>
+                  <!--
+                    Issue #740: 发货确认 (扣库存) 需要 warehouse:read_write 权限.
+                    销售看到此按钮 disable + tooltip "请前往 仓储管理 → 出货管理 由仓库确认".
+                  -->
+                  <el-tooltip
+                    v-if="['DRAFT','PENDING_WAREHOUSE_CONFIRM','PICKED'].includes(row.status) && !canWarehouseConfirm"
+                    content="发货确认 (扣库存) 由仓库角色操作, 请前往: 仓储管理 → 出货管理"
+                    placement="top"
+                  >
+                    <el-button type="warning" link size="small" disabled>发货</el-button>
+                  </el-tooltip>
+                  <el-button v-if="['DRAFT','PENDING_WAREHOUSE_CONFIRM','PICKED'].includes(row.status) && canWarehouseConfirm" type="warning" link size="small" :disabled="submitting" @click="handleShip(row.id)">发货</el-button>
                   <el-button v-if="row.status === 'SHIPPED' && canWrite" type="success" link size="small" :disabled="submitting" @click="handleDelivered(row.id)">签收</el-button>
                 </template>
               </el-table-column>

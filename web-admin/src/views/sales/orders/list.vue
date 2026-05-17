@@ -6,7 +6,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, Search, ChatDotRound } from '@element-plus/icons-vue';
+import { Plus, Refresh, Search, ChatDotRound, QuestionFilled } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { WorkflowBar } from '@/components/workflow';
@@ -610,8 +610,10 @@ async function handleQuickDelivery(row: TableRow) {
     customerId: row.customerId || row.customer?.id || '',
     deliveryDate: today,
     deliveryAddress: row.deliveryAddress || row.customer?.shippingAddress || '',
+    logisticsCompany: row.logisticsCompany || '',
     items,
-    remark: `销售订单 ${row.orderNumber || ''} 快速出库`,
+    // Issue #740: 销售只创建发货单 (任务单), 仓库 confirm 时再扣库存
+    remark: `销售订单 ${row.orderNumber || ''} 发货单`,
   };
   deliveryDialogVisible.value = true;
 }
@@ -622,13 +624,14 @@ async function submitQuickDelivery() {
   try {
     const res = await post(`/${factoryId.value}/sales/deliveries`, deliveryForm.value);
     if (res.success) {
-      ElMessage.success('出库成功');
+      // Issue #740: 文案改为"发货单已创建"明示后续等仓库 confirm
+      ElMessage.success('发货单已创建, 等待仓库确认实发数量');
       deliveryDialogVisible.value = false;
       loadData();
     } else {
-      ElMessage.error(res.message || '出库失败');
+      ElMessage.error(res.message || '发货单创建失败');
     }
-  } catch { /* axios interceptor already displayed error toast */ }
+  } catch { /* axios interceptor already displays specific error toast (including #739 idempotency 409) */ }
 }
 
 async function handleQuickInvoice(row: TableRow) {
@@ -834,15 +837,37 @@ async function submitQuickPayment() {
           (聚合 items[]). NOT @PriceSensitive — inventory 数据非价格 (跟 canViewPrice 解耦,
           所有角色可见).
           chip 垂直堆叠: 缺料 > 0 红色高亮, 一眼识别要不要催生产.
+          Issue #746: header 加 ❓ tooltip 解释含义 (客户手测 img 34 反馈 chip 含义不清).
         -->
-        <el-table-column label="锁/备/缺" width="120" align="center">
+        <el-table-column label="锁/备/缺" width="130" align="center">
+          <template #header>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              锁/备/缺
+              <el-tooltip placement="top">
+                <template #content>
+                  <div style="line-height: 1.6;">
+                    <div><b>锁</b> = 已锁定库存 (本订单已占用, 不可被其他订单分配)</div>
+                    <div><b>备</b> = 已预留 (已分配批次, 等待出货确认)</div>
+                    <div><b>缺</b> = 缺料数量 (库存不足, 需催生产或紧急采购)</div>
+                  </div>
+                </template>
+                <el-icon style="cursor: help; color: var(--text-color-secondary, #909399); font-size: 12px;"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </span>
+          </template>
           <template #default="{ row }">
             <div class="lock-reserve-shortage">
-              <div class="chip chip-lock">锁:{{ Number(row.lockedQty || 0) }}</div>
-              <div class="chip chip-reserve">备:{{ Number(row.reservedQty || 0) }}</div>
-              <div class="chip" :class="Number(row.shortageQty || 0) > 0 ? 'chip-shortage' : 'chip-zero'">
-                缺:{{ Number(row.shortageQty || 0) }}
-              </div>
+              <el-tooltip content="锁=已锁定库存 (本订单已占用)" placement="left">
+                <div class="chip chip-lock">锁:{{ Number(row.lockedQty || 0) }}</div>
+              </el-tooltip>
+              <el-tooltip content="备=已预留 (已分配批次, 等待出货)" placement="left">
+                <div class="chip chip-reserve">备:{{ Number(row.reservedQty || 0) }}</div>
+              </el-tooltip>
+              <el-tooltip :content="Number(row.shortageQty || 0) > 0 ? '缺=缺料数量, 需催生产或紧急采购' : '缺=0 无缺料'" placement="left">
+                <div class="chip" :class="Number(row.shortageQty || 0) > 0 ? 'chip-shortage' : 'chip-zero'">
+                  缺:{{ Number(row.shortageQty || 0) }}
+                </div>
+              </el-tooltip>
             </div>
           </template>
         </el-table-column>
@@ -860,13 +885,18 @@ async function submitQuickPayment() {
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'confirm')">确认</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
             <el-button v-if="row.status === 'FINANCE_REJECTED' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'resubmit')">重新提交</el-button>
+            <!--
+              Issue #740 (六扇门 May10 会议): 销售只创建发货单 (DRAFT/PENDING_WAREHOUSE_CONFIRM,
+              不扣库存); 仓库角色去 仓储管理 → 出货管理 确认实发数量并扣库存.
+              按钮文案从 "出库" 改为 "创建发货单" 准确反映行为.
+            -->
             <el-button
               v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING') && canWrite"
               type="warning"
               link
               size="small"
               @click="handleQuickDelivery(row)"
-            >出库</el-button>
+            >创建发货单</el-button>
             <el-button
               v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING' || row.status === 'SHIPPED') && canWrite"
               type="success"
@@ -913,15 +943,35 @@ async function submitQuickPayment() {
       </div>
     </el-card>
 
-    <!-- 出库对话框 -->
-    <el-dialog v-model="deliveryDialogVisible" title="快速出库" width="500px">
-      <el-form :model="deliveryForm" label-width="80px">
-        <el-form-item label="发货日期">
+    <!--
+      Issue #740: 销售创建发货单对话框 (不扣库存, 等仓库 confirm).
+      标题改为"创建发货单" + 提示文案让销售员明白此步只是创建任务单.
+    -->
+    <el-dialog v-model="deliveryDialogVisible" title="创建发货单" width="540px">
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 12px;"
+      >
+        <template #title>
+          <span style="font-size: 13px;">销售创建发货单 (任务单, 不扣库存), 仓库收到后填写实际发货数量并扣库存.</span>
+        </template>
+      </el-alert>
+      <el-form :model="deliveryForm" label-width="100px">
+        <el-form-item label="发货日期" required>
           <el-date-picker v-model="deliveryForm.deliveryDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="发货明细">
+        <el-form-item label="发货地址">
+          <el-input v-model="deliveryForm.deliveryAddress" placeholder="收货地址 (默认取销售订单)" />
+        </el-form-item>
+        <el-form-item label="物流公司">
+          <el-input v-model="deliveryForm.logisticsCompany" placeholder="物流公司 (可选, 仓库 confirm 时也可补填)" />
+        </el-form-item>
+        <el-form-item label="计划发货数量">
           <div v-for="(item, idx) in deliveryForm.items" :key="idx" style="margin-bottom: 4px">
-            {{ Number(idx) + 1 }}. 数量: <el-input-number v-model="item.deliveredQuantity" :min="1" size="small" style="width: 120px" /> {{ item.unit }}
+            {{ Number(idx) + 1 }}. {{ item.productName || '产品' }} —
+            <el-input-number v-model="item.deliveredQuantity" :min="1" size="small" style="width: 120px" /> {{ item.unit }}
           </div>
         </el-form-item>
         <el-form-item label="备注">
@@ -930,7 +980,7 @@ async function submitQuickPayment() {
       </el-form>
       <template #footer>
         <el-button @click="deliveryDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitQuickDelivery">确认出库</el-button>
+        <el-button type="primary" @click="submitQuickDelivery">创建发货单</el-button>
       </template>
     </el-dialog>
 

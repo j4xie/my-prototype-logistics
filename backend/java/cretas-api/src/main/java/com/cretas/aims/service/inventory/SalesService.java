@@ -64,6 +64,24 @@ public interface SalesService {
 
     List<SalesDeliveryRecord> getDeliveryRecordsByOrder(String salesOrderId);
 
+    /**
+     * Issue #740: list deliveries awaiting warehouse confirmation (DRAFT / PENDING_WAREHOUSE_CONFIRM /
+     * PICKED). Warehouse staff view this to pick up sales-created drafts.
+     */
+    PageResponse<SalesDeliveryRecord> getPendingWarehouseDeliveries(String factoryId, int page, int size);
+
+    /**
+     * Issue #740 warehouse-side confirm endpoint. Takes 实际发货数量 (actual quantities may differ
+     * from sales-planned), updates items, then 扣库存 + 转 SHIPPED + auto AR. Mirrors
+     * {@link #shipDelivery} but allows actual-quantity override.
+     *
+     * @param actualQuantities map of deliveryItemId (String) → actual qty (BigDecimal). Items
+     *                        not in map keep the original deliveredQuantity.
+     */
+    SalesDeliveryRecord warehouseConfirmDelivery(String factoryId, String deliveryId,
+                                                  java.util.Map<String, java.math.BigDecimal> actualQuantities,
+                                                  Long userId);
+
     /** P0-NEW-1 上传签收凭证 (照片+签收人+备注) */
     SalesDeliveryRecord uploadDeliverySignature(String factoryId, String deliveryId,
                                                  List<String> photoUrls, String signedByName, String remark);
