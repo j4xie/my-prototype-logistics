@@ -138,9 +138,27 @@ public class LeaveRequestSubmitTool extends AbstractBusinessTool {
                     "message", "无法识别当前用户, 请重新登录后再试");
         }
 
-        LeaveType leaveType = parseLeaveType(params);
-        LocalDate startDate = LocalDate.parse(getString(params, "startDate"));
-        LocalDate endDate = LocalDate.parse(getString(params, "endDate"));
+        LeaveType leaveType;
+        LocalDate startDate;
+        LocalDate endDate;
+        // R4位一体: surface friendly validation errors (parseLeaveType / LocalDate.parse may throw BusinessException
+        // or DateTimeParseException — both would otherwise fall to AbstractBusinessTool generic-catch which sanitizes
+        // message to "操作执行失败". Catch here + return PREVIEW_INVALID with the actual message preserved.
+        try {
+            leaveType = parseLeaveType(params);
+            startDate = LocalDate.parse(getString(params, "startDate"));
+            endDate = LocalDate.parse(getString(params, "endDate"));
+        } catch (BusinessException e) {
+            return Map.of(
+                    "status", "PREVIEW_INVALID",
+                    "message", "⚠️ " + e.getMessage(),
+                    "code", e.getCode() != null ? e.getCode() : 400);
+        } catch (java.time.format.DateTimeParseException e) {
+            return Map.of(
+                    "status", "PREVIEW_INVALID",
+                    "message", "⚠️ 日期格式无效, 期望 YYYY-MM-DD: " + e.getParsedString(),
+                    "code", 400);
+        }
 
         // 基础校验 — 提前在 Preview 暴露, 避免 Execute 才报错
         if (endDate.isBefore(startDate)) {
@@ -233,11 +251,37 @@ public class LeaveRequestSubmitTool extends AbstractBusinessTool {
                     "message", "无法识别当前用户, 请重新登录后再试");
         }
 
-        LeaveType leaveType = parseLeaveType(params);
-        LocalDate startDate = LocalDate.parse(getString(params, "startDate"));
-        LocalDate endDate = LocalDate.parse(getString(params, "endDate"));
-        BigDecimal durationHours = computeDurationHours(params, startDate, endDate);
-        String reason = getString(params, "reason");
+        LeaveType leaveType;
+        LocalDate startDate;
+        LocalDate endDate;
+        BigDecimal durationHours;
+        String reason;
+        // R4位一体: friendly validation errors at param-parse stage (mirrors doPreview)
+        try {
+            leaveType = parseLeaveType(params);
+            startDate = LocalDate.parse(getString(params, "startDate"));
+            endDate = LocalDate.parse(getString(params, "endDate"));
+            durationHours = computeDurationHours(params, startDate, endDate);
+            reason = getString(params, "reason");
+        } catch (BusinessException e) {
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("status", "ERROR");
+            err.put("message", "⚠️ " + e.getMessage());
+            err.put("actionHint", "请检查输入参数后重试");
+            err.put("code", e.getCode() != null ? e.getCode() : 400);
+            log.warn("LeaveRequestSubmit param-parse ERROR: factory={} user={} msg={}",
+                    factoryId, userId, e.getMessage());
+            return err;
+        } catch (java.time.format.DateTimeParseException e) {
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("status", "ERROR");
+            err.put("message", "⚠️ 日期格式无效, 期望 YYYY-MM-DD: " + e.getParsedString());
+            err.put("actionHint", "请检查 startDate / endDate 格式后重试");
+            err.put("code", 400);
+            log.warn("LeaveRequestSubmit date-parse ERROR: factory={} user={} parsed={}",
+                    factoryId, userId, e.getParsedString());
+            return err;
+        }
 
         try {
             // 1. Create DRAFT (Service does 时段重叠 check)
@@ -285,9 +329,17 @@ public class LeaveRequestSubmitTool extends AbstractBusinessTool {
                         factoryId, userId, leaveType, startDate, endDate, e.getMessage());
                 return dup;
             }
-            // 其他 BusinessException (400, 等) 透传 — 让 AbstractBusinessTool.execute() 的
-            // catch 块走 buildSanitizedErrorResult, 上层 GlobalExceptionHandler 处理 sticky toast
-            throw e;
+            // 其他 BusinessException (e.g. 400 from Service.validateDates) — 4位一体: surface
+            // friendly message instead of falling through to AbstractBusinessTool generic sanitize
+            // (which strips it to "操作执行失败，请稍后重试" — defeats fool-proof R2).
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("status", "ERROR");
+            err.put("message", "⚠️ " + e.getMessage());
+            err.put("actionHint", "请检查申请信息或联系管理员");
+            err.put("code", e.getCode() != null ? e.getCode() : 400);
+            log.warn("LeaveRequestSubmit ERROR: factory={} user={} type={} {}~{}: code={} msg={}",
+                    factoryId, userId, leaveType, startDate, endDate, e.getCode(), e.getMessage());
+            return err;
         }
     }
 
