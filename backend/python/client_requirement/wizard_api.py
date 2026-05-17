@@ -27,6 +27,27 @@ TOTAL_SPEC_FIELDS = 243
 # Java backend URL for cross-service calls
 JAVA_API_BASE = os.getenv("JAVA_API_BASE", "http://localhost:10010")
 
+# Issue #789 follow-up (2026-05-17): Java internal API now requires X-Internal-Key
+# header. The Java JwtAuthInterceptor:155 compares header value against env
+# INTERNAL_API_SECRET; if missing/mismatched the request gets HTTP 403.
+# Read once at module import; restart-test.sh + cretas-python.service inject this.
+JAVA_INTERNAL_API_SECRET = os.getenv("INTERNAL_API_SECRET", "")
+
+
+def _java_internal_headers() -> dict:
+    """Return headers for /api/internal/* calls to Java backend (Issue #789).
+
+    Returns empty dict + warns if INTERNAL_API_SECRET unset — Java will reject with
+    HTTP 403, but emitting the warning helps debug misconfigured deploys.
+    """
+    if not JAVA_INTERNAL_API_SECRET:
+        logger.warning(
+            "INTERNAL_API_SECRET not set — Java internal API calls will be rejected. "
+            "Set the env var in restart-test.sh / cretas-python.service Environment="
+        )
+        return {}
+    return {"X-Internal-Key": JAVA_INTERNAL_API_SECRET}
+
 
 # ========== Pydantic Models ==========
 
@@ -182,16 +203,18 @@ def save(request: SaveRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # If company is linked to a factory, trigger visibility recompute
+    # Issue #789 (2026-05-17): endpoint moved to /api/internal/* + X-Internal-Key auth
     if company.factory_id:
         try:
             with httpx.Client(timeout=10.0) as client:
                 resp = client.post(
-                    f"{JAVA_API_BASE}/api/mobile/{company.factory_id}/field-visibility/recompute"
+                    f"{JAVA_API_BASE}/api/internal/field-visibility/{company.factory_id}/recompute",
+                    headers=_java_internal_headers(),
                 )
                 if resp.status_code == 200:
                     logger.info(f"Triggered visibility recompute for factory {company.factory_id}")
                 else:
-                    logger.warning(f"Recompute returned {resp.status_code}")
+                    logger.warning(f"Recompute returned {resp.status_code}: {resp.text[:200]}")
         except Exception as e:
             logger.warning(f"Failed to trigger recompute: {e}")
 
@@ -744,16 +767,18 @@ def link_factory(request: LinkFactoryRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # Call Java API to set factory.surveyCompanyId and trigger recompute
+    # Issue #789 (2026-05-17): endpoint moved to /api/internal/* + X-Internal-Key auth
     try:
         with httpx.Client(timeout=10.0) as client:
             resp = client.post(
-                f"{JAVA_API_BASE}/api/mobile/{request.factoryId}/link-survey-company",
-                json={"companyId": request.companyId}
+                f"{JAVA_API_BASE}/api/internal/field-visibility/{request.factoryId}/link-survey-company",
+                json={"companyId": request.companyId},
+                headers=_java_internal_headers(),
             )
             if resp.status_code == 200:
                 logger.info(f"Linked company {request.companyId} to factory {request.factoryId}")
             else:
-                logger.warning(f"Java link-survey-company returned {resp.status_code}: {resp.text}")
+                logger.warning(f"Java link-survey-company returned {resp.status_code}: {resp.text[:200]}")
     except Exception as e:
         logger.warning(f"Failed to notify Java about factory link: {e}")
 

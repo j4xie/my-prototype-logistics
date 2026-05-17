@@ -1034,6 +1034,19 @@ public class SalesServiceImpl implements SalesService {
     }
 
     @Override
+    public FinishedGoodsBatch getFinishedGoodsBatchById(String factoryId, String batchId) {
+        // Issue #786 follow-up to #761: single-item lookup (replaces FE list-filter fallback).
+        // Mirror getSalesOrderById factory-isolation pattern (line 234-242).
+        FinishedGoodsBatch batch = finishedGoodsBatchRepository.findById(batchId)
+                .orElseThrow(() -> new ResourceNotFoundException("成品批次不存在"));
+        if (!batch.getFactoryId().equals(factoryId)) {
+            throw new BusinessException(403, "无权访问该成品批次")
+                    .withHint("当前成品批次不属于该工厂, 无法访问");
+        }
+        return batch;
+    }
+
+    @Override
     public List<FinishedGoodsBatch> getAvailableBatches(String factoryId, String productTypeId) {
         // 老路径 — 维持 D5 WH-LOG 默认。委托给三参版本传 null sourceWarehouseCode 走 fallback.
         return getAvailableBatches(factoryId, productTypeId, null);

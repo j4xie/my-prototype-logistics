@@ -48,6 +48,17 @@ public interface SupplierService {
      * 按供应材料类型获取供应商
       */
     List<SupplierDTO> getSuppliersByMaterialType(String factoryId, String materialType);
+
+    /**
+     * Issue #788 follow-up to PR #782 / #779: reverse direction lookup by material_type_id.
+     *
+     * <p>Replaces history-based {@code /suppliers/{id}/history} (lists "采过 n 次" — supplier→material direction).
+     * This is the true reverse M:N relation: material → all suppliers who ever supplied it.
+     *
+     * <p>Implementation queries PurchaseOrderItem → PurchaseOrder.supplierId (actual transaction
+     * history) rather than the lossy {@code supplied_materials} array on Supplier.
+     */
+    List<SupplierDTO> getSuppliersByMaterialTypeId(String factoryId, String materialTypeId);
      /**
      * 激活/停用供应商
       */

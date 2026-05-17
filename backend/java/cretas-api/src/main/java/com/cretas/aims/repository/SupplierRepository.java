@@ -77,6 +77,28 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
     List<Supplier> findByFactoryIdAndSuppliedMaterialsContaining(String factoryId, String materialType);
 
     /**
+     * Issue #788 follow-up to PR #782 / #779: reverse direction — find suppliers
+     * who actually supplied a given raw_material_type (history-based M:N).
+     *
+     * <p>Differs from {@link #findByFactoryIdAndSuppliedMaterialsContaining}: that one queries
+     * the declared {@code supplied_materials} array field on Supplier (lossy, by name).
+     * This one walks PurchaseOrderItem -> PurchaseOrder.supplier_id history (true M:N relation).
+     *
+     * <p>Returns distinct suppliers ordered by name. Factory-isolated through PurchaseOrder.factoryId.
+     */
+    @Query("SELECT DISTINCT s FROM Supplier s, com.cretas.aims.entity.inventory.PurchaseOrder po, "
+            + "com.cretas.aims.entity.inventory.PurchaseOrderItem poi "
+            + "WHERE s.id = po.supplierId "
+            + "AND po.id = poi.purchaseOrderId "
+            + "AND poi.materialTypeId = :materialTypeId "
+            + "AND po.factoryId = :factoryId "
+            + "AND s.factoryId = :factoryId "
+            + "ORDER BY s.name ASC")
+    List<Supplier> findDistinctSuppliersByMaterialTypeId(
+            @Param("factoryId") String factoryId,
+            @Param("materialTypeId") String materialTypeId);
+
+    /**
      * 检查供应商名称是否存在
      */
     boolean existsByFactoryIdAndName(String factoryId, String name);

@@ -331,6 +331,25 @@ public class SalesController {
         return ApiResponse.success("查询成功", batches);
     }
 
+    /**
+     * Issue #786 follow-up to PR #782 / #761: single-item lookup for finished-goods detail page.
+     *
+     * <p>detail.vue 之前走 list-filter fallback (TODO comment) — 跨 page 拿不到 + 大 list
+     * 性能差. 现在 detail.vue 改用 fetch-by-ID 直接走此 endpoint.
+     *
+     * <p>NOTE: 注意 path order — Spring 匹配 {batchId} 之前已经匹配 /available (上方更具体).
+     */
+    @GetMapping("/finished-goods/{batchId}")
+    @Operation(summary = "成品批次详情",
+            description = "Issue #786 — 替代前端 list-filter fallback. 跨 page 也能直接 fetch by ID.")
+    @RequirePermission({"sales:read_write", "sales:read", "inventory:read"})
+    public ApiResponse<FinishedGoodsBatch> getFinishedGoodsBatch(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String batchId) {
+        FinishedGoodsBatch batch = salesService.getFinishedGoodsBatchById(factoryId, batchId);
+        return ApiResponse.success("查询成功", batch);
+    }
+
     // ==================== 统计 ====================
 
     @GetMapping("/statistics")

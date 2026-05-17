@@ -348,6 +348,25 @@ public class PurchaseController {
         return ApiResponse.success("查询成功", stats);
     }
 
+    /**
+     * Issue #787 follow-up to PR #782 / #775: cumulative-received aggregate endpoint.
+     *
+     * <p>之前前端 '累计已收' 列在 RCV list 页 FE-only 聚合 current page rows — 跨 page 不准.
+     * 现在前端改用此 endpoint, 后端按 PO items 直接读 receivedQuantity (confirmReceive 时累加).
+     *
+     * <p>Response: {@code {poId, orderNumber, plannedTotal, cumulativeReceived, lines: [...] }}
+     */
+    @GetMapping("/orders/{orderId}/cumulative-received")
+    @Operation(summary = "采购订单累计已收汇总 (Issue #787)",
+            description = "按行返回 plannedQty/receivedQty/pendingQty, 替代 FE-only page-rows 聚合.")
+    @RequirePermission({"procurement:read_write", "procurement:read"})
+    public ApiResponse<Map<String, Object>> getCumulativeReceived(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        Map<String, Object> result = purchaseService.getCumulativeReceived(factoryId, orderId);
+        return ApiResponse.success("查询成功", result);
+    }
+
     // ==================== 三价对比 ====================
 
     @GetMapping("/orders/{orderId}/price-comparison")

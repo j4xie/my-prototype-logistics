@@ -775,6 +775,43 @@ public class PurchaseServiceImpl implements PurchaseService {
         return receiveRecordRepository.findByPurchaseOrderId(purchaseOrderId);
     }
 
+    @Override
+    public Map<String, Object> getCumulativeReceived(String factoryId, String orderId) {
+        // Issue #787 follow-up to PR #782 / #775: backend aggregate replaces FE-only page-rows聚合.
+        // getPurchaseOrderById already enforces factory isolation (BusinessException 403 if cross-factory).
+        PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
+        List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+
+        BigDecimal plannedTotal = BigDecimal.ZERO;
+        BigDecimal cumulativeReceived = BigDecimal.ZERO;
+        List<Map<String, Object>> lines = new ArrayList<>();
+        for (PurchaseOrderItem item : items) {
+            BigDecimal planned = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO;
+            BigDecimal received = item.getReceivedQuantity() != null ? item.getReceivedQuantity() : BigDecimal.ZERO;
+            BigDecimal pending = planned.subtract(received);
+            plannedTotal = plannedTotal.add(planned);
+            cumulativeReceived = cumulativeReceived.add(received);
+
+            // LinkedHashMap to preserve field order for FE deterministic shape.
+            Map<String, Object> line = new LinkedHashMap<>();
+            line.put("materialId", item.getMaterialTypeId());
+            line.put("materialName", item.getMaterialName());
+            line.put("plannedQty", planned);
+            line.put("receivedQty", received);
+            line.put("pendingQty", pending);
+            line.put("unit", item.getUnit());
+            lines.add(line);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("poId", order.getId());
+        result.put("orderNumber", order.getOrderNumber());
+        result.put("plannedTotal", plannedTotal);
+        result.put("cumulativeReceived", cumulativeReceived);
+        result.put("lines", lines);
+        return result;
+    }
+
     // ==================== 统计 ====================
 
     @Override

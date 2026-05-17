@@ -64,6 +64,23 @@ public interface PurchaseService {
 
     List<PurchaseReceiveRecord> getReceiveRecordsByOrder(String purchaseOrderId);
 
+    /**
+     * Issue #787 follow-up to PR #782 / #775: 后端按行汇总入库累计数量.
+     *
+     * <p>之前 RCV list response 的 '累计已收' 是 FE-only 聚合 current page rows — 跨 page 不准,
+     * 性能差. 现在前端改用此 endpoint 获取后端权威值.
+     *
+     * <p>返回结构: {@code {poId, orderNumber, plannedTotal, cumulativeReceived,
+     *                        lines: [{materialId, materialName, plannedQty, receivedQty, pendingQty}]} }
+     *
+     * <p>数据源: 直接读 {@link com.cretas.aims.entity.inventory.PurchaseOrderItem#receivedQuantity}
+     * (confirmReceive 时增量累计, 已 byPO partition). 不需要再 SUM(receive_items) 跨表.
+     *
+     * @throws com.cretas.aims.exception.ResourceNotFoundException PO 不存在
+     * @throws com.cretas.aims.exception.BusinessException 403 跨工厂访问
+     */
+    Map<String, Object> getCumulativeReceived(String factoryId, String orderId);
+
     // ==================== 统计 ====================
 
     Map<String, Object> getPurchaseStatistics(String factoryId);
