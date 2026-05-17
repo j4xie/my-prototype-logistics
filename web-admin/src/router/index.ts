@@ -247,6 +247,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'QualityDefects',
             component: () => import('@/views/quality/defects/list.vue'),
             meta: { requiresAuth: true, title: '工序质检不良', module: 'quality' }
+          },
+          // Sprint4-H Q-RETURN-1: 质检退回单 (上游退回, 区分客户销售退货)
+          {
+            path: 'returns',
+            name: 'QualityReturns',
+            component: () => import('@/views/quality/returns/list.vue'),
+            meta: { requiresAuth: true, title: '质检退回单', module: 'quality' }
           }
         ]
       },
