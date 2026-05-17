@@ -31,7 +31,22 @@ const notFound = ref(false);
 const notFoundMessage = ref('');
 const receives = ref<TableRow[]>([]);
 const receiveDialogVisible = ref(false);
-const receiveForm = ref<{ supplierId: string; receiveDate: string; items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ supplierId: '', receiveDate: '', items: [] });
+// Issue #741 — Preview hint 字段 (orderedQuantity / alreadyReceived) carried forward to dialog so
+// 用户可在输入收货数前看到 上限 (含 30% 抄收). Backend validates same upper bound at /confirm step.
+interface ReceiveFormItem {
+  materialTypeId: string;
+  materialName: string;
+  receivedQuantity: number;
+  unit: string;
+  unitPrice: number;
+  orderedQuantity: number;      // 下单总量 (从 PO item.quantity)
+  alreadyReceived: number;      // 已收 (PO item.receivedQuantity)
+  maxAllowed: number;           // 含 30% 抄收上限 = orderedQuantity * 1.3 - alreadyReceived
+}
+const receiveForm = ref<{ supplierId: string; receiveDate: string; items: ReceiveFormItem[] }>({ supplierId: '', receiveDate: '', items: [] });
+
+// Issue #741: 30% 抄收宽容上限 — 与后端 PurchaseReceiveService 一致.
+const OVER_RECEIVE_TOLERANCE = 1.3;
 const attachmentRefreshKey = ref(0);
 
 // 三价对比
@@ -135,14 +150,32 @@ function openReceiveDialog() {
   // Auto-populate supplierId from PO and default receiveDate to today
   receiveForm.value.supplierId = (order.value.supplierId as string) || '';
   receiveForm.value.receiveDate = new Date().toISOString().slice(0, 10);
-  receiveForm.value.items = (order.value.items as TableRow[]).map((it) => ({
-    materialTypeId: it.materialTypeId,
-    materialName: it.materialName,
-    receivedQuantity: it.quantity - (it.receivedQuantity || 0),
-    unit: it.unit,
-    unitPrice: it.unitPrice,
-  }));
+  receiveForm.value.items = (order.value.items as TableRow[]).map((it) => {
+    const ordered = Number(it.quantity) || 0;
+    const already = Number(it.receivedQuantity) || 0;
+    const maxAllowed = Math.max(0, +(ordered * OVER_RECEIVE_TOLERANCE - already).toFixed(3));
+    return {
+      materialTypeId: it.materialTypeId,
+      materialName: it.materialName,
+      // Default to remaining (ordered - already), capped at maxAllowed
+      receivedQuantity: Math.min(Math.max(0, ordered - already), maxAllowed),
+      unit: it.unit,
+      unitPrice: it.unitPrice,
+      orderedQuantity: ordered,
+      alreadyReceived: already,
+      maxAllowed,
+    };
+  });
   receiveDialogVisible.value = true;
+}
+
+// Issue #741: 计算剩余可入余量 (>= 0)
+function remainingAllowed(row: ReceiveFormItem): number {
+  return Math.max(0, +(row.maxAllowed - (Number(row.receivedQuantity) || 0)).toFixed(3));
+}
+
+function isOverLimit(row: ReceiveFormItem): boolean {
+  return (Number(row.receivedQuantity) || 0) > row.maxAllowed;
 }
 
 async function handleCreateReceive() {
@@ -400,12 +433,14 @@ async function confirmReceive(receiveId: string) {
         <AttachmentList
           entity-type="PURCHASE_ORDER"
           :entity-id="String(orderId)"
+          :factory-id="factoryId"
           :refresh-key="attachmentRefreshKey"
         />
         <div style="margin-top: 12px">
           <AttachmentUploadButton
             entity-type="PURCHASE_ORDER"
             :entity-id="String(orderId)"
+            :factory-id="factoryId"
             business-tag="PURCHASE_DOC"
             @uploaded="attachmentRefreshKey++"
           />
@@ -413,22 +448,54 @@ async function confirmReceive(receiveId: string) {
       </template>
     </el-card>
 
-    <el-dialog v-model="receiveDialogVisible" title="创建收货单" width="640px" destroy-on-close>
+    <el-dialog v-model="receiveDialogVisible" title="创建收货单" width="820px" destroy-on-close>
+      <!-- Issue #741: 入库防呆 — 在输入收货数前预先显示 下单/已收/可入(含30%抄收), 避免 submit 后才看到 toast -->
+      <el-alert type="info" show-icon :closable="false" style="margin-bottom: 12px"
+        title="入库上限说明"
+        description="系统允许超收 30% 作为抄收宽容 (与采购订单一致). 「可入」= 下单量 × 1.3 − 已收量. 超过此上限提交将被驳回." />
       <el-table :data="receiveForm.items" border>
-        <el-table-column prop="materialName" :label="label('rawMaterial')" width="150" />
-        <el-table-column label="收货数量" width="160">
+        <el-table-column prop="materialName" :label="label('rawMaterial')" min-width="140" show-overflow-tooltip />
+        <el-table-column label="下单" width="80" align="right">
+          <template #default="{ row }">{{ row.orderedQuantity }}</template>
+        </el-table-column>
+        <el-table-column label="已收" width="80" align="right">
+          <template #default="{ row }">{{ row.alreadyReceived }}</template>
+        </el-table-column>
+        <el-table-column label="可入 (含30%抄收)" width="140" align="right">
           <template #default="{ row }">
-            <el-input-number v-model="row.receivedQuantity" :min="0" size="small" style="width: 130px" />
+            <span :style="{ color: '#67c23a', fontWeight: 600 }">{{ row.maxAllowed }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="unit" label="单位" width="80" align="center" />
-        <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="120" align="right">
+        <el-table-column label="本次收货" width="180">
+          <template #default="{ row }">
+            <el-input-number
+              v-model="row.receivedQuantity"
+              :min="0"
+              :max="row.maxAllowed"
+              :precision="3"
+              :controls="false"
+              size="small"
+              style="width: 130px" />
+            <div v-if="isOverLimit(row)" style="color:#f56c6c; font-size:12px; margin-top:2px">
+              超出上限 (最多 {{ row.maxAllowed }})
+            </div>
+            <div v-else-if="row.receivedQuantity > 0" style="color:#909399; font-size:12px; margin-top:2px">
+              剩余可入 {{ remainingAllowed(row) }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="unit" label="单位" width="70" align="center" />
+        <el-table-column v-if="canViewPrice" prop="unitPrice" label="单价" width="110" align="right">
           <template #default="{ row }">{{ formatAmount(row.unitPrice) }}</template>
         </el-table-column>
       </el-table>
       <template #footer>
         <el-button @click="receiveDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleCreateReceive">创建收货单</el-button>
+        <el-button
+          type="primary"
+          :loading="submitting"
+          :disabled="receiveForm.items.some(isOverLimit)"
+          @click="handleCreateReceive">创建收货单</el-button>
       </template>
     </el-dialog>
   </div>

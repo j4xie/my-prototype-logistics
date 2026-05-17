@@ -41,6 +41,75 @@ const dialogForm = ref({
   customFields: {} as TableRow,
 });
 
+// Issue #745: 抽样/合格/不合格 联动自动平衡 — 任何 2 个有值, 第 3 个自动算.
+// lastEdited 记录最近用户编辑哪个字段, 改其他字段时不反推它.
+const lastEdited = ref<'sample' | 'pass' | 'fail' | null>(null);
+
+function onSampleChange(v: number | null | undefined) {
+  lastEdited.value = 'sample';
+  const sample = Number(v);
+  if (!isFinite(sample) || sample < 0) return;
+  const pass = dialogForm.value.passCount;
+  const fail = dialogForm.value.failCount;
+  if (pass != null && fail == null) {
+    dialogForm.value.failCount = Math.max(0, sample - Number(pass));
+  } else if (fail != null && pass == null) {
+    dialogForm.value.passCount = Math.max(0, sample - Number(fail));
+  }
+}
+
+function onPassChange(v: number | null | undefined) {
+  lastEdited.value = 'pass';
+  const pass = Number(v);
+  if (!isFinite(pass) || pass < 0) return;
+  const sample = dialogForm.value.sampleSize;
+  const fail = dialogForm.value.failCount;
+  if (sample != null && fail == null) {
+    dialogForm.value.failCount = Math.max(0, Number(sample) - pass);
+  } else if (sample == null && fail != null) {
+    dialogForm.value.sampleSize = pass + Number(fail);
+  } else if (sample != null && fail != null) {
+    if (lastEdited.value !== 'sample') {
+      dialogForm.value.sampleSize = pass + Number(fail);
+    }
+  }
+}
+
+function onFailChange(v: number | null | undefined) {
+  lastEdited.value = 'fail';
+  const fail = Number(v);
+  if (!isFinite(fail) || fail < 0) return;
+  const sample = dialogForm.value.sampleSize;
+  const pass = dialogForm.value.passCount;
+  if (sample != null && pass == null) {
+    dialogForm.value.passCount = Math.max(0, Number(sample) - fail);
+  } else if (sample == null && pass != null) {
+    dialogForm.value.sampleSize = Number(pass) + fail;
+  } else if (sample != null && pass != null) {
+    if (lastEdited.value !== 'sample') {
+      dialogForm.value.sampleSize = Number(pass) + fail;
+    }
+  }
+}
+
+// 派生显示: 是否一致 + 提示文案
+const balanceStatus = computed<{ ok: boolean; msg: string }>(() => {
+  const s = dialogForm.value.sampleSize;
+  const p = dialogForm.value.passCount;
+  const f = dialogForm.value.failCount;
+  if (s == null || p == null || f == null) {
+    return { ok: true, msg: '填入任意两个,第三个自动计算' };
+  }
+  const sum = Number(p) + Number(f);
+  if (sum > Number(s)) {
+    return { ok: false, msg: `合格 ${p} + 不合格 ${f} = ${sum} > 抽样 ${s} (请调整)` };
+  }
+  if (sum < Number(s)) {
+    return { ok: true, msg: `剩余 ${Number(s) - sum} 件 (待复检/有条件放行)` };
+  }
+  return { ok: true, msg: '数字一致' };
+});
+
 // 生产批次列表（用于下拉选择）
 const productionBatches = ref<TableRow[]>([]);
 
@@ -137,6 +206,10 @@ async function submitCreateForm() {
   }
   if (!dialogForm.value.sampleSize || dialogForm.value.sampleSize <= 0) {
     ElMessage.warning('请输入抽样数量');
+    return;
+  }
+  if (!balanceStatus.value.ok) {
+    ElMessage.warning(balanceStatus.value.msg);
     return;
   }
   if (!dialogForm.value.result) {
@@ -281,14 +354,38 @@ function showDetail(row: TableRow) {
             />
           </el-select>
         </el-form-item>
+        <!-- Issue #745: 抽样/合格/不合格 联动自动平衡 - 填两个第三自动算 -->
         <el-form-item label="抽样数量" required>
-          <el-input-number v-model="dialogForm.sampleSize" :min="1" style="width: 100%" />
+          <el-input-number
+            v-model="dialogForm.sampleSize"
+            :min="0"
+            :controls="false"
+            style="width: 100%"
+            @change="onSampleChange" />
         </el-form-item>
         <el-form-item label="合格数" required>
-          <el-input-number v-model="dialogForm.passCount" :min="0" style="width: 100%" />
+          <el-input-number
+            v-model="dialogForm.passCount"
+            :min="0"
+            :controls="false"
+            style="width: 100%"
+            @change="onPassChange" />
         </el-form-item>
         <el-form-item label="不合格数" required>
-          <el-input-number v-model="dialogForm.failCount" :min="0" style="width: 100%" />
+          <el-input-number
+            v-model="dialogForm.failCount"
+            :min="0"
+            :controls="false"
+            style="width: 100%"
+            @change="onFailChange" />
+        </el-form-item>
+        <el-form-item label=" ">
+          <el-tag
+            :type="balanceStatus.ok ? 'success' : 'danger'"
+            effect="plain"
+            size="small">
+            {{ balanceStatus.msg }}
+          </el-tag>
         </el-form-item>
         <el-form-item label="检验结果" required>
           <el-select v-model="dialogForm.result" placeholder="选择检验结果" style="width: 100%">

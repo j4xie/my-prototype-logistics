@@ -123,6 +123,26 @@ function isStockShortage(row: Record<string, unknown>): boolean {
   return sn < qn;
 }
 
+// Issue #744: 调拨单缺库存预检 — 任何一行库存不足时,禁用「确认发运」按钮 (调出方视角).
+// 列表表头展示 "现有库存" 红色高亮 (already wired in this file via .stock-shortage class).
+const hasStockShortage = computed(() => {
+  if (!transfer.value?.items?.length) return false;
+  return (transfer.value.items as Record<string, unknown>[]).some(isStockShortage);
+});
+
+const shipBlockedReason = computed(() => {
+  if (!hasStockShortage.value) return '';
+  const shortageRows = (transfer.value?.items as Record<string, unknown>[] | undefined)
+    ?.filter(isStockShortage) ?? [];
+  const names = shortageRows.map(r => {
+    const m = (r.materialType as { name?: string } | undefined)?.name
+      ?? (r.productType as { name?: string } | undefined)?.name
+      ?? r.materialTypeId ?? r.productTypeId ?? '-';
+    return String(m);
+  });
+  return `库存不足 (${names.join(', ')}). 请先采购或调入补足后再发货.`;
+});
+
 // ==================== B1 两阶段批次选择 (PR #309 B1=C, 2026-05-11) ====================
 // SHIP 前 (status=APPROVED), 调出方用户可为每个 item 预选批次:
 //   - 留空 = 默认 FEFO (最早过期先扣)
@@ -199,7 +219,18 @@ function formatBatchLabel(b: BatchOption): string {
             <el-button v-if="transfer.status === 'DRAFT'" type="warning" :loading="submitting" @click="handleAction('request')">提交申请</el-button>
             <el-button v-if="transfer.status === 'REQUESTED'" type="success" :loading="submitting" @click="handleAction('approve')">审批通过</el-button>
             <el-button v-if="transfer.status === 'REQUESTED'" type="danger" :loading="submitting" @click="handleAction('reject')">驳回</el-button>
-            <el-button v-if="transfer.status === 'APPROVED' && isOutbound" type="primary" :loading="submitting" @click="handleAction('ship')">确认发运</el-button>
+            <el-tooltip
+              v-if="transfer.status === 'APPROVED' && isOutbound && hasStockShortage"
+              :content="shipBlockedReason" placement="top">
+              <span>
+                <el-button type="primary" disabled>确认发运</el-button>
+              </span>
+            </el-tooltip>
+            <el-button
+              v-else-if="transfer.status === 'APPROVED' && isOutbound"
+              type="primary"
+              :loading="submitting"
+              @click="handleAction('ship')">确认发运</el-button>
             <el-button v-if="transfer.status === 'SHIPPED' && !isOutbound" type="primary" :loading="submitting" @click="handleAction('receive')">确认签收</el-button>
             <el-button v-if="transfer.status === 'RECEIVED' && !isOutbound" type="success" :loading="submitting" @click="handleAction('confirm')">确认入库</el-button>
             <el-button v-if="['DRAFT','REQUESTED'].includes(transfer.status)" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
@@ -218,6 +249,13 @@ function formatBatchLabel(b: BatchOption): string {
           <el-step title="已确认" />
         </el-steps>
         <el-alert v-else :title="`该调拨单已${statusMap[transfer.status]?.text}`" :type="transfer.status === 'REJECTED' ? 'error' : 'info'" show-icon :closable="false" style="margin-bottom: 24px" />
+
+        <!-- Issue #744: 库存不足时主动告警 (调出方视角) -->
+        <el-alert
+          v-if="transfer.status === 'APPROVED' && isOutbound && hasStockShortage"
+          type="error" show-icon :closable="false" style="margin-bottom: 16px"
+          title="原料库存不足，无法发货"
+          :description="shipBlockedReason" />
 
         <el-descriptions :column="3" border>
           <el-descriptions-item label="调拨编号">{{ transfer.transferNumber }}</el-descriptions-item>
