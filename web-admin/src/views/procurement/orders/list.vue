@@ -19,7 +19,7 @@ import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
-import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
+import { CreateModeSelector, BatchCreateDialog, QuickCreateDialog, BomExpansionDialog } from '@/components/dialog';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
 import type { InlineIconId } from '@/types/inlineIcons';
@@ -41,9 +41,12 @@ const canViewPrice = computed(() => permissionStore.canViewPrice);
 // U-VIEW-1 (Sprint 4 Wave 2 Chat L) — view-mode switcher (5 modes).
 const viewMode = ref<ViewMode>('table');
 
-// U-NEW-1 (Sprint 4 Wave 2 Chat L) — create-mode selector.
+// U-NEW-1 — create-mode selector (4 modes).
+// Sprint 4 W2 Chat L shipped normal+batch. P1 #58 finishes quick + bom.
 const createModeSelectorVisible = ref(false);
 const batchCreateVisible = ref(false);
+const quickCreateVisible = ref(false);
+const bomCreateVisible = ref(false);
 function openCreateModeSelector(): void {
   createModeSelectorVisible.value = true;
 }
@@ -53,9 +56,107 @@ async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
   } else if (mode === 'batch') {
     await Promise.all([loadSuppliers(), loadMaterials(), loadSalesOrders()]);
     batchCreateVisible.value = true;
-  } else {
-    ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
+  } else if (mode === 'quick') {
+    // P1 #58: minimal fields (supplier + type) for fast consecutive entry.
+    await loadSuppliers();
+    quickCreateVisible.value = true;
+  } else if (mode === 'bom') {
+    // P1 #58: parent PO + child items expanded from material template.
+    await Promise.all([loadSuppliers(), loadMaterials()]);
+    bomCreateVisible.value = true;
   }
+}
+
+// P1 #58 — Quick create (一维): supplier + type + expectedDate + remark.
+interface QuickPurchaseOrderRow {
+  supplierId: string;
+  purchaseType: string;
+  expectedDate: string;
+  remark: string;
+}
+function quickPurchaseOrderFactory(): QuickPurchaseOrderRow {
+  return { supplierId: '', purchaseType: 'NORMAL', expectedDate: '', remark: '' };
+}
+async function submitQuickPurchaseOrder(row: QuickPurchaseOrderRow): Promise<void> {
+  if (!row.supplierId) {
+    throw new Error('请选择供应商');
+  }
+  const payload = {
+    supplierId: row.supplierId,
+    purchaseType: row.purchaseType || 'NORMAL',
+    expectedDate: row.expectedDate || null,
+    remark: row.remark || '',
+    items: [],
+  };
+  const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+  if (!res?.success) {
+    throw new Error(res?.message || '创建失败');
+  }
+  await loadData();
+}
+
+// P1 #58 — BOM 展开: parent PO + child items from material template.
+interface BomPurchaseOrderParent {
+  supplierId: string;
+  purchaseType: string;
+  expectedDate: string;
+  remark: string;
+}
+interface BomPurchaseOrderChild {
+  materialId: string;
+  materialName: string;
+  quantity: number | string;
+  unit: string;
+  unitPrice: number | string;
+}
+function bomPurchaseOrderParentFactory(): BomPurchaseOrderParent {
+  return { supplierId: '', purchaseType: 'NORMAL', expectedDate: '', remark: '' };
+}
+const bomPurchaseTemplates = computed(() =>
+  (materials.value || []).map((m) => ({
+    id: String(m.id || ''),
+    name: String(m.name || m.code || ''),
+    description: m.category ? `分类 ${m.category}` : '',
+  }))
+);
+async function expandBomPurchaseTemplate(materialId: string): Promise<BomPurchaseOrderChild[]> {
+  const tpl = materials.value.find((m) => String(m.id) === materialId);
+  if (!tpl) return [];
+  return [
+    {
+      materialId: String(tpl.id || ''),
+      materialName: String(tpl.name || ''),
+      quantity: 1,
+      unit: String((tpl as Record<string, unknown>).unit || 'kg'),
+      unitPrice: Number((tpl as Record<string, unknown>).referencePrice ?? (tpl as Record<string, unknown>).price ?? 0) || 0,
+    },
+  ];
+}
+async function submitBomPurchaseOrder(parent: BomPurchaseOrderParent, children: BomPurchaseOrderChild[]): Promise<void> {
+  if (!parent.supplierId) {
+    throw new Error('请选择供应商');
+  }
+  if (!children.length) {
+    throw new Error('请至少添加 1 项明细');
+  }
+  const payload = {
+    supplierId: parent.supplierId,
+    purchaseType: parent.purchaseType || 'NORMAL',
+    expectedDate: parent.expectedDate || null,
+    remark: parent.remark || '',
+    items: children.map((c) => ({
+      materialId: c.materialId,
+      materialName: c.materialName,
+      quantity: Number(c.quantity) || 0,
+      unit: c.unit || 'kg',
+      unitPrice: Number(c.unitPrice) || 0,
+    })),
+  };
+  const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+  if (!res?.success) {
+    throw new Error(res?.message || '提交失败');
+  }
+  await loadData();
 }
 // U-ICON-1 (Sprint 4 Wave 2 Chat L) — inline 7-icon hover toolbar handler.
 async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<void> {
@@ -840,11 +941,11 @@ function handleAiFill(params: TableRow) {
       @fill-form="handleAiFill"
     />
 
-    <!-- U-NEW-1 (Sprint 4 Wave 2 Chat L) create-mode selector + batch dialog -->
+    <!-- U-NEW-1 — create-mode selector + 4 mode dialogs.
+         普通 + 二维 = Sprint 4 W2 Chat L. 一维 + BOM = P1 #58. -->
     <CreateModeSelector
       v-model="createModeSelectorVisible"
       :entity-label="label('purchaseOrder')"
-      :disabled-modes="['quick', 'bom']"
       @mode-selected="handleCreateModeSelected"
     />
     <BatchCreateDialog
@@ -875,6 +976,85 @@ function handleAiFill(params: TableRow) {
         <el-date-picker v-model="row.expectedDate" type="date" size="small" value-format="YYYY-MM-DD" style="width: 100%" />
       </template>
     </BatchCreateDialog>
+
+    <!-- P1 #58 — Quick (一维): supplier + type + expectedDate + remark -->
+    <QuickCreateDialog
+      v-model="quickCreateVisible"
+      :title="`快速新建 ${label('purchaseOrder')}`"
+      :context-hint="`供应商范围: ${suppliers.length} 个可选 — 回车连续录入`"
+      :fields="[
+        { prop: 'supplierId', label: '供应商', required: true, slotName: 'supplier' },
+        { prop: 'purchaseType', label: '采购类型', slotName: 'type' },
+        { prop: 'expectedDate', label: '期望交货日', slotName: 'date' },
+        { prop: 'remark', label: '备注', placeholder: '可选, 简短备注' },
+      ]"
+      :row-factory="quickPurchaseOrderFactory"
+      :submit="submitQuickPurchaseOrder"
+      :session-max="20"
+    >
+      <template #supplier="{ row }">
+        <el-select v-model="row.supplierId" filterable placeholder="选择供应商" style="width: 100%">
+          <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
+      </template>
+      <template #type="{ row }">
+        <el-select v-model="row.purchaseType" style="width: 100%">
+          <el-option label="统一采购" value="NORMAL" />
+          <el-option label="直接采购" value="DIRECT" />
+          <el-option label="紧急采购" value="URGENT" />
+        </el-select>
+      </template>
+      <template #date="{ row }">
+        <el-date-picker v-model="row.expectedDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+      </template>
+    </QuickCreateDialog>
+
+    <!-- P1 #58 — BOM 展开: parent PO + child material items -->
+    <BomExpansionDialog
+      v-model="bomCreateVisible"
+      :title="`BOM 展开新建 ${label('purchaseOrder')}`"
+      :entity-label="label('purchaseOrder')"
+      :templates="bomPurchaseTemplates"
+      :parent-factory="bomPurchaseOrderParentFactory"
+      :expand-template="expandBomPurchaseTemplate"
+      :submit="submitBomPurchaseOrder"
+      :child-columns="[
+        { prop: 'materialName', label: '物料名称', width: 200 },
+        { prop: 'quantity', label: '数量', width: 120, slotName: 'quantity' },
+        { prop: 'unit', label: '单位', width: 100 },
+        { prop: 'unitPrice', label: '单价', width: 140, slotName: 'price' },
+      ]"
+      :max-children="50"
+    >
+      <template #parent-fields="{ parent }">
+        <el-form label-position="top">
+          <el-form-item label="供应商" required>
+            <el-select v-model="parent.supplierId" filterable placeholder="选择供应商" style="width: 100%">
+              <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="采购类型">
+            <el-select v-model="parent.purchaseType" style="width: 100%">
+              <el-option label="统一采购" value="NORMAL" />
+              <el-option label="直接采购" value="DIRECT" />
+              <el-option label="紧急采购" value="URGENT" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="期望交货日">
+            <el-date-picker v-model="parent.expectedDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="parent.remark" type="textarea" :rows="2" placeholder="可选" />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #quantity="{ row }">
+        <el-input-number v-model="row.quantity" :min="0" :step="0.5" size="small" style="width: 100%" />
+      </template>
+      <template #price="{ row }">
+        <el-input-number v-model="row.unitPrice" :min="0" :step="0.01" :precision="2" size="small" style="width: 100%" />
+      </template>
+    </BomExpansionDialog>
   </div>
   </CanvasAwareWrapper>
 </template>

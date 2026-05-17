@@ -14,7 +14,7 @@ import { useWorkflowStats } from '@/composables/useWorkflowStats';
 import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
 import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
-import { CreateModeSelector, BatchCreateDialog } from '@/components/dialog';
+import { CreateModeSelector, BatchCreateDialog, QuickCreateDialog, BomExpansionDialog } from '@/components/dialog';
 import request from '@/api/request';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
@@ -84,11 +84,12 @@ const kanbanColumns = computed(() =>
   Object.entries(statusMap).map(([status, v]: [string, { text: string }]) => ({ status, label: v.text }))
 );
 
-// U-NEW-1 (Sprint 4 Wave 2 Chat L) — create-mode selector. Pre-dialog
-// presenting normal/quick/batch/bom modes. quick + bom disabled until
-// Sprint 5 wires entity-specific quick-add + BomVersion expansion.
+// U-NEW-1 — create-mode selector. Pre-dialog presenting normal/quick/batch/bom modes.
+// Sprint 4 W2 Chat L shipped: normal + batch. P1 #58 (this session): quick + bom finished.
 const createModeSelectorVisible = ref(false);
 const batchCreateVisible = ref(false);
+const quickCreateVisible = ref(false);
+const bomCreateVisible = ref(false);
 function openCreateModeSelector(): void {
   createModeSelectorVisible.value = true;
 }
@@ -99,10 +100,117 @@ async function handleCreateModeSelected(mode: CreateMode): Promise<void> {
     // Ensure dropdowns are warm before showing batch dialog.
     await Promise.all([loadCustomers(), loadProducts(), loadSalesEmployees()]);
     batchCreateVisible.value = true;
-  } else {
-    // quick + bom are disabled in selector, but defend if external trigger arrives.
-    ElMessage.info(`${mode === 'quick' ? '一维快速' : 'BOM 展开'} 模式将在 Sprint 5 上线`);
+  } else if (mode === 'quick') {
+    // P1 #58: minimal-field consecutive entry (customer + delivery date only)
+    await loadCustomers();
+    quickCreateVisible.value = true;
+  } else if (mode === 'bom') {
+    // P1 #58: parent SO + nested child lines expanded from a product template.
+    await Promise.all([loadCustomers(), loadProducts()]);
+    bomCreateVisible.value = true;
   }
+}
+
+// P1 #58 — Quick create (一维): single-row minimal-fields with consecutive entry.
+interface QuickSalesOrderRow {
+  customerId: string;
+  requiredDeliveryDate: string;
+  remark: string;
+}
+function quickSalesOrderFactory(): QuickSalesOrderRow {
+  return { customerId: '', requiredDeliveryDate: '', remark: '' };
+}
+async function submitQuickSalesOrder(row: QuickSalesOrderRow): Promise<void> {
+  if (!row.customerId) {
+    throw new Error('请选择客户');
+  }
+  const payload = {
+    customerId: row.customerId,
+    salesperson: '',
+    requiredDeliveryDate: row.requiredDeliveryDate || null,
+    remark: row.remark || '',
+    shippingIncluded: false,
+    shippingFee: 0,
+    extraFees: [],
+    items: [],
+    customFields: {},
+  };
+  const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+  if (!res?.success) {
+    throw new Error(res?.message || '创建失败');
+  }
+  // Refresh list after each submit so user sees the new row immediately.
+  await loadData();
+}
+
+// P1 #58 — BOM expansion (BOM 展开): parent SO + child items from selected product template.
+interface BomSalesOrderParent {
+  customerId: string;
+  requiredDeliveryDate: string;
+  remark: string;
+}
+interface BomSalesOrderChild {
+  productId: string;
+  productName: string;
+  quantity: number | string;
+  unit: string;
+  unitPrice: number | string;
+}
+function bomSalesOrderParentFactory(): BomSalesOrderParent {
+  return { customerId: '', requiredDeliveryDate: '', remark: '' };
+}
+// Each "BOM template" for sales = a product configuration with default qty/unit/price.
+const bomSalesTemplates = computed(() =>
+  (products.value || []).map((p) => ({
+    id: String(p.id || ''),
+    name: String(p.name || p.code || ''),
+    description: (p.code ? `编码 ${p.code}` : ''),
+  }))
+);
+async function expandBomSalesTemplate(productId: string): Promise<BomSalesOrderChild[]> {
+  const tpl = products.value.find((p) => String(p.id) === productId);
+  if (!tpl) return [];
+  // Sales SO BOM = single product line by default. Caller can manually
+  // add more rows via the dialog's "手动添加行" button.
+  return [
+    {
+      productId: String(tpl.id || ''),
+      productName: String(tpl.name || ''),
+      quantity: 1,
+      unit: String((tpl as Record<string, unknown>).unit || 'kg'),
+      unitPrice: Number((tpl as Record<string, unknown>).price ?? 0) || 0,
+    },
+  ];
+}
+async function submitBomSalesOrder(parent: BomSalesOrderParent, children: BomSalesOrderChild[]): Promise<void> {
+  if (!parent.customerId) {
+    throw new Error('请选择客户');
+  }
+  if (!children.length) {
+    throw new Error('请至少添加 1 项明细');
+  }
+  const payload = {
+    customerId: parent.customerId,
+    salesperson: '',
+    requiredDeliveryDate: parent.requiredDeliveryDate || null,
+    remark: parent.remark || '',
+    shippingIncluded: false,
+    shippingFee: 0,
+    extraFees: [],
+    items: children.map((c) => ({
+      productId: c.productId,
+      productName: c.productName,
+      quantity: Number(c.quantity) || 0,
+      unit: c.unit || 'kg',
+      unitPrice: Number(c.unitPrice) || 0,
+    })),
+    customFields: {},
+  };
+  const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+  if (!res?.success) {
+    throw new Error(res?.message || '提交失败');
+  }
+  await loadData();
 }
 // U-ICON-1 (Sprint 4 Wave 2 Chat L) — inline 7-icon hover toolbar handler.
 async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<void> {
@@ -1406,11 +1514,12 @@ async function submitQuickPayment() {
       @success="loadData"
     />
 
-    <!-- U-NEW-1 (Sprint 4 Wave 2 Chat L) create-mode selector + batch dialog -->
+    <!-- U-NEW-1 — create-mode selector + 4 mode dialogs (普通/一维/二维/BOM).
+         普通 = openCreateDialog (existing). 二维 = BatchCreateDialog (existing).
+         一维 + BOM finished in P1 #58. -->
     <CreateModeSelector
       v-model="createModeSelectorVisible"
       :entity-label="label('salesOrder')"
-      :disabled-modes="['quick', 'bom']"
       @mode-selected="handleCreateModeSelected"
     />
     <BatchCreateDialog
@@ -1434,6 +1543,70 @@ async function submitQuickPayment() {
         <el-date-picker v-model="row.requiredDeliveryDate" type="date" size="small" value-format="YYYY-MM-DD" style="width: 100%" />
       </template>
     </BatchCreateDialog>
+
+    <!-- P1 #58 — Quick (一维) single-row consecutive entry -->
+    <QuickCreateDialog
+      v-model="quickCreateVisible"
+      :title="`快速新建 ${label('salesOrder')}`"
+      :context-hint="`客户范围: ${customers.length} 个可选 — 回车连续录入`"
+      :fields="[
+        { prop: 'customerId', label: '客户', required: true, slotName: 'customer' },
+        { prop: 'requiredDeliveryDate', label: '期望交货日', slotName: 'date' },
+        { prop: 'remark', label: '备注', placeholder: '可选, 简短备注' },
+      ]"
+      :row-factory="quickSalesOrderFactory"
+      :submit="submitQuickSalesOrder"
+      :session-max="20"
+    >
+      <template #customer="{ row }">
+        <el-select v-model="row.customerId" filterable placeholder="选择客户" style="width: 100%">
+          <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </template>
+      <template #date="{ row }">
+        <el-date-picker v-model="row.requiredDeliveryDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+      </template>
+    </QuickCreateDialog>
+
+    <!-- P1 #58 — BOM 展开: parent SO + child items from product template -->
+    <BomExpansionDialog
+      v-model="bomCreateVisible"
+      :title="`BOM 展开新建 ${label('salesOrder')}`"
+      :entity-label="label('salesOrder')"
+      :templates="bomSalesTemplates"
+      :parent-factory="bomSalesOrderParentFactory"
+      :expand-template="expandBomSalesTemplate"
+      :submit="submitBomSalesOrder"
+      :child-columns="[
+        { prop: 'productName', label: '商品名称', width: 200 },
+        { prop: 'quantity', label: '数量', width: 120, slotName: 'quantity' },
+        { prop: 'unit', label: '单位', width: 100 },
+        { prop: 'unitPrice', label: '单价', width: 140, slotName: 'price' },
+      ]"
+      :max-children="50"
+    >
+      <template #parent-fields="{ parent }">
+        <el-form label-position="top">
+          <el-form-item label="客户" required>
+            <el-select v-model="parent.customerId" filterable placeholder="选择客户" style="width: 100%">
+              <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="期望交货日">
+            <el-date-picker v-model="parent.requiredDeliveryDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="parent.remark" type="textarea" :rows="2" placeholder="可选" />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #quantity="{ row }">
+        <el-input-number v-model="row.quantity" :min="0" :step="0.5" size="small" style="width: 100%" />
+      </template>
+      <template #price="{ row }">
+        <el-input-number v-model="row.unitPrice" :min="0" :step="0.01" :precision="2" size="small" style="width: 100%" />
+      </template>
+    </BomExpansionDialog>
   </div>
   </CanvasAwareWrapper>
 </template>
