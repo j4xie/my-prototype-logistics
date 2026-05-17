@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessageBox } from 'element-plus';
 
 /**
  * Sprint 4 W1 C-INLINE-CS-1: 在线客服悬浮入口.
@@ -7,6 +9,9 @@ import { ref, computed } from 'vue';
  * 默认折叠为右下角圆形按钮, 点击展开 iframe 嵌入第三方客服系统.
  * iframe URL 从 props 传入 (默认空, 不渲染 iframe 但保留按钮 placeholder).
  * 后续接入实际客服系统 (商务通 / 美洽 / 网易七鱼 等) 时配置 `serviceUrl`.
+ *
+ * 防呆 R5 (Dead-end → 导航): URL 未配置时不卡用户, 提供"前去系统设置"
+ * 二次确认 → router.push('/system'). 避免 placeholder 死胡同.
  */
 const props = withDefaults(
   defineProps<{
@@ -19,12 +24,34 @@ const props = withDefaults(
   },
 );
 
+const router = useRouter();
 const expanded = ref(false);
 
 const hasUrl = computed(() => props.serviceUrl.trim().length > 0);
 
 function toggle() {
   expanded.value = !expanded.value;
+}
+
+/**
+ * R5: dead-end → next action. 用户期望"找客服", 未配时给 actionable 下一步.
+ */
+async function goConfigure() {
+  try {
+    await ElMessageBox.confirm(
+      '客服系统尚未配置 (需管理员设置 VITE_CUSTOMER_SERVICE_URL 或在系统设置中接入第三方客服). 是否前往系统设置?',
+      '客服未配置',
+      {
+        confirmButtonText: '前去系统设置',
+        cancelButtonText: '取消',
+        type: 'info',
+      },
+    );
+    expanded.value = false;
+    router.push('/system');
+  } catch {
+    // user cancelled — no-op, panel stays open so user can close manually
+  }
 }
 </script>
 
@@ -47,7 +74,19 @@ function toggle() {
           frameborder="0"
         />
         <div v-else class="inline-cs__empty">
-          客服系统尚未配置, 请联系管理员配置 <code>serviceUrl</code>.
+          <div class="inline-cs__empty-icon">💬</div>
+          <div class="inline-cs__empty-title">客服系统尚未配置</div>
+          <div class="inline-cs__empty-desc">
+            请管理员在系统设置中接入第三方客服 (商务通 / 美洽 / 网易七鱼 等),
+            或配置 <code>VITE_CUSTOMER_SERVICE_URL</code> 环境变量.
+          </div>
+          <button
+            type="button"
+            class="inline-cs__empty-action"
+            @click="goConfigure"
+          >
+            前去系统设置 →
+          </button>
         </div>
       </div>
     </div>
@@ -153,10 +192,54 @@ function toggle() {
 
 .inline-cs__empty {
   margin: auto;
-  padding: 16px;
-  color: var(--el-text-color-secondary, #909399);
-  font-size: 14px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  gap: 12px;
+}
+
+.inline-cs__empty-icon {
+  font-size: 36px;
+  opacity: 0.5;
+}
+
+.inline-cs__empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary, #303133);
+}
+
+.inline-cs__empty-desc {
+  font-size: 13px;
+  color: var(--el-text-color-secondary, #909399);
+  line-height: 1.6;
+
+  code {
+    background-color: #f5f7fa;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+  }
+}
+
+.inline-cs__empty-action {
+  margin-top: 4px;
+  padding: 8px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--el-color-primary, #409eff);
+  background-color: transparent;
+  color: var(--el-color-primary, #409eff);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: var(--el-color-primary, #409eff);
+    color: #fff;
+  }
 }
 
 @media (max-width: 768px) {
