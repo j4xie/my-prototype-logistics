@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.CustomerTrackingRecord;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.CustomerTrackingRecordRepository;
 import com.cretas.aims.annotation.RequirePermission;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -89,17 +91,34 @@ public class CustomerTrackingRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", r));
     }
 
-    /** POST create. */
+    /**
+     * POST create.
+     *
+     * Sprint 4 W1 S-CUSTOMER-TAB-1 防呆 R4: 5min 内同 (factoryId, customerId, content) 二次创建
+     * → BusinessException(409) with actionHint to existing record (GlobalExceptionHandler 自动映射 HTTP 409).
+     */
     @PostMapping
     @RequirePermission("sales:edit")
+    @Transactional
     public ResponseEntity<Map<String, Object>> create(
             @PathVariable String factoryId,
             @Valid @RequestBody CreateTrackingRecordRequest body
     ) {
+        LocalDateTime now = LocalDateTime.now();
+        // R4 dedup
+        var recent = repository.findRecentByContent(
+                factoryId, body.getCustomerId(), body.getContent(), now.minusMinutes(5));
+        if (!recent.isEmpty()) {
+            Long existingId = recent.get(0).getId();
+            throw new BusinessException(409,
+                    "5 分钟内已创建过相同内容的跟踪记录 (id=" + existingId + "). 请避免重复提交.")
+                    .withHint("/sales/customers/" + body.getCustomerId() + "?tab=tracking&highlight=" + existingId);
+        }
+
         CustomerTrackingRecord r = new CustomerTrackingRecord();
         r.setFactoryId(factoryId);
         r.setCustomerId(body.getCustomerId());
-        r.setRecordTime(body.getRecordTime() != null ? body.getRecordTime() : LocalDateTime.now());
+        r.setRecordTime(body.getRecordTime() != null ? body.getRecordTime() : now);
         r.setRecorderName(body.getRecorderName());
         r.setRecorderId(body.getRecorderId());
         r.setContent(body.getContent());
@@ -110,6 +129,38 @@ public class CustomerTrackingRecordController {
         repository.save(r);
         log.info("Created tracking record {} for customer {} (factory={})", r.getId(), body.getCustomerId(), factoryId);
         return ResponseEntity.ok(Map.of("success", true, "data", r));
+    }
+
+    /**
+     * PUT update — Sprint 4 W1 S-CUSTOMER-TAB-1 tab 1 编辑功能.
+     * 部分更新: 仅修改 content / contactPerson / contactPhone / address / remark
+     * 不动 factoryId / customerId / recorderId / recordTime (防止误改归属/时间).
+     */
+    @PutMapping("/{id}")
+    @RequirePermission("sales:edit")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> update(
+            @PathVariable String factoryId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateTrackingRecordRequest body
+    ) {
+        CustomerTrackingRecord existing = repository.findById(id).orElseThrow(
+                () -> new BusinessException(404, "跟踪记录不存在: " + id));
+        if (!factoryId.equals(existing.getFactoryId())) {
+            throw new BusinessException(403, "无权操作此记录 (factoryId mismatch)");
+        }
+        if (existing.getDeletedAt() != null) {
+            throw new BusinessException(410, "记录已删除, 无法修改");
+        }
+
+        if (body.getContent() != null) existing.setContent(body.getContent());
+        if (body.getContactPerson() != null) existing.setContactPerson(body.getContactPerson());
+        if (body.getContactPhone() != null) existing.setContactPhone(body.getContactPhone());
+        if (body.getAddress() != null) existing.setAddress(body.getAddress());
+        if (body.getRemark() != null) existing.setRemark(body.getRemark());
+
+        repository.save(existing);
+        return ResponseEntity.ok(Map.of("success", true, "data", existing));
     }
 
     /** DELETE soft-delete (SQLDelete on entity). */
@@ -136,6 +187,16 @@ public class CustomerTrackingRecordController {
         private String recorderName;
         private Long recorderId;
         @NotBlank
+        private String content;
+        private String contactPerson;
+        private String contactPhone;
+        private String address;
+        private String remark;
+    }
+
+    /** Sprint 4 W1 S-CUSTOMER-TAB-1 PUT body — all fields optional (partial update). */
+    @Data
+    public static class UpdateTrackingRecordRequest {
         private String content;
         private String contactPerson;
         private String contactPhone;
