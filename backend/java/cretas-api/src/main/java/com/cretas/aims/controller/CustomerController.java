@@ -142,12 +142,19 @@ public class CustomerController {
             @Parameter(description = "关键词过滤 (name / customerCode / contactPerson 模糊匹配)")
             @RequestParam(required = false) String keyword,
             @Parameter(description = "name alias (Bug #6 R10: 兼容前端传 ?name= 而非 ?keyword=, 否则静默忽略)")
-            @RequestParam(required = false) String name) {
+            @RequestParam(required = false) String name,
+            @Parameter(description = "Sprint 4 W2 S-CRM-FULL-1: 客户生命周期状态过滤 (LEAD / RECURRING / LOST 等 11 阶段)")
+            @RequestParam(required = false) com.cretas.aims.entity.enums.CustomerStatus customerStatus,
+            @Parameter(description = "Sprint 4 W2 S-CRM-FULL-1: 客户重要程度过滤 (VIP / IMPORTANT / NORMAL / LOW)")
+            @RequestParam(required = false) com.cretas.aims.entity.enums.CustomerImportance importance,
+            @Parameter(description = "Sprint 4 W2 S-CRM-FULL-1: 客户来源渠道过滤 (EXHIBITION / WEBSITE 等 11 渠道)")
+            @RequestParam(required = false) com.cretas.aims.entity.enums.CustomerSource source) {
 
         // Bug #6 fix (R10 2026-04-16): 接受 ?name= 作为 ?keyword= 的别名
         // 防止前端/集成方误传 name 时静默返全表 (假阳性结果)
         String effectiveKeyword = keyword != null && !keyword.isBlank() ? keyword : name;
-        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest, effectiveKeyword);
+        PageResponse<CustomerDTO> response = customerService.getCustomerList(
+                factoryId, pageRequest, effectiveKeyword, customerStatus, importance, source);
         return ApiResponse.success(response);
     }
 

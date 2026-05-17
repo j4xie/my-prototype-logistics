@@ -85,6 +85,20 @@ public class UpdateCustomerRequest {
     @Size(max = 20, message = "状态长度不能超过20个字符")
     private String status;
 
+    // ==================== Sprint 4 W2 S-CRM-FULL-1 ====================
+
+    @Schema(description = "客户生命周期状态 (LEAD/INITIAL_CONTACT/SAMPLE_SENT/QUOTING/NEGOTIATING/SIGNING/RECURRING/INACTIVE/LOST/BLACKLIST/RECOVERED)")
+    private com.cretas.aims.entity.enums.CustomerStatus customerStatus;
+
+    @Schema(description = "客户重要程度 (VIP/IMPORTANT/NORMAL/LOW)")
+    private com.cretas.aims.entity.enums.CustomerImportance importance;
+
+    @Schema(description = "客户来源渠道 (EXHIBITION/REFERRAL/WEBSITE/SEARCH_ENGINE/WECHAT/PHONE/COLD_VISIT/PLATFORM/PARTNER/REPEAT_PURCHASE/OTHER)")
+    private com.cretas.aims.entity.enums.CustomerSource source;
+
+    @Schema(description = "最近接洽时间 — 显式更新或由销售活动 hook 自动更新")
+    private java.time.LocalDateTime lastContactedAt;
+
     /** 乐观锁版本号 (编辑时必传, 来自 GET 响应); mismatch → 409 Conflict */
     @Schema(description = "乐观锁版本号")
     private Long version;

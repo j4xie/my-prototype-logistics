@@ -89,6 +89,17 @@ public class CreateCustomerRequest {
     @Size(max = 20, message = "状态长度不能超过20个字符")
     private String status;
 
+    // ==================== Sprint 4 W2 S-CRM-FULL-1 ====================
+
+    @Schema(description = "客户生命周期状态 (默认 LEAD)")
+    private com.cretas.aims.entity.enums.CustomerStatus customerStatus;
+
+    @Schema(description = "客户重要程度 (默认 NORMAL)")
+    private com.cretas.aims.entity.enums.CustomerImportance importance;
+
+    @Schema(description = "客户来源渠道")
+    private com.cretas.aims.entity.enums.CustomerSource source;
+
     /**
      * Optimistic lock version — echoed from GET response.
      * On UPDATE: if server detects version mismatch → 409 Conflict.

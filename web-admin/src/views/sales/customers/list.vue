@@ -10,6 +10,18 @@ import DynamicEntityForm from '@/components/DynamicEntityForm.vue';
 import type { FieldConfig } from '@/config/entityFieldConfigs';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
+// Sprint 4 W2 S-CRM-FULL-1 — 防呆 R3: dropdown options 来自 single source of truth
+import {
+  CUSTOMER_STATUS_OPTIONS,
+  CUSTOMER_IMPORTANCE_OPTIONS,
+  CUSTOMER_SOURCE_OPTIONS,
+  getCustomerStatusOption,
+  getCustomerImportanceOption,
+  getCustomerSourceOption,
+  type CustomerStatusValue,
+  type CustomerImportanceValue,
+  type CustomerSourceValue,
+} from '@/constants/customerEnums';
 
 // 客户扩展字段 — 添加新字段只需在此数组加一行
 const customerExtendedFields: FieldConfig[] = [
@@ -30,6 +42,10 @@ const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const searchKeyword = ref('');
+// Sprint 4 W2 S-CRM-FULL-1 — list filters (R3 dropdown, 任一为空 = 不过滤)
+const filterCustomerStatus = ref<CustomerStatusValue | ''>('');
+const filterImportance = ref<CustomerImportanceValue | ''>('');
+const filterSource = ref<CustomerSourceValue | ''>('');
 
 onMounted(() => {
   loadData();
@@ -44,7 +60,11 @@ async function loadData() {
       params: {
         page: pagination.value.page,
         size: pagination.value.size,
-        keyword: searchKeyword.value || undefined
+        keyword: searchKeyword.value || undefined,
+        // Sprint 4 W2 S-CRM-FULL-1 — 3 个 CRM 过滤器 (空字符串 → undefined → 后端 IS NULL 分支)
+        customerStatus: filterCustomerStatus.value || undefined,
+        importance: filterImportance.value || undefined,
+        source: filterSource.value || undefined,
       }
     });
     if (response.success && response.data) {
@@ -68,6 +88,9 @@ function handleSearch() {
 
 function handleRefresh() {
   searchKeyword.value = '';
+  filterCustomerStatus.value = '';
+  filterImportance.value = '';
+  filterSource.value = '';
   pagination.value.page = 1;
   loadData();
 }
@@ -91,6 +114,7 @@ const submitting = ref(false);
 
 const defaultForm = {
   id: '',
+  customerCode: '',  // S-CRM-FULL-1 R2: 显示 dialog context, read-only
   name: '',
   contactPerson: '',
   phone: '',
@@ -100,6 +124,11 @@ const defaultForm = {
   industry: '',
   notes: '',
   status: 'ACTIVE',  // T10: status field default
+  // Sprint 4 W2 S-CRM-FULL-1 — 4 CRM 字段 (新增/编辑 dialog 内)
+  customerStatus: 'LEAD' as CustomerStatusValue,
+  importance: 'NORMAL' as CustomerImportanceValue,
+  source: '' as CustomerSourceValue | '',
+  lastContactedAt: null as string | null,
   version: null as number | null,  // optimistic lock — echoed on PUT, server returns 409 on mismatch
 };
 const formData = reactive({ ...defaultForm });
@@ -114,9 +143,12 @@ const formRules = {
 };
 
 const dialogTitle = computed(() => {
+  // S-CRM-FULL-1 防呆 R2: edit/view dialog title 必带客户身份信息 (name + code)
   if (dialogMode.value === 'add') return '新增客户';
-  if (dialogMode.value === 'edit') return '编辑客户';
-  return '查看客户';
+  const ctx = formData.name
+    ? ` — ${formData.name}${formData.customerCode ? ` (${formData.customerCode})` : ''}`
+    : '';
+  return (dialogMode.value === 'edit' ? '编辑客户' : '查看客户') + ctx;
 });
 
 const isViewMode = computed(() => dialogMode.value === 'view');
@@ -131,6 +163,7 @@ function handleView(row: TableRow) {
   dialogMode.value = 'view';
   Object.assign(formData, {
     id: row.id,
+    customerCode: (row.customerCode as string) || '',
     name: row.name || '',
     contactPerson: row.contactPerson || '',
     phone: row.phone || '',
@@ -140,6 +173,11 @@ function handleView(row: TableRow) {
     industry: row.industry || '',
     notes: row.notes || '',
     status: (row.status as string) || 'ACTIVE',  // T10
+    // Sprint 4 W2 S-CRM-FULL-1
+    customerStatus: (row.customerStatus as CustomerStatusValue) || 'LEAD',
+    importance: (row.importance as CustomerImportanceValue) || 'NORMAL',
+    source: (row.source as CustomerSourceValue) || '',
+    lastContactedAt: (row.lastContactedAt as string) || null,
   });
   dialogVisible.value = true;
 }
@@ -148,6 +186,7 @@ function handleEdit(row: TableRow) {
   dialogMode.value = 'edit';
   Object.assign(formData, {
     id: row.id,
+    customerCode: (row.customerCode as string) || '',
     name: row.name || '',
     contactPerson: row.contactPerson || '',
     phone: row.phone || '',
@@ -158,6 +197,11 @@ function handleEdit(row: TableRow) {
     industry: row.industry || '',
     notes: row.notes || '',
     status: (row.status as string) || 'ACTIVE',  // T10
+    // Sprint 4 W2 S-CRM-FULL-1
+    customerStatus: (row.customerStatus as CustomerStatusValue) || 'LEAD',
+    importance: (row.importance as CustomerImportanceValue) || 'NORMAL',
+    source: (row.source as CustomerSourceValue) || '',
+    lastContactedAt: (row.lastContactedAt as string) || null,
   });
   dialogVisible.value = true;
 }
@@ -177,6 +221,11 @@ async function handleSubmit() {
       industry: formData.industry || undefined,
       notes: formData.notes || undefined,
       status: formData.status,  // T10: P2.2 状态可编辑
+      // Sprint 4 W2 S-CRM-FULL-1
+      customerStatus: formData.customerStatus,
+      importance: formData.importance,
+      source: formData.source || undefined,
+      lastContactedAt: formData.lastContactedAt || undefined,
       // 扩展字段自动收集
       ...Object.fromEntries(
         customerExtendedFields.map(f => [f.key, (formData as TableRow)[f.key] ?? null])
@@ -273,9 +322,52 @@ async function handleDelete(row: TableRow) {
           placeholder="搜索客户名称/编号"
           :prefix-icon="Search"
           clearable
-          style="width: 280px"
+          style="width: 240px"
           @keyup.enter="handleSearch"
         />
+        <!-- Sprint 4 W2 S-CRM-FULL-1 — 防呆 R3: 3 个 enum-based filter dropdown -->
+        <el-select
+          v-model="filterCustomerStatus"
+          placeholder="全部状态"
+          clearable
+          style="width: 150px"
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="opt in CUSTOMER_STATUS_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+        <el-select
+          v-model="filterImportance"
+          placeholder="全部重要度"
+          clearable
+          style="width: 140px"
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="opt in CUSTOMER_IMPORTANCE_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
+        <el-select
+          v-model="filterSource"
+          placeholder="全部来源"
+          clearable
+          style="width: 150px"
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="opt in CUSTOMER_SOURCE_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
+        </el-select>
         <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
@@ -288,11 +380,41 @@ async function handleDelete(row: TableRow) {
         <el-table-column label="收货地址" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.shippingAddress || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="启用" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="(row.status === 'ACTIVE' || row.isActive === true) ? 'success' : 'info'" size="small">
               {{ (row.status === 'ACTIVE' || row.isActive === true) ? '合作中' : '已停用' }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <!-- Sprint 4 W2 S-CRM-FULL-1 — 3 个 CRM 列 (R2 visibility) -->
+        <el-table-column label="生命周期" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag
+              v-if="getCustomerStatusOption(row.customerStatus as string)"
+              :type="getCustomerStatusOption(row.customerStatus as string)?.tagType"
+              size="small"
+            >
+              {{ getCustomerStatusOption(row.customerStatus as string)?.label }}
+            </el-tag>
+            <span v-else class="cell-empty">未分类</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="重要度" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag
+              v-if="getCustomerImportanceOption(row.importance as string)"
+              :type="getCustomerImportanceOption(row.importance as string)?.tagType"
+              size="small"
+            >
+              {{ getCustomerImportanceOption(row.importance as string)?.label }}
+            </el-tag>
+            <span v-else class="cell-empty">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="来源" width="100" align="center">
+          <template #default="{ row }">
+            <span>{{ getCustomerSourceOption(row.source as string)?.label || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="160" fixed="right" align="center">
@@ -317,8 +439,33 @@ async function handleDelete(row: TableRow) {
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
-      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="80px" :disabled="isViewMode">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="640px" destroy-on-close>
+      <!-- S-CRM-FULL-1 防呆 R2: edit/view 模式下 dialog 顶部 context bar (品名 + 编号 + 状态 + 重要度 + 最近接洽) -->
+      <div v-if="dialogMode !== 'add' && formData.name" class="dialog-context-bar">
+        <div class="ctx-row">
+          <span class="ctx-label">客户:</span>
+          <strong>{{ formData.name }}</strong>
+          <span v-if="formData.customerCode" class="ctx-code">{{ formData.customerCode }}</span>
+        </div>
+        <div class="ctx-row ctx-tags">
+          <el-tag
+            v-if="getCustomerStatusOption(formData.customerStatus)"
+            :type="getCustomerStatusOption(formData.customerStatus)?.tagType"
+            size="small"
+          >生命周期: {{ getCustomerStatusOption(formData.customerStatus)?.label }}</el-tag>
+          <el-tag
+            v-if="getCustomerImportanceOption(formData.importance)"
+            :type="getCustomerImportanceOption(formData.importance)?.tagType"
+            size="small"
+          >重要度: {{ getCustomerImportanceOption(formData.importance)?.label }}</el-tag>
+          <el-tag v-if="formData.source" size="small" type="info">来源: {{ getCustomerSourceOption(formData.source)?.label }}</el-tag>
+          <span class="ctx-last-contact">
+            最近接洽: {{ formData.lastContactedAt ? new Date(formData.lastContactedAt).toLocaleString('zh-CN') : '未记录' }}
+          </span>
+        </div>
+      </div>
+
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="90px" :disabled="isViewMode">
         <el-form-item label="客户名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入客户名称" />
         </el-form-item>
@@ -354,6 +501,48 @@ async function handleDelete(row: TableRow) {
         </el-form-item>
         <el-form-item label="备注" prop="notes">
           <el-input v-model="formData.notes" placeholder="请输入备注" type="textarea" :rows="2" />
+        </el-form-item>
+
+        <!-- Sprint 4 W2 S-CRM-FULL-1 — 4 CRM 字段 (R3 全 dropdown, R2 选项 label 带具体释义) -->
+        <el-divider content-position="left">CRM 跟进</el-divider>
+        <el-form-item label="生命周期" prop="customerStatus">
+          <el-select v-model="formData.customerStatus" placeholder="请选择客户生命周期阶段" style="width: 100%">
+            <el-option
+              v-for="opt in CUSTOMER_STATUS_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="重要程度" prop="importance">
+          <el-select v-model="formData.importance" placeholder="请选择客户重要程度" style="width: 100%">
+            <el-option
+              v-for="opt in CUSTOMER_IMPORTANCE_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="客户来源" prop="source">
+          <el-select v-model="formData.source" placeholder="请选择客户来源渠道" clearable style="width: 100%">
+            <el-option
+              v-for="opt in CUSTOMER_SOURCE_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="最近接洽" prop="lastContactedAt">
+          <el-date-picker
+            v-model="formData.lastContactedAt"
+            type="datetime"
+            placeholder="选择最近接洽时间"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            style="width: 100%"
+          />
         </el-form-item>
 
         <!-- 扩展字段 (动态渲染) -->
@@ -441,5 +630,48 @@ async function handleDelete(row: TableRow) {
   padding-top: 16px;
   border-top: 1px solid var(--border-color-lighter, #ebeef5);
   margin-top: 16px;
+}
+
+/* Sprint 4 W2 S-CRM-FULL-1 — 防呆 R2 dialog context bar */
+.dialog-context-bar {
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.ctx-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ctx-row + .ctx-row {
+  margin-top: 8px;
+}
+
+.ctx-label {
+  color: var(--text-color-secondary, #909399);
+}
+
+.ctx-code {
+  color: var(--text-color-secondary, #909399);
+  font-family: monospace;
+}
+
+.ctx-last-contact {
+  color: var(--text-color-secondary, #909399);
+  margin-left: auto;
+}
+
+.ctx-tags {
+  gap: 6px;
+}
+
+.cell-empty {
+  color: var(--text-color-disabled, #c0c4cc);
+  font-size: 12px;
 }
 </style>
