@@ -1,0 +1,10 @@
+{
+  "name": "sprint3-depth-e2e-v2",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sprint 3 Depth E2E v2 — skill-compliant. 7 modules × 1 deep 13-step L4 test each (Rule 2). All tests labeled depth (Rule 1).",
+  "scripts": {
+    "run": "node run-depth.mjs"
+  }
+}

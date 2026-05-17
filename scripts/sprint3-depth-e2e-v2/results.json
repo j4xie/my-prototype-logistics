@@ -1,0 +1,531 @@
+{
+  "timestamp": "2026-05-16T22:43:48.509Z",
+  "skill": ".claude/skills/depth-first-e2e/SKILL.md",
+  "factory": "F006",
+  "env": "prod admin.cretaceousfuture.com",
+  "results": [
+    {
+      "module": "M1-G-chips",
+      "testId": "M1-G-deep",
+      "name": "sales_order_listener_aggregation_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "prereq": {
+            "customerCount": 1,
+            "productCount": 5,
+            "custStatus": 200,
+            "prodStatus": 200
+          },
+          "before": {
+            "totalElements": 5
+          },
+          "aggregation": {
+            "sampleOrderId": "fe70dbb9-5f83-4965-9db1-fec56d8b22ed",
+            "sampleOrderNumber": "SO-20260511-0001",
+            "topLevel": {
+              "locked": 0,
+              "reserved": 0,
+              "shortage": 100
+            },
+            "itemSum": {
+              "locked": 0,
+              "reserved": 0,
+              "shortage": 100
+            },
+            "aggregationMatch": true,
+            "itemCount": 1
+          },
+          "nav": "OK",
+          "uiChips": {
+            "domNodeCount": 21,
+            "sample": [
+              {
+                "text": "Gold · finance_summary",
+                "className": "el-tag el-tag--success el-tag--small el-tag--light"
+              },
+              {
+                "text": "锁:0",
+                "className": "chip chip-lock"
+              },
+              {
+                "text": "备:0",
+                "className": "chip chip-reserve"
+              },
+              {
+                "text": "缺:100",
+                "className": "chip chip-shortage"
+              },
+              {
+                "text": "已确认",
+                "className": "el-tag el-tag--info el-tag--small el-tag--light"
+              },
+              {
+                "text": "锁:0",
+                "className": "chip chip-lock"
+              }
+            ],
+            "textPatternsFound": [
+              "锁:",
+              "备:",
+              "缺:"
+            ]
+          },
+          "detailApi": {
+            "status": 200,
+            "detailLocked": 0,
+            "detailReserved": 0,
+            "detailShortage": 100,
+            "matchesList": true
+          },
+          "detailUI": {
+            "url": "https://admin.cretaceousfuture.com/sales/orders/fe70dbb9-5f83-4965-9db1-fec56d8b22ed",
+            "hasLockedText": false,
+            "hasReservedText": true,
+            "hasShortageText": false,
+            "urlContainsOrderId": true,
+            "redirectedToLogin": false,
+            "allPresent": false
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES — apiCall returns non-200, aggregation === null, fails",
+          "q2_frontend_crash": "YES — uiChips.length === 0 if Vue crashes",
+          "q3_subtle_bug_ui_normal": "YES — aggregation match strict-equality catches listener writeback math errors",
+          "q4_real_bug_found_this_round": "TBD",
+          "q5_prereq_seeded": "SEEDED"
+        }
+      },
+      "ts": "2026-05-16T22:42:19.012Z"
+    },
+    {
+      "module": "M2-F-business-links",
+      "testId": "M2-F-deep",
+      "name": "ai_business_link_query_8link_breakdown",
+      "status": "FAIL",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "prereq": {
+            "hasPO": true
+          },
+          "aiAsk_naturalLang": {
+            "status": 200,
+            "intentCode": "PURCHASE_ORDER_APPROVE",
+            "success": true,
+            "preview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"intentRecognized\":true,\"intentCode\":\"PURCHASE_ORDER_APPROVE\",\"intentName\":\"审批采购订单\",\"intentCategory\":\"DATA_OPERATION\",\"sensitivityLevel\":null,\"confidence\":null,\"matchMethod\":null,\"status\":\"NEED_MORE_INFO\",\"message",
+            "hasLinks": false
+          },
+          "aiAsk_explicitCode": {
+            "status": 200,
+            "success": true,
+            "message": "操作成功",
+            "preview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"intentRecognized\":false,\"intentCode\":null,\"intentName\":null,\"intentCategory\":null,\"sensitivityLevel\":null,\"confidence\":null,\"matchMethod\":null,\"status\":\"FAILED\",\""
+          },
+          "intentConfig": {
+            "status": 200,
+            "totalIntents": 254,
+            "bizLinkIntentFound": false
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES — any 500 makes verdict false",
+          "q2_frontend_crash": "N/A — API-only test",
+          "q3_subtle_bug_ui_normal": "YES — checks that tool is actually invoked, not just registered",
+          "q4_real_bug_found_this_round": "confirms #715 still open",
+          "q5_prereq_seeded": "SEEDED"
+        },
+        "knownIssue": "#715 — BusinessLinkQueryTool no intent binding"
+      },
+      "ts": "2026-05-16T22:42:23.604Z"
+    },
+    {
+      "module": "M3-E-voucher",
+      "testId": "M3-E-deep",
+      "name": "voucher_generate_balanced_entries",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "prereq": {
+            "totalPos": 7,
+            "approvedPo": true,
+            "anyPo": true,
+            "sampleStatuses": [
+              "FINANCE_REJECTED",
+              "FINANCE_APPROVED",
+              "PARTIAL_RECEIVED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "targetPo": {
+            "id": "f05582fe-4ff0-4a2a-9ff6-5f3f1ce19b23",
+            "status": "FINANCE_APPROVED"
+          },
+          "preGet": {
+            "status": 200,
+            "body": "{\"success\":true,\"data\":{\"createdAt\":\"2026-05-17T06:11:17.948507\",\"updatedAt\":\"2026-05-17T06:11:17.948507\",\"deletedAt\":null,\"id\":\"fc1e1b0e-6d74-45db-8d6f-217282d4262e\",\"factoryId\":\"F006\",\"voucherNumber"
+          },
+          "preList": {
+            "totalElements": 6
+          },
+          "postBody": {
+            "businessType": "PURCHASE_ORDER",
+            "businessId": "f05582fe-4ff0-4a2a-9ff6-5f3f1ce19b23"
+          },
+          "generate": {
+            "status": 200,
+            "bodyType": "object",
+            "bodyPreview": "{\"data\":{\"createdAt\":\"2026-05-17T06:11:17.948507\",\"updatedAt\":\"2026-05-17T06:11:17.948507\",\"deletedAt\":null,\"id\":\"fc1e1b0e-6d74-45db-8d6f-217282d4262e\",\"factoryId\":\"F006\",\"voucherNumber\":\"V-2026-0006\",\"voucherType\":\"PURCHASE_PAYMENT\",\"voucherDate\":\"2026-05-13\",\"sourceBusinessType\":\"PURCHASE_ORDER\",\""
+          },
+          "postList": {
+            "totalElements": 6,
+            "delta": 0
+          },
+          "postGet": {
+            "status": 200,
+            "bodyPreview": "{\"success\":true,\"data\":{\"createdAt\":\"2026-05-17T06:11:17.948507\",\"updatedAt\":\"2026-05-17T06:11:17.948507\",\"deletedAt\":null,\"id\":\"fc1e1b0e-6d74-45db-8d6f-217282d4262e\",\"factoryId\":\"F006\",\"voucherNumber\":\"V-2026-0006\",\"voucherType\":\"PURCHASE_PAYMENT\",\"voucherDate\":\"2026-05-13\",\"sourceBusinessType\":\"PU"
+          },
+          "balanceCheck": {
+            "voucherId": "fc1e1b0e-6d74-45db-8d6f-217282d4262e",
+            "entryCount": 2,
+            "entrySumDebit": 425,
+            "entrySumCredit": 425,
+            "voucherTotalDebit": 425,
+            "voucherTotalCredit": 425,
+            "entryBalanced": true,
+            "voucherSelfBalanced": true,
+            "aggMatchesEntries": true,
+            "fullBalance": true,
+            "subjectCodes": [
+              "1405/库存商品:D425",
+              "2202/应付账款:C425"
+            ]
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES — generate or query returning 500 makes verdict false",
+          "q2_frontend_crash": "N/A — API only (no UI route)",
+          "q3_subtle_bug_ui_normal": "YES — balanced entries check catches accounting math errors invisible to UI",
+          "q4_real_bug_found_this_round": "TBD — preGet status will reveal if #711 still applies",
+          "q5_prereq_seeded": "SEEDED (approved)"
+        },
+        "relatedIssue": null
+      },
+      "ts": "2026-05-16T22:42:25.264Z"
+    },
+    {
+      "module": "M4-H-bom-version",
+      "testId": "M4-H-deep",
+      "name": "bom_version_state_machine_roundtrip",
+      "status": "FAIL",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "bomRecipesEndpoint": {
+            "status": 200,
+            "isArray": false
+          },
+          "prereq": {
+            "recipeCount": 2,
+            "sampleRecipe": {
+              "id": "21d65c99-959c-4195-ad8c-34825b4288c9"
+            }
+          },
+          "createBody": {
+            "bomRecipeId": "21d65c99-959c-4195-ad8c-34825b4288c9"
+          },
+          "create": {
+            "status": 200,
+            "bodyPreview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"createdAt\":\"2026-05-17T06:43:31.565430876\",\"updatedAt\":\"2026-05-17T06:43:31.565430876\",\"deletedAt\":null,\"id\":\"6e9c1cb1-117d-4b2e-a21d-8f9d4869ef29\",\"factoryId\":\"F006\",\"bomRecipeId\":\"21d65c99-959c-4195-ad8c-34825b",
+            "newVersionId": "6e9c1cb1-117d-4b2e-a21d-8f9d4869ef29",
+            "newStatus": "DRAFT"
+          },
+          "submit": {
+            "status": 200,
+            "newStatus": "PENDING_APPROVAL",
+            "bodyPreview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"createdAt\":\"2026-05-17T06:43:31.565431\",\"updatedAt\":\"2026-05-17T06:43:31.805940929\",\"deletedAt\":null,\"id\":\"6e9c1cb1-117d-4b2e-a21d-8f9d4869ef29\",\"factoryId\":\"F006"
+          },
+          "approve": {
+            "status": 409,
+            "bodyPreview": "{\"code\":409,\"message\":\"数据已存在，请勿重复提交\",\"data\":null,\"timestamp\":\"2026-05-17T06:43:32.043246902\",\"success\":false,\"actionHint\":\"请检查表单中字段「bom_recipe_id」是否已存在,或返回列表查看已存在记录\",\"severity\":\"warning\",\"hintTarget\":"
+          },
+          "detail": {
+            "status": 200,
+            "finalStatus": "PENDING_APPROVAL",
+            "versionNumber": 7,
+            "effectiveFrom": null
+          },
+          "byRecipeCurrent": {
+            "status": 200,
+            "currentVersionId": "b205b277-0c3a-4387-aa4d-d731380af787",
+            "currentMatchesNew": false
+          },
+          "history": {
+            "status": 200,
+            "totalVersions": 7,
+            "obsoleteCount": 0,
+            "activeId": "b205b277-0c3a-4387-aa4d-d731380af787"
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES — any 500 in chain makes verdict false",
+          "q2_frontend_crash": "N/A — API only",
+          "q3_subtle_bug_ui_normal": "YES — checks status transitions + history.obsoleteCount",
+          "q4_real_bug_found_this_round": "#724 — approve 409 when prior APPROVED version exists",
+          "q5_prereq_seeded": "SEEDED"
+        },
+        "relatedNewIssue": "#724"
+      },
+      "ts": "2026-05-16T22:43:33.296Z"
+    },
+    {
+      "module": "M5-seed",
+      "testId": "M5-seed-deep",
+      "name": "seed_data_depth_multi_module",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "materials": {
+            "status": 200,
+            "count": 6,
+            "total": 6,
+            "names": [
+              "牛肉前腱子",
+              "冷冻猪舌",
+              "膝软骨",
+              "猪大肠",
+              "吸塑盒2014-3.5",
+              "冻猪蹄"
+            ]
+          },
+          "priceInfo": {
+            "materialId": "RMT_1777690110201",
+            "materialName": "牛肉前腱子",
+            "status": 200,
+            "hasLatestPrice": false,
+            "hasAvgPrice": false,
+            "hasStandardPrice": false,
+            "bodyPreview": "{\"code\":200,\"message\":\"查询成功\",\"data\":{\"materialTypeId\":\"RMT_1777690110201\",\"materialName\":\"牛肉前腱子\",\"materialCode\":\"DDY002\",\"unit\":\"箱\",\"bomStandardPrice\":0.0575,\"movingAvgPrice\":null,\"currentPrice\":null,\"varianceFromBom\":null,\"varianceFromAvg\":null,\"pri"
+          },
+          "inventory": {
+            "status": 200,
+            "count": 3,
+            "total": 3,
+            "sampleStock": [
+              {
+                "name": "冻猪蹄"
+              },
+              {
+                "name": "冻猪蹄"
+              },
+              {
+                "name": "牛肉前腱子"
+              }
+            ]
+          },
+          "customers": {
+            "status": 200,
+            "count": 1,
+            "total": 1
+          },
+          "workflows": {
+            "status": 200,
+            "count": 0
+          },
+          "printTemplates": {
+            "status": 200,
+            "count": 1,
+            "knownIssue": null
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES — any 500 invalidates",
+          "q2_frontend_crash": "N/A — API verification only",
+          "q3_subtle_bug_ui_normal": "PARTIAL — verifies presence not richness of data",
+          "q4_real_bug_found_this_round": "none",
+          "q5_prereq_seeded": "self-seed verification — N/A"
+        }
+      },
+      "ts": "2026-05-16T22:43:34.670Z"
+    },
+    {
+      "module": "M6-J-print-template",
+      "testId": "M6-J-deep",
+      "name": "print_template_create_and_version",
+      "status": "FAIL",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "prereq": {
+            "listStatus": 200,
+            "listTotal": 1,
+            "entityTypesStatus": 200,
+            "entityTypesCount": 14,
+            "printTypes": [
+              "PRINT_SALES_ORDER",
+              "PRINT_PURCHASE_ORDER",
+              "PRINT_QUOTATION",
+              "PRINT_PRODUCTION_TASK",
+              "PRINT_MATERIAL_REQUISITION",
+              "PRINT_WEIGHING_SLIP"
+            ]
+          },
+          "createBody": {
+            "name": "E2E_DEEP_v2_mp8xl9wk_print_template",
+            "entityType": "PRINT_QUOTATION",
+            "elementCount": 3
+          },
+          "create": {
+            "status": 409,
+            "bodyPreview": "{\"code\":409,\"message\":\"该工厂已存在此类型的表单模板: PRINT_QUOTATION\",\"data\":null,\"timestamp\":\"2026-05-17T06:43:35.232981739\",\"success\":false,\"actionHint\":\"请编辑已有模板, 或先停用旧模板\",\"severity\":\"warning\",\"hintTarget\":\"entityType\"}"
+          }
+        },
+        "reason": "Create returned 409"
+      },
+      "ts": "2026-05-16T22:43:35.401Z"
+    },
+    {
+      "module": "M7-I-approval-workflow",
+      "testId": "M7-I-deep",
+      "name": "approval_graph_lifecycle_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "steps": {
+          "prereq": {
+            "listStatus": 200,
+            "listTotal": 0,
+            "decisionTypesStatus": 200,
+            "decisionTypeCount": 10,
+            "statisticsStatus": 200,
+            "statBefore": {
+              "data": {
+                "QUALITY_RELEASE": 6
+              },
+              "totalTypes": 1,
+              "totalWorkflows": 6
+            }
+          },
+          "validate": {
+            "status": 200,
+            "valid": true,
+            "bodyPreview": "{\"code\":200,\"message\":\"操作成功\",\"data\":{\"valid\":true,\"errors\":[],\"warnings\":[]},\"timestamp\":\"2026-05-17T06:43:36.191325907\",\"success\":true,\"actionHint\":null,\"severity\":null,\"hintTarget\":null}"
+          },
+          "create": {
+            "status": 200,
+            "newId": "0018bc15-a743-40a0-afdc-25c59e6dc651",
+            "bodyPreview": "{\"code\":200,\"message\":\"审批工作流创建成功\",\"data\":{\"createdAt\":\"2026-05-17T06:43:36.420653998\",\"updatedAt\":\"2026-05-17T06:43:36.420653998\",\"deletedAt\":null,\"id\":\"0018bc15-a743-40a0-afdc-25c59e6dc651\",\"factoryId\":\"F006\",\"decisionType\":\"QUALITY_RELEASE\",\"name\":"
+          },
+          "detail": {
+            "status": 200,
+            "storedName": "E2E_DEEP_v2_mp8xl9wk_qrel",
+            "storedStartNodeId": "start1",
+            "nodesJsonType": "string",
+            "edgesJsonType": "string",
+            "nodeCount": 4,
+            "edgeCount": 3,
+            "node1Label": "质量经理审核",
+            "node2Label": "生产经理放行",
+            "edge1": {
+              "id": "e1",
+              "source": "start1",
+              "target": "node1",
+              "priority": 0
+            },
+            "hasStartNode": true,
+            "hasEndNode": true
+          },
+          "statisticsAfter": {
+            "status": 200,
+            "data": {
+              "data": {
+                "QUALITY_RELEASE": 7
+              },
+              "totalTypes": 1,
+              "totalWorkflows": 7
+            }
+          },
+          "byType": {
+            "status": 200,
+            "count": 7,
+            "foundOurWorkflow": true
+          },
+          "ui": {
+            "navResult": "OK",
+            "hasCanvas": false,
+            "bodyText": "白垩纪 AI Agent\n正在加载应用…"
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES — any 500 fails",
+          "q2_frontend_crash": "PARTIAL — editor render checked but drag/drop not exercised",
+          "q3_subtle_bug_ui_normal": "YES — JSONB graph serialization tested (node count + edge count + label roundtrip)",
+          "q4_real_bug_found_this_round": "TBD",
+          "q5_prereq_seeded": "self-seed (test creates own data)"
+        },
+        "sideEffects": "Created approval workflow 0018bc15-a743-40a0-afdc-25c59e6dc651 (E2E_DEEP_v2_mp8xl9wk_qrel)"
+      },
+      "ts": "2026-05-16T22:43:47.281Z"
+    },
+    {
+      "module": "D1-regression",
+      "testId": "D1-bom-viewer-403",
+      "name": "viewer_bom_versions_403",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "depth": "medium",
+        "steps": {
+          "prereq": {
+            "recipeCount": 0,
+            "recipeId": "placeholder-recipe-id"
+          },
+          "post": {
+            "status": 403,
+            "bodyPreview": "{\"success\":false,\"code\":\"FORBIDDEN\",\"message\":\"您的角色 [查看者] 缺少 生产管理 或 研发管理 或 财务管理 模块的 [读写] 权限 (需任一)\",\"severity\":\"error\",\"actionHint\":\"请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [查看者] 开通 生产管理 或 研发管理 或 财务管理 的 [读写] 权限 "
+          }
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES",
+          "q2_frontend_crash": "N/A",
+          "q3_subtle_bug_ui_normal": "YES — verifies #717 fix didn't regress",
+          "q4_real_bug_found_this_round": "none",
+          "q5_prereq_seeded": "API-only — no prereq"
+        }
+      },
+      "ts": "2026-05-16T22:43:48.445Z"
+    },
+    {
+      "module": "D2-regression",
+      "testId": "D2-bom-prod-mgr-approve",
+      "name": "production_mgr_can_approve_bom_version",
+      "status": "FAIL",
+      "depth": "medium",
+      "evidence": {
+        "depth": "medium",
+        "steps": {
+          "approveStatusFromM4": 409
+        },
+        "bugDiscovery": {
+          "q1_backend_500": "YES",
+          "q2_frontend_crash": "N/A",
+          "q3_subtle_bug_ui_normal": "YES — confirms #717 didn't over-block production_mgr",
+          "q4_real_bug_found_this_round": "OVERFIX OF #713!",
+          "q5_prereq_seeded": "inherits from M4"
+        }
+      },
+      "ts": "2026-05-16T22:43:48.446Z"
+    }
+  ]
+}
