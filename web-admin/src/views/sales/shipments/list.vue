@@ -43,16 +43,22 @@ function openAiForRow(row: TableRow) {
 const loading = ref(false);
 const tableData = ref<TableRow[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
-
-// U-FOOTER-1
-const summaryRequest = computed<ListSummaryRequest>(() => ({
-  filterConditions: statusFilter.value ? { status: statusFilter.value } : {},
-}));
-const { summary: footerSummary, loading: footerLoading } = useListSummary('shipment', summaryRequest);
 const customerMap = ref<Record<string, string>>({});
 const searchKeyword = ref('');
 const dateRange = ref<[string, string] | null>(null);
 const statusFilter = ref('');
+
+// U-FOOTER-1
+// Issue #716 fix — statusFilter MUST be declared BEFORE this computed because
+// useListSummary's watch fires immediately and evaluates summaryRequest.value
+// synchronously, which hits TDZ on statusFilter.value if declared after.
+// E2E observed: ReferenceError "Cannot access 'b' before initialization"
+// in Vue ReactiveEffect (mis-attributed to echarts in stack via chunk co-location).
+// Sibling returns/list.vue uses static {} filterConditions so doesn't reproduce.
+const summaryRequest = computed<ListSummaryRequest>(() => ({
+  filterConditions: statusFilter.value ? { status: statusFilter.value } : {},
+}));
+const { summary: footerSummary, loading: footerLoading } = useListSummary('shipment', summaryRequest);
 
 onMounted(() => {
   loadData();

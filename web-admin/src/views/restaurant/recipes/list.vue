@@ -316,7 +316,7 @@
         >
           <el-table-column type="selection" width="45" />
           <el-table-column label="菜品" prop="dishName" min-width="160" show-overflow-tooltip />
-          <el-table-column label="食材+用量+主料+建议单价" min-width="500">
+          <el-table-column :label="canViewPrice ? '食材+用量+主料+建议单价' : '食材+用量+主料'" min-width="500">
             <template #default="{ row }">
               <div v-for="(ing, i) in row.ingredients" :key="i" style="display: flex; gap: 6px; align-items: center; font-size: 12px; margin-bottom: 4px">
                 <el-tag size="small" :type="ing.is_main ? 'success' : ''">{{ ing.is_main ? '主' : '辅' }}</el-tag>
