@@ -54,6 +54,8 @@ public class CustomerController {
     private final CustomerService customerService;
     private final MobileService mobileService;
     private final PriceMaskResolver priceMaskResolver;
+    // Sprint 4 W2 S-PRICE-1
+    private final com.cretas.aims.service.CustomerPriceMemoryService customerPriceMemoryService;
 
     /**
      * 创建客户
@@ -220,6 +222,34 @@ public class CustomerController {
 
         List<CustomerDTO> customers = customerService.getCustomersByIndustry(factoryId, industry);
         return ApiResponse.success(customers);
+    }
+
+    /**
+     * Sprint 4 W2 S-PRICE-1 — 查询客户 × 产品的最近成交记忆价 (供 SO Item 行 R1 hint).
+     *
+     * 返回 null = 该客户该产品从未成交 (SO Item 此时仅显 PriceList 标准价 + 系统默认).
+     *
+     * 防呆 R1: dialog 创建 SO Item 时, 此 API 返回的 hint 让用户**预先看到**上次成交价,
+     * 而不是输完后再被告知"价格偏离上次成交 X%".
+     */
+    @GetMapping("/{customerId}/price-memory")
+    @Operation(summary = "查询客户记忆价 (S-PRICE-1)",
+            description = "客户 × 产品的最近成交单价 + 来源订单号 + 日期. 用于 SO Item 创建时 R1 hint.")
+    public ApiResponse<Map<String, Object>> getCustomerPriceMemory(
+            @Parameter(description = "工厂ID", required = true)
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "客户ID", required = true)
+            @PathVariable @NotBlank String customerId,
+            @Parameter(description = "产品类型ID (NOT materialId)", required = true)
+            @RequestParam @NotBlank String productTypeId) {
+        return customerPriceMemoryService.getLatest(factoryId, customerId, productTypeId)
+                .map(row -> ApiResponse.success(Map.<String, Object>of(
+                        "unitPrice", row.getUnitPrice(),
+                        "sourceOrderNumber", row.getSourceOrderNumber() != null ? row.getSourceOrderNumber() : "",
+                        "sourceSalesOrderId", row.getSourceSalesOrderId(),
+                        "orderDate", row.getOrderDate().toString()
+                )))
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     /**

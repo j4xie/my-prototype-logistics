@@ -306,6 +306,8 @@ interface OrderItem {
   // T4-D1 (issue #525): source warehouse code per line. Persists to sales_order_items.source_warehouse_code.
   // Optional/empty for legacy rows + drafts. UI label via utils/warehouse.ts:warehouseDisplayLabel.
   sourceWarehouseCode?: string;
+  // Sprint 4 W2 S-PRICE-1 (R1) — 上次成交价 hint, 不入库 (仅 UI). 由 onProductSelect 异步填.
+  priceMemoryHint?: { unitPrice: number; sourceOrderNumber: string; orderDate: string } | null;
 }
 
 const form = ref({
@@ -499,6 +501,33 @@ function onProductSelect(item: TableRow, productId: string) {
     }
     // P1-3: spec 自动填后立即调 calcBox, 抄码品会清空 boxQuantity (内部判断)
     if (item.quantity) calcBox(item);
+  }
+  // Sprint 4 W2 S-PRICE-1 (R1) — 上次成交价 hint:
+  // 选完产品立即异步查记忆价, 显在 unitPrice 输入框下. 用户**预先看到**, 不是输完后再被告知偏离.
+  fetchPriceMemory(item, productId);
+}
+
+async function fetchPriceMemory(item: TableRow, productTypeId: string) {
+  if (!form.value.customerId || !productTypeId || !factoryId.value) {
+    item.priceMemoryHint = null;
+    return;
+  }
+  try {
+    const res = await get<{ unitPrice: number; sourceOrderNumber: string; orderDate: string } | null>(
+      `/${factoryId.value}/customers/${form.value.customerId}/price-memory`,
+      { params: { productTypeId } },
+    );
+    item.priceMemoryHint = (res.success && res.data) ? res.data : null;
+  } catch {
+    // 静默失败 — hint 是 UX nice-to-have, 不阻塞下单
+    item.priceMemoryHint = null;
+  }
+}
+
+// Sprint 4 W2 S-PRICE-1 (R1) — "采用上次成交价" 一键按钮 handler
+function applyPriceMemory(item: TableRow) {
+  if (item.priceMemoryHint?.unitPrice != null) {
+    item.unitPrice = Number(item.priceMemoryHint.unitPrice);
   }
 }
 
@@ -1254,7 +1283,25 @@ async function submitQuickPayment() {
           <el-input v-model="item.specification" placeholder="规格" style="width: 120px" @change="calcBox(item)" />
           <el-input-number v-model="item.quantity" :min="1" style="width: 100px" @change="() => calcBox(item)" />
           <el-input v-model="item.unit" style="width: 80px" />
-          <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
+          <!-- Sprint 4 W2 S-PRICE-1 R1: unitPrice + 上次成交价 hint chip (一键采纳) -->
+          <div class="unit-price-wrap">
+            <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
+            <el-tooltip
+              v-if="item.priceMemoryHint"
+              :content="`上次成交 ¥${item.priceMemoryHint.unitPrice} · ${item.priceMemoryHint.orderDate} · ${item.priceMemoryHint.sourceOrderNumber} · 点击采用`"
+              placement="top"
+            >
+              <el-tag
+                type="success"
+                effect="plain"
+                size="small"
+                class="price-memory-chip"
+                @click="applyPriceMemory(item)"
+              >
+                ↻ ¥{{ item.priceMemoryHint.unitPrice }}
+              </el-tag>
+            </el-tooltip>
+          </div>
           <!-- P1-3 R2 fix: el-tag 替换 inline-styled div, 跟随 Element Plus 主题 -->
           <el-tag v-if="isAbacaItem(item)" type="warning" effect="light" size="default" style="width: 80px; text-align: center;">抄码品</el-tag>
           <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
@@ -1346,6 +1393,10 @@ async function submitQuickPayment() {
 .search-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .pagination-wrapper { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #ebeef5; margin-top: 16px; }
 .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+/* Sprint 4 W2 S-PRICE-1 R1: unitPrice + 上次成交价 chip 垂直堆 */
+.unit-price-wrap { display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
+.price-memory-chip { cursor: pointer; font-size: 11px; line-height: 1.2; padding: 1px 4px; }
+.price-memory-chip:hover { opacity: 0.85; }
 .item-header { font-size: 13px; font-weight: 600; color: #606266; margin-bottom: 4px;
   span { text-align: center; display: inline-block; }
 }
