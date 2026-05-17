@@ -2,7 +2,7 @@
 -- 绑定 tool_name 让 IntentExecutorServiceImpl 路由到 OperationLogQueryTool.
 -- 其他 2 个 tool (export/import center run) 暂未实现, 不在此次绑定.
 
-INSERT INTO ai_intent_config (
+INSERT INTO ai_intent_configs (
     id, intent_code, intent_name, intent_category,
     tool_name, keywords, is_active, sensitivity_level,
     created_at, updated_at
