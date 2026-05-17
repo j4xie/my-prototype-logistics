@@ -418,6 +418,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SalesOrderFinanceReviewDetail',
             component: () => import('@/views/sales/finance-review/detail.vue'),
             meta: { requiresAuth: true, title: '销售财务审核详情', module: 'finance', hidden: true }
+          },
+          // Sprint 4 W2 S-REMIND-1: 我的提醒
+          {
+            path: 'reminders',
+            name: 'SalesReminders',
+            component: () => import('@/views/sales/reminders/MyReminders.vue'),
+            meta: { requiresAuth: true, title: '我的提醒', module: 'sales' }
           }
         ]
       },
