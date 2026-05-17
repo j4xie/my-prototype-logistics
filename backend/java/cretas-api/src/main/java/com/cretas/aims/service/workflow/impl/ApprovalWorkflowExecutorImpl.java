@@ -4,14 +4,20 @@ import com.cretas.aims.dto.approval.ApprovalDecision;
 import com.cretas.aims.dto.approval.ApprovalRecord;
 import com.cretas.aims.dto.approval.ExecutionContext;
 import com.cretas.aims.dto.approval.PendingApproval;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.config.ApprovalWorkflow;
 import com.cretas.aims.entity.config.ApprovalWorkflowEdge;
 import com.cretas.aims.entity.config.ApprovalWorkflowNode;
+import com.cretas.aims.entity.config.WorkflowRule;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.repository.config.WorkflowRuleRepository;
 import com.cretas.aims.service.ApprovalWorkflowService;
 import com.cretas.aims.service.workflow.ApprovalWorkflowExecutor;
+import com.cretas.aims.service.workflow.RuleContextBuilder;
 import com.cretas.aims.service.workflow.SandboxedSpelEvaluator;
 import com.cretas.aims.service.workflow.SandboxedSpelEvaluator.SpelEvaluationFailure;
+import com.cretas.aims.service.workflow.WorkflowRuleEvaluator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,8 +47,12 @@ public class ApprovalWorkflowExecutorImpl implements ApprovalWorkflowExecutor {
     /**
      * Sprint 4 W2 Chat J C-WF-VAR-1: 沙箱化 SpEL 求值器, 替代 Sprint 3 I 直接
      * 使用的 StandardEvaluationContext (开放反射 / RCE attack vector).
+     * 同时承担 Sprint 4 W1 Chat D C-WF-RULE-1 rule engine 内部的 SpEL 求值.
      */
     private final SandboxedSpelEvaluator spelEvaluator;
+    private final WorkflowRuleRepository workflowRuleRepository;
+    private final WorkflowRuleEvaluator workflowRuleEvaluator;
+    private final UserRepository userRepository;
 
     /** In-memory ExecutionContext store. Sprint 4 → Redis. */
     private final Map<String, ExecutionContext> contextStore = new ConcurrentHashMap<>();
@@ -277,7 +287,50 @@ public class ApprovalWorkflowExecutorImpl implements ApprovalWorkflowExecutor {
                 ctx.getExecutionId(), nodeId, node.getLabel());
     }
 
+    /**
+     * Condition 节点 dispatch — Sprint 4 Wave 1 (C-WF-RULE-1).
+     *
+     * <p>评估顺序:
+     * <ol>
+     *   <li>查 {@link WorkflowRule} WHERE workflow_id + node_id + enabled=true ORDER BY priority ASC</li>
+     *   <li>逐 rule 评估; 第一个 true 走 {@code trueTargetNodeId};
+     *       第一个 false 且 {@code falseTargetNodeId} 非空走 false 分支</li>
+     *   <li>所有 rule 都未明确路由 → fall through 到 {@link #advanceFromConditionEdges} (Sprint 3 I 逻辑)</li>
+     * </ol>
+     */
     private void advanceFromCondition(ExecutionContext ctx, GraphIndex graph, String nodeId) {
+        List<WorkflowRule> rules = workflowRuleRepository
+                .findByWorkflowIdAndNodeIdAndEnabledTrueOrderByPriorityAsc(ctx.getWorkflowId(), nodeId);
+        if (!rules.isEmpty()) {
+            User initiator = ctx.getInitiatorUserId() == null ? null
+                    : userRepository.findById(ctx.getInitiatorUserId()).orElse(null);
+            Map<String, Object> ruleCtx = RuleContextBuilder.build(ctx, initiator);
+            for (WorkflowRule rule : rules) {
+                boolean matched = workflowRuleEvaluator.evaluate(rule, ruleCtx);
+                if (matched && rule.getTrueTargetNodeId() != null) {
+                    log.info("Rule matched (true) - nodeId={}, ruleId={}, ruleType={}, target={}",
+                            nodeId, rule.getId(), rule.getRuleType(), rule.getTrueTargetNodeId());
+                    advance(ctx, graph, rule.getTrueTargetNodeId(), nodeId);
+                    return;
+                }
+                if (!matched && rule.getFalseTargetNodeId() != null) {
+                    log.info("Rule unmatched (false→target) - nodeId={}, ruleId={}, target={}",
+                            nodeId, rule.getId(), rule.getFalseTargetNodeId());
+                    advance(ctx, graph, rule.getFalseTargetNodeId(), nodeId);
+                    return;
+                }
+                // matched=true 但 trueTarget=null, 或 matched=false 但 falseTarget=null → 继续下一 rule
+            }
+            log.debug("All rules exhausted for nodeId={} — fall through to edges", nodeId);
+        }
+        advanceFromConditionEdges(ctx, graph, nodeId);
+    }
+
+    /**
+     * Sprint 3 I 原 condition 节点 edge-based 评估 — preserved as fall-through path.
+     * (Rule path in {@link #advanceFromCondition} runs first.)
+     */
+    private void advanceFromConditionEdges(ExecutionContext ctx, GraphIndex graph, String nodeId) {
         List<ApprovalWorkflowEdge> outgoing = graph.outgoingByNode.getOrDefault(nodeId, List.of());
         // 按 priority ASC 评估 (数值越小越优先 per Edge javadoc)
         List<ApprovalWorkflowEdge> sorted = new ArrayList<>(outgoing);
@@ -425,10 +478,16 @@ public class ApprovalWorkflowExecutorImpl implements ApprovalWorkflowExecutor {
         return new GraphIndex(nodesById, outgoing, incoming);
     }
 
+    /**
+     * SpEL 求值 — Sprint 4 W1 (C-WF-RULE-1) + W2 (C-WF-VAR-1) 走 {@link SandboxedSpelEvaluator}.
+     *
+     * <p>SEC-2 fix: 原 Sprint 3 I 实现用 {@code StandardEvaluationContext} 允许
+     * {@code T(Runtime).getRuntime().exec("calc")} 任意命令执行.
+     * SandboxedSpelEvaluator 走 SimpleEvaluationContext, 拒绝 T()/Runtime/Process/Class/@/new.
+     *
+     * <p>求值失败统一 fallback false (executor 行为不变), 但日志带 user-friendly message.
+     */
     boolean evaluateCondition(String spel, Map<String, Object> businessContext) {
-        // C-WF-VAR-1: 走 SandboxedSpelEvaluator. RCE attack vectors (T(Runtime), new ProcessBuilder,
-        // .getClass(), 写入) 全 throw SpelEvaluationFailure 而非 silent execute.
-        // 求值失败统一 fallback false (executor 行为不变), 但日志带 user-friendly message.
         try {
             return spelEvaluator.evaluateBoolean(spel, businessContext);
         } catch (SpelEvaluationFailure e) {
