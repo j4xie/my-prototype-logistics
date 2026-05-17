@@ -27,7 +27,9 @@ public enum MaterialBatchStatus {
     /** 已报废 */
     SCRAPPED("已报废", "批次已报废处理"),
     /** 已预留 */
-    RESERVED("已预留", "批次已被预留，等待使用");
+    RESERVED("已预留", "批次已被预留，等待使用"),
+    /** 生产预留 (在制品 WIP) - 关联到进行中的生产批次 */
+    PRODUCING_RESERVED("生产预留", "批次已被进行中的生产批次占用 (在制品 WIP)");
 
     private final String displayName;
     private final String description;

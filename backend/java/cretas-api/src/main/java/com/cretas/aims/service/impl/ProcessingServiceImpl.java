@@ -65,6 +65,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final QualityInspectionService qualityInspectionService;
     private final ProductionAlertRepository productionAlertRepository;
+    private final ProductionPlanBatchUsageRepository productionPlanBatchUsageRepository;
 
     /**
      * 将字符串 batchId 安全转换为 Long。
@@ -122,7 +123,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         batch.setStatus(ProductionBatchStatus.IN_PROGRESS);
         batch.setStartTime(LocalDateTime.now());
         batch.setSupervisorId(supervisorId != null ? supervisorId.longValue() : null);
-        return productionBatchRepository.save(batch);
+        ProductionBatch saved = productionBatchRepository.save(batch);
+        transitionLinkedMaterialBatchesToWip(factoryId, saved.getProductionPlanId(), saved.getId());
+        return saved;
     }
     public ProductionBatch pauseProduction(String factoryId, String batchId, String reason) {
         log.info("暂停生产: factoryId={}, batchId={}, reason={}", factoryId, batchId, reason);
@@ -171,6 +174,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         batch.calculateMetrics();
         ProductionBatch saved = productionBatchRepository.save(batch);
 
+        // 释放 WIP 状态 (M-WIP-1): PRODUCING_RESERVED → 按剩余量回到 AVAILABLE / DEPLETED / USED_UP
+        releaseLinkedMaterialBatchesFromWip(factoryId, saved.getProductionPlanId(), saved.getId());
+
         // 发布批次完成事件 → 触发供应链联动（自动创建成品、更新PP、通知SO）
         try {
             applicationEventPublisher.publishEvent(new BatchCompletedEvent(this, saved));
@@ -192,8 +198,91 @@ public class ProcessingServiceImpl implements ProcessingService {
         }
         batch.setStatus(ProductionBatchStatus.CANCELLED);
         batch.setNotes(batch.getNotes() != null ? batch.getNotes() + "\n取消原因: " + reason : "取消原因: " + reason);
-        return productionBatchRepository.save(batch);
+        ProductionBatch saved = productionBatchRepository.save(batch);
+        // 释放 WIP 状态 (M-WIP-1): PRODUCING_RESERVED → RESERVED (取消时按预留量恢复)
+        releaseLinkedMaterialBatchesFromWip(factoryId, saved.getProductionPlanId(), saved.getId());
+        return saved;
     }
+
+    /**
+     * Sprint 4 Wave 2 M-WIP-1: 进入 WIP 时, 将关联物料批次状态 RESERVED → PRODUCING_RESERVED.
+     *
+     * <p>关联路径: ProductionBatch.productionPlanId → ProductionPlanBatchUsage.materialBatchId → MaterialBatch.id</p>
+     *
+     * <p>失败时记 WARN 但不抛 — 不阻塞 startProduction 主流程 (与 BatchCompletedEvent 相同的防御模式).</p>
+     */
+    private void transitionLinkedMaterialBatchesToWip(String factoryId, String productionPlanId, Long productionBatchId) {
+        if (productionPlanId == null || productionPlanId.isBlank()) {
+            return;  // 无生产计划关联 (standalone batch), 无 WIP 物料可标记
+        }
+        try {
+            List<ProductionPlanBatchUsage> usages = productionPlanBatchUsageRepository.findByProductionPlanId(productionPlanId);
+            int flipped = 0;
+            for (ProductionPlanBatchUsage usage : usages) {
+                String materialBatchId = usage.getMaterialBatchId();
+                if (materialBatchId == null) continue;
+                MaterialBatch mb = materialBatchRepository.findByIdAndFactoryId(materialBatchId, factoryId).orElse(null);
+                if (mb == null) continue;
+                if (mb.getStatus() == MaterialBatchStatus.RESERVED || mb.getStatus() == MaterialBatchStatus.AVAILABLE) {
+                    mb.setStatus(MaterialBatchStatus.PRODUCING_RESERVED);
+                    materialBatchRepository.save(mb);
+                    flipped++;
+                }
+            }
+            log.info("[M-WIP-1] WIP 转换完成: productionBatchId={}, productionPlanId={}, flipped={}/{} 物料批次",
+                    productionBatchId, productionPlanId, flipped, usages.size());
+        } catch (Exception e) {
+            log.warn("[M-WIP-1] WIP 转换失败 (不影响主流程): productionBatchId={}, productionPlanId={}, err={}",
+                    productionBatchId, productionPlanId, e.getMessage());
+        }
+    }
+
+    /**
+     * Sprint 4 Wave 2 M-WIP-1: 离开 WIP (完成 / 取消) 时, 将物料批次状态从 PRODUCING_RESERVED 释放回正常状态.
+     *
+     * <p>恢复规则:</p>
+     * <ul>
+     *   <li>currentQuantity = 0 → DEPLETED (耗尽)</li>
+     *   <li>currentQuantity &gt; 0 + reservedQuantity &gt; 0 → RESERVED (仍有预留)</li>
+     *   <li>currentQuantity &gt; 0 + reservedQuantity = 0 → AVAILABLE (无预留可用)</li>
+     * </ul>
+     */
+    private void releaseLinkedMaterialBatchesFromWip(String factoryId, String productionPlanId, Long productionBatchId) {
+        if (productionPlanId == null || productionPlanId.isBlank()) {
+            return;
+        }
+        try {
+            List<ProductionPlanBatchUsage> usages = productionPlanBatchUsageRepository.findByProductionPlanId(productionPlanId);
+            int flipped = 0;
+            for (ProductionPlanBatchUsage usage : usages) {
+                String materialBatchId = usage.getMaterialBatchId();
+                if (materialBatchId == null) continue;
+                MaterialBatch mb = materialBatchRepository.findByIdAndFactoryId(materialBatchId, factoryId).orElse(null);
+                if (mb == null) continue;
+                if (mb.getStatus() != MaterialBatchStatus.PRODUCING_RESERVED) continue;
+
+                MaterialBatchStatus next;
+                BigDecimal current = mb.getCurrentQuantity();
+                BigDecimal reserved = mb.getReservedQuantity() != null ? mb.getReservedQuantity() : BigDecimal.ZERO;
+                if (current.compareTo(BigDecimal.ZERO) <= 0) {
+                    next = MaterialBatchStatus.DEPLETED;
+                } else if (reserved.compareTo(BigDecimal.ZERO) > 0) {
+                    next = MaterialBatchStatus.RESERVED;
+                } else {
+                    next = MaterialBatchStatus.AVAILABLE;
+                }
+                mb.setStatus(next);
+                materialBatchRepository.save(mb);
+                flipped++;
+            }
+            log.info("[M-WIP-1] WIP 释放完成: productionBatchId={}, productionPlanId={}, flipped={}/{} 物料批次",
+                    productionBatchId, productionPlanId, flipped, usages.size());
+        } catch (Exception e) {
+            log.warn("[M-WIP-1] WIP 释放失败 (不影响主流程): productionBatchId={}, productionPlanId={}, err={}",
+                    productionBatchId, productionPlanId, e.getMessage());
+        }
+    }
+
     public ProductionBatch getBatchById(String factoryId, String batchId) {
         Long id = parseBatchId(batchId);
         return productionBatchRepository.findByIdAndFactoryId(id, factoryId)

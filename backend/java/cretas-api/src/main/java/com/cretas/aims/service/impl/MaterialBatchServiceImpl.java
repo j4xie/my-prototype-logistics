@@ -472,6 +472,22 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     }
 
     @Override
+    public List<MaterialBatchDTO> getWipBatches(String factoryId) {
+        return materialBatchRepository.findByFactoryIdAndStatus(factoryId, MaterialBatchStatus.PRODUCING_RESERVED)
+                .stream()
+                .map(materialBatchMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MaterialBatchDTO> getAllWipBatches() {
+        return materialBatchRepository.findByStatus(MaterialBatchStatus.PRODUCING_RESERVED)
+                .stream()
+                .map(materialBatchMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<MaterialBatchDTO> getAvailableBatchesFIFO(String factoryId, String materialTypeId) {
         List<MaterialBatch> batches = materialBatchRepository.findAvailableBatchesFIFO(factoryId, materialTypeId);
         return batches.stream()
