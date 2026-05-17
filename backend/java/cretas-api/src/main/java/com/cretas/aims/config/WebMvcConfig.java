@@ -44,21 +44,27 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         // 1. JWT认证拦截器 - 验证Token，设置用户信息
         // /api/internal/** 走 X-Internal-Key 校验分支 (JwtAuthInterceptor:155)，同样由此拦截器处理
+        // Issue #718 (2026-05-17): 加 /api/camera/** 和 /api/ai/** — 之前这些 path 完全没 JWT 校验
+        //   (CameraController/ComplexityTrainingController @PreAuthorize 是 NO-OP because
+        //    Spring Security disabled). 前端无 caller, 加 JWT 不破坏现有调用方.
         registry.addInterceptor(jwtAuthInterceptor)
-                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**", "/api/internal/**")
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**",
+                                 "/api/internal/**", "/api/camera/**", "/api/ai/**")
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
                 .order(1);  // 最高优先级
 
         // 2. 权限检查拦截器 - 检查 @RequirePermission 注解
         registry.addInterceptor(permissionInterceptor)
-                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")  // 拦截所有API
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**",
+                                 "/api/camera/**", "/api/ai/**")
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
                 .order(2);  // 在JWT之后执行
 
         // 3. Round 5 Fix SEC-1: @RequireRole 拦截器 - 检查方法级角色限制
         // Spring Security 在 application.properties 中被禁用，@PreAuthorize 失效，改用自定义注解。
         registry.addInterceptor(requireRoleInterceptor)
-                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**",
+                                 "/api/camera/**", "/api/ai/**")
                 .excludePathPatterns(swaggerWhitelist)
                 .order(3);
 

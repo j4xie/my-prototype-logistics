@@ -16,6 +16,12 @@ import java.util.Map;
 import java.util.Optional;
 import com.cretas.aims.util.ErrorSanitizer;
 
+/**
+ * Field visibility controller — read-mostly; mutating endpoints (recompute,
+ * link-survey-company) restricted to admin roles per Issue #718 (2026-05-17).
+ * Previously any auth factory user could trigger schema-level recompute or
+ * link factory to arbitrary survey company.
+ */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}")
 public class FieldVisibilityController {
@@ -43,6 +49,13 @@ public class FieldVisibilityController {
         }
     }
 
+    /**
+     * Issue #718 audit (2026-05-17): isPublicEndpoint() classifies this as
+     * Python→Java internal call (JwtAuthInterceptor:228), so @RequireRole would
+     * NOT fire even if added. Real protection lives at NetworkSecurityGroup —
+     * /field-visibility/recompute should only be reachable from VPC internal IPs.
+     * Followup: convert to /api/internal/* path with X-Internal-Key (BB).
+     */
     @PostMapping("/field-visibility/recompute")
     public ResponseEntity<?> recomputeVisibility(@PathVariable String factoryId) {
         try {
@@ -55,6 +68,13 @@ public class FieldVisibilityController {
         }
     }
 
+    /**
+     * Issue #718 audit (2026-05-17): isPublicEndpoint() classifies this as
+     * Python→Java internal call (JwtAuthInterceptor:227), so @RequireRole would
+     * NOT fire even if added. Real protection lives at NetworkSecurityGroup —
+     * /link-survey-company should only be reachable from VPC internal IPs.
+     * Followup: convert to /api/internal/* path with X-Internal-Key (BB).
+     */
     @PostMapping("/link-survey-company")
     public ResponseEntity<?> linkSurveyCompany(
             @PathVariable String factoryId,

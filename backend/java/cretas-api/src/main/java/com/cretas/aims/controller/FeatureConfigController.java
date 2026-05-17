@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.FactoryFeatureConfig;
 import com.cretas.aims.repository.FactoryFeatureConfigRepository;
@@ -13,7 +14,7 @@ import java.util.Map;
 /**
  * Feature config endpoints accessible by authenticated App users.
  * GET: load module configs for the current factory.
- * PUT: admin can adjust configs.
+ * PUT: admin can adjust configs (Issue #718 — @RequireRole added 2026-05-17).
  */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/feature-config")
@@ -40,6 +41,7 @@ public class FeatureConfigController {
     }
 
     @PutMapping("/{moduleId}")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<FactoryFeatureConfig> update(
             @PathVariable String factoryId,
             @PathVariable String moduleId,

@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.camera.CameraDeviceInfo;
 import com.cretas.aims.dto.camera.CaptureImageRequest;
 import com.cretas.aims.dto.camera.CaptureImageResponse;
@@ -21,6 +22,16 @@ import java.util.Map;
 /**
  * 相机控制器
  *
+ * Issue #718 audit (2026-05-17):
+ *  - @PreAuthorize is silently NO-OP because Spring Security method-security
+ *    is disabled (see RequireRole.java:11). Migrated to @RequireRole.
+ *  - WebMvcConfig now registers /api/camera/** with JWT + permission + role
+ *    interceptors so @RequireRole actually fires.
+ *  - Allowed roles: factory_super_admin / permission_admin / quality_manager
+ *    (was inspector + admin + supervisor — collapsed to factory-admin-tier
+ *    + quality_manager since "supervisor" isn't a configured role in current
+ *    FactoryUserRole enum).
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-02-02
@@ -39,7 +50,7 @@ public class CameraController {
      */
     @GetMapping("/version")
     @Operation(summary = "获取SDK版本", description = "获取海康威视相机SDK版本信息")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<Map<String, String>>> getSdkVersion() {
         log.info("获取相机SDK版本");
         String version = cameraService.getSdkVersion();
@@ -51,7 +62,7 @@ public class CameraController {
      */
     @GetMapping("/devices")
     @Operation(summary = "枚举相机设备", description = "获取所有可用的相机设备列表")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<List<CameraDeviceInfo>>> enumerateDevices() {
         log.info("枚举相机设备");
         List<CameraDeviceInfo> devices = cameraService.enumerateDevices();
@@ -63,7 +74,7 @@ public class CameraController {
      */
     @PostMapping("/connect")
     @Operation(summary = "连接相机", description = "连接到指定的相机设备")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<Void>> connectCamera(
             @RequestParam @Parameter(description = "设备索引") Integer deviceIndex) {
         log.info("连接相机，设备索引: {}", deviceIndex);
@@ -76,7 +87,7 @@ public class CameraController {
      */
     @PostMapping("/disconnect")
     @Operation(summary = "断开相机连接", description = "断开当前连接的相机设备")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<Void>> disconnectCamera() {
         log.info("断开相机连接");
         cameraService.disconnectCamera();
@@ -88,7 +99,7 @@ public class CameraController {
      */
     @GetMapping("/status")
     @Operation(summary = "检查连接状态", description = "检查相机是否已连接")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<Map<String, Boolean>>> getCameraStatus() {
         log.info("检查相机连接状态");
         boolean connected = cameraService.isConnected();
@@ -100,7 +111,7 @@ public class CameraController {
      */
     @PostMapping("/capture")
     @Operation(summary = "采集图像", description = "从已连接的相机采集单张图像")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<CaptureImageResponse>> captureImage(
             @Valid @RequestBody(required = false) @Parameter(description = "拍照请求参数") CaptureImageRequest request) {
         log.info("采集图像，请求参数: {}", request);
@@ -113,7 +124,7 @@ public class CameraController {
      */
     @PostMapping("/capture/quick")
     @Operation(summary = "快速拍照", description = "使用默认参数快速采集图像")
-    @PreAuthorize("hasAnyRole('ADMIN', 'QUALITY_INSPECTOR', 'SUPERVISOR')")
+    @RequireRole({"factory_super_admin", "permission_admin", "quality_manager"})
     public ResponseEntity<ApiResponse<CaptureImageResponse>> quickCapture() {
         log.info("快速拍照");
         CaptureImageResponse response = cameraService.captureImage();

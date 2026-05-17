@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.service.ComplexityClassifier;
 import com.cretas.aims.service.ComplexityTrainingService;
@@ -16,6 +17,13 @@ import com.cretas.aims.exception.BusinessException;
  * 复杂度分类器训练 API
  *
  * 提供训练接口和测试接口
+ *
+ * Issue #718 audit (2026-05-17):
+ *  - Path /api/ai/complexity/* was NOT covered by JwtAuthInterceptor (only
+ *    /api/mobile, /api/platform, /api/admin, /api/internal were registered).
+ *  - WebMvcConfig now adds /api/ai/** so @RequireRole fires.
+ *  - Restricted to platform-tier admins — training is platform ops, not
+ *    factory-level.
  *
  * @author Cretas Team
  * @version 1.0.0
@@ -38,6 +46,7 @@ public class ComplexityTrainingController {
      * @param samplesPerLevel 每个等级的样本数 (默认 20)
      */
     @PostMapping("/train")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<Map<String, Object>> train(
             @RequestParam(defaultValue = "20") int samplesPerLevel) {
 
@@ -74,6 +83,7 @@ public class ComplexityTrainingController {
      * @param text 测试文本
      */
     @PostMapping("/test")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<Map<String, Object>> test(@RequestParam String text) {
         if (!classifier.isTrained()) {
             throw new BusinessException(400, "分类器未训练，请先调用 /train 接口");
@@ -121,6 +131,7 @@ public class ComplexityTrainingController {
      * 使用 Claude 生成的高质量训练数据
      */
     @PostMapping("/train-from-file")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     public ApiResponse<Map<String, Object>> trainFromFile() {
         log.info("从预定义数据文件训练分类器...");
 

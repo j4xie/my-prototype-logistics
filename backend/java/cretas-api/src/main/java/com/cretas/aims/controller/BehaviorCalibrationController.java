@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.calibration.CalibrationDashboardDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.calibration.BehaviorCalibrationMetrics;
@@ -321,9 +322,14 @@ public class BehaviorCalibrationController {
      *
      * 用于重新计算指定工厂和日期的指标
      */
+    // Issue #718 (2026-05-17): @PreAuthorize is silently NO-OP (Spring Security
+    // method-security disabled — see RequireRole.java:11). Added @RequireRole so
+    // role-tier actually enforced. Path /api/admin/calibration is JWT-protected
+    // via interceptor (auth required) but role-tier was previously bypassable.
     @PostMapping("/metrics/calculate")
     @Operation(summary = "手动触发指标计算",
                description = "手动重新计算指定工厂和日期的校准指标（仅平台管理员）")
+    @RequireRole({"platform_admin", "super_admin", "developer"})
     @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
     public ApiResponse<BehaviorCalibrationMetrics> calculateMetrics(
             @Valid @RequestBody CalculateMetricsRequest request) {
