@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { Plus, Search, Refresh, List } from '@element-plus/icons-vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
 
@@ -220,6 +220,48 @@ async function handleSubmit() {
   }
 }
 
+// ==================== Issue #779: 该供应商供应的原料 (反查) ====================
+// 客户要求 (May 7 part2 L222-240): "一种原料可来自多个供应商, 一个供应商可供多种原料"
+// 复用 GET /suppliers/{supplierId}/history (SupplierController:285) — 返回历史供货记录,
+// 含每条记录的 materialName / quantity / 时间. 按 materialName 去重得到该供应商供过哪些原料.
+const materialsDialogVisible = ref(false);
+const materialsForSupplier = ref<Array<{ materialName?: string; materialType?: string; quantity?: number; unit?: string; date?: string; orderNumber?: string }>>([]);
+const materialsLoading = ref(false);
+const materialsDialogSupplierName = ref('');
+const materialsDistinct = computed(() => {
+  const seen = new Map<string, number>();
+  for (const h of materialsForSupplier.value) {
+    const n = String(h.materialName || h.materialType || '').trim();
+    if (!n) continue;
+    seen.set(n, (seen.get(n) || 0) + 1);
+  }
+  return Array.from(seen.entries()).map(([name, count]) => ({ name, count }));
+});
+
+async function openMaterialsForSupplier(row: TableRow) {
+  const supplierId = String(row.id || '').trim();
+  if (!supplierId) {
+    ElMessage.warning('供应商 ID 缺失');
+    return;
+  }
+  materialsDialogSupplierName.value = String(row.name || row.supplierCode || supplierId);
+  materialsForSupplier.value = [];
+  materialsDialogVisible.value = true;
+  materialsLoading.value = true;
+  try {
+    const res = await get<Array<{ materialName?: string; quantity?: number; unit?: string; date?: string; orderNumber?: string }>>(
+      `/${factoryId.value}/suppliers/${supplierId}/history`,
+    );
+    if (res.success && Array.isArray(res.data)) {
+      materialsForSupplier.value = res.data;
+    }
+  } catch {
+    /* interceptor */
+  } finally {
+    materialsLoading.value = false;
+  }
+}
+
 async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(`确定删除供应商「${row.name}」吗？`, '删除确认', {
@@ -306,9 +348,11 @@ async function handleDelete(row: TableRow) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right" align="center">
+        <el-table-column label="操作" width="240" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
+            <!-- Issue #779: 反查该供应商供应的原料 -->
+            <el-button type="primary" link size="small" :icon="List" @click="openMaterialsForSupplier(row)">供应原料</el-button>
             <el-button v-if="canWrite" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="canWrite" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -373,6 +417,58 @@ async function handleDelete(row: TableRow) {
         >
           确定
         </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Issue #779: 反查该供应商供应的原料 (基于供货历史去重 + 完整历史明细) -->
+    <el-dialog
+      v-model="materialsDialogVisible"
+      :title="`${materialsDialogSupplierName} — 供应原料`"
+      width="800px"
+      destroy-on-close
+    >
+      <!-- 去重后的原料汇总 -->
+      <div v-if="materialsDistinct.length > 0" style="margin-bottom: 16px">
+        <span style="font-size: 13px; color: #909399; margin-right: 8px">已供应原料 ({{ materialsDistinct.length }} 种):</span>
+        <el-tag
+          v-for="m in materialsDistinct"
+          :key="m.name"
+          size="small"
+          style="margin: 2px 4px"
+          type="success"
+          effect="plain"
+        >
+          {{ m.name }} ({{ m.count }} 次)
+        </el-tag>
+      </div>
+
+      <!-- 完整供货历史 -->
+      <el-table
+        v-loading="materialsLoading"
+        :data="materialsForSupplier"
+        empty-text="该供应商暂无供货历史"
+        stripe
+        border
+        size="small"
+        max-height="400"
+      >
+        <el-table-column prop="date" label="供货日期" width="120">
+          <template #default="{ row }">{{ row.date || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="原料" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.materialName || row.materialType || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="数量" width="120" align="right">
+          <template #default="{ row }">
+            {{ row.quantity != null ? `${row.quantity} ${row.unit || ''}` : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="orderNumber" label="采购单号" width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.orderNumber || '-' }}</template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="materialsDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>

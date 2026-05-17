@@ -19,7 +19,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Edit, Delete as DeleteIcon, Search, Refresh, Lock } from '@element-plus/icons-vue';
+import { Plus, Edit, Delete as DeleteIcon, Search, Refresh, Lock, View } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import type { TableRow } from '@/types/api';
@@ -260,6 +260,39 @@ async function handleSave() {
   }
 }
 
+// ==================== Issue #779: 反查供应商 ====================
+// 客户要求 (May 7 part2 L222-240): "原料的话那个加一个对应的供应商, 加个字段, 对应是哪家供应商供的吗"
+// 复用 backend GET /suppliers/by-material?materialType={name} (SupplierController:179 已有).
+const suppliersDialogVisible = ref(false);
+const suppliersForMaterial = ref<Array<{ id: string; name: string; contactPerson?: string; phone?: string }>>([]);
+const suppliersLoading = ref(false);
+const suppliersDialogMaterialName = ref('');
+
+async function openSuppliersForMaterial(row: TableRow) {
+  const materialName = String(row.name || '').trim();
+  if (!materialName) {
+    ElMessage.warning('原料名称为空, 无法查询关联供应商');
+    return;
+  }
+  suppliersDialogMaterialName.value = materialName;
+  suppliersForMaterial.value = [];
+  suppliersDialogVisible.value = true;
+  suppliersLoading.value = true;
+  try {
+    const res = await get<Array<{ id: string; name: string; contactPerson?: string; phone?: string }>>(
+      `/${factoryId.value}/suppliers/by-material`,
+      { params: { materialType: materialName } },
+    );
+    if (res.success && Array.isArray(res.data)) {
+      suppliersForMaterial.value = res.data;
+    }
+  } catch {
+    /* interceptor */
+  } finally {
+    suppliersLoading.value = false;
+  }
+}
+
 async function handleDelete(row: TableRow) {
   try {
     await ElMessageBox.confirm(
@@ -349,8 +382,10 @@ function handleSizeChange(size: number) {
             <span v-else style="color: #c0c4cc">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
+            <!-- Issue #779: 反查供应商入口 -->
+            <el-button link type="primary" :icon="View" @click="openSuppliersForMaterial(row)">供应商</el-button>
             <el-button v-if="canWrite" link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
             <el-button v-if="canWrite" link type="danger" :icon="DeleteIcon" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -483,6 +518,33 @@ function handleSizeChange(size: number) {
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSave">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Issue #779: 反查供应商对话框 -->
+    <el-dialog
+      v-model="suppliersDialogVisible"
+      :title="`${suppliersDialogMaterialName} — 关联供应商`"
+      width="640px"
+      destroy-on-close
+    >
+      <el-table
+        v-loading="suppliersLoading"
+        :data="suppliersForMaterial"
+        empty-text="该原料暂无关联供应商"
+        stripe
+        size="small"
+      >
+        <el-table-column prop="name" label="供应商名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="contactPerson" label="联系人" width="120">
+          <template #default="{ row }">{{ row.contactPerson || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="phone" label="联系电话" width="140">
+          <template #default="{ row }">{{ row.phone || '-' }}</template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="suppliersDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>

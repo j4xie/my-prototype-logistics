@@ -34,22 +34,18 @@ function rowActionsFor(row: TableRow) {
   );
 }
 
-// Issue #752: 操作按钮无响应 — 之前 view-detail/transfer/view-price-history 都只是 ElMessage.info 占位.
-// 现在接实际功能 (Issue #749 同时修: transfer 弹 confirm 跳工作流设计器, 不再 dead-end toast).
+// Issue #752 / #761 follow-up: view-detail 之前用 ElMessageBox.alert 占位,
+// 现在跳独立 detail route (views/sales/finished-goods/detail.vue, router.name=SalesFinishedGoodsDetail).
+// view-price-history 仍是 modal (后端 /finance/price-history endpoint 待接) — 显示批次单价 + 占位提示.
 async function handleRowActionClick(actionId: string, row: TableRow): Promise<void> {
   const batchLabel = row.batchNumber || row.id || '-';
   switch (actionId) {
     case 'view-detail': {
-      // 当前无独立 detail 路由 — 展示 batch 关键信息为只读弹窗
-      const fields = [
-        `批次号: ${batchLabel}`,
-        `产品: ${row.productName || row.productType?.name || '-'}`,
-        `生产: ${row.producedQuantity ?? '-'}  已发货: ${row.shippedQuantity ?? 0}  已预留: ${row.reservedQuantity ?? 0}`,
-        `生产日期: ${row.productionDate || '-'}  过期: ${row.expireDate || '-'}`,
-        `库位: ${row.storageLocation || '-'}`,
-      ];
-      ElMessageBox.alert(fields.join('\n'), '成品批次详情', { confirmButtonText: '关闭' })
-        .catch(() => {});
+      // Issue #761: 跳独立 detail route, 不再用 ElMessageBox 占位.
+      router.push({
+        name: 'SalesFinishedGoodsDetail',
+        params: { id: String(row.id || '') },
+      });
       break;
     }
     case 'transfer': {
@@ -67,12 +63,21 @@ async function handleRowActionClick(actionId: string, row: TableRow): Promise<vo
       break;
     }
     case 'view-price-history': {
-      // 价格历史 — 当前展示成本单价 (未来接 PriceHistoryDialog)
-      ElMessageBox.alert(
-        `批次 ${batchLabel} 当前成本单价: ${row.unitPrice ?? '-'}\n(历次价格变动列表待接 价格历史 API)`,
-        '价格历史',
-        { confirmButtonText: '关闭' }
-      ).catch(() => {});
+      // Issue #761: 价格历史 — Modal 展示当前单价 + 跳 detail 看完整历史.
+      // 后端 /finance/price-history/{batchId} endpoint 待补; detail.vue 内 placeholder table.
+      try {
+        await ElMessageBox.confirm(
+          `批次 ${batchLabel} 当前成本单价: ${row.unitPrice ?? '-'}\n\n完整价格历史 (生产记账/调价/退货) 待接 价格历史 API. 是否打开批次详情?`,
+          '价格历史',
+          { confirmButtonText: '打开详情', cancelButtonText: '关闭', type: 'info' }
+        );
+        router.push({
+          name: 'SalesFinishedGoodsDetail',
+          params: { id: String(row.id || '') },
+        });
+      } catch {
+        // user closed dialog — no-op
+      }
       break;
     }
     default:

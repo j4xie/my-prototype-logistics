@@ -19,6 +19,16 @@ const factoryId = computed(() => authStore.factoryId);
 const batchId = computed(() => route.params.id as string);
 const canViewPrice = computed(() => permissionStore.canViewPrice);
 
+// Issue #760: detail 页消费 ?mode=edit query
+// 编辑 button (PR #755) 跳转时带 ?mode=edit, 本页据此切换 readonly vs editable.
+// 当前 detail 页主要展示 KPI / 描述 / 成本 / 时间线 — 无 inline 表单控件,
+// 编辑入口通过顶部"编辑批次"按钮跳回 list dialog (router-back) 实现.
+// 此变更:
+//  1. isEditMode 反映 query 状态
+//  2. 顶部 header 显示 mode tag (查看 / 编辑)
+//  3. 仅 edit 模式显示"返回列表编辑"按钮 (跳 list.vue 触发 edit dialog)
+const isEditMode = computed(() => route.query.mode === 'edit');
+
 const loading = ref(false);
 const batch = ref<TableRow | null>(null);
 const timeline = ref<TableRow[]>([]);
@@ -76,6 +86,14 @@ async function loadConsumptions() {
 
 function goBack() {
   router.push('/production/batches');
+}
+
+// Issue #760: 回 list 并提示打开 edit dialog (用 query 标识)
+function goBackToListWithEdit() {
+  router.push({
+    path: '/production/batches',
+    query: { editId: batchId.value },
+  });
 }
 
 function getStatusType(status: string) {
@@ -182,8 +200,21 @@ function getTimelineIcon(type: string) {
           <el-tag :type="getStatusType(batch.status)" size="large">
             {{ getStatusText(batch.status) }}
           </el-tag>
+          <!-- Issue #760: 显式标记当前模式 -->
+          <el-tag :type="isEditMode ? 'warning' : 'info'" size="large" effect="plain">
+            {{ isEditMode ? '编辑模式' : '查看模式' }}
+          </el-tag>
         </div>
-        <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        <div style="display:flex;gap:8px">
+          <!-- Issue #760: edit mode 提供回 list 触发 edit dialog 的入口 -->
+          <el-button
+            v-if="isEditMode"
+            type="primary"
+            plain
+            @click="goBackToListWithEdit"
+          >在列表编辑</el-button>
+          <el-button :icon="Refresh" @click="loadData">刷新</el-button>
+        </div>
       </div>
 
       <!-- KPI Cards -->

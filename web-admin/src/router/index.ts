@@ -364,6 +364,13 @@ const businessRoutes: RouteRecordRaw[] = [
             component: () => import('@/views/sales/finished-goods/list.vue'),
             meta: { requiresAuth: true, title: '成品库存', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
           },
+          // Issue #761: 独立 detail route — PR #756 之前只用 ElMessageBox.alert 占位
+          {
+            path: 'finished-goods/:id',
+            name: 'SalesFinishedGoodsDetail',
+            component: () => import('@/views/sales/finished-goods/detail.vue'),
+            meta: { requiresAuth: true, title: '成品批次详情', module: 'sales', hidden: true, hideForFactoryTypes: ['RESTAURANT'] }
+          },
           {
             path: 'customers',
             name: 'SalesCustomers',

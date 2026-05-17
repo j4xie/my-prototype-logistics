@@ -49,6 +49,26 @@ const canReview = computed(
   () => order.value?.status === 'PENDING_FINANCE_REVIEW',
 );
 
+/**
+ * Issue #778 (P3 customer-gap): "预估成本" 字段暂时隐藏 (feature flag).
+ *
+ * 客户决策 (May 7 part2 L461-475):
+ *   "财务那边可能就说我一定要算出来什么东西什么东西, 这个**暂时先去掉吧**"
+ *   "财务那边肯定会比较跳的"
+ *   "后期可能我们这边跑起来的可能会用到"
+ *
+ * 修法: Option A — 前端 v-if feature flag.
+ *   后端 estimated_cost 数据保留 (重新启用时不丢值), 仅 UI 暂时遮挡.
+ *   未来如要复用: 直接把此常量翻为 true 即可.
+ *
+ * 影响范围:
+ *   - 成本核算 card 的 "当前预估成本" cell
+ *   - 成本核算 card 的 "预估利润" cell (依赖 currentEstimatedProfit)
+ *   - 审核操作 form 的 "预估成本 覆盖输入" item
+ *   - approve payload 的 estimatedCost 字段 (隐藏时不发送 override)
+ */
+const SHOW_PRE_ESTIMATED_COST = false;
+
 async function load() {
   if (!factoryId.value || !orderId.value) return;
   loading.value = true;
@@ -111,9 +131,13 @@ async function handleApprove() {
   }
   submitting.value = true;
   try {
+    // Issue #778: feature flag — disabled state 不发送 estimatedCost override,
+    // 保留后端 service 计算的当前预估值不变.
     const res = await financeApprove(factoryId.value, orderId.value, {
       notes: notes.value || undefined,
-      estimatedCost: overrideEstimatedCost.value ?? undefined,
+      estimatedCost: SHOW_PRE_ESTIMATED_COST
+        ? (overrideEstimatedCost.value ?? undefined)
+        : undefined,
     });
     if (res.success) {
       ElMessage.success('财务审核已通过');
@@ -218,7 +242,8 @@ onMounted(load);
           <div class="label">BOM 标准成本</div>
           <div class="value-lg">{{ formatAmount(breakdown.bomStandardCost) }}</div>
         </div>
-        <div class="cost-cell">
+        <!-- Issue #778: 预估成本暂时隐藏 (feature flag SHOW_PRE_ESTIMATED_COST). -->
+        <div v-if="SHOW_PRE_ESTIMATED_COST" class="cost-cell">
           <div class="label">当前预估成本</div>
           <div class="value-lg">{{ formatAmount(breakdown.currentEstimatedCost) }}</div>
         </div>
@@ -226,7 +251,7 @@ onMounted(load);
           <div class="label">实际成本</div>
           <div class="value-lg">{{ formatAmount(breakdown.actualCost) }}</div>
         </div>
-        <div class="cost-cell">
+        <div v-if="SHOW_PRE_ESTIMATED_COST" class="cost-cell">
           <div class="label">预估利润</div>
           <div :class="['value-lg', profitClass(breakdown.currentEstimatedProfit)]">
             {{ formatAmount(breakdown.currentEstimatedProfit) }}
@@ -289,7 +314,8 @@ onMounted(load);
         <span class="card-title">审核意见</span>
       </template>
       <el-form label-position="top">
-        <el-form-item label="预估成本 (财务核定, 覆盖系统当前值)">
+        <!-- Issue #778: 预估成本输入暂时隐藏 (feature flag SHOW_PRE_ESTIMATED_COST). -->
+        <el-form-item v-if="SHOW_PRE_ESTIMATED_COST" label="预估成本 (财务核定, 覆盖系统当前值)">
           <el-input-number
             v-model="overrideEstimatedCost"
             :min="0"
