@@ -151,4 +151,20 @@ public interface CustomerService {
      * 获取客户总体统计
       */
     Map<String, Object> getOverallCustomerStatistics(String factoryId);
+
+    /**
+     * Sprint 4 W1 S-CUSTOMER-TAB-1 (tab 20): 变更客户当前业务员 + 记录 history.
+     *
+     * 防呆 R4 idempotent: 5min 内对同一 customer 重复变更到同一 newSalesUserId
+     * 抛 BusinessException(409) with actionHint to 已存在 history.
+     *
+     * @param factoryId tenant scope
+     * @param customerId 客户 id
+     * @param newSalesUserId 新业务员 user id (必填, 不可与 current 相同 — 由 controller 校验)
+     * @param reason 变更原因 (必填, R3 dropdown 6 + 其他)
+     * @param changedBy 操作人 user id
+     * @return updated CustomerDTO
+     */
+    CustomerDTO updateAssignedSalesUser(String factoryId, String customerId,
+                                        Long newSalesUserId, String reason, Long changedBy);
 }

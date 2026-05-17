@@ -57,6 +57,8 @@ public class CustomerMapper {
                 .updatedAt(customer.getUpdatedAt())
                 .createdBy(customer.getCreatedBy())
                 .version(customer.getVersion())
+                .assignedSalesUserId(customer.getAssignedSalesUserId())
+                .assignedSalesUserAssignedAt(customer.getAssignedSalesUserAssignedAt())
                 .build();
         // 设置创建人姓名
         if (customer.getCreatedByUser() != null) {
