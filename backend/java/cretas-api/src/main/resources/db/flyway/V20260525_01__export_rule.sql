@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS export_rules (
     is_async            BOOLEAN      NOT NULL DEFAULT FALSE,
     -- 触发 async 的阈值. 行数估算 > row_threshold 走 queue; 默认 10000 行.
     row_threshold       INTEGER      NOT NULL DEFAULT 10000,
+    -- target_entity: fully-qualified JPA entity class name driving the SELECT,
+    -- e.g. "com.cretas.aims.entity.Customer". ExportService uses reflection +
+    -- EntityManager.createQuery to fetch by factoryId.
+    target_entity       VARCHAR(200) NOT NULL,
     created_by          BIGINT,
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP    NOT NULL DEFAULT NOW(),

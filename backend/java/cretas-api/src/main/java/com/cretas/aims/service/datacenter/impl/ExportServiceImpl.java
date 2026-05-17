@@ -14,13 +14,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 导出规则服务 — v1 实现 Rule CRUD + Job 持久化骨架. 实际查询执行 + Excel 写入
- * (调 ExcelUtil + SpEL filter eval) 在 Day 3+ 由 follow-up commit 完成.
+ * 导出规则服务 — Rule CRUD + run (sync 直返 base64 / async 走 {@link ExportJobRunner}).
+ * 实际 entity query / SpEL filter / EasyExcel 写入由 {@link ExportExecutor} 承担.
+ *
+ * <p>Sprint 4 Chat K C-EXPORT-CENTER-1.
  */
 @Slf4j
 @Service
@@ -29,6 +31,8 @@ public class ExportServiceImpl implements ExportService {
 
     private final ExportRuleRepository ruleRepo;
     private final ExportJobRepository jobRepo;
+    private final ExportExecutor executor;
+    private final ExportJobRunner jobRunner;
 
     @Override
     @Transactional
@@ -41,6 +45,9 @@ public class ExportServiceImpl implements ExportService {
         }
         if (rule.getColumns() == null || rule.getColumns().isEmpty()) {
             throw new BusinessException("columns 必填");
+        }
+        if (rule.getTargetEntity() == null || rule.getTargetEntity().isEmpty()) {
+            throw new BusinessException("targetEntity 必填 (fully-qualified entity class)");
         }
         if (rule.getFormat() == null) rule.setFormat("XLSX");
         if (rule.getIsAsync() == null) rule.setIsAsync(Boolean.FALSE);
@@ -61,6 +68,7 @@ public class ExportServiceImpl implements ExportService {
         if (patch.getFormat() != null) rule.setFormat(patch.getFormat());
         if (patch.getIsAsync() != null) rule.setIsAsync(patch.getIsAsync());
         if (patch.getRowThreshold() != null) rule.setRowThreshold(patch.getRowThreshold());
+        if (patch.getTargetEntity() != null) rule.setTargetEntity(patch.getTargetEntity());
         return ruleRepo.save(rule);
     }
 
@@ -87,30 +95,57 @@ public class ExportServiceImpl implements ExportService {
     }
 
     @Override
+    @Transactional
     public Map<String, Object> exportByRule(String factoryId, Long ruleId, Long triggeredBy,
                                             Map<String, Object> runtimeParams) {
         ExportRule rule = getRule(factoryId, ruleId);
 
-        // v1 骨架: 创建 Job 占位. Day 3+ follow-up 接入 SpEL filter eval + ExcelUtil 写入.
-        // 同步路径 (≤ rowThreshold) 不创建 Job, 直接返 base64.
-        // 异步路径 (> rowThreshold or isAsync=true) 创建 Job + @Async 跑.
-        ExportJob job = ExportJob.builder()
-                .factoryId(factoryId)
-                .ruleId(rule.getId())
-                .triggeredBy(triggeredBy)
-                .status("PENDING")
-                .runtimeParams(runtimeParams)
-                .startedAt(LocalDateTime.now())
-                .build();
-        job = jobRepo.save(job);
+        // v1 路由策略: 仅按 rule.isAsync 标志决定. 行数估算 (用于自动 sync/async 切换)
+        // 推迟到 Day 4+ 等 EntityManager 接入更稳定后做.
+        if (Boolean.TRUE.equals(rule.getIsAsync())) {
+            ExportJob job = ExportJob.builder()
+                    .factoryId(factoryId)
+                    .ruleId(rule.getId())
+                    .triggeredBy(triggeredBy)
+                    .status("PENDING")
+                    .runtimeParams(runtimeParams)
+                    .build();
+            job = jobRepo.save(job);
+            jobRunner.runAsync(job.getId());  // 跨 bean 调用确保 @Async proxy 生效
+            Map<String, Object> response = new HashMap<>();
+            response.put("mode", "ASYNC");
+            response.put("jobId", job.getId());
+            response.put("status", "PENDING");
+            log.info("[ExportService] async exportByRule rule={} factory={} jobId={}",
+                    ruleId, factoryId, job.getId());
+            return response;
+        }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("mode", "ASYNC");
-        response.put("jobId", job.getId());
-        response.put("note", "v1 skeleton — actual export executor pending Day 3+ follow-up");
-        log.info("[ExportService] exportByRule rule={} factory={} jobId={} (skeleton)",
-                ruleId, factoryId, job.getId());
-        return response;
+        // SYNC 路径: 直接 invoke executor, 返 base64.
+        try {
+            ExportExecutor.Result result = executor.run(rule, runtimeParams, null);
+            Map<String, Object> response = new HashMap<>();
+            response.put("mode", "SYNC");
+            response.put("filename", buildFilename(rule));
+            response.put("rowCount", result.rowCount);
+            response.put("fileSizeBytes", result.fileSizeBytes);
+            response.put("fileBase64", result.bytes == null ? null : Base64.getEncoder().encodeToString(result.bytes));
+            log.info("[ExportService] sync exportByRule rule={} factory={} rows={} bytes={}",
+                    ruleId, factoryId, result.rowCount, result.fileSizeBytes);
+            return response;
+        } catch (Exception ex) {
+            throw new BusinessException("导出失败: " + ex.getMessage());
+        }
+    }
+
+    private static String buildFilename(ExportRule rule) {
+        String name = rule.getRuleName() == null ? "export" : rule.getRuleName();
+        String ext = switch (rule.getFormat() == null ? "XLSX" : rule.getFormat().toUpperCase()) {
+            case "CSV" -> ".csv";
+            case "PDF" -> ".pdf";
+            default -> ".xlsx";
+        };
+        return name.replaceAll("[\\\\/?*\\[\\]:]", "_") + ext;
     }
 
     @Override

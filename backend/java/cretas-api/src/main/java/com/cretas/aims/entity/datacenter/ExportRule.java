@@ -73,6 +73,10 @@ public class ExportRule extends BaseEntity {
     @Column(name = "row_threshold", nullable = false)
     private Integer rowThreshold;
 
+    /** Fully-qualified JPA entity class name, e.g. {@code com.cretas.aims.entity.Customer}. */
+    @Column(name = "target_entity", nullable = false, length = 200)
+    private String targetEntity;
+
     @Column(name = "created_by")
     private Long createdBy;
 }
