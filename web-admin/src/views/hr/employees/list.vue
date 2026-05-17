@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
 import type { TableRow } from '@/types/api';
+import DepartmentSwitcherRow, { type DeptOption } from '@/components/layout/DepartmentSwitcherRow.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -21,7 +22,34 @@ const pagination = ref({ page: 1, size: 10, total: 0 });
 // 加 3 个 filter: keyword (姓名/用户名/手机) / roleCode / isActive
 const searchForm = reactive({ keyword: '', roleCode: '', isActive: null as boolean | null });
 
+// Sprint 4 W2 #63 U-DEPT-1 integration: 部门切换 button row
+// 防呆 R2: button text 部门名称 (不是 ID) — DepartmentSwitcherRow 已用 dept.name
+// 防呆 R5: "全部" button 为默认 (清空 filter, dept.id = null)
+const activeDeptId = ref<string | null>(null);
+const departments = ref<DeptOption[]>([]);
+
+async function loadDepartments() {
+  if (!factoryId.value) return;
+  try {
+    const response = await get<TableRow[]>(`/${factoryId.value}/departments/active`);
+    if (response.success && response.data) {
+      departments.value = (response.data as TableRow[]).map((d) => ({
+        id: String(d.id),
+        name: d.name as string,
+      }));
+    }
+  } catch (error) {
+    console.error('加载部门列表失败:', error);
+  }
+}
+
+function handleDeptChange(_id: string | null) {
+  pagination.value.page = 1;
+  loadData();
+}
+
 onMounted(() => {
+  loadDepartments();
   loadData();
 });
 
@@ -48,6 +76,19 @@ async function loadData() {
           const active = u.isActive === true || u.status === 'ACTIVE';
           return active === searchForm.isActive;
         });
+      }
+      // Sprint 4 W2 #63 U-DEPT-1: filter by selected department (name-match)
+      // User records expose dept as departmentName/department/departmentDisplayName,
+      // not deptId — match dept name to the active chip's name.
+      if (activeDeptId.value !== null) {
+        const dept = departments.value.find((d) => d.id === activeDeptId.value);
+        const deptName = dept?.name;
+        if (deptName) {
+          rows = rows.filter((u: TableRow) => {
+            const userDept = u.departmentDisplayName || u.departmentName || u.department || '';
+            return String(userDept) === deptName;
+          });
+        }
       }
       tableData.value = rows;
       pagination.value.total = response.data.totalElements || 0;
@@ -239,6 +280,14 @@ function getRoleText(role: string) {
           <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleAdd">添加员工</el-button>
         </div>
       </template>
+
+      <!-- Sprint 4 W2 #63 U-DEPT-1: 部门切换 button row (1 个部门时自动隐藏) -->
+      <DepartmentSwitcherRow
+        v-model="activeDeptId"
+        :departments="departments"
+        all-label="全部"
+        @change="handleDeptChange"
+      />
 
       <!-- Apr 20 Bug BR-10 fix: 加检索栏 (keyword + 角色 + 状态) -->
       <div class="search-bar" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
