@@ -45,6 +45,14 @@ public class CustomerMapper {
                 .ratingNotes(customer.getRatingNotes())
                 .isActive(customer.getIsActive())
                 .notes(customer.getNotes())
+                // Sprint 4 W2 S-CRM-FULL-1
+                .customerStatus(customer.getCustomerStatus())
+                .importance(customer.getImportance())
+                .source(customer.getSource())
+                .lastContactedAt(customer.getLastContactedAt())
+                // Sprint 4 W2 S-INVOICE-CLIENT-1
+                .defaultTaxRate(customer.getDefaultTaxRate())
+                .defaultInvoiceType(customer.getDefaultInvoiceType())
                 .createdAt(customer.getCreatedAt())
                 .updatedAt(customer.getUpdatedAt())
                 .createdBy(customer.getCreatedBy())
@@ -95,6 +103,17 @@ public class CustomerMapper {
         }
         customer.setIsActive(status == null || "ACTIVE".equalsIgnoreCase(status));
         customer.setNotes(request.getNotes());
+        // Sprint 4 W2 S-CRM-FULL-1: 默认 LEAD / NORMAL (UI 可创建后立刻 update)
+        customer.setCustomerStatus(request.getCustomerStatus() != null
+                ? request.getCustomerStatus()
+                : com.cretas.aims.entity.enums.CustomerStatus.LEAD);
+        customer.setImportance(request.getImportance() != null
+                ? request.getImportance()
+                : com.cretas.aims.entity.enums.CustomerImportance.NORMAL);
+        customer.setSource(request.getSource()); // null OK (允许未分类)
+        // Sprint 4 W2 S-INVOICE-CLIENT-1: 客户级开票默认 (allow null)
+        customer.setDefaultTaxRate(request.getDefaultTaxRate());
+        customer.setDefaultInvoiceType(request.getDefaultInvoiceType());
         customer.setCreatedBy(createdBy);
         customer.setCreatedAt(LocalDateTime.now());
         return customer;
@@ -159,6 +178,26 @@ public class CustomerMapper {
         }
         if (request.getNotes() != null) {
             customer.setNotes(request.getNotes());
+        }
+        // Sprint 4 W2 S-CRM-FULL-1: 4 字段 partial update
+        if (request.getCustomerStatus() != null) {
+            customer.setCustomerStatus(request.getCustomerStatus());
+        }
+        if (request.getImportance() != null) {
+            customer.setImportance(request.getImportance());
+        }
+        if (request.getSource() != null) {
+            customer.setSource(request.getSource());
+        }
+        if (request.getLastContactedAt() != null) {
+            customer.setLastContactedAt(request.getLastContactedAt());
+        }
+        // Sprint 4 W2 S-INVOICE-CLIENT-1
+        if (request.getDefaultTaxRate() != null) {
+            customer.setDefaultTaxRate(request.getDefaultTaxRate());
+        }
+        if (request.getDefaultInvoiceType() != null) {
+            customer.setDefaultInvoiceType(request.getDefaultInvoiceType());
         }
         customer.setUpdatedAt(LocalDateTime.now());
     }

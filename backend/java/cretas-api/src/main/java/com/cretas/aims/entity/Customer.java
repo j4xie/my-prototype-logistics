@@ -103,6 +103,38 @@ public class Customer extends BaseEntity {
     @Column(name = "bank_account", length = 100)
     private String bankAccount;
 
+    // ==================== Sprint 4 W2 S-CRM-FULL-1: 客户生命周期 / 战略价值 / 渠道归因 ====================
+
+    /** 客户生命周期状态 (11 阶段: LEAD → ... → RECURRING / INACTIVE / LOST / BLACKLIST / RECOVERED) */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_status", length = 30)
+    private com.cretas.aims.entity.enums.CustomerStatus customerStatus;
+
+    /** 客户重要程度 (VIP / IMPORTANT / NORMAL / LOW) — 销售人工标记的战略价值, 与 rating 数字评分互补 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "importance", length = 20)
+    private com.cretas.aims.entity.enums.CustomerImportance importance;
+
+    /** 客户来源渠道 (11 渠道: EXHIBITION / REFERRAL / WEBSITE / ... / OTHER) — 销售漏斗归因 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", length = 30)
+    private com.cretas.aims.entity.enums.CustomerSource source;
+
+    /** 最近一次接洽时间 — 用于沉睡客户识别 + 销售跟进提醒 */
+    @Column(name = "last_contacted_at")
+    private java.time.LocalDateTime lastContactedAt;
+
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1: 客户级开票默认 (Option 3 三层 default 链第 1 层) ====================
+
+    /** 客户级默认税率 (%) — SalesOrder 创建时 prefill 到 SO.defaultTaxRate, 再下放到 Item.taxRate */
+    @Column(name = "default_tax_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal defaultTaxRate;
+
+    /** 客户级默认开票类型 — 同上 3 层 default 链, 最终落到 InvoiceRecord.invoiceType */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_invoice_type", length = 20)
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
     @Column(name = "notes", columnDefinition = "TEXT")

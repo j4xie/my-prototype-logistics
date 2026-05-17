@@ -40,6 +40,16 @@ public interface CustomerService {
      * 获取客户列表（分页, 支持 keyword 过滤）
       */
     PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword);
+
+    /**
+     * 获取客户列表（分页, 支持 keyword + 3 个 CRM 过滤器）— Sprint 4 W2 S-CRM-FULL-1.
+     * 任一过滤参数 null 即不过滤.
+     */
+    PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword,
+                                              com.cretas.aims.entity.enums.CustomerStatus customerStatus,
+                                              com.cretas.aims.entity.enums.CustomerImportance importance,
+                                              com.cretas.aims.entity.enums.CustomerSource source);
+
      /**
      * 获取所有活跃客户
       */

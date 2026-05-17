@@ -48,6 +48,28 @@ public class CustomerDTO {
     private BigDecimal totalSales;
     private LocalDateTime lastOrderDate;
     private BigDecimal averageOrderValue;
+    // ==================== Sprint 4 W2 S-CRM-FULL-1 ====================
+
+    /** 客户生命周期状态 (LEAD/INITIAL_CONTACT/.../RECOVERED) */
+    private com.cretas.aims.entity.enums.CustomerStatus customerStatus;
+
+    /** 客户重要程度 (VIP/IMPORTANT/NORMAL/LOW) */
+    private com.cretas.aims.entity.enums.CustomerImportance importance;
+
+    /** 客户来源渠道 */
+    private com.cretas.aims.entity.enums.CustomerSource source;
+
+    /** 最近接洽时间 — null = 从未接洽 */
+    private LocalDateTime lastContactedAt;
+
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1: 客户级开票默认 ====================
+
+    /** 客户级默认税率 (%) — SO 创建 prefill 第 1 层 */
+    private BigDecimal defaultTaxRate;
+
+    /** 客户级默认开票类型 — SO 创建 prefill 第 1 层 */
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     // 审计信息
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

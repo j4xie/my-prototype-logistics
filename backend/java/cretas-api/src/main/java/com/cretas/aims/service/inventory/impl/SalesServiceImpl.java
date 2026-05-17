@@ -134,8 +134,9 @@ public class SalesServiceImpl implements SalesService {
                 "totalAmount", preComputedTotal,
                 "hasDuplicateProduct", hasDuplicate));
 
-        // 验证客户
-        customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
+        // 验证客户 (Sprint 4 W2 S-INVOICE-CLIENT-1: 捕获 customer 用于 default prefill)
+        com.cretas.aims.entity.Customer customer = customerRepository
+                .findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
 
         String orderNumber = generateSalesOrderNumber(factoryId);
@@ -156,6 +157,15 @@ public class SalesServiceImpl implements SalesService {
         order.setQuoteId(request.getQuoteId()); // 报价→订单联动 (5016s 客户流程文档)
         order.setStatus(SalesOrderStatus.DRAFT);
         order.setCreatedBy(userId);
+
+        // Sprint 4 W2 S-INVOICE-CLIENT-1 Option 3 三层 default 链 — 第 1→2 层 prefill:
+        // 请求显式 > 客户级 default. SO 上的值会在 Item 创建时继续下放 (第 2→3 层).
+        order.setDefaultTaxRate(request.getDefaultTaxRate() != null
+                ? request.getDefaultTaxRate()
+                : customer.getDefaultTaxRate());
+        order.setDefaultInvoiceType(request.getDefaultInvoiceType() != null
+                ? request.getDefaultInvoiceType()
+                : customer.getDefaultInvoiceType());
 
         order = salesOrderRepository.save(order);
 
@@ -186,7 +196,14 @@ public class SalesServiceImpl implements SalesService {
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
-            item.setTaxRate(itemDTO.getTaxRate() != null ? itemDTO.getTaxRate() : BigDecimal.ZERO);
+            // Sprint 4 W2 S-INVOICE-CLIENT-1 Option 3 三层 default 链 — 第 2→3 层 prefill:
+            // Item 显式 > SO defaultTaxRate (已 prefill 自客户) > 0. 用户改 SO 级 default 触发批量重算
+            // 由前端 watch 处理, 后端只兜底防 NPE.
+            BigDecimal effectiveTaxRate = itemDTO.getTaxRate();
+            if (effectiveTaxRate == null) {
+                effectiveTaxRate = order.getDefaultTaxRate() != null ? order.getDefaultTaxRate() : BigDecimal.ZERO;
+            }
+            item.setTaxRate(effectiveTaxRate);
             item.setDiscountRate(itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO);
             item.setRemark(itemDTO.getRemark());
             item.setSpecification(itemDTO.getSpecification());

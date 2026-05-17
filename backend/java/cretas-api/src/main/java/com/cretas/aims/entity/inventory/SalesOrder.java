@@ -189,6 +189,19 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "estimated_profit", precision = 15, scale = 2)
     private BigDecimal estimatedProfit;
 
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1: 订单级默认 (Option 3 三层 default 链第 2 层) ====================
+
+    /** 单据级默认税率 (%) — SO 创建时 prefill 自 Customer.defaultTaxRate, 再下放到 Item.taxRate.
+     *  Item 创建时若未显式指定 taxRate, 则继承此 SO default. 用户可改单据级 default 临时覆盖客户级. */
+    @PriceSensitive
+    @Column(name = "default_tax_rate", precision = 5, scale = 2)
+    private BigDecimal defaultTaxRate;
+
+    /** 单据级默认开票类型 — 同上 3 层链, 最终下放到 InvoiceRecord.invoiceType */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_invoice_type", length = 20)
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     // ==================== 开票/回款/扩展 ====================
 
     /** 开票状态: NOT_INVOICED, PARTIAL_INVOICED, FULLY_INVOICED */

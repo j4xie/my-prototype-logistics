@@ -71,6 +71,38 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
                                             Pageable pageable);
 
     /**
+     * Sprint 4 W2 S-CRM-FULL-1: list 多过滤器 (keyword + customerStatus + importance + source).
+     * 任一参数 null 即不过滤. 用 CAST(:param AS string) 给 PG 类型 hint, 避免
+     * "could not determine data type of parameter $N" (per database-entity-sync.md).
+     * keyword 已经过 SqlLikeEscaper.escape() 处理, ESCAPE '\\' 子句生效.
+     */
+    @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
+           "AND (CAST(:keyword AS string) IS NULL " +
+           "     OR c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "     OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "     OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\') " +
+           "AND (CAST(:customerStatus AS string) IS NULL OR c.customerStatus = :customerStatus) " +
+           "AND (CAST(:importance AS string) IS NULL OR c.importance = :importance) " +
+           "AND (CAST(:source AS string) IS NULL OR c.source = :source)")
+    Page<Customer> searchByFiltersPaged(
+            @Param("factoryId") String factoryId,
+            @Param("keyword") String keyword,
+            @Param("customerStatus") com.cretas.aims.entity.enums.CustomerStatus customerStatus,
+            @Param("importance") com.cretas.aims.entity.enums.CustomerImportance importance,
+            @Param("source") com.cretas.aims.entity.enums.CustomerSource source,
+            Pageable pageable);
+
+    /**
+     * Sprint 4 W2 S-CRM-FULL-1: 沉睡客户查询 — 最近接洽 < cutoff.
+     * lastContactedAt IS NULL 视为从未接洽 (一并返回), 用 OR 涵盖.
+     */
+    @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
+           "AND (c.lastContactedAt IS NULL OR c.lastContactedAt < :cutoff) " +
+           "ORDER BY c.lastContactedAt ASC NULLS FIRST")
+    List<Customer> findSleepingCustomers(@Param("factoryId") String factoryId,
+                                         @Param("cutoff") java.time.LocalDateTime cutoff);
+
+    /**
      * 根据客户类型查找客户
      */
     List<Customer> findByFactoryIdAndType(String factoryId, String type);

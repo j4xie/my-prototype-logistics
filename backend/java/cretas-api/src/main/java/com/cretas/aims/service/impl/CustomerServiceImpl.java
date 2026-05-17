@@ -163,15 +163,25 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword) {
+        return getCustomerList(factoryId, pageRequest, keyword, null, null, null);
+    }
+
+    @Override
+    public PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword,
+                                                     com.cretas.aims.entity.enums.CustomerStatus customerStatus,
+                                                     com.cretas.aims.entity.enums.CustomerImportance importance,
+                                                     com.cretas.aims.entity.enums.CustomerSource source) {
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPage() - 1,
                 pageRequest.getSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        Page<Customer> customerPage = (keyword != null && !keyword.trim().isEmpty())
-                ? customerRepository.searchByNamePaged(factoryId,
-                    com.cretas.aims.util.SqlLikeEscaper.escape(keyword.trim()), pageable)
-                : customerRepository.findByFactoryId(factoryId, pageable);
+        // Sprint 4 W2 S-CRM-FULL-1: keyword 为空时传 null 给 repository (走 IS NULL 分支).
+        String escapedKeyword = (keyword != null && !keyword.trim().isEmpty())
+                ? com.cretas.aims.util.SqlLikeEscaper.escape(keyword.trim())
+                : null;
+        Page<Customer> customerPage = customerRepository.searchByFiltersPaged(
+                factoryId, escapedKeyword, customerStatus, importance, source, pageable);
         List<CustomerDTO> customerDTOs = customerPage.getContent().stream()
                 .map(customerMapper::toDTO)
                 .collect(Collectors.toList());

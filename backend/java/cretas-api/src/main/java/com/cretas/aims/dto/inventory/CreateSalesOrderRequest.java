@@ -50,6 +50,15 @@ public class CreateSalesOrderRequest {
     /** 其他费用 (装卸/包装/加急等) */
     private List<ExtraFeeItem> extraFees;
 
+    // ==================== Sprint 4 W2 S-INVOICE-CLIENT-1 Option 3 三层 default 链 (第 2 层 SO override) ====================
+
+    /** 单据级默认税率 (%) — 未传 → SO 创建时 prefill 自 customer.defaultTaxRate.
+     *  传值表示用户单据级临时覆盖客户级 default (e.g. 客户 13%, 此单 9%). */
+    private BigDecimal defaultTaxRate;
+
+    /** 单据级默认开票类型 — 同 defaultTaxRate, 未传 → fallback 自 customer.defaultInvoiceType */
+    private com.cretas.aims.entity.enums.InvoiceType defaultInvoiceType;
+
     @Valid
     @NotEmpty(message = "订单行项目不能为空")
     private List<SalesOrderItemDTO> items;
