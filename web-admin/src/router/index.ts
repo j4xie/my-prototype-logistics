@@ -425,6 +425,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SalesReminders',
             component: () => import('@/views/sales/reminders/MyReminders.vue'),
             meta: { requiresAuth: true, title: '我的提醒', module: 'sales' }
+          },
+          // Sprint 4 W2 S-NEED-1: 客户需求
+          {
+            path: 'needs',
+            name: 'SalesNeeds',
+            component: () => import('@/views/sales/needs/list.vue'),
+            meta: { requiresAuth: true, title: '客户需求', module: 'sales' }
           }
         ]
       },
