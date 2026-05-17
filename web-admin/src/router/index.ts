@@ -602,6 +602,14 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: 'LLM 用量监控', module: 'system' }
           },
           {
+            // Sprint 4 Chat K C-LOG-AUDIT-1 (2026-05-16): 系统操作日志独立 menu.
+            // Tracks entity-level CRUD via @Loggable AOP. backend: OperationLogController.
+            path: 'operation-log',
+            name: 'SystemOperationLog',
+            component: () => import('@/views/system/operation-log/index.vue'),
+            meta: { requiresAuth: true, title: '操作日志', module: 'system' }
+          },
+          {
             // 数据织网 A spec admin audit page (Phase 3 Day 10 + Phase 4.5 wire-up)
             path: 'data-fabric/capability-audit',
             name: 'CapabilityAudit',
