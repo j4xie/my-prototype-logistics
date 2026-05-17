@@ -5,6 +5,12 @@ import com.cretas.aims.dto.report.DashboardStatisticsDTO;
 import com.cretas.aims.dto.report.KpiMetricsDTO;
 import com.cretas.aims.dto.report.OeeReportDTO;
 import com.cretas.aims.dto.report.ProductionByProductDTO;
+import com.cretas.aims.dto.report.SalesProductProfitRowDTO;
+import com.cretas.aims.entity.inventory.SalesOrder;
+import com.cretas.aims.entity.inventory.SalesOrderItem;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.repository.inventory.SalesOrderItemRepository;
+import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.service.ReportService;
 import com.cretas.aims.service.report.DashboardStatisticsService;
 import com.cretas.aims.service.report.ProductionReportService;
@@ -12,6 +18,13 @@ import com.cretas.aims.service.report.ReportExportService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -35,6 +48,12 @@ public class ReportServiceImpl implements ReportService {
     private final DashboardStatisticsService dashboardStatisticsService;
     private final ReportExportService reportExportService;
     private final ProductionReportService productionReportService;
+    private final SalesOrderRepository salesOrderRepository;
+    private final SalesOrderItemRepository salesOrderItemRepository;
+
+    private static final int DEFAULT_PROFIT_LOOKBACK_DAYS = 90;
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
+    private static final BigDecimal TREND_FLAT_THRESHOLD_PCT = new BigDecimal("1.0");
 
     // ==================== Dashboard 统计 ====================
 
@@ -261,5 +280,132 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public Map<String, Object> getOnTimeDeliveryReport(String factoryId, LocalDate startDate, LocalDate endDate) {
         return productionReportService.getOnTimeDeliveryReport(factoryId, startDate, endDate);
+    }
+
+    @Override
+    public List<SalesProductProfitRowDTO> getSalesOrderProductProfitDetail(String factoryId,
+                                                                           String salesOrderId,
+                                                                           Integer lookbackDays) {
+        SalesOrder order = salesOrderRepository.findById(salesOrderId)
+                .orElseThrow(() -> new BusinessException(404, "销售订单不存在: " + salesOrderId));
+        if (!Objects.equals(order.getFactoryId(), factoryId)) {
+            throw new BusinessException(403, "无权访问该工厂的销售订单");
+        }
+
+        List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(salesOrderId);
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        int window = lookbackDays != null && lookbackDays > 0 ? lookbackDays : DEFAULT_PROFIT_LOOKBACK_DAYS;
+        LocalDate endDate = order.getOrderDate() != null ? order.getOrderDate() : LocalDate.now();
+        LocalDate startDate = endDate.minusDays(window);
+
+        List<String> productTypeIds = items.stream()
+                .map(SalesOrderItem::getProductTypeId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<String, BigDecimal> avgByProduct = new HashMap<>();
+        if (!productTypeIds.isEmpty()) {
+            salesOrderItemRepository.findHistoricalAvgPrice(factoryId, productTypeIds, startDate, endDate)
+                    .forEach(row -> {
+                        if (row.getAvgUnitPrice() != null) {
+                            avgByProduct.put(row.getProductTypeId(),
+                                    row.getAvgUnitPrice().setScale(4, RoundingMode.HALF_UP));
+                        }
+                    });
+        }
+
+        List<SalesProductProfitRowDTO> result = new ArrayList<>(items.size());
+        for (SalesOrderItem item : items) {
+            result.add(buildProfitRow(item, avgByProduct.get(item.getProductTypeId())));
+        }
+        return result;
+    }
+
+    /**
+     * Build one profit row. Honors @PriceSensitive by leaving derived price fields null
+     * when any required input is null (i.e., already stripped upstream by the framework
+     * for non-price roles when the entity is fetched in that auth context).
+     *
+     * <p>This service is called via REST under {@link com.cretas.aims.controller.ReportController}
+     * which is gated by {@code @RequirePermission}, so non-price callers should never reach
+     * here — but the null-safe computation defends against future code paths that might.
+     */
+    private SalesProductProfitRowDTO buildProfitRow(SalesOrderItem item, BigDecimal historicalAvg) {
+        BigDecimal quantity = item.getQuantity();
+        BigDecimal unitPrice = item.getUnitPrice();
+        BigDecimal costUnitPrice = item.getCostUnitPrice();
+        BigDecimal discountRate = item.getDiscountRate();
+        BigDecimal taxRate = item.getTaxRate();
+
+        SalesProductProfitRowDTO.SalesProductProfitRowDTOBuilder b = SalesProductProfitRowDTO.builder()
+                .productTypeId(item.getProductTypeId())
+                .productName(item.getProductName())
+                .unit(item.getUnit())
+                .quantity(quantity)
+                .unitPrice(unitPrice)
+                .costUnitPrice(costUnitPrice)
+                .historicalAvgPrice(historicalAvg);
+
+        BigDecimal grossProfit = null;
+        if (unitPrice != null && costUnitPrice != null) {
+            grossProfit = unitPrice.subtract(costUnitPrice).setScale(4, RoundingMode.HALF_UP);
+            b.grossProfit(grossProfit);
+            if (unitPrice.signum() > 0) {
+                b.grossMarginPct(grossProfit.multiply(HUNDRED)
+                        .divide(unitPrice, 2, RoundingMode.HALF_UP));
+            }
+        }
+
+        BigDecimal lineAmount = null;
+        if (unitPrice != null && quantity != null) {
+            BigDecimal raw = unitPrice.multiply(quantity);
+            BigDecimal discountMultiplier = BigDecimal.ONE;
+            if (discountRate != null && discountRate.signum() > 0) {
+                discountMultiplier = BigDecimal.ONE.subtract(
+                        discountRate.divide(HUNDRED, 6, RoundingMode.HALF_UP));
+            }
+            lineAmount = raw.multiply(discountMultiplier).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        if (lineAmount != null && unitPrice != null && quantity != null && discountRate != null) {
+            b.discountAmount(unitPrice.multiply(quantity).subtract(lineAmount).setScale(2, RoundingMode.HALF_UP));
+        }
+
+        BigDecimal taxAmount = null;
+        if (lineAmount != null && taxRate != null) {
+            taxAmount = lineAmount.multiply(taxRate).divide(HUNDRED, 2, RoundingMode.HALF_UP);
+            b.taxAmount(taxAmount);
+        }
+
+        if (grossProfit != null && quantity != null) {
+            BigDecimal netProfit = grossProfit.multiply(quantity);
+            if (discountRate != null && discountRate.signum() > 0) {
+                BigDecimal discountMultiplier = BigDecimal.ONE.subtract(
+                        discountRate.divide(HUNDRED, 6, RoundingMode.HALF_UP));
+                netProfit = netProfit.multiply(discountMultiplier);
+            }
+            if (taxAmount != null) {
+                netProfit = netProfit.subtract(taxAmount);
+            }
+            b.netProfit(netProfit.setScale(2, RoundingMode.HALF_UP));
+        }
+
+        if (unitPrice != null && historicalAvg != null && historicalAvg.signum() > 0) {
+            BigDecimal deltaPct = unitPrice.subtract(historicalAvg).multiply(HUNDRED)
+                    .divide(historicalAvg, 2, RoundingMode.HALF_UP);
+            if (deltaPct.abs().compareTo(TREND_FLAT_THRESHOLD_PCT) < 0) {
+                b.priceTrend("FLAT");
+            } else if (deltaPct.signum() > 0) {
+                b.priceTrend("UP");
+            } else {
+                b.priceTrend("DOWN");
+            }
+        }
+
+        return b.build();
     }
 }

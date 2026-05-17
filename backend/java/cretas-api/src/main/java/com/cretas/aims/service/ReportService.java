@@ -5,6 +5,7 @@ import com.cretas.aims.dto.report.DashboardStatisticsDTO;
 import com.cretas.aims.dto.report.KpiMetricsDTO;
 import com.cretas.aims.dto.report.OeeReportDTO;
 import com.cretas.aims.dto.report.ProductionByProductDTO;
+import com.cretas.aims.dto.report.SalesProductProfitRowDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
 import java.util.List;
@@ -256,4 +257,21 @@ public interface ReportService {
      * @return 准时交付数据
      */
     Map<String, Object> getOnTimeDeliveryReport(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 获取销售订单产品级利润详情 (Sprint 4 Wave 2 S-PROFIT-DETAIL-1).
+     *
+     * <p>11-col view per line item: product/qty/unitPrice/cost/grossProfit/grossMarginPct/
+     * discount/tax/netProfit/historicalAvgPrice/trend. Price-sensitive fields stripped
+     * via {@code @PriceSensitive} for non-price roles.
+     *
+     * @param factoryId factory scope
+     * @param salesOrderId the order to drill into
+     * @param lookbackDays historical avg window (defaults to 90 at controller layer)
+     * @return per-line profit detail rows
+     * @throws com.cretas.aims.exception.BusinessException when order not found or cross-tenant
+     */
+    List<SalesProductProfitRowDTO> getSalesOrderProductProfitDetail(String factoryId,
+                                                                    String salesOrderId,
+                                                                    Integer lookbackDays);
 }

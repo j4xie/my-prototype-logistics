@@ -995,6 +995,14 @@ async function handleQuickPayFull() {
             <el-button v-if="['PARTIAL_DELIVERED','DELIVERED','COMPLETED'].includes(order.status)"
                        type="warning" :loading="submitting" @click="openReturnDialog">申请退货</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
+            <!-- Sprint 4 Wave 2 S-PROFIT-DETAIL-1: per-product profit drill-down.
+                 Only meaningful for non-DRAFT orders with line items + visible to price-cleared roles. -->
+            <el-button
+              v-if="canViewPrice && order.status !== 'DRAFT'"
+              type="info"
+              plain
+              @click="router.push(`/sales/orders/${orderId}/profit`)"
+            >产品级利润分析</el-button>
           </div>
         </div>
       </template>
