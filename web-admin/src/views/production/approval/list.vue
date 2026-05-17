@@ -8,6 +8,7 @@ import {
   getPendingApprovals, approveReport, rejectReport, batchApproveReports,
   type ApprovalItem
 } from '@/api/processProduction';
+import OpinionInputDialog from '@/components/approval/OpinionInputDialog.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -71,21 +72,28 @@ async function handleApprove(row: ApprovalItem) {
   }
 }
 
-async function handleReject(row: ApprovalItem) {
+// C-OPINION-1: 弹框 state + pending row reference (替代 ElMessageBox.prompt)
+const rejectDialogVisible = ref(false);
+const rejectTargetRow = ref<ApprovalItem | null>(null);
+
+function handleReject(row: ApprovalItem) {
   if (!factoryId.value) return;
+  rejectTargetRow.value = row;
+  rejectDialogVisible.value = true;
+}
+
+async function handleRejectConfirm(reason: string) {
+  const row = rejectTargetRow.value;
+  if (!factoryId.value || !row) return;
   try {
-    const { value: reason } = await ElMessageBox.prompt('请输入驳回原因', '驳回报工', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPattern: /.+/,
-      inputErrorMessage: '请输入驳回原因'
-    });
     await rejectReport(factoryId.value, row.id, reason);
     ElMessage.success('已驳回');
     loadData();
   } catch (e) {
     // Interceptor shows specific toast; dedupe fallback
     if (e !== 'cancel') console.error('[操作失败]', e);
+  } finally {
+    rejectTargetRow.value = null;
   }
 }
 
@@ -199,6 +207,23 @@ function formatDate(dateStr: string | null) {
         @current-change="handlePageChange"
       />
     </el-card>
+
+    <!-- C-OPINION-1: 驳回意见弹框 (R3 必选 dropdown + R2 context line) -->
+    <OpinionInputDialog
+      v-if="factoryId"
+      v-model:visible="rejectDialogVisible"
+      title="驳回报工"
+      :context-line="
+        rejectTargetRow
+          ? `${rejectTargetRow.reporterName ?? '?'} - ${rejectTargetRow.processCategory ?? '?'} (${formatDate(rejectTargetRow.reportDate)})`
+          : ''
+      "
+      :factory-id="factoryId"
+      decision-type="CUSTOM"
+      other-placeholder="请输入驳回原因"
+      confirm-text="驳回"
+      @confirm="handleRejectConfirm"
+    />
   </div>
 </template>
 
