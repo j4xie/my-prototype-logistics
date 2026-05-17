@@ -13,7 +13,9 @@ import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
 import com.cretas.aims.entity.bom.OverheadCostConfig;
 import com.cretas.aims.repository.bom.BomChangeLogRepository;
+import com.cretas.aims.dto.orchestration.BomTreeResult;
 import com.cretas.aims.service.BomService;
+import com.cretas.aims.service.orchestration.RecursiveBomExpansionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +47,7 @@ import java.util.List;
 public class BomController {
 
     private final BomService bomService;
+    private final RecursiveBomExpansionService recursiveBomExpansionService;
 
     /** P1-9 BOM 变更痕迹查询 Repository (可选注入, 老环境未部署 migration 时不阻塞) */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -59,6 +62,27 @@ public class BomController {
             @PathVariable @Parameter(description = "产品类型ID") String productTypeId) {
         log.info("Getting BOM items: factoryId={}, productTypeId={}", factoryId, productTypeId);
         return ApiResponse.success(bomService.getBomItemsByProduct(factoryId, productTypeId));
+    }
+
+    /**
+     * M-MATTREE-1 (Sprint 4 W2): 多级 BOM 树展开 + 叶子节点库存短缺计算.
+     *
+     * <p>区别于 {@code /items/{productTypeId}} 的单层 BomItem 查询, 本端口递归展开 sub-BOM
+     * (半成品 → 原料), 返回完整树结构 + maxDepth / leafCount / shortfallLeafCount 统计 +
+     * 循环检测 (cycleDetected + cycleTypeIds)。</p>
+     */
+    @GetMapping("/tree/{productTypeId}")
+    @Operation(summary = "多级 BOM 树展开 (M-MATTREE-1)",
+            description = "递归展开成品 BOM 到原料叶子, 叶子节点附加库存可用量 + 短缺数量")
+    public ApiResponse<BomTreeResult> getBomTree(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "产品类型ID (树根)") String productTypeId,
+            @RequestParam(value = "quantity", defaultValue = "1")
+            @Parameter(description = "计划生产数量 (默认 1)") java.math.BigDecimal quantity) {
+        log.info("Expanding BOM tree: factoryId={}, productTypeId={}, quantity={}",
+                factoryId, productTypeId, quantity);
+        return ApiResponse.success(
+                recursiveBomExpansionService.expandTree(factoryId, productTypeId, quantity));
     }
 
     /**

@@ -94,6 +94,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: 'BOM配方管理', module: 'production' }
           },
           {
+            path: 'bom/tree',
+            name: 'BomTreeExpansion',
+            component: () => import('@/views/production/bom/tree.vue'),
+            meta: { requiresAuth: true, title: '多级 BOM 展开', module: 'production' }
+          },
+          {
             path: 'approval',
             name: 'ProductionApproval',
             component: () => import('@/views/production/approval/list.vue'),
