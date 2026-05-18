@@ -42,6 +42,15 @@ export interface RowAction {
    * is not in PRICE_VIEW_ROLES (mirrors backend `procurement:price:view`).
    */
   priceRelated?: boolean;
+  /**
+   * Feature is defined but its backing API is not implemented yet. Renderers
+   * MUST treat as disabled + append " (开发中)" suffix to the label so the user
+   * sees roadmap signal but can't click into a "待接 API" stub toast.
+   *
+   * 2026-05-18: applied to COPY / RETURN / VIEW_PRICE_HISTORY based on F006
+   * admin feedback. Remove the flag when the API ships.
+   */
+  pending?: boolean;
 }
 
 export interface RowActionAIContext {
@@ -75,10 +84,10 @@ export const COMMON_ACTIONS = {
     label: '转外购',
     aiHint: '我要找外购',
   },
-  RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单' },
+  RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单', pending: true },
   TRANSFER: { id: 'transfer', icon: '🔄', label: '调拨', aiHint: '我要调拨' },
   PRINT_PDF: { id: 'print-pdf', icon: '📄', label: '打印 PDF', aiHint: '打印这单' },
-  COPY: { id: 'copy', icon: '📑', label: '复制', aiHint: '复制这单' },
+  COPY: { id: 'copy', icon: '📑', label: '复制', aiHint: '复制这单', pending: true },
   LOCK: { id: 'lock', icon: '🔒', label: '锁定', aiHint: '锁住这单不让人改' },
   UNLOCK: { id: 'unlock', icon: '🔓', label: '解锁', aiHint: '解锁这单' },
   EDIT: { id: 'edit', icon: '✏️', label: '编辑', aiHint: '修改这单' },
@@ -128,6 +137,7 @@ export const COMMON_ACTIONS = {
     label: '价格历史',
     priceRelated: true,
     aiHint: '看这单价格历史',
+    pending: true,
   },
   VIEW_DETAIL: { id: 'view-detail', icon: '🔍', label: '查看详情', aiHint: '看这单详情' },
 } as const satisfies Record<string, Omit<RowAction, never>>;

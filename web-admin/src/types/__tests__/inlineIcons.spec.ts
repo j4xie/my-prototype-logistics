@@ -7,13 +7,14 @@ import {
 import type { RowAction } from '../rowActions';
 
 describe('INLINE_ICONS catalog', () => {
-  it('exposes 7 icons in canonical order', () => {
+  // 2026-05-18 (PR #859): print-pdf removed (duplicate of top-row PDF button).
+  // forward + audit marked pending (API not implemented yet).
+  it('exposes 6 icons in canonical order (print-pdf removed)', () => {
     expect(INLINE_ICONS.map((d) => d.id)).toEqual([
       'copy',
       'mark',
       'lock',
       'forward',
-      'print-pdf',
       'delete',
       'audit',
     ]);
@@ -28,6 +29,11 @@ describe('INLINE_ICONS catalog', () => {
     const del = INLINE_ICONS.find((d) => d.id === 'delete')!;
     expect(del.danger).toBe(true);
     expect(del.requiresConfirm).toBe(true);
+  });
+
+  it('flags forward + audit as pending (待接 API)', () => {
+    const pending = INLINE_ICONS.filter((d) => d.pending).map((d) => d.id);
+    expect(pending.sort()).toEqual(['audit', 'forward']);
   });
 });
 
@@ -60,16 +66,36 @@ describe('computeInlineIconStates', () => {
     expect(copy.enabled).toBe(false);
   });
 
-  it('preserves canonical 7-icon order', () => {
+  it('preserves canonical 6-icon order', () => {
     const states = computeInlineIconStates([]);
     expect(states.map((s) => s.def.id)).toEqual([
       'copy',
       'mark',
       'lock',
       'forward',
-      'print-pdf',
       'delete',
       'audit',
     ]);
+  });
+
+  it('propagates pending flag from INLINE_ICONS defs (forward+audit)', () => {
+    const states = computeInlineIconStates([]);
+    const fwd = states.find((s) => s.def.id === 'forward')!;
+    const aud = states.find((s) => s.def.id === 'audit')!;
+    const cpy = states.find((s) => s.def.id === 'copy')!;
+    expect(fwd.pending).toBe(true);
+    expect(aud.pending).toBe(true);
+    expect(cpy.pending).toBe(false);
+  });
+
+  it('propagates pending flag from RowAction.pending (copy via COMMON_ACTIONS)', () => {
+    // COMMON_ACTIONS.COPY is now marked pending; simulate the action arriving
+    // from useRowActions with pending=true.
+    const states = computeInlineIconStates([
+      { id: 'copy', icon: '📑', label: '复制', pending: true } as RowAction,
+    ]);
+    const cpy = states.find((s) => s.def.id === 'copy')!;
+    expect(cpy.enabled).toBe(true);
+    expect(cpy.pending).toBe(true);
   });
 });
