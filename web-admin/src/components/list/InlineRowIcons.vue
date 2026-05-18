@@ -7,12 +7,12 @@ import {
 } from '@/types/inlineIcons';
 
 /**
- * U-ICON-1 — inline 7-icon row toolbar (hover-on-row).
+ * U-ICON-1 — inline action toolbar (text-only chips).
  *
- * Renders 7 small icon buttons in the row末 cell. Visible on row hover via
- * parent's :class="{ 'row-hover': true }" + CSS opacity. Coexists with the
- * "更多 ▾" RowActionMenu (PR #678) — this is inline-primary, that is
- * dropdown-secondary.
+ * 2026-05-18 redesign: emoji icons + hover-tooltip replaced with plain text
+ * chips, and disabled entries no longer render at all (was opacity 0.35).
+ * Coexists with the "更多 ▾" RowActionMenu (PR #678) — this is inline-primary,
+ * that is dropdown-secondary.
  *
  * Props:
  *   - rowActions: output of computeRowActions for the row (status + RBAC filtered)
@@ -31,69 +31,60 @@ const emit = defineEmits<{
   (e: 'icon-click', id: InlineIconId): void;
 }>();
 
-const states = computed(() => computeInlineIconStates(props.rowActions, props.entityType));
+// 客户反馈 (2026-05-18, F006 admin): 7 emoji icons 永驻 + 无文字 + disabled 也渲染
+// → 用户不知道每个干啥, 看到一堆灰色图标以为不能用。修法:
+//   1. 过滤 disabled — 只渲染 enabled 的, 当前状态不允许的直接不显示
+//   2. 去掉 emoji icon, 纯文字 label, 更直接 (per 用户 2026-05-18 二次反馈)
+// 防呆设计 Rule 5 — "用户犯错前阻止" 而不是 disabled 灰掉让用户猜。
+const enabledStates = computed(() =>
+  computeInlineIconStates(props.rowActions, props.entityType).filter((s) => s.enabled)
+);
 
-function handle(id: InlineIconId, enabled: boolean): void {
-  if (!enabled) return;
+function handle(id: InlineIconId): void {
   emit('icon-click', id);
 }
 </script>
 
 <template>
   <div class="inline-row-icons" role="toolbar" aria-label="行操作">
-    <el-tooltip
-      v-for="state in states"
+    <button
+      v-for="state in enabledStates"
       :key="state.def.id"
-      :content="state.enabled ? state.def.label : (state.disabledReason || state.def.label)"
-      placement="top"
-      :show-after="150"
-    >
-      <button
-        type="button"
-        class="inline-row-icon-btn"
-        :class="{ disabled: !state.enabled, danger: state.def.danger }"
-        :aria-label="state.def.label"
-        :disabled="!state.enabled"
-        :tabindex="state.enabled ? 0 : -1"
-        @click.stop="handle(state.def.id, state.enabled)"
-      >
-        <span class="inline-row-icon">{{ state.def.icon }}</span>
-      </button>
-    </el-tooltip>
+      type="button"
+      class="inline-row-icon-btn"
+      :class="{ danger: state.def.danger }"
+      :aria-label="state.def.label"
+      @click.stop="handle(state.def.id)"
+    >{{ state.def.label }}</button>
   </div>
 </template>
 
 <style scoped>
 .inline-row-icons {
   display: inline-flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 4px;
   align-items: center;
-  /* Parent row should set opacity via `.el-table__row:hover .inline-row-icons`
-     for hover-reveal. Standalone use shows always-on. */
+  row-gap: 4px;
 }
 .inline-row-icon-btn {
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 2px 5px;
+  border: none;
+  padding: 0 2px;
   cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--el-color-primary);
+  transition: color 0.12s ease;
 }
-.inline-row-icon-btn:hover:not(.disabled) {
-  background: var(--el-fill-color-light);
-  border-color: var(--el-border-color-light);
+.inline-row-icon-btn:hover {
+  color: var(--el-color-primary-light-3);
+  text-decoration: underline;
 }
-.inline-row-icon-btn.disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.inline-row-icon-btn.danger {
+  color: var(--el-color-danger);
 }
-.inline-row-icon-btn.danger:hover:not(.disabled) {
-  background: var(--el-color-danger-light-9);
-  border-color: var(--el-color-danger-light-5);
-}
-.inline-row-icon {
-  display: inline-block;
+.inline-row-icon-btn.danger:hover {
+  color: var(--el-color-danger-light-3);
 }
 </style>
