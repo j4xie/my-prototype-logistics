@@ -572,6 +572,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'HRLeaveBalances',
             component: () => import('@/views/hr/leave-balances/list.vue'),
             meta: { requiresAuth: true, title: '假期余额', module: 'hr' }
+          },
+          {
+            // P1-40 H-WAGE-FULL MVP — 月度工资单 (基本工资 + 社保 + 个税 + 实发)
+            path: 'salaries',
+            name: 'HRSalaries',
+            component: () => import('@/views/hr/salaries/list.vue'),
+            meta: { requiresAuth: true, title: '工资管理', module: 'hr' }
           }
         ]
       },
