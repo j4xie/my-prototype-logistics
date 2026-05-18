@@ -119,9 +119,9 @@ public class ReminderQueryTool extends AbstractBusinessTool {
         result.put("count", items.size());
         result.put("totalElements", page.getTotalElements());
         result.put("statusFilter", statusFilter);
+        result.put("assigneeUserId", userId);
         result.put("reminders", items);
         result.put("actionHint", "查看完整提醒列表或处理提醒: /sales/reminders (我的提醒页面)");
-        result.put("actionRoute", "/sales/reminders");
 
         // Pending count is convenient for AI summary ("还有 N 条未处理").
         long pendingCount = reminderService.countPending(factoryId, userId);
@@ -155,7 +155,6 @@ public class ReminderQueryTool extends AbstractBusinessTool {
         row.put("dueDate", r.getDueDate());
         row.put("snoozedUntil", r.getSnoozedUntil());
         row.put("message", r.getMessage());
-        row.put("assigneeId", r.getAssigneeId());
         return row;
     }
 

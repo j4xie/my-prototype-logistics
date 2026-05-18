@@ -133,6 +133,9 @@ public class CustomerTrackingRecentQueryTool extends AbstractBusinessTool {
 
         // 防呆 R2: 先解析客户名, 即使没有记录也能回出明确上下文 "X 客户最近 30 天无跟进"
         String customerName = resolveCustomerName(factoryId, customerId);
+        // 防呆 R2 (user-facing display): name 解析失败时 fall back to "该客户" 而非裸 UUID.
+        String customerNameForDisplay = (customerName != null && !customerName.isBlank())
+                ? customerName : "该客户";
 
         LocalDateTime since = LocalDateTime.now().minusDays(daysBack);
         List<CustomerTrackingRecord> records = customerTrackingRecordRepository.findRecentForCustomer(
@@ -160,11 +163,11 @@ public class CustomerTrackingRecentQueryTool extends AbstractBusinessTool {
 
         String message;
         if (items.isEmpty()) {
-            message = String.format("客户 %s 最近 %d 天暂无跟进记录",
-                    customerName != null ? customerName : customerId, daysBack);
+            message = String.format("%s 最近 %d 天暂无跟进记录",
+                    customerNameForDisplay, daysBack);
         } else {
-            message = String.format("客户 %s 最近 %d 天共 %d 条跟进记录",
-                    customerName != null ? customerName : customerId, daysBack, items.size());
+            message = String.format("%s 最近 %d 天共 %d 条跟进记录",
+                    customerNameForDisplay, daysBack, items.size());
         }
         return buildSimpleResult(message, data);
     }
