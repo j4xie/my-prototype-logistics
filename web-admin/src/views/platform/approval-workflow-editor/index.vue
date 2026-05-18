@@ -320,6 +320,8 @@ const decisionTypeOptions: Array<{ value: DecisionType; label: string }> = [
   { value: 'MATERIAL_DISPOSAL',       label: 'MATERIAL_DISPOSAL 物料处置' },
   { value: 'PRODUCTION_PLAN_CHANGE',  label: 'PRODUCTION_PLAN_CHANGE 生产计划变更' },
   { value: 'EQUIPMENT_STATUS_CHANGE', label: 'EQUIPMENT_STATUS_CHANGE 设备状态' },
+  { value: 'PURCHASE_ORDER_APPROVAL', label: 'PURCHASE_ORDER_APPROVAL 采购订单审批' },
+  { value: 'SALES_ORDER_APPROVAL',    label: 'SALES_ORDER_APPROVAL 销售订单审批' },
   { value: 'CUSTOM',                  label: 'CUSTOM 自定义' },
 ]
 

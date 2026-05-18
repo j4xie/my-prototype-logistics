@@ -207,6 +207,20 @@ public class ApprovalChainConfig extends BaseEntity {
         EXPENSE_APPROVAL,
 
         /**
+         * 采购订单审批 (Phase 1 Canvas-Workflow, 2026-05-18) —
+         * 替代 PR #859 purchase_order_approval_rules 临时方案.
+         * PurchaseServiceImpl.submitOrder 通过 ApprovalWorkflowExecutor
+         * 按此 DecisionType 查 active workflow 决定路由.
+         */
+        PURCHASE_ORDER_APPROVAL,
+
+        /**
+         * 销售订单审批 (Phase 1 Canvas-Workflow, 2026-05-18) —
+         * SalesOrderService 预留, 实际接入在 Phase B-2.
+         */
+        SALES_ORDER_APPROVAL,
+
+        /**
          * 其他自定义
          */
         CUSTOM
