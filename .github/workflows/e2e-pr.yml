@@ -43,6 +43,18 @@ jobs:
       POSTGRES_SMARTBI_PASSWORD: smartbi_pass
       JWT_SECRET: ci_e2e_jwt_secret_at_least_32_chars_long_for_github_actions
       SPRING_PROFILES_ACTIVE: pg
+      # Flyway is disabled in CI: the V*.sql migrations under db/flyway/ assume
+      # the pre-Flyway schema (notifications, factories, drools_rules, …) already
+      # exists from the Hibernate ddl-auto era — those CREATE TABLEs live in
+      # db/migration{,-pg-converted}/ which Flyway is not configured to scan
+      # (spring.flyway.locations=classpath:db/flyway only). On a fresh CI db,
+      # the very first ALTER (V20260416_01__notifications_add_target_role.sql)
+      # blows up with "relation 'notifications' does not exist", which is why
+      # e2e-pr-gate has been red since 2026-04-16. Letting Hibernate
+      # ddl-auto=update build the full schema from entity metadata instead
+      # gives us a working schema for the e2e suite. Migrations are still tested
+      # at the deploy-test-env stage (deploy-backend.sh) before prod.
+      SPRING_FLYWAY_ENABLED: 'false'
       PG_HOST: localhost
       PG_PORT: 5432
       PG_USER: cretas_user
@@ -69,6 +81,11 @@ jobs:
           # 4 minutes after wait-for-health timeout.
           psql -h localhost -U cretas_user -d cretas_db   -c "CREATE EXTENSION IF NOT EXISTS vector;"
           psql -h localhost -U cretas_user -d smartbi_db  -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Pre-create shedlock table — ShedLock library uses this but it's not a JPA entity,
+          # so Hibernate ddl-auto=update won't create it. Normally Flyway migration
+          # V20260415_01__shedlock_table.sql handles this, but SPRING_FLYWAY_ENABLED=false
+          # (see env block above) skips Flyway in CI. Mirrors the migration's schema exactly.
+          psql -h localhost -U cretas_user -d cretas_db -c "CREATE TABLE IF NOT EXISTS shedlock (name VARCHAR(128) NOT NULL, lock_until TIMESTAMP NOT NULL, locked_at TIMESTAMP NOT NULL, locked_by VARCHAR(255) NOT NULL, PRIMARY KEY (name));"
 
       # ── Toolchain ────────────────────────────────────────────────────────────
       - uses: actions/setup-java@v4
