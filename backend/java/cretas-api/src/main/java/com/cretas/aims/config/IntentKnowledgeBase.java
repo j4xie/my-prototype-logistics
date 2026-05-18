@@ -4670,11 +4670,17 @@ public class IntentKnowledgeBase {
         // V20260606_13 added HR_LEAVE_SUBMIT intent + Tool, V20260606_15 boosted KEYWORD priority,
         // but PHRASE_MATCH (this map) wins over KEYWORD per AIIntentService tier order, so the
         // boost alone didn't help. This is the "full fix" tracked as follow-up in V20260606_15:38.
-        // "批准请假" left as ATTENDANCE_STATS for now — no HR_LEAVE_APPROVE tool exists yet
-        // (separate follow-up if Tool added).
+        //
+        // #848 follow-up (2026-05-18): HR_LEAVE_APPROVE Tool + intent (V20260606_27) now ship,
+        // so "批准请假" / "同意请假" / "通过请假" / "驳回请假" / "拒绝请假" route to the new
+        // WRITE+preview Tool wrapping LeaveRequestService.approve / reject.
         phraseToIntentMapping.put("请假申请", "HR_LEAVE_SUBMIT");
         phraseToIntentMapping.put("帮我请假", "HR_LEAVE_SUBMIT");
-        phraseToIntentMapping.put("批准请假", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("批准请假", "HR_LEAVE_APPROVE");
+        phraseToIntentMapping.put("同意请假", "HR_LEAVE_APPROVE");
+        phraseToIntentMapping.put("通过请假", "HR_LEAVE_APPROVE");
+        phraseToIntentMapping.put("驳回请假", "HR_LEAVE_APPROVE");
+        phraseToIntentMapping.put("拒绝请假", "HR_LEAVE_APPROVE");
         phraseToIntentMapping.put("分配任务", "TASK_ASSIGN_WORKER");
         phraseToIntentMapping.put("删除员工", "HR_DELETE_EMPLOYEE");
 
