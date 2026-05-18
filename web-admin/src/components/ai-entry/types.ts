@@ -36,9 +36,9 @@ export const PRODUCTION_PLAN_CONFIG: AiEntryConfig = {
   welcomeMessage: '你好！我可以帮你快速创建生产计划。',
   scopeLabel: '仅限生产计划相关操作',
   examples: [
-    '帮我创建一个明天生产500kg豆腐的计划',
-    '给永佑客户排一批豆腐干，300kg，后天交货',
-    '创建生产计划：豆皮200kg，工序分切，批次日期今天',
+    '帮我创建一个明天生产500kg [产品名] 的计划',
+    '给 [客户名] 客户排一批 [产品名]，300kg，后天交货',
+    '创建生产计划：[产品名] 200kg，工序分切，批次日期今天',
   ],
   tutorialSteps: [
     { title: '描述需求', description: '用自然语言说出你要创建的生产计划，比如产品、数量、日期等', icon: '1' },
@@ -49,7 +49,7 @@ export const PRODUCTION_PLAN_CONFIG: AiEntryConfig = {
   systemPrompt: `你是食品工厂的生产计划助手。用户会用自然语言描述生产计划需求，你需要通过对话收集以下字段信息：
 
 必填字段：
-- productTypeName: 产品名称（如"豆腐干"、"豆腐"）
+- productTypeName: 产品名称（由工厂决定，你不知道具体清单，需要用户提供）
 - plannedQuantity: 计划数量（数字）
 - plannedDate: 计划日期（YYYY-MM-DD 格式）
 
@@ -59,6 +59,11 @@ export const PRODUCTION_PLAN_CONFIG: AiEntryConfig = {
 - batchDate: 批次日期（YYYY-MM-DD 格式）
 - notes: 备注
 
+⚠️ 重要规则：
+- **不要假设**工厂可生产哪些产品。每个工厂的产品不同（食品厂可能做豆制品、肉制品、烘焙等）。
+- 如果用户问"我们有哪些产品", 实话告诉用户："我无法直接查询工厂产品清单, 请直接告诉我您要生产的产品名称, 系统会根据您输入的名称匹配。"
+- 不要列举编造的产品例子。
+
 交互规则：
 1. 如果用户一次性提供了所有必填信息，直接返回 FILL_FORM
 2. 如果缺少必填字段，礼貌追问（每次只问1-2个问题）
@@ -67,7 +72,7 @@ export const PRODUCTION_PLAN_CONFIG: AiEntryConfig = {
 
 当所有必填字段收集完毕后，返回如下格式（用 markdown 代码块包裹）：
 \`\`\`json
-{"action":"FILL_FORM","params":{"productTypeName":"豆腐干","plannedQuantity":500,"plannedDate":"2026-03-10","sourceCustomerName":"永佑","processName":"分切","batchDate":"2026-03-10","notes":""}}
+{"action":"FILL_FORM","params":{"productTypeName":"<用户提供的产品名>","plannedQuantity":500,"plannedDate":"2026-03-10","sourceCustomerName":"<客户名>","processName":"分切","batchDate":"2026-03-10","notes":""}}
 \`\`\`
 
 在返回 JSON 之前，先用一句话总结收集到的信息。`,
@@ -89,8 +94,8 @@ export const PRODUCT_CONFIG: AiEntryConfig = {
   welcomeMessage: '你好！我可以帮你快速录入新产品。',
   scopeLabel: '仅限产品信息录入',
   examples: [
-    '添加一个成品 豆腐干 规格310g 单位kg',
-    '录入原料：大豆，单位kg',
+    '添加一个成品 [产品名] 规格310g 单位kg',
+    '录入原料：[原料名]，单位kg',
     '新增包辅材 纸箱 规格60*40*30 单位个',
   ],
   tutorialSteps: [
@@ -118,7 +123,7 @@ export const PRODUCT_CONFIG: AiEntryConfig = {
 
 当所有必填字段收集完毕后，返回如下格式：
 \`\`\`json
-{"action":"FILL_FORM","params":{"name":"豆腐干","productCategory":"FINISHED_PRODUCT","unit":"kg","specification":"310g","relatedCustomer":"","notes":""}}
+{"action":"FILL_FORM","params":{"name":"<产品名>","productCategory":"FINISHED_PRODUCT","unit":"kg","specification":"310g","relatedCustomer":"","notes":""}}
 \`\`\`
 
 在返回 JSON 之前，先用一句话总结。`,
@@ -192,9 +197,9 @@ export const SALES_ORDER_CONFIG: AiEntryConfig = {
   welcomeMessage: '你好！我可以帮你快速创建销售单。',
   scopeLabel: '仅限销售单相关操作',
   examples: [
-    '给永佑创建1000kg豆腐干订单，下周五交货',
-    '新建销售单：客户XX，豆腐500kg，豆皮200kg',
-    '创建订单给YY客户，豆腐干800kg单价12元，送到XX路',
+    '给 [客户名] 创建1000kg [产品名] 订单，下周五交货',
+    '新建销售单：客户XX，[产品A]500kg，[产品B]200kg',
+    '创建订单给YY客户，[产品名]800kg单价12元，送到XX路',
   ],
   tutorialSteps: [
     { title: '描述订单', description: '说出客户名称、产品、数量等，支持同时添加多种产品', icon: '1' },
@@ -225,7 +230,7 @@ export const SALES_ORDER_CONFIG: AiEntryConfig = {
 
 当信息收集完毕后，返回如下格式：
 \`\`\`json
-{"action":"FILL_FORM","params":{"customerName":"永佑","requiredDeliveryDate":"2026-03-15","deliveryAddress":"","remark":"","items":[{"productName":"豆腐干","quantity":1000,"unit":"kg","unitPrice":0}]}}
+{"action":"FILL_FORM","params":{"customerName":"<客户名>","requiredDeliveryDate":"2026-03-15","deliveryAddress":"","remark":"","items":[{"productName":"<产品名>","quantity":1000,"unit":"kg","unitPrice":0}]}}
 \`\`\`
 
 在返回 JSON 之前，先用一句话总结。`,
@@ -343,9 +348,9 @@ export const PROCESS_TASK_CONFIG: AiEntryConfig = {
   welcomeMessage: '你好！我可以帮你快速创建生产批次。',
   scopeLabel: '仅限生产批次创建',
   examples: [
-    '创建批次：豆腐干 500kg',
-    '新开生产批次，产品豆腐 300kg 单位 kg',
-    '豆皮 200kg 创建批次，备注客户永佑订单',
+    '创建批次：[产品名] 500kg',
+    '新开生产批次，产品 [产品名] 300kg 单位 kg',
+    '[产品名] 200kg 创建批次，备注客户 [客户名] 订单',
   ],
   tutorialSteps: [
     { title: '描述批次', description: '说出产品名称和计划数量，批次号会自动生成', icon: '1' },
@@ -356,12 +361,17 @@ export const PROCESS_TASK_CONFIG: AiEntryConfig = {
   systemPrompt: `你是食品工厂的生产批次助手。用户会用自然语言描述生产批次需求，你需要通过对话收集以下字段：
 
 必填字段：
-- productTypeName: 产品名称（如 "豆腐干"、"豆腐"、"豆皮"）
+- productTypeName: 产品名称（由工厂决定，你不知道具体清单，需要用户提供）
 - plannedQuantity: 计划数量（数字）
 
 可选字段：
 - unit: 单位（kg / 箱 / 件 / 吨，默认 kg）
 - notes: 备注
+
+⚠️ 重要规则：
+- **不要假设**工厂可生产哪些产品。每个工厂的产品不同（食品厂可能做肉制品/豆制品/烘焙等）。
+- 如果用户问"我们有哪些产品"或"我们能生产什么", 实话告诉用户："我无法直接查询工厂产品清单, 请直接告诉我您要生产的产品名称, 系统会根据您输入的名称匹配。建议先到 [基础数据→产品管理] 查看完整产品清单。"
+- 不要列举编造的产品例子。
 
 交互规则：
 1. 如果用户一次性提供了所有必填信息，直接返回 FILL_FORM
@@ -371,7 +381,7 @@ export const PROCESS_TASK_CONFIG: AiEntryConfig = {
 
 当所有必填字段收集完毕后，返回如下格式：
 \`\`\`json
-{"action":"FILL_FORM","params":{"productTypeName":"豆腐干","plannedQuantity":500,"unit":"kg","notes":""}}
+{"action":"FILL_FORM","params":{"productTypeName":"<用户提供的产品名>","plannedQuantity":500,"unit":"kg","notes":""}}
 \`\`\`
 
 在返回 JSON 之前，先用一句话总结。`,
