@@ -83,6 +83,51 @@ wait_for_health() {
     return 1
 }
 
+# wait_for_health_via_ssh <ssh_target> <port> [path] [retries] [interval]
+# 返回: 0=成功, 1=超时
+#
+# 2026-05-18: SG Phase 3 收紧后 47:10010/10011/8083/8084 仅允许 nginx 139 source IP.
+# 本地开发机 public-IP curl 拿 HTTP 000 (firewall reject), wait_for_health() 误判
+# 服务挂掉. 这个 helper SSH 到 47 走 loopback (http://localhost:<port>) 绕过 SG.
+# 测试服务 (10011, 8084) 没有 nginx upstream, **必须**走这个 helper.
+# Prod 服务 (10010, 8083) 部署完用 nginx upstream 验证更标准; 但 in-place / rollback
+# fallback 路径也可以用这个 helper.
+wait_for_health_via_ssh() {
+    local ssh_target="$1"
+    local port="$2"
+    local path="${3:-/api/mobile/health}"
+    local retries="${4:-60}"
+    local interval="${5:-2}"
+    local total_wait=$((retries * interval))
+
+    log "INFO" "健康检查 (SSH localhost): ${ssh_target} :${port}${path} (最多等待 ${total_wait}s)"
+
+    local i status=""
+    for i in $(seq 1 "$retries"); do
+        # outer `|| echo "000"` 兜底 ssh 自身失败 (无网络/host down); inner `|| echo '000'`
+        # 兜底 curl 失败 (服务还没起). 双层防 set -e 杀整个 deploy.
+        status=$(ssh -o ConnectTimeout=3 "$ssh_target" \
+            "curl -s -o /dev/null --connect-timeout 2 --max-time 3 -w '%{http_code}' http://localhost:${port}${path} 2>/dev/null || echo '000'" \
+            2>/dev/null || echo "000")
+        # 取最后一行 (有时 ssh banner / motd 会污染 stdout)
+        status=$(echo "$status" | tail -1)
+
+        if [ "$status" = "200" ]; then
+            log "INFO" "服务正常 (HTTP 200, 等待 $((i * interval))s)"
+            return 0
+        fi
+
+        if [ $((i % 5)) -eq 0 ]; then
+            log "INFO" "等待服务启动... ($((i * interval))/${total_wait}s, HTTP $status)"
+        fi
+
+        sleep "$interval"
+    done
+
+    log "ERROR" "健康检查超时 (${total_wait}s), 最后状态: HTTP $status"
+    return 1
+}
+
 # ==================== 备份管理 ====================
 
 # archive_backup <file_path> [keep_count]

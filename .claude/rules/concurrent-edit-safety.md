@@ -109,6 +109,34 @@ git commit -m "feat: my change" -- backend/foo.py backend/bar.py
 - **多个 Claude Code chat** 同时 edit 一个文件会互相覆盖 — 不要并行 edit 同一文件.
 - **必须并行时**: 用 git worktree 隔离, 或者明确分工 (session A 改 fileA, session B 改 fileB).
 
+### 7. ⛔ Subagent worktree 别用 `mklink /J` 共享 node_modules (Windows 致命)
+
+**事故 (2026-05-18)**: 给并行 subagent 写 brief 时,为了省 `npm install` 时间,告诉它们在 worktree 里 junction 共享主 repo 的 `node_modules`:
+```bash
+cd web-admin
+cmd //c "mklink /J node_modules C:\Users\Steve\my-prototype-logistics\web-admin\node_modules"
+```
+Subagent 完成, `git worktree remove --force <worktree-path>` 清理. **Junction 删除时, Windows 把 target dir 内容也递归清空了** — 主 repo 的 `web-admin/node_modules` 被掏空,下次 deploy 跑 `vite build` 报 "vite 不是内部或外部命令" 失败. 必须 `npm install --legacy-peer-deps` 重装 (~20s + 阻断 prod deploy).
+
+**Why**: Windows `mklink /J` 是 NTFS directory junction (reparse point). 不同 explorer / del / rmdir 对 junction 的处理不一致 — 某些路径 (尤其是 `git worktree remove --force` 触发的递归删除) 会把它当成"真目录"递归删, 而不是"删 reparse point 本身".
+
+**Symptom check**: `ls -la web-admin/node_modules` 应该有几百个子目录 (vue, vite, element-plus, ...). 如果只看到 `./` 和 `../` (空), 就是被掏空了.
+
+**正 pattern (subagent brief 里写)**:
+```bash
+# 安全: 让 subagent 在 worktree 里独立装 npm 包. ~20s + 不共享, 不会被 junction 删除连坐.
+cd web-admin && npm install --prefer-offline --legacy-peer-deps
+```
+
+`--prefer-offline` 让 npm 优先用本地 cache (主 repo 装过的包会有 cache hit), 实际下载量很小 → 接近 junction 速度,无连坐风险.
+
+**Mvn/Python 不受影响**: maven `.m2` cache 在 `~/.m2`,跨 worktree 天然共享. Python `venv` 不共享但每个 worktree 独立装也快.
+
+**适用范围**:
+- 写 Agent tool brief 时,**禁止**告诉 subagent 用 `mklink /J` 共享 `node_modules`.
+- 也别用于其它 build-tool dir (e.g. `target/`, `.next/`, `.gradle/`).
+- 单文件 hardlink (`mklink /H`) 可以 — 没有递归删除问题. 但通常用不到.
+
 ---
 
 ## 优先级组合
@@ -119,6 +147,7 @@ git commit -m "feat: my change" -- backend/foo.py backend/bar.py
 | 2+ chat 都要改同一文件 | git worktree 隔离 (规则 2) |
 | 不确定是否并发 | git status 防御 (规则 4) + 关闭其他 editor (规则 6) |
 | **Commit 阶段保护 scope** | **`git commit -- F1 F2` 或 `safe-commit.sh`** (规则 5b) — 即使 staged 区被并发 session 污染, 仅 commit 列出的文件 |
+| **Subagent worktree node_modules** | **`npm install --prefer-offline --legacy-peer-deps`** (规则 7) — 禁止 `mklink /J`, Windows worktree 清理会把主 repo 的 node_modules 一起掏空 |
 | 长期约束 | 这个 rule 本身 + memory `feedback_concurrent_edit_safety.md` |
 
 **Apr 8 事故正确做法**: Phase C 产品化应该用 **规则 1 + 规则 2** — 开 worktree 跑完整流程, 每个 phase 完成立即 commit.
