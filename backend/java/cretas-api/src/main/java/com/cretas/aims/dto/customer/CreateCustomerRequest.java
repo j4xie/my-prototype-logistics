@@ -73,6 +73,13 @@ public class CreateCustomerRequest {
     @PositiveOrZero(message = "信用额度必须大于等于0")
     private BigDecimal creditLimit;
 
+    @Schema(description = "信用账期天数 (P1 #23 S-CREDIT-1, default 30)")
+    @PositiveOrZero(message = "信用账期天数必须 >= 0")
+    private Integer creditPeriodDays;
+
+    @Schema(description = "信用状态 (NORMAL/WARNING/SUSPENDED, default NORMAL)")
+    private com.cretas.aims.entity.enums.CreditStatus creditStatus;
+
     @Schema(description = "客户评级 (1-5)")
     private Integer rating;
 

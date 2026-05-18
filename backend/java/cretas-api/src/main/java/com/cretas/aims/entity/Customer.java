@@ -102,6 +102,16 @@ public class Customer extends BaseEntity {
     @PriceSensitive
     @Column(name = "current_balance", precision = 12, scale = 2)
     private java.math.BigDecimal currentBalance = java.math.BigDecimal.ZERO;
+
+    /** P1 #23 S-CREDIT-1: 信用账期天数. NULL = 无账期, default 30. */
+    @Column(name = "credit_period_days")
+    private Integer creditPeriodDays = 30;
+
+    /** P1 #23 S-CREDIT-1: 信用状态 (NORMAL / WARNING / SUSPENDED). SUSPENDED 时创建 SO 硬阻塞. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "credit_status", length = 20)
+    private com.cretas.aims.entity.enums.CreditStatus creditStatus = com.cretas.aims.entity.enums.CreditStatus.NORMAL;
+
     @Column(name = "rating")
     private Integer rating;
     @Column(name = "rating_notes", columnDefinition = "TEXT")

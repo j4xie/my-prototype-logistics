@@ -9,7 +9,19 @@ import type { FormInstance } from 'element-plus';
 import DynamicEntityForm from '@/components/DynamicEntityForm.vue';
 import type { FieldConfig } from '@/config/entityFieldConfigs';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
+import CreditPanel from './components/CreditPanel.vue';
 import type { TableRow } from '@/types/api';
+
+// P1 #23 S-CREDIT-1 — 信用状态映射
+type CreditStatusValue = 'NORMAL' | 'WARNING' | 'SUSPENDED';
+const CREDIT_STATUS_OPTIONS: Array<{ value: CreditStatusValue; label: string; tagType: 'success' | 'warning' | 'danger' }> = [
+  { value: 'NORMAL', label: '正常', tagType: 'success' },
+  { value: 'WARNING', label: '预警', tagType: 'warning' },
+  { value: 'SUSPENDED', label: '冻结', tagType: 'danger' },
+];
+function getCreditStatusOption(v: string | undefined | null) {
+  return CREDIT_STATUS_OPTIONS.find(o => o.value === v);
+}
 // Sprint 4 W2 S-CRM-FULL-1 — 防呆 R3: dropdown options 来自 single source of truth
 import {
   CUSTOMER_STATUS_OPTIONS,
@@ -34,6 +46,8 @@ const customerExtendedFields: FieldConfig[] = [
   { key: 'bankAccount', label: '银行账号', type: 'text', group: '开票信息', order: 4 },
   { key: 'creditLimit', label: '信用额度', type: 'decimal', group: '信用管理', precision: 2, suffix: '元', order: 5 },
   { key: 'paymentTerms', label: '结算模式', type: 'text', group: '信用管理', order: 6, placeholder: '如 月结30天' },
+  // P1 #23 S-CREDIT-1: 信用账期天数 + 信用状态
+  { key: 'creditPeriodDays', label: '信用账期', type: 'decimal', group: '信用管理', precision: 0, suffix: '天', order: 7, placeholder: '默认 30' },
 ];
 
 const authStore = useAuthStore();
@@ -135,6 +149,8 @@ const defaultForm = {
   // Sprint 4 W2 S-INVOICE-CLIENT-1 — 客户级开票默认 (Option 3 三层链第 1 层)
   defaultTaxRate: null as number | null,
   defaultInvoiceType: '' as InvoiceTypeValue | '',
+  // P1 #23 S-CREDIT-1 — 信用状态 (creditLimit/creditPeriodDays 走 extendedFields)
+  creditStatus: 'NORMAL' as CreditStatusValue,
   version: null as number | null,  // optimistic lock — echoed on PUT, server returns 409 on mismatch
 };
 const formData = reactive({ ...defaultForm });
@@ -187,6 +203,8 @@ function handleView(row: TableRow) {
     // Sprint 4 W2 S-INVOICE-CLIENT-1
     defaultTaxRate: (row.defaultTaxRate as number | null) ?? null,
     defaultInvoiceType: (row.defaultInvoiceType as InvoiceTypeValue) || '',
+    // P1 #23 S-CREDIT-1
+    creditStatus: (row.creditStatus as CreditStatusValue) || 'NORMAL',
   });
   dialogVisible.value = true;
 }
@@ -214,6 +232,8 @@ function handleEdit(row: TableRow) {
     // Sprint 4 W2 S-INVOICE-CLIENT-1
     defaultTaxRate: (row.defaultTaxRate as number | null) ?? null,
     defaultInvoiceType: (row.defaultInvoiceType as InvoiceTypeValue) || '',
+    // P1 #23 S-CREDIT-1
+    creditStatus: (row.creditStatus as CreditStatusValue) || 'NORMAL',
   });
   dialogVisible.value = true;
 }
@@ -241,6 +261,8 @@ async function handleSubmit() {
       // Sprint 4 W2 S-INVOICE-CLIENT-1
       defaultTaxRate: formData.defaultTaxRate ?? undefined,
       defaultInvoiceType: formData.defaultInvoiceType || undefined,
+      // P1 #23 S-CREDIT-1
+      creditStatus: formData.creditStatus || undefined,
       // 扩展字段自动收集
       ...Object.fromEntries(
         customerExtendedFields.map(f => [f.key, (formData as TableRow)[f.key] ?? null])
@@ -432,6 +454,19 @@ async function handleDelete(row: TableRow) {
             <span>{{ getCustomerSourceOption(row.source as string)?.label || '-' }}</span>
           </template>
         </el-table-column>
+        <!-- P1 #23 S-CREDIT-1 — 信用状态列 -->
+        <el-table-column label="信用" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag
+              v-if="getCreditStatusOption(row.creditStatus as string)"
+              :type="getCreditStatusOption(row.creditStatus as string)?.tagType"
+              size="small"
+            >
+              {{ getCreditStatusOption(row.creditStatus as string)?.label }}
+            </el-tag>
+            <span v-else class="cell-empty">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
@@ -455,6 +490,12 @@ async function handleDelete(row: TableRow) {
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="640px" destroy-on-close>
+      <!-- P1 #23 S-CREDIT-1: view/edit 模式下 mount 信用面板 (在 context bar 之上) -->
+      <CreditPanel
+        v-if="dialogMode !== 'add' && formData.id"
+        :customer-id="formData.id"
+      />
+
       <!-- S-CRM-FULL-1 防呆 R2: edit/view 模式下 dialog 顶部 context bar (品名 + 编号 + 状态 + 重要度 + 最近接洽) -->
       <div v-if="dialogMode !== 'add' && formData.name" class="dialog-context-bar">
         <div class="ctx-row">
@@ -590,6 +631,22 @@ async function handleDelete(row: TableRow) {
               </span>
             </el-option>
           </el-select>
+        </el-form-item>
+
+        <!-- P1 #23 S-CREDIT-1: 信用状态 dropdown (creditLimit / creditPeriodDays 走扩展字段) -->
+        <el-divider content-position="left">信用控制 (创建销售单时按此状态预检)</el-divider>
+        <el-form-item label="信用状态" prop="creditStatus">
+          <el-select v-model="formData.creditStatus" placeholder="请选择信用状态" style="width: 100%">
+            <el-option
+              v-for="opt in CREDIT_STATUS_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+          <div class="form-hint">
+            NORMAL=正常下单, WARNING=已用 ≥ 80% 自动预警, SUSPENDED=管理员手工冻结 (创建销售单将被阻塞)
+          </div>
         </el-form-item>
 
         <!-- 扩展字段 (动态渲染) -->
