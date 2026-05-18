@@ -1,10 +1,12 @@
 package com.cretas.aims.service.hr.impl;
 
+import com.cretas.aims.entity.hr.HrInsuranceConfig;
 import com.cretas.aims.entity.hr.SalaryItem;
 import com.cretas.aims.entity.hr.enums.SalaryStatus;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.SalaryItemRepository;
+import com.cretas.aims.service.hr.HrInsuranceConfigService;
 import com.cretas.aims.service.hr.SalaryItemService;
 import com.cretas.aims.service.hr.SalarySpecialDeductionService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SalaryItemServiceImpl implements SalaryItemService {
 
+    // 法定默认费率 (#833 follow-up: 这些只作为 fallback;
+    // 实际生效费率走 HrInsuranceConfigService.getCurrent(factoryId, yearMonth))
     private static final BigDecimal RATE_SOCIAL_EMPLOYEE = new BigDecimal("0.105");
     private static final BigDecimal RATE_SOCIAL_EMPLOYER = new BigDecimal("0.26");
     private static final BigDecimal RATE_FUND_EMPLOYEE = new BigDecimal("0.08");
@@ -59,6 +63,13 @@ public class SalaryItemServiceImpl implements SalaryItemService {
      */
     @Autowired(required = false)
     private SalarySpecialDeductionService specialDeductionService;
+
+    /**
+     * #833 follow-up: 工厂级 社保 / 公积金 费率配置服务 (Optional 注入, 同上理由).
+     * 当 service 为 null (e.g. legacy unit test) 时, fallback 到本文件硬编码 RATE_* 常量.
+     */
+    @Autowired(required = false)
+    private HrInsuranceConfigService insuranceConfigService;
 
     @Override
     @Transactional
@@ -79,8 +90,9 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         }
         // 集成: 拉取该 user+yearMonth 所有 ACTIVE 专项扣除合计, 减少应税收入
         BigDecimal specialDeduction = fetchSpecialDeductionTotal(factoryId, userId, yearMonth);
-        Map<String, BigDecimal> calc = previewComputeFromBaseWithDeductions(
-                baseSalary, specialDeduction);
+        // #833 follow-up: 走工厂级费率配置 (fallback 到硬编码默认)
+        Map<String, BigDecimal> calc = resolveRatesAndPreview(
+                factoryId, yearMonth, baseSalary, specialDeduction);
         SalaryItem item = SalaryItem.builder()
                 .factoryId(factoryId)
                 .userId(userId)
@@ -121,8 +133,9 @@ public class SalaryItemServiceImpl implements SalaryItemService {
                 if (baseSalary.signum() < 0) throw new BusinessException("baseSalary 必须 ≥ 0");
                 BigDecimal specialDeduction = fetchSpecialDeductionTotal(
                         factoryId, item.getUserId(), item.getYearMonth());
-                Map<String, BigDecimal> calc = previewComputeFromBaseWithDeductions(
-                        baseSalary, specialDeduction);
+                // #833 follow-up: 走工厂级费率配置
+                Map<String, BigDecimal> calc = resolveRatesAndPreview(
+                        factoryId, item.getYearMonth(), baseSalary, specialDeduction);
                 item.setBaseSalary(baseSalary);
                 item.setSocialInsuranceEmployee(calc.get("socialInsuranceEmployee"));
                 item.setSocialInsuranceEmployer(calc.get("socialInsuranceEmployer"));
@@ -155,18 +168,36 @@ public class SalaryItemServiceImpl implements SalaryItemService {
      *
      * <p>计税公式: taxable = base - 个人社保 - 个人公积金 - 5000起征点 - specialDeductionTotal
      * (taxable < 0 截到 0)
+     *
+     * <p>backward-compat: 此入口走默认硬编码费率 (RATE_* 常量).
+     * 走配置费率请用 {@link #previewComputeFromBaseWithRates}.
      */
     @Override
     public Map<String, BigDecimal> previewComputeFromBaseWithDeductions(
             BigDecimal baseSalary, BigDecimal specialDeductionTotal) {
+        return previewComputeFromBaseWithRates(
+                baseSalary, specialDeductionTotal,
+                RATE_SOCIAL_EMPLOYEE, RATE_SOCIAL_EMPLOYER,
+                RATE_FUND_EMPLOYEE, RATE_FUND_EMPLOYER);
+    }
+
+    /**
+     * Internal helper: 同 previewComputeFromBaseWithDeductions 但接受外部传入的费率.
+     * #833 follow-up: 让 create / update / applyComputeFromBase 路径走
+     * HrInsuranceConfigService 解析的费率而非硬编码.
+     */
+    private Map<String, BigDecimal> previewComputeFromBaseWithRates(
+            BigDecimal baseSalary, BigDecimal specialDeductionTotal,
+            BigDecimal rateSocialEmployee, BigDecimal rateSocialEmployer,
+            BigDecimal rateFundEmployee, BigDecimal rateFundEmployer) {
         if (baseSalary == null) baseSalary = BigDecimal.ZERO;
         if (specialDeductionTotal == null) specialDeductionTotal = BigDecimal.ZERO;
         if (specialDeductionTotal.signum() < 0) specialDeductionTotal = BigDecimal.ZERO;
 
-        BigDecimal socialEmp = baseSalary.multiply(RATE_SOCIAL_EMPLOYEE).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal socialEmr = baseSalary.multiply(RATE_SOCIAL_EMPLOYER).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal fundEmp = baseSalary.multiply(RATE_FUND_EMPLOYEE).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal fundEmr = baseSalary.multiply(RATE_FUND_EMPLOYER).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal socialEmp = baseSalary.multiply(rateSocialEmployee).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal socialEmr = baseSalary.multiply(rateSocialEmployer).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal fundEmp = baseSalary.multiply(rateFundEmployee).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal fundEmr = baseSalary.multiply(rateFundEmployer).setScale(2, RoundingMode.HALF_UP);
         // 关键改动: 专项扣除从应税收入中减去 (在 5000 起征点之后)
         BigDecimal taxable = baseSalary.subtract(socialEmp).subtract(fundEmp)
                 .subtract(TAX_THRESHOLD).subtract(specialDeductionTotal);
@@ -198,8 +229,9 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         }
         BigDecimal specialDeduction = fetchSpecialDeductionTotal(
                 factoryId, item.getUserId(), item.getYearMonth());
-        Map<String, BigDecimal> calc = previewComputeFromBaseWithDeductions(
-                item.getBaseSalary(), specialDeduction);
+        // #833 follow-up: 走工厂级费率配置
+        Map<String, BigDecimal> calc = resolveRatesAndPreview(
+                factoryId, item.getYearMonth(), item.getBaseSalary(), specialDeduction);
         item.setSocialInsuranceEmployee(calc.get("socialInsuranceEmployee"));
         item.setSocialInsuranceEmployer(calc.get("socialInsuranceEmployer"));
         item.setProvidentFundEmployee(calc.get("providentFundEmployee"));
@@ -208,6 +240,43 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         item.setPersonalTax(calc.get("personalTax"));
         item.setNetSalary(calc.get("netSalary"));
         return repository.save(item);
+    }
+
+    /**
+     * #833 follow-up: 解析该 factory + yearMonth 的费率配置后调 previewComputeFromBaseWithRates.
+     * insuranceConfigService null (legacy unit test) 时 fallback 到 RATE_* 硬编码常量.
+     */
+    private Map<String, BigDecimal> resolveRatesAndPreview(
+            String factoryId, String yearMonth,
+            BigDecimal baseSalary, BigDecimal specialDeductionTotal) {
+        if (insuranceConfigService == null) {
+            // Fallback: 用硬编码默认 (backward-compat for unit tests)
+            return previewComputeFromBaseWithDeductions(baseSalary, specialDeductionTotal);
+        }
+        YearMonth ym;
+        try {
+            ym = YearMonth.parse(yearMonth);
+        } catch (DateTimeParseException ex) {
+            log.warn("resolveRatesAndPreview: invalid yearMonth={}, fallback to defaults", yearMonth);
+            return previewComputeFromBaseWithDeductions(baseSalary, specialDeductionTotal);
+        }
+        HrInsuranceConfig cfg = insuranceConfigService.getCurrent(factoryId, ym);
+        // 个人社保 = 养老 + 医疗 + 失业 (合计)
+        BigDecimal socialEmp = safeRate(cfg.getEmployeePensionRate())
+                .add(safeRate(cfg.getEmployeeMedicalRate()))
+                .add(safeRate(cfg.getEmployeeUnemploymentRate()));
+        BigDecimal socialEmr = safeRate(cfg.getEmployerPensionRate())
+                .add(safeRate(cfg.getEmployerMedicalRate()))
+                .add(safeRate(cfg.getEmployerUnemploymentRate()));
+        return previewComputeFromBaseWithRates(
+                baseSalary, specialDeductionTotal,
+                socialEmp, socialEmr,
+                safeRate(cfg.getEmployeeProvidentFundRate()),
+                safeRate(cfg.getEmployerProvidentFundRate()));
+    }
+
+    private static BigDecimal safeRate(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 
     /**

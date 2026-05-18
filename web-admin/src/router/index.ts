@@ -604,6 +604,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'HRSpecialDeductions',
             component: () => import('@/views/hr/special-deductions/list.vue'),
             meta: { requiresAuth: true, title: '专项扣除', module: 'hr' }
+          },
+          {
+            // #833 H-WAGE follow-up — 工厂级 社保 / 公积金 费率配置 (替代硬编码)
+            path: 'config/insurance-rates',
+            name: 'HRInsuranceConfig',
+            component: () => import('@/views/hr/config/insurance-rates.vue'),
+            meta: { requiresAuth: true, title: '社保公积金配置', module: 'hr' }
           }
         ]
       },
