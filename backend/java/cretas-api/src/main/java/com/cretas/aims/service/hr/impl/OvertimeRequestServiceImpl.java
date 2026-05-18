@@ -6,6 +6,7 @@ import com.cretas.aims.entity.hr.enums.CompensationType;
 import com.cretas.aims.entity.hr.enums.HrRequestStatus;
 import com.cretas.aims.entity.hr.enums.LeaveType;
 import com.cretas.aims.entity.hr.enums.OvertimeType;
+import com.cretas.aims.event.OvertimeApprovedEvent;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.OvertimeRequestRepository;
@@ -15,6 +16,7 @@ import com.cretas.aims.service.hr.OvertimeRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ public class OvertimeRequestServiceImpl implements OvertimeRequestService {
 
     private final OvertimeRequestRepository repository;
     private final LeaveBalanceService balanceService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
     @Lazy
@@ -133,6 +136,10 @@ public class OvertimeRequestServiceImpl implements OvertimeRequestService {
             balanceService.addEarned(req.getFactoryId(), req.getUserId(),
                     LeaveType.COMPTIME, yearMonth, req.getHours());
         }
+        // 发布事件 — 给 CompTimeEventListener (ledger 入账) 及未来 Payroll listener 用
+        eventPublisher.publishEvent(new OvertimeApprovedEvent(
+                this, req.getFactoryId(), req.getId(), req.getUserId(),
+                req.getCompensationType(), req.getHours(), req.getStartTime(), approverId));
         log.info("OvertimeRequest {} APPROVED by {} comp={}",
                 req.getId(), approverId, req.getCompensationType());
         return saved;

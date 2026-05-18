@@ -592,6 +592,13 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '假期余额', module: 'hr' }
           },
           {
+            // #835 follow-up — 调休账单 (CompTime Balance + Ledger)
+            path: 'comptime-balance',
+            name: 'HRCompTimeBalance',
+            component: () => import('@/views/hr/attendance/comptime-balance.vue'),
+            meta: { requiresAuth: true, title: '调休账单', module: 'hr' }
+          },
+          {
             // P1-40 H-WAGE-FULL MVP — 月度工资单 (基本工资 + 社保 + 个税 + 实发)
             path: 'salaries',
             name: 'HRSalaries',

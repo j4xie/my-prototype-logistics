@@ -4,6 +4,7 @@ import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
 import com.cretas.aims.entity.hr.LeaveRequest;
 import com.cretas.aims.entity.hr.enums.HrRequestStatus;
 import com.cretas.aims.entity.hr.enums.LeaveType;
+import com.cretas.aims.event.LeaveApprovedEvent;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.LeaveRequestRepository;
@@ -13,6 +14,7 @@ import com.cretas.aims.service.hr.LeaveRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +42,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
     private final LeaveRequestRepository repository;
     private final LeaveBalanceService balanceService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Lazy to break potential cycles via ApprovalChain ⇄ Tool ⇄ AIIntent (rule). */
     @Autowired
@@ -139,6 +142,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             balanceService.addUsed(req.getFactoryId(), req.getUserId(),
                     req.getLeaveType(), yearMonth, req.getDurationHours());
         }
+        // 发布事件 — 给 CompTimeEventListener (ledger 出账, 只处理 COMPTIME) 用
+        eventPublisher.publishEvent(new LeaveApprovedEvent(
+                this, req.getFactoryId(), req.getId(), req.getUserId(),
+                req.getLeaveType(), req.getDurationHours(), req.getStartDate(), approverId));
         log.info("LeaveRequest {} APPROVED by {}", req.getId(), approverId);
         return saved;
     }
