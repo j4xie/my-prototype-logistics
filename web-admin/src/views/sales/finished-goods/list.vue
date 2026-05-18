@@ -11,6 +11,7 @@ import { formatAmount } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu } from '@/components/list';
 import { computeRowActions } from '@/composables/useRowActions';
+import PriceHistoryDialog from '@/components/dialog/PriceHistoryDialog.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -36,7 +37,42 @@ function rowActionsFor(row: TableRow) {
 
 // Issue #752 / #761 follow-up: view-detail 之前用 ElMessageBox.alert 占位,
 // 现在跳独立 detail route (views/sales/finished-goods/detail.vue, router.name=SalesFinishedGoodsDetail).
-// view-price-history 仍是 modal (后端 /finance/price-history endpoint 待接) — 显示批次单价 + 占位提示.
+//
+// 2026-05-18 (#860 follow-up): view-price-history 接 GET /customer-price-history
+// (跨客户的成交价历史 by product_type_id) — 展示在 PriceHistoryDialog 内.
+// 成品库存视图行没有 customerId 上下文, dialog 自动 fallback 跨客户视图.
+
+// ---------- PriceHistoryDialog state ----------
+const priceHistoryDialog = ref({
+  visible: false,
+  productId: '',
+  productLabel: '',
+});
+
+function openPriceHistory(row: TableRow) {
+  // 从 row 上提取 productTypeId — entity 字段对应 customer_price_history.product_type_id.
+  // finished-goods 行的来源是 FinishedGoodsBatch, 字段名 productTypeId. fallback 兼容 productType.id.
+  const ptid = String(
+    (row as TableRow & { productTypeId?: string; productType?: { id?: string } }).productTypeId
+    || (row as TableRow & { productType?: { id?: string } }).productType?.id
+    || ''
+  );
+  if (!ptid) {
+    ElMessage.warning('当前行缺少产品类型 ID, 无法查询价格历史');
+    return;
+  }
+  const label = String(
+    row.productName
+    || (row as TableRow & { productType?: { name?: string } }).productType?.name
+    || ptid
+  );
+  priceHistoryDialog.value = {
+    visible: true,
+    productId: ptid,
+    productLabel: label,
+  };
+}
+
 async function handleRowActionClick(actionId: string, row: TableRow): Promise<void> {
   const batchLabel = row.batchNumber || row.id || '-';
   switch (actionId) {
@@ -63,21 +99,8 @@ async function handleRowActionClick(actionId: string, row: TableRow): Promise<vo
       break;
     }
     case 'view-price-history': {
-      // Issue #761: 价格历史 — Modal 展示当前单价 + 跳 detail 看完整历史.
-      // 后端 /finance/price-history/{batchId} endpoint 待补; detail.vue 内 placeholder table.
-      try {
-        await ElMessageBox.confirm(
-          `批次 ${batchLabel} 当前成本单价: ${row.unitPrice ?? '-'}\n\n完整价格历史 (生产记账/调价/退货) 待接 价格历史 API. 是否打开批次详情?`,
-          '价格历史',
-          { confirmButtonText: '打开详情', cancelButtonText: '关闭', type: 'info' }
-        );
-        router.push({
-          name: 'SalesFinishedGoodsDetail',
-          params: { id: String(row.id || '') },
-        });
-      } catch {
-        // user closed dialog — no-op
-      }
+      // #860 follow-up: 接真实 GET /customer-price-history — 跨客户的销售成交价历史.
+      openPriceHistory(row);
       break;
     }
     default:
@@ -206,6 +229,13 @@ function statusType(row: TableRow) {
           @current-change="handlePageChange" @size-change="handleSizeChange" />
       </div>
     </el-card>
+
+    <!-- 价格历史 Dialog — #860 follow-up, 接 GET /customer-price-history -->
+    <PriceHistoryDialog
+      v-model:visible="priceHistoryDialog.visible"
+      :product-id="priceHistoryDialog.productId"
+      :product-label="priceHistoryDialog.productLabel"
+    />
   </div>
 </template>
 

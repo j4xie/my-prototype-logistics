@@ -137,7 +137,9 @@ export const COMMON_ACTIONS = {
     label: '价格历史',
     priceRelated: true,
     aiHint: '看这单价格历史',
-    pending: true,
+    // 2026-05-18: GET /customer-price-history endpoint shipped (#860 follow-up),
+    // PriceHistoryDialog wired in 成品库存视图. Other entityTypes (salesOrder PENDING_APPROVAL,
+    // purchaseOrder SUBMITTED/PENDING_APPROVAL) still pending wiring.
   },
   VIEW_DETAIL: { id: 'view-detail', icon: '🔍', label: '查看详情', aiHint: '看这单详情' },
 } as const satisfies Record<string, Omit<RowAction, never>>;
