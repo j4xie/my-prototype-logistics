@@ -9,6 +9,7 @@ import request, { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, ChatDotRound, Download } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
+import AuditLogDrawer from '@/components/AuditLogDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { WorkflowBar } from '@/components/workflow';
 import { useWorkflowStats } from '@/composables/useWorkflowStats';
@@ -183,7 +184,11 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       }
       break;
     case 'audit':
-      // pending: chip is disabled in UI; this case is defensive (won't fire)
+      // PR #861: open AuditLogDrawer scoped to this row. Backend
+      // OperationLogController filters by entityType + entityId.
+      auditEntityId.value = String(row.id || '');
+      auditEntityLabel.value = String(row.orderNumber || row.id || '');
+      auditDrawerVisible.value = true;
       break;
   }
 }
@@ -629,6 +634,12 @@ function handleRefresh() {
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
 
+// ==================== Audit Log Drawer (PR #861) ====================
+// State for AuditLogDrawer — scoped to the row clicked via 审计 inline chip.
+const auditDrawerVisible = ref(false);
+const auditEntityId = ref('');
+const auditEntityLabel = ref('');
+
 function handleAiFill(params: TableRow) {
   // Match supplierName to supplierId
   const supplierName = String(params.supplierName || '');
@@ -1052,6 +1063,15 @@ function handleAiFill(params: TableRow) {
         <el-input-number v-model="row.unitPrice" :min="0" :step="0.01" :precision="2" size="small" style="width: 100%" />
       </template>
     </BomExpansionDialog>
+
+    <!-- PR #861: per-row operation log timeline (replaces the disabled "审计" chip). -->
+    <AuditLogDrawer
+      v-model:visible="auditDrawerVisible"
+      entity-type="PurchaseOrder"
+      entity-type-label="采购单"
+      :entity-id="auditEntityId"
+      :entity-label="auditEntityLabel"
+    />
   </div>
   </CanvasAwareWrapper>
 </template>
