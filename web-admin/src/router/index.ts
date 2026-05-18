@@ -31,6 +31,14 @@ const baseRoutes: RouteRecordRaw[] = [
     name: 'MobileOnly',
     component: () => import('@/views/error/mobile-only.vue'),
     meta: { requiresAuth: false, title: '请使用移动端' }
+  },
+  // PR #872 (#860 follow-up): 公开分享只读视图. requiresAuth=false → guards.ts
+  // 跳过 auth/permission/role 检查. token 本身 (32 char base62) 是唯一凭证.
+  {
+    path: '/share/:token',
+    name: 'PublicShare',
+    component: () => import('@/views/share/SharePage.vue'),
+    meta: { requiresAuth: false, title: '分享内容' }
   }
 ];
 
