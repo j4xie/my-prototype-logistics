@@ -352,6 +352,18 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'InquiryQuoteDetail',
             component: () => import('@/views/procurement/inquiry-quotes/detail.vue'),
             meta: { requiresAuth: true, title: '核价单详情', module: 'procurement', hidden: true }
+          },
+          // 采购审批规则 自由配置 (F006 客户要求, 替代硬编码 10% 阈值)
+          {
+            path: 'approval-rules',
+            name: 'PurchaseApprovalRules',
+            component: () => import('@/views/procurement/approval-rules/list.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '采购审批规则',
+              module: 'procurement',
+              roles: ['factory_super_admin', 'permission_admin', 'procurement_manager', 'finance_manager']
+            }
           }
         ]
       },
