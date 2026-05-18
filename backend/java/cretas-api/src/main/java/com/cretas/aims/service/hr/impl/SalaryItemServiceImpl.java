@@ -6,6 +6,7 @@ import com.cretas.aims.entity.hr.enums.SalaryStatus;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.SalaryItemRepository;
+import com.cretas.aims.service.hr.AnnualBonusTaxCalculator;
 import com.cretas.aims.service.hr.HrInsuranceConfigService;
 import com.cretas.aims.service.hr.SalaryItemService;
 import com.cretas.aims.service.hr.SalarySpecialDeductionService;
@@ -435,6 +436,65 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         BigDecimal tax = taxableIncome.multiply(rate).subtract(deduction);
         if (tax.signum() < 0) tax = BigDecimal.ZERO;
         return tax.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * #833 follow-up: 设置年终奖 + 计算 tax + 写库.
+     *
+     * <p>R4 防呆: PAID 拒改, DRAFT/CONFIRMED 可任意更新.
+     * <p>不动月度个税字段 (personal_tax/socialInsuranceEmployee/etc.) — 独立于月度算法.
+     */
+    @Override
+    @Transactional
+    public SalaryItem setAnnualBonus(String factoryId, String id, BigDecimal bonus) {
+        SalaryItem item = load(factoryId, id);
+        if (item.getStatus() == SalaryStatus.PAID) {
+            throw new BusinessException(
+                    String.format("已发放工资单不可修改年终奖 [用户 %d / %s]",
+                            item.getUserId(), item.getYearMonth()));
+        }
+        if (bonus == null) {
+            // 清空模式: 清掉 annualBonus + tax
+            item.setAnnualBonus(null);
+            item.setAnnualBonusTax(null);
+        } else {
+            if (bonus.signum() < 0) {
+                throw new BusinessException("年终奖必须 ≥ 0");
+            }
+            BigDecimal normalized = bonus.setScale(2, RoundingMode.HALF_UP);
+            BigDecimal tax = AnnualBonusTaxCalculator.computeAnnualBonusTax(normalized);
+            item.setAnnualBonus(normalized);
+            item.setAnnualBonusTax(tax);
+        }
+        SalaryItem saved = repository.save(item);
+        log.info("SalaryItem annual bonus set: id={}, user={}, ym={}, bonus={}, tax={}",
+                saved.getId(), saved.getUserId(), saved.getYearMonth(),
+                saved.getAnnualBonus(), saved.getAnnualBonusTax());
+        return saved;
+    }
+
+    /**
+     * #833 follow-up R1: preview 年终奖税额 (不写库).
+     */
+    @Override
+    public Map<String, Object> previewAnnualBonusTax(BigDecimal bonus) {
+        BigDecimal amount = bonus == null ? BigDecimal.ZERO : bonus;
+        if (amount.signum() < 0) amount = BigDecimal.ZERO;
+        BigDecimal normalized = amount.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tax = AnnualBonusTaxCalculator.computeAnnualBonusTax(normalized);
+        AnnualBonusTaxCalculator.BracketHit hit =
+                AnnualBonusTaxCalculator.findBracket(normalized);
+        BigDecimal monthlyEq = normalized.divide(
+                new BigDecimal("12"), 2, RoundingMode.HALF_UP);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("annualBonus", normalized);
+        result.put("annualBonusTax", tax);
+        result.put("monthlyEquivalent", monthlyEq);
+        result.put("bracketRate", hit.ratePercent);
+        result.put("bracketLabel", hit.label);
+        result.put("quickDeduction", hit.quickDeduction);
+        return result;
     }
 
     private SalaryItem load(String factoryId, String id) {

@@ -23,6 +23,10 @@ export interface SalaryItem {
   taxableIncome: number;
   personalTax: number;
   netSalary: number;
+  /** #833 follow-up: 年终奖金额 (null = 未设定 / 已清空) */
+  annualBonus?: number | null;
+  /** #833 follow-up: 年终奖个税 (null = 未设定) */
+  annualBonusTax?: number | null;
   status: SalaryStatus;
   remark?: string | null;
   confirmedAt?: string | null;
@@ -31,6 +35,16 @@ export interface SalaryItem {
   paidBy?: number | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** #833 follow-up: 年终奖税额 preview payload (R1 防呆 dialog 实时显示) */
+export interface AnnualBonusPreview {
+  annualBonus: number;
+  annualBonusTax: number;
+  monthlyEquivalent: number;
+  bracketRate: string;       // "3%" / "10%" / ... / "45%"
+  bracketLabel: string;      // "≤3000" / "≤12000" / ... / ">80000"
+  quickDeduction: number;
 }
 
 export interface SalaryComputePreview {
@@ -142,5 +156,33 @@ export function getMonthlySummary(
   return get<SalaryMonthlySummary>(
     `/${factoryId}/hr/salaries/summary`,
     { params: { yearMonth } }
+  );
+}
+
+// ============= #833 follow-up: 年终奖 =============
+
+/** R1 防呆: 输入 bonus 后实时算 tax + bracket (不写库) */
+export function previewAnnualBonusTax(
+  factoryId: string,
+  bonusAmount: number
+): Promise<ApiResponse<AnnualBonusPreview>> {
+  return post<AnnualBonusPreview>(
+    `/${factoryId}/hr/salaries/annual-bonus-preview`,
+    { bonusAmount }
+  );
+}
+
+/**
+ * 设置/更新年终奖 (按一次性年终奖税法算 tax 写库).
+ * bonusAmount=null → 清空 annualBonus + tax (该月无年终奖).
+ */
+export function setAnnualBonus(
+  factoryId: string,
+  id: string,
+  bonusAmount: number | null
+): Promise<ApiResponse<SalaryItem>> {
+  return post<SalaryItem>(
+    `/${factoryId}/hr/salaries/${id}/annual-bonus`,
+    { bonusAmount }
   );
 }
