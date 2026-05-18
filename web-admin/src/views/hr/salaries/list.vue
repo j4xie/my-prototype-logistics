@@ -18,6 +18,11 @@ import {
   type SalaryComputePreview,
   type SalaryMonthlySummary,
 } from '@/api/salary';
+import {
+  previewDeductionForMonth,
+  type SalarySpecialDeduction,
+} from '@/api/specialDeduction';
+import { exportPayslipPDF } from './payslipExport';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -307,6 +312,44 @@ async function handleDelete(row: SalaryItem) {
     if (e !== 'cancel' && e !== 'close') console.error(e);
   }
 }
+
+// #833 / #844 follow-up: 工资条 PDF 生成 (客户端 jsPDF + 专项扣除明细).
+// 同时拉取该 user+yearMonth ACTIVE 专项扣除明细 (#844 API);
+// previewDeductionForMonth 失败时 PDF 仍可生成,仅省略扣除明细。
+const exportingId = ref<string | null>(null);
+async function handleExportPayslip(row: SalaryItem) {
+  if (!factoryId.value) return;
+  exportingId.value = row.id;
+  try {
+    // 1) 拉专项扣除明细 (非阻塞 — 失败仅省略该 section)
+    let deductions: SalarySpecialDeduction[] = [];
+    try {
+      const dedRes = await previewDeductionForMonth(
+        factoryId.value,
+        row.userId,
+        row.yearMonth
+      );
+      if (dedRes.success && dedRes.data?.activeDeductions) {
+        deductions = dedRes.data.activeDeductions;
+      }
+    } catch (e) {
+      // 静默 — PDF 仍可生成,仅省略扣除明细
+      console.warn('拉取专项扣除明细失败,PDF 将不含该 section:', e);
+    }
+
+    // 2) 生成并下载 PDF
+    const fileName = await exportPayslipPDF({
+      salary: row,
+      deductions,
+    });
+    ElMessage.success(`已下载 ${fileName}`);
+  } catch (e) {
+    console.error('工资条 PDF 生成失败:', e);
+    ElMessage.error('PDF 生成失败');
+  } finally {
+    exportingId.value = null;
+  }
+}
 </script>
 
 <template>
@@ -424,7 +467,7 @@ async function handleDelete(row: SalaryItem) {
             </template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" show-overflow-tooltip />
-          <el-table-column label="操作" width="280" fixed="right">
+          <el-table-column label="操作" width="380" fixed="right">
             <template #default="{ row }">
               <template v-if="canWrite && row.status === 'DRAFT'">
                 <el-button size="small" @click="openEdit(row)">编辑</el-button>
@@ -441,6 +484,14 @@ async function handleDelete(row: SalaryItem) {
                   标记发放
                 </el-button>
               </template>
+              <!-- #833 / #844 follow-up: 工资条 PDF — 全状态可下载 (草稿亦可预览) -->
+              <el-button
+                size="small"
+                :loading="exportingId === row.id"
+                @click="handleExportPayslip(row)"
+              >
+                下载工资条
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
