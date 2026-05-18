@@ -3,11 +3,13 @@
 // 2026-05-18 redesign (PR #858 + #859):
 //   - Was 7 emoji icons + tooltip; now plain text chips (per F006 admin feedback)
 //   - 'print-pdf' removed — duplicates the dedicated PDF button at top of 操作 col
-//   - 'forward' marked `pending: true` until its API lands — renders as
-//     disabled chip + " (开发中)" suffix instead of "(待接 API)" toast
-//   - 'audit' un-pended in PR #861 (this PR): backend OperationLog / @Loggable
-//     AOP / OperationLogController + V20260525_03 migration are live; the chip
-//     now opens AuditLogDrawer scoped to the row's entity (purchaseOrder /
+//   - 'forward' was marked `pending: true`; un-pended in PR #872 — backend
+//     ShareLinkController + V20260518_01__share_links migration + frontend
+//     ForwardShareDialog are live, chip now opens the dialog (generates token
+//     + clipboard URL). See parent list.vue handleInlineIconClick('forward').
+//   - 'audit' un-pended in PR #861: backend OperationLog / @Loggable AOP /
+//     OperationLogController + V20260525_03 migration are live; the chip
+//     opens AuditLogDrawer scoped to the row's entity (purchaseOrder /
 //     salesOrder). See parent list.vue handleInlineIconClick('audit', ...).
 //
 // Remaining palette (6 chips):
@@ -43,7 +45,7 @@ export const INLINE_ICONS: readonly InlineIconDef[] = [
   { id: 'copy', icon: '📑', label: '复制', inlineOnly: false },
   { id: 'mark', icon: '🏷️', label: '标记', inlineOnly: true },
   { id: 'lock', icon: '🔒', label: '锁定', inlineOnly: false },
-  { id: 'forward', icon: '↗️', label: '转发', inlineOnly: true, pending: true },
+  { id: 'forward', icon: '↗️', label: '转发', inlineOnly: true },
   { id: 'delete', icon: '🗑️', label: '删除', inlineOnly: false, danger: true, requiresConfirm: true },
   { id: 'audit', icon: '🔎', label: '审计', inlineOnly: true },
 ];

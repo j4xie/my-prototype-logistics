@@ -42,6 +42,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 "/webjars/**"
         };
 
+        // PR #872 (#860 follow-up): /api/mobile/public/** 是匿名公开端点
+        //   (转发 / 分享链接 / 未来其他无登录需要的 read-only path). 必须从 JWT /
+        //   Permission / RequireRole / Module 拦截器全部排除, 否则匿名访问会被 401.
+        //   security model: token 本身 = 32 char base62 ~ 190 bit entropy 即唯一凭证.
+        String[] publicWhitelist = {
+                "/api/mobile/public/**"
+        };
+
         // 1. JWT认证拦截器 - 验证Token，设置用户信息
         // /api/internal/** 走 X-Internal-Key 校验分支 (JwtAuthInterceptor:155)，同样由此拦截器处理
         // Issue #718 (2026-05-17): 加 /api/camera/** 和 /api/ai/** — 之前这些 path 完全没 JWT 校验
@@ -51,6 +59,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**",
                                  "/api/internal/**", "/api/camera/**", "/api/ai/**")
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
+                .excludePathPatterns(publicWhitelist)   // 排除公开分享端点 (#872)
                 .order(1);  // 最高优先级
 
         // 2. 权限检查拦截器 - 检查 @RequirePermission 注解
@@ -58,6 +67,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**",
                                  "/api/camera/**", "/api/ai/**")
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
+                .excludePathPatterns(publicWhitelist)   // 排除公开分享端点 (#872)
                 .order(2);  // 在JWT之后执行
 
         // 3. Round 5 Fix SEC-1: @RequireRole 拦截器 - 检查方法级角色限制
@@ -66,6 +76,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**",
                                  "/api/camera/**", "/api/ai/**")
                 .excludePathPatterns(swaggerWhitelist)
+                .excludePathPatterns(publicWhitelist)   // 排除公开分享端点 (#872)
                 .order(3);
 
         // 4. Apr 24 Phase 8: @RequireModule 拦截器 - 检查 Canvas 工厂模块是否启用
@@ -74,6 +85,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(moduleEnabledInterceptor)
                 .addPathPatterns("/api/mobile/**")
                 .excludePathPatterns(swaggerWhitelist)
+                .excludePathPatterns(publicWhitelist)   // 排除公开分享端点 (#872)
                 .order(4);
 
         WebMvcConfigurer.super.addInterceptors(registry);

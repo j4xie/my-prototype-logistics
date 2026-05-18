@@ -23,6 +23,8 @@ import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, Tim
 import { CreateModeSelector, BatchCreateDialog, QuickCreateDialog, BomExpansionDialog } from '@/components/dialog';
 import CreateReturnOrderDialog from '@/components/dialog/CreateReturnOrderDialog.vue';
 import { copyPurchaseOrder } from '@/api/orderCopy';
+// PR #878 (#860 follow-up) — 转发 / 分享链接 dialog.
+import ForwardShareDialog from '@/components/dialog/ForwardShareDialog.vue';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
 import type { InlineIconId } from '@/types/inlineIcons';
@@ -175,7 +177,10 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       handleRowActionClick('lock', row);
       break;
     case 'forward':
-      // pending: chip is disabled in UI; this case is defensive (won't fire)
+      // PR #872 (#860 follow-up): generate share link + clipboard URL.
+      forwardEntityId.value = String(row.id || '');
+      forwardEntityLabel.value = String(row.orderNumber || row.id || '');
+      forwardDialogVisible.value = true;
       break;
     case 'delete':
       try {
@@ -694,6 +699,12 @@ const auditDrawerVisible = ref(false);
 const auditEntityId = ref('');
 const auditEntityLabel = ref('');
 
+// ==================== Forward Share Dialog (PR #872) ====================
+// State for ForwardShareDialog — scoped to the row clicked via 转发 inline chip.
+const forwardDialogVisible = ref(false);
+const forwardEntityId = ref('');
+const forwardEntityLabel = ref('');
+
 function handleAiFill(params: TableRow) {
   // Match supplierName to supplierId
   const supplierName = String(params.supplierName || '');
@@ -1125,6 +1136,16 @@ function handleAiFill(params: TableRow) {
       entity-type-label="采购单"
       :entity-id="auditEntityId"
       :entity-label="auditEntityLabel"
+    />
+
+    <!-- PR #872 (#860 follow-up) — 转发分享链接 dialog (replaces (开发中) chip). -->
+    <ForwardShareDialog
+      v-model:visible="forwardDialogVisible"
+      :factory-id="factoryId"
+      entity-type="PurchaseOrder"
+      entity-type-label="采购单"
+      :entity-id="forwardEntityId"
+      :entity-label="forwardEntityLabel"
     />
 
     <!-- PR #866 (#860 follow-up) — 退货 dialog. Wires existing ReturnOrderController. -->

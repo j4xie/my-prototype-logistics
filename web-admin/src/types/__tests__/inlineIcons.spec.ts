@@ -8,8 +8,8 @@ import type { RowAction } from '../rowActions';
 
 describe('INLINE_ICONS catalog', () => {
   // 2026-05-18 (PR #859): print-pdf removed (duplicate of top-row PDF button).
-  // forward + audit originally marked pending; audit un-pended in PR #861
-  // (this PR) — OperationLog backend live, AuditLogDrawer wired in parent.
+  // forward + audit originally marked pending; audit un-pended in PR #861,
+  // forward un-pended in PR #872 — ForwardShareDialog + ShareLinkController live.
   it('exposes 6 icons in canonical order (print-pdf removed)', () => {
     expect(INLINE_ICONS.map((d) => d.id)).toEqual([
       'copy',
@@ -32,9 +32,9 @@ describe('INLINE_ICONS catalog', () => {
     expect(del.requiresConfirm).toBe(true);
   });
 
-  it('flags only forward as pending (audit shipped in PR #861)', () => {
+  it('flags no static icons as pending (audit shipped #861, forward shipped #872)', () => {
     const pending = INLINE_ICONS.filter((d) => d.pending).map((d) => d.id);
-    expect(pending.sort()).toEqual(['forward']);
+    expect(pending).toEqual([]);
   });
 });
 
@@ -79,12 +79,12 @@ describe('computeInlineIconStates', () => {
     ]);
   });
 
-  it('propagates pending flag from INLINE_ICONS defs (forward only after PR #861)', () => {
+  it('propagates pending flag from INLINE_ICONS defs (no static pending after PR #872)', () => {
     const states = computeInlineIconStates([]);
     const fwd = states.find((s) => s.def.id === 'forward')!;
     const aud = states.find((s) => s.def.id === 'audit')!;
     const cpy = states.find((s) => s.def.id === 'copy')!;
-    expect(fwd.pending).toBe(true);
+    expect(fwd.pending).toBe(false); // un-pended in PR #872 — ForwardShareDialog live
     expect(aud.pending).toBe(false); // un-pended in PR #861 — AuditLogDrawer live
     expect(cpy.pending).toBe(false);
   });

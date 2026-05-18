@@ -16,6 +16,8 @@ import { getBucketPrimaryStatus, getBucketLabel } from '@/types/workflow';
 import { formatAmount } from '@/utils/tableFormatters';
 import { RowActionMenu, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
 import { CreateModeSelector, BatchCreateDialog, QuickCreateDialog, BomExpansionDialog } from '@/components/dialog';
+// PR #872 (#860 follow-up) — 转发 / 分享链接 dialog.
+import ForwardShareDialog from '@/components/dialog/ForwardShareDialog.vue';
 import request from '@/api/request';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
@@ -230,7 +232,10 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       handleRowActionClick('lock', row);
       break;
     case 'forward':
-      // pending: chip is disabled in UI; this case is defensive (won't fire)
+      // PR #872 (#860 follow-up): generate share link + clipboard URL.
+      forwardEntityId.value = String(row.id || '');
+      forwardEntityLabel.value = String(row.orderNumber || row.id || '');
+      forwardDialogVisible.value = true;
       break;
     case 'delete':
       try {
@@ -887,6 +892,12 @@ const aiEntryVisible = ref(false);
 const auditDrawerVisible = ref(false);
 const auditEntityId = ref('');
 const auditEntityLabel = ref('');
+
+// ==================== Forward Share Dialog (PR #872) ====================
+// State for ForwardShareDialog — scoped to the row clicked via 转发 inline chip.
+const forwardDialogVisible = ref(false);
+const forwardEntityId = ref('');
+const forwardEntityLabel = ref('');
 
 function handleAiFill(params: TableRow) {
   // Match customerName to customerId
@@ -1644,6 +1655,16 @@ async function submitQuickPayment() {
       entity-type-label="销售订单"
       :entity-id="auditEntityId"
       :entity-label="auditEntityLabel"
+    />
+
+    <!-- PR #872 (#860 follow-up) — 转发分享链接 dialog (replaces (开发中) chip). -->
+    <ForwardShareDialog
+      v-model:visible="forwardDialogVisible"
+      :factory-id="factoryId"
+      entity-type="SalesOrder"
+      entity-type-label="销售订单"
+      :entity-id="forwardEntityId"
+      :entity-label="forwardEntityLabel"
     />
   </div>
   </CanvasAwareWrapper>
