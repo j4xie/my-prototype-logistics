@@ -56,4 +56,22 @@ public interface SalaryItemRepository extends JpaRepository<SalaryItem, String> 
     /** 工厂某月份所有 user 的工资清单 (HR 导出用). */
     List<SalaryItem> findByFactoryIdAndYearMonthOrderByUserId(
             String factoryId, String yearMonth);
+
+    /**
+     * #833 follow-up (年度汇算): 拉取指定 user 指定年度 (yearMonth 前缀 e.g. "2025-")
+     * 全部月度工资单 (按月升序). LIKE pattern 利用 (factory_id, year_month) 索引前缀扫描.
+     *
+     * <p>e.g. yearPrefix="2025-" → 命中 "2025-01" ~ "2025-12".
+     */
+    @Query("""
+            SELECT s FROM SalaryItem s
+            WHERE s.factoryId = :factoryId
+              AND s.userId = :userId
+              AND s.yearMonth LIKE :yearPrefix
+            ORDER BY s.yearMonth ASC
+            """)
+    List<SalaryItem> findByFactoryIdAndUserIdAndYearPrefix(
+            @Param("factoryId") String factoryId,
+            @Param("userId") Long userId,
+            @Param("yearPrefix") String yearPrefix);
 }
