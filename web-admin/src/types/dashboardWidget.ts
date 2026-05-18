@@ -33,6 +33,7 @@ export type WidgetKind =
   | 'equipment-status'
   | 'quality-rate'
   | 'scheduling-alerts'
+  | 'top-overtime-employees'
   | 'alert'
   | 'quick-action'
   | 'calendar'

@@ -16,3 +16,6 @@ export { default as PendingRemindersWidget } from './endpoint/PendingRemindersWi
 export { default as EquipmentStatusWidget } from './endpoint/EquipmentStatusWidget.vue';
 export { default as QualityRateWidget } from './endpoint/QualityRateWidget.vue';
 export { default as SchedulingAlertsWidget } from './endpoint/SchedulingAlertsWidget.vue';
+
+// #835 follow-up — HR Hours Aggregator widget
+export { default as TopOvertimeEmployeesWidget } from './endpoint/TopOvertimeEmployeesWidget.vue';

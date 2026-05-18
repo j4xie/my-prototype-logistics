@@ -614,6 +614,13 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '排班日历', module: 'hr' }
           },
           {
+            // #835 follow-up — 工时统计 (Hours Aggregator Report)
+            path: 'hours-report',
+            name: 'HRHoursReport',
+            component: () => import('@/views/hr/attendance/hours-report.vue'),
+            meta: { requiresAuth: true, title: '工时统计', module: 'hr' }
+          },
+          {
             // P1-40 H-WAGE-FULL MVP — 月度工资单 (基本工资 + 社保 + 个税 + 实发)
             path: 'salaries',
             name: 'HRSalaries',
