@@ -4,6 +4,7 @@ import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
 import com.cretas.aims.entity.hr.LeaveRequest;
 import com.cretas.aims.entity.hr.enums.HrRequestStatus;
 import com.cretas.aims.entity.hr.enums.LeaveType;
+import com.cretas.aims.event.LeaveApprovedEvent;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.hr.LeaveRequestRepository;
 import com.cretas.aims.service.ApprovalChainService;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -46,6 +48,9 @@ class LeaveRequestServiceImplTest {
     @Mock
     private ApprovalChainService approvalChainService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private LeaveRequestServiceImpl service;
 
     private static final String FACTORY = "F006";
@@ -54,7 +59,7 @@ class LeaveRequestServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        service = new LeaveRequestServiceImpl(repository, balanceService);
+        service = new LeaveRequestServiceImpl(repository, balanceService, eventPublisher);
         Field f = LeaveRequestServiceImpl.class.getDeclaredField("approvalChainService");
         f.setAccessible(true);
         f.set(service, approvalChainService);
@@ -98,10 +103,11 @@ class LeaveRequestServiceImplTest {
         assertNotNull(result.getApprovedAt());
         verify(balanceService).addUsed(FACTORY, USER, LeaveType.ANNUAL, "2026-05",
                 new BigDecimal("24"));
+        verify(eventPublisher).publishEvent(any(LeaveApprovedEvent.class));
     }
 
     @Test
-    @DisplayName("approve PERSONAL (非 tracked) 不动 LeaveBalance")
+    @DisplayName("approve PERSONAL (非 tracked) 不动 LeaveBalance 但仍发布事件")
     void approve_skips_balance_for_non_tracked() {
         LeaveRequest req = sample(HrRequestStatus.SUBMITTED, LeaveType.PERSONAL);
         when(repository.findByIdAndFactoryId("L-001", FACTORY)).thenReturn(Optional.of(req));
@@ -111,6 +117,8 @@ class LeaveRequestServiceImplTest {
 
         assertEquals(HrRequestStatus.APPROVED, result.getStatus());
         verify(balanceService, never()).addUsed(any(), any(), any(), any(), any());
+        // 事件仍发布 — listener 内部 filter LeaveType
+        verify(eventPublisher).publishEvent(any(LeaveApprovedEvent.class));
     }
 
     @Test

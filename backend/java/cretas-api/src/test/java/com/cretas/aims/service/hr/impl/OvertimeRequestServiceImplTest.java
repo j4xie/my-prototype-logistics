@@ -5,6 +5,7 @@ import com.cretas.aims.entity.hr.enums.CompensationType;
 import com.cretas.aims.entity.hr.enums.HrRequestStatus;
 import com.cretas.aims.entity.hr.enums.LeaveType;
 import com.cretas.aims.entity.hr.enums.OvertimeType;
+import com.cretas.aims.event.OvertimeApprovedEvent;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.hr.OvertimeRequestRepository;
 import com.cretas.aims.service.ApprovalChainService;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -45,6 +47,9 @@ class OvertimeRequestServiceImplTest {
     @Mock
     private ApprovalChainService approvalChainService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private OvertimeRequestServiceImpl service;
 
     private static final String FACTORY = "F006";
@@ -53,7 +58,7 @@ class OvertimeRequestServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        service = new OvertimeRequestServiceImpl(repository, balanceService);
+        service = new OvertimeRequestServiceImpl(repository, balanceService, eventPublisher);
         Field f = OvertimeRequestServiceImpl.class.getDeclaredField("approvalChainService");
         f.setAccessible(true);
         f.set(service, approvalChainService);
@@ -93,10 +98,11 @@ class OvertimeRequestServiceImplTest {
         assertEquals(HrRequestStatus.APPROVED, result.getStatus());
         verify(balanceService).addEarned(FACTORY, USER, LeaveType.COMPTIME, "2026-05",
                 new BigDecimal("4"));
+        verify(eventPublisher).publishEvent(any(OvertimeApprovedEvent.class));
     }
 
     @Test
-    @DisplayName("approve CASH 不动 LeaveBalance")
+    @DisplayName("approve CASH 不动 LeaveBalance 但仍发布事件")
     void approve_cash_skips_balance() {
         OvertimeRequest req = sample(HrRequestStatus.SUBMITTED, CompensationType.CASH);
         when(repository.findByIdAndFactoryId("O-001", FACTORY)).thenReturn(Optional.of(req));
@@ -106,5 +112,7 @@ class OvertimeRequestServiceImplTest {
 
         assertEquals(HrRequestStatus.APPROVED, result.getStatus());
         verify(balanceService, never()).addEarned(any(), any(), any(), any(), any());
+        // 事件仍发布 — 让 future Payroll listener 拿到 CASH OT
+        verify(eventPublisher).publishEvent(any(OvertimeApprovedEvent.class));
     }
 }
