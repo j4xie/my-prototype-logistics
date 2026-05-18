@@ -3,12 +3,16 @@
 // 2026-05-18 redesign (PR #858 + #859):
 //   - Was 7 emoji icons + tooltip; now plain text chips (per F006 admin feedback)
 //   - 'print-pdf' removed — duplicates the dedicated PDF button at top of 操作 col
-//   - 'forward' / 'audit' marked `pending: true` until their APIs land — render
-//     as disabled chip + " (开发中)" suffix instead of "(待接 API)" toast
+//   - 'forward' marked `pending: true` until its API lands — renders as
+//     disabled chip + " (开发中)" suffix instead of "(待接 API)" toast
+//   - 'audit' un-pended in PR #861 (this PR): backend OperationLog / @Loggable
+//     AOP / OperationLogController + V20260525_03 migration are live; the chip
+//     now opens AuditLogDrawer scoped to the row's entity (purchaseOrder /
+//     salesOrder). See parent list.vue handleInlineIconClick('audit', ...).
 //
 // Remaining palette (6 chips):
 //   复制 (copy) / 标记 (mark) / 锁定 (lock) / 转发 (forward, pending) /
-//   删除 (delete) / 审计 (audit, pending)
+//   删除 (delete) / 审计 (audit)
 //
 // 3 ids reuse existing COMMON_ACTIONS so RBAC/status filters compose cleanly:
 //   copy / lock / delete  → ids in COMMON_ACTIONS
@@ -41,7 +45,7 @@ export const INLINE_ICONS: readonly InlineIconDef[] = [
   { id: 'lock', icon: '🔒', label: '锁定', inlineOnly: false },
   { id: 'forward', icon: '↗️', label: '转发', inlineOnly: true, pending: true },
   { id: 'delete', icon: '🗑️', label: '删除', inlineOnly: false, danger: true, requiresConfirm: true },
-  { id: 'audit', icon: '🔎', label: '审计', inlineOnly: true, pending: true },
+  { id: 'audit', icon: '🔎', label: '审计', inlineOnly: true },
 ];
 
 export interface InlineIconState {

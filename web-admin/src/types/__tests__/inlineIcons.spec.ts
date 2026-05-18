@@ -8,7 +8,8 @@ import type { RowAction } from '../rowActions';
 
 describe('INLINE_ICONS catalog', () => {
   // 2026-05-18 (PR #859): print-pdf removed (duplicate of top-row PDF button).
-  // forward + audit marked pending (API not implemented yet).
+  // forward + audit originally marked pending; audit un-pended in PR #861
+  // (this PR) — OperationLog backend live, AuditLogDrawer wired in parent.
   it('exposes 6 icons in canonical order (print-pdf removed)', () => {
     expect(INLINE_ICONS.map((d) => d.id)).toEqual([
       'copy',
@@ -31,9 +32,9 @@ describe('INLINE_ICONS catalog', () => {
     expect(del.requiresConfirm).toBe(true);
   });
 
-  it('flags forward + audit as pending (待接 API)', () => {
+  it('flags only forward as pending (audit shipped in PR #861)', () => {
     const pending = INLINE_ICONS.filter((d) => d.pending).map((d) => d.id);
-    expect(pending.sort()).toEqual(['audit', 'forward']);
+    expect(pending.sort()).toEqual(['forward']);
   });
 });
 
@@ -78,13 +79,13 @@ describe('computeInlineIconStates', () => {
     ]);
   });
 
-  it('propagates pending flag from INLINE_ICONS defs (forward+audit)', () => {
+  it('propagates pending flag from INLINE_ICONS defs (forward only after PR #861)', () => {
     const states = computeInlineIconStates([]);
     const fwd = states.find((s) => s.def.id === 'forward')!;
     const aud = states.find((s) => s.def.id === 'audit')!;
     const cpy = states.find((s) => s.def.id === 'copy')!;
     expect(fwd.pending).toBe(true);
-    expect(aud.pending).toBe(true);
+    expect(aud.pending).toBe(false); // un-pended in PR #861 — AuditLogDrawer live
     expect(cpy.pending).toBe(false);
   });
 
