@@ -1102,8 +1102,9 @@ deploy_jar() {
             fi
         else
             echo "   [生产] 检查 10010..."
+            # 2026-05-18: SG 收紧后 public-IP curl 拿 HTTP 000, 改 SSH localhost.
             # Round 5 fix: bumped 30→90 same as test path (Spring Boot + BERT startup).
-            if ! wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 90 2; then
+            if ! wait_for_health_via_ssh "$SERVER" 10010 /api/mobile/health 90 2; then
                 echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-prod.log'"
             fi
         fi
@@ -1111,8 +1112,12 @@ deploy_jar() {
 
     if [[ "$DEPLOY_ENV" == "test" || "$DEPLOY_ENV" == "all" ]]; then
         echo "   [测试] 检查 10011..."
+        # 2026-05-18: SG 收紧 (10011 仅放行 139/32) → public-IP curl 永远 HTTP 000.
+        # 上一版 wait_for_health "http://${SERVER_IP}:10011/..." 在 --env all 模式下
+        # 永远 240s timeout, 误判 test 挂掉 → 脚本不再继续 deploy prod → prod 整段
+        # 时间 DOWN (今天踩过一次). 改 SSH localhost 绕过 SG.
         # 240s: Spring Boot startup + intent cache 13s + buffer (issue #255)
-        if ! wait_for_health "http://${SERVER_IP}:10011/api/mobile/health" 120 2; then
+        if ! wait_for_health_via_ssh "$SERVER" 10011 /api/mobile/health 120 2; then
             echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-test.log'"
         fi
     fi
@@ -1207,16 +1212,16 @@ deploy_rollback() {
         bash restart.sh $DEPLOY_ENV
     "
 
-    SERVER_IP="${SERVER#*@}"
+    # 2026-05-18: rollback 健康检查也改 SSH localhost (SG 收紧后 public-IP 永远 timeout)
     if [[ "$DEPLOY_ENV" == "prod" || "$DEPLOY_ENV" == "all" ]]; then
-        if wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 30 2; then
+        if wait_for_health_via_ssh "$SERVER" 10010 /api/mobile/health 30 2; then
             log "INFO" "回滚完成，生产服务正常"
         else
             log "WARN" "回滚完成但生产健康检查超时，请手动检查"
         fi
     fi
     if [[ "$DEPLOY_ENV" == "test" || "$DEPLOY_ENV" == "all" ]]; then
-        if wait_for_health "http://${SERVER_IP}:10011/api/mobile/health" 30 2; then
+        if wait_for_health_via_ssh "$SERVER" 10011 /api/mobile/health 30 2; then
             log "INFO" "回滚完成，测试服务正常"
         else
             log "WARN" "回滚完成但测试健康检查超时，请手动检查"
