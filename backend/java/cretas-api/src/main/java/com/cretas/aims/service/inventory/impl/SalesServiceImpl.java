@@ -18,6 +18,7 @@ import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
 import com.cretas.aims.service.config.FactoryConfigService;
+import com.cretas.aims.annotation.Loggable;
 import com.cretas.aims.service.factory.WarehouseResolver;
 import com.cretas.aims.service.inventory.SalesService;
 import org.slf4j.Logger;
@@ -127,6 +128,8 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     @Transactional
+    @Loggable(module = "SALES_ORDER", action = "CREATE", entityType = "SalesOrder",
+              summary = "'创建销售单 客户=' + #request.customerId")
     public SalesOrder createSalesOrder(String factoryId, CreateSalesOrderRequest request, Long userId) {
         // Canvas V2: DB-driven validation — pre-compute totalAmount so rules can reference it
         BigDecimal preComputedTotal = BigDecimal.ZERO;
@@ -354,6 +357,8 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     @Transactional
+    @Loggable(module = "SALES_ORDER", action = "CONFIRM", entityType = "SalesOrder",
+              entityIdParam = "orderId")
     public SalesOrder confirmOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         runConfiguredValidation(factoryId, "STATUS_CHANGE", Map.of(
@@ -383,6 +388,8 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     @Transactional
+    @Loggable(module = "SALES_ORDER", action = "SUBMIT_FINANCE", entityType = "SalesOrder",
+              entityIdParam = "orderId")
     public SalesOrder submitForFinanceReview(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         runConfiguredValidation(factoryId, "STATUS_CHANGE", Map.of(
@@ -596,6 +603,8 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     @Transactional
+    @Loggable(module = "SALES_ORDER", action = "UPDATE", entityType = "SalesOrder",
+              entityIdParam = "orderId")
     public SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
@@ -708,6 +717,8 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     @Transactional
+    @Loggable(module = "SALES_ORDER", action = "CANCEL", entityType = "SalesOrder",
+              entityIdParam = "orderId")
     public SalesOrder cancelOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         // R39 BUG-8 fix: was only blocking COMPLETED → FINANCE_APPROVED+/PROCESSING/SHIPPED/CANCELLED
