@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { RowAction, EntityType } from '@/types/rowActions';
 import {
   type InlineIconId,
+  type InlineIconDef,
   computeInlineIconStates,
 } from '@/types/inlineIcons';
 
@@ -32,30 +33,46 @@ const emit = defineEmits<{
 }>();
 
 // 客户反馈 (2026-05-18, F006 admin): 7 emoji icons 永驻 + 无文字 + disabled 也渲染
-// → 用户不知道每个干啥, 看到一堆灰色图标以为不能用。修法:
-//   1. 过滤 disabled — 只渲染 enabled 的, 当前状态不允许的直接不显示
-//   2. 去掉 emoji icon, 纯文字 label, 更直接 (per 用户 2026-05-18 二次反馈)
-// 防呆设计 Rule 5 — "用户犯错前阻止" 而不是 disabled 灰掉让用户猜。
-const enabledStates = computed(() =>
+// → 用户不知道每个干啥, 看到一堆灰色图标以为不能用。修法 (PR #858 + PR #859):
+//   1. RBAC/状态 disabled 的 → 不渲染 (per 防呆 Rule 5 "Dead-end 改导航")
+//   2. 改纯文字 chip, 去掉 emoji (二次反馈)
+//   3. 后端 API 未实现的 (pending) → 渲染但 disabled, 后接 " (开发中)" 暗示 roadmap
+const visibleStates = computed(() =>
   computeInlineIconStates(props.rowActions, props.entityType).filter((s) => s.enabled)
 );
 
-function handle(id: InlineIconId): void {
-  emit('icon-click', id);
+function handle(state: { def: InlineIconDef; pending: boolean }): void {
+  if (state.pending) return; // disabled chip — no-op
+  emit('icon-click', state.def.id);
 }
 </script>
 
 <template>
   <div class="inline-row-icons" role="toolbar" aria-label="行操作">
-    <button
-      v-for="state in enabledStates"
-      :key="state.def.id"
-      type="button"
-      class="inline-row-icon-btn"
-      :class="{ danger: state.def.danger }"
-      :aria-label="state.def.label"
-      @click.stop="handle(state.def.id)"
-    >{{ state.def.label }}</button>
+    <template v-for="state in visibleStates" :key="state.def.id">
+      <el-tooltip
+        v-if="state.pending"
+        content="此功能 API 开发中, 暂未上线"
+        placement="top"
+        :show-after="200"
+      >
+        <button
+          type="button"
+          class="inline-row-icon-btn pending"
+          :class="{ danger: state.def.danger }"
+          :aria-label="state.def.label + ' (开发中)'"
+          :disabled="true"
+        >{{ state.def.label }} <span class="pending-tag">(开发中)</span></button>
+      </el-tooltip>
+      <button
+        v-else
+        type="button"
+        class="inline-row-icon-btn"
+        :class="{ danger: state.def.danger }"
+        :aria-label="state.def.label"
+        @click.stop="handle(state)"
+      >{{ state.def.label }}</button>
+    </template>
   </div>
 </template>
 
@@ -86,5 +103,17 @@ function handle(id: InlineIconId): void {
 }
 .inline-row-icon-btn.danger:hover {
   color: var(--el-color-danger-light-3);
+}
+.inline-row-icon-btn.pending {
+  color: var(--el-text-color-disabled);
+  cursor: not-allowed;
+}
+.inline-row-icon-btn.pending:hover {
+  color: var(--el-text-color-disabled);
+  text-decoration: none;
+}
+.pending-tag {
+  font-size: 11px;
+  color: var(--el-text-color-placeholder);
 }
 </style>

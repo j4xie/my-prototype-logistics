@@ -172,10 +172,7 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       handleRowActionClick('lock', row);
       break;
     case 'forward':
-      ElMessage.info(`转发 ${row.orderNumber} (待接 share/email API)`);
-      break;
-    case 'print-pdf':
-      handleRowActionClick('print-pdf', row);
+      // pending: chip is disabled in UI; this case is defensive (won't fire)
       break;
     case 'delete':
       try {
@@ -186,7 +183,7 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
       }
       break;
     case 'audit':
-      ElMessage.info(`审计日志 (待接 audit log API): ${row.orderNumber}`);
+      // pending: chip is disabled in UI; this case is defensive (won't fire)
       break;
   }
 }

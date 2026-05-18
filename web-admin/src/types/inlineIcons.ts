@@ -1,45 +1,54 @@
-// U-ICON-1 (Sprint 4 Wave 2 Chat L) — 7 inline row icons.
+// U-ICON-1 (Sprint 4 Wave 2 Chat L) — inline row action chips.
 //
-// Per brief, fixed 7-icon palette shown on row hover:
-//   复制 (copy) / 标记 (mark) / 锁定 (lock) / 转发 (forward) / 打印 (print-pdf) /
-//   删除 (delete) / 审计 (audit)
+// 2026-05-18 redesign (PR #858 + #859):
+//   - Was 7 emoji icons + tooltip; now plain text chips (per F006 admin feedback)
+//   - 'print-pdf' removed — duplicates the dedicated PDF button at top of 操作 col
+//   - 'forward' / 'audit' marked `pending: true` until their APIs land — render
+//     as disabled chip + " (开发中)" suffix instead of "(待接 API)" toast
 //
-// 4 ids reuse existing COMMON_ACTIONS so RBAC/status filters compose cleanly:
-//   copy / lock / print-pdf / delete  → ids in COMMON_ACTIONS
+// Remaining palette (6 chips):
+//   复制 (copy) / 标记 (mark) / 锁定 (lock) / 转发 (forward, pending) /
+//   删除 (delete) / 审计 (audit, pending)
+//
+// 3 ids reuse existing COMMON_ACTIONS so RBAC/status filters compose cleanly:
+//   copy / lock / delete  → ids in COMMON_ACTIONS
 // 3 ids are inline-specific (no COMMON_ACTIONS equivalent yet):
-//   mark / forward / audit            → handled in parent click handler
-//
-// The component's `computeInlineIconStates()` returns an array of 7 entries
-// preserving order, each marked enabled/disabled per existing useRowActions
-// catalog (for known ids) or always-enabled (for inline-only ids).
+//   mark / forward / audit  → handled in parent click handler
 
 import type { RowAction, EntityType } from './rowActions';
 
-export type InlineIconId = 'copy' | 'mark' | 'lock' | 'forward' | 'print-pdf' | 'delete' | 'audit';
+export type InlineIconId = 'copy' | 'mark' | 'lock' | 'forward' | 'delete' | 'audit';
 
 export interface InlineIconDef {
   id: InlineIconId;
-  icon: string; // emoji
+  icon: string; // emoji (legacy field; current renderer is text-only)
   label: string;
   /** When true, parent owns the click handler; component doesn't try to map to COMMON_ACTIONS. */
   inlineOnly: boolean;
   danger?: boolean;
   requiresConfirm?: boolean;
+  /**
+   * Feature defined but backing API not implemented. Renderer shows as
+   * disabled chip with " (开发中)" suffix instead of letting the user click
+   * into a "待接 API" toast. Remove when API ships.
+   */
+  pending?: boolean;
 }
 
 export const INLINE_ICONS: readonly InlineIconDef[] = [
   { id: 'copy', icon: '📑', label: '复制', inlineOnly: false },
   { id: 'mark', icon: '🏷️', label: '标记', inlineOnly: true },
   { id: 'lock', icon: '🔒', label: '锁定', inlineOnly: false },
-  { id: 'forward', icon: '↗️', label: '转发', inlineOnly: true },
-  { id: 'print-pdf', icon: '📄', label: '打印', inlineOnly: false },
+  { id: 'forward', icon: '↗️', label: '转发', inlineOnly: true, pending: true },
   { id: 'delete', icon: '🗑️', label: '删除', inlineOnly: false, danger: true, requiresConfirm: true },
-  { id: 'audit', icon: '🔎', label: '审计', inlineOnly: true },
+  { id: 'audit', icon: '🔎', label: '审计', inlineOnly: true, pending: true },
 ];
 
 export interface InlineIconState {
   def: InlineIconDef;
   enabled: boolean;
+  /** API not implemented yet — show as disabled + "(开发中)" suffix. */
+  pending: boolean;
   /** Reason shown on tooltip when disabled. */
   disabledReason?: string;
 }
@@ -58,21 +67,24 @@ export function computeInlineIconStates(
   _entityType?: EntityType
 ): InlineIconState[] {
   const byId = new Map(rowActions.map((a) => [a.id, a]));
-  return INLINE_ICONS.map((def) => {
+  return INLINE_ICONS.map<InlineIconState>((def) => {
+    const pending = def.pending === true;
     if (def.inlineOnly) {
-      return { def, enabled: true };
+      return { def, enabled: true, pending };
     }
     const match = byId.get(def.id);
     if (!match) {
       return {
         def,
         enabled: false,
+        pending,
         disabledReason: '当前状态不允许此操作',
       };
     }
     return {
       def,
       enabled: !match.disabled,
+      pending: pending || match.pending === true,
       disabledReason: match.disabled ? match.disabledReason : undefined,
     };
   });

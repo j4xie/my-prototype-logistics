@@ -46,6 +46,11 @@ function handleCommand(cmd: string | number | object) {
     return;
   }
   if (typeof cmd === 'string') {
+    // Safety: el-dropdown should suppress @command for disabled items, but
+    // double-check pending here and no-op rather than fire a "(待接 API)" toast
+    // if the dropdown ever calls @command for a disabled entry.
+    const action = props.actions.find((a) => a.id === cmd);
+    if (action?.pending) return;
     emit('action-click', cmd);
   }
 }
@@ -78,14 +83,23 @@ function handleCommand(cmd: string | number | object) {
             v-for="action in actions"
             :key="action.id"
             :command="action.id"
-            :disabled="action.disabled"
-            :class="{ 'row-action-menu__item--danger': action.danger }"
-            :title="action.disabled ? action.disabledReason : undefined"
+            :disabled="action.disabled || action.pending"
+            :class="{
+              'row-action-menu__item--danger': action.danger,
+              'row-action-menu__item--pending': action.pending,
+            }"
+            :title="action.pending
+              ? '此功能 API 开发中, 暂未上线'
+              : (action.disabled ? action.disabledReason : undefined)"
           >
             <span class="row-action-menu__icon" aria-hidden="true">{{ action.icon }}</span>
             <span class="row-action-menu__label">{{ action.label }}</span>
             <span
-              v-if="action.requiresConfirm"
+              v-if="action.pending"
+              class="row-action-menu__pending-tag"
+            >(开发中)</span>
+            <span
+              v-else-if="action.requiresConfirm"
               class="row-action-menu__confirm-hint"
             >需确认</span>
           </el-dropdown-item>
@@ -132,5 +146,10 @@ function handleCommand(cmd: string | number | object) {
 }
 .row-action-menu__item--danger {
   color: var(--el-color-danger);
+}
+.row-action-menu__pending-tag {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--el-text-color-placeholder);
 }
 </style>
