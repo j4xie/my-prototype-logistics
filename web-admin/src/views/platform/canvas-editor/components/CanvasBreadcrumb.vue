@@ -30,12 +30,15 @@ const moduleNames: Record<string, string> = {
 }
 
 const tabLabels: Record<string, { icon: string; label: string }> = {
-  workflow: { icon: '🔄', label: '流程设计' },
+  workflow: { icon: '🔄', label: '状态机' },
+  approval: { icon: '✅', label: '审批工作流' },
   triggers: { icon: '🔗', label: '触发链' },
   validation: { icon: '📐', label: '校验规则' },
   fields: { icon: '📋', label: '字段配置' },
   permissions: { icon: '🛡️', label: '权限矩阵' },
+  'module-permissions': { icon: '🔐', label: '模块权限' },
   tools: { icon: '🔧', label: '工具/技能' },
+  scheduler: { icon: '⏰', label: '定时任务' },
 }
 
 const moduleIcon = computed(() => moduleIcons[selectedModule.value] || '📄')
