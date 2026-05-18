@@ -35,6 +35,7 @@ public class SkillManagementController {
     /**
      * 列出所有 Skills（来自 SkillRegistry，包含 DB + file + default）
      */
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     @GetMapping
     public ResponseEntity<Map<String, Object>> listSkills() {
         List<Map<String, Object>> skills = autoComposerService.listAllSkills();
@@ -48,6 +49,7 @@ public class SkillManagementController {
     /**
      * 获取 Skill 详情
      */
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     @GetMapping("/{skillName}")
     public ResponseEntity<Map<String, Object>> getSkill(@PathVariable String skillName) {
         var skillDef = skillRegistry.getSkill(skillName);
@@ -163,6 +165,7 @@ public class SkillManagementController {
     /**
      * 获取 Tool 共现模式分析
      */
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     @GetMapping("/patterns")
     public ResponseEntity<Map<String, Object>> getPatterns(
             @PathVariable String factoryId,
@@ -183,6 +186,7 @@ public class SkillManagementController {
     /**
      * 获取 Skill 自动组合推荐
      */
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     @GetMapping("/recommendations")
     public ResponseEntity<Map<String, Object>> getRecommendations(
             @PathVariable String factoryId,

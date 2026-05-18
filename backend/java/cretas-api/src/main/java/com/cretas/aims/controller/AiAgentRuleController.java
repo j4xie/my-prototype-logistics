@@ -45,6 +45,7 @@ public class AiAgentRuleController {
 
     // ==================== 规则查询 ====================
 
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @GetMapping
     @Operation(summary = "获取所有规则", description = "获取工厂的所有启用的 AI Agent 规则列表")
     public ResponseEntity<ApiResponse<List<AiAgentRule>>> getAllRules(
@@ -65,6 +66,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @GetMapping("/{ruleId}")
     @Operation(summary = "获取单个规则", description = "根据规则ID获取规则详情")
     public ResponseEntity<ApiResponse<AiAgentRule>> getRule(
@@ -85,6 +87,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.success(r));
     }
 
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @GetMapping("/trigger/{triggerType}")
     @Operation(summary = "按触发类型获取规则", description = "获取指定触发类型的规则列表")
     public ResponseEntity<ApiResponse<List<AiAgentRule>>> getRulesByTriggerType(
@@ -97,6 +100,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @GetMapping("/trigger-types")
     @Operation(summary = "获取所有触发类型", description = "获取系统支持的所有触发类型")
     public ResponseEntity<ApiResponse<List<Map<String, String>>>> getTriggerTypes(
@@ -283,6 +287,7 @@ public class AiAgentRuleController {
 
     // ==================== 统计信息 ====================
 
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @GetMapping("/stats")
     @Operation(summary = "获取规则统计", description = "获取 AI Agent 规则的统计信息")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(
@@ -313,6 +318,7 @@ public class AiAgentRuleController {
 
     // ==================== 可用工具列表 ====================
 
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @GetMapping("/available-tools")
     @Operation(summary = "获取可用工具列表", description = "获取可在规则中使用的工具列表")
     public ResponseEntity<ApiResponse<List<Map<String, String>>>> getAvailableTools(
