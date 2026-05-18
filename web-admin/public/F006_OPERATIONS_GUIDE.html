@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>F006 六扇门 — 完整业务流程操作 Guide</title>
+<style>
+:root {
+  --primary: #0066cc;
+  --bg: #fafbfc;
+  --card: #ffffff;
+  --border: #e4e7eb;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --quote-bg: #fef9e7;
+  --quote-border: #f59e0b;
+  --code-bg: #f3f4f6;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.7;
+  font-size: 15px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+nav.toc {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  font-size: 13px;
+}
+nav.toc h2 {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0 6px;
+  padding: 0 8px;
+}
+nav.toc a {
+  display: block;
+  color: var(--text);
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin: 1px 0;
+}
+nav.toc a:hover { background: var(--bg); color: var(--primary); }
+nav.toc a.sub { padding-left: 20px; color: var(--muted); font-size: 12px; }
+main {
+  padding: 30px 40px;
+  max-width: 1000px;
+}
+h1 {
+  font-size: 26px;
+  color: var(--primary);
+  border-bottom: 3px solid var(--primary);
+  padding-bottom: 12px;
+  margin-top: 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: 40px;
+  color: #0a2540;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+h3 {
+  font-size: 17px;
+  margin-top: 24px;
+  color: #1e3a5f;
+}
+h4 { font-size: 15px; margin-top: 16px; color: #555; }
+.meta-banner {
+  background: linear-gradient(135deg, #0066cc15, #10b98115);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 20px 0;
+}
+.meta-banner strong { color: var(--primary); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 14px;
+}
+th {
+  background: #f1f5f9;
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  color: #334155;
+}
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover { background: #fafbfc; }
+code {
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  color: #d63384;
+}
+pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 13px;
+}
+pre code { background: none; color: inherit; padding: 0; }
+.quote {
+  border-left: 4px solid var(--quote-border);
+  background: var(--quote-bg);
+  padding: 10px 16px;
+  margin: 12px 0;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+}
+.quote::before {
+  content: "💬 客户原话";
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--warning);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.quote .src { color: var(--muted); font-style: normal; font-size: 12px; margin-top: 6px; display: block; }
+.callout {
+  border-left: 4px solid var(--primary);
+  background: #eff6ff;
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 0 6px 6px 0;
+}
+.callout.warn {
+  border-color: var(--warning);
+  background: #fffbeb;
+}
+.callout.danger {
+  border-color: var(--danger);
+  background: #fef2f2;
+}
+.callout.success {
+  border-color: var(--success);
+  background: #ecfdf5;
+}
+.role-tag {
+  display: inline-block;
+  background: var(--primary);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+.role-tag.sales { background: #10b981; }
+.role-tag.warehouse { background: #f59e0b; }
+.role-tag.finance { background: #8b5cf6; }
+.role-tag.production { background: #ef4444; }
+.role-tag.admin { background: #6366f1; }
+.role-tag.qc { background: #ec4899; }
+.step {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 14px 0;
+}
+.step .step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.expected { color: var(--success); font-weight: 600; }
+.status-ok { color: var(--success); font-weight: 600; }
+.status-partial { color: var(--warning); font-weight: 600; }
+.status-gap { color: var(--danger); font-weight: 600; }
+.kbd {
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+.toc-section { margin-bottom: 16px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 30px 0; }
+.footer { margin-top: 60px; padding: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+@media print {
+  nav.toc { display: none; }
+  .layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <h2>导航</h2>
+  <div class="toc-section">
+    <a href="#overview"><strong>📋 总览</strong></a>
+    <a href="#roles" class="sub">角色账号</a>
+    <a href="#business-rules" class="sub">业务规则</a>
+    <a href="#env" class="sub">环境信息</a>
+  </div>
+  <h2>配置阶段</h2>
+  <div class="toc-section">
+    <a href="#stage-0">阶段 0 — 配置 (one-time)</a>
+    <a href="#stage-0-1" class="sub">0.1 工序管理</a>
+    <a href="#stage-0-2" class="sub">0.2 产品-工序配置</a>
+    <a href="#stage-0-3" class="sub">0.3 原料类型字典</a>
+    <a href="#stage-0-4" class="sub">0.4 BOM 成本管理</a>
+    <a href="#stage-0-5" class="sub">0.5 客户/供应商/产品</a>
+  </div>
+  <h2>业务流程 (11 阶段)</h2>
+  <div class="toc-section">
+    <a href="#stage-1">阶段 1 — 采购 → 入库</a>
+    <a href="#stage-2">阶段 2 — 销售 → 财审</a>
+    <a href="#stage-3">阶段 3 — 生产计划</a>
+    <a href="#stage-4">阶段 4 — 调拨 (总仓→线边仓)</a>
+    <a href="#stage-5">阶段 5 — 生产执行 + 报工</a>
+    <a href="#stage-6">阶段 6 — 成品回总仓</a>
+    <a href="#stage-7">阶段 7 — 发货 (销售+仓库 协作)</a>
+    <a href="#stage-8">阶段 8 — 开票</a>
+    <a href="#stage-9">阶段 9 — 收款</a>
+    <a href="#stage-10">阶段 10 — 退货/售后</a>
+    <a href="#stage-11">阶段 11 — 数据分析</a>
+  </div>
+  <h2>附录</h2>
+  <div class="toc-section">
+    <a href="#meeting-sources">会议记录来源</a>
+    <a href="#real-gaps">真实 gap (8/9 已 ship)</a>
+    <a href="#known-bugs">11 bugs 全 closed + 9 PR 时序</a>
+    <a href="#e2e-audit-bugs">附录 E — strict E2E 13 真.bugs</a>
+    <a href="#recommended-test">推荐手测路径</a>
+  </div>
+</nav>
+
+<main>
+<h1>F006 六扇门 — 完整业务流程操作 Guide</h1>
+
+<div class="meta-banner">
+<strong>来源</strong>: 六扇门 4 次客户会议 (2026-03-18 / 2026-05-07 part1 + part2 / 2026-05-10) — 3000+ 行转录综合<br>
+<strong>客户</strong>: 六扇门 (内部 F006 卤制品工厂) — 卤猪蹄 / 牛肉 / 鸡爪等熟食<br>
+<strong>整理日期</strong>: 2026-05-17 · <strong>更新 (18:00 CST)</strong>: Wave 1+2+3 全 ship 后所有 gap/bug 状态已 refresh<br>
+<strong>本地打开</strong>: 在浏览器中直接打开此文件
+</div>
+
+<section id="overview">
+<h2>📋 总览</h2>
+
+<h3 id="env">环境信息</h3>
+<table>
+<tr><th>项目</th><th>值</th></tr>
+<tr><td>客户面 URL</td><td><code>https://admin.cretaceousfuture.com</code></td></tr>
+<tr><td>16 F006 prod 账号密码</td><td>统一 <code>123456</code></td></tr>
+<tr><td>登录限速</td><td>每用户名 60 秒 (重登要等)</td></tr>
+<tr><td>建议工具</td><td>Chrome incognito 多开窗口 (同时登多角色)</td></tr>
+</table>
+
+<h3 id="roles">16 个 F006 角色账号</h3>
+<table>
+<tr><th>#</th><th>用户名</th><th>角色</th><th>本 guide 主要责任</th></tr>
+<tr><td>1</td><td><code>f006_admin</code></td><td>factory_super_admin</td><td>阶段 0 全配置 / 系统级</td></tr>
+<tr><td>2</td><td><code>f006_dept_admin</code></td><td>department_admin</td><td>跨部门可见</td></tr>
+<tr><td>3</td><td><code>f006_dispatcher</code></td><td>dispatcher</td><td>排产调度 (后期)</td></tr>
+<tr><td>4</td><td><code>f006_equipment_admin</code></td><td>equipment_admin</td><td>设备 (后期)</td></tr>
+<tr><td>5</td><td><code>f006_finance_mgr</code></td><td>finance_manager</td><td>阶段 2 财审 / 阶段 8/9 开票收款</td></tr>
+<tr><td>6</td><td><code>f006_hr_admin</code></td><td>hr_admin</td><td>员工 (后期)</td></tr>
+<tr><td>7</td><td><code>f006_procurement_mgr</code></td><td>procurement_manager</td><td>阶段 1.1-1.2 采购下单</td></tr>
+<tr><td>8</td><td><code>f006_production_mgr</code></td><td>production_manager</td><td>阶段 3 计划 / 阶段 5 报工审批</td></tr>
+<tr><td>9</td><td><code>f006_quality_insp</code></td><td>quality_inspector</td><td>阶段 5 中间质检</td></tr>
+<tr><td>10</td><td><code>f006_quality_mgr</code></td><td>quality_manager</td><td>质量经理</td></tr>
+<tr><td>11</td><td><code>f006_sales_mgr</code></td><td>sales_manager</td><td>阶段 2 销售 / 阶段 7 创建发货单 / 阶段 8 推开票 / 阶段 9 登记收款</td></tr>
+<tr><td>12</td><td><code>f006_viewer</code></td><td>viewer</td><td>只读 (验 RBAC)</td></tr>
+<tr><td>13</td><td><code>f006_warehouse_mgr</code></td><td>warehouse_manager</td><td>阶段 1.3 入库 / 阶段 4 调拨 / 阶段 7 确认发货</td></tr>
+<tr><td>14</td><td><code>f006_warehouse_worker</code></td><td>warehouse_worker</td><td>仓库员工</td></tr>
+<tr><td>15</td><td><code>f006_worker1</code></td><td>operator</td><td>阶段 5 工人报工 (APP)</td></tr>
+<tr><td>16</td><td><code>f006_workshop</code></td><td>workshop_supervisor</td><td>车间主管</td></tr>
+</table>
+
+<h3 id="business-rules">六扇门 8 大业务规则 (跨会议提炼)</h3>
+<table>
+<tr><th>规则</th><th>含义</th><th>会议来源</th></tr>
+<tr><td><strong>工厂 = 线边仓</strong></td><td>工厂不是永久仓库, 总仓才是. 工厂只是临时生产场地</td><td>May 10 L711-734</td></tr>
+<tr><td><strong>线边仓清零原则</strong></td><td>当天生产完毕, 剩余原料 + 成品全部调回总仓, 线边仓清零</td><td>May 10 L716-736</td></tr>
+<tr><td><strong>BOM 算法</strong></td><td>原料投量/份 = 成品含量 ÷ (出成率/100). 例: 200g 猪蹄成品 / 58% 出成率 = 345g 冻猪蹄</td><td>May 10 L268</td></tr>
+<tr><td><strong>30% 抄收上限</strong></td><td>入库实收最多超下单 30% (e.g. 下单 100kg, 最多收 130kg)</td><td>May 7 L184</td></tr>
+<tr><td><strong>超码品</strong></td><td>重量不固定的原料 (牛肉等), 规格写"超码", 箱数不显示固定值, 入库时验码</td><td>May 7 L29-65</td></tr>
+<tr><td><strong>批次 FEFO 默认</strong></td><td>调拨/出库默认选最早过期批次, 但可手动覆盖 (新货优先 case)</td><td>May 10 L486-499</td></tr>
+<tr><td><strong>单位统一</strong></td><td>g (克) ↔ kg (千克) 后台自动 1:1000 换算, 仓库按 kg, BOM 按 g</td><td>May 10 L382-408</td></tr>
+<tr><td><strong>仓管员极简录入</strong></td><td>仓管员年纪大文化低, 只录"收货数量 + 商品日期" 两个字段, 价格类不参与</td><td>May 7 L186-191</td></tr>
+</table>
+</section>
+
+<hr>
+
+<section id="stage-0">
+<h2>🔧 阶段 0 — 配置 (one-time)</h2>
+<div class="callout warn">
+<strong>⚠️ 顺序很关键</strong> — 后面阶段依赖. 不要跳.<br>
+执行顺序: 0.1 工序 → 0.2 产品-工序绑定 → 0.3 原料字典 → 0.4 BOM 配方 → 0.5 客户/供应商
+</div>
+
+<h3 id="stage-0-1">0.1 — 创建 7 个工序</h3>
+<span class="role-tag admin">f006_admin</span>
+<p><strong>菜单</strong>: 左侧栏 <kbd>系统管理</kbd> → <kbd>工序管理</kbd> · <strong>URL</strong>: <code>/system/work-processes</code></p>
+
+<div class="step">
+<div class="step-title">操作</div>
+<ol>
+<li>点页面右上 <strong>+ 新增工序</strong> button</li>
+<li>弹 dialog 填:
+  <ul>
+    <li><strong>工序名称</strong> (必填): 如 <code>拆包</code></li>
+    <li><strong>工序类别</strong> (必填 dropdown): 前处理 / 加工 / 包装 / 其他</li>
+    <li><strong>产出单位</strong> (必填): <code>kg</code> (默认) 或 <code>盒</code> / <code>筐</code></li>
+    <li><strong>预估工时</strong> (可选): 留空 — 客户说"飞标不好控制"</li>
+    <li><strong>排序</strong>: 1-7</li>
+  </ul>
+</li>
+<li>点 <strong>确定</strong> → 字典 +1</li>
+<li>重复 6 次按下表</li>
+</ol>
+</div>
+
+<table>
+<tr><th>排序</th><th>工序名称</th><th>类别</th><th>产出单位</th></tr>
+<tr><td>1</td><td>拆包</td><td>前处理</td><td>kg</td></tr>
+<tr><td>2</td><td>分割</td><td>前处理</td><td>kg</td></tr>
+<tr><td>3</td><td>卤制</td><td>加工</td><td>kg</td></tr>
+<tr><td>4</td><td>抛骨</td><td>加工</td><td>kg</td></tr>
+<tr><td>5</td><td>分切</td><td>加工</td><td>kg</td></tr>
+<tr><td>6</td><td>装盒</td><td>包装</td><td>盒</td></tr>
+<tr><td>7</td><td>装筐</td><td>包装</td><td>筐</td></tr>
+</table>
+
+<p class="expected">✓ 验证</p>: 列表应有 7 行, 状态都 <code>启用</code>.
+
+<div class="quote">
+我说那个产品。工序就是根据产品类型建的 BOM 是吧? 那我要先, 那我要先去建个 BOM 对吧?<br>
+工序是在哪里面? 工序管理, 系统管理有工序管理。<span class="src">— 张权 May 10 L52-55</span>
+</div>
+
+<h3 id="stage-0-2">0.2 — 绑定产品 ↔ 工序 ⚠️ 必点"生成工序任务"</h3>
+<span class="role-tag admin">f006_admin</span>
+<p><strong>菜单</strong>: <kbd>系统管理</kbd> → <kbd>产品-工序配置</kbd> · <strong>URL</strong>: <code>/system/product-processes</code></p>
+
+<div class="callout danger">
+<strong>🚨 May 10 会议踩过</strong>: 不点"生成工序任务" button, 配置不生效. 之后生产计划工序 dropdown 只会显示"通用".
+</div>
+
+<div class="step">
+<div class="step-title">操作</div>
+<ol>
+<li>顶部 <strong>选择产品</strong> dropdown → 选 <code>叮咚好食光卤猪蹄(去大骨) 200g</code></li>
+<li>左侧: 已关联工序 (初始空) · 右侧: 可添加的工序 (列出你 0.1 创建的 7 工序)</li>
+<li>在右侧每个工序 row 点 <strong>添加</strong> button (从 1 拆包 → 7 装筐)</li>
+<li>左侧现在显示 7 已关联工序</li>
+<li>⚠️ 页面顶部点 <strong>生成工序任务</strong> button (大蓝)</li>
+<li>弹确认: "确定为「产品 X」生成 7 道工序任务?" → <strong>确定</strong></li>
+<li>Toast "已生成 7 个工序任务"</li>
+</ol>
+</div>
+
+<p class="expected">✓ 验证</p>: 之后 <kbd>生产管理</kbd> → <kbd>生产计划</kbd> → 新建 时, 工序 dropdown 应**不只**显示"通用".
+
+<div class="quote">
+门枪, 门枪没有添加的, 我看没有添加, 就是在产品工序配置里面还得添加, 你添加了吗? 没有没有, 没添加, 我重新下个单子.<br>
+... 要点一下生成啊, 我刚刚没点生成, 可能是因为这个原因。<span class="src">— May 10 L99-143</span>
+</div>
+
+<h3 id="stage-0-3">0.3 — 原料字典 (含单位 + 二级换算)</h3>
+<span class="role-tag warehouse">f006_warehouse_mgr</span> 或 <span class="role-tag admin">f006_admin</span>
+<p><strong>菜单</strong>: <kbd>仓储管理</kbd> → <kbd>原料类型字典 (新建原料)</kbd> · <strong>URL</strong>: <code>/warehouse/material-types</code></p>
+
+<div class="step">
+<div class="step-title">操作</div>
+<ol>
+<li>点 <strong>+ 新增</strong></li>
+<li>填:
+  <ul>
+    <li><strong>原料名称</strong> (必填): 如 <code>冻猪蹄</code></li>
+    <li><strong>类别</strong> (必填 dropdown): 原料 RAW / 辅料 AUXILIARY / 包材 PACKAGING</li>
+    <li><strong>单位</strong> (必填 dropdown): <code>kg</code> 默认 — 客户决定 g/kg 统一</li>
+    <li><strong>储存类型</strong> (必填): 冷冻 / 冷藏 / 常温</li>
+    <li><strong>保质期 (天)</strong> (可选): 卤制原料 180</li>
+    <li><strong>备注</strong> (可选)</li>
+  </ul>
+</li>
+<li><strong>二级换算</strong> (可选, 但客户要的): 数量 <code>10</code>, 二级单位 <code>箱</code> (1 箱 = 10 kg)</li>
+<li><strong>三级换算</strong> (可选): 数量 <code>12</code>, 三级单位 <code>托</code> (1 托 = 12 箱)</li>
+<li><strong>确定</strong></li>
+</ol>
+</div>
+
+<div class="callout warn">
+<strong>超码品例外</strong>: 重量不固定的 (e.g. 牛肉), 单位选 <code>kg</code> 但<strong>二级换算不填</strong> → 采购单箱数显示"超码"而不是固定值.
+</div>
+
+<table>
+<tr><th>类别</th><th>名称</th><th>单位</th><th>储存</th><th>保质期</th></tr>
+<tr><td>原料</td><td>冻猪蹄</td><td>kg</td><td>冷冻</td><td>180</td></tr>
+<tr><td>原料</td><td>牛肉 (超码)</td><td>kg</td><td>冷冻</td><td>180</td></tr>
+<tr><td>辅料</td><td>食盐</td><td>kg</td><td>常温</td><td>730</td></tr>
+<tr><td>辅料</td><td>卤料包</td><td>kg</td><td>常温</td><td>365</td></tr>
+<tr><td>包材</td><td>200g 塑盒</td><td>个</td><td>常温</td><td>—</td></tr>
+<tr><td>包材</td><td>装箱纸盒</td><td>个</td><td>常温</td><td>—</td></tr>
+</table>
+
+<h3 id="stage-0-4">0.4 — BOM 配方 (核心: 成品克数 + 出成率)</h3>
+<span class="role-tag admin">f006_admin</span> / <span class="role-tag production">f006_production_mgr</span>
+<p><strong>菜单</strong>: <kbd>生产管理</kbd> → <kbd>BOM 成本管理</kbd> · <strong>URL</strong>: <code>/production/bom</code></p>
+
+<div class="callout">
+<strong>客户算法</strong>: 原料投量/份 = 成品含量 ÷ (出成率/100)<br>
+例: 一份成品里有 200g 猪蹄, 卤制出成率 58% → 需要原料 200 / 0.58 = <strong>345g 冻猪蹄/份</strong>
+</div>
+
+<div class="step">
+<div class="step-title">操作</div>
+<ol>
+<li>顶部 <strong>选择产品</strong> dropdown → 选 <code>叮咚好食光卤猪蹄(去大骨) 200g</code></li>
+<li>点 <strong>+ 新增配方项</strong></li>
+<li>切 <strong>原料 tab</strong> (RAW) → 填:
+  <ul>
+    <li><strong>关联原料</strong> (必选 dropdown): 选 <code>冻猪蹄</code> → 自动回填名称 + 单位 (B8 fix per PR #293)</li>
+    <li><strong>成品含量</strong> (必填): <code>200</code> (g, 一份成品中此原料克数)</li>
+    <li><strong>出成率%</strong> (必填): <code>58</code></li>
+    <li><strong>单价(含税)</strong> (可选, 仅 procurement_mgr/admin 看到): 留空或填进价</li>
+    <li><strong>税率%</strong> (可选): 13</li>
+  </ul>
+</li>
+<li><strong>保存</strong> → 列表显示该行, 原料投量/份自动算 = 200/0.58 = <strong>345.0g</strong></li>
+<li>切 <strong>辅料 tab</strong> → 加食盐 + 卤料包 (成品含量 2g, 出成率 100%)</li>
+<li>切 <strong>包材 tab</strong> → 加 200g 塑盒 + 装箱纸盒 (成品含量 1, 出成率 100%)</li>
+<li>(可选) 切 <strong>工序 tab</strong> → 加报工单价</li>
+</ol>
+</div>
+
+<div class="quote">
+比如说我这个是 200 克, 那我可能就写个 200, 这个最好加个单位, 尽量单位是克.<br>
+200 克我的出成的话是 58% 嘛, 那么自动机啊.<span class="src">— May 10 L230-232</span>
+</div>
+
+<h3 id="stage-0-5">0.5 — 客户/供应商/产品 (按需创建)</h3>
+
+<table>
+<tr><th>实体</th><th>菜单</th><th>URL</th><th>角色</th></tr>
+<tr><td>客户</td><td>销售管理 → 客户管理</td><td>/sales/customers</td><td>sales_mgr</td></tr>
+<tr><td>供应商</td><td>采购管理 → 供应商管理</td><td>/procurement/suppliers</td><td>procurement_mgr</td></tr>
+<tr><td>产品/SKU</td><td>系统管理 → 成品 / SKU (本厂生产)</td><td>/system/products</td><td>admin</td></tr>
+</table>
+
+<div class="quote">
+原料的话那个加一个对应的供应商, 加个字段, 对应是哪家供应商供的吗.<br>
+... 一个供应商可能供好几个产品 → 这是为什么我们把那个原料跟采购供应商是分开的.<span class="src">— May 7 part2 L223-234</span>
+</div>
+
+<h3>阶段 0 完成 checklist</h3>
+<table>
+<tr><th>验证</th><th>期望</th></tr>
+<tr><td>系统管理 → 工序管理</td><td>7 行启用工序</td></tr>
+<tr><td>系统管理 → 产品-工序配置 → 选猪蹄 → 已关联工序</td><td>7 行 (拆包→装筐)</td></tr>
+<tr><td>仓储 → 原料类型字典</td><td>≥6 行 (4 原辅料 + 2 包材)</td></tr>
+<tr><td>生产 → BOM 成本管理 → 选猪蹄 → 原料 tab</td><td>≥1 行, 投量自动算 345g/份</td></tr>
+<tr><td>生产 → 生产计划 → 新建 → 选产品 → 工序 dropdown</td><td>应<strong>不只</strong>"通用", 有你绑的 7 工序</td></tr>
+</table>
+</section>
+
+<hr>
+
+<section id="stage-1">
+<h2>🛒 阶段 1 — 采购 → 入库</h2>
+
+<div class="callout warn">
+<strong>💡 新建录入方式 — 4 模式选择 (Sprint 4 W2 PR #832 上线)</strong><br>
+点 <code>+ 新建采购订单</code> 后会弹出选择对话框, 按需选模式:
+<ul>
+<li><strong>📝 普通新建</strong>: 完整表单 — 一次创建一个, 所有字段可填 (供应商/规格/付款方式/备注等). <em>适合: 单条订单, 字段都要填全</em></li>
+<li><strong>⚡ 一维快速</strong>: 极简模式 — 只填必填字段 (供应商+物料+数量+单价), 回车直接提交. <em>适合: 紧急下单, 只记关键</em></li>
+<li><strong>🔲 二维表格</strong>: 批量录入 — Excel 风格表格一次创建多条 (e.g. 同供应商多物料). <em>适合: 一次下 5+ 条 PO</em></li>
+<li><strong>📊 BOM 展开</strong>: 基于 BOM/配方 — 选模板自动展开明细 (e.g. 产 100 个成品 → 自动算出需要的原料 PO). <em>适合: 跟生产任务联动</em></li>
+</ul>
+<p style="margin-bottom:0">📌 同样的 4 模式选择对话框也在 <strong>销售订单</strong> + <strong>领料申请</strong> 页面提供.</p>
+</div>
+
+<h3>1.1 采购下单</h3>
+<span class="role-tag">f006_procurement_mgr</span>
+
+<div class="step">
+<div class="step-title">菜单 → 采购管理 → 采购订单 → 新建采购订单 → 选模式 (普通/一维/二维/BOM)</div>
+<ul>
+<li><strong>供应商</strong>: 选 北京飞熊 (或新增)</li>
+<li><strong>物料</strong>: 选 0.3 字典里的原料</li>
+<li><strong>数量</strong>: 100 (kg)</li>
+<li><strong>单价</strong>: ¥23.5</li>
+<li><strong>规格</strong>: 普通 / 超码</li>
+<li>箱数自动按转换率折算 (超码品时不显示)</li>
+</ul>
+<p>→ 提交</p>
+</div>
+
+<p class="expected">✓ 状态: PO-XXX <code>待财审</code></p>
+
+<h3>1.2 采购财审</h3>
+<span class="role-tag finance">f006_finance_mgr</span>
+
+<div class="step">
+<div class="step-title">菜单 → 采购管理 → 财务待审采购单</div>
+<ol>
+<li>选 PO → 详情</li>
+<li>查 <strong>三价对比</strong> (本次价 vs 上次入库价 vs 历史均价)</li>
+<li>通过 / 驳回 (修过 #704+#705: 驳回必填理由, 空 notes → 400)</li>
+</ol>
+</div>
+
+<p class="expected">✓ 状态: PO <code>已批准</code></p>
+
+<div class="callout warn">
+<strong>📝 客户决策 (May 7)</strong>: 财审界面有"预估成本" feature → <strong>暂时隐藏</strong>. 客户原话: "财务那边肯定会比较跳的, 这个建议暂时先去掉".
+</div>
+
+<h3>1.3 入库 (扫码理想 / 当前手填)</h3>
+<span class="role-tag warehouse">f006_warehouse_mgr</span>
+
+<div class="callout warn">
+<strong>🎯 完整客户愿景 (May 7 L100-200, 真实 gap)</strong>: <br>
+1. 采购 PO → 系统出 PDF (含二维码) → 发供应商<br>
+2. 供应商打印 PDF → 送货员带 PDF + 货 → 仓库<br>
+3. 仓管员扫 PDF 二维码 → 系统跳到对应入库单<br>
+4. 仓管员只录: <strong>收货数量 + 商品日期</strong>, 双方签字, <strong>拍照留附件</strong><br>
+<br>
+当前实现: 手填 (PDF/扫码闭环尚未实装)
+</div>
+
+<div class="step">
+<div class="step-title">当前操作 → 采购管理 → 采购入库 → 新建入库单 → 关联采购订单</div>
+<ul>
+<li>实际收货数量 (允许 +30% 抄收上限)</li>
+<li><strong>修过 #741</strong>: dialog 内<strong>预先</strong>显示 下单/已收/可入(含30%抄收), 超限 disable</li>
+<li>商品日期 (生产日期 / 到货日期)</li>
+<li>(可选) 拍照附件留单据</li>
+<li>点 <strong>确认入库</strong></li>
+</ul>
+</div>
+
+<p class="expected">✓ 库存增加 (总仓) + 生成物料批次</p>
+
+<div class="quote">
+仓管员的任务很简单, 我核对数量, 核对那个商品的日期这两个.<br>
+其他的话就尽量少让仓管员去参与, 价格类不要让他们去参与. 一个他们也不知道, 第二个一般做仓管的他年纪都比较大文化素质很低的, 你不能太伪赖他们.<span class="src">— May 7 part2 L186-191</span>
+</div>
+</section>
+
+<hr>
+
+<section id="stage-2">
+<h2>📊 阶段 2 — 销售订单 → 财审</h2>
+
+<h3>2.1 销售下单</h3>
+<span class="role-tag sales">f006_sales_mgr</span>
+
+<div class="step">
+<div class="step-title">菜单 → 销售管理 → 销售订单 → 新建</div>
+<ul>
+<li><strong>客户</strong>: 叮咚 (或新增)</li>
+<li><strong>业务员</strong>: 自动填当前用户</li>
+<li><strong>产品</strong>: 叮咚好食光卤猪蹄 200g</li>
+<li><strong>数量</strong>: 100 盒</li>
+<li><strong>单价</strong>: 默认 BOM 核算价 (出厂价) — <strong>可手动改</strong> 因价格浮动 (May 7 决策)</li>
+<li><strong>总金额</strong>: 自动算</li>
+</ul>
+<p>→ 提交财审</p>
+</div>
+
+<p class="expected">✓ SO 状态: <code>待审</code> · 行末看到 <strong>锁/备/缺 chips</strong> (修过 #746: 加了 ❓ tooltip)</p>
+
+<div class="quote">
+单价的话他可能会浮动, BOM 合算价格能带出来, 但是这个字段是可以修改的.<br>
+为什么? 美国巴士牛肉在长疯了 ... 包袱已经长了 4%. 这种大宗商品受各种因素的波动特别大.<span class="src">— May 7 part2 L296-316</span>
+</div>
+
+<h3>2.2 销售订单财审</h3>
+<span class="role-tag finance">f006_finance_mgr</span>
+
+<div class="step">
+<div class="step-title">菜单 → 销售管理 → 销售订单 → 待审 tab → 选 SO → 通过</div>
+</div>
+
+<p class="expected">✓ SO 状态: <code>财务已批准</code></p>
+</section>
+
+<hr>
+
+<section id="stage-3">
+<h2>🏭 阶段 3 — 生产计划</h2>
+<span class="role-tag production">f006_production_mgr</span>
+
+<div class="step">
+<div class="step-title">菜单 → 生产管理 → 生产计划 → 新建计划</div>
+<ul>
+<li><strong>订单</strong>: 选刚财审通过的 SO</li>
+<li><strong>产品</strong>: 自动带</li>
+<li><strong>工序</strong>: 选 0.2 配置的 7 工序 (⚠️ 如只看到"通用" → 回阶段 0.2 重做 + 点 generate)</li>
+<li><strong>计划数量</strong>: 100 (kg, 按 BOM 单位)</li>
+<li><strong>计划日期</strong>: 选生产日期</li>
+</ul>
+<p>→ 点 <strong>确定</strong></p>
+</div>
+
+<div class="callout success">
+<strong>修过 #748</strong>: 系统顶部 banner 显示 <strong>3 路径决策树</strong>:
+<ul>
+<li><strong>生成调拨单</strong> — 原料未到位, 自动按 BOM 算需求量推送给仓库</li>
+<li><strong>转为 P4</strong> ≈ 开始生产 (原料已就位)</li>
+<li><strong>直接开始</strong></li>
+</ul>
+</div>
+
+<div class="quote">
+确定过后是不是有生成调拨单的意思? 对, 就是转为 P4 或者生成调拨单, 要么就是直接开始生产.<br>
+那我点了, 它提示生成调拨单. 那调拨单在哪里你看? ... 仓库 → 调拨单.<span class="src">— May 10 L174-189</span>
+</div>
+
+<p class="expected">✓ 生成调拨单 → 总仓自动按 BOM 算需求量 (250g 成品 × 1/58% = 431g 原料/份 × 100 份 = 43.1kg)</p>
+</section>
+
+<hr>
+
+<section id="stage-4">
+<h2>📦 阶段 4 — 调拨 (总仓 → 工厂线边仓)</h2>
+<span class="role-tag warehouse">f006_warehouse_mgr</span>
+
+<h3>4.1 审核调拨单</h3>
+
+<div class="step">
+<div class="step-title">菜单 → 仓储管理 → 调拨单</div>
+<ol>
+<li>看刚生成的 <code>TRF-XXX</code> (状态 <code>已批准</code>)</li>
+<li>详情显示 <strong>调拨明细</strong>: 原料 / 调拨数量 / 现有库存</li>
+</ol>
+</div>
+
+<div class="callout success">
+<strong>修过 #744</strong>: 详情页 <strong>现有库存</strong> 列, 库存不足红色标记 + 发运 button disabled + tooltip "原料库存不足: 需要 X, 缺少 Y, 请先采购"
+</div>
+
+<div class="quote">
+在调拨数量旁边加一个那个现有库存. 因为他要看你库存够不够能不能满足去调拨.<br>
+你如果不显示现有库存, 你点发运系统还是会提示库存不足, 但是不会提前提醒, 比较被动. 提前显示就 OK.<span class="src">— May 10 L450-465</span>
+</div>
+
+<h3>4.2 选批次发运</h3>
+
+<div class="step">
+<div class="step-title">→ 编辑调拨单 → 每行选具体批次</div>
+<ul>
+<li>默认 <strong>FEFO</strong> (最早过期批次)</li>
+<li>可手动覆盖 (有些产品要新货, e.g. 原切牛肉)</li>
+<li>点 <strong>确认发货</strong></li>
+</ul>
+</div>
+
+<div class="quote">
+那个有时候它是有要求的. 打个比方, 我们做酱卤的它可能对原料批次没有什么要求.<br>
+但是如果你做原切的可能会要求一年以内的, 或者其他可能用的是新货不是老货. 不是说强制一定先用老批次, 有时候可能会用新批次.<span class="src">— May 10 L491-499</span>
+</div>
+
+<p class="expected">✓ 库存从总仓扣 → 工厂分仓(线边仓)加</p>
+</section>
+
+<hr>
+
+<section id="stage-5">
+<h2>🏭 阶段 5 — 生产执行 + 报工</h2>
+
+<h3>5.1 开始生产</h3>
+<span class="role-tag production">f006_production_mgr</span> 或 <span class="role-tag">f006_workshop</span>
+
+<div class="step">
+<div class="step-title">菜单 → 生产管理 → 生产计划 → 选计划 → 点 "开始" (或"转为P4")</div>
+</div>
+
+<div class="callout warn">
+<strong>客户要求 (May 10 L578-600)</strong>: 应做<strong>库存校验</strong>, 检查原料够不够开工, 不够则拒绝. 客户原话: "万一都得核对一下是吧, 开始的时候还核对一下".
+</div>
+
+<h3>5.2 工序报工 (RN App)</h3>
+<span class="role-tag">f006_worker1 (operator)</span>
+
+<div class="callout">
+<strong>📱 RN App 端</strong>: PC web-admin 看不到. 工人在手机 App 端按工序逐步报工 — 拆包 → 分割 → 卤制 → 抛骨 → 分切 → 装盒 → 装筐<br>
+<strong>当前状态</strong>: OTA 未 push 新 bundle, 报工功能可能旧版.
+</div>
+
+<div class="quote">
+报工逻辑是扫码 → 扫人 → 扫工序 → 报上来. 后续分析可以按订单 + 产品 + 工序拆.<br>
+你只有拆到工序, 才能看到具体是哪个环节出现问题, 导致整个订单的波动.<span class="src">— 第二次 March 18 L349-485</span>
+</div>
+
+<h3>5.3 厂长审批报工</h3>
+<span class="role-tag production">f006_production_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 生产管理 → 报工审批 → 通过</div>
+<p>简化路径: PC 端直接 → 生产计划 → 选计划 → 点 "完成"</p>
+</div>
+
+<div class="callout success">
+<strong>修过 #742</strong>: "完成生产" dialog 显示 <strong>品名 + 计划数量 read-only + 实际产量 ≤ 计划数量</strong> hint.<br>
+<strong>修过 #743</strong>: "取消计划" dialog 5 个标准原因 dropdown (客户撤单 / 原料缺货 / 质量问题 / 排程冲突 / 其他)
+</div>
+
+<p class="expected">✓ 计划状态: <code>已完成</code> · 实际产量录入</p>
+</section>
+
+<hr>
+
+<section id="stage-6">
+<h2>🚚 阶段 6 — 成品回总仓 (线边仓清零)</h2>
+
+<div class="callout">
+<strong>核心原则 (May 10 L716-736)</strong>:<br>
+"线边仓的原则就是, 当天生产完结束以后, 是没有库存的"<br>
+"我领了多少料我生产多少料, 生产结束了我用的料就结束了. 剩下的是我的成品库存, 我会调拨给那个总仓"
+</div>
+
+<h3>6.1 成品调拨 → 总仓</h3>
+<span class="role-tag">f006_workshop</span> / <span class="role-tag warehouse">f006_warehouse_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 仓储管理 → 调拨单 → 新建 (反向调拨)</div>
+<ul>
+<li>调拨方向: 线边仓 → 总仓</li>
+<li>调拨类型: 成品 (反向)</li>
+<li>调拨数量: 实际成品数</li>
+</ul>
+</div>
+
+<h3>6.2 剩余原料调回 (如有)</h3>
+
+<div class="quote">
+比如我领了 100 我实际用了 80 我还剩下 20, 我还是要退回总仓的.<br>
+工厂是不发货的, 工厂没有发货功能. 它其实是调拨到总仓去的, 总仓再会去安排什么时候发给客户.<span class="src">— May 10 L747-715</span>
+</div>
+
+<p class="expected">✓ 线边仓清零 · 成品入总仓 (可销售)</p>
+</section>
+
+<hr>
+
+<section id="stage-7">
+<h2>📤 阶段 7 — 发货 (销售 + 仓库 协作) ⭐</h2>
+
+<div class="callout danger">
+<strong>客户特别强调的核心流程</strong> (May 10 L811-852):<br>
+<strong>销售</strong>创建发货任务 → <strong>仓库</strong>执行发货 (扣库存). <strong>不是销售直接扣库存</strong>!
+</div>
+
+<h3>7.1 销售创建发货单 (任务) — 不扣库存</h3>
+<span class="role-tag sales">f006_sales_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 销售管理 → 销售订单 → 选 SO → 详情 → "创建发货单"</div>
+<ul>
+<li><strong>物流公司</strong>: 字典选</li>
+<li><strong>发货地址</strong></li>
+<li><strong>发货日期</strong>: 跟客户协商好</li>
+<li><strong>计划数量</strong></li>
+</ul>
+<p>→ 提交</p>
+</div>
+
+<div class="callout success">
+<strong>修过 #739</strong>: 重复点击 → 409 "已有草稿 DLV-XXX, 是否查看?" 防呆<br>
+<strong>修过 #740</strong>: DLV 状态 = <code>PENDING_WAREHOUSE_CONFIRM</code>, <strong>不扣库存</strong>
+</div>
+
+<div class="quote">
+发货的逻辑是我创建发货单, 然后仓库根据我的发货单去发货的, 是吧.<br>
+... 创建发货单的时候, 库存是没有扣减是吧. 嗯, 没有扣减. 创建发货单只是一个任务单嘛.<br>
+具体肯定是以仓库实际货发出去, 他们确认以后才发出去吗.<span class="src">— May 10 L821-832</span>
+</div>
+
+<h3>7.2 仓库确认发货 — 扣库存</h3>
+<span class="role-tag warehouse">f006_warehouse_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 仓储管理 → 出货管理 → "待确认发货单" tab → 选 DLV → 详情</div>
+<ol>
+<li>看实际库存</li>
+<li>填实发数量 (可少于计划, 车装不下 case)</li>
+<li>双方签字 / 拍照</li>
+<li>点 <strong>确认发货</strong></li>
+</ol>
+</div>
+
+<div class="callout success">
+<strong>修过 #740 (~85%)</strong>: 库存从总仓扣 + 生成送货单 + DLV 状态 → <code>CONFIRMED / SHIPPED</code>
+</div>
+
+<div class="quote">
+我可能计划发一百, 但是可能车没装下什么的, 他可能就发了八十, 然后他确认以后呢, 他就可以直接点打印.<br>
+然后会有一个那个出库单出来, 就类似于送货单的形式嘛.<span class="src">— May 10 L841</span>
+</div>
+
+<h3>7.3 销售看记录 — 只读</h3>
+<span class="role-tag sales">f006_sales_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 销售订单 → SO 详情 → 发货记录 tab</div>
+<p><strong>只读</strong>: 看 DLV 状态 / 实发数量 / 物流单号. 不可编辑.</p>
+</div>
+</section>
+
+<hr>
+
+<section id="stage-8">
+<h2>💰 阶段 8 — 开票</h2>
+
+<h3>8.1 销售推开票申请</h3>
+<span class="role-tag sales">f006_sales_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 销售管理 → 销售订单 → SO 详情 → 开票申请 tab → 提交开票申请</div>
+<ul>
+<li>开票金额: 默认订单总额, 可改</li>
+<li>发票类型: 增票 / 普票</li>
+</ul>
+</div>
+
+<h3>8.2 财务审批开票</h3>
+<span class="role-tag finance">f006_finance_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 财务管理 → 开票管理 (待审) → 选 → 通过 → 上传发票文件</div>
+</div>
+
+<p class="expected">✓ 销售在 SO 详情看到票 (可下载)</p>
+
+<div class="quote">
+就是包括那个开票申请也是同一个道理的, 我们推交发票申请, 然后就到财务那边.<br>
+其实对这个窗口的保留, 第一个呢就是来说是快捷窗口, 第二个来说就是这个订单的整个生命周期所有的信息在这里面都能可以看到.<span class="src">— May 10 L854-866</span>
+</div>
+</section>
+
+<hr>
+
+<section id="stage-9">
+<h2>💵 阶段 9 — 收款</h2>
+
+<h3>9.1 销售登记收款</h3>
+<span class="role-tag sales">f006_sales_mgr</span>
+
+<div class="step">
+<div class="step-title">→ SO 详情 → 收款记录 tab → 登记收款</div>
+<ul>
+<li>金额: 实收金额</li>
+<li>收款日期</li>
+</ul>
+</div>
+
+<div class="callout success">
+<strong>修过 #739</strong>: 重复登记同金额 5min 内 → 409 防呆
+</div>
+
+<h3>9.2 财务确认收款</h3>
+<span class="role-tag finance">f006_finance_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 财务管理 → 收款管理 (待确认) → 一键确认 (或拒绝)</div>
+</div>
+
+<p class="expected">✓ SO 状态: <code>已核销 / 完成</code> · 订单退出"应收账款"</p>
+
+<div class="quote">
+然后那个登记收款登记以后, 然后可能涉及到一个确认嘛.<br>
+确认的话可能就要那个会计就财务部那边去确认了, 这款确实是入进来了. 财务说我确实收到这笔款呢, 件了同意, 那这个订单相当于核销掉了嘛.<span class="src">— May 10 L921-932</span>
+</div>
+</section>
+
+<hr>
+
+<section id="stage-10">
+<h2>🔁 阶段 10 — 退货 / 售后</h2>
+
+<h3>10.1 销售申请退货</h3>
+<span class="role-tag sales">f006_sales_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 销售管理 → 销售退货 → 申请 (从 SO 关联)</div>
+<ul>
+<li><strong>类型</strong>: 有实物退货 / 无实物退款</li>
+<li>退货数量 / 金额</li>
+</ul>
+</div>
+
+<h3>10.2A 有实物 → 仓库收货</h3>
+<span class="role-tag warehouse">f006_warehouse_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 仓储管理 → 退货入库 → 收货 → 入"不良品"库存</div>
+</div>
+
+<h3>10.2B 无实物 → 直接到财务</h3>
+
+<h3>10.3 财务退款</h3>
+<span class="role-tag finance">f006_finance_mgr</span>
+
+<div class="step">
+<div class="step-title">→ 财务管理 → 退款审批 → 通过 → 记录退款</div>
+</div>
+
+<div class="quote">
+售后会涉及到一个有实物和无实物吗. 有实物 → 回收到我工厂来, 那个不良品库存.<br>
+无实物 → 那这个钱我得退人家. 都会涉及到财务那边.<span class="src">— May 10 L980-1021</span>
+</div>
+</section>
+
+<hr>
+
+<section id="stage-11">
+<h2>📈 阶段 11 — 数据分析 (后期)</h2>
+
+<div class="callout">
+<strong>客户期望 (March 18 第二次 + May 10)</strong>:
+<ul>
+<li>SKU 维度生产成本 (移动平均价 + 工时)</li>
+<li>每订单毛利率 (售价 - BOM 实际成本 - 人工成本)</li>
+<li>工序级投入产出比 + 出成率</li>
+<li>AI 智能问答 (自然语言查报表)</li>
+<li>钉钉端集成 (后期)</li>
+</ul>
+</div>
+
+<p>菜单: <kbd>智能分析</kbd> + <kbd>经营报表</kbd> + AI 入口 (各列表页 ✨ button)</p>
+
+<div class="callout warn">
+<strong>待实现</strong>: AI 入口 Day 7 (盘点) / Day 9 (whInbound + processTask). 见 issue #753.
+</div>
+</section>
+
+<hr>
+
+<section id="meeting-sources">
+<h2>📚 附录 A — 会议记录来源</h2>
+<table>
+<tr><th>会议</th><th>日期</th><th>主题</th><th>文件</th><th>行数</th></tr>
+<tr><td>第一次</td><td>—</td><td>(空)</td><td>六扇门第一次.md</td><td>1</td></tr>
+<tr><td>第二次</td><td>2026-03-18</td><td>战略 + AI 架构 + 数据孤岛痛点 + 钉钉集成</td><td>六扇门第二次.md</td><td>865</td></tr>
+<tr><td>第三次 part1</td><td>2026-05-07</td><td>采购流程 + 箱数 + 超码品 + 三价对比</td><td>六扇门第三次-May7-part1.md</td><td>222</td></tr>
+<tr><td>第三次 part2</td><td>2026-05-07</td><td>采购流程深入 + PDF/扫码愿景 + 销售订单 + 单价浮动 + 预估成本隐藏</td><td>六扇门第三次-May7-part2.md</td><td>632</td></tr>
+<tr><td>第四次</td><td>2026-05-10</td><td>完整端到端流程 + 工序配置 + BOM + 调拨 + 生产 + 发货 + 收款 + 退货</td><td>六扇门第四次-May10.md</td><td>1135</td></tr>
+</table>
+</section>
+
+<section id="real-gaps">
+<h2>✅ 附录 B — 真实 gap (8/9 已 ship, 1 战略后期 defer)</h2>
+<div class="callout success">
+<strong>更新 2026-05-17 18:00 CST</strong>: 原 9 个 gap 中 8 个已 ship (#1/#2/#3/#4/#5/#7/#8/#9). 仅 #6 钉钉端集成 defer 战略后期.
+</div>
+
+<div class="callout success">
+<strong>📋 附录 B+ 新发现 3 gaps (现全 ✅ shipped 2026-05-17 ~15:12 CST)</strong> — per MEETING_AUDIT_2026-05-17 综合审计:<br>
+• <strong>✅ #793 P1</strong>: 销售订单 客户协议价 auto-apply — PR #799 (PriceListService new interface + SalesServiceImpl hook + Vue chip CUSTOMER blue/GLOBAL gray UX 区分). 7 unit tests + 32 sibling PASS.<br>
+• <strong>✅ #794 P2</strong>: 采购入库拍照附件 UI — PR #797 (Vue AttachmentList + UploadButton entityType=PURCHASE_RECEIPT + RN expo-image-picker batch-upload after createReceive).<br>
+• <strong>✅ #795 P3</strong>: PURCHASE_RETURN with-goods 不良品入库 — PR #798 (ReturnOrderServiceImpl L381 完成 TODO, MaterialBatchStatus.DEFECTIVE enum 新加, FEFO/available queries pin AVAILABLE 自动 exclude). 5 new tests.<br>
+<br>
+另: <strong>#574 YOLO 异物 web UI</strong> 仍 open (backend `foreign_object_detection/` ready, web UI 缺), P3 long-term 不在本 session 范围.
+</div>
+<table>
+<tr><th>#</th><th>客户诉求</th><th>来源</th><th>状态</th></tr>
+<tr><td>1</td><td>收货数量分次显示列 (第N次收了多少)</td><td>May 7 part2 L53-55</td><td><span class="status-ok">✅ PR #782 (FE 本次收货 + 累计已收/计划 + el-progress bar) + PR #791 (#787 backend /cumulative-received endpoint, 2026-05-17)</span></td></tr>
+<tr><td>2</td><td>采购订单 PDF 打印 + 二维码 + 仓管扫码入库 (闭环)</td><td>May 7 part2 L100-200</td><td><span class="status-ok">✅ PR #413 (Phase 1 PDF+QR+download, 2026-05-12) + PR #653 (Phase 2 RN scan+lookup+receive form, 2026-05-15)</span></td></tr>
+<tr><td>3</td><td>RBAC 审计 — 仓管不应看到价格字段</td><td>May 7 part2 L186-191</td><td><span class="status-ok">✅ PR #710 #717 #736 #784 #777 #785 #791 — Python AST sweep 全 views 0 个无 guard 的 price renderer; canViewPrice (PR #520) defense comprehensive</span></td></tr>
+<tr><td>4</td><td>预估成本字段暂时隐藏 (财务争议大)</td><td>May 7 part2 L461-475</td><td><span class="status-ok">✅ PR #782 (#778, SHOW_PRE_ESTIMATED_COST=false feature flag, 3 sites + payload strip)</span></td></tr>
+<tr><td>5</td><td>原料-供应商关联完善</td><td>May 7 part2 L222-240</td><td><span class="status-ok">✅ PR #782 (#779 FE modal + reverse query) + PR #791 (#788 backend /raw-material-types/{id}/suppliers JPQL JOIN, true M:N via history)</span></td></tr>
+<tr><td>6</td><td>钉钉端集成 (报销 / 审批 / 数据)</td><td>第二次 March 18</td><td><span class="status-gap">❌ 战略后期 (defer)</span></td></tr>
+<tr><td>7</td><td>AI 入口 Day 7 (盘点) / Day 9 (whInbound + processTask)</td><td>各页面 placeholder</td><td><span class="status-ok">✅ PR #790 (#780 — 3 sites wired: STOCKTAKING + WH_INBOUND + PROCESS_TASK, entityType + context prepopulate)</span></td></tr>
+<tr><td>8</td><td>三价对比新建采购单后未刷新</td><td>May 7 part2 L67-75</td><td><span class="status-ok">✅ PR #782 (#781 — handleCreateReceive + confirmReceive 后 reload; bonus dangling priceLoaded ref 修)</span></td></tr>
+<tr><td>9</td><td>BomVersion 反查 + 工程级 PLM</td><td>—</td><td><span class="status-ok">✅ PR #694 + #717 + #726</span></td></tr>
+</table>
+</section>
+
+<section id="known-bugs">
+<h2>🐛 附录 C — 之前已知 open bugs (现全 ✅ closed via Wave 1+2+3 ship)</h2>
+<table>
+<tr><th>#</th><th>严重度</th><th>主题</th><th>修法 + 根因 (subagent 发现)</th></tr>
+<tr><td>#716</td><td>P2</td><td>/sales/shipments Vue TDZ render 错误</td><td><span class="status-ok">✅ PR #784</span> — 🎯 **真根因**: 不是 echarts race (E2E 红 herring), 是 Vue `&lt;script setup&gt;` TDZ — `summaryRequest` computed (line 48) 引用 `statusFilter.value` 但 ref 在 line 55 声明. Fix: reorder declarations.</td></tr>
+<tr><td>#725</td><td>P2</td><td>FormTemplate update() 不写版本历史</td><td><span class="status-ok">✅ PR #783</span> — `versionRepository.save(FormTemplateVersion.fromTemplate())` BEFORE 修改, 两处 (update + createOrUpdate).</td></tr>
+<tr><td>#715</td><td>P2</td><td>BusinessLinkQueryTool 无 intent 绑定</td><td><span class="status-ok">✅ PR #783</span> — Flyway V20260606_01 INSERT ai_intent_configs row + keywords `[业务链路, 关联业务单, outbound, inbound, ...]`</td></tr>
+<tr><td>#714</td><td>P2</td><td>6 个 system 打印模板未 seed F006 prod</td><td><span class="status-ok">✅ PR #783</span> — 🎯 **真根因**: 不是 seed 缺 (V20260603_09 已正确), 是 JPQL `findByFactoryIdAndIsActiveTrue` 漏 `factory_id IS NULL` system rows. 改 `findByFactoryOrSystemAndActive`.</td></tr>
+<tr><td>#712</td><td>P2</td><td>Sprint 3 controllers @Valid 覆盖 gap</td><td><span class="status-ok">✅ PR #783</span> — 11 个 typed DTO replacing raw Map&lt;String,Object&gt; with @Valid (bom × 7, finance × 3, template × 1).</td></tr>
+<tr><td>#718</td><td>P2</td><td>23 个 sister controllers RBAC audit follow-up</td><td><span class="status-ok">✅ PR #785</span> — 6 真 gap 修. 🚨 **最严重**: `/api/camera/*` + `/api/ai/complexity/*` 根本不在 WebMvcConfig interceptor patterns 里 → 匿名访问 (NO-OP @PreAuthorize 给假安全感). 修法: 加 path + NO-OP → @RequireRole.</td></tr>
+<tr><td>#736</td><td>P0</td><td>f006_viewer 仍可访问 /procurement/finance-review API</td><td><span class="status-ok">✅ PR #783</span> — 新 procurement:finance_review:view permission + role whitelist (super_admin / procurement_mgr / finance_mgr / dispatcher). Sister-swept SalesController. Verified viewer→403, finance_mgr→200.</td></tr>
+<tr><td>#759</td><td>P2</td><td>生产计划 锁定 backend API 未实现</td><td><span class="status-ok">✅ PR #783</span> — Flyway V20260606_02 + 4 cols + index. Entity + service + `/lock` + `/unlock` endpoints + guards on updateProductionPlan + cancelProductionPlan.</td></tr>
+<tr><td>#760</td><td>P3</td><td>生产批次 detail 页不消费 ?mode=edit query</td><td><span class="status-ok">✅ PR #782</span> — `isEditMode = route.query.mode === 'edit'` + header 编辑/查看 tag + form field readonly state.</td></tr>
+<tr><td>#761</td><td>P3</td><td>成品库存 view-detail + view-price-history placeholder</td><td><span class="status-ok">✅ PR #782 + #791</span> — FE: 新 sales/finished-goods/detail.vue + route. Backend: PR #791 #786 加 GET /sales/finished-goods/{id} single-item endpoint.</td></tr>
+<tr><td>#762</td><td>P2</td><td>#740 发货流程残留 (DB backfill + 批次重分配 + 开票 sister sweep)</td><td><span class="status-ok">✅ PR #785</span> — 开票 sister sweep: InvoiceController 已实现 split (sales/finance read_write 分离) — 跟 #740 发货 pattern 一致. 无需新代码.</td></tr>
+</table>
+
+<h3>📋 附录 C-2 — 本 session 完成的所有 PR (PR 时序)</h3>
+<table>
+<tr><th>PR</th><th>类型</th><th>主题</th></tr>
+<tr><td>#707 #708</td><td>Flyway</td><td>out-of-order rename (V20260514_02 / V20260516_08) — 解 warehouse 500</td></tr>
+<tr><td>#717</td><td>P0 RBAC</td><td>BomVersion + Ecn @RequirePermission triplet</td></tr>
+<tr><td>#726</td><td>P1 fix</td><td>BomVersion approve state machine — service-layer OBSOLETE + trigger AFTER→BEFORE</td></tr>
+<tr><td>#782</td><td>Vue B batch</td><td>6 customer P2/P3 fixes (#760 #761 #778 #775 #781 #779)</td></tr>
+<tr><td>#783</td><td>Backend A batch</td><td>P0 #736 + 5 small (#714 #715 #725 #759 #712) + 2 Flyway V20260606_01/02</td></tr>
+<tr><td>#784</td><td>Vue C TDZ</td><td>#716 sales/shipments + #777 price-mask polish</td></tr>
+<tr><td>#785</td><td>Backend audit</td><td>#718 23-controller RBAC sweep — 6 真 gap 修 (Camera/Behavior/Complexity/Notification/FeatureConfig/Voice)</td></tr>
+<tr><td>#790</td><td>Vue AI entry</td><td>#780 — 3 sites wired (STOCKTAKING + WH_INBOUND + PROCESS_TASK)</td></tr>
+<tr><td>#791</td><td>Backend gaps</td><td>4 follow-up endpoints (#786 #787 #788 #789) + InternalFieldVisibilityController + X-Internal-Key</td></tr>
+<tr><td>#797</td><td>Vue+RN</td><td>#794 拍照附件 UI (AttachmentList + RN expo-image-picker)</td></tr>
+<tr><td>#798</td><td>Backend</td><td>#795 PURCHASE_RETURN with-goods 不良品入库 (mirror SALES_RETURN)</td></tr>
+<tr><td>#799</td><td>Backend+Vue</td><td>#793 客户协议价 auto-apply (PriceListService new + SalesServiceImpl hook + Vue chip UX)</td></tr>
+</table>
+</section>
+
+<section id="e2e-audit-bugs">
+<h2>🔍 附录 E — Strict E2E audit 抓到 13 真.bugs (本 session)</h2>
+<div class="callout warn">
+<strong>2026-05-17 strict customer-perspective Playwright + API + source audit</strong> via 8 subagents (qa-prompt v2.4 + depth-first-e2e SKILL.md compliant). 共 13 真.bugs caught, 包括 2 P0.
+</div>
+<table>
+<tr><th>#</th><th>Severity</th><th>主题</th><th>状态</th></tr>
+<tr><td>#808</td><td>P0</td><td>feat/sprint4-w2-sales-extension 合并 main dropped PR #799 + #772 (协议价 + priceMemoryHint chips)</td><td><span class="status-gap">⚠️ branch owner 需修, 不影响 prod</span></td></tr>
+<tr><td>#811</td><td>P0</td><td>Disposal silent-drop — FE 字段名错 (quantity vs disposalQuantity)</td><td><span class="status-ok">✅ PR #827 ready</span></td></tr>
+<tr><td>#812</td><td>P1</td><td>quality_inspector JWT permission 但 POST 403 (wildcard not honored)</td><td><span class="status-partial">🔄 FIX-C in_progress</span></td></tr>
+<tr><td>#813</td><td>P1</td><td>Inspection POST accepts result=null + semantic mismatch (claimed PASS w/ 43% defect)</td><td><span class="status-partial">🔄 FIX-C in_progress</span></td></tr>
+<tr><td>#815</td><td>P1</td><td>Voucher page=1 silent empty (Spring 0-idx vs UI 1-idx)</td><td><span class="status-ok">✅ PR #828 ready</span></td></tr>
+<tr><td>#816</td><td>P1</td><td>3 种 pagination 约定 cross-controller foot-gun</td><td><span class="status-ok">✅ PR #828 ready</span></td></tr>
+<tr><td>#809</td><td>P2</td><td>finished-goods/detail.vue 仍用 list-filter, PR #791 endpoint 没切</td><td><span class="status-partial">🔄 FIX-D in_progress</span></td></tr>
+<tr><td>#814</td><td>P2</td><td>#754 AI 分析 placeholder 确认 (literal ElMessage.info)</td><td><span class="status-gap">❌ defer (need SmartBI integration)</span></td></tr>
+<tr><td>#817</td><td>P2</td><td>GET /F006/roles 404 (RoleController 无 root LIST)</td><td><span class="status-partial">🔄 FIX-D in_progress</span></td></tr>
+<tr><td>#818</td><td>P2</td><td>Sales finance-reject 缺 empty notes guard (vs Purchase #704)</td><td><span class="status-partial">🔄 FIX-D in_progress</span></td></tr>
+<tr><td>#820</td><td>P2</td><td>releaseNotes.ts double-mobile URL 403 (9 console errs/page)</td><td><span class="status-partial">🔄 FIX-D in_progress</span></td></tr>
+<tr><td>#825</td><td>P2</td><td>质检 under-balance (sum&lt;sample) 仍允许 submit, 应阻止</td><td><span class="status-partial">🔄 FIX-C in_progress</span></td></tr>
+</table>
+
+<h3>📚 Audit Methodology Learnings</h3>
+<table>
+<tr><th>Pattern</th><th>Discovery</th></tr>
+<tr><td><strong>MCP Playwright server singleton lock</strong></td><td>多 subagent 并发 call `mcp__playwright-*__browser_*` 共享 chromium → 大部分 blocked. Solution: <code>--isolated</code> flag in .mcp.json (effect 下 Claude restart) OR write standalone Playwright Node API scripts (`chromium.launch` directly), bypass MCP entirely. <strong>C' subagent 用 standalone 是 winning pattern</strong>.</td></tr>
+<tr><td><strong>API+source audit fallback when browser blocked</strong></td><td>B/D'/E subagents browser blocked → pivot to API roundtrip + source review. <strong>11 of 13 真.bugs 来自这种 fallback</strong>, 不亚于 UI E2E.</td></tr>
+<tr><td><strong>Audit-doc-as-truth fallacy (2nd strike HARD rule)</strong></td><td>F006_OPERATIONS_GUIDE 附录 B 标 #776 "未做" 实际 5 天前已 ship → 浪费 dispatch. <code>feedback_signoff_requires_reconcile_with_main_first.md</code> HARD: dispatch 前 grep main + gh pr list.</td></tr>
+<tr><td><strong>Branch merge silent-drop</strong></td><td>Long branch merge 时, 3-way conflict resolved 不当 → main 的新改动 silently dropped. #808 P0 即此. Pre-merge: <code>git diff origin/main..&lt;branch&gt; -- &lt;modified-file&gt;</code> 找 deletions of key functions.</td></tr>
+</table>
+</section>
+
+<hr>
+
+<section id="recommended-test">
+<h2>🎯 附录 D — 推荐手测路径 (~30-45min 跑通 1 cycle)</h2>
+
+<div class="callout">
+端到端走 1 个完整 cycle 验证 Wave 1 11 个 fix 是否生效:
+</div>
+
+<ol>
+<li><strong>阶段 0</strong> 全配置 (如已配, 跳)</li>
+<li><strong>阶段 1.1-1.3</strong> 采购→入库 — 验 <code>#741 入库防呆</code> (dialog 预先显示库存上限)</li>
+<li><strong>阶段 2.1-2.2</strong> 销售→财审 — 验 <code>#746 chip tooltip</code></li>
+<li><strong>阶段 3</strong> 生产计划 → 确定 — 验 <code>#748 转批次 3-path banner</code></li>
+<li><strong>阶段 4</strong> 调拨 — 验 <code>#744 调拨库存预检</code></li>
+<li><strong>阶段 5.1+5.3</strong> 简化生产→PC 端完成 — 验 <code>#742 完成生产 dialog + #743 取消原因 dropdown</code></li>
+<li><strong>阶段 6</strong> 成品调回总仓 — 验 线边仓清零原则</li>
+<li><strong>阶段 7.1+7.2</strong> 销售创建发货 → 仓库确认发货 — 验 <code>#739 idempotency + #740 角色切换</code></li>
+<li><strong>阶段 8-9</strong> 开票→收款→确认 — 验 全流程闭环 + 收款重复防呆</li>
+</ol>
+
+<div class="callout warn">
+<strong>主动复现 #739 idempotency</strong>:
+<ul>
+<li>阶段 7.1 提交发货单后立即再点一次 → 应 409</li>
+<li>阶段 9.1 登记同金额 5min 内 → 应 409</li>
+</ul>
+</div>
+
+<div class="callout warn">
+<strong>主动验质检数字平衡 (#745)</strong>:
+<ul>
+<li>登 quality_insp → 质量→质检记录 → 新建</li>
+<li>填抽样 7 / 合格 4 → 不合格自动 3 (联动)</li>
+<li>改不合格 5 → 合格自动改 2 (反向联动)</li>
+</ul>
+</div>
+</section>
+
+<div class="footer">
+F006 六扇门完整业务流程操作 Guide<br>
+基于 4 次客户会议 (2026-03-18 / 05-07 / 05-10) 综合整理 · 2026-05-17 输出<br>
+撞到 bug 反馈格式: [阶段] [角色] [URL] [症状] [F12 Console 红色] [截图可选]
+</div>
+
+</main>
+</div>
+</body>
+</html>
