@@ -14,8 +14,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.cretas.aims.config.RequireRole;
 
 import java.util.List;
 import java.util.Map;
@@ -56,7 +56,7 @@ public class AiAgentRuleController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "获取所有规则（含禁用）", description = "获取工厂的所有 AI Agent 规则，包括已禁用的")
     public ResponseEntity<ApiResponse<List<AiAgentRule>>> getAllRulesIncludeDisabled(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
@@ -115,7 +115,7 @@ public class AiAgentRuleController {
 
     @RequirePermission({"system:read_write"})
     @PostMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "创建规则", description = "创建新的 AI Agent 规则（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AiAgentRule>> createRule(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
@@ -147,7 +147,7 @@ public class AiAgentRuleController {
 
     @RequirePermission({"system:read_write"})
     @PutMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "更新规则", description = "更新现有的 AI Agent 规则（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AiAgentRule>> updateRule(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
@@ -189,7 +189,7 @@ public class AiAgentRuleController {
 
     @RequirePermission({"system:read_write"})
     @DeleteMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "删除规则", description = "删除 AI Agent 规则（仅工厂管理员）")
     public ResponseEntity<ApiResponse<Void>> deleteRule(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
@@ -218,7 +218,7 @@ public class AiAgentRuleController {
 
     @RequirePermission({"system:read_write"})
     @PostMapping("/{ruleId}/toggle")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "切换规则状态", description = "启用或禁用 AI Agent 规则（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AiAgentRule>> toggleRule(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
@@ -251,7 +251,7 @@ public class AiAgentRuleController {
 
     @RequirePermission({"system:read_write"})
     @PatchMapping("/{ruleId}/priority")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "调整规则优先级", description = "调整 AI Agent 规则的优先级（数值越小越优先）")
     public ResponseEntity<ApiResponse<AiAgentRule>> updatePriority(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
