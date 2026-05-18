@@ -135,7 +135,7 @@ async function submitQuickSalesOrder(row: QuickSalesOrderRow): Promise<void> {
     items: [],
     customFields: {},
   };
-  const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+  const res = await post(`/${factoryId.value}/sales/orders`, payload);
   if (!res?.success) {
     throw new Error(res?.message || '创建失败');
   }
@@ -206,7 +206,7 @@ async function submitBomSalesOrder(parent: BomSalesOrderParent, children: BomSal
     })),
     customFields: {},
   };
-  const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+  const res = await post(`/${factoryId.value}/sales/orders`, payload);
   if (!res?.success) {
     throw new Error(res?.message || '提交失败');
   }
@@ -250,7 +250,7 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
 // U-MARKER-1 (Sprint 4 Wave 2 Chat L) — PATCH marker color to backend.
 async function handleMarkerSelect(row: TableRow, color: RowMarkerColor | null): Promise<void> {
   try {
-    const res = await request.patch(`/mobile/${factoryId.value}/markers/sales-order/${row.id}`, {
+    const res = await request.patch(`/${factoryId.value}/markers/sales-order/${row.id}`, {
       color,
     });
     if (res?.data?.success) {
@@ -284,7 +284,7 @@ async function submitBatchOrders(orders: Array<{ customerId: string; salesperson
       items: [],
       customFields: {},
     };
-    const res = await post(`/mobile/${factoryId.value}/sales/orders`, payload);
+    const res = await post(`/${factoryId.value}/sales/orders`, payload);
     if (res?.success) created.push(String(res.data?.orderNumber || res.data?.id || ''));
   }
   if (!created.length) {
