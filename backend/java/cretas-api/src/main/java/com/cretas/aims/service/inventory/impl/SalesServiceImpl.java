@@ -735,6 +735,99 @@ public class SalesServiceImpl implements SalesService {
     }
 
     /**
+     * 复制销售订单 — 见 {@link SalesService#copySalesOrder} 文档.
+     *
+     * <p>实现说明:
+     * <ul>
+     *   <li>用 {@link #getSalesOrderById} 校验源订单 + factory 隔离 (404 / 403).</li>
+     *   <li>新订单 status = DRAFT, createdBy = 当前用户, orderDate = 今天.</li>
+     *   <li>items 用 fresh SalesOrderItem 实例 (Hibernate 不复用 id),
+     *       deliveredQuantity/lockedQty/reservedQty 重置为 0.</li>
+     *   <li>orderNumber 复用 {@link #generateSalesOrderNumber} (含 advisory lock 防 race).</li>
+     *   <li>extraFees 是 JSON List — 浅 copy ArrayList 即可 (item 不可变).</li>
+     * </ul>
+     */
+    @Override
+    @Transactional
+    @Loggable(module = "SALES_ORDER", action = "COPY", entityType = "SalesOrder",
+              entityIdParam = "sourceOrderId")
+    public SalesOrder copySalesOrder(String factoryId, String sourceOrderId, Long userId) {
+        SalesOrder source = getSalesOrderById(factoryId, sourceOrderId);
+        // 强制初始化 items (lazy collection)
+        org.hibernate.Hibernate.initialize(source.getItems());
+
+        String newOrderNumber = generateSalesOrderNumber(factoryId);
+
+        SalesOrder newOrder = new SalesOrder();
+        newOrder.setFactoryId(factoryId);
+        newOrder.setOrderNumber(newOrderNumber);
+        // 复制业务字段
+        newOrder.setCustomerId(source.getCustomerId());
+        newOrder.setOrderDate(LocalDate.now());
+        newOrder.setRequiredDeliveryDate(source.getRequiredDeliveryDate());
+        newOrder.setDeliveryAddress(source.getDeliveryAddress());
+        newOrder.setDiscountAmount(source.getDiscountAmount() != null
+                ? source.getDiscountAmount() : BigDecimal.ZERO);
+        newOrder.setRemark(source.getRemark());
+        newOrder.setSalesperson(source.getSalesperson());
+        newOrder.setSalespersonId(source.getSalespersonId());
+        newOrder.setShippingIncluded(source.getShippingIncluded());
+        newOrder.setShippingFee(source.getShippingFee());
+        // extraFees 是 List<ExtraFeeItem>; 浅 copy (item 不变, 由 Hibernate JSON 再序列化)
+        if (source.getExtraFees() != null) {
+            newOrder.setExtraFees(new ArrayList<>(source.getExtraFees()));
+        }
+        newOrder.setQuoteId(source.getQuoteId());
+        newOrder.setDefaultTaxRate(source.getDefaultTaxRate());
+        newOrder.setDefaultInvoiceType(source.getDefaultInvoiceType());
+        newOrder.setBoxQuantity(source.getBoxQuantity());
+        // 重置状态字段
+        newOrder.setStatus(SalesOrderStatus.DRAFT);
+        newOrder.setCreatedBy(userId);
+        // 不复制 confirmedAt/finance*/estimatedCost/estimatedProfit/actualShippedAmount
+        // /invoiceStatus/invoicedAmount/paidAmount/settlementFlag/transportPlanStatus
+        // /deliveryReminderDate/contractFile*/vflag/markerColor (默认值已 OK)
+
+        newOrder = salesOrderRepository.save(newOrder);
+
+        // 复制行项目 (fresh instances, 重置 delivered/locked/reserved)
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<SalesOrderItem> newItems = new ArrayList<>();
+        for (SalesOrderItem srcItem : source.getItems()) {
+            SalesOrderItem newItem = new SalesOrderItem();
+            newItem.setSalesOrderId(newOrder.getId());
+            newItem.setProductTypeId(srcItem.getProductTypeId());
+            newItem.setProductName(srcItem.getProductName());
+            newItem.setQuantity(srcItem.getQuantity());
+            newItem.setUnit(srcItem.getUnit());
+            newItem.setUnitPrice(srcItem.getUnitPrice());
+            newItem.setDiscountRate(srcItem.getDiscountRate() != null
+                    ? srcItem.getDiscountRate() : BigDecimal.ZERO);
+            newItem.setCostUnitPrice(srcItem.getCostUnitPrice());
+            newItem.setTaxRate(srcItem.getTaxRate());
+            newItem.setRemark(srcItem.getRemark());
+            newItem.setSpecification(srcItem.getSpecification());
+            newItem.setBoxQuantity(srcItem.getBoxQuantity());
+            newItem.setSourceWarehouseCode(srcItem.getSourceWarehouseCode());
+            // deliveredQuantity / lockedQty / reservedQty 默认 ZERO — 不复制状态量
+            newItems.add(newItem);
+
+            BigDecimal lineAmount = newItem.getLineAmount();
+            if (lineAmount != null) {
+                totalAmount = totalAmount.add(lineAmount);
+            }
+        }
+        salesOrderItemRepository.saveAll(newItems);
+        newOrder.setTotalAmount(totalAmount);
+        newOrder = salesOrderRepository.save(newOrder);
+
+        log.info("复制销售订单: source={}({}) → new={}({}), items={}",
+                sourceOrderId, source.getOrderNumber(),
+                newOrder.getId(), newOrderNumber, newItems.size());
+        return newOrder;
+    }
+
+    /**
      * Round 14: Compute all aggregate formulas configured for a sales order.
      * Returns formula results keyed by formula_code (e.g., "tax_group_sum").
      * The "杀手锏 G1" killer feature — 39 factories have tax_group_sum configured,

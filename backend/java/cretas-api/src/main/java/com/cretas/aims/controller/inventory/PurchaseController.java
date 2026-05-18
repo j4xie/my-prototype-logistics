@@ -232,6 +232,24 @@ public class PurchaseController {
         return ApiResponse.success("采购订单已取消", order);
     }
 
+    /**
+     * 复制采购订单 — #860 follow-up.
+     * 基于现有订单创建新草稿, 复制供应商/品项/价格, 不复制审批/到货状态.
+     */
+    @RequireModule("purchase_order")
+    @PostMapping("/orders/{orderId}/copy")
+    @Operation(summary = "复制采购订单 (创建新草稿)")
+    @RequirePermission("procurement:read_write")
+    public ApiResponse<PurchaseOrder> copyOrder(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader("Authorization") String authorization) {
+        Long userId = extractUserId(authorization);
+        log.info("复制采购订单: factoryId={}, sourceOrderId={}", factoryId, orderId);
+        PurchaseOrder order = purchaseService.copyPurchaseOrder(factoryId, orderId, userId);
+        return ApiResponse.success("采购订单已复制为新草稿", order);
+    }
+
     // ==================== 财务审核 ====================
 
     @RequireModule("purchase_order")

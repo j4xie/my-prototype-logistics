@@ -87,7 +87,7 @@ export const COMMON_ACTIONS = {
   RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单' },
   TRANSFER: { id: 'transfer', icon: '🔄', label: '调拨', aiHint: '我要调拨' },
   PRINT_PDF: { id: 'print-pdf', icon: '📄', label: '打印 PDF', aiHint: '打印这单' },
-  COPY: { id: 'copy', icon: '📑', label: '复制', aiHint: '复制这单', pending: true },
+  COPY: { id: 'copy', icon: '📑', label: '复制', aiHint: '复制这单' },
   LOCK: { id: 'lock', icon: '🔒', label: '锁定', aiHint: '锁住这单不让人改' },
   UNLOCK: { id: 'unlock', icon: '🔓', label: '解锁', aiHint: '解锁这单' },
   EDIT: { id: 'edit', icon: '✏️', label: '编辑', aiHint: '修改这单' },

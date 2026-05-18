@@ -586,6 +586,86 @@ public class PurchaseServiceImpl implements PurchaseService {
         return order;
     }
 
+    /**
+     * 复制采购订单 — 见 {@link PurchaseService#copyPurchaseOrder} 文档.
+     *
+     * <p>实现说明:
+     * <ul>
+     *   <li>用 {@link #getPurchaseOrderById} 校验源订单 + factory 隔离 (404 / 403).</li>
+     *   <li>新订单 status = DRAFT, createdBy = 当前用户, orderDate = 今天.</li>
+     *   <li>items 用 fresh PurchaseOrderItem 实例 (Hibernate 不复用 id), receivedQuantity 重置为 0.</li>
+     *   <li>orderNumber 复用 {@link #generateOrderNumber} 防 race condition.</li>
+     * </ul>
+     */
+    @Override
+    @Transactional
+    @Loggable(module = "PURCHASE_ORDER", action = "COPY", entityType = "PurchaseOrder",
+              entityIdParam = "sourceOrderId")
+    public PurchaseOrder copyPurchaseOrder(String factoryId, String sourceOrderId, Long userId) {
+        PurchaseOrder source = getPurchaseOrderById(factoryId, sourceOrderId);
+        // 强制初始化 items (lazy collection)
+        org.hibernate.Hibernate.initialize(source.getItems());
+
+        String newOrderNumber = generateOrderNumber(factoryId);
+
+        PurchaseOrder newOrder = new PurchaseOrder();
+        newOrder.setFactoryId(factoryId);
+        newOrder.setOrderNumber(newOrderNumber);
+        // 复制业务字段
+        newOrder.setSupplierId(source.getSupplierId());
+        newOrder.setPurchaseType(source.getPurchaseType());
+        newOrder.setIsImported(source.getIsImported());
+        newOrder.setOrderDate(LocalDate.now());
+        newOrder.setExpectedDeliveryDate(source.getExpectedDeliveryDate());
+        newOrder.setRemark(source.getRemark());
+        newOrder.setSalesOrderId(source.getSalesOrderId());
+        newOrder.setInquiryQuoteId(source.getInquiryQuoteId());
+        // 重置状态字段
+        newOrder.setStatus(PurchaseOrderStatus.DRAFT);
+        newOrder.setCreatedBy(userId);
+        // 不复制 approvedBy/approvedAt/finance*/vflag/markerColor (默认值已 OK)
+
+        newOrder = purchaseOrderRepository.save(newOrder);
+
+        // 复制行项目 (fresh instances, 重置 receivedQuantity)
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal taxAmount = BigDecimal.ZERO;
+        List<PurchaseOrderItem> newItems = new ArrayList<>();
+        for (PurchaseOrderItem srcItem : source.getItems()) {
+            PurchaseOrderItem newItem = new PurchaseOrderItem();
+            newItem.setPurchaseOrderId(newOrder.getId());
+            newItem.setMaterialTypeId(srcItem.getMaterialTypeId());
+            newItem.setMaterialName(srcItem.getMaterialName());
+            newItem.setQuantity(srcItem.getQuantity());
+            newItem.setUnit(srcItem.getUnit());
+            newItem.setUnitPrice(srcItem.getUnitPrice());
+            newItem.setTaxRate(srcItem.getTaxRate() != null ? srcItem.getTaxRate() : BigDecimal.ZERO);
+            newItem.setRemark(srcItem.getRemark());
+            newItem.setSpecification(srcItem.getSpecification());
+            newItem.setBoxQuantity(srcItem.getBoxQuantity());
+            // receivedQuantity 默认 ZERO — 不复制源 receivedQuantity
+            newItems.add(newItem);
+
+            BigDecimal lineAmount = newItem.getLineAmount();
+            if (lineAmount != null) {
+                totalAmount = totalAmount.add(lineAmount);
+                BigDecimal lineWithTax = newItem.getLineAmountWithTax();
+                if (lineWithTax != null) {
+                    taxAmount = taxAmount.add(lineWithTax.subtract(lineAmount));
+                }
+            }
+        }
+        purchaseOrderItemRepository.saveAll(newItems);
+        newOrder.setTotalAmount(totalAmount);
+        newOrder.setTaxAmount(taxAmount);
+        newOrder = purchaseOrderRepository.save(newOrder);
+
+        log.info("复制采购订单: source={}({}) → new={}({}), items={}",
+                sourceOrderId, source.getOrderNumber(),
+                newOrder.getId(), newOrderNumber, newItems.size());
+        return newOrder;
+    }
+
     // ==================== 采购入库 ====================
 
     @Override

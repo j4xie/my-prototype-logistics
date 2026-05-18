@@ -58,6 +58,25 @@ public interface ProductionPlanService {
       */
     ProductionPlanDTO getProductionPlanById(String factoryId, String planId);
      /**
+     * 复制生产计划 — 基于现有计划创建新草稿 (#860 follow-up).
+     *
+     * <p>复制内容: productTypeId/plannedQuantity/plannedDate/expectedCompletionDate/planType/
+     * customerOrderNumber/priority/notes/estimated*Cost/suggestedProductionLineId/estimatedWorkers/
+     * assignedSupervisorId/sourceType/sourceOrderId/sourceOrderItemId/sourceCustomerName/processName/
+     * batchDate.
+     *
+     * <p>不复制 (重置或重新生成): id / planNumber (重新生成) / status (PENDING) / createdBy (current user)
+     * / actualQuantity / actual*Cost / approval* / locked* / current/forecast/probability fields
+     * / vflag / startTime / endTime / batchUsages / materialConsumptions.
+     *
+     * <p>注: 此 API 直接 save 而非走 createProductionPlan, 跳过 Canvas validation +
+     * SO source validation + auto scheduling (复制场景假设源订单已通过这些检查).
+     *
+     * @throws com.cretas.aims.exception.ResourceNotFoundException 源计划不存在
+     * @throws com.cretas.aims.exception.BusinessException 403 跨工厂访问
+      */
+    ProductionPlanDTO copyProductionPlan(String factoryId, String sourcePlanId, Long userId);
+     /**
      * 获取生产计划列表（分页）
       */
     PageResponse<ProductionPlanDTO> getProductionPlanList(String factoryId, PageRequest pageRequest);

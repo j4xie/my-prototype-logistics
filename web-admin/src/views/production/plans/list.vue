@@ -14,6 +14,7 @@ import {
   exportProductionPlans,
   getSupervisors,
 } from '@/api/productionPlan';
+import { copyProductionPlan } from '@/api/orderCopy';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
@@ -50,7 +51,7 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     case 'view-detail': handleViewPlan(row); break;
     case 'cancel': handleCancel(row); break;
     case 'print-pdf': void safePrint('production-task', factoryId.value, String(row.id), { fileName: `生产计划_${row.planNumber || row.id}` }); break;
-    case 'copy': ElMessage.info(`复制计划 ${row.planNumber} (待接 API)`); break;
+    case 'copy': void handleCopyPlan(row); break;
     case 'lock':
       // #747: 锁定动作目前后端 API 未实装, 给出明确提示而非静默 info
       ElMessageBox.alert(
@@ -480,6 +481,27 @@ async function submitCancel() {
     if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
+  }
+}
+
+// #860 follow-up (2026-05-18): 复制生产计划 → 新草稿 (status=PENDING).
+// 后端复用产品/数量/日期/成本预估, 不复制实际值/审批/锁定状态.
+// 错误由 axios interceptor sticky toast 显示, 不要 try/catch 吞.
+async function handleCopyPlan(row: TableRow): Promise<void> {
+  const planNumber = String(row.planNumber || row.id || '');
+  try {
+    await ElMessageBox.confirm(
+      `确认复制生产计划 ${planNumber} 为新草稿？复制内容包含产品、数量、日期和成本预估，不复制实际值/审批/锁定状态。`,
+      '复制生产计划',
+      { confirmButtonText: '复制', cancelButtonText: '取消', type: 'info' }
+    );
+  } catch {
+    return; // 用户取消
+  }
+  const res = await copyProductionPlan(factoryId.value, String(row.id));
+  if (res?.success && res.data) {
+    ElMessage.success(`已复制为 ${res.data.planNumber}`);
+    await loadData();
   }
 }
 

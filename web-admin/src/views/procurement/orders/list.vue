@@ -22,6 +22,7 @@ import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
 import { CreateModeSelector, BatchCreateDialog, QuickCreateDialog, BomExpansionDialog } from '@/components/dialog';
 import CreateReturnOrderDialog from '@/components/dialog/CreateReturnOrderDialog.vue';
+import { copyPurchaseOrder } from '@/api/orderCopy';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
 import type { InlineIconId } from '@/types/inlineIcons';
@@ -282,9 +283,29 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     case 'reject': handleAction(String(row.id), 'reject'); break;
     case 'cancel': handleAction(String(row.id), 'cancel'); break;
     case 'print-pdf': handleDownloadPdf(row); break;
-    case 'copy': ElMessage.info(`复制采购单 ${row.orderNumber} (待接 API)`); break;
+    case 'copy': void handleCopyOrder(row); break;
     case 'return': openReturnDialog(row); break;
     default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+
+// #860 follow-up (2026-05-18): 复制采购订单 → 新草稿. 后端复用供应商/品项/价格,
+// 不复制审批/到货状态. 错误由 axios interceptor sticky toast 显示, 不要 try/catch 吞.
+async function handleCopyOrder(row: TableRow): Promise<void> {
+  const orderNumber = String(row.orderNumber || row.id || '');
+  try {
+    await ElMessageBox.confirm(
+      `确认复制采购单 ${orderNumber} 为新草稿？复制内容包含供应商、品项和价格，不复制审批/到货状态。`,
+      '复制采购单',
+      { confirmButtonText: '复制', cancelButtonText: '取消', type: 'info' }
+    );
+  } catch {
+    return; // 用户取消
+  }
+  const res = await copyPurchaseOrder(factoryId.value, String(row.id));
+  if (res?.success && res.data) {
+    ElMessage.success(`已复制为 ${res.data.orderNumber}`);
+    await loadData();
   }
 }
 function openAiForRow(row: TableRow) {

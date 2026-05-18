@@ -166,6 +166,23 @@ public class SalesController {
         return ApiResponse.success("销售订单已取消", order);
     }
 
+    /**
+     * 复制销售订单 — #860 follow-up.
+     * 基于现有订单创建新草稿, 复制客户/品项/价格, 不复制审批/发货/收款状态.
+     */
+    @PostMapping("/orders/{orderId}/copy")
+    @Operation(summary = "复制销售订单 (创建新草稿)")
+    @RequirePermission("sales:read_write")
+    public ApiResponse<SalesOrder> copyOrder(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId,
+            @RequestHeader("Authorization") String authorization) {
+        Long userId = extractUserId(authorization);
+        log.info("复制销售订单: factoryId={}, sourceOrderId={}", factoryId, orderId);
+        SalesOrder order = salesService.copySalesOrder(factoryId, orderId, userId);
+        return ApiResponse.success("销售订单已复制为新草稿", order);
+    }
+
     // ==================== 财务审核 ====================
 
     @PostMapping("/orders/{orderId}/submit-for-review")

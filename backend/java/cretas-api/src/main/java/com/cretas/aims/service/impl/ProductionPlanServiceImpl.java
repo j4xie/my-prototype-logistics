@@ -560,6 +560,83 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         log.info("删除生产计划成功: planId={}", planId);
     }
 
+    /**
+     * 复制生产计划 — 见 {@link ProductionPlanService#copyProductionPlan} 文档.
+     *
+     * <p>实现说明:
+     * <ul>
+     *   <li>用 {@link ProductionPlanRepository#findById} + factory 隔离 (404 / 403).</li>
+     *   <li>新计划 status = PENDING, createdBy = 当前用户, planNumber 重新生成.</li>
+     *   <li>不走 {@link #createProductionPlan} — 跳过 SO source validation /
+     *       Canvas validation / auto scheduling (复制场景假设源已通过).</li>
+     *   <li>不复制 actualQuantity / actual*Cost / approval* / locked* / 状态字段.</li>
+     * </ul>
+     */
+    @Override
+    @Transactional
+    @com.cretas.aims.annotation.Loggable(module = "PRODUCTION_PLAN", action = "COPY",
+            entityType = "ProductionPlan", entityIdParam = "sourcePlanId")
+    public ProductionPlanDTO copyProductionPlan(String factoryId, String sourcePlanId, Long userId) {
+        ProductionPlan source = productionPlanRepository.findById(sourcePlanId)
+                .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", sourcePlanId));
+
+        if (!source.getFactoryId().equals(factoryId)) {
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法复制");
+        }
+
+        ProductionPlan newPlan = new ProductionPlan();
+        newPlan.setId(UUID.randomUUID().toString());
+        newPlan.setFactoryId(factoryId);
+        // planNumber: 复用 ProductionPlanMapper 的 generatePlanNumber 模式 (PLAN-{ts}-{uuid8})
+        newPlan.setPlanNumber("PLAN-" + System.currentTimeMillis()
+                + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        // 复制业务字段
+        newPlan.setProductTypeId(source.getProductTypeId());
+        newPlan.setPlannedQuantity(source.getPlannedQuantity());
+        newPlan.setPlannedDate(source.getPlannedDate());
+        newPlan.setExpectedCompletionDate(source.getExpectedCompletionDate());
+        newPlan.setPlanType(source.getPlanType());
+        newPlan.setCustomerOrderNumber(source.getCustomerOrderNumber());
+        newPlan.setPriority(source.getPriority());
+        newPlan.setNotes(source.getNotes());
+        newPlan.setEstimatedMaterialCost(source.getEstimatedMaterialCost());
+        newPlan.setEstimatedLaborCost(source.getEstimatedLaborCost());
+        newPlan.setEstimatedEquipmentCost(source.getEstimatedEquipmentCost());
+        newPlan.setEstimatedOtherCost(source.getEstimatedOtherCost());
+        newPlan.setSuggestedProductionLineId(source.getSuggestedProductionLineId());
+        newPlan.setEstimatedWorkers(source.getEstimatedWorkers());
+        newPlan.setAssignedSupervisorId(source.getAssignedSupervisorId());
+        newPlan.setSourceType(source.getSourceType());
+        newPlan.setSourceOrderId(source.getSourceOrderId());
+        newPlan.setSourceOrderItemId(source.getSourceOrderItemId());
+        newPlan.setSourceCustomerName(source.getSourceCustomerName());
+        newPlan.setProcessName(source.getProcessName());
+        newPlan.setBatchDate(source.getBatchDate());
+        newPlan.setForecastReason(source.getForecastReason());
+        newPlan.setAiConfidence(source.getAiConfidence());
+        newPlan.setIsMixedBatch(source.getIsMixedBatch() != null ? source.getIsMixedBatch() : false);
+        newPlan.setMixedBatchType(source.getMixedBatchType());
+        newPlan.setRelatedOrders(source.getRelatedOrders());
+        newPlan.setCrValue(source.getCrValue());
+        // 重置状态字段
+        newPlan.setStatus(ProductionPlanStatus.PENDING);
+        newPlan.setCreatedBy(userId);
+        newPlan.setAllocatedQuantity(java.math.BigDecimal.ZERO);
+        newPlan.setIsFullyMatched(false);
+        newPlan.setIsLocked(false);
+        // 不复制: actualQuantity / actual*Cost / approval* / locked*
+        // / currentProbability / probabilityUpdatedAt / startTime / endTime
+        // / isForceInserted / requiresApproval (默认值已 OK)
+
+        newPlan = productionPlanRepository.save(newPlan);
+
+        log.info("复制生产计划: source={}({}) → new={}({})",
+                sourcePlanId, source.getPlanNumber(),
+                newPlan.getId(), newPlan.getPlanNumber());
+        return toDTOWithConversionInfo(newPlan);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public ProductionPlanDTO getProductionPlanById(String factoryId, String planId) {
