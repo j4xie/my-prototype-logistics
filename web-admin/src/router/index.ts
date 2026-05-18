@@ -635,6 +635,13 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '社保公积金配置', module: 'hr' }
           },
           {
+            // #863 follow-up — 城市差异化 社保 / 公积金 覆盖 (基数 + 部分费率)
+            path: 'config/city-overrides',
+            name: 'HRCityInsuranceOverrides',
+            component: () => import('@/views/hr/config/city-overrides.vue'),
+            meta: { requiresAuth: true, title: '城市差异化社保', module: 'hr' }
+          },
+          {
             // #833 H-WAGE follow-up — 年度汇算 (综合所得 annual settlement)
             path: 'annual-settlement',
             name: 'HRAnnualSettlement',

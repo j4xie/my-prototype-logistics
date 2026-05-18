@@ -7,6 +7,7 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.SalaryItemRepository;
 import com.cretas.aims.service.hr.AnnualBonusTaxCalculator;
+import com.cretas.aims.service.hr.HrCityInsuranceOverrideService;
 import com.cretas.aims.service.hr.HrInsuranceConfigService;
 import com.cretas.aims.service.hr.SalaryItemService;
 import com.cretas.aims.service.hr.SalarySpecialDeductionService;
@@ -72,6 +73,14 @@ public class SalaryItemServiceImpl implements SalaryItemService {
     @Autowired(required = false)
     private HrInsuranceConfigService insuranceConfigService;
 
+    /**
+     * #863 follow-up: 城市差异化覆盖服务 (Optional 注入, 同上).
+     * 当 user 关联了 city 且该 city 有 ACTIVE 覆盖时, 应用基数 / 费率覆盖.
+     * 否则 fallback 到工厂默认 (insuranceConfigService).
+     */
+    @Autowired(required = false)
+    private HrCityInsuranceOverrideService cityOverrideService;
+
     @Override
     @Transactional
     public SalaryItem create(String factoryId, Long userId, String yearMonth,
@@ -92,8 +101,9 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         // 集成: 拉取该 user+yearMonth 所有 ACTIVE 专项扣除合计, 减少应税收入
         BigDecimal specialDeduction = fetchSpecialDeductionTotal(factoryId, userId, yearMonth);
         // #833 follow-up: 走工厂级费率配置 (fallback 到硬编码默认)
+        // #863 follow-up: 若该 user 关联了 city, 应用城市覆盖 (基数 + 费率)
         Map<String, BigDecimal> calc = resolveRatesAndPreview(
-                factoryId, yearMonth, baseSalary, specialDeduction);
+                factoryId, userId, yearMonth, baseSalary, specialDeduction);
         SalaryItem item = SalaryItem.builder()
                 .factoryId(factoryId)
                 .userId(userId)
@@ -135,8 +145,9 @@ public class SalaryItemServiceImpl implements SalaryItemService {
                 BigDecimal specialDeduction = fetchSpecialDeductionTotal(
                         factoryId, item.getUserId(), item.getYearMonth());
                 // #833 follow-up: 走工厂级费率配置
+                // #863 follow-up: 含 user 关联 city 的覆盖
                 Map<String, BigDecimal> calc = resolveRatesAndPreview(
-                        factoryId, item.getYearMonth(), baseSalary, specialDeduction);
+                        factoryId, item.getUserId(), item.getYearMonth(), baseSalary, specialDeduction);
                 item.setBaseSalary(baseSalary);
                 item.setSocialInsuranceEmployee(calc.get("socialInsuranceEmployee"));
                 item.setSocialInsuranceEmployer(calc.get("socialInsuranceEmployer"));
@@ -231,8 +242,10 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         BigDecimal specialDeduction = fetchSpecialDeductionTotal(
                 factoryId, item.getUserId(), item.getYearMonth());
         // #833 follow-up: 走工厂级费率配置
+        // #863 follow-up: 含 user 关联 city 的覆盖
         Map<String, BigDecimal> calc = resolveRatesAndPreview(
-                factoryId, item.getYearMonth(), item.getBaseSalary(), specialDeduction);
+                factoryId, item.getUserId(), item.getYearMonth(),
+                item.getBaseSalary(), specialDeduction);
         item.setSocialInsuranceEmployee(calc.get("socialInsuranceEmployee"));
         item.setSocialInsuranceEmployer(calc.get("socialInsuranceEmployer"));
         item.setProvidentFundEmployee(calc.get("providentFundEmployee"));
@@ -246,9 +259,15 @@ public class SalaryItemServiceImpl implements SalaryItemService {
     /**
      * #833 follow-up: 解析该 factory + yearMonth 的费率配置后调 previewComputeFromBaseWithRates.
      * insuranceConfigService null (legacy unit test) 时 fallback 到 RATE_* 硬编码常量.
+     *
+     * <p>#863 follow-up: 接受 {@code userId}, 若该 user 关联了 city 且 cityOverrideService 可用,
+     * 取合并后的 effective 配置 (含城市基数 + 部分费率覆盖); 否则走工厂默认.
+     *
+     * <p>缴费基数 capping: effective.baseSalaryLowerBound / upperBound 不为空时,
+     * baseSalary 被 clamp 到 [lower, upper] 后再算 social / fund. 这是城市差异化的核心价值.
      */
     private Map<String, BigDecimal> resolveRatesAndPreview(
-            String factoryId, String yearMonth,
+            String factoryId, Long userId, String yearMonth,
             BigDecimal baseSalary, BigDecimal specialDeductionTotal) {
         if (insuranceConfigService == null) {
             // Fallback: 用硬编码默认 (backward-compat for unit tests)
@@ -261,7 +280,19 @@ public class SalaryItemServiceImpl implements SalaryItemService {
             log.warn("resolveRatesAndPreview: invalid yearMonth={}, fallback to defaults", yearMonth);
             return previewComputeFromBaseWithDeductions(baseSalary, specialDeductionTotal);
         }
-        HrInsuranceConfig cfg = insuranceConfigService.getCurrent(factoryId, ym);
+
+        // #863: 查 user → city → effective merged config
+        HrInsuranceConfig cfg;
+        String cityCode = null;
+        if (cityOverrideService != null && userId != null) {
+            cityCode = cityOverrideService.getEmployeeCityCode(factoryId, userId);
+        }
+        if (cityCode != null && cityOverrideService != null) {
+            cfg = cityOverrideService.getEffectiveConfigForCity(factoryId, cityCode, ym);
+        } else {
+            cfg = insuranceConfigService.getCurrent(factoryId, ym);
+        }
+
         // 个人社保 = 养老 + 医疗 + 失业 (合计)
         BigDecimal socialEmp = safeRate(cfg.getEmployeePensionRate())
                 .add(safeRate(cfg.getEmployeeMedicalRate()))
@@ -269,11 +300,32 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         BigDecimal socialEmr = safeRate(cfg.getEmployerPensionRate())
                 .add(safeRate(cfg.getEmployerMedicalRate()))
                 .add(safeRate(cfg.getEmployerUnemploymentRate()));
-        return previewComputeFromBaseWithRates(
-                baseSalary, specialDeductionTotal,
+
+        // 应用基数 clamp (城市覆盖必填基数, 工厂默认 optional)
+        BigDecimal cappedBase = clampBase(baseSalary,
+                cfg.getBaseSalaryLowerBound(), cfg.getBaseSalaryUpperBound());
+
+        Map<String, BigDecimal> result = previewComputeFromBaseWithRates(
+                cappedBase, specialDeductionTotal,
                 socialEmp, socialEmr,
                 safeRate(cfg.getEmployeeProvidentFundRate()),
                 safeRate(cfg.getEmployerProvidentFundRate()));
+        // 计算结果中的 baseSalary 应当反映 cap 之后的值 (统计预览口径一致)
+        result.put("baseSalary", cappedBase == null
+                ? BigDecimal.ZERO
+                : cappedBase.setScale(2, RoundingMode.HALF_UP));
+        return result;
+    }
+
+    /**
+     * #863 防呆: 缴费基数 cap 到 [lower, upper] (任一为空则跳过对应方向).
+     */
+    static BigDecimal clampBase(BigDecimal base, BigDecimal lower, BigDecimal upper) {
+        if (base == null) return BigDecimal.ZERO;
+        BigDecimal v = base;
+        if (lower != null && v.compareTo(lower) < 0) v = lower;
+        if (upper != null && v.compareTo(upper) > 0) v = upper;
+        return v;
     }
 
     private static BigDecimal safeRate(BigDecimal v) {
