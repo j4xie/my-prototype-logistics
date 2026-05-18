@@ -492,6 +492,13 @@ const businessRoutes: RouteRecordRaw[] = [
             component: () => import('@/views/sales/needs/list.vue'),
             meta: { requiresAuth: true, title: '客户需求', module: 'sales' }
           },
+          // P2 #74 S-COMPLAINT-1: 售后服务投诉
+          {
+            path: 'service-complaints',
+            name: 'SalesServiceComplaints',
+            component: () => import('@/views/sales/service-complaints/list.vue'),
+            meta: { requiresAuth: true, title: '售后服务投诉', module: 'sales' }
+          },
           // Sprint 4 W2 S-REPORTS-PRESETS: 销售报表 (5 active + 9 Sprint 5 stub)
           {
             path: 'reports',
