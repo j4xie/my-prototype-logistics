@@ -88,7 +88,7 @@ async function submitQuickPurchaseOrder(row: QuickPurchaseOrderRow): Promise<voi
     remark: row.remark || '',
     items: [],
   };
-  const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+  const res = await post(`/${factoryId.value}/purchase/orders`, payload);
   if (!res?.success) {
     throw new Error(res?.message || '创建失败');
   }
@@ -152,7 +152,7 @@ async function submitBomPurchaseOrder(parent: BomPurchaseOrderParent, children: 
       unitPrice: Number(c.unitPrice) || 0,
     })),
   };
-  const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+  const res = await post(`/${factoryId.value}/purchase/orders`, payload);
   if (!res?.success) {
     throw new Error(res?.message || '提交失败');
   }
@@ -194,7 +194,7 @@ async function handleInlineIconClick(id: InlineIconId, row: TableRow): Promise<v
 // U-MARKER-1 (Sprint 4 Wave 2 Chat L) — PATCH marker color to backend.
 async function handleMarkerSelect(row: TableRow, color: RowMarkerColor | null): Promise<void> {
   try {
-    const res = await request.patch(`/mobile/${factoryId.value}/markers/purchase-order/${row.id}`, {
+    const res = await request.patch(`/${factoryId.value}/markers/purchase-order/${row.id}`, {
       color,
     });
     if (res?.data?.success) {
@@ -223,7 +223,7 @@ async function submitBatchPurchaseOrders(orders: Array<{ supplierId: string; pur
       remark: order.remark || '',
       items: [],
     };
-    const res = await post(`/mobile/${factoryId.value}/purchase/orders`, payload);
+    const res = await post(`/${factoryId.value}/purchase/orders`, payload);
     if (res?.success) created.push(String(res.data?.orderNumber || res.data?.id || ''));
   }
   if (!created.length) {
