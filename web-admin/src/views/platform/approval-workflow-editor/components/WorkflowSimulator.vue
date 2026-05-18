@@ -73,6 +73,8 @@ import { ElMessage } from 'element-plus'
 import type { ApprovalWorkflowEdge, ApprovalWorkflowNode } from '@/api/approvalWorkflow'
 import {
   cancelSimulation,
+  computeTraversedEdgeIds,
+  computeTraversedNodeIds,
   startSimulation,
   submitDecision,
   type SimApprovalRecord,
@@ -87,7 +89,11 @@ const props = defineProps<{
   startNodeId: string
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [v: boolean] }>()
+const emit = defineEmits<{
+  'update:modelValue': [v: boolean]
+  // Phase 1 B.5 Task 4: emit traversed sets so parent canvas can highlight DAG path
+  'traversal-update': [payload: { traversedNodeIds: string[]; traversedEdgeIds: string[]; activeNodeIds: string[] }]
+}>()
 
 const open = computed({
   get: () => props.modelValue,
@@ -105,8 +111,27 @@ watch(open, (v) => {
   // reset on close
   if (!v) {
     ctx.value = null
+    // Phase 1 B.5 Task 4: clear traversal styling when modal closes
+    emit('traversal-update', { traversedNodeIds: [], traversedEdgeIds: [], activeNodeIds: [] })
   }
 })
+
+// Phase 1 B.5 Task 4: emit traversed sets whenever ctx state changes
+// (startSimulation / submitDecision / cancelSimulation all mutate ctx in place,
+// but the Map/Set internals don't trigger Vue reactivity — so we re-assign
+// ctx.value after each operation in onStart/onApprove/onReject/onCancel).
+function emitTraversal() {
+  const c = ctx.value
+  if (!c) {
+    emit('traversal-update', { traversedNodeIds: [], traversedEdgeIds: [], activeNodeIds: [] })
+    return
+  }
+  emit('traversal-update', {
+    traversedNodeIds: computeTraversedNodeIds(c),
+    traversedEdgeIds: computeTraversedEdgeIds(c, props.edges),
+    activeNodeIds: [...c.activeNodeIds],
+  })
+}
 
 function addCtxRow() {
   ctxRows.value.push({ key: '', value: '' })
@@ -209,6 +234,7 @@ function onStart() {
   }
   try {
     ctx.value = startSimulation(buildInput(), buildBusinessContext())
+    emitTraversal()
   } catch (e) {
     ElMessage.error(`启动模拟失败: ${e instanceof Error ? e.message : e}`)
   }
@@ -218,6 +244,9 @@ function onApprove(nodeId: string) {
   if (!ctx.value) return
   try {
     submitDecision(ctx.value, buildInput(), nodeId, 'APPROVED', { approverUserId: 999, approverRole: 'simulator' })
+    // Re-trigger reactivity since submitDecision mutates Map/Set in place
+    ctx.value = { ...ctx.value }
+    emitTraversal()
   } catch (e) {
     ElMessage.error(`提交失败: ${e instanceof Error ? e.message : e}`)
   }
@@ -227,6 +256,8 @@ function onReject(nodeId: string) {
   if (!ctx.value) return
   try {
     submitDecision(ctx.value, buildInput(), nodeId, 'REJECTED', { approverUserId: 999, approverRole: 'simulator' })
+    ctx.value = { ...ctx.value }
+    emitTraversal()
   } catch (e) {
     ElMessage.error(`提交失败: ${e instanceof Error ? e.message : e}`)
   }
@@ -235,14 +266,18 @@ function onReject(nodeId: string) {
 function onCancel() {
   if (!ctx.value || ctx.value.status !== 'RUNNING') return
   cancelSimulation(ctx.value, '模拟器手动取消')
+  ctx.value = { ...ctx.value }
+  emitTraversal()
 }
 
 function onReset() {
   ctx.value = null
+  emitTraversal()
 }
 
 function onClose(done: () => void) {
   ctx.value = null
+  emitTraversal()
   done()
 }
 </script>

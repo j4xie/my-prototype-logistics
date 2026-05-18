@@ -9,11 +9,17 @@
       <div v-if="approverRoles.length" class="badge roles">
         👤 {{ approverRoles.join(' / ') }}
       </div>
+      <div v-if="departmentIds.length" class="badge depts">
+        🏢 {{ departmentIds.length }} 个部门
+      </div>
       <div v-if="requiredApprovers > 1" class="badge cosign">
         会签 {{ requiredApprovers }} 人
       </div>
       <div v-if="timeoutMinutes > 0" class="badge sla">
         ⏱ {{ timeoutMinutes }} 分钟
+      </div>
+      <div v-if="delegateUserId" class="badge delegate">
+        👥 委托: {{ delegateUserId }}
       </div>
       <div v-if="autoApprove" class="badge auto">
         ⚡ 自动审批
@@ -38,6 +44,9 @@ const props = defineProps<{
       timeoutMinutes?: number
       autoApproveCondition?: string
       autoRejectCondition?: string
+      // Phase 1 B.5 additions
+      departmentIds?: number[]
+      delegateUserId?: string
     }
   }
   selected?: boolean
@@ -47,6 +56,9 @@ const approverRoles = computed(() => props.data?.config?.approverRoles ?? [])
 const requiredApprovers = computed(() => Number(props.data?.config?.requiredApprovers ?? 1))
 const timeoutMinutes = computed(() => Number(props.data?.config?.timeoutMinutes ?? 0))
 const autoApprove = computed(() => Boolean(props.data?.config?.autoApproveCondition))
+// Phase 1 B.5
+const departmentIds = computed(() => props.data?.config?.departmentIds ?? [])
+const delegateUserId = computed(() => props.data?.config?.delegateUserId ?? '')
 </script>
 
 <style scoped>
@@ -68,7 +80,9 @@ const autoApprove = computed(() => Boolean(props.data?.config?.autoApproveCondit
 .node-body { padding: 6px 12px; font-size: 11px; color: #606266; display: flex; flex-direction: column; gap: 3px; }
 .badge { padding: 2px 6px; border-radius: 3px; background: #f4f4f5; }
 .badge.roles { color: #409eff; }
+.badge.depts { color: #909399; }
 .badge.cosign { color: #e6a23c; font-weight: 600; }
 .badge.sla { color: #f56c6c; }
+.badge.delegate { color: #909399; }
 .badge.auto { color: #67c23a; }
 </style>

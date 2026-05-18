@@ -7,6 +7,12 @@
       <div v-if="notifyRoles.length" class="node-roles">
         → {{ notifyRoles.join(', ') }}
       </div>
+      <div v-if="channels.length" class="node-channels">
+        <span v-if="channels.includes('wechat')" title="微信">📱</span>
+        <span v-if="channels.includes('dingtalk')" title="钉钉">🔔</span>
+        <span v-if="channels.includes('email')" title="邮件">✉</span>
+      </div>
+      <div v-else class="node-channels warn" title="未配置通知渠道">⚠</div>
     </div>
     <Handle type="source" :position="Position.Bottom" />
   </div>
@@ -20,12 +26,13 @@ const props = defineProps<{
   data?: {
     label?: string
     nodeType?: string
-    config?: { notifyRoles?: string[]; notifyTemplate?: string }
+    config?: { notifyRoles?: string[]; notifyTemplate?: string; channels?: string[] }
   }
   selected?: boolean
 }>()
 
 const notifyRoles = computed(() => props.data?.config?.notifyRoles ?? [])
+const channels = computed(() => props.data?.config?.channels ?? [])
 </script>
 
 <style scoped>
@@ -40,4 +47,6 @@ const notifyRoles = computed(() => props.data?.config?.notifyRoles ?? [])
 .node-icon { font-size: 20px; color: #909399; line-height: 1; }
 .node-label { font-size: 13px; font-weight: 600; color: #303133; margin-top: 2px; }
 .node-roles { font-size: 10px; color: #909399; margin-top: 2px; max-width: 130px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node-channels { font-size: 14px; margin-top: 4px; display: flex; gap: 4px; justify-content: center; }
+.node-channels.warn { color: #e6a23c; font-size: 12px; }
 </style>

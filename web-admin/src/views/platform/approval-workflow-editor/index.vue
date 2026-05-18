@@ -141,6 +141,7 @@
       :nodes="simulatorInput.nodes"
       :edges="simulatorInput.edges"
       :start-node-id="simulatorInput.startNodeId"
+      @traversal-update="onSimulatorTraversalUpdate"
     />
 
     <!-- Sprint 4 Wave 1 (C-WF-RULE-1): WorkflowRule 管理 drawer -->
@@ -222,6 +223,42 @@ const selectedWorkflowId = ref<string | undefined>(undefined)
 const simulatorOpen = ref(false)
 const simulatorInput = ref<SimulatorInput | null>(null)
 
+// Phase 1 B.5 Task 4: DAG path highlighting state
+// (populated via @traversal-update from <WorkflowSimulator>)
+const simTraversedNodeIds = ref<string[]>([])
+const simTraversedEdgeIds = ref<string[]>([])
+const simActiveNodeIds = ref<string[]>([])
+
+function onSimulatorTraversalUpdate(payload: {
+  traversedNodeIds: string[]
+  traversedEdgeIds: string[]
+  activeNodeIds: string[]
+}) {
+  simTraversedNodeIds.value = payload.traversedNodeIds
+  simTraversedEdgeIds.value = payload.traversedEdgeIds
+  simActiveNodeIds.value = payload.activeNodeIds
+  // Re-apply class injection by updating nodes/edges arrays
+  syncSimClasses()
+}
+
+function syncSimClasses() {
+  const activeSet = new Set(simActiveNodeIds.value)
+  const traversedNodeSet = new Set(simTraversedNodeIds.value)
+  const traversedEdgeSet = new Set(simTraversedEdgeIds.value)
+  nodes.value = nodes.value.map(n => ({
+    ...n,
+    class: activeSet.has(n.id)
+      ? 'sim-active'
+      : traversedNodeSet.has(n.id)
+        ? 'sim-traversed'
+        : '',
+  }))
+  edges.value = edges.value.map(e => ({
+    ...e,
+    class: traversedEdgeSet.has(e.id) ? 'sim-traversed' : '',
+  }))
+}
+
 interface SelectedElement {
   kind: 'node' | 'edge'
   id: string
@@ -289,7 +326,8 @@ function defaultConfigFor(type: NodeType): Record<string, unknown> {
     case 'join':
       return { mode: 'ALL' }
     case 'notify':
-      return { notifyRoles: [] }
+      // Phase 1 B.5 Task 3: default channels empty (warns user to pick one)
+      return { notifyRoles: [], channels: [] }
     case 'end':
       return { outcome: 'APPROVED' }
     default:
@@ -767,4 +805,26 @@ onMounted(async () => {
 .properties-panel h4 { margin: 0 0 8px; font-size: 14px; color: #303133; }
 .placeholder p { margin: 4px 0; font-size: 13px; }
 .placeholder .hint { color: #909399; font-family: monospace; font-size: 11px; }
+
+/* Phase 1 B.5 Task 4: Simulator DAG path highlighting */
+:deep(.vue-flow__node.sim-traversed) {
+  box-shadow: 0 0 0 2px #67c23a !important; /* green = completed */
+  filter: drop-shadow(0 0 4px rgba(103, 194, 58, 0.4));
+}
+:deep(.vue-flow__node.sim-active) {
+  box-shadow: 0 0 0 2px #e6a23c !important; /* yellow = current (waiting) */
+  animation: sim-pulse 1.5s infinite;
+}
+:deep(.vue-flow__edge.sim-traversed .vue-flow__edge-path) {
+  stroke: #67c23a !important;
+  stroke-width: 3px !important;
+}
+:deep(.vue-flow__edge.sim-traversed .vue-flow__edge-text) {
+  fill: #67c23a !important;
+  font-weight: 600 !important;
+}
+@keyframes sim-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #e6a23c; }
+  50% { box-shadow: 0 0 0 6px rgba(230, 162, 60, 0.4); }
+}
 </style>
