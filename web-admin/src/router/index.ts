@@ -585,6 +585,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'HRSalaries',
             component: () => import('@/views/hr/salaries/list.vue'),
             meta: { requiresAuth: true, title: '工资管理', module: 'hr' }
+          },
+          {
+            // P1-40 H-WAGE 专项扣除 follow-up — 个税 6 大专项附加扣除 (月度计税自动减项)
+            path: 'special-deductions',
+            name: 'HRSpecialDeductions',
+            component: () => import('@/views/hr/special-deductions/list.vue'),
+            meta: { requiresAuth: true, title: '专项扣除', module: 'hr' }
           }
         ]
       },

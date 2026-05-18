@@ -37,8 +37,20 @@ public interface SalaryItemService {
      * R1 防呆 preview: 根据 baseSalary 计算 social/tax/net, 不写库.
      * 返回 Map: baseSalary / socialInsuranceEmployee / socialInsuranceEmployer /
      * providentFundEmployee / providentFundEmployer / taxableIncome / personalTax / netSalary.
+     *
+     * <p>backward-compat 入口 — 默认 specialDeductionTotal=0.
      */
     Map<String, BigDecimal> previewComputeFromBase(BigDecimal baseSalary);
+
+    /**
+     * R1 防呆 preview with 专项扣除: 同 previewComputeFromBase, 但额外减去
+     * specialDeductionTotal (6 大附加扣除月度合计).
+     *
+     * <p>计税公式: taxable = base - 个人社保 - 个人公积金 - 5000起征点 - specialDeductionTotal
+     * (taxable < 0 截到 0)
+     */
+    Map<String, BigDecimal> previewComputeFromBaseWithDeductions(
+            BigDecimal baseSalary, BigDecimal specialDeductionTotal);
 
     /**
      * 应用 computeFromBase 到已存在的 DRAFT 工资单.

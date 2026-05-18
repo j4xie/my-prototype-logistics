@@ -6,8 +6,10 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.hr.SalaryItemRepository;
 import com.cretas.aims.service.hr.SalaryItemService;
+import com.cretas.aims.service.hr.SalarySpecialDeductionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,13 @@ public class SalaryItemServiceImpl implements SalaryItemService {
 
     private final SalaryItemRepository repository;
 
+    /**
+     * 专项扣除服务 — Optional 注入避免 unit test (mocking 只填 repository)
+     * 因缺 bean 启动失败. 生产 / IT 环境总是有 bean.
+     */
+    @Autowired(required = false)
+    private SalarySpecialDeductionService specialDeductionService;
+
     @Override
     @Transactional
     public SalaryItem create(String factoryId, Long userId, String yearMonth,
@@ -68,7 +77,10 @@ public class SalaryItemServiceImpl implements SalaryItemService {
                     "用户 %d 在 %s 已存在工资单 (id=%s, 状态=%s), 请直接编辑或先删除",
                     userId, yearMonth, e.getId(), e.getStatus()));
         }
-        Map<String, BigDecimal> calc = previewComputeFromBase(baseSalary);
+        // 集成: 拉取该 user+yearMonth 所有 ACTIVE 专项扣除合计, 减少应税收入
+        BigDecimal specialDeduction = fetchSpecialDeductionTotal(factoryId, userId, yearMonth);
+        Map<String, BigDecimal> calc = previewComputeFromBaseWithDeductions(
+                baseSalary, specialDeduction);
         SalaryItem item = SalaryItem.builder()
                 .factoryId(factoryId)
                 .userId(userId)
@@ -85,8 +97,8 @@ public class SalaryItemServiceImpl implements SalaryItemService {
                 .remark(remark)
                 .build();
         SalaryItem saved = repository.save(item);
-        log.info("SalaryItem created: id={}, user={}, ym={}, base={}", saved.getId(),
-                userId, yearMonth, baseSalary);
+        log.info("SalaryItem created: id={}, user={}, ym={}, base={}, specialDeduction={}",
+                saved.getId(), userId, yearMonth, baseSalary, specialDeduction);
         return saved;
     }
 
@@ -107,7 +119,10 @@ public class SalaryItemServiceImpl implements SalaryItemService {
             // DRAFT — 全字段允许改
             if (baseSalary != null) {
                 if (baseSalary.signum() < 0) throw new BusinessException("baseSalary 必须 ≥ 0");
-                Map<String, BigDecimal> calc = previewComputeFromBase(baseSalary);
+                BigDecimal specialDeduction = fetchSpecialDeductionTotal(
+                        factoryId, item.getUserId(), item.getYearMonth());
+                Map<String, BigDecimal> calc = previewComputeFromBaseWithDeductions(
+                        baseSalary, specialDeduction);
                 item.setBaseSalary(baseSalary);
                 item.setSocialInsuranceEmployee(calc.get("socialInsuranceEmployee"));
                 item.setSocialInsuranceEmployer(calc.get("socialInsuranceEmployer"));
@@ -125,15 +140,36 @@ public class SalaryItemServiceImpl implements SalaryItemService {
     /**
      * R1 防呆 preview: 算 social + fund + tax + net, 不写库.
      * Pure function — Controller 调它给 dialog 实时显示预览.
+     *
+     * <p>backward-compat: 默认 specialDeductionTotal=0. 调用方需要扣减专项扣除时
+     * 改调 {@link #previewComputeFromBaseWithDeductions}.
      */
     @Override
     public Map<String, BigDecimal> previewComputeFromBase(BigDecimal baseSalary) {
+        return previewComputeFromBaseWithDeductions(baseSalary, BigDecimal.ZERO);
+    }
+
+    /**
+     * R1 防呆 preview with 专项扣除: 同 previewComputeFromBase, 但额外减去
+     * specialDeductionTotal (6 大附加扣除月度合计).
+     *
+     * <p>计税公式: taxable = base - 个人社保 - 个人公积金 - 5000起征点 - specialDeductionTotal
+     * (taxable < 0 截到 0)
+     */
+    @Override
+    public Map<String, BigDecimal> previewComputeFromBaseWithDeductions(
+            BigDecimal baseSalary, BigDecimal specialDeductionTotal) {
         if (baseSalary == null) baseSalary = BigDecimal.ZERO;
+        if (specialDeductionTotal == null) specialDeductionTotal = BigDecimal.ZERO;
+        if (specialDeductionTotal.signum() < 0) specialDeductionTotal = BigDecimal.ZERO;
+
         BigDecimal socialEmp = baseSalary.multiply(RATE_SOCIAL_EMPLOYEE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal socialEmr = baseSalary.multiply(RATE_SOCIAL_EMPLOYER).setScale(2, RoundingMode.HALF_UP);
         BigDecimal fundEmp = baseSalary.multiply(RATE_FUND_EMPLOYEE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal fundEmr = baseSalary.multiply(RATE_FUND_EMPLOYER).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal taxable = baseSalary.subtract(socialEmp).subtract(fundEmp).subtract(TAX_THRESHOLD);
+        // 关键改动: 专项扣除从应税收入中减去 (在 5000 起征点之后)
+        BigDecimal taxable = baseSalary.subtract(socialEmp).subtract(fundEmp)
+                .subtract(TAX_THRESHOLD).subtract(specialDeductionTotal);
         if (taxable.signum() < 0) taxable = BigDecimal.ZERO;
         BigDecimal tax = computePersonalTax(taxable);
         BigDecimal net = baseSalary.subtract(socialEmp).subtract(fundEmp).subtract(tax);
@@ -145,6 +181,8 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         result.put("socialInsuranceEmployer", socialEmr);
         result.put("providentFundEmployee", fundEmp);
         result.put("providentFundEmployer", fundEmr);
+        result.put("specialDeductionTotal",
+                specialDeductionTotal.setScale(2, RoundingMode.HALF_UP));
         result.put("taxableIncome", taxable.setScale(2, RoundingMode.HALF_UP));
         result.put("personalTax", tax);
         result.put("netSalary", net.setScale(2, RoundingMode.HALF_UP));
@@ -158,7 +196,10 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         if (item.getStatus() != SalaryStatus.DRAFT) {
             throw new BusinessException("仅 DRAFT 状态可重算, 当前状态=" + item.getStatus());
         }
-        Map<String, BigDecimal> calc = previewComputeFromBase(item.getBaseSalary());
+        BigDecimal specialDeduction = fetchSpecialDeductionTotal(
+                factoryId, item.getUserId(), item.getYearMonth());
+        Map<String, BigDecimal> calc = previewComputeFromBaseWithDeductions(
+                item.getBaseSalary(), specialDeduction);
         item.setSocialInsuranceEmployee(calc.get("socialInsuranceEmployee"));
         item.setSocialInsuranceEmployer(calc.get("socialInsuranceEmployer"));
         item.setProvidentFundEmployee(calc.get("providentFundEmployee"));
@@ -167,6 +208,27 @@ public class SalaryItemServiceImpl implements SalaryItemService {
         item.setPersonalTax(calc.get("personalTax"));
         item.setNetSalary(calc.get("netSalary"));
         return repository.save(item);
+    }
+
+    /**
+     * 拉取该 user+yearMonth 所有 ACTIVE 专项扣除合计.
+     * MVP: specialDeductionService 是 @Autowired(required=false) — unit test (mock 只填
+     * repository) 可能为 null, 此时返 0 维持向后兼容.
+     */
+    private BigDecimal fetchSpecialDeductionTotal(String factoryId, Long userId, String yearMonth) {
+        if (specialDeductionService == null) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            YearMonth ym = YearMonth.parse(yearMonth);
+            BigDecimal v = specialDeductionService.computeTotalDeductionForMonth(
+                    factoryId, userId, ym);
+            return v == null ? BigDecimal.ZERO : v;
+        } catch (DateTimeParseException ex) {
+            // 已经在调用方 validateYearMonth 过, 这里防御一道
+            log.warn("fetchSpecialDeductionTotal: invalid yearMonth={}, fallback to 0", yearMonth);
+            return BigDecimal.ZERO;
+        }
     }
 
     @Override

@@ -288,4 +288,59 @@ class SalaryItemServiceImplTest {
         when(repository.findByIdAndFactoryId("S-002", FACTORY)).thenReturn(Optional.of(confirmed));
         assertThrows(BusinessException.class, () -> service.applyComputeFromBase(FACTORY, "S-002"));
     }
+
+    // ---------- 专项扣除 integration (P1-40 follow-up) ----------
+
+    @Test
+    @DisplayName("previewWithDeductions: base 10000 + 专项扣除 4000 → 应税截到 0, 个税 0")
+    void preview_withDeductions_reducedToZero() {
+        // base=10000, social=1050, fund=800, threshold=5000, deduction=4000
+        // taxable = 10000 - 1050 - 800 - 5000 - 4000 = -850 → 截到 0
+        Map<String, BigDecimal> r = service.previewComputeFromBaseWithDeductions(
+                new BigDecimal("10000"), new BigDecimal("4000"));
+        assertEquals(0, BigDecimal.ZERO.compareTo(r.get("taxableIncome")));
+        assertEquals(0, BigDecimal.ZERO.compareTo(r.get("personalTax")));
+        assertEquals(0, new BigDecimal("4000.00").compareTo(r.get("specialDeductionTotal")));
+        // net = 10000 - 1050 - 800 - 0 = 8150 (税从 105 降到 0, 实发涨 105)
+        assertEquals(0, new BigDecimal("8150.00").compareTo(r.get("netSalary")));
+    }
+
+    @Test
+    @DisplayName("previewWithDeductions: base 20000 + 专项 3000 → taxable 10150, 税 805")
+    void preview_withDeductions_reducedNotZero() {
+        // base=20000, social=2100, fund=1600, threshold=5000, deduction=3000
+        // taxable = 20000 - 2100 - 1600 - 5000 - 3000 = 8300 → bracket 2 (10%, 速算 210)
+        // tax = 8300 * 0.10 - 210 = 620
+        Map<String, BigDecimal> r = service.previewComputeFromBaseWithDeductions(
+                new BigDecimal("20000"), new BigDecimal("3000"));
+        assertEquals(0, new BigDecimal("8300.00").compareTo(r.get("taxableIncome")));
+        assertEquals(0, new BigDecimal("620.00").compareTo(r.get("personalTax")));
+        assertEquals(0, new BigDecimal("3000.00").compareTo(r.get("specialDeductionTotal")));
+    }
+
+    @Test
+    @DisplayName("previewWithDeductions: deduction null/负 → 等同 0")
+    void preview_withDeductions_nullNegative() {
+        Map<String, BigDecimal> nullRes = service.previewComputeFromBaseWithDeductions(
+                new BigDecimal("10000"), null);
+        Map<String, BigDecimal> negRes = service.previewComputeFromBaseWithDeductions(
+                new BigDecimal("10000"), new BigDecimal("-500"));
+        Map<String, BigDecimal> zeroRes = service.previewComputeFromBaseWithDeductions(
+                new BigDecimal("10000"), BigDecimal.ZERO);
+        // 三个结果应当一致
+        assertEquals(0, nullRes.get("personalTax").compareTo(zeroRes.get("personalTax")));
+        assertEquals(0, negRes.get("personalTax").compareTo(zeroRes.get("personalTax")));
+        assertEquals(0, BigDecimal.ZERO.compareTo(nullRes.get("specialDeductionTotal")));
+    }
+
+    @Test
+    @DisplayName("previewWithDeductions: backward-compat — preview(base) == previewWithDeductions(base, 0)")
+    void preview_backwardCompat() {
+        Map<String, BigDecimal> legacy = service.previewComputeFromBase(new BigDecimal("10000"));
+        Map<String, BigDecimal> withDed = service.previewComputeFromBaseWithDeductions(
+                new BigDecimal("10000"), BigDecimal.ZERO);
+        assertEquals(0, legacy.get("personalTax").compareTo(withDed.get("personalTax")));
+        assertEquals(0, legacy.get("netSalary").compareTo(withDed.get("netSalary")));
+        assertEquals(0, legacy.get("taxableIncome").compareTo(withDed.get("taxableIncome")));
+    }
 }
