@@ -20,6 +20,8 @@ export type DecisionType =
   | 'MATERIAL_DISPOSAL'
   | 'PRODUCTION_PLAN_CHANGE'
   | 'EQUIPMENT_STATUS_CHANGE'
+  | 'PURCHASE_ORDER_APPROVAL'
+  | 'SALES_ORDER_APPROVAL'
   | 'CUSTOM'
 
 export type PublishStatus = 'draft' | 'published' | 'archived'

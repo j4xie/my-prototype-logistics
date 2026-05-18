@@ -43,6 +43,34 @@
               @change="(v: number | undefined) => syncConfig({ timeoutMinutes: v ?? 0 })"
             />
           </el-form-item>
+          <!-- Phase 1 B.5 Task 1: 部门选择器 (可选) -->
+          <el-form-item label="部门 (可选)">
+            <el-select
+              v-model="departmentIds"
+              multiple filterable clearable
+              placeholder="选择审批所属部门 (限定审批人范围)"
+              :loading="deptLoading"
+              style="width: 100%"
+              @change="(v: number[]) => syncConfig({ departmentIds: v })"
+            >
+              <el-option
+                v-for="dept in deptOptions"
+                :key="dept.id"
+                :label="dept.name"
+                :value="dept.id"
+              />
+            </el-select>
+            <div class="hint">仅这些部门下的角色用户可审批; 留空 = 全工厂范围</div>
+          </el-form-item>
+          <!-- Phase 1 B.5 Task 2: 委托人 (可选) -->
+          <el-form-item label="委托人 (可选 — 主审超时后转派)">
+            <el-input
+              v-model="delegateUserId"
+              placeholder="userId (如: 100)"
+              @change="syncConfig({ delegateUserId })"
+            />
+            <div class="hint">主审 SLA 超时后, 自动转派给该 userId; Sprint 4 B.4 后端会消费此字段</div>
+          </el-form-item>
           <el-form-item label="自动通过条件 (SpEL)">
             <el-input
               v-model="autoApproveCondition"
@@ -124,6 +152,21 @@
               <el-option v-for="r in ROLE_OPTIONS" :key="r.value" :label="r.label" :value="r.value" />
             </el-select>
           </el-form-item>
+          <!-- Phase 1 B.5 Task 3: 通知渠道 (微信 / 钉钉 / 邮件) -->
+          <el-form-item label="通知渠道">
+            <el-checkbox-group
+              v-model="notifyChannels"
+              @change="(v: string[]) => syncConfig({ channels: v })"
+            >
+              <el-checkbox label="wechat">📱 微信</el-checkbox>
+              <el-checkbox label="dingtalk">🔔 钉钉</el-checkbox>
+              <el-checkbox label="email">✉ 邮件</el-checkbox>
+            </el-checkbox-group>
+            <div v-if="notifyChannels.length === 0" class="hint warn">
+              ⚠ 未选渠道, 通知不会发送
+            </div>
+            <div v-else class="hint">已选 {{ notifyChannels.length }} 个渠道</div>
+          </el-form-item>
           <el-form-item label="通知模板 (可选)">
             <el-input
               v-model="notifyTemplate"
@@ -188,8 +231,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import type { NodeType } from '@/api/approvalWorkflow'
+import { useAuthStore } from '@/store/modules/auth'
+import { get } from '@/api/request'
 
 interface SelectedElement {
   kind: 'node' | 'edge'
@@ -288,9 +333,48 @@ const notifyTemplate = computed({
   get: () => String(config.value.notifyTemplate ?? ''),
   set: (v: string) => syncConfig({ notifyTemplate: v }),
 })
+// Phase 1 B.5 Task 3: notify channels (wechat / dingtalk / email)
+const notifyChannels = computed({
+  get: () => (config.value.channels as string[]) ?? [],
+  set: (v: string[]) => syncConfig({ channels: v }),
+})
 const outcome = computed({
   get: () => String(config.value.outcome ?? 'APPROVED'),
   set: (v: string) => syncConfig({ outcome: v }),
+})
+
+// Phase 1 B.5 Task 1: 部门选择器
+interface DeptOption { id: number; name: string }
+const deptOptions = ref<DeptOption[]>([])
+const deptLoading = ref(false)
+const authStore = useAuthStore()
+async function loadDepartments() {
+  const factoryId = authStore.factoryId
+  if (!factoryId) return
+  deptLoading.value = true
+  try {
+    const res = await get(`/${factoryId}/departments/active`)
+    if (res.success && Array.isArray(res.data)) {
+      deptOptions.value = (res.data as Array<{ id: number; name: string }>).map(d => ({ id: d.id, name: d.name }))
+    }
+  } catch (e) {
+    // silent — fall back to empty list (selector still usable for manual ids)
+    console.warn('[PropertyPanel] load departments failed', e)
+  } finally {
+    deptLoading.value = false
+  }
+}
+onMounted(() => { loadDepartments() })
+
+const departmentIds = computed({
+  get: () => (config.value.departmentIds as number[]) ?? [],
+  set: (v: number[]) => syncConfig({ departmentIds: v }),
+})
+
+// Phase 1 B.5 Task 2: 委托人 userId (string for input v-model; backend can parse)
+const delegateUserId = computed({
+  get: () => String(config.value.delegateUserId ?? ''),
+  set: (v: string) => syncConfig({ delegateUserId: v }),
 })
 
 function syncConfig(patch: Record<string, unknown>) {
@@ -321,4 +405,5 @@ function emitUpdate() {
 .property-panel { padding: 12px; }
 h4 { margin: 0 0 12px; font-size: 14px; color: #303133; }
 .hint { font-size: 11px; color: #909399; margin-top: 2px; }
+.hint.warn { color: #e6a23c; font-weight: 500; }
 </style>

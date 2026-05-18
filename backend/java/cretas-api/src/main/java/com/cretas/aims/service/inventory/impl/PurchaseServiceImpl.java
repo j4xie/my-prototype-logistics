@@ -15,6 +15,13 @@ import com.cretas.aims.entity.inventory.*;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.entity.bom.BomItem;
+import com.cretas.aims.entity.config.ApprovalWorkflow;
+import com.cretas.aims.entity.config.ApprovalWorkflowNode;
+import com.cretas.aims.entity.workflow.ApprovalHistory.HistoryAction;
+import com.cretas.aims.entity.workflow.ApprovalWorkflowInstance;
+import com.cretas.aims.entity.workflow.ApprovalWorkflowInstance.InstanceStatus;
+import com.cretas.aims.service.ApprovalWorkflowService;
+import com.cretas.aims.service.workflow.WorkflowEngineService;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
@@ -124,6 +131,22 @@ public class PurchaseServiceImpl implements PurchaseService {
      */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.service.notification.NotificationService notificationService;
+
+    /**
+     * Phase 1 Canvas-Workflow B.6 — workflow engine 替换 evaluateApprovalTrigger.
+     *
+     * <p>{@code approveOrder} 优先走 Canvas-configured workflow (graph DAG).
+     * 当 factory 无 active PURCHASE_ORDER_APPROVAL workflow 时, 回落 legacy
+     * {@link #legacyApproveOrder} (PR #859 approval_rules 临时方案).
+     *
+     * <p>{@code required=false} — Phase 1 灰度期允许工程师把 bean 移除测兜底路径.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private WorkflowEngineService workflowEngine;
+
+    /** Phase 1 B.6 — 用于查询 active workflow 的 graph 节点 (notifyNextStage 需要). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ApprovalWorkflowService approvalWorkflowService;
 
     public PurchaseServiceImpl(PurchaseOrderRepository purchaseOrderRepository,
                                PurchaseOrderItemRepository purchaseOrderItemRepository,
@@ -325,17 +348,103 @@ public class PurchaseServiceImpl implements PurchaseService {
         return purchaseOrderRepository.save(order);
     }
 
+    /**
+     * Phase 1 Canvas-Workflow B.6 — approveOrder 优先走 Canvas-configured workflow.
+     *
+     * <p>分支策略:
+     * <ol>
+     *   <li>{@link WorkflowEngineService} bean 不可用 → legacy path</li>
+     *   <li>同一 PO 已有 RUNNING workflow instance (人工 resume) → {@code transitionNode}</li>
+     *   <li>Otherwise, try {@code startWorkflow}; 若 factory 无 active workflow ({@code IllegalArgumentException})
+     *       → legacy fallback</li>
+     * </ol>
+     *
+     * <p>workflow 终态 → PO status 映射:
+     * <ul>
+     *   <li>{@code InstanceStatus.APPROVED} → {@code PurchaseOrderStatus.APPROVED}</li>
+     *   <li>{@code InstanceStatus.REJECTED} → 保留 SUBMITTED + audit note (enum 暂无 REJECTED 值)</li>
+     *   <li>{@code InstanceStatus.RUNNING} → {@code PurchaseOrderStatus.WORKFLOW_RUNNING} + notify next-stage approvers</li>
+     *   <li>{@code CANCELLED / TIMEOUT} → 回 SUBMITTED 等待人工 retry</li>
+     * </ul>
+     *
+     * <p>TODO (Phase 2 / Sprint 4): 增加 {@code fromNodeId} 请求参数, 允许 controller 精确指定
+     * parallel 场景下当前审批的具体 active node id. B.4 当前 derive from {@code currentNodeIds[0]}.
+     */
     @Override
     @Transactional
     @Loggable(module = "PURCHASE_ORDER", action = "APPROVE", entityType = "PurchaseOrder",
               entityIdParam = "orderId")
     public PurchaseOrder approveOrder(String factoryId, String orderId, Long approvedBy) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
-        if (order.getStatus() != PurchaseOrderStatus.SUBMITTED) {
-            throw new BusinessException(409, "只有已提交状态的订单可以审批")
+        // 兼容 WORKFLOW_RUNNING — 多步审批中, 同一审批人继续推进的语义合理.
+        if (order.getStatus() != PurchaseOrderStatus.SUBMITTED
+                && order.getStatus() != PurchaseOrderStatus.WORKFLOW_RUNNING) {
+            throw new BusinessException(409, "只有已提交或审批中状态的订单可以审批")
                     .withHint("请刷新订单列表查看最新状态");
         }
 
+        // Phase 1 B.6 — workflow engine 不可用直接走 legacy path
+        if (workflowEngine == null) {
+            return legacyApproveOrder(factoryId, orderId, approvedBy, order);
+        }
+
+        // Build context for workflow evaluation (SpEL 在 edges 上读 #context.xxx)
+        Map<String, Object> context = new HashMap<>();
+        context.put("amount", order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO);
+        context.put("totalAmount", order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO);
+        context.put("orderId", order.getId());
+        context.put("supplierId", order.getSupplierId() != null ? order.getSupplierId() : "");
+        context.put("priceVarianceItemCount", countPriceAlertItems(factoryId, order));
+        context.put("decision", "APPROVE");
+
+        // 是否已有 RUNNING workflow (resume) 还是首次启动
+        Optional<ApprovalWorkflowInstance> existing = workflowEngine.getCurrentInstance(
+                factoryId, "PURCHASE_ORDER", order.getId());
+
+        ApprovalWorkflowInstance instance;
+        if (existing.isPresent() && existing.get().getStatus() == InstanceStatus.RUNNING) {
+            // Resume — transition the current node
+            instance = workflowEngine.transitionNode(
+                    existing.get().getId(), approvedBy, "factory_super_admin",
+                    HistoryAction.APPROVE, "采购订单审批");
+        } else {
+            // Start new workflow — factory 无 active workflow 时 fallback legacy
+            try {
+                instance = workflowEngine.startWorkflow(
+                        factoryId, "PURCHASE_ORDER", order.getId(), context, approvedBy);
+            } catch (IllegalArgumentException noWorkflowConfigured) {
+                log.info("No active PURCHASE_ORDER_APPROVAL workflow for factory={}; falling back to legacy ({})",
+                        factoryId, noWorkflowConfigured.getMessage());
+                return legacyApproveOrder(factoryId, orderId, approvedBy, order);
+            }
+        }
+
+        // Translate workflow instance status to PO status
+        order.setApprovedBy(approvedBy);
+        order.setApprovedAt(LocalDateTime.now());
+        order.setStatus(translateInstanceStatus(instance.getStatus()));
+
+        if (instance.getStatus() == InstanceStatus.RUNNING) {
+            // 通知下一阶段 approvers (审批人角色读自 active approval node 的 approverRoles)
+            notifyNextStage(factoryId, order, instance);
+            log.info("采购订单 → 工作流审批中: orderId={}, instanceId={}, currentNodes={}",
+                    orderId, instance.getId(), instance.getCurrentNodeIds());
+        } else {
+            log.info("采购订单 → 工作流终态: orderId={}, instanceId={}, instanceStatus={}, poStatus={}",
+                    orderId, instance.getId(), instance.getStatus(), order.getStatus());
+        }
+
+        return purchaseOrderRepository.save(order);
+    }
+
+    /**
+     * Phase 1 B.6 legacy fallback — workflow engine 不可用或 factory 无 active workflow 时调用.
+     *
+     * <p>保留 Sprint2-J P-FIN-1 的 evaluateApprovalTrigger 路径: 总额 / 三价偏差触发
+     * PENDING_FINANCE_REVIEW. 这是 PR #859 临时方案, 等 Phase 1+2 全部 factory 都迁
+     * 到 Canvas workflow 后可删除.
+     */
+    private PurchaseOrder legacyApproveOrder(String factoryId, String orderId, Long approvedBy, PurchaseOrder order) {
         // Sprint2-J P-FIN-1: 评估审核规则 → 是否需要财务复核
         // 触发条件 (任一): (a) 任一行三价 priceAlert=true (偏差 > 阈值)
         //                  (b) 订单 totalAmount > rule.amountThreshold
@@ -349,11 +458,11 @@ public class PurchaseServiceImpl implements PurchaseService {
             // 业务语义: 运营审批已 implicit 通过 (approvedBy/At 已记录),
             // 但财务复核未通过前不允许 receive/PO 履行 → 状态机锁定.
             order.setStatus(PurchaseOrderStatus.PENDING_FINANCE_REVIEW);
-            log.info("审批采购订单 → 触发财务复核: orderId={}, approvedBy={}, 原因={}",
+            log.info("[legacy] 审批采购订单 → 触发财务复核: orderId={}, approvedBy={}, 原因={}",
                     orderId, approvedBy, eval.reason());
         } else {
             order.setStatus(PurchaseOrderStatus.APPROVED);
-            log.info("审批采购订单: orderId={}, approvedBy={}", orderId, approvedBy);
+            log.info("[legacy] 审批采购订单: orderId={}, approvedBy={}", orderId, approvedBy);
         }
 
         PurchaseOrder saved = purchaseOrderRepository.save(order);
@@ -377,6 +486,104 @@ public class PurchaseServiceImpl implements PurchaseService {
         }
 
         return saved;
+    }
+
+    /**
+     * Phase 1 B.6 — workflow instance status → PO status 映射.
+     *
+     * <p>{@code REJECTED} 暂保留 SUBMITTED (enum 尚未新增 REJECTED 终态), 上层日志已写入.
+     * Phase 2 可考虑加 PurchaseOrderStatus.REJECTED.
+     */
+    private PurchaseOrderStatus translateInstanceStatus(InstanceStatus status) {
+        if (status == null) return PurchaseOrderStatus.SUBMITTED;
+        return switch (status) {
+            case APPROVED -> PurchaseOrderStatus.APPROVED;
+            case RUNNING -> PurchaseOrderStatus.WORKFLOW_RUNNING;
+            // REJECTED — 没有专门枚举值, 暂回退 SUBMITTED 让用户改完重新提交.
+            // CANCELLED / TIMEOUT — 边缘情况, 实例已结束, PO 回 SUBMITTED 可重新审批.
+            case REJECTED, CANCELLED, TIMEOUT -> PurchaseOrderStatus.SUBMITTED;
+        };
+    }
+
+    /**
+     * Phase 1 B.6 — 统计触发三价标红的行数, 供 workflow context 使用.
+     *
+     * <p>逻辑同 {@link #evaluateApprovalTrigger} 但只返回计数, 不评估金额阈值. 失败时返 0
+     * (fail-open, 不阻塞主审批).
+     */
+    private int countPriceAlertItems(String factoryId, PurchaseOrder order) {
+        try {
+            PurchaseOrderApprovalRule rule = resolveActiveRule(factoryId);
+            BigDecimal threshold = rule != null && rule.getPriceVarianceThreshold() != null
+                    ? rule.getPriceVarianceThreshold()
+                    : PRICE_ALERT_THRESHOLD;
+            List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+            int count = 0;
+            for (PurchaseOrderItem item : items) {
+                if (item.getMaterialTypeId() == null || item.getUnitPrice() == null) continue;
+                MaterialPriceComparisonDTO dto = buildPriceComparison(factoryId,
+                        item.getMaterialTypeId(), item.getMaterialName(),
+                        item.getUnitPrice(), threshold);
+                if (Boolean.TRUE.equals(dto.getPriceAlert())) {
+                    count++;
+                }
+            }
+            return count;
+        } catch (Exception e) {
+            log.warn("三价计数失败 (fail-open 返 0): orderId={}, error={}", order.getId(), e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Phase 1 B.6 — 通知下一阶段 active approval 节点对应的所有 approverRoles.
+     *
+     * <p>仅 type=approval 的 active 节点会发通知. notify/condition/parallel/join 自动节点
+     * 跳过 (workflow 引擎已 autoAdvance).
+     */
+    @SuppressWarnings("unchecked")
+    private void notifyNextStage(String factoryId, PurchaseOrder order, ApprovalWorkflowInstance instance) {
+        if (notificationService == null || approvalWorkflowService == null) {
+            return;
+        }
+        if (instance.getCurrentNodeIds() == null || instance.getCurrentNodeIds().isEmpty()) {
+            return;
+        }
+        try {
+            ApprovalWorkflow workflow = approvalWorkflowService
+                    .getById(factoryId, instance.getWorkflowId()).orElse(null);
+            if (workflow == null) return;
+            List<ApprovalWorkflowNode> nodes = approvalWorkflowService
+                    .deserializeNodes(workflow.getNodesJson());
+            Map<String, ApprovalWorkflowNode> byId = new HashMap<>();
+            for (ApprovalWorkflowNode n : nodes) {
+                byId.put(n.getId(), n);
+            }
+            for (String nodeId : instance.getCurrentNodeIds()) {
+                ApprovalWorkflowNode node = byId.get(nodeId);
+                if (node == null || !"approval".equals(node.getType())) continue;
+                Map<String, Object> config = node.getConfig() == null ? Map.of() : node.getConfig();
+                Object roles = config.get("approverRoles");
+                if (!(roles instanceof List<?> roleList)) continue;
+                for (Object roleRaw : roleList) {
+                    String role = String.valueOf(roleRaw);
+                    if (role.isBlank()) continue;
+                    try {
+                        notificationService.notifyRole(
+                                factoryId, role, "采购单待审",
+                                String.format("采购单 %s 待%s审批 (节点: %s, 总额 ¥%s)",
+                                        order.getOrderNumber(), role, node.getLabel(),
+                                        order.getTotalAmount() == null ? "-" : order.getTotalAmount()));
+                    } catch (Exception inner) {
+                        log.warn("通知 role={} 失败 (主流程不受影响): orderId={}, error={}",
+                                role, order.getId(), inner.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("notifyNextStage 失败 (主流程不受影响): orderId={}, instanceId={}, error={}",
+                    order.getId(), instance.getId(), e.getMessage());
+        }
     }
 
     /**

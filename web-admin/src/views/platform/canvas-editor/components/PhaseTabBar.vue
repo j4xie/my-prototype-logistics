@@ -27,7 +27,8 @@ import { useCanvasEditor } from '../composables/useCanvasEditor'
 const { activeTab } = useCanvasEditor()
 
 const phaseA = [
-  { key: 'workflow', icon: '🔄', label: '流程设计' },
+  { key: 'workflow', icon: '🔄', label: '状态机' },
+  { key: 'approval', icon: '✅', label: '审批工作流' },
   { key: 'triggers', icon: '🔗', label: '触发链' },
   { key: 'validation', icon: '📐', label: '校验规则' },
 ]

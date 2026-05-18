@@ -347,6 +347,49 @@ export function cancelSimulation(ctx: SimExecutionContext, reason: string): SimE
   return ctx
 }
 
+// ==================== DAG Path Highlighting (Phase 1 B.5 Task 4) ====================
+
+/**
+ * Compute the set of node IDs that have been touched during execution.
+ * Includes:
+ *   - All nodes that recorded any history (approvals, joins, end)
+ *   - All currently active nodes (waiting for human input)
+ * Used by index.vue to inject `sim-traversed` CSS class onto VueFlow nodes.
+ */
+export function computeTraversedNodeIds(ctx: SimExecutionContext | null): string[] {
+  if (!ctx) return []
+  const set = new Set<string>()
+  for (const nodeId of ctx.nodeHistory.keys()) set.add(nodeId)
+  for (const nodeId of ctx.activeNodeIds) set.add(nodeId)
+  // Include start node (advance() starts there but doesn't record history for it)
+  if (ctx.startNodeId) set.add(ctx.startNodeId)
+  return [...set]
+}
+
+/**
+ * Compute the set of edge IDs traversed during execution.
+ * An edge is "traversed" if BOTH its source and target are in
+ * computeTraversedNodeIds. This is a slight over-approximation
+ * (an edge to a node that's reached via a different path would
+ * still be marked) but acceptable for visual demo purposes —
+ * for a clean DAG without diamonds it's exact.
+ *
+ * F006 demo path: ¥50K PO → start → condition (>10K?) → finance → end
+ * highlights start→condition, condition→finance, finance→end edges in green.
+ */
+export function computeTraversedEdgeIds(
+  ctx: SimExecutionContext | null,
+  edges: ApprovalWorkflowEdge[],
+): string[] {
+  if (!ctx) return []
+  const touched = new Set(computeTraversedNodeIds(ctx))
+  const out: string[] = []
+  for (const e of edges) {
+    if (touched.has(e.source) && touched.has(e.target)) out.push(e.id)
+  }
+  return out
+}
+
 /**
  * Convenience for testing: drive a workflow to completion by a scripted
  * sequence of decisions, mirroring the backend's submit() loop.

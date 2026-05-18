@@ -1224,16 +1224,20 @@ const businessRoutes: RouteRecordRaw[] = [
       },
       // Sprint 3 Track-I (C-APPROVAL-EDITOR-1) — graph-native 审批工作流编辑器.
       // Backend: ApprovalWorkflowController + ApprovalWorkflowExecutor (4 modes).
-      // Day 5 scaffold (skeleton); Day 6-9 fills nodes / property panel / simulator.
+      //
+      // Phase 1 Canvas-Workflow (2026-05-18): UI 入口迁移到 Canvas Editor 的
+      // "审批工作流" Tab. 此独立路由仍保留 (供旧书签访问 / 全屏调试), 但
+      // showInMenu:false 不再出现在侧边菜单 — 用户通过 /platform/canvas-editor 进入.
+      // Sprint 4+ 完全移除独立路由前请确认: 无对此 path 的硬编码引用.
       {
         path: 'approval-workflow-editor',
         name: 'ApprovalWorkflowEditor',
         component: () => import('@/views/platform/approval-workflow-editor/index.vue'),
         meta: {
-          title: '审批工作流编辑器',
+          title: '审批工作流编辑器 (已迁移到 Canvas)',
           icon: 'Connection',
           requiresAuth: true,
-          showInMenu: true,
+          showInMenu: false,
           roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
         },
       },

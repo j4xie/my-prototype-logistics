@@ -1,10 +1,10 @@
 <template>
-  <div class="approval-workflow-editor">
-    <!-- Header -->
+  <div class="approval-workflow-editor" :class="{ embedded: props.embedded }">
+    <!-- Toolbar (h2 title 隐藏当 Canvas 内嵌入 — Canvas 已有 header; 但工具栏 buttons 保留) -->
     <el-card shadow="never" class="header-card">
       <div class="header-row">
         <div class="header-left">
-          <h2>审批工作流编辑器</h2>
+          <h2 v-if="!props.embedded">审批工作流编辑器</h2>
           <el-tag v-if="currentWorkflow" :type="publishStatusType" size="small">
             {{ publishStatusLabel }} v{{ currentWorkflow.version }}
           </el-tag>
@@ -141,6 +141,7 @@
       :nodes="simulatorInput.nodes"
       :edges="simulatorInput.edges"
       :start-node-id="simulatorInput.startNodeId"
+      @traversal-update="onSimulatorTraversalUpdate"
     />
 
     <!-- Sprint 4 Wave 1 (C-WF-RULE-1): WorkflowRule 管理 drawer -->
@@ -197,6 +198,12 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 
+// ==================== Props ====================
+
+// embedded=true: 当此组件被 canvas-editor 作为 Tab 内嵌时, 隐藏 h2 title 并
+// 调整高度以适应 canvas-editor 的 tab 容器 (Canvas 已有自己的 header + breadcrumb).
+const props = defineProps<{ embedded?: boolean }>()
+
 // ==================== State ====================
 
 const authStore = useAuthStore()
@@ -215,6 +222,42 @@ const selectedWorkflowId = ref<string | undefined>(undefined)
 // Simulator modal state
 const simulatorOpen = ref(false)
 const simulatorInput = ref<SimulatorInput | null>(null)
+
+// Phase 1 B.5 Task 4: DAG path highlighting state
+// (populated via @traversal-update from <WorkflowSimulator>)
+const simTraversedNodeIds = ref<string[]>([])
+const simTraversedEdgeIds = ref<string[]>([])
+const simActiveNodeIds = ref<string[]>([])
+
+function onSimulatorTraversalUpdate(payload: {
+  traversedNodeIds: string[]
+  traversedEdgeIds: string[]
+  activeNodeIds: string[]
+}) {
+  simTraversedNodeIds.value = payload.traversedNodeIds
+  simTraversedEdgeIds.value = payload.traversedEdgeIds
+  simActiveNodeIds.value = payload.activeNodeIds
+  // Re-apply class injection by updating nodes/edges arrays
+  syncSimClasses()
+}
+
+function syncSimClasses() {
+  const activeSet = new Set(simActiveNodeIds.value)
+  const traversedNodeSet = new Set(simTraversedNodeIds.value)
+  const traversedEdgeSet = new Set(simTraversedEdgeIds.value)
+  nodes.value = nodes.value.map(n => ({
+    ...n,
+    class: activeSet.has(n.id)
+      ? 'sim-active'
+      : traversedNodeSet.has(n.id)
+        ? 'sim-traversed'
+        : '',
+  }))
+  edges.value = edges.value.map(e => ({
+    ...e,
+    class: traversedEdgeSet.has(e.id) ? 'sim-traversed' : '',
+  }))
+}
 
 interface SelectedElement {
   kind: 'node' | 'edge'
@@ -283,7 +326,8 @@ function defaultConfigFor(type: NodeType): Record<string, unknown> {
     case 'join':
       return { mode: 'ALL' }
     case 'notify':
-      return { notifyRoles: [] }
+      // Phase 1 B.5 Task 3: default channels empty (warns user to pick one)
+      return { notifyRoles: [], channels: [] }
     case 'end':
       return { outcome: 'APPROVED' }
     default:
@@ -320,6 +364,8 @@ const decisionTypeOptions: Array<{ value: DecisionType; label: string }> = [
   { value: 'MATERIAL_DISPOSAL',       label: 'MATERIAL_DISPOSAL 物料处置' },
   { value: 'PRODUCTION_PLAN_CHANGE',  label: 'PRODUCTION_PLAN_CHANGE 生产计划变更' },
   { value: 'EQUIPMENT_STATUS_CHANGE', label: 'EQUIPMENT_STATUS_CHANGE 设备状态' },
+  { value: 'PURCHASE_ORDER_APPROVAL', label: 'PURCHASE_ORDER_APPROVAL 采购订单审批' },
+  { value: 'SALES_ORDER_APPROVAL',    label: 'SALES_ORDER_APPROVAL 销售订单审批' },
   { value: 'CUSTOM',                  label: 'CUSTOM 自定义' },
 ]
 
@@ -713,6 +759,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
 }
+/* 当 canvas-editor 内嵌时, 父容器 (.canvas-content) 已提供 flex:1 + 滚动 */
+.approval-workflow-editor.embedded {
+  height: 100%;
+}
 .header-card { margin-bottom: 8px; flex-shrink: 0; }
 .header-row { display: flex; justify-content: space-between; align-items: center; }
 .header-left { display: flex; align-items: center; gap: 12px; }
@@ -755,4 +805,26 @@ onMounted(async () => {
 .properties-panel h4 { margin: 0 0 8px; font-size: 14px; color: #303133; }
 .placeholder p { margin: 4px 0; font-size: 13px; }
 .placeholder .hint { color: #909399; font-family: monospace; font-size: 11px; }
+
+/* Phase 1 B.5 Task 4: Simulator DAG path highlighting */
+:deep(.vue-flow__node.sim-traversed) {
+  box-shadow: 0 0 0 2px #67c23a !important; /* green = completed */
+  filter: drop-shadow(0 0 4px rgba(103, 194, 58, 0.4));
+}
+:deep(.vue-flow__node.sim-active) {
+  box-shadow: 0 0 0 2px #e6a23c !important; /* yellow = current (waiting) */
+  animation: sim-pulse 1.5s infinite;
+}
+:deep(.vue-flow__edge.sim-traversed .vue-flow__edge-path) {
+  stroke: #67c23a !important;
+  stroke-width: 3px !important;
+}
+:deep(.vue-flow__edge.sim-traversed .vue-flow__edge-text) {
+  fill: #67c23a !important;
+  font-weight: 600 !important;
+}
+@keyframes sim-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #e6a23c; }
+  50% { box-shadow: 0 0 0 6px rgba(230, 162, 60, 0.4); }
+}
 </style>

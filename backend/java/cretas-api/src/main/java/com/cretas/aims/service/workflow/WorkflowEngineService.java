@@ -1,0 +1,118 @@
+package com.cretas.aims.service.workflow;
+
+import com.cretas.aims.entity.workflow.ApprovalHistory;
+import com.cretas.aims.entity.workflow.ApprovalHistory.HistoryAction;
+import com.cretas.aims.entity.workflow.ApprovalWorkflowInstance;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Workflow engine — Phase 1 B.3 持久化层入口.
+ *
+ * <p>替换 Sprint 3 Track-I {@link ApprovalWorkflowExecutor} 的内存实现:
+ * <ul>
+ *   <li>实例持久化 — Redis hot cache + PG shadow store</li>
+ *   <li>状态机推进 — start → condition → ... → approval → end</li>
+ *   <li>SpEL 条件评估 — 走 {@link SandboxedSpelEvaluator} 沙箱</li>
+ *   <li>启动恢复 — 重启时拉 RUNNING 行重建 Redis</li>
+ * </ul>
+ *
+ * <p><b>当前实现状态 (B.3 skeleton)</b>:
+ * <ul>
+ *   <li>{@code startWorkflow / evaluateCondition / rebuildRedisFromPg / getCurrentInstance / getHistory} 已实现</li>
+ *   <li>{@code transitionNode / cancel} → B.4 完成 DAG advance 逻辑</li>
+ * </ul>
+ *
+ * @since 2026-05-18 (Phase 1 B.3)
+ */
+public interface WorkflowEngineService {
+
+    /**
+     * 启动 workflow 实例.
+     *
+     * <p>流程:
+     * <ol>
+     *   <li>moduleCode → DecisionType 映射</li>
+     *   <li>{@code ApprovalWorkflowService.getActiveByDecisionType} 取 active workflow</li>
+     *   <li>创建 instance, 写入 PG + Redis (key {@code aw:instance:{id}})</li>
+     *   <li>从 startNode 走到第一个非自动节点 (approval 或 end)</li>
+     *   <li>写 {@code START} history record</li>
+     * </ol>
+     *
+     * @param factoryId 工厂 id
+     * @param moduleCode 业务模块 (PURCHASE_ORDER / SALES_ORDER / ...)
+     * @param businessEntityId 业务实体 id (PO id / SO id)
+     * @param contextJson 业务上下文 — SpEL 评估时绑定为 {@code #context.xxx}
+     * @param initiatorUserId 发起人, 系统触发时可 NULL
+     * @return 创建的实例 (status=RUNNING, 已 walk 到第一个 human/end 节点)
+     * @throws IllegalArgumentException moduleCode 未映射, 或无 active workflow
+     */
+    ApprovalWorkflowInstance startWorkflow(String factoryId,
+                                           String moduleCode,
+                                           String businessEntityId,
+                                           Map<String, Object> contextJson,
+                                           Long initiatorUserId);
+
+    /**
+     * 推进一个节点 (用户审批 / 自动转换 / 超时).
+     *
+     * <p><b>B.4 实现</b> — DAG advance 逻辑: 找当前 active 节点 outgoing edges,
+     * 评估 condition 走第一个 true 的, 重复直到 approval/end. parallel/join
+     * 处理多分支.
+     *
+     * @param instanceId workflow 实例 id
+     * @param actorId 操作人 (AUTO_TRANSITION / TIMEOUT 时 NULL)
+     * @param actorRole 操作人 role (同上)
+     * @param action APPROVE / REJECT / SKIP / DELEGATE / TIMEOUT / AUTO_TRANSITION
+     * @param notes 自由文本备注
+     * @return 推进后的实例 (可能仍 RUNNING, 或已到终态)
+     */
+    ApprovalWorkflowInstance transitionNode(String instanceId,
+                                            Long actorId,
+                                            String actorRole,
+                                            HistoryAction action,
+                                            String notes);
+
+    /**
+     * 业务实体查实例 — PurchaseService.findInstanceByPO 用 (B.6).
+     *
+     * <p>同一 (factoryId, moduleCode, businessEntityId) 理论上至多 1 active.
+     */
+    Optional<ApprovalWorkflowInstance> getCurrentInstance(String factoryId,
+                                                          String moduleCode,
+                                                          String businessEntityId);
+
+    /**
+     * 时间线 UI — 实例完整历史按时间升序.
+     */
+    List<ApprovalHistory> getHistory(String factoryId, String instanceId);
+
+    /**
+     * SpEL 条件评估 (沙箱化, 经 {@link SandboxedSpelEvaluator}).
+     *
+     * <p>表达式形如 {@code #context.amount > 30000}, {@code #context.department == 'finance'}.
+     *
+     * @param spelExpression SpEL 字符串
+     * @param context 业务上下文 map, 绑定为 {@code #context}
+     * @return true 当且仅当结果是 {@code Boolean.TRUE}
+     */
+    boolean evaluateCondition(String spelExpression, Map<String, Object> context);
+
+    /**
+     * 取消 workflow 实例 — 业务方主动 cancel.
+     *
+     * <p><b>B.4 实现</b> — 设 status=CANCELLED, completedAt=now, 写 CANCEL history.
+     */
+    ApprovalWorkflowInstance cancel(String instanceId, Long cancellerUserId, String reason);
+
+    /**
+     * 启动 hook — 从 PG 重建 Redis state.
+     *
+     * <p>实现注解 {@code @EventListener(ApplicationReadyEvent.class)}, 应用启动后
+     * 扫所有 factory 的 RUNNING 实例 HSET 进 Redis (key {@code aw:instance:{id}}).
+     * Redis fail-open: 重建失败仅 log warning, PG 仍是 source of truth.
+     */
+    void rebuildRedisFromPg();
+}
