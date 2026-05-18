@@ -81,6 +81,11 @@ jobs:
           # 4 minutes after wait-for-health timeout.
           psql -h localhost -U cretas_user -d cretas_db   -c "CREATE EXTENSION IF NOT EXISTS vector;"
           psql -h localhost -U cretas_user -d smartbi_db  -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Pre-create shedlock table — ShedLock library uses this but it's not a JPA entity,
+          # so Hibernate ddl-auto=update won't create it. Normally Flyway migration
+          # V20260415_01__shedlock_table.sql handles this, but SPRING_FLYWAY_ENABLED=false
+          # (see env block above) skips Flyway in CI. Mirrors the migration's schema exactly.
+          psql -h localhost -U cretas_user -d cretas_db -c "CREATE TABLE IF NOT EXISTS shedlock (name VARCHAR(128) NOT NULL, lock_until TIMESTAMP NOT NULL, locked_at TIMESTAMP NOT NULL, locked_by VARCHAR(255) NOT NULL, PRIMARY KEY (name));"
 
       # ── Toolchain ────────────────────────────────────────────────────────────
       - uses: actions/setup-java@v4
