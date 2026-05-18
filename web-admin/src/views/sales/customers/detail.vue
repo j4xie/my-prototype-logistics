@@ -36,6 +36,7 @@
             :is="t.component"
             :customer-id="customerId"
             :customer="customer"
+            @changed="refreshCustomer"
           />
           <PlaceholderTab
             v-else
@@ -89,7 +90,8 @@ const assignedSalesUserName = ref<string>('');
 // 8 defer + 1 integration (priceMemory) have R5 next-action to tracking/quotes/returns.
 const TAB_DEFS: TabDef[] = [
   // 1 — real
-  { key: 'tracking', label: '跟踪记录', component: undefined /* Phase D1 */ },
+  { key: 'tracking', label: '跟踪记录',
+    component: defineAsyncComponent(() => import('./detail/tabs/TrackingTab.vue')) },
   // 2-6 — defer (R5 → tracking)
   { key: 'wechat', label: '微信记录',
     status: '暂未对接企微 API', workaround: '当前请用「跟踪记录」tab 手工补录',
@@ -107,10 +109,14 @@ const TAB_DEFS: TabDef[] = [
     status: 'Sprint 5+ 上线', workaround: '当前请用「跟踪记录」tab 手工补录',
     actionText: '去跟踪记录', actionTabKey: 'tracking' },
   // 7-10 — real
-  { key: 'orders', label: '销售单', component: undefined /* Phase D2 */ },
-  { key: 'samples', label: '样品单', component: undefined /* Phase D3 */ },
-  { key: 'quotes', label: '报价单', component: undefined /* Phase D3 */ },
-  { key: 'products', label: '产品', component: undefined /* Phase D8 */ },
+  { key: 'orders', label: '销售单',
+    component: defineAsyncComponent(() => import('./detail/tabs/OrdersTab.vue')) },
+  { key: 'samples', label: '样品单',
+    component: defineAsyncComponent(() => import('./detail/tabs/SamplesTab.vue')) },
+  { key: 'quotes', label: '报价单',
+    component: defineAsyncComponent(() => import('./detail/tabs/QuotesTab.vue')) },
+  { key: 'products', label: '产品',
+    component: defineAsyncComponent(() => import('./detail/tabs/ProductsTab.vue')) },
   // 11-12 — defer (R5 → tracking, CRM modules pending)
   { key: 'campaign', label: '活动管理',
     status: 'Sprint 5+ (CRM 模块) 上线', workaround: '当前请在「跟踪记录」记录活动',
@@ -119,24 +125,29 @@ const TAB_DEFS: TabDef[] = [
     status: 'Sprint 5+ 上线', workaround: '当前请在「跟踪记录」记录商机',
     actionText: '去跟踪记录', actionTabKey: 'tracking' },
   // 13-14 — real
-  { key: 'itemStats', label: '商品统计', component: undefined /* Phase D8 */ },
-  { key: 'shipAddr', label: '收件地址', component: undefined /* Phase D9 */ },
+  { key: 'itemStats', label: '商品统计',
+    component: defineAsyncComponent(() => import('./detail/tabs/ItemStatsTab.vue')) },
+  { key: 'shipAddr', label: '收件地址',
+    component: defineAsyncComponent(() => import('./detail/tabs/ShippingAddressTab.vue')) },
   // 15-17 — real
-  { key: 'invoices', label: '开票', component: undefined /* Phase D4 */ },
-  { key: 'payments', label: '收款', component: undefined /* Phase D4 */ },
-  { key: 'returns', label: '退货', component: undefined /* Phase D5 */ },
+  { key: 'invoices', label: '开票',
+    component: defineAsyncComponent(() => import('./detail/tabs/InvoicesTab.vue')) },
+  { key: 'payments', label: '收款',
+    component: defineAsyncComponent(() => import('./detail/tabs/PaymentsTab.vue')) },
+  { key: 'returns', label: '退货',
+    component: defineAsyncComponent(() => import('./detail/tabs/ReturnsTab.vue')) },
   // 18 — defer (R5 → returns)
   { key: 'aftersales', label: '售后',
     status: 'Sprint 6+ 上线', workaround: '当前请用「退货」tab 处理售后退货',
     actionText: '去退货', actionTabKey: 'returns' },
-  // 19 — integration (Chat B S-PRICE-1 pending; ship 后 wire defineAsyncComponent)
+  // 19 — integration fallback (Chat B S-PRICE-1 pending; internal placeholder)
   { key: 'priceMemory', label: '价格记忆',
-    status: '功能即将上线 (Chat B 开发中)',
-    workaround: '当前请查「报价单」tab 看历史价',
-    actionText: '去报价单', actionTabKey: 'quotes' },
-  // 20-21 — real
-  { key: 'salesUserHist', label: '业务员变更', component: undefined /* Phase D7 */ },
-  { key: 'attachments', label: '文件附件', component: undefined /* Phase D5 */ },
+    component: defineAsyncComponent(() => import('./detail/tabs/PriceMemoryTab.vue')) },
+  // 20-21 — real (Phase D7, D5)
+  { key: 'salesUserHist', label: '业务员变更',
+    component: defineAsyncComponent(() => import('./detail/tabs/SalesUserHistoryTab.vue')) },
+  { key: 'attachments', label: '文件附件',
+    component: defineAsyncComponent(() => import('./detail/tabs/AttachmentsTab.vue')) },
 ];
 
 function onTabChange(key: string | number) {
@@ -154,6 +165,15 @@ watch(
     }
   },
 );
+
+async function refreshCustomer() {
+  if (!factoryId.value || !customerId.value) return;
+  try {
+    customer.value = await getCustomer(factoryId.value, customerId.value);
+  } catch (e) {
+    console.warn('[CustomerDetail] refresh failed:', e);
+  }
+}
 
 onMounted(async () => {
   if (!customerId.value) {
