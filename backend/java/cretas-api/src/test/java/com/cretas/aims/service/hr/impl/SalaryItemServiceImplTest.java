@@ -343,4 +343,90 @@ class SalaryItemServiceImplTest {
         assertEquals(0, legacy.get("netSalary").compareTo(withDed.get("netSalary")));
         assertEquals(0, legacy.get("taxableIncome").compareTo(withDed.get("taxableIncome")));
     }
+
+    // ---------- 年终奖 #833 follow-up ----------
+
+    @Test
+    @DisplayName("setAnnualBonus: DRAFT — 写入 bonus + tax, 不动 monthly tax 字段")
+    void setAnnualBonus_draft_writesAll() {
+        SalaryItem item = sample(SalaryStatus.DRAFT, new BigDecimal("8000"));
+        BigDecimal originalTax = item.getPersonalTax();
+        BigDecimal originalNet = item.getNetSalary();
+        when(repository.findByIdAndFactoryId("S-001", FACTORY)).thenReturn(Optional.of(item));
+        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        // bonus 36000 → monthlyEq 3000 → 第1档 3% → tax = 1080
+        SalaryItem r = service.setAnnualBonus(FACTORY, "S-001", new BigDecimal("36000"));
+        assertEquals(0, new BigDecimal("36000.00").compareTo(r.getAnnualBonus()));
+        assertEquals(0, new BigDecimal("1080.00").compareTo(r.getAnnualBonusTax()));
+        // monthly fields 不变 (与月度算法独立)
+        assertEquals(0, originalTax.compareTo(r.getPersonalTax()));
+        assertEquals(0, originalNet.compareTo(r.getNetSalary()));
+    }
+
+    @Test
+    @DisplayName("setAnnualBonus: CONFIRMED 仍可改 (PAID 才锁)")
+    void setAnnualBonus_confirmedAllowed() {
+        SalaryItem item = sample(SalaryStatus.CONFIRMED, new BigDecimal("8000"));
+        when(repository.findByIdAndFactoryId("S-001", FACTORY)).thenReturn(Optional.of(item));
+        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        SalaryItem r = service.setAnnualBonus(FACTORY, "S-001", new BigDecimal("12000"));
+        // bonus 12000 → monthlyEq 1000 → 第1档 → tax = 360
+        assertEquals(0, new BigDecimal("12000.00").compareTo(r.getAnnualBonus()));
+        assertEquals(0, new BigDecimal("360.00").compareTo(r.getAnnualBonusTax()));
+    }
+
+    @Test
+    @DisplayName("setAnnualBonus: PAID 拒改 (R4 防呆)")
+    void setAnnualBonus_paidRejected() {
+        SalaryItem item = sample(SalaryStatus.PAID, new BigDecimal("8000"));
+        when(repository.findByIdAndFactoryId("S-001", FACTORY)).thenReturn(Optional.of(item));
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                service.setAnnualBonus(FACTORY, "S-001", new BigDecimal("36000")));
+        assertTrue(ex.getMessage().contains("已发放"));
+    }
+
+    @Test
+    @DisplayName("setAnnualBonus: null bonus 清空 annualBonus + tax")
+    void setAnnualBonus_nullClears() {
+        SalaryItem item = sample(SalaryStatus.DRAFT, new BigDecimal("8000"));
+        item.setAnnualBonus(new BigDecimal("36000.00"));
+        item.setAnnualBonusTax(new BigDecimal("1080.00"));
+        when(repository.findByIdAndFactoryId("S-001", FACTORY)).thenReturn(Optional.of(item));
+        when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        SalaryItem r = service.setAnnualBonus(FACTORY, "S-001", null);
+        assertNull(r.getAnnualBonus());
+        assertNull(r.getAnnualBonusTax());
+    }
+
+    @Test
+    @DisplayName("setAnnualBonus: negative bonus → BusinessException")
+    void setAnnualBonus_negativeRejected() {
+        SalaryItem item = sample(SalaryStatus.DRAFT, new BigDecimal("8000"));
+        when(repository.findByIdAndFactoryId("S-001", FACTORY)).thenReturn(Optional.of(item));
+        assertThrows(BusinessException.class, () ->
+                service.setAnnualBonus(FACTORY, "S-001", new BigDecimal("-1")));
+    }
+
+    @Test
+    @DisplayName("previewAnnualBonusTax: 36000 返第1档 label + tax 1080")
+    void previewAnnualBonusTax_firstBracket() {
+        Map<String, Object> r = service.previewAnnualBonusTax(new BigDecimal("36000"));
+        assertEquals(0, new BigDecimal("36000.00").compareTo((BigDecimal) r.get("annualBonus")));
+        assertEquals(0, new BigDecimal("1080.00").compareTo((BigDecimal) r.get("annualBonusTax")));
+        assertEquals("3%", r.get("bracketRate"));
+        assertEquals("≤3000", r.get("bracketLabel"));
+        assertEquals(0, new BigDecimal("3000.00").compareTo((BigDecimal) r.get("monthlyEquivalent")));
+    }
+
+    @Test
+    @DisplayName("previewAnnualBonusTax: null → 全 0 + 第1档")
+    void previewAnnualBonusTax_nullSafe() {
+        Map<String, Object> r = service.previewAnnualBonusTax(null);
+        assertEquals(0, BigDecimal.ZERO.compareTo((BigDecimal) r.get("annualBonus")));
+        assertEquals(0, BigDecimal.ZERO.compareTo((BigDecimal) r.get("annualBonusTax")));
+        assertEquals("3%", r.get("bracketRate"));
+    }
 }

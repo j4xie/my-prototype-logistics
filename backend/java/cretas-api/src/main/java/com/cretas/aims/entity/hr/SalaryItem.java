@@ -97,6 +97,22 @@ public class SalaryItem extends BaseEntity {
     @Builder.Default
     private BigDecimal netSalary = BigDecimal.ZERO;
 
+    /**
+     * 年终奖金额 (¥). #833 follow-up — Flyway V20260606_24.
+     * Nullable: 大多数月份无年终奖, 设为 null 节省语义噪音.
+     * 计税独立于月度工资 (一次性年终奖政策, 按月度等价 bonusAmount/12 找税率档).
+     */
+    @Column(name = "annual_bonus", precision = 12, scale = 2)
+    private BigDecimal annualBonus;
+
+    /**
+     * 年终奖个税 (¥). #833 follow-up.
+     * Nullable: 仅在 annualBonus 设定后计算填写.
+     * 公式: tax = bonusAmount × bracket_rate − quick_deduction (China 一次性年终奖税法).
+     */
+    @Column(name = "annual_bonus_tax", precision = 12, scale = 2)
+    private BigDecimal annualBonusTax;
+
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     @Builder.Default

@@ -84,4 +84,26 @@ public interface SalaryItemService {
      * 返回 Map: totalBase / totalSocialEmployee / totalPersonalTax / totalNet / recordCount.
      */
     Map<String, BigDecimal> summarizeMonth(String factoryId, String yearMonth);
+
+    /**
+     * #833 follow-up: 设置/更新年终奖金额 + 按一次性年终奖税法计算个税写库.
+     *
+     * <p>R4 防呆: PAID 状态拒绝修改, DRAFT/CONFIRMED 可任意更新.
+     * <p>不影响月度个税 (personal_tax 不变).
+     *
+     * @param factoryId factory
+     * @param id        SalaryItem id
+     * @param bonus     年终奖金额 (≥0). null 视为清空 (annualBonus=null, tax=null).
+     * @return saved SalaryItem (含 annualBonus + annualBonusTax)
+     */
+    SalaryItem setAnnualBonus(String factoryId, String id, BigDecimal bonus);
+
+    /**
+     * #833 follow-up R1: preview 年终奖税额 (不写库).
+     * 用于 Vue dialog 输入 bonus 时实时显示 "税额 ¥X (税率 Y% bracket)".
+     *
+     * @param bonus 年终奖金额 (null/≤0 返 zero)
+     * @return Map: annualBonus / annualBonusTax / bracketRate / bracketLabel / monthlyEquivalent
+     */
+    Map<String, Object> previewAnnualBonusTax(BigDecimal bonus);
 }

@@ -98,6 +98,53 @@ public class SalaryItemController {
         ));
     }
 
+    /**
+     * #833 follow-up R1 防呆 preview: 给定 annualBonus 算 tax + bracket label, 不写库.
+     * 用于前端 dialog 输入年终奖时实时显示 "税额 ¥X (税率 Y% bracket Z)".
+     */
+    @PostMapping("/annual-bonus-preview")
+    @RequirePermission({"hr:read", "hr:read_write"})
+    public ResponseEntity<?> annualBonusPreview(@PathVariable String factoryId,
+                                                @RequestBody Map<String, Object> body) {
+        BigDecimal bonus = body.get("bonusAmount") == null
+                ? BigDecimal.ZERO
+                : new BigDecimal(body.get("bonusAmount").toString());
+        Map<String, Object> preview = service.previewAnnualBonusTax(bonus);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", preview,
+                "message", String.format("年终奖 ¥%s → 税额 ¥%s (税率 %s, 档位 %s)",
+                        bonus, preview.get("annualBonusTax"),
+                        preview.get("bracketRate"), preview.get("bracketLabel"))
+        ));
+    }
+
+    /**
+     * #833 follow-up: 设置/更新年终奖 (按一次性年终奖税法算 tax 写库).
+     * R2 防呆: response message 含 user+yearMonth+bonus+tax context.
+     * R4 防呆: PAID 状态拒改, DRAFT/CONFIRMED 可任意更新 (Service 抛 400).
+     *
+     * @param body { "bonusAmount": Number } 或 { "bonusAmount": null } (后者清空)
+     */
+    @PostMapping("/{id}/annual-bonus")
+    @RequirePermission({"hr:read_write"})
+    public ResponseEntity<?> setAnnualBonus(@PathVariable String factoryId,
+                                            @PathVariable String id,
+                                            @RequestBody Map<String, Object> body) {
+        Object raw = body.get("bonusAmount");
+        BigDecimal bonus = (raw == null) ? null : new BigDecimal(raw.toString());
+        SalaryItem saved = service.setAnnualBonus(factoryId, id, bonus);
+        String bonusStr = saved.getAnnualBonus() == null ? "已清空" : "¥" + saved.getAnnualBonus();
+        String taxStr = saved.getAnnualBonusTax() == null ? "—" : "¥" + saved.getAnnualBonusTax();
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", saved,
+                // R2 防呆: 含 user+yearMonth+bonus+tax context
+                "message", String.format("已设置年终奖 [用户 %d / %s / 年终奖 %s / 个税 %s]",
+                        saved.getUserId(), saved.getYearMonth(), bonusStr, taxStr)
+        ));
+    }
+
     @PostMapping("/{id}/recompute")
     @RequirePermission({"hr:read_write"})
     public ResponseEntity<?> recompute(@PathVariable String factoryId,

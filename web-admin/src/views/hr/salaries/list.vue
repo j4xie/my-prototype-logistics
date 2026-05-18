@@ -13,10 +13,13 @@ import {
   deleteSalary,
   previewSalaryCompute,
   getMonthlySummary,
+  previewAnnualBonusTax,
+  setAnnualBonus,
   type SalaryItem,
   type SalaryStatus,
   type SalaryComputePreview,
   type SalaryMonthlySummary,
+  type AnnualBonusPreview,
 } from '@/api/salary';
 import {
   previewDeductionForMonth,
@@ -313,6 +316,91 @@ async function handleDelete(row: SalaryItem) {
   }
 }
 
+// ============= #833 follow-up: 年终奖 dialog =============
+const bonusDialogVisible = ref(false);
+const bonusSubmitting = ref(false);
+const bonusEditingRow = ref<SalaryItem | null>(null);
+const bonusForm = ref<{ bonusAmount: number | null }>({ bonusAmount: 0 });
+const bonusPreview = ref<AnnualBonusPreview | null>(null);
+const bonusPreviewLoading = ref(false);
+
+// R4 防呆: 年终奖 dialog 仅 DRAFT/CONFIRMED 可开; PAID 锁
+function canEditAnnualBonus(row: SalaryItem): boolean {
+  return canWrite.value && row.status !== 'PAID';
+}
+
+function openAnnualBonusDialog(row: SalaryItem) {
+  if (!canEditAnnualBonus(row)) {
+    ElMessage.warning(`已发放工资单不可修改年终奖 [用户 ${row.userId} / ${row.yearMonth}]`);
+    return;
+  }
+  bonusEditingRow.value = row;
+  bonusForm.value = {
+    bonusAmount: row.annualBonus == null ? 0 : Number(row.annualBonus),
+  };
+  bonusPreview.value = null;
+  bonusDialogVisible.value = true;
+  // 立刻 trigger preview (initial value)
+  refreshBonusPreview();
+}
+
+// R1 防呆: bonus 输入变化 → 实时算 tax + bracket
+watch(() => bonusForm.value.bonusAmount, (val) => {
+  if (!bonusDialogVisible.value) return;
+  if (val == null || val < 0) {
+    bonusPreview.value = null;
+    return;
+  }
+  refreshBonusPreview();
+});
+
+async function refreshBonusPreview() {
+  if (!factoryId.value) return;
+  const amount = bonusForm.value.bonusAmount;
+  if (amount == null || amount < 0) {
+    bonusPreview.value = null;
+    return;
+  }
+  bonusPreviewLoading.value = true;
+  try {
+    const res = await previewAnnualBonusTax(factoryId.value, amount);
+    if (res.success && res.data) {
+      bonusPreview.value = res.data;
+    }
+  } catch (e) {
+    console.error('年终奖 preview 失败:', e);
+  } finally {
+    bonusPreviewLoading.value = false;
+  }
+}
+
+async function handleSubmitAnnualBonus() {
+  if (!factoryId.value || !bonusEditingRow.value) return;
+  const amount = bonusForm.value.bonusAmount;
+  if (amount != null && amount < 0) {
+    ElMessage.error('年终奖必须 ≥ 0');
+    return;
+  }
+  bonusSubmitting.value = true;
+  try {
+    const res = await setAnnualBonus(
+      factoryId.value,
+      bonusEditingRow.value.id,
+      amount === 0 ? null : amount  // 0 视为清空
+    );
+    if (res.success) {
+      ElMessage.success(res.message || '已设置年终奖');
+      bonusDialogVisible.value = false;
+      await loadList();
+    }
+  } catch (e) {
+    // 4位一体: axios interceptor 已 sticky display message
+    console.error('设置年终奖失败:', e);
+  } finally {
+    bonusSubmitting.value = false;
+  }
+}
+
 // #833 / #844 follow-up: 工资条 PDF 生成 (客户端 jsPDF + 专项扣除明细).
 // 同时拉取该 user+yearMonth ACTIVE 专项扣除明细 (#844 API);
 // previewDeductionForMonth 失败时 PDF 仍可生成,仅省略扣除明细。
@@ -454,6 +542,19 @@ async function handleExportPayslip(row: SalaryItem) {
           <el-table-column prop="personalTax" label="个税" width="100">
             <template #default="{ row }">¥{{ Number(row.personalTax).toFixed(2) }}</template>
           </el-table-column>
+          <!-- #833 follow-up: 年终奖 + 年终奖个税 (nullable) -->
+          <el-table-column prop="annualBonus" label="年终奖" width="110">
+            <template #default="{ row }">
+              <span v-if="row.annualBonus != null">¥{{ Number(row.annualBonus).toFixed(2) }}</span>
+              <span v-else style="color: #c0c4cc;">—</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="annualBonusTax" label="年终奖个税" width="110">
+            <template #default="{ row }">
+              <span v-if="row.annualBonusTax != null">¥{{ Number(row.annualBonusTax).toFixed(2) }}</span>
+              <span v-else style="color: #c0c4cc;">—</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="netSalary" label="实发" width="110">
             <template #default="{ row }">
               <strong>¥{{ Number(row.netSalary).toFixed(2) }}</strong>
@@ -484,6 +585,14 @@ async function handleExportPayslip(row: SalaryItem) {
                   标记发放
                 </el-button>
               </template>
+              <!-- #833 follow-up: 设置年终奖 — DRAFT/CONFIRMED 可改, PAID 锁 -->
+              <el-button
+                v-if="canEditAnnualBonus(row)"
+                size="small"
+                @click="openAnnualBonusDialog(row)"
+              >
+                {{ row.annualBonus != null ? '改年终奖' : '设年终奖' }}
+              </el-button>
               <!-- #833 / #844 follow-up: 工资条 PDF — 全状态可下载 (草稿亦可预览) -->
               <el-button
                 size="small"
@@ -602,6 +711,85 @@ async function handleExportPayslip(row: SalaryItem) {
           @click="handleSubmit"
         >
           {{ dialogMode === 'create' ? '保存草稿' : '保存修改' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- #833 follow-up: 年终奖编辑对话框 — R1 防呆 实时预览 tax + bracket -->
+    <el-dialog
+      v-model="bonusDialogVisible"
+      title="设置年终奖"
+      width="640px"
+    >
+      <div v-if="bonusEditingRow" style="margin-bottom: 12px; color: #606266; font-size: 13px;">
+        <strong>员工 {{ bonusEditingRow.userId }}</strong> / 月份
+        <strong>{{ bonusEditingRow.yearMonth }}</strong> / 实发
+        <strong>¥{{ Number(bonusEditingRow.netSalary).toFixed(2) }}</strong>
+      </div>
+      <el-form :model="bonusForm" label-width="100px">
+        <el-form-item label="年终奖 (¥)" required>
+          <el-input-number
+            v-model="bonusForm.bonusAmount"
+            :min="0"
+            :step="1000"
+            :precision="2"
+            style="width: 240px;"
+          />
+          <span style="margin-left: 12px; color: #909399; font-size: 12px;">
+            (留 0 = 该月无年终奖)
+          </span>
+        </el-form-item>
+
+        <!-- R1 防呆: 实时 tax + bracket preview -->
+        <el-alert
+          v-if="bonusPreview"
+          :type="bonusPreview.annualBonusTax > 0 ? 'warning' : 'info'"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 16px;"
+        >
+          <template #title>
+            <div style="font-weight: 600;">
+              税额预览: ¥{{ Number(bonusPreview.annualBonusTax).toFixed(2) }}
+              (税率 {{ bonusPreview.bracketRate }} / 档位 {{ bonusPreview.bracketLabel }})
+            </div>
+          </template>
+          <template #default>
+            <div style="font-size: 13px; line-height: 1.8;">
+              <div>
+                年终奖 ¥{{ Number(bonusPreview.annualBonus).toFixed(2) }}
+                ÷ 12 = 月度等价 ¥{{ Number(bonusPreview.monthlyEquivalent).toFixed(2) }}
+                → 档位 {{ bonusPreview.bracketLabel }}
+              </div>
+              <div>
+                税额 = ¥{{ Number(bonusPreview.annualBonus).toFixed(2) }}
+                × {{ bonusPreview.bracketRate }}
+                − ¥{{ Number(bonusPreview.quickDeduction).toFixed(2) }} (速算扣除)
+                = ¥{{ Number(bonusPreview.annualBonusTax).toFixed(2) }}
+              </div>
+              <div style="color: #909399; margin-top: 4px;">
+                按中国一次性年终奖税法 (独立于月度个税)
+              </div>
+            </div>
+          </template>
+        </el-alert>
+        <el-alert
+          v-else-if="bonusPreviewLoading"
+          type="info"
+          title="计算中..."
+          :closable="false"
+          style="margin-bottom: 16px;"
+        />
+      </el-form>
+
+      <template #footer>
+        <el-button @click="bonusDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :loading="bonusSubmitting"
+          @click="handleSubmitAnnualBonus"
+        >
+          保存
         </el-button>
       </template>
     </el-dialog>
