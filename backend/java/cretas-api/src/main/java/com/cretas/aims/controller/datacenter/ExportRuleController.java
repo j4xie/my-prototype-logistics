@@ -14,8 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.cretas.aims.config.RequireRole;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -38,7 +38,7 @@ public class ExportRuleController {
     // ───── Rule CRUD ─────
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Page<ExportRule>>> list(
             @PathVariable String factoryId,
             @RequestParam(required = false) String moduleCode,
@@ -51,7 +51,7 @@ public class ExportRuleController {
     }
 
     @GetMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ExportRule>> get(
             @PathVariable String factoryId,
             @PathVariable Long ruleId) {
@@ -59,7 +59,7 @@ public class ExportRuleController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ExportRule>> create(
             @PathVariable String factoryId,
             @RequestBody ExportRule rule) {
@@ -68,7 +68,7 @@ public class ExportRuleController {
     }
 
     @PutMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ExportRule>> update(
             @PathVariable String factoryId,
             @PathVariable Long ruleId,
@@ -78,7 +78,7 @@ public class ExportRuleController {
     }
 
     @DeleteMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable String factoryId,
             @PathVariable Long ruleId) {
@@ -94,7 +94,7 @@ public class ExportRuleController {
      * @param body {@code {"runtimeParams":{"startDate":"2026-01-01",...}}}
      */
     @PostMapping("/{ruleId}/run")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> run(
             @PathVariable String factoryId,
             @PathVariable Long ruleId,
@@ -110,7 +110,7 @@ public class ExportRuleController {
     // ───── Job tracking ─────
 
     @GetMapping("/jobs")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Page<ExportJob>>> listJobs(
             @PathVariable String factoryId,
             @RequestParam(required = false) String status,
@@ -122,7 +122,7 @@ public class ExportRuleController {
     }
 
     @GetMapping("/jobs/{jobId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ExportJob>> getJob(
             @PathVariable String factoryId,
             @PathVariable String jobId) {
@@ -133,7 +133,7 @@ public class ExportRuleController {
      * 下载已完成的 Job 文件. 仅 status=SUCCESS 且 filePath 非空时返文件流.
      */
     @GetMapping("/jobs/{jobId}/download")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<Resource> download(
             @PathVariable String factoryId,
             @PathVariable String jobId) {

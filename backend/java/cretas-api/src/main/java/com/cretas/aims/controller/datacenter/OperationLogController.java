@@ -9,8 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.cretas.aims.config.RequireRole;
 
 import java.time.LocalDateTime;
 
@@ -43,7 +43,7 @@ public class OperationLogController {
      * @param size       每页条数 (default 50, max 200)
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'AUDIT_VIEWER')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Page<OperationLog>>> list(
             @PathVariable String factoryId,
             @RequestParam(required = false) String module,
@@ -64,7 +64,7 @@ public class OperationLogController {
 
     /** 查看单条日志 (含 diff JSONB 详情). */
     @GetMapping("/{logId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'AUDIT_VIEWER')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<OperationLog>> get(
             @PathVariable String factoryId,
             @PathVariable Long logId) {
