@@ -26,6 +26,7 @@ import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.entity.inventory.PurchaseOrderApprovalRule;
 import com.cretas.aims.event.MaterialReceivedEvent;
+import com.cretas.aims.annotation.Loggable;
 import com.cretas.aims.service.MaterialBatchService;
 import com.cretas.aims.service.inventory.PurchaseService;
 import org.slf4j.Logger;
@@ -150,6 +151,8 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
+    @Loggable(module = "PURCHASE_ORDER", action = "CREATE", entityType = "PurchaseOrder",
+              summary = "'创建采购单 ' + #request.supplierName")
     public PurchaseOrder createPurchaseOrder(String factoryId, CreatePurchaseOrderRequest request, Long userId) {
         // Canvas V2: DB-driven validation
         if (validationRuleEvaluator != null) {
@@ -309,6 +312,8 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
+    @Loggable(module = "PURCHASE_ORDER", action = "SUBMIT", entityType = "PurchaseOrder",
+              entityIdParam = "orderId")
     public PurchaseOrder submitOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
@@ -322,6 +327,8 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
+    @Loggable(module = "PURCHASE_ORDER", action = "APPROVE", entityType = "PurchaseOrder",
+              entityIdParam = "orderId")
     public PurchaseOrder approveOrder(String factoryId, String orderId, Long approvedBy) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.SUBMITTED) {
@@ -484,6 +491,8 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
+    @Loggable(module = "PURCHASE_ORDER", action = "CANCEL", entityType = "PurchaseOrder",
+              entityIdParam = "orderId")
     public PurchaseOrder cancelOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         // R39 BUG-8 sister fix: was only blocking COMPLETED/CLOSED → FINANCE_APPROVED/PARTIAL_RECEIVED/CANCELLED
@@ -501,6 +510,8 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
+    @Loggable(module = "PURCHASE_ORDER", action = "UPDATE", entityType = "PurchaseOrder",
+              entityIdParam = "orderId")
     public PurchaseOrder updateDraftOrder(String factoryId, String orderId, UpdatePurchaseOrderRequest request) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
