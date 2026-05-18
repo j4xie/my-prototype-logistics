@@ -1,10 +1,10 @@
 <template>
-  <div class="approval-workflow-editor">
-    <!-- Header -->
+  <div class="approval-workflow-editor" :class="{ embedded: props.embedded }">
+    <!-- Toolbar (h2 title 隐藏当 Canvas 内嵌入 — Canvas 已有 header; 但工具栏 buttons 保留) -->
     <el-card shadow="never" class="header-card">
       <div class="header-row">
         <div class="header-left">
-          <h2>审批工作流编辑器</h2>
+          <h2 v-if="!props.embedded">审批工作流编辑器</h2>
           <el-tag v-if="currentWorkflow" :type="publishStatusType" size="small">
             {{ publishStatusLabel }} v{{ currentWorkflow.version }}
           </el-tag>
@@ -196,6 +196,12 @@ import {
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
+
+// ==================== Props ====================
+
+// embedded=true: 当此组件被 canvas-editor 作为 Tab 内嵌时, 隐藏 h2 title 并
+// 调整高度以适应 canvas-editor 的 tab 容器 (Canvas 已有自己的 header + breadcrumb).
+const props = defineProps<{ embedded?: boolean }>()
 
 // ==================== State ====================
 
@@ -714,6 +720,10 @@ onMounted(async () => {
   height: calc(100vh - 90px);
   display: flex;
   flex-direction: column;
+}
+/* 当 canvas-editor 内嵌时, 父容器 (.canvas-content) 已提供 flex:1 + 滚动 */
+.approval-workflow-editor.embedded {
+  height: 100%;
 }
 .header-card { margin-bottom: 8px; flex-shrink: 0; }
 .header-row { display: flex; justify-content: space-between; align-items: center; }

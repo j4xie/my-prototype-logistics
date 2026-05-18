@@ -37,6 +37,7 @@
         <div class="canvas-content">
           <!-- Flow tabs (Phase A) -->
           <WorkflowDesigner v-if="activeTab === 'workflow' && selectedModule" :factory-id="factoryId" :module-code="selectedModule" />
+          <ApprovalWorkflowEditor v-else-if="activeTab === 'approval'" :embedded="true" />
           <TriggerChainDesigner v-else-if="activeTab === 'triggers'" :factory-id="factoryId" />
           <ValidationRulePanel v-else-if="activeTab === 'validation'" :factory-id="factoryId" :module-code="selectedModule" />
 
@@ -104,6 +105,7 @@ import CanvasBreadcrumb from './components/CanvasBreadcrumb.vue'
 import StatusBar from './components/StatusBar.vue'
 import ModuleTree from './components/ModuleTree.vue'
 import WorkflowDesigner from './components/WorkflowDesigner.vue'
+import ApprovalWorkflowEditor from '@/views/platform/approval-workflow-editor/index.vue'
 import TriggerChainDesigner from './components/TriggerChainDesigner.vue'
 import ValidationRulePanel from './components/ValidationRulePanel.vue'
 import FieldConfigPanel from './components/FieldConfigPanel.vue'
