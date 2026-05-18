@@ -9,8 +9,8 @@ import com.cretas.aims.service.skill.SkillRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.cretas.aims.config.RequireRole;
 
 import java.util.List;
 import java.util.Map;
@@ -79,7 +79,7 @@ public class SkillManagementController {
      */
     @RequirePermission({"hr:read_write"})
     @PostMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN', 'PLATFORM_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     public ResponseEntity<Map<String, Object>> createSkill(@RequestBody Map<String, Object> body) {
         try {
             String name = (String) body.get("name");
@@ -121,7 +121,7 @@ public class SkillManagementController {
      * 启用/禁用 Skill (仅管理员)
      */
     @RequestMapping(value = "/{skillName}/active", method = {RequestMethod.PATCH, RequestMethod.PUT})
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN', 'PLATFORM_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     public ResponseEntity<Map<String, Object>> toggleSkill(
             @PathVariable String skillName,
             @RequestBody Map<String, Boolean> body) {
@@ -144,7 +144,7 @@ public class SkillManagementController {
      */
     @RequirePermission({"hr:read_write"})
     @DeleteMapping("/{skillName}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN', 'PLATFORM_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin", "platform_admin"})
     public ResponseEntity<Map<String, Object>> deleteSkill(@PathVariable String skillName) {
         Optional<SmartBiSkill> skillOpt = skillRepository.findByName(skillName);
         if (skillOpt.isEmpty()) {

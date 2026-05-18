@@ -9,8 +9,8 @@ import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.cretas.aims.config.RequireRole;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class UserMenuPermissionController {
 
     /** 列出该用户的所有 override */
     @GetMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<List<UserMenuPermission>>> list(
             @PathVariable String factoryId,
             @PathVariable String userId) {
@@ -46,7 +46,7 @@ public class UserMenuPermissionController {
 
     /** 计算用户的最终有效菜单集合 */
     @GetMapping("/effective")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Set<String>>> getEffective(
             @PathVariable String factoryId,
             @PathVariable String userId,
@@ -58,7 +58,7 @@ public class UserMenuPermissionController {
     /** 追加授权 */
     @RequirePermission({"system:read_write"})
     @PostMapping("/grant")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<UserMenuPermission>> grant(
             @PathVariable String factoryId,
             @PathVariable String userId,
@@ -76,7 +76,7 @@ public class UserMenuPermissionController {
     /** 撤销授权 */
     @RequirePermission({"system:read_write"})
     @PostMapping("/revoke")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<UserMenuPermission>> revoke(
             @PathVariable String factoryId,
             @PathVariable String userId,
@@ -94,7 +94,7 @@ public class UserMenuPermissionController {
     /** 清除 override, 回归 role 默认 */
     @RequirePermission({"system:read_write"})
     @DeleteMapping("/{menuCode}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Void>> clear(
             @PathVariable String factoryId,
             @PathVariable String userId,

@@ -15,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.cretas.aims.config.RequireRole;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -34,7 +34,7 @@ public class ProcessWorkReportingController {
 
     @GetMapping("/pending-approval")
     @Operation(summary = "待审核报工列表")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @RequireRole({"factory_super_admin", "permission_admin", "production_manager", "workshop_supervisor"})
     public ApiResponse<PageResponse<Map<String, Object>>> getPendingApprovals(
             @PathVariable String factoryId,
             @RequestParam(defaultValue = "1") Integer page,
@@ -46,7 +46,7 @@ public class ProcessWorkReportingController {
     @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/approve")
     @Operation(summary = "审批通过(幂等)")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @RequireRole({"factory_super_admin", "permission_admin", "production_manager", "workshop_supervisor"})
     public ApiResponse<Map<String, Object>> approve(
             @PathVariable String factoryId,
             @PathVariable Long id,
@@ -57,7 +57,7 @@ public class ProcessWorkReportingController {
     @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/reject")
     @Operation(summary = "审批拒绝")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @RequireRole({"factory_super_admin", "permission_admin", "production_manager", "workshop_supervisor"})
     public ApiResponse<Map<String, Object>> reject(
             @PathVariable String factoryId,
             @PathVariable Long id,
@@ -70,7 +70,7 @@ public class ProcessWorkReportingController {
     @RequirePermission({"production:read_write"})
     @PutMapping("/batch-approve")
     @Operation(summary = "批量审批(全部成功或全部回滚)")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @RequireRole({"factory_super_admin", "permission_admin", "production_manager", "workshop_supervisor"})
     public ApiResponse<Map<String, Object>> batchApprove(
             @PathVariable String factoryId,
             @RequestBody List<Long> reportIds,
@@ -129,7 +129,7 @@ public class ProcessWorkReportingController {
     @RequirePermission({"production:read_write"})
     @PostMapping("/{id}/reversal")
     @Operation(summary = "冲销(已审批记录的数量修正)")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @RequireRole({"factory_super_admin", "permission_admin", "production_manager", "workshop_supervisor"})
     public ApiResponse<Map<String, Object>> createReversal(
             @PathVariable String factoryId,
             @PathVariable Long id,
