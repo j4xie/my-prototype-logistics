@@ -14,6 +14,7 @@ import PendingRemindersWidget from './endpoint/PendingRemindersWidget.vue';
 import EquipmentStatusWidget from './endpoint/EquipmentStatusWidget.vue';
 import QualityRateWidget from './endpoint/QualityRateWidget.vue';
 import SchedulingAlertsWidget from './endpoint/SchedulingAlertsWidget.vue';
+import TopOvertimeEmployeesWidget from './endpoint/TopOvertimeEmployeesWidget.vue';
 
 const registrations: WidgetRegistration[] = [
   // ---------- Raw kinds (Sprint 4 Chat L) — external-config ----------
@@ -86,6 +87,14 @@ const registrations: WidgetRegistration[] = [
     kind: 'scheduling-alerts',
     defaultTitle: '排程告警',
     component: SchedulingAlertsWidget,
+    defaultConfig: () => ({ maxItems: 5 }),
+    defaultSize: { w: 4, h: 3 },
+  },
+  {
+    // #835 follow-up — HR Hours Aggregator widget (top OT employees)
+    kind: 'top-overtime-employees',
+    defaultTitle: '本月加班 Top 5',
+    component: TopOvertimeEmployeesWidget,
     defaultConfig: () => ({ maxItems: 5 }),
     defaultSize: { w: 4, h: 3 },
   },
