@@ -56,6 +56,22 @@ public interface SalesService {
 
     SalesOrder cancelOrder(String factoryId, String orderId);
 
+    /**
+     * 复制销售订单 — 基于现有订单创建新草稿 (#860 follow-up).
+     *
+     * <p>复制内容: 客户/订单日期(=今天)/要求交货日期/收货地址/折扣/备注/业务员/运费/extraFees/quoteId/
+     * defaultTaxRate/defaultInvoiceType/items (产品/数量/单位/单价/折扣率/税率/规格/箱数/备注/sourceWarehouseCode).
+     *
+     * <p>不复制 (重置或重新生成): id / orderNumber (重新生成) / status (DRAFT) / createdBy (current user)
+     * / confirmedAt / financeReview* / estimatedCost / estimatedProfit / actualShippedAmount
+     * / deliveredQuantity / lockedQty / reservedQty / invoiceStatus / invoicedAmount / settlementFlag
+     * / paidAmount / transportPlanStatus / deliveryReminderDate / contractFile* / vflag / markerColor.
+     *
+     * @throws com.cretas.aims.exception.ResourceNotFoundException 源订单不存在
+     * @throws com.cretas.aims.exception.BusinessException 403 跨工厂访问
+     */
+    SalesOrder copySalesOrder(String factoryId, String sourceOrderId, Long userId);
+
     // ==================== 发货/出库 ====================
 
     SalesDeliveryRecord createDeliveryRecord(String factoryId, CreateDeliveryRequest request, Long userId);

@@ -28,6 +28,7 @@ import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
+import { copySalesOrder } from '@/api/orderCopy';
 import type { TableRow } from '@/types/api';
 import { TableFooter } from '@/components/list';
 import { useListSummary } from '@/composables/useListSummary';
@@ -310,9 +311,29 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     case 'submit': case 'approve': handleAction(String(row.id), 'confirm'); break;
     case 'cancel': handleAction(String(row.id), 'cancel'); break;
     case 'print-pdf': void safePrint('sales-order', factoryId.value, String(row.id), { fileName: `销售订单_${row.orderNumber || row.id}` }); break;
-    case 'copy': ElMessage.info(`复制单据 ${row.orderNumber} (待接 API)`); break;
+    case 'copy': void handleCopyOrder(row); break;
     case 'convert-to-production': ElMessage.info('转生产任务 (待 Track E N31 集成)'); break;
     default: ElMessage.info(`Action: ${actionId}`);
+  }
+}
+
+// #860 follow-up (2026-05-18): 复制销售订单 → 新草稿. 后端复用客户/品项/价格,
+// 不复制审批/发货/收款状态. 错误由 axios interceptor sticky toast 显示.
+async function handleCopyOrder(row: TableRow): Promise<void> {
+  const orderNumber = String(row.orderNumber || row.id || '');
+  try {
+    await ElMessageBox.confirm(
+      `确认复制销售单 ${orderNumber} 为新草稿？复制内容包含客户、品项和价格，不复制审批/发货/收款状态。`,
+      '复制销售单',
+      { confirmButtonText: '复制', cancelButtonText: '取消', type: 'info' }
+    );
+  } catch {
+    return; // 用户取消
+  }
+  const res = await copySalesOrder(factoryId.value, String(row.id));
+  if (res?.success && res.data) {
+    ElMessage.success(`已复制为 ${res.data.orderNumber}`);
+    await loadData();
   }
 }
 function openAiForRow(row: TableRow) {

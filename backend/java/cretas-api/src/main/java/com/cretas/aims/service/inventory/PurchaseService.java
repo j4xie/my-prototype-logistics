@@ -52,6 +52,20 @@ public interface PurchaseService {
 
     PurchaseOrder updateDraftOrder(String factoryId, String orderId, UpdatePurchaseOrderRequest request);
 
+    /**
+     * 复制采购订单 — 基于现有订单创建新草稿 (#860 follow-up).
+     *
+     * <p>复制内容: 供应商/采购类型/预期到货日期/备注/sales_order_id/inquiry_quote_id/items
+     * (material_type_id/quantity/unit/unit_price/tax_rate/specification/box_quantity/remark).
+     *
+     * <p>不复制 (重置或重新生成): id / orderNumber (重新生成) / status (DRAFT) / createdBy (current user)
+     * / approvedBy / approvedAt / financeReview* / receivedQuantity / vflag (UNCREATED) / markerColor.
+     *
+     * @throws com.cretas.aims.exception.ResourceNotFoundException 源订单不存在
+     * @throws com.cretas.aims.exception.BusinessException 403 跨工厂访问
+     */
+    PurchaseOrder copyPurchaseOrder(String factoryId, String sourceOrderId, Long userId);
+
     // ==================== 采购入库 ====================
 
     PurchaseReceiveRecord createReceiveRecord(String factoryId, CreateReceiveRecordRequest request, Long userId);

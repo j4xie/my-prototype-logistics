@@ -336,6 +336,29 @@ public class ProductionPlanController {
     }
 
     /**
+     * 复制生产计划 — #860 follow-up.
+     * 基于现有计划创建新草稿, 复制产品/数量/日期/成本预估, 不复制实际值/审批/锁定状态.
+     */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
+    @PostMapping("/{planId}/copy")
+    @Operation(summary = "复制生产计划 (创建新草稿)",
+            description = "复制计划业务字段, status 重置为 PENDING. 跳过 SO source / Canvas validation.")
+    public ApiResponse<ProductionPlanDTO> copyProductionPlan(
+            @Parameter(description = "工厂ID", required = true, example = "F001")
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "源计划ID", required = true, example = "PLAN-1234567890-ABCDEF12")
+            @PathVariable @NotBlank String planId,
+            @RequestHeader("Authorization") String authorization) {
+
+        Long userId = extractUserId(authorization);
+        log.info("复制生产计划: factoryId={}, sourcePlanId={}, userId={}",
+                factoryId, planId, userId);
+        ProductionPlanDTO plan = productionPlanService.copyProductionPlan(factoryId, planId, userId);
+        return ApiResponse.success("生产计划已复制为新草稿", plan);
+    }
+
+    /**
      * 锁定生产计划 (Issue #759, 2026-05-17).
      *
      * <p>锁定后该计划不可编辑数量/日期/取消 — 进入排产阶段后防误操作.
