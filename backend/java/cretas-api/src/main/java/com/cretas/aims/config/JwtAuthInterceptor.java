@@ -202,7 +202,8 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                     && !"scale-protocols".equals(factoryId) && !"dashboard".equals(factoryId)
                     && !"workflow".equals(factoryId)   // /api/mobile/workflow/* are global endpoints (node-schemas, validate)
                     && !"admin".equals(factoryId)      // /api/mobile/admin/* are cross-factory admin endpoints (cache management etc)
-                    && !"smartbi-config".equals(factoryId)) {  // /api/mobile/smartbi-config/* uses ?factoryId= query param (R21-F4 fix)
+                    && !"smartbi-config".equals(factoryId)  // /api/mobile/smartbi-config/* uses ?factoryId= query param (R21-F4 fix)
+                    && !"system".equals(factoryId)) {  // Issue #836 (2026-05-17): /api/mobile/system/* is global (release-notes/status/info), not factory-scoped
                 return factoryId;
             }
         }
