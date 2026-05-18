@@ -1415,13 +1415,16 @@ async function submitQuickPayment() {
         </el-form-item>
         <CanvasDynamicFields v-model="form.customFields" module-code="sales_order" />
         <el-divider>{{ label('product') }}明细</el-divider>
+        <!-- 数量/单价/箱数 input-number 控件 -/+ 占两端, value 字段被挤压看不到数字.
+             跟 procurement orders dialog 同 widening (其在 May 7 已扩, sales 漏修),
+             F006 客户 2026-05-18 报 sales dialog 也有. 下单数量 100→120, 单价 100→140, 箱数 80→110 — 确保 3 位以上数字 + 小数点 + -/+ 控件能完整显示. -->
         <div class="item-row item-header">
           <span style="width: 200px">品名</span>
           <span style="width: 120px">规格</span>
-          <span style="width: 100px">下单数量</span>
+          <span style="width: 120px">下单数量</span>
           <span style="width: 80px">单位</span>
-          <span style="width: 100px">单价</span>
-          <span style="width: 80px">箱数</span>
+          <span style="width: 140px">单价</span>
+          <span style="width: 110px">箱数</span>
           <span style="width: 90px" title="税率 (开票 G1 按此分组): 9=原料, 13=加工, 6=服务">税率(%)</span>
           <!-- T4-D1 (issue #525): 来源仓库 — F006 客户反馈 "成品会调回总仓, 总仓再安排发货".
                Customer wants to record per-line source warehouse (WH-LOG 总仓 / WH-WKS 线边仓). -->
@@ -1433,12 +1436,12 @@ async function submitQuickPayment() {
             <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
           </el-select>
           <el-input v-model="item.specification" placeholder="规格" style="width: 120px" @change="calcBox(item)" />
-          <el-input-number v-model="item.quantity" :min="1" style="width: 100px" @change="() => calcBox(item)" />
+          <el-input-number v-model="item.quantity" :min="1" style="width: 120px" @change="() => calcBox(item)" />
           <el-input v-model="item.unit" style="width: 80px" />
           <!-- Sprint 4 W2 S-PRICE-1 R1: unitPrice + 上次成交价 hint chip (一键采纳) -->
           <!-- Issue #793: 客户协议价 hint (CUSTOMER 自动覆盖, GLOBAL 仅提示) -->
           <div class="unit-price-wrap">
-            <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
+            <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 140px" />
             <el-tooltip
               v-if="item.contractPriceHint"
               :content="`${item.contractPriceHint.source === 'CUSTOMER' ? '协议价' : '全局价'} ¥${item.contractPriceHint.price} · ${item.contractPriceHint.priceListName}${item.contractPriceHint.source === 'CUSTOMER' ? ' · 已自动应用' : ' · 点击采用'}`"
@@ -1471,8 +1474,8 @@ async function submitQuickPayment() {
             </el-tooltip>
           </div>
           <!-- P1-3 R2 fix: el-tag 替换 inline-styled div, 跟随 Element Plus 主题 -->
-          <el-tag v-if="isAbacaItem(item)" type="warning" effect="light" size="default" style="width: 80px; text-align: center;">抄码品</el-tag>
-          <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
+          <el-tag v-if="isAbacaItem(item)" type="warning" effect="light" size="default" style="width: 110px; text-align: center;">抄码品</el-tag>
+          <el-input-number v-else v-model="item.boxQuantity" :min="0" :precision="2" style="width: 110px" placeholder="箱" />
           <el-select v-model="item.taxRate" placeholder="税率" style="width: 90px" size="default">
             <el-option :value="0" label="0% 免税" />
             <el-option :value="3" label="3% 小规模" />
