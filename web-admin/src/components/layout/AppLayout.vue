@@ -6,6 +6,8 @@ import AppHeader from './AppHeader.vue';
 // U-FEED-1 (Sprint 4 Wave 2 Chat L) — in-app release-notes toast stack.
 import ReleaseNoteCard from '@/components/notification/ReleaseNoteCard.vue';
 import InlineCustomerService from '@/components/support/InlineCustomerService.vue';
+// P3 #89 (C-SERVICE-CODE-1) — bottom-left service-code badge for customer issue reporting.
+import ServiceCodeBadge from './ServiceCodeBadge.vue';
 
 const appStore = useAppStore();
 
@@ -47,6 +49,8 @@ const mainStyle = computed(() => ({
     <ReleaseNoteCard />
     <!-- Sprint 4 W1 C-INLINE-CS-1: 在线客服浮动入口 (固定右下角) -->
     <InlineCustomerService :service-url="customerServiceUrl" />
+    <!-- P3 #89 C-SERVICE-CODE-1: 服务代码 footer (左下角, 点击复制供报问题) -->
+    <ServiceCodeBadge />
   </div>
 </template>
 

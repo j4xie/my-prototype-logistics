@@ -1,12 +1,43 @@
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+
+/**
+ * P3 #89 服务代码 footer badge — build-time injected constants.
+ * Read package.json version + git short SHA so client can report
+ * a unique "service code" string for customer issue reports.
+ */
+function getAppVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+function getCommitSha(): string {
+  // CI / deploy may pre-set this; fall back to git in dev / local build.
+  if (process.env.VITE_COMMIT_SHA) return process.env.VITE_COMMIT_SHA;
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: __dirname }).toString().trim();
+  } catch {
+    return 'unknown';
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [vue()],
+    define: {
+      __APP_VERSION__: JSON.stringify(getAppVersion()),
+      __COMMIT_SHA__: JSON.stringify(getCommitSha()),
+      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    },
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
