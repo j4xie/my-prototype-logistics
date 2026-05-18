@@ -4665,8 +4665,15 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("异常考勤", "ATTENDANCE_ANOMALY");
 
         // H4: HR操作 — 请假/任务分配/删除
-        phraseToIntentMapping.put("请假申请", "ATTENDANCE_STATS");
-        phraseToIntentMapping.put("帮我请假", "ATTENDANCE_STATS");
+        // Sprint 5 P3 fix (2026-05-17): "请假申请" / "帮我请假" are submit-leave WRITE actions,
+        // not read-only attendance stats. Route to HR_LEAVE_SUBMIT (Sprint 5 Tool 4) instead.
+        // V20260606_13 added HR_LEAVE_SUBMIT intent + Tool, V20260606_15 boosted KEYWORD priority,
+        // but PHRASE_MATCH (this map) wins over KEYWORD per AIIntentService tier order, so the
+        // boost alone didn't help. This is the "full fix" tracked as follow-up in V20260606_15:38.
+        // "批准请假" left as ATTENDANCE_STATS for now — no HR_LEAVE_APPROVE tool exists yet
+        // (separate follow-up if Tool added).
+        phraseToIntentMapping.put("请假申请", "HR_LEAVE_SUBMIT");
+        phraseToIntentMapping.put("帮我请假", "HR_LEAVE_SUBMIT");
         phraseToIntentMapping.put("批准请假", "ATTENDANCE_STATS");
         phraseToIntentMapping.put("分配任务", "TASK_ASSIGN_WORKER");
         phraseToIntentMapping.put("删除员工", "HR_DELETE_EMPLOYEE");
