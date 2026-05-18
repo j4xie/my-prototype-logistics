@@ -37,6 +37,12 @@ public class CustomerDTO {
     private String paymentTerms;
     private BigDecimal creditLimit;
     private BigDecimal currentBalance;
+
+    /** P1 #23 S-CREDIT-1: 信用账期天数 */
+    private Integer creditPeriodDays;
+
+    /** P1 #23 S-CREDIT-1: 信用状态 (NORMAL/WARNING/SUSPENDED) */
+    private com.cretas.aims.entity.enums.CreditStatus creditStatus;
     // 评级信息
     private Integer rating;
     private String ratingNotes;

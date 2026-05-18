@@ -94,6 +94,14 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.service.inventory.PriceListService priceListService;
 
+    /**
+     * P1 #23 S-CREDIT-1: 客户信用预检 (2026-05-17).
+     * SUSPENDED → 硬阻塞; WARNING (exceeds) → 仅 log (soft warn, FE 通过 GET credit-status 预呈现).
+     * Optional — 未注册时跳过检查 (不影响现有逻辑).
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.service.crm.CustomerCreditCheckService customerCreditCheckService;
+
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
@@ -146,6 +154,36 @@ public class SalesServiceImpl implements SalesService {
         com.cretas.aims.entity.Customer customer = customerRepository
                 .findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
+
+        // P1 #23 S-CREDIT-1: 创建前信用预检 (防呆 R1 + R2 + R5)
+        // SUSPENDED → 硬阻塞 409; WARNING (exceeds) → 仅 log soft warn (后端不阻塞, 前端通过 GET credit-status 预呈现).
+        if (customerCreditCheckService != null) {
+            try {
+                com.cretas.aims.dto.customer.CreditStatusDTO creditStatus =
+                        customerCreditCheckService.checkCreditAvailable(
+                                factoryId, request.getCustomerId(), preComputedTotal);
+                if (creditStatus.getCreditStatus() == com.cretas.aims.entity.enums.CreditStatus.SUSPENDED) {
+                    throw new BusinessException(409,
+                            "客户 " + customer.getName() + " 信用已被冻结, 无法创建新销售单")
+                            .withHint(creditStatus.getSuggestedAction())
+                            .withHintTarget("customerId")
+                            .withSeverity("ERROR");
+                }
+                if (creditStatus.isExceeds()) {
+                    // soft warn — 仅 log, 不阻塞 (按 backlog "超期警告" 语义, 销售有权强制下单)
+                    log.warn("P1-23 信用预警: factoryId={}, customer={}, requested={}, available={}, action={}",
+                            factoryId, customer.getName(), preComputedTotal,
+                            creditStatus.getAvailable(), creditStatus.getSuggestedAction());
+                }
+            } catch (BusinessException be) {
+                // 信用阻塞 — 重新抛出
+                throw be;
+            } catch (Exception e) {
+                // 检查本身失败 (e.g. customer 不存在 — 但上面已 fetch) — 仅 log, 不阻塞 SO 创建
+                log.warn("P1-23 信用检查失败 (跳过, 不阻塞 SO): factoryId={}, customerId={}, error={}",
+                        factoryId, request.getCustomerId(), e.getMessage());
+            }
+        }
 
         String orderNumber = generateSalesOrderNumber(factoryId);
 

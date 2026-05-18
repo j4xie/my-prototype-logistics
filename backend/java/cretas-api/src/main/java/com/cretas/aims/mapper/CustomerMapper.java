@@ -41,6 +41,8 @@ public class CustomerMapper {
                 .paymentTerms(customer.getPaymentTerms())
                 .creditLimit(customer.getCreditLimit())
                 .currentBalance(customer.getCurrentBalance())
+                .creditPeriodDays(customer.getCreditPeriodDays())
+                .creditStatus(customer.getCreditStatus())
                 .rating(customer.getRating())
                 .ratingNotes(customer.getRatingNotes())
                 .isActive(customer.getIsActive())
@@ -96,6 +98,12 @@ public class CustomerMapper {
         customer.setPaymentTerms(request.getPaymentTerms());
         customer.setCreditLimit(request.getCreditLimit());
         customer.setCurrentBalance(BigDecimal.ZERO);
+        // P1 #23 S-CREDIT-1: default 30d period, NORMAL status if not provided
+        customer.setCreditPeriodDays(request.getCreditPeriodDays() != null
+                ? request.getCreditPeriodDays() : 30);
+        customer.setCreditStatus(request.getCreditStatus() != null
+                ? request.getCreditStatus()
+                : com.cretas.aims.entity.enums.CreditStatus.NORMAL);
         customer.setRating(request.getRating() != null ? request.getRating() : 3);
         customer.setRatingNotes(request.getRatingNotes());
         // Bug D fix + audit M3 validation: status must be ACTIVE/INACTIVE if provided
@@ -163,6 +171,13 @@ public class CustomerMapper {
         }
         if (request.getCreditLimit() != null) {
             customer.setCreditLimit(request.getCreditLimit());
+        }
+        // P1 #23 S-CREDIT-1: 2 字段 partial update
+        if (request.getCreditPeriodDays() != null) {
+            customer.setCreditPeriodDays(request.getCreditPeriodDays());
+        }
+        if (request.getCreditStatus() != null) {
+            customer.setCreditStatus(request.getCreditStatus());
         }
         if (request.getRating() != null) {
             customer.setRating(request.getRating());
