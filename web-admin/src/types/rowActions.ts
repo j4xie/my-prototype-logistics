@@ -84,7 +84,7 @@ export const COMMON_ACTIONS = {
     label: '转外购',
     aiHint: '我要找外购',
   },
-  RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单', pending: true },
+  RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单' },
   TRANSFER: { id: 'transfer', icon: '🔄', label: '调拨', aiHint: '我要调拨' },
   PRINT_PDF: { id: 'print-pdf', icon: '📄', label: '打印 PDF', aiHint: '打印这单' },
   COPY: { id: 'copy', icon: '📑', label: '复制', aiHint: '复制这单', pending: true },

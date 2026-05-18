@@ -21,6 +21,7 @@ import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguatio
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter, ViewModeSwitcher, GridView, KanbanView, TimelinePlaceholder, CalendarPlaceholder, InlineRowIcons, RowMarkerCell } from '@/components/list';
 import { CreateModeSelector, BatchCreateDialog, QuickCreateDialog, BomExpansionDialog } from '@/components/dialog';
+import CreateReturnOrderDialog from '@/components/dialog/CreateReturnOrderDialog.vue';
 import type { ViewMode } from '@/types/viewMode';
 import type { CreateMode } from '@/types/createMode';
 import type { InlineIconId } from '@/types/inlineIcons';
@@ -241,6 +242,38 @@ function rowActionsFor(row: TableRow) {
     { canViewPrice: canViewPrice.value }
   );
 }
+// 退货 dialog state (#860 follow-up — wires existing backend ReturnOrderController).
+const returnDialogVisible = ref(false);
+const returnDialogRow = ref<TableRow | null>(null);
+const returnDialogItems = computed(() => {
+  const row = returnDialogRow.value;
+  if (!row || !Array.isArray(row.items)) return [];
+  return (row.items as TableRow[]).map((it) => ({
+    id: it.id,
+    materialTypeId: it.materialTypeId ? String(it.materialTypeId) : null,
+    productTypeId: null,
+    itemName: String(it.materialName || it.itemName || '-'),
+    unitPrice: Number(it.unitPrice) || 0,
+    // For procurement, cap return at ordered quantity (no per-line received-qty
+    // hydration on list endpoint; service-side over-return guard will reject).
+    maxQuantity: Number(it.quantity) || 0,
+    batchNumber: it.batchNumber ? String(it.batchNumber) : null,
+  }));
+});
+function openReturnDialog(row: TableRow): void {
+  if (!Array.isArray(row.items) || row.items.length === 0) {
+    ElMessage.warning('采购单无明细, 无法发起退货. 请打开订单详情确认.');
+    return;
+  }
+  returnDialogRow.value = row;
+  returnDialogVisible.value = true;
+}
+function handleReturnSuccess(): void {
+  returnDialogVisible.value = false;
+  returnDialogRow.value = null;
+  void loadData();
+}
+
 function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': goDetail(String(row.id)); break;
@@ -250,7 +283,7 @@ function handleRowActionClick(actionId: string, row: TableRow) {
     case 'cancel': handleAction(String(row.id), 'cancel'); break;
     case 'print-pdf': handleDownloadPdf(row); break;
     case 'copy': ElMessage.info(`复制采购单 ${row.orderNumber} (待接 API)`); break;
-    case 'return': ElMessage.info(`发起退货 (待接 returnOrder API): ${row.id}`); break;
+    case 'return': openReturnDialog(row); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
@@ -1064,13 +1097,27 @@ function handleAiFill(params: TableRow) {
       </template>
     </BomExpansionDialog>
 
-    <!-- PR #861: per-row operation log timeline (replaces the disabled "审计" chip). -->
+    <!-- PR #865: per-row operation log timeline (replaces the disabled "审计" chip). -->
     <AuditLogDrawer
       v-model:visible="auditDrawerVisible"
       entity-type="PurchaseOrder"
       entity-type-label="采购单"
       :entity-id="auditEntityId"
       :entity-label="auditEntityLabel"
+    />
+
+    <!-- PR #866 (#860 follow-up) — 退货 dialog. Wires existing ReturnOrderController. -->
+    <CreateReturnOrderDialog
+      v-if="returnDialogRow"
+      v-model="returnDialogVisible"
+      :factory-id="factoryId"
+      return-type="PURCHASE_RETURN"
+      :source-order-id="String(returnDialogRow.id)"
+      :source-order-number="String(returnDialogRow.orderNumber || returnDialogRow.id)"
+      :counterparty-id="String(returnDialogRow.supplierId || '')"
+      :counterparty-name="String(returnDialogRow.supplierName || (returnDialogRow.supplier as TableRow)?.name || returnDialogRow.supplierId || '-')"
+      :items="returnDialogItems"
+      @success="handleReturnSuccess"
     />
   </div>
   </CanvasAwareWrapper>

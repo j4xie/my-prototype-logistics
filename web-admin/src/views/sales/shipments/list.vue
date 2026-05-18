@@ -8,6 +8,7 @@ import { Plus, Search } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { TableRow } from '@/types/api';
 import { RowActionMenu, TableFooter } from '@/components/list';
+import CreateReturnOrderDialog from '@/components/dialog/CreateReturnOrderDialog.vue';
 import { computeRowActions } from '@/composables/useRowActions';
 import { safePrint } from '@/api/printApi';
 import { useListSummary } from '@/composables/useListSummary';
@@ -27,12 +28,47 @@ function rowActionsFor(row: TableRow) {
     { canViewPrice: canViewPrice.value }
   );
 }
+// 退货 dialog state (#860 follow-up — wires existing backend ReturnOrderController).
+// Shipments 是 single-product 记录, items list 只有 1 行 (productName + quantity).
+const returnDialogVisible = ref(false);
+const returnDialogRow = ref<TableRow | null>(null);
+const returnDialogItems = computed(() => {
+  const row = returnDialogRow.value;
+  if (!row) return [];
+  return [
+    {
+      id: String(row.id),
+      // Shipment doesn't carry productTypeId in the list response; we send
+      // null + itemName so backend records the return line by name.
+      materialTypeId: null,
+      productTypeId: row.productTypeId ? String(row.productTypeId) : null,
+      itemName: String(row.productName || '-'),
+      unitPrice: Number(row.unitPrice) || 0,
+      maxQuantity: Number(row.quantity) || 0,
+      batchNumber: row.batchNumber ? String(row.batchNumber) : null,
+    },
+  ];
+});
+function openReturnDialog(row: TableRow): void {
+  if (!row.customerId) {
+    ElMessage.warning('该出货记录缺少客户信息, 无法发起退货.');
+    return;
+  }
+  returnDialogRow.value = row;
+  returnDialogVisible.value = true;
+}
+function handleReturnSuccess(): void {
+  returnDialogVisible.value = false;
+  returnDialogRow.value = null;
+  void loadData();
+}
+
 function handleRowActionClick(actionId: string, row: TableRow) {
   switch (actionId) {
     case 'view-detail': handleView(row); break;
     // Shipments 复用 sales-order 模板 — 出货关联的销售单 PDF 是客户期望
     case 'print-pdf': void safePrint('sales-order', factoryId.value, String(row.salesOrderId || row.id), { fileName: `出货单_${row.id}` }); break;
-    case 'return': ElMessage.info(`发起退货 (待接 returnOrder API): ${row.id}`); break;
+    case 'return': openReturnDialog(row); break;
     default: ElMessage.info(`Action: ${actionId}`);
   }
 }
@@ -367,6 +403,20 @@ async function submitCreateForm() {
         layout="total, prev, pager, next"
         @current-change="handlePageChange"
         class="pagination"
+      />
+
+      <!-- #860 follow-up — 退货 dialog. Wires existing ReturnOrderController. -->
+      <CreateReturnOrderDialog
+        v-if="returnDialogRow"
+        v-model="returnDialogVisible"
+        :factory-id="factoryId"
+        return-type="SALES_RETURN"
+        :source-order-id="String(returnDialogRow.id)"
+        :source-order-number="String(returnDialogRow.shipmentNumber || returnDialogRow.id)"
+        :counterparty-id="String(returnDialogRow.customerId || '')"
+        :counterparty-name="customerMap[String(returnDialogRow.customerId || '')] || String(returnDialogRow.customerId || '-')"
+        :items="returnDialogItems"
+        @success="handleReturnSuccess"
       />
     </el-card>
   </div>
