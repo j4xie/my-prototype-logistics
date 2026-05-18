@@ -5,12 +5,12 @@ import com.cretas.aims.entity.datacenter.OperationLog;
 import com.cretas.aims.service.datacenter.OperationLogService;
 import com.cretas.aims.utils.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -32,12 +32,28 @@ import java.lang.reflect.Parameter;
 @Slf4j
 @Aspect
 @Component
-@RequiredArgsConstructor
 public class LoggableAspect {
 
     private final OperationLogService operationLogService;
 
     private static final ExpressionParser SPEL = new SpelExpressionParser();
+
+    /**
+     * Inject {@link OperationLogService} via {@code @Lazy} proxy to break a Spring init cycle.
+     *
+     * <p>{@code @Aspect} beans are eagerly instantiated when the auto-proxy creator
+     * post-processes any other bean (including {@code flyway}). Without {@code @Lazy}, this
+     * triggers eager creation of {@code OperationLogServiceImpl} → {@code OperationLogRepository}
+     * → {@code primaryEntityManagerFactory}. The EMF is registered as {@code @DependsOn("flyway")}
+     * by {@code JpaDependsOnDatabaseInitializationDetector}, producing a circular depends-on
+     * (flyway → loggableAspect → operationLogServiceImpl → operationLogRepository → primaryEMF → flyway).
+     *
+     * <p>{@code @Lazy} resolves the service via a proxy at first invocation (after context refresh
+     * completes), so the eager dependency edge is never registered.
+     */
+    public LoggableAspect(@Lazy OperationLogService operationLogService) {
+        this.operationLogService = operationLogService;
+    }
 
     @Around("@annotation(loggable)")
     public Object around(ProceedingJoinPoint joinPoint, Loggable loggable) throws Throwable {
