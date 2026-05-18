@@ -84,7 +84,7 @@ export const COMMON_ACTIONS = {
     label: '转外购',
     aiHint: '我要找外购',
   },
-  RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单', pending: true },
+  RETURN: { id: 'return', icon: '↩️', label: '退货', aiHint: '我要退这单' },
   TRANSFER: { id: 'transfer', icon: '🔄', label: '调拨', aiHint: '我要调拨' },
   PRINT_PDF: { id: 'print-pdf', icon: '📄', label: '打印 PDF', aiHint: '打印这单' },
   COPY: { id: 'copy', icon: '📑', label: '复制', aiHint: '复制这单', pending: true },
@@ -137,7 +137,9 @@ export const COMMON_ACTIONS = {
     label: '价格历史',
     priceRelated: true,
     aiHint: '看这单价格历史',
-    pending: true,
+    // 2026-05-18: GET /customer-price-history endpoint shipped (#860 follow-up),
+    // PriceHistoryDialog wired in 成品库存视图. Other entityTypes (salesOrder PENDING_APPROVAL,
+    // purchaseOrder SUBMITTED/PENDING_APPROVAL) still pending wiring.
   },
   VIEW_DETAIL: { id: 'view-detail', icon: '🔍', label: '查看详情', aiHint: '看这单详情' },
 } as const satisfies Record<string, Omit<RowAction, never>>;

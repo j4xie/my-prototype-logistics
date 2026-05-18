@@ -48,4 +48,19 @@ public interface CustomerPriceHistoryRepository extends JpaRepository<CustomerPr
      * 批量查 — 销售单确认时一次写入多行 (按 SO 批 dedup).
      */
     List<CustomerPriceHistory> findBySourceSalesOrderId(String sourceSalesOrderId);
+
+    /**
+     * 跨客户查产品成交历史 — 用于 "价格历史" 对话框在没有 customerId 上下文时 (e.g. 成品库存视图)
+     * 展示该产品在所有客户的成交记录.
+     *
+     * Sprint 4 W2 follow-up (2026-05-18): backend GET /customer-price-history endpoint
+     * 允许 customerId 可选, 缺省则走此查询.
+     */
+    @Query("SELECT h FROM CustomerPriceHistory h " +
+           "WHERE h.factoryId = :factoryId " +
+           "  AND h.productTypeId = :productTypeId " +
+           "ORDER BY h.orderDate DESC, h.createdAt DESC")
+    List<CustomerPriceHistory> findHistoryByProductAcrossCustomers(
+            @Param("factoryId") String factoryId,
+            @Param("productTypeId") String productTypeId);
 }

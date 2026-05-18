@@ -45,6 +45,28 @@ public class CustomerPriceMemoryServiceImpl implements CustomerPriceMemoryServic
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<CustomerPriceHistory> findHistory(String factoryId, String customerId, String productTypeId, int limit) {
+        if (factoryId == null || productTypeId == null) {
+            return List.of();
+        }
+        // Clamp limit: <1 → default 20, >200 → cap at 200 (防御性, 避免拖库).
+        int safeLimit = (limit < 1) ? 20 : Math.min(limit, 200);
+
+        List<CustomerPriceHistory> rows;
+        if (customerId == null || customerId.isBlank()) {
+            // 没有 customerId 上下文 (e.g. 成品库存视图) — 跨客户查该产品历史.
+            rows = historyRepository.findHistoryByProductAcrossCustomers(factoryId, productTypeId);
+        } else {
+            rows = historyRepository.findLatestByCustomerAndProduct(factoryId, customerId, productTypeId);
+        }
+        if (rows.size() <= safeLimit) {
+            return rows;
+        }
+        return new java.util.ArrayList<>(rows.subList(0, safeLimit));
+    }
+
+    @Override
     @Transactional
     public int recordFromSalesOrder(SalesOrder order) {
         if (order == null || order.getCustomerId() == null) {

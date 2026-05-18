@@ -4,6 +4,7 @@ import com.cretas.aims.entity.CustomerPriceHistory;
 import com.cretas.aims.entity.inventory.SalesOrder;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -34,4 +35,16 @@ public interface CustomerPriceMemoryService {
      * @return 实际写入行数 (0 = 全部已存在 / SO 无 items, ≥1 = 新增)
      */
     int recordFromSalesOrder(SalesOrder order);
+
+    /**
+     * 查询客户 × 产品的最近 N 条成交价历史 (用于 "价格历史" 对话框展示).
+     *
+     * @param factoryId     工厂 ID (必填)
+     * @param customerId    客户 ID (可选 — null 表示查该 productTypeId 在所有客户的成交历史)
+     * @param productTypeId 产品类型 ID (必填)
+     * @param limit         最大返回条数 (1..200, &lt;1 则默认 20)
+     * @return 按 orderDate DESC, createdAt DESC 排序的历史 list (含价格 + 来源订单号 + 日期).
+     *         unitPrice 字段为 {@code @PriceSensitive}, 无 price 权限角色看到的 list 中 unitPrice 已被 null.
+     */
+    List<CustomerPriceHistory> findHistory(String factoryId, String customerId, String productTypeId, int limit);
 }
