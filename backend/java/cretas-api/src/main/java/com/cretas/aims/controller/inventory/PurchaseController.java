@@ -216,6 +216,9 @@ public class PurchaseController {
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
             @RequestHeader("Authorization") String authorization) {
+        // TODO (Phase 2 / Sprint 4): 增加 @RequestParam(required=false) String fromNodeId
+        // 让 parallel 场景下前端能精确指定本次审批操作的 active node id.
+        // 目前 WorkflowEngineService.transitionNode 从 instance.currentNodeIds[0] 取 fromNode (B.4 简化).
         Long userId = extractUserId(authorization);
         PurchaseOrder order = purchaseService.approveOrder(factoryId, orderId, userId);
         return ApiResponse.success("采购订单已审批", order);

@@ -11,6 +11,12 @@ public enum PurchaseOrderStatus {
     DRAFT("草稿", "采购订单草稿，尚未提交"),
     /** 已提交待审批 */
     SUBMITTED("已提交", "已提交等待审批"),
+    /**
+     * 工作流审批中 (Phase 1 Canvas-Workflow, 2026-05-18) —
+     * approveOrder 启动了 Canvas-configured workflow, 当前在 RUNNING approval node 等待人工.
+     * 等 transitionNode 推进到终态后再切换 APPROVED / REJECTED / PENDING_FINANCE_REVIEW.
+     */
+    WORKFLOW_RUNNING("审批中", "工作流审批进行中，等待审批人操作"),
     /** 已审批 (运营审批) */
     APPROVED("已审批", "运营审批通过，等待财务审核"),
     /** 待财务审核 */
