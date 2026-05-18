@@ -14,9 +14,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.cretas.aims.config.RequireRole;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -38,7 +38,7 @@ public class ImportRuleController {
     // ───── Rule CRUD ─────
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Page<ImportRule>>> list(
             @PathVariable String factoryId,
             @RequestParam(required = false) String moduleCode,
@@ -51,7 +51,7 @@ public class ImportRuleController {
     }
 
     @GetMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ImportRule>> get(
             @PathVariable String factoryId,
             @PathVariable Long ruleId) {
@@ -59,7 +59,7 @@ public class ImportRuleController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ImportRule>> create(
             @PathVariable String factoryId,
             @RequestBody ImportRule rule) {
@@ -68,7 +68,7 @@ public class ImportRuleController {
     }
 
     @PutMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ImportRule>> update(
             @PathVariable String factoryId,
             @PathVariable Long ruleId,
@@ -78,7 +78,7 @@ public class ImportRuleController {
     }
 
     @DeleteMapping("/{ruleId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable String factoryId,
             @PathVariable Long ruleId) {
@@ -92,7 +92,7 @@ public class ImportRuleController {
      * 上传 Excel + 解析 + 行级 validate. 返 ImportJob 含 row-level errors. 不写库.
      */
     @PostMapping(value = "/{ruleId}/dryrun", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ImportJob>> dryrun(
             @PathVariable String factoryId,
             @PathVariable Long ruleId,
@@ -104,7 +104,7 @@ public class ImportRuleController {
 
     /** 确认提交 dryrun 通过的 Job. 仅 status=DRYRUN_DONE 可 commit. */
     @PostMapping("/jobs/{jobId}/commit")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ImportJob>> commit(
             @PathVariable String factoryId,
             @PathVariable String jobId) {
@@ -114,7 +114,7 @@ public class ImportRuleController {
     // ───── Job tracking ─────
 
     @GetMapping("/jobs")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<Page<ImportJob>>> listJobs(
             @PathVariable String factoryId,
             @RequestParam(required = false) String status,
@@ -126,7 +126,7 @@ public class ImportRuleController {
     }
 
     @GetMapping("/jobs/{jobId}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<ApiResponse<ImportJob>> getJob(
             @PathVariable String factoryId,
             @PathVariable String jobId) {
@@ -135,7 +135,7 @@ public class ImportRuleController {
 
     /** 下载失败行反向导出的 Excel. */
     @GetMapping("/jobs/{jobId}/errors/download")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN', 'DATA_ANALYST')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ResponseEntity<Resource> downloadErrors(
             @PathVariable String factoryId,
             @PathVariable String jobId) {
