@@ -532,6 +532,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '考勤管理', module: 'hr' }
           },
           {
+            path: 'attendance-exceptions',
+            name: 'HRAttendanceExceptions',
+            component: () => import('@/views/hr/attendance/exceptions.vue'),
+            meta: { requiresAuth: true, title: '考勤异常处理', module: 'hr' }
+          },
+          {
             path: 'whitelist',
             name: 'HRWhitelist',
             component: () => import('@/views/hr/whitelist/index.vue'),
