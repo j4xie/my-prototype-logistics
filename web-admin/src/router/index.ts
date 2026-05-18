@@ -618,6 +618,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'HRInsuranceConfig',
             component: () => import('@/views/hr/config/insurance-rates.vue'),
             meta: { requiresAuth: true, title: '社保公积金配置', module: 'hr' }
+          },
+          {
+            // #833 H-WAGE follow-up — 年度汇算 (综合所得 annual settlement)
+            path: 'annual-settlement',
+            name: 'HRAnnualSettlement',
+            component: () => import('@/views/hr/salaries/annual-settlement.vue'),
+            meta: { requiresAuth: true, title: '年度汇算', module: 'hr' }
           }
         ]
       },
