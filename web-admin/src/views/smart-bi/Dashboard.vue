@@ -2187,7 +2187,7 @@ onUnmounted(() => {
     </el-row>
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
-    <TemplateGrid page-key="dashboard" :factory-id="factoryId || 'F001'" />
+    <TemplateGrid page-key="dashboard" :factory-id="factoryId || ''" />
 
     <!-- Day 8 数据织网 Sub-Project A: bottom CTA prompting users to unlock
          capability-gated cards by uploading more comprehensive data -->

@@ -886,7 +886,7 @@ export async function simulateWhatIf(params: {
       body: JSON.stringify({
         uploadId: params.uploadId,
         rawData: params.rawData,
-        factoryId: params.factoryId || 'F001',
+        factoryId: params.factoryId || '',  // #840: no F001 fallback (multi-tenant leak)
         scenarios: params.scenarios,
         elasticity: params.elasticity,
       }),

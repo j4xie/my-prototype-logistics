@@ -143,7 +143,7 @@ onMounted(async () => {
 async function loadUploads() {
   try {
     // Note: factoryId-scoped via auth store; pass no positional factoryId here.
-    void (factoryId.value || 'F001');
+    void (factoryId.value || '');  // #840: no F001 fallback
     const response = await getUploadHistory();
     uploads.value = response.data || [];
     if (uploads.value.length > 0) {
@@ -398,7 +398,7 @@ const reviewStats = ref<{ totalReviews: number; storeCount: number; lastUpload?:
 
 async function loadReviewStats() {
   try {
-    const resp = await getReviewStats(factoryId.value || 'F001') as {
+    const resp = await getReviewStats(factoryId.value || '') as {
       success?: boolean;
       data?: { totalReviews: number; storeCount: number; lastUpload?: string };
     };
@@ -1953,7 +1953,7 @@ function formatCurrency(v?: number): string {
     <!-- W5.2 — BOM Ingest Dialog -->
     <BomIngestDialog
       v-model="bomIngestDialogVisible"
-      :factory-id="factoryId || 'F001'"
+      :factory-id="factoryId || ''"
       @data-changed="onBomDataChanged"
     />
 
@@ -1967,14 +1967,14 @@ function formatCurrency(v?: number): string {
       :destroy-on-close="false"
     >
       <RestaurantChatPanel
-        :factory-id="factoryId || 'F001'"
+        :factory-id="factoryId || ''"
         :sub-sector="subSector"
         :upload-id="selectedUploadId != null ? String(selectedUploadId) : undefined"
       />
     </el-drawer>
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
-    <TemplateGrid page-key="restaurantv2" :factory-id="factoryId || 'F001'" />
+    <TemplateGrid page-key="restaurantv2" :factory-id="factoryId || ''" />
   </div>
 </template>
 

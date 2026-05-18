@@ -524,7 +524,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
-    <TemplateGrid page-key="trend" :factory-id="factoryId || 'F001'" />
+    <TemplateGrid page-key="trend" :factory-id="factoryId || ''" />
 
     <UnlockMoreCTA />
   </div>
