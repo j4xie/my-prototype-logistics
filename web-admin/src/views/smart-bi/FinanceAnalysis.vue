@@ -2527,7 +2527,7 @@ onUnmounted(() => {
     </el-dialog>
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
-    <TemplateGrid page-key="finance" :factory-id="factoryId || 'F001'" />
+    <TemplateGrid page-key="finance" :factory-id="factoryId || ''" />
 
     <!-- Day 9 数据织网 Sub-Project A: unlock more analyses CTA -->
     <UnlockMoreCTA />

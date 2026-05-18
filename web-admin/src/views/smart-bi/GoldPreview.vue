@@ -52,7 +52,7 @@ function onAudit(row: { entityId?: string | null; fieldName?: string | null }): 
   if (url) router.push(url);
 }
 
-const factoryId = ref<string>(auth.factoryId || 'F001');
+const factoryId = ref<string>(auth.factoryId || '');  // #840: no F001 fallback
 const startDate = ref<string>('2025-01-01');
 const endDate = ref<string>('2025-12-31');
 const loading = ref<boolean>(false);

@@ -1080,7 +1080,7 @@ async function handleNL2SQLQuery(query: string) {
     const res = await nl2sql({
       query,
       uploadId: selectedUploadId.value,
-      factoryId: factoryId.value || 'F001',
+      factoryId: factoryId.value || '',
       execute: true,
       limit: 200,
     });

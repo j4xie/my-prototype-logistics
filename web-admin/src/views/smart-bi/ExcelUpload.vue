@@ -449,10 +449,10 @@ async function runUploadAsync(rawFile: File, region?: TableRegion) {
   uploadProgress.value = 0;
   uploadStage.value = 'uploading';
 
-  // Try to get factoryId from auth store; fallback to F001 for backward compat.
+  // #840: no F001 fallback (multi-tenant leak). Empty string → backend 4xx → user sees error.
   const authStore = useAuthStore();
   const factoryId =
-    (authStore.user as { factoryId?: string } | null)?.factoryId || 'F001';
+    (authStore.user as { factoryId?: string } | null)?.factoryId || '';
 
   try {
     // Phase A: transfer bytes to server (progress 0-100%)
