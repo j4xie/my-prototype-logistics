@@ -221,6 +221,7 @@ const menuConfig: MenuItem[] = [
       { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
       { path: '/system/llm-usage', title: 'LLM 用量监控', icon: '', module: 'system' },
       { path: '/system/encoding-rules', title: '编码规则字典', icon: '', module: 'system' },
+      { path: '/system/image-library', title: '公共图片库', icon: '', module: 'system' },
       { path: '/system/approval-chains', title: '审批链配置', icon: '', module: 'system' },
       { path: '/system/ai-quota', title: 'AI 配额规则', icon: '', module: 'system' },
       { path: '/system/products', title: '成品 / SKU (本厂生产)', icon: '', module: 'system' },

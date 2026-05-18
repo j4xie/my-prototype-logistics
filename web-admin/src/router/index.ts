@@ -786,6 +786,13 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '编码规则字典', module: 'system' }
           },
           {
+            // P2 #80 C-IMAGE-LIB-1 (2026-05-18): 公共图片库 — 引用 Attachment + 跨工厂共享
+            path: 'image-library',
+            name: 'SystemImageLibrary',
+            component: () => import('@/views/system/image-library/list.vue'),
+            meta: { requiresAuth: true, title: '公共图片库', module: 'system' }
+          },
+          {
             path: 'approval-chains',
             name: 'SystemApprovalChains',
             component: () => import('@/views/system/approval-chains/list.vue'),
